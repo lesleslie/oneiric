@@ -1,0 +1,60 @@
+[project]
+name = "oneiric"
+version = "0.1.0"
+description = "Universal resolution layer for pluggable components with hot-swapping and remote manifest delivery"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "pydantic>=2.7",
+    "structlog>=24.1",
+    "opentelemetry-api>=1.24",
+    "pyyaml>=6.0.1",
+    "typer>=0.12",
+    "cryptography>=42.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=4.1",
+    "pytest-timeout>=2.2",
+    "freezegun>=1.4",
+]
+
+[project.scripts]
+oneiric = "oneiric.cli:main"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--cov=oneiric",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+]
+markers = [
+    "security: Security-related tests",
+    "integration: Integration tests",
+    "slow: Slow-running tests",
+]
+
+[tool.coverage.run]
+source = ["oneiric"]
+omit = ["tests/*", "**/__pycache__/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if __name__ == .__main__.:",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+]

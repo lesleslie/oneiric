@@ -1,0 +1,38 @@
+source: sample-demo
+entries:
+  - domain: adapter
+    key: remote-demo
+    provider: remote
+    factory: oneiric.remote.samples:demo_remote_adapter
+    stack_level: 3
+    priority: 25
+    metadata:
+      description: Remote demo adapter registered via manifest
+  - domain: service
+    key: remote-status
+    provider: remote
+    factory: oneiric.remote.samples:demo_remote_service
+    stack_level: 3
+    metadata:
+      description: Remote demo service
+  - domain: task
+    key: remote-task
+    provider: remote
+    factory: oneiric.remote.samples:demo_remote_task
+    stack_level: 3
+    metadata:
+      description: Remote async task handler
+  - domain: event
+    key: remote.event
+    provider: remote
+    factory: oneiric.remote.samples:demo_remote_event_handler
+    stack_level: 3
+    metadata:
+      description: Remote event handler
+  - domain: workflow
+    key: remote-workflow
+    provider: remote
+    factory: oneiric.remote.samples:demo_remote_workflow
+    stack_level: 3
+    metadata:
+      description: Remote workflow definition
