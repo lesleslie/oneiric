@@ -5,6 +5,7 @@ support, reusing existing ACB adapters and actions where useful. Domains (adapte
 services, tasks, events, workflows) plug into the same resolver and lifecycle.
 
 ## Top-Level Packages
+
 - `core/runtime`: Context, DI bindings, TaskGroup/nursery helpers, cancellation-safe
   utilities.
 - `core/resolution`: Candidate model, resolver, registries (active/shadowed), explain
@@ -20,12 +21,14 @@ services, tasks, events, workflows) plug into the same resolver and lifecycle.
   keys and lifecycle hooks.
 
 ## Candidate Model (shared)
+
 - Fields: domain, key, provider, priority, stack_level (z-index), factory/import,
   metadata (capabilities, version, source), health hook, lifecycle hooks.
 - Precedence: explicit config override > pkg-inferred priority > stack_level >
   registration order.
 
 ## Domain Mapping
+
 - Adapters: key = category; provider = adapter name; metadata includes capabilities
   and version; lifecycle for outbound resources (connections, clients).
 - Services: key = service_id; provider = implementation; lifecycle + health.
@@ -37,48 +40,55 @@ services, tasks, events, workflows) plug into the same resolver and lifecycle.
   activation flag; graceful swap (migrate/drain in-flight where possible).
 
 ## Lifecycle & Swap
+
 - Standard contract: init() → health() → (run) → cleanup(); optional pause/resume.
 - Swap flow: resolve target → instantiate → health check → pre_swap hook → bind →
   cleanup old → post_swap hook; rollback on failure unless force.
 - Config/manifest watcher triggers swap when mappings change.
 
 ## Discovery Sources
+
 - Local package: `register_pkg` captures caller path, maps to priority, emits candidates.
 - Entry points (or pluggy-style): enumerate entry points for each domain group.
 - Remote manifest: signed manifest with uri + sha/signature; download wheel/zip to
   cache; install or sys.path prepend; register candidates with source metadata.
 
 ## Observability
+
 - Trace spans for discovery/registration/resolve/swap; metrics for swap attempts/
   successes/failures; structured logs include domain/key/provider/source/priority.
 - Health/readiness endpoints/polls backed by lifecycle health hooks.
 
 ## Configuration
+
 - Typed settings; `settings/*.yaml` (or TOML) for explicit overrides (domain/key →
   provider). Remote manifest location configurable. Stack order configurable via env
   (e.g., `STACK_ORDER=sites,splashstand,fastblocks,oneiric`).
 
 ## CLI/Diagnostics
+
 - Commands: list (active/shadowed), why/explain, swap, health, show sources.
 - Per-domain tables include priority, stack_level, source, timestamp, decision reason.
 
 ## Compatibility Note
+
 - No legacy constraints. Keep existing adapter behavior by wrapping implementations
   with lifecycle/resolver shims; actions utilities remain, with DI/context bindings.
 
 ## Integration Guidance (fastblocks, crackerjack, splashstand, session-mgmt-mcp)
+
 - Feasibility: high. Existing adapter modules can be registered as candidates; their
   categories map directly. Services/tasks/events/workflows integrate by defining
   keys and registering providers; override semantics are handled by resolver.
 - Migration steps:
-  1) Add stack priority map per app (`STACK_ORDER` env or config; e.g., sites →
+  1. Add stack priority map per app (`STACK_ORDER` env or config; e.g., sites →
      splashstand → fastblocks → oneiric).
-  2) Register packages via new `register_pkg` (no old globals).
-  3) Wrap adapters with lifecycle shims; declare stack_level/provider metadata.
-  4) Bind services/tasks/events/workflows through their bridges; remove legacy
+  1. Register packages via new `register_pkg` (no old globals).
+  1. Wrap adapters with lifecycle shims; declare stack_level/provider metadata.
+  1. Bind services/tasks/events/workflows through their bridges; remove legacy
      registration paths.
-  5) Enable OTel/logging helpers; add minimal health hooks.
-  6) Optionally set up remote manifest for shared/ad-hoc components.
+  1. Enable OTel/logging helpers; add minimal health hooks.
+  1. Optionally set up remote manifest for shared/ad-hoc components.
 - Strengthening apps:
   - Deterministic overrides across the stack (sites → splashstand → fastblocks → oneiric).
   - Hot swap for safer rollout and config-driven changes.
@@ -86,6 +96,7 @@ services, tasks, events, workflows) plug into the same resolver and lifecycle.
   - Plugin/remote delivery to share components across repos without copy/paste.
 
 ## Optional Early Adds
+
 - Capability tags and negotiation in resolver (select by capability + priority).
 - Middleware/pipeline adapters to compose behavior.
 - Retry/backoff + circuit breaker mixins for outbound adapters.

@@ -5,7 +5,7 @@
 **Target:** Production-Ready (v1.0.0)
 **Timeline:** 12-16 weeks
 
----
+______________________________________________________________________
 
 ## Executive Summary
 
@@ -23,7 +23,7 @@ Week 10-12: 🔵 Production Hardening (Circuit breakers, retries)
 Week 13-16: ⚪ Performance & Polish
 ```
 
----
+______________________________________________________________________
 
 ## Phase Completion Status
 
@@ -44,30 +44,35 @@ Week 13-16: ⚪ Performance & Polish
 #### 🔴 Critical Blockers (Must Fix for Beta)
 
 1. **Arbitrary Code Execution** (`lifecycle.py:44-53`)
+
    - **Risk:** Remote manifest can import `os:system` and execute shell commands
    - **Fix:** Factory allowlist with safe module prefixes
    - **Effort:** 1 day
    - **Blocker:** Production deployment impossible
 
-2. **Missing Signature Verification** (`remote/loader.py`)
+1. **Missing Signature Verification** (`remote/loader.py`)
+
    - **Risk:** MITM attacks can replace manifests even with HTTPS
    - **Fix:** Add cryptographic signature verification using `cryptography` library
    - **Effort:** 3 days
    - **Blocker:** Remote manifests unusable in hostile networks
 
-3. **Zero Test Coverage** (No `tests/` directory)
+1. **Zero Test Coverage** (No `tests/` directory)
+
    - **Risk:** Cannot verify correctness, refactoring breaks unknowingly
    - **Fix:** Minimum 60% coverage (50+ tests)
    - **Effort:** 2 weeks
    - **Blocker:** No confidence in stability
 
-4. **Path Traversal** (`loader.py:52-54`)
+1. **Path Traversal** (`loader.py:52-54`)
+
    - **Risk:** Malicious URI like `../../etc/passwd` escapes cache directory
    - **Fix:** Path sanitization with `resolve()` checks
    - **Effort:** 2 hours
    - **Blocker:** File system compromise
 
-5. **No HTTP Timeouts** (`loader.py:73`)
+1. **No HTTP Timeouts** (`loader.py:73`)
+
    - **Risk:** Hangs indefinitely on slow/malicious servers
    - **Fix:** Add `timeout=30.0` to `urllib.request.urlopen()`
    - **Effort:** 2 hours
@@ -76,21 +81,25 @@ Week 13-16: ⚪ Performance & Polish
 #### 🟡 High Priority (Beta Requirements)
 
 6. **Race Conditions in Registry** (`resolution.py:118-135`)
+
    - **Issue:** No thread safety for concurrent registrations
    - **Fix:** Add `threading.Lock()` or document single-threaded constraint
    - **Effort:** 1 day
 
-7. **Unbounded Instance Cache** (`lifecycle.py:113`)
+1. **Unbounded Instance Cache** (`lifecycle.py:113`)
+
    - **Issue:** Memory leak as instances accumulate without eviction
    - **Fix:** Implement LRU cache with max size or TTL-based eviction
    - **Effort:** 2 days
 
-8. **Secrets Cache Never Invalidates** (`bridge.py:44, 59`)
+1. **Secrets Cache Never Invalidates** (`bridge.py:44, 59`)
+
    - **Issue:** Secrets cached forever, no rotation support
    - **Fix:** Add TTL or invalidate on config reload
    - **Effort:** 1 day
 
-9. **Sequential Remote Entry Registration** (`loader.py:161-181`)
+1. **Sequential Remote Entry Registration** (`loader.py:161-181`)
+
    - **Issue:** 100 manifest entries = 100× latency
    - **Fix:** Parallelize with `asyncio.gather()`
    - **Effort:** 2 days
@@ -98,26 +107,30 @@ Week 13-16: ⚪ Performance & Polish
 #### 🟢 Medium Priority (Post-Beta)
 
 10. **Entry Point Discovery** (Phase 4 deferred)
+
     - **Spec:** `discover_from_entry_points(group)` for pluggy-style plugins
     - **Status:** Enum exists (`CandidateSource.ENTRY_POINT`) but unused
     - **Effort:** 3 days
 
-11. **Circuit Breaker Pattern** (Phase 5 deferred)
+01. **Circuit Breaker Pattern** (Phase 5 deferred)
+
     - **Spec:** Protect remote sync from cascading failures
     - **Status:** Infinite retry in remote loop
     - **Effort:** 1 week
 
-12. **Retry with Exponential Backoff** (Phase 5 deferred)
+01. **Retry with Exponential Backoff** (Phase 5 deferred)
+
     - **Spec:** Graceful handling of transient remote failures
     - **Status:** Retries immediately on next interval
     - **Effort:** 2 days
 
-13. **Capability Negotiation** (Optional early add)
+01. **Capability Negotiation** (Optional early add)
+
     - **Spec:** Select candidates by features + priority
     - **Status:** Metadata dict exists, no resolver logic
     - **Effort:** 1 week
 
----
+______________________________________________________________________
 
 ## Roadmap by Week
 
@@ -128,6 +141,7 @@ Week 13-16: ⚪ Performance & Polish
 **Tasks:**
 
 1. **Day 1: Factory Allowlist** (4 hours)
+
    ```python
    # Add to lifecycle.py
    ALLOWED_MODULE_PREFIXES = [
@@ -148,7 +162,8 @@ Week 13-16: ⚪ Performance & Polish
        # ... rest of implementation
    ```
 
-2. **Day 1: Path Sanitization** (2 hours)
+1. **Day 1: Path Sanitization** (2 hours)
+
    ```python
    # Add to loader.py
    filename = sha256 or Path(uri).name
@@ -157,14 +172,16 @@ Week 13-16: ⚪ Performance & Polish
        raise ValueError(f"Path traversal attempt blocked: {filename}")
    ```
 
-3. **Day 1: HTTP Timeouts** (2 hours)
+1. **Day 1: HTTP Timeouts** (2 hours)
+
    ```python
    # Update loader.py:73, 234
    timeout = self.settings.http_timeout or 30.0  # seconds
    with urllib.request.urlopen(request, context=context, timeout=timeout) as response:
    ```
 
-4. **Days 2-5: Signature Verification** (3 days)
+1. **Days 2-5: Signature Verification** (3 days)
+
    - Add dependencies: `cryptography>=42.0.0`
    - Extend `RemoteManifest` model:
      ```python
@@ -197,20 +214,23 @@ Week 13-16: ⚪ Performance & Polish
              return False
      ```
 
-5. **Days 6-8: Input Validation Hardening** (2 days)
+1. **Days 6-8: Input Validation Hardening** (2 days)
+
    - Factory string format validation (regex: `^[\w.]+:\w+$`)
    - Domain/key format validation (alphanumeric + underscore/hyphen)
    - Stack level bounds checking (-1000 to 1000)
    - Priority bounds checking (-1000 to 1000)
    - Add `ValidationError` exception with detailed messages
 
-6. **Days 9-10: Security Audit & Documentation** (2 days)
+1. **Days 9-10: Security Audit & Documentation** (2 days)
+
    - Run `bandit` security scanner
    - Document security assumptions (trusted network vs hostile)
    - Add `SECURITY.md` with responsible disclosure policy
    - Create security configuration guide
 
 **Deliverables:**
+
 - ✅ Factory allowlist enforced
 - ✅ Path traversal blocked
 - ✅ HTTP timeouts configured
@@ -220,7 +240,7 @@ Week 13-16: ⚪ Performance & Polish
 
 **Success Criteria:** CRITICAL_AUDIT_REPORT.md security score rises from 45/100 to 80/100
 
----
+______________________________________________________________________
 
 ### Weeks 3-6: Test Coverage Foundation (CRITICAL)
 
@@ -231,6 +251,7 @@ Week 13-16: ⚪ Performance & Polish
 **Week 3: Test Infrastructure Setup** (5 days)
 
 1. **Day 1: Test Framework Configuration**
+
    ```toml
    # pyproject.toml
    [project.optional-dependencies]
@@ -266,9 +287,10 @@ Week 13-16: ⚪ Performance & Polish
    ]
    ```
 
-2. **Days 2-5: Core Test Suites** (20 tests)
+1. **Days 2-5: Core Test Suites** (20 tests)
 
    **Resolver Precedence Tests** (`tests/core/test_resolution.py` - 10 tests)
+
    ```python
    @pytest.mark.unit
    class TestResolverPrecedence:
@@ -291,6 +313,7 @@ Week 13-16: ⚪ Performance & Polish
    ```
 
    **Lifecycle Swap Tests** (`tests/core/test_lifecycle.py` - 10 tests)
+
    ```python
    @pytest.mark.asyncio
    class TestLifecycleSwaps:
@@ -315,6 +338,7 @@ Week 13-16: ⚪ Performance & Polish
 **Week 4: Security & Remote Tests** (15 tests)
 
 3. **Security Tests** (`tests/security/test_factory_validation.py` - 8 tests)
+
    ```python
    @pytest.mark.security
    class TestFactoryValidation:
@@ -332,7 +356,8 @@ Week 13-16: ⚪ Performance & Polish
        # ... 5 more attack vectors
    ```
 
-4. **Remote Manifest Tests** (`tests/remote/test_loader.py` - 7 tests)
+1. **Remote Manifest Tests** (`tests/remote/test_loader.py` - 7 tests)
+
    ```python
    @pytest.mark.asyncio
    class TestRemoteLoader:
@@ -351,6 +376,7 @@ Week 13-16: ⚪ Performance & Polish
 **Week 5: Integration & Config Tests** (15 tests)
 
 5. **Config Watcher Tests** (`tests/runtime/test_watchers.py` - 8 tests)
+
    ```python
    @pytest.mark.asyncio
    @pytest.mark.integration
@@ -367,7 +393,8 @@ Week 13-16: ⚪ Performance & Polish
        # ... 5 more behaviors
    ```
 
-6. **Domain Bridge Tests** (`tests/domains/test_bridges.py` - 7 tests)
+1. **Domain Bridge Tests** (`tests/domains/test_bridges.py` - 7 tests)
+
    ```python
    @pytest.mark.asyncio
    class TestDomainBridges:
@@ -383,6 +410,7 @@ Week 13-16: ⚪ Performance & Polish
 **Week 6: CLI & Edge Cases** (10 tests)
 
 7. **CLI Command Tests** (`tests/test_cli.py` - 5 tests)
+
    ```python
    from typer.testing import CliRunner
 
@@ -396,7 +424,8 @@ Week 13-16: ⚪ Performance & Polish
        # ... 3 more commands
    ```
 
-8. **Concurrency Tests** (`tests/core/test_concurrency.py` - 5 tests)
+1. **Concurrency Tests** (`tests/core/test_concurrency.py` - 5 tests)
+
    ```python
    @pytest.mark.asyncio
    class TestConcurrency:
@@ -410,6 +439,7 @@ Week 13-16: ⚪ Performance & Polish
    ```
 
 **Deliverables:**
+
 - ✅ 60 tests covering core logic, security, and integration
 - ✅ 60% code coverage minimum (target: 70%)
 - ✅ CI/CD pipeline with automated testing
@@ -417,7 +447,7 @@ Week 13-16: ⚪ Performance & Polish
 
 **Success Criteria:** `pytest --cov=oneiric --cov-report=term` shows 60%+ coverage
 
----
+______________________________________________________________________
 
 ### Weeks 7-9: Documentation & API Stability
 
@@ -428,11 +458,13 @@ Week 13-16: ⚪ Performance & Polish
 **Week 7: API Documentation** (5 days)
 
 1. **Days 1-2: Docstring Completion** (80% coverage target)
+
    - Add comprehensive docstrings to all public APIs
    - Include parameter types, return types, raises, examples
    - Use NumPy docstring format for consistency
 
    Example:
+
    ```python
    def resolve(
        self,
@@ -472,7 +504,8 @@ Week 13-16: ⚪ Performance & Polish
        """
    ```
 
-2. **Days 3-4: Architecture Documentation** (Update docs/)
+1. **Days 3-4: Architecture Documentation** (Update docs/)
+
    - Expand `README.md` with:
      - Quick start guide (5-minute tutorial)
      - Architecture overview diagram
@@ -486,7 +519,8 @@ Week 13-16: ⚪ Performance & Polish
      - Configuration options
      - Environment variables
 
-3. **Day 5: Migration Guides**
+1. **Day 5: Migration Guides**
+
    - `docs/MIGRATION_FROM_ACB.md` - For ACB users
    - `docs/UPGRADE_GUIDE.md` - Version upgrade path
    - `docs/SECURITY_GUIDE.md` - Security best practices
@@ -494,13 +528,15 @@ Week 13-16: ⚪ Performance & Polish
 **Week 8: Example Projects** (5 days)
 
 4. **Days 1-2: Simple Examples** (`examples/` directory)
+
    - `01_basic_adapter/` - Register and use an adapter
    - `02_hot_swapping/` - Runtime component swapping
    - `03_remote_manifest/` - Load components from remote
    - `04_multi_domain/` - Services, tasks, events together
    - `05_cli_usage/` - CLI diagnostics and troubleshooting
 
-5. **Days 3-5: Advanced Examples**
+1. **Days 3-5: Advanced Examples**
+
    - `06_custom_domain/` - Create your own pluggable domain
    - `07_health_monitoring/` - Integrate with Prometheus/Grafana
    - `08_production_deploy/` - Docker, systemd, Kubernetes
@@ -510,21 +546,25 @@ Week 13-16: ⚪ Performance & Polish
 **Week 9: API Stability & Deprecation Policy** (5 days)
 
 6. **Days 1-2: API Review**
+
    - Identify inconsistencies (e.g., `AdapterBridge.use(category=)` vs `DomainBridge.use(key=)`)
    - Deprecate redundant APIs (`LifecycleManager.activate()` vs `.swap()`)
    - Add `@deprecated` decorators with migration paths
 
-7. **Days 3-4: Type Stubs & Protocol Definitions**
+1. **Days 3-4: Type Stubs & Protocol Definitions**
+
    - Extract protocols for bridges (avoid concrete class coupling)
    - Add generic type variables for factory returns
    - Create `oneiric/py.typed` marker for type checkers
 
-8. **Day 5: Versioning Policy**
+1. **Day 5: Versioning Policy**
+
    - Document SemVer commitment (1.0 = stable API)
    - Define what's public vs private (underscore convention)
    - Add `__all__` exports to `__init__.py` files
 
 **Deliverables:**
+
 - ✅ 80% docstring coverage
 - ✅ Comprehensive architecture documentation
 - ✅ 10 working example projects
@@ -533,7 +573,7 @@ Week 13-16: ⚪ Performance & Polish
 
 **Success Criteria:** New contributor can build a plugin in < 30 minutes with docs alone
 
----
+______________________________________________________________________
 
 ### Weeks 10-12: Production Hardening
 
@@ -544,6 +584,7 @@ Week 13-16: ⚪ Performance & Polish
 **Week 10: Circuit Breaker & Retry Logic** (5 days)
 
 1. **Days 1-2: Circuit Breaker Implementation**
+
    ```python
    # oneiric/remote/resilience.py
    from enum import Enum
@@ -579,7 +620,8 @@ Week 13-16: ⚪ Performance & Polish
                raise
    ```
 
-2. **Days 3-4: Exponential Backoff**
+1. **Days 3-4: Exponential Backoff**
+
    ```python
    # oneiric/remote/resilience.py
    import asyncio
@@ -617,7 +659,8 @@ Week 13-16: ⚪ Performance & Polish
                await asyncio.sleep(delay)
    ```
 
-3. **Day 5: Integration & Testing**
+1. **Day 5: Integration & Testing**
+
    - Wire circuit breaker into `RemoteLoader`
    - Add retry logic to manifest fetch
    - Write 10 tests for circuit breaker states
@@ -626,17 +669,20 @@ Week 13-16: ⚪ Performance & Polish
 **Week 11: Performance Optimization** (5 days)
 
 4. **Days 1-2: Profiling & Bottlenecks**
+
    - Profile resolver with 1000+ candidates
    - Profile lifecycle swaps under load (100 swaps/sec)
    - Identify hotspots with `cProfile` and `py-spy`
 
-5. **Days 3-4: Optimization Implementations**
+1. **Days 3-4: Optimization Implementations**
+
    - Parallelize remote entry registration (`asyncio.gather()`)
    - Add resolver result caching (LRU cache for resolve calls)
    - Batch snapshot persistence (queue writes, flush every 5s)
    - Config watcher: Check mtime before full reload
 
-6. **Day 5: Benchmarking Suite**
+1. **Day 5: Benchmarking Suite**
+
    ```python
    # tests/benchmarks/test_performance.py
    import pytest
@@ -663,23 +709,27 @@ Week 13-16: ⚪ Performance & Polish
 **Week 12: Observability Enhancements** (5 days)
 
 7. **Days 1-2: Metrics Expansion**
+
    - Add lifecycle state metrics (ready/failed/activating counts)
    - Add resolver decision latency histogram
    - Add remote sync latency percentiles (p50, p95, p99)
    - Add circuit breaker state changes counter
 
-8. **Days 3-4: Structured Logging Improvements**
+1. **Days 3-4: Structured Logging Improvements**
+
    - Add correlation IDs for swap chains
    - Add log sampling for verbose debug (1 in 100)
    - Add log level configuration via `ONEIRIC_LOG_LEVEL`
    - Add audit logging for security events (factory loads, signature checks)
 
-9. **Day 5: Monitoring Integration Guide**
+1. **Day 5: Monitoring Integration Guide**
+
    - `docs/MONITORING.md` with Prometheus examples
    - Grafana dashboard JSON template
    - Sample alerting rules (circuit breaker open, high swap failure rate)
 
 **Deliverables:**
+
 - ✅ Circuit breaker protecting remote sync
 - ✅ Exponential backoff with jitter
 - ✅ Performance benchmarks (baseline established)
@@ -687,10 +737,11 @@ Week 13-16: ⚪ Performance & Polish
 - ✅ Comprehensive metrics for production monitoring
 
 **Success Criteria:**
+
 - Resolver handles 1000 candidates in < 10ms
 - Remote sync survives 50% failure rate without cascading
 
----
+______________________________________________________________________
 
 ### Weeks 13-16: Final Polish & Release Prep
 
@@ -701,6 +752,7 @@ Week 13-16: ⚪ Performance & Polish
 **Week 13: Missing Features Completion** (5 days)
 
 1. **Days 1-3: Entry Point Discovery** (Phase 4 completion)
+
    ```python
    # oneiric/core/discovery.py
    from importlib.metadata import entry_points
@@ -730,7 +782,8 @@ Week 13-16: ⚪ Performance & Polish
        return candidates
    ```
 
-2. **Days 4-5: Capability Negotiation** (Optional early add)
+1. **Days 4-5: Capability Negotiation** (Optional early add)
+
    ```python
    # oneiric/core/resolution.py
    def resolve_by_capability(
@@ -760,12 +813,14 @@ Week 13-16: ⚪ Performance & Polish
 **Week 14: Deployment Infrastructure** (5 days)
 
 3. **Days 1-2: Docker & Kubernetes**
+
    - Create `Dockerfile` with multi-stage build
    - Create Kubernetes manifests (`k8s/deployment.yaml`, `k8s/configmap.yaml`)
    - Create Helm chart (`chart/oneiric/`)
    - Add health check endpoints for k8s probes
 
-4. **Days 3-4: CI/CD Pipeline**
+1. **Days 3-4: CI/CD Pipeline**
+
    - GitHub Actions workflow (`.github/workflows/ci.yml`)
      - Run tests on Python 3.13 and 3.14
      - Security scanning (bandit, safety)
@@ -776,7 +831,8 @@ Week 13-16: ⚪ Performance & Polish
      - PyPI publishing
      - Docker image push to GHCR
 
-5. **Day 5: Deployment Documentation**
+1. **Day 5: Deployment Documentation**
+
    - `docs/DEPLOYMENT.md` with examples for:
      - Systemd service
      - Docker Compose
@@ -786,13 +842,15 @@ Week 13-16: ⚪ Performance & Polish
 **Week 15: Community & Ecosystem** (5 days)
 
 6. **Days 1-2: Project Infrastructure**
+
    - `CONTRIBUTING.md` with development workflow
    - `CODE_OF_CONDUCT.md` (Contributor Covenant)
    - `CHANGELOG.md` with release notes
    - Issue templates (bug report, feature request, security)
    - Pull request template with checklist
 
-7. **Days 3-4: Plugin Ecosystem Kickstart**
+1. **Days 3-4: Plugin Ecosystem Kickstart**
+
    - Create `oneiric-plugins` GitHub organization
    - Publish 3 reference plugins:
      - `oneiric-adapter-redis` (cache adapter)
@@ -800,7 +858,8 @@ Week 13-16: ⚪ Performance & Polish
      - `oneiric-task-email` (email sending task)
    - Create plugin template repository
 
-8. **Day 5: Community Launch**
+1. **Day 5: Community Launch**
+
    - Publish blog post announcing v1.0
    - Submit to Python Weekly, Python Bytes
    - Create Discord/Slack community
@@ -809,26 +868,30 @@ Week 13-16: ⚪ Performance & Polish
 **Week 16: Final Hardening & Release** (5 days)
 
 9. **Days 1-2: Security Audit**
+
    - Run automated security scanners (bandit, semgrep, snyk)
    - Manual code review of security-critical paths
    - Update `SECURITY.md` with audit results
    - Generate SBOM (Software Bill of Materials)
 
-10. **Days 3-4: Load Testing**
-    - Stress test with 10,000 candidates
-    - Stress test with 1,000 concurrent swaps
-    - Memory leak testing (24-hour soak test)
-    - Remote sync resilience (network partition tests)
+1. **Days 3-4: Load Testing**
 
-11. **Day 5: Release v1.0.0**
-    - Final version bump
-    - Generate release notes
-    - Tag release on GitHub
-    - Publish to PyPI
-    - Update documentation site
-    - Announce on social media
+   - Stress test with 10,000 candidates
+   - Stress test with 1,000 concurrent swaps
+   - Memory leak testing (24-hour soak test)
+   - Remote sync resilience (network partition tests)
+
+1. **Day 5: Release v1.0.0**
+
+   - Final version bump
+   - Generate release notes
+   - Tag release on GitHub
+   - Publish to PyPI
+   - Update documentation site
+   - Announce on social media
 
 **Deliverables:**
+
 - ✅ Entry point discovery implemented
 - ✅ Capability negotiation available
 - ✅ Docker/K8s deployment ready
@@ -839,28 +902,32 @@ Week 13-16: ⚪ Performance & Polish
 
 **Success Criteria:** v1.0.0 passes all quality gates and is production-deployed
 
----
+______________________________________________________________________
 
 ## Technical Debt Management
 
 ### High-Priority Refactoring (During Weeks 7-12)
 
 1. **Consolidate Bridge Duplication** (Week 8, 1 day)
+
    - `AdapterBridge` and `DomainBridge` share 90% code
    - Extract common logic to `BaseBridge` abstract class
    - Reduce maintenance burden
 
-2. **Split CLI Monolith** (Week 9, 2 days)
+1. **Split CLI Monolith** (Week 9, 2 days)
+
    - 1000-line `cli.py` is hard to maintain
    - Refactor to `cli/commands/` package with subcommands
    - Improve testability and extensibility
 
-3. **Extract Shared Utilities** (Week 7, 1 day)
+1. **Extract Shared Utilities** (Week 7, 1 day)
+
    - Duplicate `_maybe_await()` in `lifecycle.py` and `config.py`
    - Create `oneiric/utils/async_helpers.py`
    - Add other common patterns (retry, timeout, context managers)
 
-4. **Pydantic Model Inheritance** (Week 8, 1 day)
+1. **Pydantic Model Inheritance** (Week 8, 1 day)
+
    - 15+ Pydantic models with no shared base
    - Create `BaseSettings` with common validation patterns
    - Ensure consistent error messages
@@ -868,6 +935,7 @@ Week 13-16: ⚪ Performance & Polish
 ### Design Improvements
 
 1. **Protocol-Based Bridge Interface** (Week 9, 2 days)
+
    ```python
    # oneiric/domains/protocols.py
    from typing import Protocol, runtime_checkable
@@ -889,7 +957,8 @@ Week 13-16: ⚪ Performance & Polish
            ...
    ```
 
-2. **Result Type for Error Handling** (Week 10, 1 day)
+1. **Result Type for Error Handling** (Week 10, 1 day)
+
    ```python
    # oneiric/core/result.py
    from typing import Generic, TypeVar, Union
@@ -917,19 +986,21 @@ Week 13-16: ⚪ Performance & Polish
            return Err(LifecycleError(str(e)))
    ```
 
----
+______________________________________________________________________
 
 ## Quality Gates & Success Criteria
 
 ### Beta Release (v0.5.0) - Week 6
 
 **Blockers Cleared:**
+
 - ✅ Factory allowlist enforced (arbitrary code execution blocked)
 - ✅ Path traversal sanitization (file system compromise blocked)
 - ✅ HTTP timeouts configured (availability protected)
 - ✅ 60% test coverage minimum (core logic verified)
 
 **Quality Scores:**
+
 - Security: 80/100 (up from 45/100)
 - Testing: 70/100 (up from 10/100)
 - Overall: 78/100 (Beta Quality)
@@ -937,6 +1008,7 @@ Week 13-16: ⚪ Performance & Polish
 ### Release Candidate (v0.9.0) - Week 12
 
 **Additional Requirements:**
+
 - ✅ Signature verification implemented (trusted remote manifests)
 - ✅ Circuit breaker protecting remote sync
 - ✅ Exponential backoff with jitter
@@ -944,6 +1016,7 @@ Week 13-16: ⚪ Performance & Polish
 - ✅ Performance benchmarks established
 
 **Quality Scores:**
+
 - Security: 90/100
 - Testing: 80/100
 - Documentation: 90/100
@@ -952,6 +1025,7 @@ Week 13-16: ⚪ Performance & Polish
 ### Production Release (v1.0.0) - Week 16
 
 **Final Requirements:**
+
 - ✅ 80% test coverage (comprehensive)
 - ✅ Security audit passed
 - ✅ Load testing completed (1000+ candidates, 1000 swaps/sec)
@@ -960,6 +1034,7 @@ Week 13-16: ⚪ Performance & Polish
 - ✅ Deployment documentation complete
 
 **Quality Scores:**
+
 - Architecture: 90/100
 - Security: 95/100
 - Testing: 90/100
@@ -967,7 +1042,7 @@ Week 13-16: ⚪ Performance & Polish
 - Observability: 90/100
 - Overall: 92/100 (Production Ready - matches ACB quality)
 
----
+______________________________________________________________________
 
 ## Risk Management
 
@@ -990,7 +1065,7 @@ Week 13-16: ⚪ Performance & Polish
 | **Cryptography** | Vulnerability in signature verification | Security scanning in CI, update promptly |
 | **Python 3.14** | Features not backportable to 3.13 | Test on both 3.13 and 3.14, avoid 3.14-only syntax |
 
----
+______________________________________________________________________
 
 ## Resource Allocation
 
@@ -1008,57 +1083,62 @@ Week 13-16: ⚪ Performance & Polish
 ### Team Structure (Recommended)
 
 **Solo Developer:**
+
 - 16 weeks full-time (realistic for alpha → production)
 - Focus on P0 items first, defer P2 if time constrained
 
 **Small Team (2-3 developers):**
+
 - 8-10 weeks with parallel workstreams:
   - Developer 1: Security + core testing
   - Developer 2: Documentation + examples
   - Developer 3: Production hardening + deployment
 
 **Large Team (4+ developers):**
+
 - 6-8 weeks with specialized roles:
   - Security Engineer: Signature verification, audit
   - Backend Engineer: Circuit breaker, retry logic
   - DevOps Engineer: CI/CD, Kubernetes, monitoring
   - Technical Writer: Documentation, examples, guides
 
----
+______________________________________________________________________
 
 ## Comparison with ACB Framework
 
 ### What Oneiric Does Better (Post-Roadmap)
 
 1. **Resolution Sophistication**: 4-tier precedence vs ACB's 2-tier
-2. **Hot-Swapping**: First-class runtime swaps vs manual reload
-3. **Explain API**: Full decision traces vs implicit resolution
-4. **CLI Diagnostics**: Comprehensive tooling vs none
-5. **Remote-Native**: Built for distributed components from day one
+1. **Hot-Swapping**: First-class runtime swaps vs manual reload
+1. **Explain API**: Full decision traces vs implicit resolution
+1. **CLI Diagnostics**: Comprehensive tooling vs none
+1. **Remote-Native**: Built for distributed components from day one
 
 ### What ACB Still Does Better (Even Post-Roadmap)
 
 1. **Production Maturity**: 31 releases, battle-tested vs greenfield
-2. **Adapter Ecosystem**: 60+ implementations vs 3 reference plugins
-3. **Full Platform**: Services, Tasks, Events, Workflows with implementations vs bridges only
-4. **Community**: Established user base vs new project
-5. **Integration**: FastBlocks framework, MCP server vs standalone
+1. **Adapter Ecosystem**: 60+ implementations vs 3 reference plugins
+1. **Full Platform**: Services, Tasks, Events, Workflows with implementations vs bridges only
+1. **Community**: Established user base vs new project
+1. **Integration**: FastBlocks framework, MCP server vs standalone
 
 ### Convergence Path
 
 **Option 1: Oneiric as ACB v2.0 Foundation** (12-18 months post-1.0)
+
 - ACB adopts Oneiric resolution layer for adapters
 - Gradual migration over multiple ACB releases
 - Backward compatibility maintained via shim layer
 
 **Option 2: Parallel Evolution** (Immediate)
+
 - Oneiric focuses on resolution layer excellence
 - ACB continues as full application platform
 - Cross-pollination of ideas (ACB adds explain API, Oneiric adds adapter implementations)
 
 **Recommendation:** Option 2 initially, reassess Option 1 after Oneiric proves stability in production for 6-12 months.
 
----
+______________________________________________________________________
 
 ## Appendix: Quick Reference
 
@@ -1081,10 +1161,10 @@ Phase 7 (Partial) ← Production Hardening
 ### Critical Path Items (Cannot Parallelize)
 
 1. **Week 1-2: Security** → Blocks beta testing
-2. **Week 3-6: Tests** → Blocks refactoring confidence
-3. **Week 7-9: Docs** → Blocks community adoption
-4. **Week 10-12: Hardening** → Blocks production deployment
-5. **Week 13-16: Polish** → Blocks v1.0.0 release
+1. **Week 3-6: Tests** → Blocks refactoring confidence
+1. **Week 7-9: Docs** → Blocks community adoption
+1. **Week 10-12: Hardening** → Blocks production deployment
+1. **Week 13-16: Polish** → Blocks v1.0.0 release
 
 ### Files Requiring Immediate Attention
 
@@ -1100,26 +1180,27 @@ Phase 7 (Partial) ← Production Hardening
 ### Recommended Reading Order for New Contributors
 
 1. `docs/NEW_ARCH_SPEC.md` - Understand the vision
-2. `docs/RESOLUTION_LAYER_SPEC.md` - Core semantics
-3. `docs/ACB_COMPARISON.md` - Learn from ACB's maturity
-4. `docs/CRITICAL_AUDIT_REPORT.md` - Understand current gaps
-5. **This document** (`UNIFIED_ROADMAP.md`) - Know what's next
+1. `docs/RESOLUTION_LAYER_SPEC.md` - Core semantics
+1. `docs/ACB_COMPARISON.md` - Learn from ACB's maturity
+1. `docs/CRITICAL_AUDIT_REPORT.md` - Understand current gaps
+1. **This document** (`UNIFIED_ROADMAP.md`) - Know what's next
 
----
+______________________________________________________________________
 
 ## Conclusion
 
 Oneiric has **world-class architectural vision** trapped in **alpha-quality implementation**. This roadmap provides a clear, disciplined path to production readiness by:
 
 1. **Weeks 1-2:** Closing critical security vulnerabilities (factory allowlist, path sanitization, timeouts)
-2. **Weeks 3-6:** Building test coverage foundation (60 tests minimum, 60% coverage)
-3. **Weeks 7-9:** Completing documentation and stabilizing APIs
-4. **Weeks 10-12:** Hardening for production (circuit breakers, retry logic, performance)
-5. **Weeks 13-16:** Final polish and v1.0.0 release
+1. **Weeks 3-6:** Building test coverage foundation (60 tests minimum, 60% coverage)
+1. **Weeks 7-9:** Completing documentation and stabilizing APIs
+1. **Weeks 10-12:** Hardening for production (circuit breakers, retry logic, performance)
+1. **Weeks 13-16:** Final polish and v1.0.0 release
 
 **Key Insight:** We must resist the temptation to add new features (Phase 5-7 optional items) until we secure the foundation with tests and security fixes. **Every line is a liability** until it's tested and hardened.
 
 **Success Definition:** Oneiric v1.0.0 achieves 92/100 quality score (matching ACB's production-readiness) with:
+
 - Zero critical security vulnerabilities
 - 80%+ test coverage
 - Comprehensive documentation
@@ -1130,7 +1211,7 @@ Oneiric has **world-class architectural vision** trapped in **alpha-quality impl
 
 Let's build something **reliable, secure, and excellent**.
 
----
+______________________________________________________________________
 
 **Document Version:** 1.0
 **Last Updated:** 2025-11-25

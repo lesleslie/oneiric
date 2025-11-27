@@ -1,0 +1,39 @@
+[app]
+name = "oneiric-demo"
+environment = "dev"
+
+[remote]
+enabled = true
+manifest_url = "docs/sample_remote_manifest.yaml"
+cache_dir = ".oneiric_cache"
+verify_tls = false
+refresh_interval = 60.0
+max_retries = 4
+retry_base_delay = 0.5
+retry_max_delay = 10.0
+retry_jitter = 0.2
+circuit_breaker_threshold = 4
+circuit_breaker_reset = 45.0
+
+[logging]
+level = "INFO"
+emit_json = true
+
+[[logging.sinks]]
+target = "stdout"
+level = "INFO"
+
+[[logging.sinks]]
+target = "file"
+path = ".oneiric_cache/demo.log"
+max_bytes = 1048576
+backup_count = 2
+
+[plugins]
+auto_load = true
+
+[adapters.selections]
+demo = "builtin"
+
+[services.selections]
+status = "cli"

@@ -11,7 +11,7 @@ from typing import Any, Dict, Mapping, Optional
 
 from pydantic import BaseModel, Field
 
-from .logging import get_logger
+from .logging import LoggingConfig, get_logger
 from .lifecycle import LifecycleManager, LifecycleError
 from oneiric.runtime.health import default_runtime_health_path
 from .resolution import ResolverSettings
@@ -56,6 +56,56 @@ class RemoteSourceConfig(BaseModel):
         default=300.0,
         description="Optional interval (seconds) to re-sync remote manifests; disabled when null.",
     )
+    max_retries: int = Field(default=3, description="Number of retry attempts for remote fetches.")
+    retry_base_delay: float = Field(default=1.0, description="Base delay (seconds) for retry backoff.")
+    retry_max_delay: float = Field(default=30.0, description="Maximum delay (seconds) between retries.")
+    retry_jitter: float = Field(default=0.25, description="Jitter factor added to retry sleep.")
+    circuit_breaker_threshold: int = Field(
+        default=5,
+        description="Consecutive failures before opening the remote circuit breaker.",
+    )
+    circuit_breaker_reset: float = Field(
+        default=60.0,
+        description="Seconds before allowing attempts after circuit breaker opens.",
+    )
+    latency_budget_ms: float = Field(
+        default=5000.0,
+        description="Warn threshold (milliseconds) for remote sync latency.",
+    )
+
+
+class LifecycleConfig(BaseModel):
+    activation_timeout: float = Field(
+        default=30.0,
+        description="Seconds before lifecycle activation times out.",
+    )
+    health_timeout: float = Field(
+        default=5.0,
+        description="Seconds before lifecycle health checks time out.",
+    )
+    cleanup_timeout: float = Field(
+        default=10.0,
+        description="Seconds before cleanup hooks time out.",
+    )
+    hook_timeout: float = Field(
+        default=5.0,
+        description="Seconds before pre/post-swap hooks time out.",
+    )
+    shield_tasks: bool = Field(
+        default=True,
+        description="Shield lifecycle awaitables from cancellation.",
+    )
+
+
+class PluginsConfig(BaseModel):
+    auto_load: bool = Field(
+        default=False,
+        description="Load built-in Oneiric entry-point groups (oneiric.*).",
+    )
+    entry_points: list[str] = Field(
+        default_factory=list,
+        description="Additional entry-point groups to load during bootstrap.",
+    )
 
 
 class OneiricSettings(BaseModel):
@@ -65,8 +115,12 @@ class OneiricSettings(BaseModel):
     tasks: LayerSettings = Field(default_factory=LayerSettings)
     events: LayerSettings = Field(default_factory=LayerSettings)
     workflows: LayerSettings = Field(default_factory=LayerSettings)
+    actions: LayerSettings = Field(default_factory=LayerSettings)
     secrets: SecretsConfig = Field(default_factory=SecretsConfig)
     remote: RemoteSourceConfig = Field(default_factory=RemoteSourceConfig)
+    logging: LoggingConfig = Field(default_factory=LoggingConfig)
+    lifecycle: LifecycleConfig = Field(default_factory=LifecycleConfig)
+    plugins: PluginsConfig = Field(default_factory=PluginsConfig)
 
 
 def load_settings(path: Optional[str | Path] = None) -> OneiricSettings:
@@ -93,6 +147,7 @@ def resolver_settings_from_config(settings: OneiricSettings) -> ResolverSettings
         "task": settings.tasks.selections,
         "event": settings.events.selections,
         "workflow": settings.workflows.selections,
+        "action": settings.actions.selections,
     }
     for domain, mapping in domain_map.items():
         if mapping:

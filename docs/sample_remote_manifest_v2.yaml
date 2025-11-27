@@ -1,0 +1,359 @@
+# Remote Manifest v2 - Enhanced with Full Adapter/Action Metadata
+# Demonstrates all Stage 4 schema enhancements
+
+source: oneiric-production-v2
+signature: "base64-encoded-ed25519-signature-placeholder"
+signature_algorithm: ed25519
+
+entries:
+  # ==============================================================================
+  # ADAPTER EXAMPLES - Full metadata with all Stage 4 fields
+  # ==============================================================================
+
+  # Redis Cache Adapter - Production example with all metadata
+  - domain: adapter
+    key: cache
+    provider: redis
+    factory: oneiric.adapters.cache.redis:RedisCacheAdapter
+    uri: https://cdn.oneiric.dev/releases/v1.0.0/redis-cache.whl
+    sha256: abc123def456789abc123def456789abc123def456789abc123def456789abc1
+    stack_level: 50
+    priority: 500
+    version: "1.0.0"
+
+    # Adapter-specific metadata
+    capabilities: ["kv", "ttl", "tracking", "pub-sub"]
+    owner: "Platform Core Team"
+    requires_secrets: true
+    settings_model: "oneiric.adapters.cache.redis:RedisSettings"
+
+    # Dependencies
+    requires:
+      - "redis>=5.0.0"
+      - "coredis>=4.0.0"
+
+    # Platform constraints
+    python_version: ">=3.14"
+    os_platform: ["linux", "darwin"]
+
+    # Documentation
+    license: "MIT"
+    documentation_url: "https://docs.oneiric.dev/adapters/cache/redis"
+
+    # Generic metadata
+    metadata:
+      description: "Production Redis cache with client-side tracking and pub-sub"
+      health_check_timeout: 5.0
+      connection_pool_size: 10
+      max_connections: 50
+
+  # PostgreSQL Database Adapter - Full example
+  - domain: adapter
+    key: database
+    provider: postgres
+    factory: oneiric.adapters.database.postgres:PostgresAdapter
+    stack_level: 40
+    priority: 400
+    version: "1.0.0"
+
+    capabilities: ["sql", "transactions", "async-pool", "migrations"]
+    owner: "Data Platform Team"
+    requires_secrets: true
+    settings_model: "oneiric.adapters.database.postgres:PostgresSettings"
+
+    requires:
+      - "asyncpg>=0.29.0"
+
+    python_version: ">=3.14"
+    os_platform: ["linux", "darwin", "windows"]
+
+    license: "MIT"
+    documentation_url: "https://docs.oneiric.dev/adapters/database/postgres"
+
+    metadata:
+      description: "PostgreSQL adapter with async connection pooling"
+      pool_min_size: 5
+      pool_max_size: 20
+
+  # S3 Storage Adapter - Cloud storage example
+  - domain: adapter
+    key: storage
+    provider: s3
+    factory: oneiric.adapters.storage.s3:S3StorageAdapter
+    stack_level: 30
+    version: "1.0.0"
+
+    capabilities: ["object-storage", "multipart-upload", "presigned-urls"]
+    owner: "Data Platform Team"
+    requires_secrets: true
+    settings_model: "oneiric.adapters.storage.s3:S3Settings"
+
+    requires:
+      - "aioboto3>=12.0.0"
+      - "boto3>=1.34.0"
+
+    python_version: ">=3.14"
+
+    license: "MIT"
+    documentation_url: "https://docs.oneiric.dev/adapters/storage/s3"
+
+    metadata:
+      description: "AWS S3 storage adapter with multipart upload support"
+      max_concurrent_uploads: 10
+
+  # Auth0 Identity Adapter - Authentication example
+  - domain: adapter
+    key: identity
+    provider: auth0
+    factory: oneiric.adapters.identity.auth0:Auth0Adapter
+    stack_level: 40
+    version: "1.0.0"
+
+    capabilities: ["jwt-validation", "jwks-caching", "user-info"]
+    owner: "Security Team"
+    requires_secrets: true
+    settings_model: "oneiric.adapters.identity.auth0:Auth0Settings"
+
+    requires:
+      - "httpx>=0.27.0"
+      - "python-jose[cryptography]>=3.3.0"
+
+    python_version: ">=3.14"
+
+    license: "MIT"
+    documentation_url: "https://docs.oneiric.dev/adapters/identity/auth0"
+
+    metadata:
+      description: "Auth0 JWT validation with JWKS caching"
+      jwks_cache_ttl: 3600
+
+  # Sentry Monitoring Adapter - Observability example
+  - domain: adapter
+    key: monitoring
+    provider: sentry
+    factory: oneiric.adapters.monitoring.sentry:SentryAdapter
+    stack_level: 20
+    version: "1.0.0"
+
+    capabilities: ["error-tracking", "performance-monitoring", "release-tracking"]
+    owner: "Observability Team"
+    requires_secrets: true
+    settings_model: "oneiric.adapters.monitoring.sentry:SentrySettings"
+
+    requires:
+      - "sentry-sdk>=2.0.0"
+
+    python_version: ">=3.14"
+
+    license: "MIT"
+    documentation_url: "https://docs.oneiric.dev/adapters/monitoring/sentry"
+
+    metadata:
+      description: "Sentry error and performance monitoring"
+      traces_sample_rate: 0.1
+      profiles_sample_rate: 0.1
+
+  # ==============================================================================
+  # ACTION EXAMPLES - Full metadata with action-specific fields
+  # ==============================================================================
+
+  # HTTP Fetch Action - Network action with retry policy
+  - domain: action
+    key: http.fetch
+    provider: builtin-http-fetch
+    factory: oneiric.actions.http:HttpFetchAction
+    stack_level: 10
+    version: "1.0.0"
+
+    # Action-specific metadata
+    side_effect_free: false  # Makes HTTP requests (side effect)
+    timeout_seconds: 30.0
+    retry_policy:
+      max_attempts: 3
+      backoff_multiplier: 2.0
+      max_backoff: 60.0
+      retriable_status_codes: [429, 500, 502, 503, 504]
+
+    requires:
+      - "httpx>=0.27.0"
+
+    python_version: ">=3.14"
+
+    license: "MIT"
+    documentation_url: "https://docs.oneiric.dev/actions/http/fetch"
+
+    metadata:
+      description: "HTTP fetch with automatic retry and circuit breaker"
+      supported_methods: ["GET", "POST", "PUT", "DELETE", "PATCH"]
+
+  # Workflow Audit Action - Stateless audit action
+  - domain: action
+    key: workflow.audit
+    provider: builtin-workflow-audit
+    factory: oneiric.actions.workflow:WorkflowAuditAction
+    stack_level: 10
+    version: "1.0.0"
+
+    side_effect_free: true  # Pure audit logging (no side effects)
+    timeout_seconds: 5.0
+
+    python_version: ">=3.14"
+
+    license: "MIT"
+    documentation_url: "https://docs.oneiric.dev/actions/workflow/audit"
+
+    metadata:
+      description: "Workflow audit logging with structured events"
+
+  # Security Signature Action - Cryptographic action
+  - domain: action
+    key: security.signature
+    provider: builtin-security-signature
+    factory: oneiric.actions.security:SecuritySignatureAction
+    stack_level: 10
+    version: "1.0.0"
+
+    side_effect_free: true  # Pure computation (deterministic)
+    timeout_seconds: 10.0
+
+    requires:
+      - "cryptography>=42.0.0"
+
+    python_version: ">=3.14"
+
+    license: "MIT"
+    documentation_url: "https://docs.oneiric.dev/actions/security/signature"
+
+    metadata:
+      description: "HMAC signature generation and verification"
+      supported_algorithms: ["sha256", "sha512", "blake3"]
+
+  # Data Transform Action - Data processing with timeout
+  - domain: action
+    key: data.transform
+    provider: builtin-data-transform
+    factory: oneiric.actions.data:DataTransformAction
+    stack_level: 10
+    version: "1.0.0"
+
+    side_effect_free: true  # Pure data transformation
+    timeout_seconds: 60.0  # Longer timeout for large datasets
+
+    requires:
+      - "msgspec>=0.18.0"
+
+    python_version: ">=3.14"
+
+    license: "MIT"
+    documentation_url: "https://docs.oneiric.dev/actions/data/transform"
+
+    metadata:
+      description: "Declarative data transformation with field selectors"
+      max_payload_size_mb: 10
+
+  # Task Schedule Action - Long-running task scheduler
+  - domain: action
+    key: task.schedule
+    provider: builtin-task-schedule
+    factory: oneiric.actions.task:TaskScheduleAction
+    stack_level: 10
+    version: "1.0.0"
+
+    side_effect_free: false  # Schedules tasks (side effect)
+    timeout_seconds: 120.0
+    retry_policy:
+      max_attempts: 5
+      backoff_multiplier: 1.5
+      max_backoff: 300.0
+
+    python_version: ">=3.14"
+
+    license: "MIT"
+    documentation_url: "https://docs.oneiric.dev/actions/task/schedule"
+
+    metadata:
+      description: "Task scheduling with cron and interval patterns"
+      supported_patterns: ["cron", "interval", "one-shot"]
+
+  # ==============================================================================
+  # SERVICE EXAMPLES - Domain-agnostic services
+  # ==============================================================================
+
+  - domain: service
+    key: payment-processor
+    provider: stripe
+    factory: example.services.payment:StripePaymentService
+    stack_level: 20
+    version: "1.0.0"
+
+    capabilities: ["charge", "refund", "subscription"]
+    owner: "Payments Team"
+    requires_secrets: true
+
+    requires:
+      - "stripe>=9.0.0"
+
+    python_version: ">=3.14"
+
+    license: "Proprietary"
+    documentation_url: "https://internal.example.com/services/payment"
+
+    metadata:
+      description: "Stripe payment processing service"
+      api_version: "2024-11-20"
+
+  # ==============================================================================
+  # TASK & EVENT EXAMPLES - Minimal examples
+  # ==============================================================================
+
+  - domain: task
+    key: email-sender
+    provider: sendgrid
+    factory: example.tasks.email:SendGridEmailTask
+    stack_level: 10
+    version: "1.0.0"
+
+    side_effect_free: false
+    timeout_seconds: 30.0
+    retry_policy:
+      max_attempts: 3
+      backoff_multiplier: 2.0
+
+    requires:
+      - "sendgrid>=6.11.0"
+
+    metadata:
+      description: "Email sending via SendGrid"
+
+  - domain: event
+    key: webhook.dispatch
+    provider: http-webhook
+    factory: example.events.webhook:HttpWebhookHandler
+    stack_level: 10
+    version: "1.0.0"
+
+    side_effect_free: false
+    timeout_seconds: 60.0
+
+    metadata:
+      description: "HTTP webhook dispatcher with concurrent delivery"
+
+  # ==============================================================================
+  # WORKFLOW EXAMPLE - Orchestration
+  # ==============================================================================
+
+  - domain: workflow
+    key: data-pipeline
+    provider: orchestrator
+    factory: example.workflows.pipeline:DataPipelineWorkflow
+    stack_level: 10
+    version: "1.0.0"
+
+    side_effect_free: false
+    timeout_seconds: 3600.0  # 1 hour for long-running pipeline
+
+    capabilities: ["dag-execution", "checkpointing", "rollback"]
+
+    metadata:
+      description: "Multi-stage data processing pipeline"
+      max_parallel_stages: 5

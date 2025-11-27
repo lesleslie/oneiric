@@ -6,11 +6,12 @@
 **Cumulative Total:** 390 tests (388 passing, 2 skipped)
 **Overall Coverage:** 83% (up from 83%)
 
----
+______________________________________________________________________
 
 ## Summary
 
 Successfully completed Week 6 integration and edge case testing phase, achieving:
+
 - **23 new integration tests** (92% of 25 target)
 - **21 passing tests** (2 intentionally skipped network tests)
 - **390 total tests** across entire codebase
@@ -18,11 +19,12 @@ Successfully completed Week 6 integration and edge case testing phase, achieving
 
 This completes all 6 planned test phases (Core, Adapters, Domains, Security, Remote+Runtime+CLI, Integration).
 
----
+______________________________________________________________________
 
 ## Test Files Created
 
 ### 1. End-to-End Integration Tests (`tests/integration/test_e2e_workflows.py`)
+
 **Tests:** 8 test methods across 6 test classes
 **All Passing:** ✅
 
@@ -38,6 +40,7 @@ This completes all 6 planned test phases (Core, Adapters, Domains, Security, Rem
 | `TestOrchestratorIntegration` | `test_orchestrator_coordinates_all_domains` | RuntimeOrchestrator coordinates all domain bridges |
 
 **Key Coverage:**
+
 - Full lifecycle workflows (register → resolve → activate → swap)
 - Multi-domain coordination across all 5 domains
 - Config watcher automation
@@ -46,6 +49,7 @@ This completes all 6 planned test phases (Core, Adapters, Domains, Security, Rem
 - RuntimeOrchestrator end-to-end integration
 
 ### 2. Edge Case & Stress Tests (`tests/integration/test_edge_cases.py`)
+
 **Tests:** 15 test methods across 8 test classes
 **Passing:** 13, **Skipped:** 2 (network tests)
 
@@ -60,15 +64,16 @@ This completes all 6 planned test phases (Core, Adapters, Domains, Security, Rem
 | `TestAsyncCancellation` | 2 tests | Graceful cancellation of lifecycle and orchestrator operations |
 
 **Key Coverage:**
+
 - Concurrent registration safety (100 parallel operations)
 - Resource leak prevention
-- Performance at scale (1000 candidates resolved in <10ms)
+- Performance at scale (1000 candidates resolved in \<10ms)
 - Invalid input handling (factory strings, domain names)
 - Security validation placeholders (documented for future implementation)
 - Rollback scenarios
 - Async cancellation handling
 
----
+______________________________________________________________________
 
 ## Test Implementation Details
 
@@ -166,50 +171,58 @@ async def test_concurrent_registration(self, tmp_path):
         assert candidate is not None
 ```
 
----
+______________________________________________________________________
 
 ## Coverage Analysis
 
 ### Integration Tests Coverage Impact
+
 Integration tests improved coverage in:
+
 - `oneiric/adapters/bridge.py`: 50% → 70% (+20%)
 - `oneiric/domains/base.py`: 47% → 67% (+20%)
 - `oneiric/remote/loader.py`: 49% → 46% (variance from test order)
 
 **Overall Impact:** Maintained 83% overall coverage while adding comprehensive e2e scenarios.
 
----
+______________________________________________________________________
 
 ## Lessons Learned
 
 ### 1. **Test Component Design**
+
 - Using realistic test components (TestAdapter, TestService, etc.) instead of mocks provides better integration validation
 - Components with `__init__` constructors trigger pytest collection warnings - acceptable for test helpers
 
 ### 2. **Settings API Complexity**
+
 - Domain bridges require `LayerSettings` instances (not plain dicts)
 - `LayerSettings` has `.selections` dict attribute for provider configuration
 - Fixed via: `LayerSettings()` for all bridge instantiations
 
 ### 3. **Lifecycle API Clarifications**
+
 - No public `cleanup()` method (private `_cleanup_instance` exists)
 - Health check with `force=True` may show state as "ready" or "failed" depending on implementation
 - Fixed tests to be more flexible about lifecycle states
 
 ### 4. **Network Test Flakiness**
+
 - Network tests using real URLs (even fake domains) are flaky in CI/testing
 - Better to skip network tests or use comprehensive mocks
 - Decision: Skipped 2 network tests with `@pytest.mark.skip` - error handling tested elsewhere
 
 ### 5. **Activity Store Snapshot Format**
+
 - Snapshot is nested: `{domain: {key: DomainActivity}}` not flat `{domain:key: DomainActivity}`
 - Fixed test assertions to match actual API
 
----
+______________________________________________________________________
 
 ## Quality Metrics
 
 ### Test Distribution
+
 - Core (resolution + lifecycle): 68 tests
 - Adapters: 28 tests
 - Domains: 44 tests
@@ -222,6 +235,7 @@ Integration tests improved coverage in:
 **Total:** 390 tests
 
 ### Coverage by Module
+
 | Module | Coverage | Status |
 |--------|----------|--------|
 | `oneiric/core/resolution.py` | 99% | ✅ Excellent |
@@ -233,23 +247,26 @@ Integration tests improved coverage in:
 | `oneiric/cli.py` | 80% | ✅ Good |
 | **Overall** | **83%** | ✅ **Excellent** |
 
----
+______________________________________________________________________
 
 ## Test Stability
 
 ### Passing Tests: 388/390 (99.5%)
+
 - All integration tests passing consistently
 - 2 tests intentionally skipped (network flakiness)
 
 ### Known Limitations
+
 - Network error handling tests skipped (flaky - tested elsewhere)
 - Security validation tests document expected behavior (not yet implemented - see `docs/CRITICAL_AUDIT_REPORT.md`)
 
----
+______________________________________________________________________
 
 ## Completion Checklist
 
 ### Week 6 Tasks
+
 - [✅] End-to-end integration tests (8 tests) - **COMPLETE**
 - [✅] Edge case tests (15 tests) - **COMPLETE**
 - [✅] Stress tests (concurrent, performance) - **COMPLETE**
@@ -257,6 +274,7 @@ Integration tests improved coverage in:
 - [✅] Update documentation with results - **COMPLETE**
 
 ### Overall Test Suite (6-Week Plan)
+
 - [✅] **Week 1:** Core foundation tests (68 tests)
 - [✅] **Week 2:** Adapter tests (28 tests)
 - [✅] **Week 3:** Domain tests (44 tests)
@@ -266,35 +284,41 @@ Integration tests improved coverage in:
 
 **Total Achievement:** 390 tests (130% of 300+ target), 83% coverage (138% of 60% target)
 
----
+______________________________________________________________________
 
 ## Next Steps
 
 ### Testing Complete ✅
+
 All planned testing phases are now complete. The project has:
+
 - Comprehensive unit test coverage (68% → 83%)
 - Full integration test coverage (e2e workflows)
 - Security validation tests (100 tests)
 - Edge case and stress tests
 
 ### Security Hardening (Critical)
+
 Before production use, address security issues documented in `docs/CRITICAL_AUDIT_REPORT.md`:
+
 1. Factory allowlist (arbitrary code execution risk)
-2. Manifest signature verification (missing cryptographic validation)
-3. Path traversal prevention (cache directory operations)
-4. HTTP timeouts (hanging fetches)
+1. Manifest signature verification (missing cryptographic validation)
+1. Path traversal prevention (cache directory operations)
+1. HTTP timeouts (hanging fetches)
 
 ### Future Enhancements
+
 - Performance benchmarking suite
 - Load testing for high-concurrency scenarios
 - Additional network failure scenarios (with proper mocking)
 - Security validation implementation (currently documented only)
 
----
+______________________________________________________________________
 
 ## Conclusion
 
 Week 6 integration testing successfully validates that all components work together correctly:
+
 - ✅ Full lifecycle workflows across all 5 domains
 - ✅ Multi-domain coordination and orchestration
 - ✅ Config-driven hot-swapping automation
@@ -305,6 +329,7 @@ Week 6 integration testing successfully validates that all components work toget
 - ✅ Graceful error handling
 
 **Final Metrics:**
+
 - **390 total tests** (130% of target)
 - **83% overall coverage** (138% of target)
 - **99.5% test pass rate**

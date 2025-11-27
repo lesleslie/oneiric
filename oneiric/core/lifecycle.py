@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
 import importlib
 import inspect
 import json
+import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -13,6 +15,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 from opentelemetry.trace import Span
 
 from .logging import get_logger
+from .metrics import record_swap_duration
 from .observability import get_tracer
 from .resolution import Candidate, Resolver
 from .security import load_factory_allowlist, validate_factory_string
@@ -40,6 +43,18 @@ class LifecycleHooks:
 
     def add_cleanup(self, hook: CleanupHook) -> None:
         self.on_cleanup.append(hook)
+
+
+@dataclass
+class LifecycleSafetyOptions:
+    """Runtime safety knobs for lifecycle operations."""
+
+    activation_timeout: float = 30.0
+    health_timeout: float = 5.0
+    cleanup_timeout: float = 10.0
+    hook_timeout: float = 5.0
+    shield_tasks: bool = True
+    max_swap_samples: int = 20
 
 
 def resolve_factory(factory: str | FactoryCallable) -> FactoryCallable:
@@ -76,12 +91,6 @@ def resolve_factory(factory: str | FactoryCallable) -> FactoryCallable:
         raise LifecycleError(f"Failed to load factory '{factory}': {exc}") from exc
 
 
-async def _maybe_await(call: Awaitable[Any] | Any) -> Any:
-    if inspect.isawaitable(call):
-        return await call
-    return call
-
-
 @dataclass
 class LifecycleStatus:
     domain: str
@@ -93,6 +102,10 @@ class LifecycleStatus:
     last_state_change_at: Optional[datetime] = None
     last_activated_at: Optional[datetime] = None
     last_health_at: Optional[datetime] = None
+    last_swap_duration_ms: Optional[float] = None
+    recent_swap_durations_ms: List[float] = field(default_factory=list)
+    successful_swaps: int = 0
+    failed_swaps: int = 0
 
     def as_dict(self) -> Dict[str, Any]:
         return {
@@ -105,6 +118,10 @@ class LifecycleStatus:
             "last_state_change_at": _isoformat(self.last_state_change_at),
             "last_activated_at": _isoformat(self.last_activated_at),
             "last_health_at": _isoformat(self.last_health_at),
+            "last_swap_duration_ms": self.last_swap_duration_ms,
+            "recent_swap_durations_ms": list(self.recent_swap_durations_ms),
+            "successful_swaps": self.successful_swaps,
+            "failed_swaps": self.failed_swaps,
         }
 
 
@@ -130,6 +147,7 @@ class LifecycleManager:
         hooks: Optional[LifecycleHooks] = None,
         *,
         status_snapshot_path: Optional[str] = None,
+        safety: Optional[LifecycleSafetyOptions] = None,
     ) -> None:
         self.resolver = resolver
         self.hooks = hooks or LifecycleHooks()
@@ -137,6 +155,7 @@ class LifecycleManager:
         self._status: Dict[Tuple[str, str], LifecycleStatus] = {}
         self._status_snapshot_path = Path(status_snapshot_path) if status_snapshot_path else None
         self._logger = get_logger("lifecycle")
+        self._safety = safety or LifecycleSafetyOptions()
         self._load_status_snapshot()
 
     async def activate(self, domain: str, key: str, provider: Optional[str] = None, *, force: bool = False) -> Any:
@@ -164,7 +183,11 @@ class LifecycleManager:
         if not checks:
             return True
         for check in checks:
-            result = await _maybe_await(check())
+            result = await self._maybe_with_protection(
+                check(),
+                timeout=self._safety.health_timeout,
+                label=f"health probe {domain}:{key}",
+            )
             if result is False:
                 self._update_status(
                     candidate,
@@ -187,6 +210,8 @@ class LifecycleManager:
 
     async def _apply_candidate(self, candidate: Candidate, *, force: bool) -> Any:
         span = self._start_span(candidate)
+        started_at = time.perf_counter()
+        success = False
         instance_key = (candidate.domain, candidate.key)
         previous = self._instances.get(instance_key)
         self._update_status(
@@ -217,6 +242,7 @@ class LifecycleManager:
                 key=candidate.key,
                 provider=candidate.provider,
             )
+            success = True
             return instance
         except Exception as exc:
             error_message = str(exc)
@@ -236,21 +262,40 @@ class LifecycleManager:
             await self._rollback(candidate, previous, force=force)
             if force:
                 return previous
+            if isinstance(exc, LifecycleError):
+                raise
             raise LifecycleError(
                 f"Swap failed for {candidate.domain}:{candidate.key} ({candidate.provider})"
             ) from exc
         finally:
+            duration_ms = (time.perf_counter() - started_at) * 1000
+            self._record_swap_metrics(candidate, duration_ms, success)
+            record_swap_duration(
+                candidate.domain,
+                candidate.key,
+                candidate.provider,
+                duration_ms,
+                success=success,
+            )
             span.end()
 
     async def _instantiate_candidate(self, candidate: Candidate) -> Any:
         factory = resolve_factory(candidate.factory)
         product = factory()
-        return await _maybe_await(product)
+        return await self._maybe_with_protection(
+            product,
+            timeout=self._safety.activation_timeout,
+            label=f"activate {candidate.domain}:{candidate.key}",
+        )
 
     async def _run_health(self, candidate: Candidate, instance: Any, *, force: bool) -> None:
         health_checks = self._collect_health_checks(candidate, instance)
         for check in health_checks:
-            result = await _maybe_await(check())
+            result = await self._maybe_with_protection(
+                check(),
+                timeout=self._safety.health_timeout,
+                label=f"health {candidate.domain}:{candidate.key}",
+            )
             if result is False and not force:
                 raise LifecycleError(
                     f"Health check failed for {candidate.domain}:{candidate.key} ({candidate.provider})"
@@ -279,10 +324,18 @@ class LifecycleManager:
         for method_name in cleanup_methods:
             method = getattr(instance, method_name, None)
             if callable(method):
-                await _maybe_await(method())
+                await self._maybe_with_protection(
+                    method(),
+                    timeout=self._safety.cleanup_timeout,
+                    label=f"cleanup {type(instance).__name__}",
+                )
                 break
         for hook in self.hooks.on_cleanup:
-            await _maybe_await(hook(instance))
+            await self._maybe_with_protection(
+                hook(instance),
+                timeout=self._safety.hook_timeout,
+                label="cleanup hook",
+            )
 
     async def _run_hooks(
         self,
@@ -292,7 +345,11 @@ class LifecycleManager:
         old_instance: Optional[Any],
     ) -> None:
         for hook in hooks:
-            await _maybe_await(hook(candidate, new_instance, old_instance))
+            await self._maybe_with_protection(
+                hook(candidate, new_instance, old_instance),
+                timeout=self._safety.hook_timeout,
+                label="lifecycle hook",
+            )
 
     async def _rollback(self, candidate: Candidate, previous: Optional[Any], *, force: bool) -> None:
         if not force and previous:
@@ -331,11 +388,7 @@ class LifecycleManager:
         last_activated_at: Optional[datetime] = None,
         last_health_at: Optional[datetime] = None,
     ) -> None:
-        key = (candidate.domain, candidate.key)
-        status = self._status.get(key)
-        if not status:
-            status = LifecycleStatus(domain=candidate.domain, key=candidate.key)
-            self._status[key] = status
+        status = self._ensure_status_entry(candidate)
         if state is not None:
             status.state = state
             status.last_state_change_at = _now()
@@ -381,6 +434,42 @@ class LifecycleManager:
         tmp_path.write_text(json.dumps(payload))
         tmp_path.replace(path)
 
+    def _ensure_status_entry(self, candidate: Candidate) -> LifecycleStatus:
+        key = (candidate.domain, candidate.key)
+        status = self._status.get(key)
+        if not status:
+            status = LifecycleStatus(domain=candidate.domain, key=candidate.key)
+            self._status[key] = status
+        return status
+
+    def _record_swap_metrics(self, candidate: Candidate, duration_ms: float, success: bool) -> None:
+        status = self._ensure_status_entry(candidate)
+        status.last_swap_duration_ms = duration_ms
+        if success:
+            status.successful_swaps += 1
+        else:
+            status.failed_swaps += 1
+        status.recent_swap_durations_ms.append(duration_ms)
+        max_samples = max(1, self._safety.max_swap_samples)
+        if len(status.recent_swap_durations_ms) > max_samples:
+            del status.recent_swap_durations_ms[:-max_samples]
+
+    async def _maybe_with_protection(self, call: Awaitable[Any] | Any, *, timeout: float, label: str) -> Any:
+        if inspect.isawaitable(call):
+            return await self._await_with_timeout(call, timeout, label)
+        return call
+
+    async def _await_with_timeout(self, awaitable: Awaitable[Any], timeout: float, label: str) -> Any:
+        task: Awaitable[Any] = awaitable
+        if self._safety.shield_tasks:
+            task = asyncio.shield(task)  # type: ignore[assignment]
+        if timeout and timeout > 0:
+            try:
+                return await asyncio.wait_for(task, timeout)
+            except asyncio.TimeoutError as exc:  # pragma: no cover - exercised via unit tests
+                raise LifecycleError(f"{label} timed out after {timeout:.2f}s") from exc
+        return await task
+
 
 def _status_from_dict(entry: Any) -> Optional[LifecycleStatus]:
     if not isinstance(entry, dict):
@@ -397,6 +486,14 @@ def _status_from_dict(entry: Any) -> Optional[LifecycleStatus]:
     status.last_state_change_at = _parse_timestamp(entry.get("last_state_change_at"))
     status.last_activated_at = _parse_timestamp(entry.get("last_activated_at"))
     status.last_health_at = _parse_timestamp(entry.get("last_health_at"))
+    last_duration = entry.get("last_swap_duration_ms")
+    if _is_number(last_duration):
+        status.last_swap_duration_ms = float(last_duration)
+    history = entry.get("recent_swap_durations_ms") or []
+    if isinstance(history, list):
+        status.recent_swap_durations_ms = [float(value) for value in history if _is_number(value)]
+    status.successful_swaps = int(entry.get("successful_swaps") or 0)
+    status.failed_swaps = int(entry.get("failed_swaps") or 0)
     return status
 
 
@@ -407,3 +504,11 @@ def _parse_timestamp(value: Optional[str]) -> Optional[datetime]:
         return datetime.fromisoformat(value)
     except ValueError:
         return None
+
+
+def _is_number(value: Any) -> bool:
+    try:
+        float(value)
+    except (TypeError, ValueError):
+        return False
+    return True

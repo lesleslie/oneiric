@@ -58,6 +58,7 @@ export ONEIRIC_TRUSTED_PUBLIC_KEYS="base64-public-key-1,base64-public-key-2"
 ```
 
 **Example:**
+
 ```bash
 export ONEIRIC_TRUSTED_PUBLIC_KEYS="MCowBQYDK2VwAyEA..."
 ```
@@ -78,6 +79,7 @@ result = await sync_remote_manifest(
 ```
 
 **Verification Behavior:**
+
 - ✅ **Signature present + valid**: Manifest accepted, logged as verified
 - ⚠️ **Signature present + invalid**: Manifest **rejected**, error raised
 - ⚠️ **No signature**: Manifest accepted with warning (backward compatibility)
@@ -118,12 +120,14 @@ openssl pkey -in private_key.pem -pubout -out public_key.pem
 ### Key Storage Best Practices
 
 **Private Keys (Publishers):**
+
 - ❌ Never commit to version control
 - ✅ Store in secrets manager (AWS Secrets Manager, HashiCorp Vault, etc.)
 - ✅ Use environment variables in CI/CD
 - ✅ Rotate periodically (e.g., every 90 days)
 
 **Public Keys (Consumers):**
+
 - ✅ Can be committed to configuration
 - ✅ Distribute via secure channels
 - ✅ Include in documentation
@@ -206,10 +210,11 @@ jobs:
 Before verification, manifests are converted to a canonical JSON representation:
 
 1. **Remove signature fields** (`signature`, `signature_algorithm`)
-2. **Sort keys alphabetically**
-3. **Compact JSON** (no whitespace)
+1. **Sort keys alphabetically**
+1. **Compact JSON** (no whitespace)
 
 **Example:**
+
 ```python
 from oneiric.remote.security import get_canonical_manifest_for_signing
 
@@ -224,6 +229,7 @@ canonical = get_canonical_manifest_for_signing(manifest)
 ```
 
 This ensures that:
+
 - Signature verification is consistent regardless of formatting
 - Whitespace/order differences don't break verification
 - Publishers and consumers use identical byte sequences
@@ -245,6 +251,7 @@ def verify_manifest_signature(
 ```
 
 **Key Rotation Support:**
+
 - Multiple public keys can be trusted simultaneously
 - Verification succeeds if **any** trusted key validates the signature
 - Allows gradual key rotation without downtime
@@ -281,12 +288,14 @@ is_valid, error = verify_manifest_signature(
 ### Threat Model
 
 **Mitigated Threats:**
+
 - ✅ Man-in-the-middle attacks (CVSS 8.1)
 - ✅ Manifest tampering during transit
 - ✅ Unauthorized manifest publishing
 - ✅ Supply chain compromise
 
 **Not Mitigated (Out of Scope):**
+
 - ❌ Compromised signing keys (key management responsibility)
 - ❌ Malicious but validly-signed manifests (trust boundary)
 - ❌ Replay attacks (consider timestamp validation in future)
@@ -294,26 +303,30 @@ is_valid, error = verify_manifest_signature(
 ### Key Security
 
 **ED25519 Properties:**
+
 - **Key Size:** 256-bit security level
 - **Signature Size:** 64 bytes
 - **Performance:** ~70K signatures/second, ~25K verifications/second
 - **Resistance:** Collision-resistant, EUF-CMA secure
 
 **Best Practices:**
+
 1. Generate keys in secure environment (not production servers)
-2. Use hardware security modules (HSMs) for production keys
-3. Implement key rotation policy
-4. Monitor signature verification logs for anomalies
-5. Revoke compromised keys immediately
+1. Use hardware security modules (HSMs) for production keys
+1. Implement key rotation policy
+1. Monitor signature verification logs for anomalies
+1. Revoke compromised keys immediately
 
 ### Backward Compatibility
 
 **Current Behavior (v0.1.0):**
+
 - Unsigned manifests: **Accepted** with warning
 - Signed + valid: Accepted
 - Signed + invalid: **Rejected**
 
 **Future Behavior (v1.0.0):**
+
 - Consider making signatures **mandatory** for production manifests
 - Add `require_signature` configuration option
 - Implement manifest versioning with signature requirements
@@ -337,11 +350,13 @@ print(os.environ.get("ONEIRIC_TRUSTED_PUBLIC_KEYS"))
 #### 2. "Signature verification failed with all trusted keys"
 
 **Causes:**
+
 - Wrong public key (doesn't match private key used for signing)
 - Manifest was modified after signing
 - Signature is corrupted
 
 **Debugging:**
+
 ```python
 from oneiric.remote.security import get_canonical_manifest_for_signing
 
@@ -365,6 +380,7 @@ pub_key.verify(sig_bytes, canonical.encode("utf-8"))  # Raises if invalid
 **Cause:** Signature string is not valid base64
 
 **Fix:** Ensure signature is properly base64-encoded:
+
 ```python
 import base64
 
@@ -382,6 +398,7 @@ logging.getLogger("remote.security").setLevel(logging.DEBUG)
 ```
 
 **Output:**
+
 ```
 INFO:remote.security:signature-verified key_index=0 signature_length=64
 WARNING:remote.security:signature-verification-failed error="Signature verification failed with all 2 trusted keys: key_0: signature mismatch; key_1: signature mismatch"

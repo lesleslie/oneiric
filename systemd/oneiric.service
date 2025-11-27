@@ -1,0 +1,83 @@
+[Unit]
+Description=Oneiric - Universal Resolution Layer
+Documentation=https://github.com/your-org/oneiric
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=oneiric
+Group=oneiric
+
+# Working directory
+WorkingDirectory=/opt/oneiric
+
+# Environment
+Environment="PATH=/opt/oneiric/.local/bin:/usr/local/bin:/usr/bin"
+Environment="ONEIRIC_CONFIG=/opt/oneiric/settings"
+Environment="LOG_LEVEL=INFO"
+Environment="ONEIRIC_LOG_FORMAT=json"
+Environment="OTEL_SERVICE_NAME=oneiric"
+Environment="PROMETHEUS_METRICS_PORT=9090"
+
+# Environment file for secrets (optional)
+EnvironmentFile=-/etc/oneiric/environment
+
+# Start command
+ExecStart=/opt/oneiric/.local/bin/uv run python -m oneiric.cli orchestrate \
+  --manifest /opt/oneiric/settings/manifest.yaml \
+  --refresh-interval 120
+
+# Pre-start validation
+ExecStartPre=/bin/sh -c 'test -r /opt/oneiric/settings/manifest.yaml'
+ExecStartPre=/opt/oneiric/.local/bin/uv run python -m oneiric.cli health --probe
+
+# Reload command (graceful restart)
+ExecReload=/bin/kill -HUP $MAINPID
+
+# Restart policy
+Restart=on-failure
+RestartSec=10s
+StartLimitBurst=5
+StartLimitInterval=300s
+
+# Timeout
+TimeoutStartSec=60s
+TimeoutStopSec=30s
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=oneiric
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Nice priority (lower = higher priority, range: -20 to 19)
+Nice=-5
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/oneiric/.oneiric_cache /opt/oneiric/logs
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+
+# Capabilities (drop all by default)
+CapabilityBoundingSet=
+# Uncomment if you need to bind to privileged ports (<1024)
+# AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target

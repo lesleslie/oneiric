@@ -24,6 +24,7 @@ class RuntimeHealthSnapshot:
     last_remote_registered: Optional[int] = None
     last_remote_per_domain: Dict[str, int] = None  # type: ignore[assignment]
     last_remote_skipped: Optional[int] = None
+    last_remote_duration_ms: Optional[float] = None
     activity_state: Dict[str, Dict[str, Any]] = None  # type: ignore[assignment]
 
     def as_dict(self) -> dict[str, Any]:
@@ -55,6 +56,7 @@ def load_runtime_health(path: str | Path) -> RuntimeHealthSnapshot:
     snapshot.last_remote_registered = data.get("last_remote_registered")
     snapshot.last_remote_per_domain = data.get("last_remote_per_domain") or {}
     snapshot.last_remote_skipped = data.get("last_remote_skipped")
+    snapshot.last_remote_duration_ms = data.get("last_remote_duration_ms")
     snapshot.activity_state = data.get("activity_state") or {}
     return snapshot
 

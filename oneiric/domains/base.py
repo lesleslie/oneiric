@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from oneiric.core.config import LayerSettings
 from oneiric.core.lifecycle import LifecycleError, LifecycleManager
 from oneiric.core.logging import get_logger
+from oneiric.core.metrics import record_drain_state, record_pause_state
 from oneiric.core.resolution import Candidate, Resolver
 from oneiric.runtime.activity import DomainActivity, DomainActivityStore
 
@@ -125,6 +126,7 @@ class DomainBridge:
             note=note if note is not None else current.note,
         )
         self._persist_activity(key, state)
+        record_pause_state(self.domain, paused)
         self._logger.info(
             "domain-paused" if paused else "domain-resumed",
             domain=self.domain,
@@ -141,6 +143,7 @@ class DomainBridge:
             note=note if note is not None else current.note,
         )
         self._persist_activity(key, state)
+        record_drain_state(self.domain, draining)
         self._logger.info(
             "domain-draining" if draining else "domain-drain-cleared",
             domain=self.domain,

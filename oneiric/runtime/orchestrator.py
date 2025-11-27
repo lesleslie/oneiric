@@ -101,6 +101,8 @@ class RuntimeOrchestrator:
         self._remote_task: Optional[asyncio.Task[None]] = None
 
     async def sync_remote(self, manifest_url: Optional[str] = None):
+        """Run a single remote sync and refresh runtime health metadata."""
+
         try:
             result = await sync_remote_manifest(
                 self.resolver,
@@ -118,6 +120,7 @@ class RuntimeOrchestrator:
                 last_remote_registered=result.registered,
                 last_remote_per_domain=result.per_domain,
                 last_remote_skipped=result.skipped,
+                last_remote_duration_ms=result.duration_ms,
             )
         return result
 
@@ -128,6 +131,8 @@ class RuntimeOrchestrator:
         refresh_interval_override: Optional[float] = None,
         enable_remote: bool = True,
     ) -> None:
+        """Start config watchers and (optionally) the remote refresh loop."""
+
         for watcher in self._watchers:
             await watcher.start()
         self._update_health(
@@ -150,6 +155,8 @@ class RuntimeOrchestrator:
                 )
 
     async def stop(self) -> None:
+        """Stop config watchers and cancel any running remote loop."""
+
         for watcher in self._watchers:
             await watcher.stop()
         if self._remote_task:
@@ -168,6 +175,8 @@ class RuntimeOrchestrator:
 
 
     async def _remote_loop(self, manifest_url: Optional[str], interval: float) -> None:
+        """Background task that periodically refreshes the remote manifest."""
+
         if not manifest_url:
             logger.info("remote-refresh-skip", reason="no-manifest-url")
             return
@@ -193,7 +202,10 @@ class RuntimeOrchestrator:
         last_remote_registered: Optional[int] = None,
         last_remote_per_domain: Optional[Dict[str, int]] = None,
         last_remote_skipped: Optional[int] = None,
+        last_remote_duration_ms: Optional[float] = None,
     ) -> None:
+        """Persist runtime health snapshot updates to disk."""
+
         if not self._health_path:
             return
         if watchers_running is not None:
@@ -212,6 +224,8 @@ class RuntimeOrchestrator:
             self._health.last_remote_per_domain = last_remote_per_domain
         if last_remote_skipped is not None:
             self._health.last_remote_skipped = last_remote_skipped
+        if last_remote_duration_ms is not None:
+            self._health.last_remote_duration_ms = last_remote_duration_ms
         if self._activity_store:
             snapshot = self._activity_store.snapshot()
             self._health.activity_state = {

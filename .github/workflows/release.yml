@@ -1,0 +1,182 @@
+name: Release & Publish
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers on version tags like v1.0.0, v0.2.0-beta, etc.
+
+permissions:
+  contents: write  # Needed for creating releases
+  id-token: write  # Needed for OIDC authentication (optional)
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run tests
+        run: |
+          uv run pytest tests/ -v
+          echo "✓ All tests passed"
+
+      - name: Build wheel package
+        run: |
+          uv build
+          echo "✓ Built wheel package"
+          ls -lh dist/
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          # Remove 'v' prefix from tag (v1.0.0 -> 1.0.0)
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Generate remote manifest
+        run: |
+          uv run python scripts/generate_manifest.py \
+            --output dist/manifest.yaml \
+            --version ${{ steps.version.outputs.version }} \
+            --source "oneiric-production"
+          echo "✓ Generated manifest"
+          cat dist/manifest.yaml
+
+      - name: Sign manifest with ED25519
+        env:
+          ED25519_PRIVATE_KEY: ${{ secrets.ED25519_PRIVATE_KEY }}
+        run: |
+          # Write private key to temporary file
+          echo "$ED25519_PRIVATE_KEY" > /tmp/private_key.pem
+          chmod 600 /tmp/private_key.pem
+
+          # Sign manifest
+          uv run python scripts/sign_manifest.py \
+            --manifest dist/manifest.yaml \
+            --private-key /tmp/private_key.pem
+
+          # Clean up private key
+          rm /tmp/private_key.pem
+
+          echo "✓ Signed manifest"
+
+      - name: Upload to S3 (if configured)
+        if: vars.S3_BUCKET != ''
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+        run: |
+          # Install boto3 for S3 uploads
+          pip install boto3
+
+          # Upload wheel
+          uv run python scripts/upload_artifacts.py \
+            --artifact dist/*.whl \
+            --backend s3 \
+            --bucket ${{ vars.S3_BUCKET }} \
+            --key releases/${{ steps.version.outputs.version }}/oneiric.whl \
+            --region $AWS_REGION \
+            --public-read
+
+          # Upload manifest
+          uv run python scripts/upload_artifacts.py \
+            --artifact dist/manifest.yaml \
+            --backend s3 \
+            --bucket ${{ vars.S3_BUCKET }} \
+            --key releases/${{ steps.version.outputs.version }}/manifest.yaml \
+            --region $AWS_REGION \
+            --public-read
+
+          echo "✓ Uploaded to S3"
+
+      - name: Upload to GCS (if configured)
+        if: vars.GCS_BUCKET != ''
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCS_SERVICE_ACCOUNT_KEY }}
+        run: |
+          # Install google-cloud-storage for GCS uploads
+          pip install google-cloud-storage
+
+          # Write service account key to file
+          echo "$GOOGLE_APPLICATION_CREDENTIALS" > /tmp/gcs_key.json
+          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcs_key.json
+
+          # Upload wheel
+          uv run python scripts/upload_artifacts.py \
+            --artifact dist/*.whl \
+            --backend gcs \
+            --bucket ${{ vars.GCS_BUCKET }} \
+            --key releases/${{ steps.version.outputs.version }}/oneiric.whl \
+            --public-read
+
+          # Upload manifest
+          uv run python scripts/upload_artifacts.py \
+            --artifact dist/manifest.yaml \
+            --backend gcs \
+            --bucket ${{ vars.GCS_BUCKET }} \
+            --key releases/${{ steps.version.outputs.version }}/manifest.yaml \
+            --public-read
+
+          # Clean up service account key
+          rm /tmp/gcs_key.json
+
+          echo "✓ Uploaded to GCS"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.whl
+            dist/manifest.yaml
+          body: |
+            ## Release ${{ github.ref_name }}
+
+            ### What's New
+            - Automated release via GitHub Actions
+            - Signed remote manifest (ED25519)
+            - Published to cloud storage
+
+            ### Installation
+            ```bash
+            pip install https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/oneiric-${{ steps.version.outputs.version }}-py3-none-any.whl
+            ```
+
+            ### Remote Manifest
+            ```bash
+            # Download signed manifest
+            curl -O https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/manifest.yaml
+
+            # Sync from remote manifest
+            uv run python -m oneiric.cli remote-sync --manifest manifest.yaml
+            ```
+
+            ### Checksums
+            See attached files for SHA256 checksums.
+
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-alpha') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-rc') }}
+
+      - name: Publish to PyPI (optional)
+        if: vars.PUBLISH_TO_PYPI == 'true'
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          pip install twine
+          twine upload dist/*.whl dist/*.tar.gz
+          echo "✓ Published to PyPI"

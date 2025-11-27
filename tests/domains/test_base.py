@@ -526,6 +526,24 @@ class TestDomainBridgeActivity:
         retrieved = bridge.activity_state("api")
         assert retrieved.paused is True
 
+    def test_set_paused_emits_metric(self, monkeypatch):
+        """set_paused() records pause metrics via instrumentation."""
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        settings = LayerSettings()
+        bridge = DomainBridge("service", resolver, lifecycle, settings)
+
+        calls = []
+        monkeypatch.setattr(
+            "oneiric.domains.base.record_pause_state",
+            lambda domain, paused: calls.append((domain, paused)),
+        )
+
+        bridge.set_paused("api", True)
+        bridge.set_paused("api", False)
+
+        assert calls == [("service", True), ("service", False)]
+
     def test_set_paused_resume(self):
         """set_paused(False) resumes paused component."""
         resolver = Resolver()
@@ -552,6 +570,24 @@ class TestDomainBridgeActivity:
 
         assert state.draining is True
         assert state.note == "draining queue"
+
+    def test_set_draining_emits_metric(self, monkeypatch):
+        """set_draining() records drain metrics."""
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        settings = LayerSettings()
+        bridge = DomainBridge("service", resolver, lifecycle, settings)
+
+        calls = []
+        monkeypatch.setattr(
+            "oneiric.domains.base.record_drain_state",
+            lambda domain, draining: calls.append((domain, draining)),
+        )
+
+        bridge.set_draining("api", True)
+        bridge.set_draining("api", False)
+
+        assert calls == [("service", True), ("service", False)]
 
     def test_set_draining_clear(self):
         """set_draining(False) clears drain state."""

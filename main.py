@@ -3,7 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from oneiric.adapters import AdapterMetadata, register_adapter_metadata
+from oneiric import plugins
+from oneiric.adapters import AdapterMetadata, register_adapter_metadata, register_builtin_adapters
 from oneiric.core.config import (
     SecretsHook,
     lifecycle_snapshot_path,
@@ -11,7 +12,7 @@ from oneiric.core.config import (
     resolver_settings_from_config,
     runtime_health_path,
 )
-from oneiric.core.lifecycle import LifecycleManager
+from oneiric.core.lifecycle import LifecycleManager, LifecycleSafetyOptions
 from oneiric.core.logging import configure_logging
 from oneiric.core.resolution import Candidate, Resolver
 from oneiric.core.runtime import run_sync
@@ -28,9 +29,11 @@ class DemoAdapter:
 
 
 async def _async_main() -> None:
-    configure_logging()
     settings = load_settings()
+    configure_logging(settings.logging)
     resolver = Resolver(settings=resolver_settings_from_config(settings))
+    register_builtin_adapters(resolver)
+    plugins.register_entrypoint_plugins(resolver, settings.plugins)
     register_adapter_metadata(
         resolver,
         package_name="oneiric.demo",
@@ -48,6 +51,13 @@ async def _async_main() -> None:
     lifecycle = LifecycleManager(
         resolver,
         status_snapshot_path=str(lifecycle_snapshot_path(settings)),
+        safety=LifecycleSafetyOptions(
+            activation_timeout=settings.lifecycle.activation_timeout,
+            health_timeout=settings.lifecycle.health_timeout,
+            cleanup_timeout=settings.lifecycle.cleanup_timeout,
+            hook_timeout=settings.lifecycle.hook_timeout,
+            shield_tasks=settings.lifecycle.shield_tasks,
+        ),
     )
     secrets = SecretsHook(lifecycle, settings.secrets)
     remote_result = await sync_remote_manifest(

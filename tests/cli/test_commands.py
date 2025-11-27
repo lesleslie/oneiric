@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+import io
 import json
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from typer.testing import CliRunner
 
-from oneiric.cli import app
+from oneiric import plugins
+from oneiric.cli import _print_runtime_health, app
 from oneiric.core.config import OneiricSettings
 from oneiric.core.lifecycle import LifecycleManager
 from oneiric.core.resolution import Resolver
@@ -88,6 +91,13 @@ class TestListCommand:
 
         assert result.exit_code == 0
         assert "Active workflows:" in result.stdout
+
+    def test_list_actions(self, runner):
+        """list command works for actions."""
+        result = runner.invoke(app, ["--demo", "list", "--domain", "action"])
+
+        assert result.exit_code == 0
+        assert "Active actions:" in result.stdout
 
     def test_list_invalid_domain(self, runner):
         """list command rejects invalid domain."""
@@ -345,22 +355,222 @@ class TestHealthCommand:
         assert result.exit_code == 0
 
 
+class TestRuntimeHealthPrinter:
+    """Unit tests for runtime health printer helper."""
+
+    def test_runtime_health_latency_warning(self, tmp_path):
+        """_print_runtime_health includes latency budget warnings."""
+        snapshot = {
+            "watchers_running": True,
+            "remote_enabled": True,
+            "last_remote_duration_ms": 7500.0,
+        }
+        settings = OneiricSettings()
+        settings.remote.latency_budget_ms = 1000.0
+        buffer = io.StringIO()
+        with redirect_stdout(buffer):
+            _print_runtime_health(snapshot, str(tmp_path), settings.remote)
+
+        output = buffer.getvalue()
+        assert "last_remote_duration" in output
+        assert "exceeds budget" in output
+
+
+class TestPluginBootstrap:
+    """Ensure CLI bootstraps entry-point plugins when enabled."""
+
+    def test_cli_initializes_plugins(self, monkeypatch, runner):
+        settings = OneiricSettings()
+        settings.plugins.auto_load = True
+
+        monkeypatch.setattr("oneiric.cli.load_settings", lambda path: settings)
+        called = {}
+
+        def fake_register(resolver, config):
+            called["config"] = config
+            return plugins.PluginRegistrationReport(groups=["oneiric.adapters"], registered=0)
+
+        monkeypatch.setattr("oneiric.cli.plugins.register_entrypoint_plugins", fake_register)
+
+        result = runner.invoke(app, ["--demo", "list", "--domain", "adapter"])
+
+        assert result.exit_code == 0
+        assert called["config"] is settings.plugins
+
+
+class TestPluginsCommand:
+    """Tests for the plugins diagnostics command."""
+
+    def test_plugins_command_text(self, monkeypatch, runner):
+        settings = OneiricSettings()
+        settings.plugins.auto_load = True
+        report = plugins.PluginRegistrationReport(
+            groups=["oneiric.adapters"],
+            registered=2,
+            entries=[
+                plugins.PluginEntryRecord(
+                    group="oneiric.adapters",
+                    entry_point="demo",
+                    payload_type="Candidate",
+                    registered_candidates=2,
+                )
+            ],
+        )
+
+        monkeypatch.setattr("oneiric.cli.load_settings", lambda path: settings)
+        monkeypatch.setattr("oneiric.cli.plugins.register_entrypoint_plugins", lambda *args, **kwargs: report)
+
+        result = runner.invoke(app, ["--demo", "plugins"])
+
+        assert result.exit_code == 0
+        assert "Entry-point groups loaded" in result.stdout
+        assert "demo" in result.stdout
+
+    def test_plugins_command_json(self, monkeypatch, runner):
+        settings = OneiricSettings()
+        report = plugins.PluginRegistrationReport(groups=["pkg"], registered=0)
+        monkeypatch.setattr("oneiric.cli.load_settings", lambda path: settings)
+        monkeypatch.setattr("oneiric.cli.plugins.register_entrypoint_plugins", lambda *args, **kwargs: report)
+
+        result = runner.invoke(app, ["--demo", "plugins", "--json"])
+
+        assert result.exit_code == 0
+        output = result.stdout.strip()
+        lines = [line for line in output.splitlines() if line.strip()]
+        start_index = None
+        for idx in range(len(lines) - 1, -1, -1):
+            if lines[idx].lstrip().startswith("{"):
+                start_index = idx
+                break
+        payload = "\n".join(lines[start_index:]) if start_index is not None else lines[-1]
+        data = json.loads(payload)
+        assert data["registered"] == 0
+
+
+class TestActionInvokeCommand:
+    def test_action_invoke_returns_json(self, runner):
+        result = runner.invoke(
+            app,
+            [
+                "--demo",
+                "action-invoke",
+                "compression.encode",
+                "--payload",
+                '{"text": "hello"}',
+                "--json",
+            ],
+        )
+
+        assert result.exit_code == 0
+        lines = [line for line in result.stdout.splitlines() if line.strip()]
+        start_index = None
+        for idx in range(len(lines) - 1, -1, -1):
+            if lines[idx].lstrip().startswith("{"):
+                start_index = idx
+                break
+        payload = "\n".join(lines[start_index:]) if start_index is not None else lines[-1]
+        data = json.loads(payload)
+        assert data["mode"] == "compress"
+        assert data["algorithm"] == "zlib"
+
+    def test_action_invoke_workflow_audit(self, runner):
+        result = runner.invoke(
+            app,
+            [
+                "--demo",
+                "action-invoke",
+                "workflow.audit",
+                "--payload",
+                '{"event": "deploy", "details": {"service": "oneiric"}}',
+                "--json",
+            ],
+        )
+
+        assert result.exit_code == 0
+        lines = [line for line in result.stdout.splitlines() if line.strip()]
+        start_index = None
+        for idx in range(len(lines) - 1, -1, -1):
+            if lines[idx].lstrip().startswith("{"):
+                start_index = idx
+                break
+        payload = "\n".join(lines[start_index:]) if start_index is not None else lines[-1]
+        data = json.loads(payload)
+        assert data["status"] == "recorded"
+        assert data["details"]["service"] == "oneiric"
+
+    def test_action_invoke_workflow_notify(self, runner):
+        result = runner.invoke(
+            app,
+            [
+                "--demo",
+                "action-invoke",
+                "workflow.notify",
+                "--payload",
+                '{"message": "deploy", "recipients": ["ops"], "channel": "deploys"}',
+                "--json",
+            ],
+        )
+
+        assert result.exit_code == 0
+        lines = [line for line in result.stdout.splitlines() if line.strip()]
+        start_index = None
+        for idx in range(len(lines) - 1, -1, -1):
+            if lines[idx].lstrip().startswith("{"):
+                start_index = idx
+                break
+        payload = "\n".join(lines[start_index:]) if start_index is not None else lines[-1]
+        data = json.loads(payload)
+        assert data["status"] == "queued"
+        assert data["channel"] == "deploys"
+        assert data["recipients"] == ["ops"]
+
+    def test_action_invoke_workflow_retry(self, runner):
+        result = runner.invoke(
+            app,
+            [
+                "--demo",
+                "action-invoke",
+                "workflow.retry",
+                "--payload",
+                '{"attempt": 1, "max_attempts": 3}',
+                "--json",
+            ],
+        )
+
+        assert result.exit_code == 0
+        lines = [line for line in result.stdout.splitlines() if line.strip()]
+        start_index = None
+        for idx in range(len(lines) - 1, -1, -1):
+            if lines[idx].lstrip().startswith("{"):
+                start_index = idx
+                break
+        payload = "\n".join(lines[start_index:]) if start_index is not None else lines[-1]
+        data = json.loads(payload)
+        assert data["status"] == "scheduled"
+        assert data["next_attempt"] == 2
+
+
 class TestActivityCommand:
     """Test activity command."""
 
     def test_activity_empty(self, runner, tmp_path):
         """activity command handles no paused/draining keys."""
-        result = runner.invoke(app, [f"--config={tmp_path / 'app.yml'}", "--demo", "activity"])
+        config_file = tmp_path / "settings.toml"
+        cache_dir = tmp_path / "cache"
+        config_file.write_text(f"[remote]\ncache_dir = \"{cache_dir}\"\n")
+        result = runner.invoke(app, [f"--config={config_file}", "--demo", "activity"])
 
         assert result.exit_code == 0
-        # Message may appear in log lines or at end
-        assert "No paused or draining" in result.stdout or "paused" not in result.stdout
+        assert "No paused or draining" in result.stdout
 
     def test_activity_with_paused(self, runner, tmp_path):
         """activity command shows paused keys."""
+        config_file = tmp_path / "settings.toml"
+        cache_dir = tmp_path / "cache"
+        config_file.write_text(f"[remote]\ncache_dir = \"{cache_dir}\"\n")
         # Pause a key first
         runner.invoke(app, [
-            f"--config={tmp_path / 'app.yml'}",
+            f"--config={config_file}",
             "--demo",
             "pause",
             "demo",
@@ -368,18 +578,25 @@ class TestActivityCommand:
             "adapter"
         ])
 
-        result = runner.invoke(app, [f"--config={tmp_path / 'app.yml'}", "--demo", "activity"])
+        result = runner.invoke(app, [f"--config={config_file}", "--demo", "activity"])
 
         assert result.exit_code == 0
-        assert "adapter activity:" in result.stdout
+        assert "Total activity: paused=1" in result.stdout
+        assert "adapter activity: paused=1 draining=0" in result.stdout
 
     def test_activity_json_output(self, runner, tmp_path):
         """activity command supports JSON output."""
-        result = runner.invoke(app, [f"--config={tmp_path / 'app.yml'}", "--demo", "activity", "--json"])
+        config_file = tmp_path / "settings.toml"
+        cache_dir = tmp_path / "cache"
+        config_file.write_text(f"[remote]\ncache_dir = \"{cache_dir}\"\n")
+        result = runner.invoke(app, [f"--config={config_file}", "--demo", "activity", "--json"])
 
         assert result.exit_code == 0
-        # JSON output may be mixed with logs - just verify it runs
-        assert result.stdout is not None
+        output = result.stdout
+        idx = output.rfind("\n{")
+        payload = json.loads(output[idx + 1 :])
+        assert "totals" in payload
+        assert "domains" in payload
 
 
 class TestRemoteStatusCommand:
@@ -387,15 +604,21 @@ class TestRemoteStatusCommand:
 
     def test_remote_status_empty(self, runner, tmp_path):
         """remote-status command handles no telemetry."""
-        result = runner.invoke(app, [f"--config={tmp_path / 'app.yml'}", "--demo", "remote-status"])
+        config_file = tmp_path / "settings.toml"
+        cache_dir = tmp_path / "cache"
+        config_file.write_text(f"[remote]\ncache_dir = \"{cache_dir}\"\n")
+        result = runner.invoke(app, [f"--config={config_file}", "--demo", "remote-status"])
 
         assert result.exit_code == 0
-        # May have telemetry from previous tests
-        assert result.stdout is not None
+        assert "Manifest URL" in result.stdout
+        assert "Remote latency budget" in result.stdout
 
     def test_remote_status_json_output(self, runner, tmp_path):
         """remote-status command supports JSON output."""
-        result = runner.invoke(app, [f"--config={tmp_path / 'app.yml'}", "--demo", "remote-status", "--json"])
+        config_file = tmp_path / "settings.toml"
+        cache_dir = tmp_path / "cache"
+        config_file.write_text(f"[remote]\ncache_dir = \"{cache_dir}\"\n")
+        result = runner.invoke(app, [f"--config={config_file}", "--demo", "remote-status", "--json"])
 
         assert result.exit_code == 0
         # JSON output may be mixed with logs - just verify it runs
@@ -410,9 +633,12 @@ class TestRemoteSyncCommand:
         # Create a minimal manifest
         manifest_file = tmp_path / "manifest.yaml"
         manifest_file.write_text("source: test\nentries: []\n")
+        config_file = tmp_path / "settings.toml"
+        cache_dir = tmp_path / "cache"
+        config_file.write_text(f"[remote]\ncache_dir = \"{cache_dir}\"\n")
 
         result = runner.invoke(app, [
-            f"--config={tmp_path / 'app.yml'}",
+            f"--config={config_file}",
             "--demo",
             "remote-sync",
             "--manifest",

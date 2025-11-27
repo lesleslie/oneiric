@@ -9,7 +9,7 @@ Successfully completed Week 1 tasks from the Unified Implementation Plan, addres
 **Security Module Coverage:** 100%
 **Overall Test Coverage:** 26% (security-focused)
 
----
+______________________________________________________________________
 
 ## Critical Security Fixes Implemented
 
@@ -18,6 +18,7 @@ Successfully completed Week 1 tasks from the Unified Implementation Plan, addres
 **Vulnerability:** Factory resolution allowed importing any Python module, enabling RCE attacks.
 
 **Fix Implemented:**
+
 - Created `oneiric/core/security.py` with factory validation
 - Implemented module blocklist (os, subprocess, sys, importlib, builtins, shutil, pathlib, tempfile)
 - Added factory allowlist with environment variable override (`ONEIRIC_FACTORY_ALLOWLIST`)
@@ -26,6 +27,7 @@ Successfully completed Week 1 tasks from the Unified Implementation Plan, addres
 **Tests:** 24 tests covering factory validation and RCE attack scenarios
 
 **Files Modified:**
+
 - `oneiric/core/security.py` (NEW - 202 lines, 100% coverage)
 - `oneiric/core/lifecycle.py:57-82` (added security validation)
 
@@ -34,6 +36,7 @@ Successfully completed Week 1 tasks from the Unified Implementation Plan, addres
 **Vulnerability:** Cache directory operations vulnerable to directory traversal attacks.
 
 **Fix Implemented:**
+
 - Early detection of path traversal patterns (`..`, `/`, `\`)
 - Filename sanitization before path resolution
 - `.resolve()` + `.is_relative_to()` verification
@@ -42,6 +45,7 @@ Successfully completed Week 1 tasks from the Unified Implementation Plan, addres
 **Tests:** 20 tests covering path traversal attack scenarios (Linux, Windows, home directory, cron backdoors)
 
 **Files Modified:**
+
 - `oneiric/remote/loader.py:54-93` (path traversal protection)
 - `oneiric/core/security.py:122-157` (key format validation)
 
@@ -50,6 +54,7 @@ Successfully completed Week 1 tasks from the Unified Implementation Plan, addres
 **Vulnerability:** Remote fetches could hang indefinitely, causing DoS.
 
 **Fix Implemented:**
+
 - Added `DEFAULT_HTTP_TIMEOUT = 30.0` constant
 - Applied timeout to both manifest fetch and artifact download
 - Timeout parameter added to `urllib.request.urlopen()` calls
@@ -57,6 +62,7 @@ Successfully completed Week 1 tasks from the Unified Implementation Plan, addres
 **Tests:** Covered by integration tests (manifests, artifacts)
 
 **Files Modified:**
+
 - `oneiric/remote/loader.py:36` (constant definition)
 - `oneiric/remote/loader.py:127, 288` (timeout application)
 
@@ -65,6 +71,7 @@ Successfully completed Week 1 tasks from the Unified Implementation Plan, addres
 **Vulnerability:** Remote manifest entries lacked proper validation.
 
 **Fix Implemented:**
+
 - Domain validation (adapter, service, task, event, workflow)
 - Key format validation (alphanumeric + `-_`, optional `.`)
 - Provider format validation (same as keys)
@@ -76,10 +83,11 @@ Successfully completed Week 1 tasks from the Unified Implementation Plan, addres
 **Tests:** 34 tests covering all validation scenarios
 
 **Files Modified:**
-- `oneiric/remote/loader.py:332-385` (_validate_entry function)
+
+- `oneiric/remote/loader.py:332-385` (\_validate_entry function)
 - `oneiric/core/security.py` (validation helper functions)
 
----
+______________________________________________________________________
 
 ## Test Infrastructure Established
 
@@ -97,6 +105,7 @@ tests/
 ### Test Configuration
 
 **pyproject.toml additions:**
+
 - pytest dependencies (pytest, pytest-asyncio, pytest-cov, pytest-timeout)
 - Test markers (security, integration, slow)
 - Coverage configuration (source, omit patterns)
@@ -105,6 +114,7 @@ tests/
 ### Shared Fixtures
 
 Created in `tests/conftest.py`:
+
 - `temp_dir` - Temporary directory for test files
 - `cache_dir` - Cache directory fixture
 - `resolver` - Fresh Resolver instance
@@ -117,16 +127,18 @@ Created in `tests/conftest.py`:
 ### Demo Components
 
 Created `oneiric/demo.py` with test components:
+
 - `DemoAdapter` - Simple adapter for testing
 - `RedisAdapter` - Redis adapter for testing
 - `MemcachedAdapter` - Memcached adapter for testing
 - `demo_factory()` - Factory function for testing
 
----
+______________________________________________________________________
 
 ## Test Results Summary
 
 ### Overall Statistics
+
 - **Total Tests:** 74
 - **Passing:** 74 (100%)
 - **Failing:** 0
@@ -135,6 +147,7 @@ Created `oneiric/demo.py` with test components:
 ### Test Breakdown by Category
 
 #### Factory Validation Tests (24 tests)
+
 - ✅ Allowed factories succeed
 - ✅ Blocked modules rejected (os, subprocess, sys, importlib, builtins, shutil, pathlib, tempfile)
 - ✅ Disallowed prefixes rejected
@@ -144,6 +157,7 @@ Created `oneiric/demo.py` with test components:
 - ✅ Real-world attack scenarios (RCE, arbitrary imports, filesystem attacks)
 
 #### Path Traversal Tests (20 tests)
+
 - ✅ Normal filenames allowed
 - ✅ Parent directory traversal blocked (`../../`)
 - ✅ Absolute paths blocked (`/etc/passwd`)
@@ -155,6 +169,7 @@ Created `oneiric/demo.py` with test components:
 - ✅ Real-world attack scenarios (Linux `/etc/passwd`, Windows `System32`, SSH keys, cron backdoors)
 
 #### Input Validation Tests (34 tests)
+
 - ✅ Valid entries pass validation
 - ✅ Invalid domains rejected
 - ✅ Missing required fields rejected
@@ -166,11 +181,12 @@ Created `oneiric/demo.py` with test components:
 - ✅ URI path traversal prevention
 - ✅ Real-world attack scenarios (RCE, path injection, integer overflow)
 
----
+______________________________________________________________________
 
 ## Code Quality Metrics
 
 ### Coverage by Module
+
 - `oneiric/core/security.py` - **100%** (60/60 statements)
 - `oneiric/remote/models.py` - **100%** (17/17 statements)
 - `oneiric/__init__.py` - **100%** (5/5 statements)
@@ -179,6 +195,7 @@ Created `oneiric/demo.py` with test components:
 - `oneiric/remote/loader.py` - **37%** (75/204 statements)
 
 ### Security Module Details
+
 - **Lines of Code:** 202
 - **Functions:** 5
   - `validate_factory_string()` - Format and security validation
@@ -189,35 +206,40 @@ Created `oneiric/demo.py` with test components:
 - **Test Coverage:** 100%
 - **Security Tests:** 74 (all passing)
 
----
+______________________________________________________________________
 
 ## Issues Fixed During Implementation
 
 ### Issue 1: Missing Demo Module
+
 **Problem:** Tests failed with "No module named 'oneiric.demo'"
 **Fix:** Created `oneiric/demo.py` with DemoAdapter, RedisAdapter, MemcachedAdapter
 **Impact:** 24 factory validation tests now pass
 
 ### Issue 2: Empty Allowlist Handling
+
 **Problem:** Empty list `[]` treated as falsy, falling back to defaults
 **Fix:** Changed `allowed_prefixes or DEFAULT_ALLOWED_PREFIXES` to `allowed_prefixes if allowed_prefixes is not None else DEFAULT_ALLOWED_PREFIXES`
 **Impact:** Empty allowlist now properly rejects all factories
 
 ### Issue 3: Path Traversal Error Messages
+
 **Problem:** Tests expected "Invalid filename" but got more specific "Path traversal attempt detected in URI"
 **Fix:** Updated test expectations to match improved error messages
 **Impact:** Path traversal detection is now more accurate and provides better error messages
 
 ### Issue 4: Environment Variable Detection
+
 **Problem:** `os.getenv("ONEIRIC_FACTORY_ALLOWLIST", "")` couldn't distinguish between unset and empty
 **Fix:** Changed to `os.getenv("ONEIRIC_FACTORY_ALLOWLIST")` and check `if env_value is not None`
 **Impact:** Can now differentiate between unset (use defaults) and empty (reject all)
 
----
+______________________________________________________________________
 
 ## Security Improvements Summary
 
 ### Before Week 1
+
 - ❌ No factory validation (arbitrary code execution possible)
 - ❌ No path traversal protection
 - ❌ No HTTP timeouts (DoS vulnerability)
@@ -226,6 +248,7 @@ Created `oneiric/demo.py` with test components:
 - ❌ CVSS Score: Multiple Critical (9.8, 8.6, 7.3, 5.9)
 
 ### After Week 1
+
 - ✅ Comprehensive factory validation with blocklist and allowlist
 - ✅ Multi-layer path traversal protection
 - ✅ 30-second HTTP timeouts on all remote operations
@@ -234,36 +257,40 @@ Created `oneiric/demo.py` with test components:
 - ✅ 100% coverage on security module
 - ✅ Critical vulnerabilities mitigated
 
----
+______________________________________________________________________
 
 ## Next Steps (Week 2+)
 
 ### Immediate Next Tasks (From Unified Plan)
 
 1. **Implement Signature Verification (P0)** - Week 2
+
    - ED25519 signature verification for remote manifests
    - Public key distribution mechanism
    - Signature validation integration
    - Tests for signature verification
 
-2. **Add Thread Safety to CandidateRegistry (P1)** - Week 2
+1. **Add Thread Safety to CandidateRegistry (P1)** - Week 2
+
    - Implement threading.RLock() for registry operations
    - Document thread safety guarantees
    - Add concurrency tests
 
-3. **Create Core Resolution Test Suite (Week 3-4)**
+1. **Create Core Resolution Test Suite (Week 3-4)**
+
    - ~25 tests for precedence rules
    - Active/shadowed component tracking
    - Explain API functionality
    - Target: 90%+ coverage on resolution.py
 
-4. **Create Lifecycle Management Test Suite (Week 3-4)**
+1. **Create Lifecycle Management Test Suite (Week 3-4)**
+
    - ~30 tests for activation, swap, rollback
    - Health check integration
    - Error handling and recovery
    - Target: 90%+ coverage on lifecycle.py
 
----
+______________________________________________________________________
 
 ## Conclusion
 
@@ -277,6 +304,7 @@ Week 1 objectives have been **fully achieved**:
 The Oneiric project has successfully addressed its most critical security gaps and established a solid foundation for further testing and development. The security module is production-ready, though additional features (signature verification, thread safety) are still needed before the overall project can be considered production-ready.
 
 **Quality Improvement:**
+
 - Security Score: 68/100 → **85/100** (estimated, pending full audit)
 - Test Coverage: 0% → 26% (focused on security)
 - Critical Vulnerabilities: 4 → **1** (signature verification pending)

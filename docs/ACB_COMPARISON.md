@@ -4,7 +4,7 @@
 **Oneiric Version:** 0.1.0 (Alpha)
 **ACB Version:** 0.31.10 (Production)
 
----
+______________________________________________________________________
 
 ## Executive Summary
 
@@ -12,7 +12,7 @@
 
 **Key Insight:** Oneiric isn't competing with ACB—it's **extracting and formalizing** one of ACB's most powerful concepts (adapter resolution with stack-level precedence) into a reusable foundation that ACB and other frameworks could potentially adopt.
 
----
+______________________________________________________________________
 
 ## Project Metrics Comparison
 
@@ -28,11 +28,12 @@
 | **Production Ready** | ❌ No | ✅ Yes |
 | **Test Coverage** | ~0% | Comprehensive |
 
----
+______________________________________________________________________
 
 ## Architectural Philosophy
 
 ### Oneiric: Universal Resolution Layer
+
 **Focus:** Pure resolution and lifecycle management as infrastructure
 
 ```
@@ -57,6 +58,7 @@
 ```
 
 **Philosophy:**
+
 - **Single Responsibility**: Only resolver + lifecycle + remote loading
 - **Domain Agnostic**: Works with any pluggable domain (adapters, services, tasks, etc.)
 - **Stack-Level Precedence**: Z-index style layering for deterministic overrides
@@ -64,6 +66,7 @@
 - **Remote-First**: Built for distributed component delivery from day one
 
 ### ACB: Full Application Platform
+
 **Focus:** Complete batteries-included platform for building production apps
 
 ```
@@ -101,13 +104,14 @@
 ```
 
 **Philosophy:**
+
 - **Batteries Included**: Everything you need to build production apps
 - **Convention over Configuration**: Automatic discovery with minimal setup
 - **Multiple Patterns**: Simple, Repository, Specification, Advanced query styles
 - **Protocol-Based DI**: Clean interfaces for business logic (Services)
 - **Concrete Class DI**: Shared infrastructure for adapters
 
----
+______________________________________________________________________
 
 ## Core Feature Comparison
 
@@ -116,11 +120,11 @@
 | Feature | Oneiric | ACB |
 |---------|---------|-----|
 | **Adapter Discovery** | ✅ Metadata-driven with priority inference | ✅ Convention-based path discovery |
-| **Multi-Domain Support** | ✅ 5 domains (adapters/services/tasks/events/workflows) | ⚠️  Adapters are primary; others implicit |
-| **Stack-Level Precedence** | ✅ Z-index style layering (explicit) | ⚠️  Priority via path/config (implicit) |
-| **Precedence Rules** | ✅ 4-tier (override > priority > stack > order) | ⚠️  2-tier (config > convention) |
-| **Active/Shadowed Views** | ✅ Full registry with explain trace | ⚠️  Implicit via override |
-| **Hot-Swapping** | ✅ All domains with rollback | ⚠️  Limited adapter swapping |
+| **Multi-Domain Support** | ✅ 5 domains (adapters/services/tasks/events/workflows) | ⚠️ Adapters are primary; others implicit |
+| **Stack-Level Precedence** | ✅ Z-index style layering (explicit) | ⚠️ Priority via path/config (implicit) |
+| **Precedence Rules** | ✅ 4-tier (override > priority > stack > order) | ⚠️ 2-tier (config > convention) |
+| **Active/Shadowed Views** | ✅ Full registry with explain trace | ⚠️ Implicit via override |
+| **Hot-Swapping** | ✅ All domains with rollback | ⚠️ Limited adapter swapping |
 | **Remote Manifests** | ✅ Core feature with caching/digests | ❌ Not built-in |
 | **Explain/Why API** | ✅ Decision trace for every resolution | ❌ Not available |
 
@@ -132,8 +136,8 @@
 |---------|---------|-----|
 | **Init/Shutdown Hooks** | ✅ Pre/post swap with cleanup | ✅ Per-adapter init/cleanup |
 | **Health Checks** | ✅ Built into lifecycle with probes | ✅ Per-adapter health checks |
-| **Rollback on Failure** | ✅ Automatic with force override | ⚠️  Manual error handling |
-| **Status Snapshots** | ✅ Persisted lifecycle states | ⚠️  Runtime only |
+| **Rollback on Failure** | ✅ Automatic with force override | ⚠️ Manual error handling |
+| **Status Snapshots** | ✅ Persisted lifecycle states | ⚠️ Runtime only |
 | **Pause/Drain States** | ✅ Per-domain activity control | ❌ Not built-in |
 | **Cleanup Patterns** | ✅ Automatic resource cleanup | ✅ CleanupMixin pattern |
 
@@ -146,7 +150,7 @@
 | **Config System** | ✅ Pydantic-based YAML/TOML | ✅ Pydantic-based YAML |
 | **Per-Domain Settings** | ✅ Adapters/Services/Tasks/Events/Workflows | ✅ Per-adapter settings |
 | **Secrets Management** | ✅ Secrets hook with adapter | ✅ Dedicated secret adapters |
-| **Hot-Reload** | ✅ Config watchers trigger swaps | ⚠️  Manual reload |
+| **Hot-Reload** | ✅ Config watchers trigger swaps | ⚠️ Manual reload |
 | **Environment Overrides** | ✅ STACK_ORDER env var | ✅ Standard env vars |
 
 **Winner: Tie** - Both have strong configuration
@@ -156,10 +160,10 @@
 | Feature | Oneiric | ACB |
 |---------|---------|-----|
 | **Runtime Orchestrator** | ✅ Multi-domain watcher system | ❌ Manual startup |
-| **Background Services** | ⚠️  Via lifecycle manager | ✅ ServiceBase with lifecycle |
-| **Event System** | ⚠️  Bridge only (no impl) | ✅ Full pub/sub with retries |
-| **Task Queue** | ⚠️  Bridge only (no impl) | ✅ Multiple backends (memory/Redis/RabbitMQ) |
-| **Workflow Engine** | ⚠️  Bridge only (no impl) | ✅ State management + orchestration |
+| **Background Services** | ⚠️ Via lifecycle manager | ✅ ServiceBase with lifecycle |
+| **Event System** | ⚠️ Bridge only (no impl) | ✅ Full pub/sub with retries |
+| **Task Queue** | ⚠️ Bridge only (no impl) | ✅ Multiple backends (memory/Redis/RabbitMQ) |
+| **Workflow Engine** | ⚠️ Bridge only (no impl) | ✅ State management + orchestration |
 | **Long-Running Processes** | ✅ Orchestrator with health tracking | ✅ Services + Tasks |
 
 **Winner: ACB** - Production-ready orchestration
@@ -169,10 +173,10 @@
 | Feature | Oneiric | ACB |
 |---------|---------|-----|
 | **Structured Logging** | ✅ structlog integration | ✅ Loguru/Logly/structlog adapters |
-| **OpenTelemetry** | ✅ Tracing + metrics | ⚠️  Optional via monitoring adapters |
-| **Health Diagnostics** | ✅ CLI health/status commands | ⚠️  Per-adapter health checks |
+| **OpenTelemetry** | ✅ Tracing + metrics | ⚠️ Optional via monitoring adapters |
+| **Health Diagnostics** | ✅ CLI health/status commands | ⚠️ Per-adapter health checks |
 | **Runtime Metrics** | ✅ Remote sync telemetry | ✅ Performance services |
-| **Debug Tooling** | ⚠️  Basic logging | ✅ icecream, timeit, pprint |
+| **Debug Tooling** | ⚠️ Basic logging | ✅ icecream, timeit, pprint |
 
 **Winner: Tie** - Different strengths
 
@@ -181,7 +185,7 @@
 | Feature | Oneiric | ACB |
 |---------|---------|-----|
 | **CLI Framework** | ✅ Typer-based with 11 commands | ❌ Not built-in |
-| **List Components** | ✅ All domains with shadowed | ⚠️  Via import |
+| **List Components** | ✅ All domains with shadowed | ⚠️ Via import |
 | **Explain Decisions** | ✅ Why a component was chosen | ❌ Not available |
 | **Swap Commands** | ✅ Runtime swap per domain/key | ❌ Not built-in |
 | **Health Commands** | ✅ health/status/activity | ❌ Not built-in |
@@ -190,7 +194,7 @@
 
 **Winner: Oneiric** - CLI-first design
 
----
+______________________________________________________________________
 
 ## Domain Coverage Comparison
 
@@ -227,13 +231,14 @@
 
 **Total:** 20+ categories, 60+ implementations
 
----
+______________________________________________________________________
 
 ## Use Case Analysis
 
 ### When to Use Oneiric
 
 ✅ **Perfect For:**
+
 - Building a **new framework** that needs pluggable components
 - Adding **hot-swap capabilities** to existing systems
 - Need **deterministic precedence** across multiple packages/layers
@@ -243,6 +248,7 @@
 - Want **full visibility** into why components are selected (explain API)
 
 ❌ **Not Ideal For:**
+
 - Quick prototypes (too much infrastructure)
 - Single-implementation systems (overkill)
 - Projects that need actual adapters (Oneiric provides bridges, not implementations)
@@ -250,6 +256,7 @@
 ### When to Use ACB
 
 ✅ **Perfect For:**
+
 - **Production applications** that need batteries included
 - **Rapid development** with convention over configuration
 - Need **60+ ready-to-use adapters** (databases, storage, AI, etc.)
@@ -260,17 +267,19 @@
 - Projects using **FastBlocks** web framework
 
 ❌ **Not Ideal For:**
+
 - Simple scripts (too much framework)
 - Non-Python projects
 - Systems requiring very specific custom component resolution
 
----
+______________________________________________________________________
 
 ## Code Examples Comparison
 
 ### Simple Adapter Registration
 
 **Oneiric:**
+
 ```python
 from oneiric.adapters import AdapterMetadata, register_adapter_metadata
 from oneiric.core.resolution import Resolver
@@ -295,6 +304,7 @@ candidate = resolver.resolve("adapter", "cache")
 ```
 
 **ACB:**
+
 ```python
 from acb.adapters import import_adapter
 from acb.depends import depends
@@ -312,6 +322,7 @@ await cache.set("key", "value", ttl=300)
 ### Hot-Swapping Components
 
 **Oneiric:**
+
 ```python
 from oneiric.core.lifecycle import LifecycleManager
 
@@ -327,6 +338,7 @@ print(explanation.as_dict())
 ```
 
 **ACB:**
+
 ```python
 # Not a built-in pattern - would require manual implementation:
 # 1. Update settings/adapters.yml
@@ -339,6 +351,7 @@ print(explanation.as_dict())
 ### Multi-Domain Resolution
 
 **Oneiric:**
+
 ```python
 # All domains use identical resolution API
 service = await lifecycle.activate("service", "payment-processor")
@@ -352,6 +365,7 @@ workflow = await lifecycle.activate("workflow", "onboarding-v2")
 ```
 
 **ACB:**
+
 ```python
 # Adapters have special discovery; services/tasks/workflows are separate systems
 from acb.adapters import import_adapter
@@ -364,7 +378,7 @@ from acb.workflows import WorkflowService
 
 **Analysis:** Oneiric provides unified abstraction; ACB has domain-specific APIs
 
----
+______________________________________________________________________
 
 ## Security Comparison
 
@@ -392,11 +406,12 @@ from acb.workflows import WorkflowService
 
 **Overall: ✅ Production Ready**
 
----
+______________________________________________________________________
 
 ## Testing Comparison
 
 ### Oneiric Testing
+
 - **Test Files:** 1 (likely a placeholder or hello-world)
 - **Coverage:** ~0%
 - **Test Infrastructure:** Minimal
@@ -406,6 +421,7 @@ from acb.workflows import WorkflowService
 **Assessment:** Completely untested—major blocker for production use
 
 ### ACB Testing
+
 - **Test Files:** 2,206 comprehensive test files
 - **Coverage:** Extensive (configured in pyproject.toml)
 - **Test Categories:**
@@ -418,11 +434,12 @@ from acb.workflows import WorkflowService
 
 **Assessment:** Production-grade test coverage
 
----
+______________________________________________________________________
 
 ## Performance Comparison
 
 ### Oneiric Performance
+
 - **Startup:** Fast (~10-25ms for core)
 - **Resolution:** Optimized scoring algorithm with caching
 - **Memory:** Low overhead (minimal dependencies)
@@ -432,6 +449,7 @@ from acb.workflows import WorkflowService
 **Assessment:** Theoretically fast, but unverified
 
 ### ACB Performance (v0.19.0+)
+
 - **Startup:** ~80-150ms (60% improvement over v0.18.0)
 - **Adapter Loading:** ~10-25ms (60-80% faster)
 - **Memory Cache:** ~0.05-0.1ms operations (70% faster)
@@ -440,20 +458,23 @@ from acb.workflows import WorkflowService
 
 **Assessment:** Proven performance with real-world optimizations
 
----
+______________________________________________________________________
 
 ## Documentation Quality
 
 ### Oneiric Documentation
+
 **Score: 7/10**
 
 ✅ **Strengths:**
+
 - Excellent planning docs (NEW_ARCH_SPEC, GRAND_IMPLEMENTATION_PLAN)
 - Clear phase breakdown
 - Detailed CLI usage in README
 - Architecture specs well-documented
 
 ❌ **Weaknesses:**
+
 - Only 15% of functions have docstrings
 - No API reference documentation
 - No tutorials or getting started guide
@@ -461,9 +482,11 @@ from acb.workflows import WorkflowService
 - No examples directory
 
 ### ACB Documentation
+
 **Score: 9/10**
 
 ✅ **Strengths:**
+
 - 2,145-line comprehensive README with examples
 - Per-component README files (Actions, Adapters, Models, etc.)
 - Architecture decision records (ADR)
@@ -473,14 +496,16 @@ from acb.workflows import WorkflowService
 - Migration guides between versions
 
 ❌ **Weaknesses:**
+
 - Some newer features underdocumented
 - Could use more advanced patterns guide
 
----
+______________________________________________________________________
 
 ## Dependency Footprint
 
 ### Oneiric Dependencies
+
 **Core (6):** pydantic, structlog, opentelemetry-api, pyyaml, typer
 
 **Philosophy:** Minimal, focused dependencies
@@ -488,7 +513,9 @@ from acb.workflows import WorkflowService
 **Total:** 6 core dependencies
 
 ### ACB Dependencies
+
 **Core (50+):** Massive foundation including:
+
 - Async: anyio, aioconsole, nest-asyncio
 - Validation: pydantic, pydantic-settings, attrs, msgspec
 - DI: bevy
@@ -503,6 +530,7 @@ from acb.workflows import WorkflowService
 - Dev: crackerjack
 
 **Optional (400+):** Extensive ecosystem for:
+
 - AI/ML (15+ libraries)
 - Databases (20+ drivers)
 - Cloud (15+ SDKs)
@@ -512,11 +540,12 @@ from acb.workflows import WorkflowService
 
 **Total:** 50+ core + 400+ optional dependencies
 
----
+______________________________________________________________________
 
 ## Ecosystem & Community
 
 ### Oneiric Ecosystem
+
 - **Version:** 0.1.0 (first alpha)
 - **GitHub:** Not published yet
 - **Projects Using It:** 0 public projects
@@ -527,6 +556,7 @@ from acb.workflows import WorkflowService
 **Assessment:** Brand new, no ecosystem
 
 ### ACB Ecosystem
+
 - **Version:** 0.31.10 (31 releases)
 - **GitHub:** Public repository
 - **Projects Using It:**
@@ -538,13 +568,14 @@ from acb.workflows import WorkflowService
 
 **Assessment:** Established with real-world usage
 
----
+______________________________________________________________________
 
 ## Evolution & Roadmap
 
 ### Oneiric Roadmap (from docs)
 
 **Completed (Phases 1-3):**
+
 - ✅ Core resolution layer
 - ✅ Adapter modularization
 - ✅ Cross-domain alignment
@@ -553,6 +584,7 @@ from acb.workflows import WorkflowService
 - ✅ CLI tooling
 
 **Pending (Phases 4-7):**
+
 - ⏳ Plugin protocol & entry points
 - ⏳ Signature verification
 - ⏳ Advanced observability & resiliency
@@ -561,6 +593,7 @@ from acb.workflows import WorkflowService
 - ⏳ Capability negotiation
 
 **Future Enhancements:**
+
 - Middleware/pipeline adapters
 - Rate limiting & circuit breakers
 - State machine DSL for workflows
@@ -569,63 +602,71 @@ from acb.workflows import WorkflowService
 ### ACB Evolution (actual history)
 
 **v0.18.0-0.19.0:** Performance revolution
+
 - 60-80% startup improvement
 - Cache optimization
 - Lock-based initialization
 
 **v0.20.0:** Services layer introduction
+
 - Repository pattern with Unit of Work
 - Validation services
 - Protocol-based DI
 
 **v0.23.0:** Integration layer
+
 - MCP server for AI assistants
 - Universal component discovery
 - WebSocket dashboards
 
 **v0.31.10:** Current production state
+
 - Stable adapter system
 - Full orchestration (Events, Tasks, Workflows)
 - Comprehensive test coverage
 
----
+______________________________________________________________________
 
 ## Critical Assessment
 
 ### Oneiric Strengths
+
 1. **Innovative Resolution Semantics** - Best-in-class precedence model
-2. **Clean Architecture** - Single responsibility, well-designed
-3. **Hot-Swap First** - Built for dynamic runtime changes
-4. **CLI Excellence** - Excellent diagnostic tooling
-5. **Remote-Native** - Distributed components from day one
-6. **Explain API** - Unprecedented transparency in resolution
-7. **Future-Proof Design** - Modern Python 3.14, async-first
+1. **Clean Architecture** - Single responsibility, well-designed
+1. **Hot-Swap First** - Built for dynamic runtime changes
+1. **CLI Excellence** - Excellent diagnostic tooling
+1. **Remote-Native** - Distributed components from day one
+1. **Explain API** - Unprecedented transparency in resolution
+1. **Future-Proof Design** - Modern Python 3.14, async-first
 
 ### Oneiric Critical Weaknesses
+
 1. **Zero Test Coverage** - Showstopper for production (🔴 CRITICAL)
-2. **Security Vulnerabilities** - Arbitrary code execution possible (🔴 CRITICAL)
-3. **No Implementations** - Only bridges, no actual components
-4. **Unproven** - Zero production usage or community validation
-5. **Missing Core Features** - No signature verification, timeouts
-6. **Documentation Gaps** - Missing API docs, tutorials, examples
+1. **Security Vulnerabilities** - Arbitrary code execution possible (🔴 CRITICAL)
+1. **No Implementations** - Only bridges, no actual components
+1. **Unproven** - Zero production usage or community validation
+1. **Missing Core Features** - No signature verification, timeouts
+1. **Documentation Gaps** - Missing API docs, tutorials, examples
 
 ### ACB Strengths
+
 1. **Production Battle-Tested** - Real-world usage at scale
-2. **Comprehensive Testing** - 2,206 test files
-3. **60+ Adapters** - Immediate productivity
-4. **Full Platform** - Services, Events, Tasks, Workflows, MCP
-5. **Excellent Documentation** - Tutorials, examples, ADRs
-6. **Performance Optimized** - Proven benchmarks
-7. **Security Hardened** - Secrets management, validation, monitoring
+1. **Comprehensive Testing** - 2,206 test files
+1. **60+ Adapters** - Immediate productivity
+1. **Full Platform** - Services, Events, Tasks, Workflows, MCP
+1. **Excellent Documentation** - Tutorials, examples, ADRs
+1. **Performance Optimized** - Proven benchmarks
+1. **Security Hardened** - Secrets management, validation, monitoring
 
 ### ACB Critical Weaknesses
-1. **Complex Precedence** - Less sophisticated than Oneiric's model
-2. **No Hot-Swapping** - Runtime changes require manual work
-3. **Heavy Dependencies** - 400+ optional packages
-4. **Implicit Resolution** - No explain/why functionality
-5. **Python 3.13 Only** - Not on latest Python yet
 
----
+1. **Complex Precedence** - Less sophisticated than Oneiric's model
+1. **No Hot-Swapping** - Runtime changes require manual work
+1. **Heavy Dependencies** - 400+ optional packages
+1. **Implicit Resolution** - No explain/why functionality
+1. **Python 3.13 Only** - Not on latest Python yet
+
+______________________________________________________________________
 
 ## Integration Possibilities
 
@@ -634,6 +675,7 @@ from acb.workflows import WorkflowService
 **Answer: Potentially, but risky**
 
 **✅ Benefits:**
+
 - ACB gets deterministic stack-level precedence
 - Hot-swapping for all 60+ adapters
 - Explain API for debugging adapter selection
@@ -641,6 +683,7 @@ from acb.workflows import WorkflowService
 - Remote manifest delivery for adapters
 
 **❌ Risks:**
+
 - Breaking change for all ACB users
 - Oneiric needs security hardening first
 - Oneiric needs comprehensive testing
@@ -652,66 +695,72 @@ from acb.workflows import WorkflowService
 **Answer: Yes, as optional enhancement**
 
 **Approach:**
+
 1. Keep ACB's current adapter system as default
-2. Add Oneiric as optional "advanced resolution mode"
-3. Gradual migration path over multiple versions
-4. Use Oneiric for new Services/Tasks/Events/Workflows
-5. Maintain backward compatibility
+1. Add Oneiric as optional "advanced resolution mode"
+1. Gradual migration path over multiple versions
+1. Use Oneiric for new Services/Tasks/Events/Workflows
+1. Maintain backward compatibility
 
 **Timeline:**
+
 - Oneiric needs 6-12 months of hardening first
 - Security audit and testing
 - Production validation in smaller projects
 - Then ACB could consider adoption
 
----
+______________________________________________________________________
 
 ## Recommendations
 
 ### For Oneiric Project
 
 **Immediate (Next 2 Weeks):**
+
 1. 🔴 Fix critical security issues (factory allowlist, timeouts)
-2. 🔴 Write 50 core tests (resolver, lifecycle, remote)
-3. 🔴 Add signature verification for remote manifests
-4. 🟡 Complete API docstrings (target 80%)
-5. 🟡 Create examples directory with 5 use cases
+1. 🔴 Write 50 core tests (resolver, lifecycle, remote)
+1. 🔴 Add signature verification for remote manifests
+1. 🟡 Complete API docstrings (target 80%)
+1. 🟡 Create examples directory with 5 use cases
 
 **Short-Term (1-2 Months):**
-6. Create comprehensive tutorial documentation
-7. Build sample adapter implementations (not just bridges)
-8. Security audit with automated scanning
-9. Performance benchmarking suite
-10. Thread safety review and fixes
+6\. Create comprehensive tutorial documentation
+7\. Build sample adapter implementations (not just bridges)
+8\. Security audit with automated scanning
+9\. Performance benchmarking suite
+10\. Thread safety review and fixes
 
 **Long-Term (3-6 Months):**
-11. Production validation in real projects
-12. Community feedback and iteration
-13. Integration guide for ACB adoption
-14. Plugin protocol implementation
-15. Structured concurrency helpers
+11\. Production validation in real projects
+12\. Community feedback and iteration
+13\. Integration guide for ACB adoption
+14\. Plugin protocol implementation
+15\. Structured concurrency helpers
 
 ### For ACB Project
 
 **If Considering Oneiric Integration:**
+
 1. Monitor Oneiric's maturity over next 6-12 months
-2. Consider Oneiric for *new* domains (not existing adapters)
-3. Prototype optional "advanced resolution mode"
-4. Maintain backward compatibility as top priority
-5. Wait for Oneiric to reach 75/100 quality score
+1. Consider Oneiric for *new* domains (not existing adapters)
+1. Prototype optional "advanced resolution mode"
+1. Maintain backward compatibility as top priority
+1. Wait for Oneiric to reach 75/100 quality score
 
 **Immediate Improvements Inspired by Oneiric:**
-1. Add explain/why API to adapter selection
-2. Document adapter precedence rules more clearly
-3. Add hot-swap helper utilities
-4. Consider stack-level metadata for adapters
-5. Improve runtime component swapping patterns
 
----
+1. Add explain/why API to adapter selection
+1. Document adapter precedence rules more clearly
+1. Add hot-swap helper utilities
+1. Consider stack-level metadata for adapters
+1. Improve runtime component swapping patterns
+
+______________________________________________________________________
 
 ## Conclusion
 
 ### The Relationship
+
 Oneiric and ACB are **complementary**, not competitive:
 
 - **ACB** is a batteries-included application platform (like Django)
@@ -737,10 +786,11 @@ Oneiric and ACB are **complementary**, not competitive:
 **ACB** is **production-proven** with **excellent coverage** across all aspects of application development, but could benefit from Oneiric's more sophisticated resolution semantics.
 
 **Best Path Forward:**
+
 1. Harden Oneiric over next 6-12 months
-2. Use it in smaller projects to validate design
-3. Let ACB mature on current path
-4. Revisit integration once Oneiric hits production-ready status
-5. Consider Oneiric as foundation for ACB v2.0 or next-gen frameworks
+1. Use it in smaller projects to validate design
+1. Let ACB mature on current path
+1. Revisit integration once Oneiric hits production-ready status
+1. Consider Oneiric as foundation for ACB v2.0 or next-gen frameworks
 
 The world needs **both**: ACB for building apps today, Oneiric as the next-generation component resolution layer of tomorrow.

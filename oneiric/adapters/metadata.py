@@ -29,13 +29,26 @@ class AdapterMetadata(BaseModel):
     priority: Optional[int] = None
     source: CandidateSource = CandidateSource.LOCAL_PKG
     health: Optional[Callable[[], bool]] = None
+    owner: Optional[str] = None
+    requires_secrets: bool = False
+    settings_model: str | type[BaseModel] | None = None
     extras: dict[str, Any] = Field(default_factory=dict)
 
     def to_candidate(self) -> Candidate:
+        settings_model_path: Optional[str]
+        if isinstance(self.settings_model, str):
+            settings_model_path = self.settings_model
+        elif self.settings_model:
+            settings_model_path = f"{self.settings_model.__module__}.{self.settings_model.__name__}"
+        else:
+            settings_model_path = None
         metadata = {
             "version": self.version,
             "description": self.description,
             "capabilities": self.capabilities,
+            "owner": self.owner,
+            "requires_secrets": self.requires_secrets,
+            "settings_model": settings_model_path,
             **self.extras,
         }
         metadata = {key: value for key, value in metadata.items() if value not in (None, [], {})}

@@ -1,0 +1,3 @@
+# Override crackerjack to remove ONNXRuntime dependency for Python 3.14 compatibility
+crackerjack>=0.44.36
+# onnxruntime  # Omit this to make it unavailable to crackerjack

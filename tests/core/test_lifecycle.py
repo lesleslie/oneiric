@@ -17,6 +17,7 @@ from oneiric.core.lifecycle import (
     LifecycleError,
     LifecycleHooks,
     LifecycleManager,
+    LifecycleSafetyOptions,
     LifecycleStatus,
 )
 from oneiric.core.resolution import Candidate, CandidateSource, Resolver
@@ -174,12 +175,95 @@ class TestLifecycleActivation:
         )
 
         # Activation should fail
-        with pytest.raises(LifecycleError, match="Swap failed"):
+        with pytest.raises(LifecycleError, match="Health check failed"):
             await lifecycle.activate("adapter", "cache")
 
         # Status should show failure
         status = lifecycle.get_status("adapter", "cache")
         assert status.state == "failed"
+
+    @pytest.mark.asyncio
+    async def test_activate_records_swap_metric(self, monkeypatch):
+        """Successful activation records swap duration metrics."""
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+
+        resolver.register(
+            Candidate(
+                domain="adapter",
+                key="cache",
+                provider="redis",
+                factory=lambda: MockComponent("redis"),
+                source=CandidateSource.MANUAL,
+            )
+        )
+
+        calls = []
+        monkeypatch.setattr(
+            "oneiric.core.lifecycle.record_swap_duration",
+            lambda domain, key, provider, duration_ms, success: calls.append(
+                (domain, key, provider, success)
+            ),
+        )
+
+        await lifecycle.activate("adapter", "cache")
+
+        assert calls
+        assert calls[0] == ("adapter", "cache", "redis", True)
+
+    @pytest.mark.asyncio
+    async def test_swap_metrics_persist_on_status(self):
+        """LifecycleStatus captures swap latency samples."""
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        resolver.register(
+            Candidate(
+                domain="adapter",
+                key="cache",
+                provider="redis",
+                factory=lambda: MockComponent("redis"),
+            )
+        )
+
+        await lifecycle.activate("adapter", "cache")
+
+        status = lifecycle.get_status("adapter", "cache")
+        assert status is not None
+        assert status.successful_swaps == 1
+        assert status.failed_swaps == 0
+        assert status.last_swap_duration_ms is not None
+        assert len(status.recent_swap_durations_ms) == 1
+
+    @pytest.mark.asyncio
+    async def test_activate_failure_records_metric(self, monkeypatch):
+        """Failed activation still emits swap duration metric."""
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+
+        async def failing_health_check() -> bool:
+            return False
+
+        resolver.register(
+            Candidate(
+                domain="adapter",
+                key="cache",
+                provider="redis",
+                factory=lambda: MockComponent("redis"),
+                health=failing_health_check,
+                source=CandidateSource.MANUAL,
+            )
+        )
+
+        outcomes = []
+        monkeypatch.setattr(
+            "oneiric.core.lifecycle.record_swap_duration",
+            lambda domain, key, provider, duration_ms, success: outcomes.append(success),
+        )
+
+        with pytest.raises(LifecycleError):
+            await lifecycle.activate("adapter", "cache")
+
+        assert outcomes and outcomes[0] is False
 
     @pytest.mark.asyncio
     async def test_activate_with_force_skips_health_check(self):
@@ -388,7 +472,7 @@ class TestLifecycleHotSwap:
         await lifecycle.activate("adapter", "cache", provider="redis")
 
         # Try to swap to memcached (should fail and rollback)
-        with pytest.raises(LifecycleError, match="Swap failed"):
+        with pytest.raises(LifecycleError, match="Health check failed"):
             await lifecycle.swap("adapter", "cache", provider="memcached")
 
         # Should still be using redis (rollback)
@@ -435,6 +519,37 @@ class TestLifecycleHotSwap:
         # Force swap to memcached (skip health check)
         instance = await lifecycle.swap("adapter", "cache", provider="memcached", force=True)
         assert instance.name == "memcached"
+
+    @pytest.mark.asyncio
+    async def test_health_timeout_enforced(self):
+        """Lifecycle enforces health timeouts when configured."""
+        resolver = Resolver()
+        lifecycle = LifecycleManager(
+            resolver,
+            safety=LifecycleSafetyOptions(
+                activation_timeout=1.0,
+                health_timeout=0.01,
+                cleanup_timeout=1.0,
+                hook_timeout=1.0,
+            ),
+        )
+
+        async def slow_health():
+            await asyncio.sleep(0.05)
+            return True
+
+        resolver.register(
+            Candidate(
+                domain="adapter",
+                key="cache",
+                provider="redis",
+                factory=lambda: MockComponent("redis"),
+                health=slow_health,
+            )
+        )
+
+        with pytest.raises(LifecycleError, match="timed out"):
+            await lifecycle.activate("adapter", "cache")
 
 
 class TestLifecycleHooks:

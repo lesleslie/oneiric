@@ -1,0 +1,11 @@
+[project]
+name = "hello-oneiric-plugin"
+version = "0.1.0"
+description = "Sample Oneiric adapter/service plugin"
+dependencies = ["oneiric"]
+
+[project.entry-points."oneiric.adapters"]
+hello_adapter = "hello_oneiric_plugin:adapter_entries"
+
+[project.entry-points."oneiric.services"]
+hello_service = "hello_oneiric_plugin:service_entries"

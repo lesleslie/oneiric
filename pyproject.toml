@@ -5,32 +5,69 @@ description = "Universal resolution layer for pluggable components with hot-swap
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
-    "pydantic>=2.7",
-    "structlog>=24.1",
-    "opentelemetry-api>=1.24",
-    "pyyaml>=6.0.1",
-    "typer>=0.12",
-    "cryptography>=42.0",
+    "pydantic>=2.12.5",
+    "structlog>=25.5.0",
+    "opentelemetry-api>=1.38.0",
+    "pyyaml>=6.0.3",
+    "typer>=0.20.0",
+    "cryptography>=46.0.3",
+    "google-cloud-storage>=3.6.0",
+    "google-cloud-secret-manager>=2.25.0",
+    "httpx>=1.0.dev3",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
-    "pytest>=8.0",
-    "pytest-asyncio>=0.23",
-    "pytest-cov>=4.1",
-    "pytest-timeout>=2.2",
-    "freezegun>=1.4",
+    "pytest>=9.0.1",
+    "pytest-asyncio>=1.3.0",
+    "pytest-cov>=7.0.0",
+    "pytest-timeout>=2.4.0",
+    "freezegun>=1.5.5",
+    "uv-bump>=0.3.1",
+]
+actions = []
+adapters = [
+    "aiohttp>=3.13.2",
+    "aioboto3>=15.5.0",
+    "aiomysql>=0.3.2",
+    "aiosqlite>=0.21.0",
+    "asyncpg>=0.31.0",
+    "azure-storage-blob>=12.27.1",
+    "coredis>=5.3.0",
+    "logfire>=4.15.1",
+    "nats-py>=2.12.0",
+    "opentelemetry-exporter-otlp>=1.38.0",
+    "opentelemetry-sdk>=1.38.0",
+    "PyJWT>=2.8",
+    "sentry-sdk>=3.0.0a7",
 ]
 
 [project.scripts]
 oneiric = "oneiric.cli:main"
 
+[project.urls]
+ONNXRuntime-Compatibility = "https://github.com/microsoft/onnxruntime/issues/new"  # Placeholder for tracking ONNX compatibility
+
+
+[tool.uv]
+package = true
+prerelease = "allow"
+
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
+testpaths = [
+    "tests",
+]
+python_files = [
+    "test_*.py",
+]
+python_classes = [
+    "Test*",
+]
+python_functions = [
+    "test_*",
+]
 addopts = [
     "-v",
     "--strict-markers",
@@ -46,8 +83,13 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["oneiric"]
-omit = ["tests/*", "**/__pycache__/*"]
+source = [
+    "oneiric",
+]
+omit = [
+    "tests/*",
+    "**/__pycache__/*",
+]
 
 [tool.coverage.report]
 exclude_lines = [
@@ -57,4 +99,30 @@ exclude_lines = [
     "raise AssertionError",
     "raise NotImplementedError",
     "if TYPE_CHECKING:",
+]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 88
+fix = true
+unsafe-fixes = true
+show-fixes = true
+output-format = "full"
+
+[tool.ruff.format]
+"docstring - code-format" = true
+
+[tool.ruff.lint]
+extend-select = [
+    "C901",
+    "F",
+    "I",
+    "UP",
+]
+ignore = [
+    "E402",
+    "F821",
+]
+fixable = [
+    "ALL",
 ]

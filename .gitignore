@@ -11,3 +11,4 @@ wheels/
 
 # Runtime cache
 .oneiric_cache/
+/NOTES.md

@@ -17,6 +17,7 @@ import yaml
 
 from oneiric.core.config import RemoteSourceConfig, SecretsHook
 from oneiric.core.logging import get_logger
+from oneiric.core.resiliency import CircuitBreaker, CircuitBreakerOpen, run_with_retry
 from oneiric.core.resolution import Candidate, CandidateSource, Resolver
 
 from .models import RemoteManifest, RemoteManifestEntry
@@ -35,6 +36,25 @@ VALID_DOMAINS = {"adapter", "service", "task", "event", "workflow"}
 
 # Default HTTP timeout for remote fetches (30 seconds)
 DEFAULT_HTTP_TIMEOUT = 30.0
+
+_REMOTE_BREAKERS: Dict[str, CircuitBreaker] = {}
+
+
+def _breaker_key(url: str, cache_dir: str) -> str:
+    return f"{cache_dir}:{url}"
+
+
+def _breaker_for(config: RemoteSourceConfig, url: str) -> CircuitBreaker:
+    key = _breaker_key(url, config.cache_dir)
+    breaker = _REMOTE_BREAKERS.get(key)
+    if breaker is None:
+        breaker = CircuitBreaker(
+            name=f"remote:{url}",
+            failure_threshold=config.circuit_breaker_threshold,
+            recovery_time=config.circuit_breaker_reset,
+        )
+        _REMOTE_BREAKERS[key] = breaker
+    return breaker
 
 
 @dataclass
@@ -154,8 +174,27 @@ async def sync_remote_manifest(
         logger.info("remote-skip", reason="disabled")
         return None
 
+    breaker = _breaker_for(config, url)
     try:
-        return await _run_sync(resolver, config, url, secrets)
+        return await breaker.call(
+            lambda: _run_sync(
+                resolver,
+                config,
+                url,
+                secrets,
+                retry_attempts=config.max_retries,
+                retry_base_delay=config.retry_base_delay,
+                retry_max_delay=config.retry_max_delay,
+                retry_jitter=config.retry_jitter,
+            )
+        )
+    except CircuitBreakerOpen as exc:
+        logger.warning(
+            "remote-sync-circuit-open",
+            url=url,
+            retry_after=exc.retry_after,
+        )
+        return None
     except Exception as exc:
         error = str(exc)
         record_remote_failure(config.cache_dir, error)
@@ -182,10 +221,29 @@ async def remote_sync_loop(
         logger.info("remote-refresh-skip", reason="no-refresh-interval")
         return
 
+    breaker = _breaker_for(config, url)
     while True:
         await asyncio.sleep(interval)
         try:
-            await _run_sync(resolver, config, url, secrets)
+            await breaker.call(
+                lambda: _run_sync(
+                    resolver,
+                    config,
+                    url,
+                    secrets,
+                    retry_attempts=config.max_retries,
+                    retry_base_delay=config.retry_base_delay,
+                    retry_max_delay=config.retry_max_delay,
+                    retry_jitter=config.retry_jitter,
+                )
+            )
+        except CircuitBreakerOpen as exc:
+            logger.warning(
+                "remote-refresh-circuit-open",
+                url=url,
+                retry_after=exc.retry_after,
+            )
+            continue
         except Exception as exc:  # pragma: no cover - log and continue
             error = str(exc)
             logger.error(
@@ -202,9 +260,20 @@ async def _run_sync(
     config: RemoteSourceConfig,
     url: str,
     secrets: Optional[SecretsHook],
+    *,
+    retry_attempts: int,
+    retry_base_delay: float,
+    retry_max_delay: float,
+    retry_jitter: float,
 ) -> Optional[RemoteSyncResult]:
     headers = await _auth_headers(config, secrets)
-    manifest_data = _fetch_text(url, headers, verify_tls=config.verify_tls)
+    manifest_data = await run_with_retry(
+        lambda: _fetch_text(url, headers, verify_tls=config.verify_tls),
+        attempts=retry_attempts,
+        base_delay=retry_base_delay,
+        max_delay=retry_max_delay,
+        jitter=retry_jitter,
+    )
     manifest = _parse_manifest(manifest_data)
     artifact_manager = ArtifactManager(config.cache_dir, verify_tls=config.verify_tls)
 
@@ -227,7 +296,13 @@ async def _run_sync(
             continue
         artifact_path = None
         if entry.uri:
-            artifact_path = artifact_manager.fetch(entry.uri, entry.sha256, headers)
+            artifact_path = await run_with_retry(
+                lambda: artifact_manager.fetch(entry.uri, entry.sha256, headers),
+                attempts=retry_attempts,
+                base_delay=retry_base_delay,
+                max_delay=retry_max_delay,
+                jitter=retry_jitter,
+            )
         if entry.sha256:
             digest_checks += 1
         candidate = _candidate_from_entry(entry, artifact_path)
@@ -340,7 +415,11 @@ def _parse_manifest(text: str, *, verify_signature: bool = True) -> RemoteManife
 
 
 def _candidate_from_entry(entry: RemoteManifestEntry, artifact_path: Optional[Path]) -> Candidate:
+    """Convert manifest entry to Candidate with full metadata propagation (Stage 4 enhancement)."""
+    # Start with generic metadata from entry
     metadata = dict(entry.metadata)
+
+    # Core metadata
     metadata.update(
         {
             "remote_uri": entry.uri,
@@ -349,7 +428,44 @@ def _candidate_from_entry(entry: RemoteManifestEntry, artifact_path: Optional[Pa
             "source": "remote",
         }
     )
+
+    # Adapter-specific metadata (Stage 4)
+    if entry.capabilities:
+        metadata["capabilities"] = entry.capabilities
+    if entry.owner:
+        metadata["owner"] = entry.owner
+    metadata["requires_secrets"] = entry.requires_secrets
+    if entry.settings_model:
+        metadata["settings_model"] = entry.settings_model
+
+    # Action-specific metadata (Stage 4)
+    metadata["side_effect_free"] = entry.side_effect_free
+    if entry.timeout_seconds is not None:
+        metadata["timeout_seconds"] = entry.timeout_seconds
+    if entry.retry_policy:
+        metadata["retry_policy"] = entry.retry_policy
+
+    # Dependency constraints (Stage 4)
+    if entry.requires:
+        metadata["requires"] = entry.requires
+    if entry.conflicts_with:
+        metadata["conflicts_with"] = entry.conflicts_with
+
+    # Platform constraints (Stage 4)
+    if entry.python_version:
+        metadata["python_version"] = entry.python_version
+    if entry.os_platform:
+        metadata["os_platform"] = entry.os_platform
+
+    # Documentation (Stage 4)
+    if entry.license:
+        metadata["license"] = entry.license
+    if entry.documentation_url:
+        metadata["documentation_url"] = entry.documentation_url
+
+    # Filter out None values
     metadata = {key: value for key, value in metadata.items() if value is not None}
+
     return Candidate(
         domain=entry.domain,
         key=entry.key,

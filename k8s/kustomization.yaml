@@ -1,0 +1,56 @@
+# Kustomize configuration for Oneiric Kubernetes deployment
+# Usage: kubectl apply -k k8s/
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: oneiric
+
+# Common labels applied to all resources
+commonLabels:
+  app: oneiric
+  managed-by: kustomize
+
+# Resources in application order
+resources:
+  - 00-namespace.yaml
+  - 10-serviceaccount.yaml
+  - 20-configmap.yaml
+  - 21-configmap-settings.yaml
+  - 30-secret.yaml
+  - 40-pvc.yaml
+  - 50-deployment.yaml
+  - 60-service.yaml
+  - 61-service-lb.yaml
+  - 70-ingress.yaml
+  - 80-hpa.yaml
+  - 81-pdb.yaml
+  - 90-servicemonitor.yaml
+  - 91-prometheusrule.yaml
+
+# ConfigMap generator (alternative to static files)
+# configMapGenerator:
+#   - name: oneiric-config
+#     literals:
+#       - ONEIRIC_STACK_ORDER=production:100,staging:50,default:0
+#       - LOG_LEVEL=INFO
+
+# Secret generator (DO NOT commit actual secrets!)
+# secretGenerator:
+#   - name: oneiric-secrets
+#     literals:
+#       - api-key=placeholder
+
+# Images (override image tags)
+images:
+  - name: oneiric
+    newName: your-registry.com/oneiric
+    newTag: "0.1.0"
+
+# Replicas (override replica count)
+replicas:
+  - name: oneiric
+    count: 3
+
+# Namespace creation
+# Run: kubectl apply -k k8s/

@@ -5,11 +5,13 @@ hierarchical resolution, hot swap, plugins, and remote-delivered components whil
 keeping existing adapter functionality and actions utilities.
 
 ## Python Version
+
 - Target Python 3.14 if the toolchain and dependencies are available in CI/dev. If
   any critical deps lag, fall back to 3.13 and bump when they’re ready. Keep code
   3.13-clean so the switch is trivial.
 
 ## Recommendation: Clean-Slate Core, Reuse Adapters
+
 - Build a new core (resolution layer, lifecycle, observability, plugin/remote
   interfaces) from scratch instead of incrementally refactoring the current monolith.
 - Reuse existing adapter implementations by wrapping them in the new lifecycle/
@@ -17,22 +19,24 @@ keeping existing adapter functionality and actions utilities.
 - Actions utilities can stay; expose them via the new DI/context if needed.
 
 ## Clean-Slate Core Outline
-1) New core packages: `core/resolution`, `core/lifecycle`, `core/observability`,
+
+1. New core packages: `core/resolution`, `core/lifecycle`, `core/observability`,
    `core/plugins`, `core/runtime` (context/taskgroups/supervision).
-2) Candidate model + resolver (shared across adapters/services/tasks/events/workflows)
+1. Candidate model + resolver (shared across adapters/services/tasks/events/workflows)
    with precedence: config override > package priority > stack_level > last-write.
-3) Lifecycle contract (init/health/cleanup/pause-resume) with rollback on failed init.
-4) Structured concurrency helpers (TaskGroup/Nursery abstraction) and cancellation-
+1. Lifecycle contract (init/health/cleanup/pause-resume) with rollback on failed init.
+1. Structured concurrency helpers (TaskGroup/Nursery abstraction) and cancellation-
    safe utilities; make all background work go through them.
-5) Observability: OpenTelemetry tracing/metrics/logging fields standard across domains;
+1. Observability: OpenTelemetry tracing/metrics/logging fields standard across domains;
    health/readiness hooks.
-6) Plugin protocol: entry points or pluggy-style plus path-based discovery; optional
+1. Plugin protocol: entry points or pluggy-style plus path-based discovery; optional
    remote manifest source (signed wheel/zip) with cache.
-7) Hot swap: resolver-driven swap with health check, cleanup, rollback; config/manifest
+1. Hot swap: resolver-driven swap with health check, cleanup, rollback; config/manifest
    watcher triggers swaps.
-8) CLI/diagnostics: list/why/explain/swap per domain; active vs. shadowed.
+1. CLI/diagnostics: list/why/explain/swap per domain; active vs. shadowed.
 
 ## Migration of Existing Adapters/Actions
+
 - Wrap current adapters with the new lifecycle interface; register them via the
   resolver. Keep module code intact where possible.
 - Add `stack_level` metadata and provider IDs; map categories to keys.
@@ -40,6 +44,7 @@ keeping existing adapter functionality and actions utilities.
   needed.
 
 ## Optional/Forward-Looking Items Worth Doing Now
+
 - Capability tags + negotiation in the candidate model (select by capability + priority).
 - Middleware/pipeline adapters (wrappers/combinators) to compose behavior.
 - Retry/backoff + circuit breaker mixins as shared policies for outbound adapters.
@@ -52,6 +57,7 @@ keeping existing adapter functionality and actions utilities.
   ecosystem quickly.
 
 ## When to Fully Rebuild vs. Refactor
+
 - Rebuild core if:
   - You want the resolver/lifecycle/observability changes fast without fighting the
     existing large modules.

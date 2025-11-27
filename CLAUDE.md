@@ -13,6 +13,7 @@ Oneiric is a **universal resolution layer** for pluggable components with hot-sw
 ## Architecture
 
 ### Core Philosophy
+
 Oneiric provides **resolver + lifecycle + remote loading** as infrastructure, not as an application framework. It's domain-agnostic: the same resolution semantics work for adapters, services, tasks, events, workflows, or any custom domain.
 
 ### Key Components
@@ -51,21 +52,27 @@ oneiric/
 ```
 
 ### Resolution Precedence (4-tier)
+
 Components are resolved with this priority order (highest wins):
+
 1. **Explicit override** - `selections` in config (`adapters.yml`, `services.yml`, etc.)
-2. **Inferred priority** - From `ONEIRIC_STACK_ORDER` env var or path heuristics
-3. **Stack level** - Z-index style layering (candidate metadata `stack_level`)
-4. **Registration order** - Last registered wins (tie-breaker)
+1. **Inferred priority** - From `ONEIRIC_STACK_ORDER` env var or path heuristics
+1. **Stack level** - Z-index style layering (candidate metadata `stack_level`)
+1. **Registration order** - Last registered wins (tie-breaker)
 
 ### Lifecycle Flow
+
 ```
 resolve → instantiate → health_check → pre_swap_hook →
 bind_instance → cleanup_old → post_swap_hook
 ```
+
 Rollback occurs if instantiation or health check fails (unless `force=True`).
 
 ### Domain Bridges
+
 All domains (adapters, services, tasks, events, workflows) use the same `DomainBridge` pattern:
+
 - Registry-backed resolution via `Resolver`
 - Lifecycle activation via `LifecycleManager`
 - Config watchers trigger automatic swaps
@@ -101,6 +108,7 @@ uv run python -m oneiric.cli pause --resume --domain service status
 ```
 
 ### Shell Completions
+
 ```bash
 # Install Typer shell completions (one-time setup)
 uv run python -m oneiric.cli --install-completion
@@ -141,6 +149,7 @@ uv run pytest --cov=oneiric --cov-report=term
 ## Configuration
 
 ### Settings Structure
+
 ```
 settings/
 ├── app.yml         # Application metadata (not required)
@@ -152,11 +161,13 @@ settings/
 ```
 
 ### Environment Variables
+
 - `ONEIRIC_CONFIG` - Path to config directory
 - `ONEIRIC_STACK_ORDER` - Stack priority override (e.g., `sites,splashstand,fastblocks,oneiric`)
   - Format: `name1:priority1,name2:priority2` or `name1,name2` (auto-assigns 0, 10, 20...)
 
 ### Cache Directory
+
 - Default: `.oneiric_cache/`
 - Contains:
   - `lifecycle_status.json` - Per-domain lifecycle state
@@ -264,11 +275,12 @@ async with watcher:
 **DO NOT USE IN PRODUCTION** until these are fixed (see `docs/CRITICAL_AUDIT_REPORT.md`):
 
 1. **Arbitrary code execution** - `lifecycle.py:resolve_factory()` allows importing any module
-2. **Missing signature verification** - Remote manifests only check SHA256, no signatures
-3. **Path traversal** - Cache directory operations need path sanitization
-4. **No HTTP timeouts** - Remote fetches can hang indefinitely
+1. **Missing signature verification** - Remote manifests only check SHA256, no signatures
+1. **Path traversal** - Cache directory operations need path sanitization
+1. **No HTTP timeouts** - Remote fetches can hang indefinitely
 
 **Immediate fixes required:**
+
 - Add factory allowlist (whitelist permitted modules/functions)
 - Implement manifest signature verification
 - Add path sanitization for all cache file operations
@@ -292,18 +304,20 @@ The `docs/` directory contains comprehensive architecture and planning:
 ## Design Principles
 
 1. **Single Responsibility** - Oneiric only does resolution + lifecycle + remote loading
-2. **Domain Agnostic** - Same semantics work for any pluggable domain
-3. **Explicit Over Implicit** - Stack levels, priorities, and selection are transparent
-4. **Explain Everything** - Every resolution has a traceable decision path
-5. **Hot-Swap First** - Runtime changes without restarts
-6. **Remote Native** - Built for distributed component delivery
-7. **Type Safe** - Full Pydantic + type hints throughout
-8. **Async First** - All I/O is async, structured concurrency ready
+1. **Domain Agnostic** - Same semantics work for any pluggable domain
+1. **Explicit Over Implicit** - Stack levels, priorities, and selection are transparent
+1. **Explain Everything** - Every resolution has a traceable decision path
+1. **Hot-Swap First** - Runtime changes without restarts
+1. **Remote Native** - Built for distributed component delivery
+1. **Type Safe** - Full Pydantic + type hints throughout
+1. **Async First** - All I/O is async, structured concurrency ready
 
 ## Observability
 
 ### Structured Logging
+
 Uses `structlog` with domain/key/provider context:
+
 ```python
 logger.info(
     "swap-complete",
@@ -314,12 +328,15 @@ logger.info(
 ```
 
 ### OpenTelemetry
+
 Automatic spans for:
+
 - `resolver.resolve` - Component resolution
 - `lifecycle.swap` - Hot-swap operations
 - `remote.sync` - Remote manifest fetches
 
 ### CLI Diagnostics
+
 ```bash
 # Show active vs shadowed components
 uv run python -m oneiric.cli --demo list --domain adapter

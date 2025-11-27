@@ -36,3 +36,52 @@ entries:
     stack_level: 3
     metadata:
       description: Remote workflow definition
+  - domain: action
+    key: workflow.audit
+    provider: builtin-workflow-audit
+    factory: oneiric.actions.workflow:WorkflowAuditAction
+    stack_level: 3
+    metadata:
+      description: Builtin workflow audit kit registered remotely
+  - domain: action
+    key: workflow.notify
+    provider: builtin-workflow-notify
+    factory: oneiric.actions.workflow:WorkflowNotifyAction
+    stack_level: 3
+    metadata:
+      description: Builtin workflow notify kit registered remotely
+  - domain: action
+    key: workflow.retry
+    provider: builtin-workflow-retry
+    factory: oneiric.actions.workflow:WorkflowRetryAction
+    stack_level: 3
+    metadata:
+      description: Builtin workflow retry kit registered remotely
+  - domain: action
+    key: http.fetch
+    provider: builtin-http-fetch
+    factory: oneiric.actions.http:HttpFetchAction
+    stack_level: 3
+    metadata:
+      description: HTTP fetch action with httpx backing
+  - domain: action
+    key: security.signature
+    provider: builtin-security-signature
+    factory: oneiric.actions.security:SecuritySignatureAction
+    stack_level: 3
+    metadata:
+      description: Security signature helper action
+  - domain: action
+    key: data.transform
+    provider: builtin-data-transform
+    factory: oneiric.actions.data:DataTransformAction
+    stack_level: 3
+    metadata:
+      description: Data transformation helper registered remotely
+  - domain: action
+    key: debug.console
+    provider: builtin-debug-console
+    factory: oneiric.actions.debug:DebugConsoleAction
+    stack_level: 3
+    metadata:
+      description: Debug console helper action

@@ -25,6 +25,7 @@ class TestRuntimeHealthSnapshot:
         assert snapshot.orchestrator_pid is None
         assert snapshot.updated_at is None
         assert snapshot.last_remote_registered is None
+        assert snapshot.last_remote_duration_ms is None
         # These fields have None defaults with type: ignore
         assert snapshot.last_remote_per_domain is None
         assert snapshot.last_remote_skipped is None
@@ -42,6 +43,7 @@ class TestRuntimeHealthSnapshot:
             last_remote_registered=10,
             last_remote_per_domain={"adapter": 5, "service": 5},
             last_remote_skipped=2,
+            last_remote_duration_ms=123.4,
             activity_state={
                 "adapter:cache": {"paused": False, "draining": False},
             },
@@ -54,6 +56,7 @@ class TestRuntimeHealthSnapshot:
         assert snapshot.last_remote_registered == 10
         assert snapshot.last_remote_per_domain == {"adapter": 5, "service": 5}
         assert snapshot.last_remote_skipped == 2
+        assert snapshot.last_remote_duration_ms == 123.4
 
     def test_as_dict(self):
         """RuntimeHealthSnapshot.as_dict() serializes to dict."""
@@ -89,6 +92,7 @@ class TestLoadRuntimeHealth:
             "last_remote_per_domain": {"adapter": 5},
             "last_remote_skipped": 2,
             "updated_at": "2025-01-15T10:00:00Z",
+            "last_remote_duration_ms": 250.0,
         }
         health_file.write_text(json.dumps(health_data))
 
@@ -99,6 +103,7 @@ class TestLoadRuntimeHealth:
         assert snapshot.orchestrator_pid == 12345
         assert snapshot.last_remote_registered == 10
         assert snapshot.last_remote_per_domain == {"adapter": 5}
+        assert snapshot.last_remote_duration_ms == 250.0
 
     def test_load_from_nonexistent_file(self, tmp_path):
         """load_runtime_health() returns defaults if file missing."""
