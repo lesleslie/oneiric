@@ -1,0 +1,482 @@
+# Prometheus Alert Rules for Oneiric
+# Version: 1.0
+# Last Updated: 2025-11-26
+#
+# Alert severity levels:
+# - critical: Pages on-call, requires immediate action (SLA impact)
+# - warning: Notifies team channel, investigate within 4 hours
+# - info: Logs only, informational (no action required)
+
+groups:
+  # Critical alerts - Page on-call immediately
+  - name: oneiric_critical_alerts
+    interval: 15s
+    rules:
+      # Resolution layer failures
+      - alert: OneiricResolutionFailureRateHigh
+        expr: |
+          (1 - oneiric:resolution_success_rate_global:5m) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          component: resolver
+          team: platform
+          sla_impact: high
+        annotations:
+          summary: "Oneiric resolution failure rate is {{ $value | humanizePercentage }}"
+          description: |
+            Resolution failures exceed 5% threshold across all domains.
+            Current failure rate: {{ $value | humanizePercentage }}
+            This indicates components cannot be discovered/resolved.
+          impact: "User requests may fail, degraded service availability"
+          runbook_url: "https://docs.oneiric.io/runbooks/resolution-failures"
+          dashboard_url: "http://grafana:3000/d/oneiric-resolution"
+          grafana_panel: "resolution-success-rate"
+
+      # Lifecycle swap failures
+      - alert: OneiricLifecycleSwapFailureRateHigh
+        expr: |
+          (1 - oneiric:lifecycle_swap_success_rate:5m) > 0.10
+        for: 2m
+        labels:
+          severity: critical
+          component: lifecycle
+          team: platform
+          sla_impact: high
+        annotations:
+          summary: "Oneiric swap failure rate is {{ $value | humanizePercentage }}"
+          description: |
+            Hot-swap operations failing at {{ $value | humanizePercentage }} rate.
+            This prevents configuration updates and deployments.
+          impact: "Cannot deploy updates, stuck on old component versions"
+          runbook_url: "https://docs.oneiric.io/runbooks/swap-failures"
+          dashboard_url: "http://grafana:3000/d/oneiric-lifecycle"
+
+      # Remote sync consecutive failures
+      - alert: OneiricRemoteSyncConsecutiveFailures
+        expr: |
+          oneiric_remote_sync_total{outcome="failed"}
+          - oneiric_remote_sync_total{outcome="failed"} offset 5m >= 3
+        for: 1m
+        labels:
+          severity: critical
+          component: remote
+          team: platform
+          sla_impact: medium
+        annotations:
+          summary: "Oneiric remote sync has failed 3+ consecutive times"
+          description: |
+            Remote manifest sync failing repeatedly for source: {{ $labels.source }}
+            Cannot fetch new components or updates from remote registry.
+          impact: "Stale components, missing security updates, cannot pull new artifacts"
+          runbook_url: "https://docs.oneiric.io/runbooks/remote-sync-failures"
+          dashboard_url: "http://grafana:3000/d/oneiric-remote"
+
+      # Digest verification failures (security)
+      - alert: OneiricDigestVerificationFailed
+        expr: |
+          rate(oneiric_remote_digest_checks_total{outcome="failed"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          component: security
+          team: security
+          sla_impact: critical
+        annotations:
+          summary: "Oneiric artifact digest verification failed"
+          description: |
+            SHA256 digest mismatch detected for cached artifacts.
+            Possible cache corruption or supply chain attack.
+            IMMEDIATE INVESTIGATION REQUIRED.
+          impact: "Potential security breach, corrupted artifacts, supply chain compromise"
+          runbook_url: "https://docs.oneiric.io/runbooks/cache-corruption"
+          security_advisory: "https://docs.oneiric.io/security/digest-failures"
+
+      # Signature verification failures (critical security)
+      - alert: OneiricSignatureVerificationFailed
+        expr: |
+          rate(oneiric_remote_signature_verifications_total{outcome="failed"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          component: security
+          team: security
+          sla_impact: critical
+        annotations:
+          summary: "Oneiric manifest signature verification failed"
+          description: |
+            ED25519 signature verification failed for remote manifest.
+            Possible manifest tampering, MITM attack, or key rotation needed.
+            IMMEDIATE INVESTIGATION REQUIRED.
+          impact: "Potential security breach, untrusted manifests, supply chain attack"
+          runbook_url: "https://docs.oneiric.io/runbooks/signature-verification"
+          security_advisory: "https://docs.oneiric.io/security/signature-failures"
+
+      # Resolution latency SLA breach
+      - alert: OneiricResolutionLatencySLABreach
+        expr: |
+          oneiric:resolution_latency_p99:5m > 0.5
+        for: 5m
+        labels:
+          severity: critical
+          component: resolver
+          team: performance
+          sla_impact: high
+        annotations:
+          summary: "Oneiric P99 resolution latency is {{ $value }}s (SLA: 100ms)"
+          description: |
+            Resolution latency severely degraded, 5x above SLA.
+            P99: {{ $value }}s (target: 100ms)
+          impact: "Slow application startup, request timeout risks"
+          runbook_url: "https://docs.oneiric.io/runbooks/extreme-latency"
+
+      # Memory exhaustion risk
+      - alert: OneiricActiveInstancesExtremelyHigh
+        expr: |
+          oneiric:system_active_instances_total:5m > 200
+        for: 5m
+        labels:
+          severity: critical
+          component: system
+          team: platform
+          sla_impact: high
+        annotations:
+          summary: "{{ $value }} active instances (risk of memory exhaustion)"
+          description: |
+            Extremely high number of active component instances.
+            Estimated memory: {{ $value | humanize1024 }}MB
+            Risk of OOMKiller in Kubernetes or memory exhaustion.
+          impact: "Application crash, OOMKilled pods, service unavailability"
+          runbook_url: "https://docs.oneiric.io/runbooks/memory-exhaustion"
+
+  # Warning alerts - Notify team channel, investigate within 4 hours
+  - name: oneiric_warning_alerts
+    interval: 30s
+    rules:
+      # Resolution latency degraded
+      - alert: OneiricResolutionLatencyHigh
+        expr: |
+          oneiric:resolution_latency_p99:5m > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: resolver
+          team: performance
+        annotations:
+          summary: "Oneiric P99 resolution latency is {{ $value }}s"
+          description: |
+            Resolution latency exceeds 100ms SLO.
+            P99: {{ $value }}s (target: < 100ms)
+            Investigate resolver performance.
+          impact: "Slower application startup, degraded user experience"
+          runbook_url: "https://docs.oneiric.io/runbooks/high-latency"
+          dashboard_url: "http://grafana:3000/d/oneiric-resolution"
+
+      # Slow swap operations
+      - alert: OneiricSwapDurationHigh
+        expr: |
+          oneiric:lifecycle_swap_latency_p95:5m > 5000
+        for: 5m
+        labels:
+          severity: warning
+          component: lifecycle
+          team: platform
+        annotations:
+          summary: "Oneiric P95 swap latency is {{ $value }}ms"
+          description: |
+            Hot-swap operations taking longer than 5s threshold.
+            P95: {{ $value }}ms (target: < 5s)
+            Slow health checks or initialization.
+          impact: "Delayed configuration updates, slow deployments"
+          runbook_url: "https://docs.oneiric.io/runbooks/slow-swaps"
+          dashboard_url: "http://grafana:3000/d/oneiric-lifecycle"
+
+      # Health check failures
+      - alert: OneiricHealthCheckFailuresHigh
+        expr: |
+          rate(oneiric_lifecycle_health_check_failures_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: lifecycle
+          team: platform
+        annotations:
+          summary: "Oneiric health check failure rate is {{ $value }}/sec"
+          description: |
+            Health checks failing frequently for provider: {{ $labels.provider }}
+            Failure rate: {{ $value }}/sec
+            May cause rollbacks or prevent swaps.
+          impact: "Cannot activate new components, deployment blocked"
+          runbook_url: "https://docs.oneiric.io/runbooks/health-check-failures"
+
+      # Remote sync slow
+      - alert: OneiricRemoteSyncSlow
+        expr: |
+          oneiric:remote_sync_latency_p99:5m > 30
+        for: 5m
+        labels:
+          severity: warning
+          component: remote
+          team: infrastructure
+        annotations:
+          summary: "Oneiric P99 remote sync latency is {{ $value }}s"
+          description: |
+            Remote manifest sync exceeds latency budget.
+            P99: {{ $value }}s (budget: 30s)
+            Source: {{ $labels.source }}
+            Check network or remote endpoint performance.
+          impact: "Delayed artifact updates, slow refresh loop"
+          runbook_url: "https://docs.oneiric.io/runbooks/slow-remote-sync"
+          dashboard_url: "http://grafana:3000/d/oneiric-remote"
+
+      # Cache growing rapidly
+      - alert: OneiricCacheSizeGrowingRapidly
+        expr: |
+          rate(oneiric_system_cache_size_bytes[1h]) > 100 * 1024 * 1024
+        for: 30m
+        labels:
+          severity: warning
+          component: system
+          team: platform
+        annotations:
+          summary: "Oneiric cache growing at {{ $value | humanize1024 }}B/sec"
+          description: |
+            Cache growth rate: {{ $value | humanize1024 }}B/sec
+            Exceeds 100MB/hour threshold, cleanup may be needed.
+            Current size: {{ query "oneiric_system_cache_size_bytes" | first | value | humanize1024 }}B
+          impact: "Disk space exhaustion risk, performance degradation"
+          runbook_url: "https://docs.oneiric.io/runbooks/cache-cleanup"
+
+      # High number of shadowed components
+      - alert: OneiricShadowedComponentsHigh
+        expr: |
+          sum(oneiric_resolution_shadowed_total) > 50
+        for: 10m
+        labels:
+          severity: warning
+          component: resolver
+          team: platform
+        annotations:
+          summary: "Oneiric has {{ $value }} shadowed components"
+          description: |
+            Large number of inactive (shadowed) candidates registered.
+            Total shadowed: {{ $value }}
+            Review registrations, may indicate duplicate or stale entries.
+          impact: "Memory overhead, slower resolution, confusing diagnostics"
+          runbook_url: "https://docs.oneiric.io/runbooks/shadowed-cleanup"
+
+      # Rollback rate elevated
+      - alert: OneiricRollbackRateHigh
+        expr: |
+          rate(oneiric_lifecycle_swap_total{outcome="rollback"}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          component: lifecycle
+          team: platform
+        annotations:
+          summary: "Rollback rate is {{ $value }}/sec"
+          description: |
+            Elevated rollback rate indicates failing swaps.
+            Rate: {{ $value }}/sec
+            Investigate root cause of activation failures.
+          impact: "Cannot deploy updates, stuck on old versions"
+          runbook_url: "https://docs.oneiric.io/runbooks/rollback-investigation"
+
+      # Resolution failures by domain
+      - alert: OneiricResolutionFailuresByDomain
+        expr: |
+          (1 - oneiric:resolution_success_rate:5m) > 0.10
+        for: 5m
+        labels:
+          severity: warning
+          component: resolver
+          team: platform
+        annotations:
+          summary: "Oneiric resolution failures in {{ $labels.domain }}: {{ $value | humanizePercentage }}"
+          description: |
+            Domain-specific resolution failures detected.
+            Domain: {{ $labels.domain }}
+            Failure rate: {{ $value | humanizePercentage }}
+          impact: "Specific domain unavailable, partial service degradation"
+          runbook_url: "https://docs.oneiric.io/runbooks/domain-failures"
+
+      # Swap failures by domain
+      - alert: OneiricSwapFailuresByDomain
+        expr: |
+          (1 - oneiric:lifecycle_swap_success_rate_by_domain:5m) > 0.20
+        for: 5m
+        labels:
+          severity: warning
+          component: lifecycle
+          team: platform
+        annotations:
+          summary: "Oneiric swap failures in {{ $labels.domain }}: {{ $value | humanizePercentage }}"
+          description: |
+            Domain-specific swap failures detected.
+            Domain: {{ $labels.domain }}
+            Failure rate: {{ $value | humanizePercentage }}
+          impact: "Cannot update components in this domain"
+          runbook_url: "https://docs.oneiric.io/runbooks/domain-swap-failures"
+
+  # Info alerts - Informational, no immediate action
+  - name: oneiric_info_alerts
+    interval: 60s
+    rules:
+      # Application restarted
+      - alert: OneiricRestarted
+        expr: |
+          oneiric_system_uptime_seconds < 300
+        for: 1m
+        labels:
+          severity: info
+          component: system
+          team: platform
+        annotations:
+          summary: "Oneiric application restarted"
+          description: |
+            Uptime: {{ $value }}s (< 5 minutes)
+            Recently restarted or deployed.
+            Monitor for post-restart issues.
+          impact: "None (expected after deployment)"
+
+      # Components paused (maintenance mode)
+      - alert: OneiricComponentsPaused
+        expr: |
+          oneiric:activity_paused_total:5m > 0
+        for: 5m
+        labels:
+          severity: info
+          component: activity
+          team: platform
+        annotations:
+          summary: "{{ $value }} Oneiric components are paused"
+          description: |
+            Components in maintenance/paused state: {{ $value }}
+            This is expected during maintenance windows.
+            Verify maintenance is intentional.
+          impact: "Paused components won't hot-swap"
+
+      # Components draining
+      - alert: OneiricComponentsDraining
+        expr: |
+          oneiric:activity_draining_total:5m > 0
+        for: 5m
+        labels:
+          severity: info
+          component: activity
+          team: platform
+        annotations:
+          summary: "{{ $value }} Oneiric components are draining"
+          description: |
+            Components in draining state: {{ $value }}
+            Waiting for in-flight operations to complete.
+          impact: "Swaps delayed until draining completes"
+
+      # First remote sync after restart
+      - alert: OneiricRemoteSyncInitial
+        expr: |
+          oneiric_remote_sync_total < 2 and oneiric_system_uptime_seconds < 600
+        for: 1m
+        labels:
+          severity: info
+          component: remote
+          team: platform
+        annotations:
+          summary: "Oneiric performing initial remote sync"
+          description: |
+            Initial remote manifest sync in progress.
+            This is expected after restart.
+          impact: "None (normal bootstrap)"
+
+      # Cache size milestone
+      - alert: OneiricCacheSizeMilestone
+        expr: |
+          oneiric_system_cache_size_bytes > 5 * 1024 * 1024 * 1024
+        for: 5m
+        labels:
+          severity: info
+          component: system
+          team: platform
+        annotations:
+          summary: "Oneiric cache size exceeded 5GB"
+          description: |
+            Cache size: {{ $value | humanize1024 }}B
+            Consider implementing cleanup policy.
+          impact: "None (informational)"
+
+      # High throughput milestone
+      - alert: OneiricHighThroughput
+        expr: |
+          oneiric:resolution_throughput_global:5m > 100
+        for: 5m
+        labels:
+          severity: info
+          component: resolver
+          team: platform
+        annotations:
+          summary: "Oneiric handling {{ $value }}/sec resolution requests"
+          description: |
+            High throughput detected: {{ $value }}/sec
+            Monitor for resource constraints.
+          impact: "None (informational)"
+
+  # SLO breach alerts (error budget)
+  - name: oneiric_slo_alerts
+    interval: 60s
+    rules:
+      # Resolution SLO breach (99% success, P99 < 100ms)
+      - alert: OneiricResolutionSLOBreach
+        expr: |
+          (oneiric:sli_resolution_latency:5m + oneiric:sli_resolution_success:5m) < 2
+        for: 10m
+        labels:
+          severity: critical
+          component: resolver
+          team: platform
+          sla_impact: high
+        annotations:
+          summary: "Oneiric resolution SLO breached"
+          description: |
+            One or more resolution SLIs failing:
+            - Success rate: {{ query "oneiric:resolution_success_rate_global:5m" | first | value | humanizePercentage }} (target: > 99%)
+            - P99 latency: {{ query "oneiric:resolution_latency_p99:5m" | first | value }}s (target: < 100ms)
+          impact: "SLA breach, error budget consumption"
+          runbook_url: "https://docs.oneiric.io/runbooks/slo-resolution"
+
+      # Lifecycle SLO breach (95% success, P95 < 5s)
+      - alert: OneiricLifecycleSLOBreach
+        expr: |
+          (oneiric:sli_lifecycle_swap_latency:5m + oneiric:sli_lifecycle_swap_success:5m) < 2
+        for: 10m
+        labels:
+          severity: critical
+          component: lifecycle
+          team: platform
+          sla_impact: high
+        annotations:
+          summary: "Oneiric lifecycle SLO breached"
+          description: |
+            One or more lifecycle SLIs failing:
+            - Swap success rate: {{ query "oneiric:lifecycle_swap_success_rate:5m" | first | value | humanizePercentage }} (target: > 95%)
+            - P95 latency: {{ query "oneiric:lifecycle_swap_latency_p95:5m" | first | value }}ms (target: < 5s)
+          impact: "SLA breach, error budget consumption"
+          runbook_url: "https://docs.oneiric.io/runbooks/slo-lifecycle"
+
+      # Remote sync SLO breach (99% success, P99 < 30s)
+      - alert: OneiricRemoteSyncSLOBreach
+        expr: |
+          (oneiric:sli_remote_sync_latency:5m + oneiric:sli_remote_sync_success:5m) < 2
+        for: 10m
+        labels:
+          severity: warning
+          component: remote
+          team: infrastructure
+        annotations:
+          summary: "Oneiric remote sync SLO breached"
+          description: |
+            One or more remote sync SLIs failing:
+            - Sync success rate: {{ query "oneiric:remote_sync_success_rate:5m" | first | value | humanizePercentage }} (target: > 99%)
+            - P99 latency: {{ query "oneiric:remote_sync_latency_p99:5m" | first | value }}s (target: < 30s)
+          impact: "SLA impact (low priority), delayed updates"
+          runbook_url: "https://docs.oneiric.io/runbooks/slo-remote"

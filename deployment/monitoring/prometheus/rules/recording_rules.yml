@@ -1,0 +1,304 @@
+# Prometheus Recording Rules for Oneiric
+# Version: 1.0
+# Last Updated: 2025-11-26
+#
+# Recording rules pre-compute frequently needed expressions to:
+# - Reduce dashboard query latency
+# - Simplify complex PromQL in alerts
+# - Aggregate metrics for long-term trends
+
+groups:
+  # Resolution metrics aggregation
+  - name: oneiric_resolution_aggregates
+    interval: 30s
+    rules:
+      # Resolution success rate by domain (5min window)
+      - record: oneiric:resolution_success_rate:5m
+        expr: |
+          sum(rate(oneiric_resolution_total{outcome="success"}[5m])) by (domain)
+          /
+          sum(rate(oneiric_resolution_total[5m])) by (domain)
+
+      # Overall resolution success rate
+      - record: oneiric:resolution_success_rate_global:5m
+        expr: |
+          sum(rate(oneiric_resolution_total{outcome="success"}[5m]))
+          /
+          sum(rate(oneiric_resolution_total[5m]))
+
+      # P50 resolution latency by domain
+      - record: oneiric:resolution_latency_p50:5m
+        expr: |
+          histogram_quantile(0.50,
+            sum(rate(oneiric_resolution_duration_seconds_bucket[5m])) by (domain, le)
+          )
+
+      # P95 resolution latency by domain
+      - record: oneiric:resolution_latency_p95:5m
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(oneiric_resolution_duration_seconds_bucket[5m])) by (domain, le)
+          )
+
+      # P99 resolution latency by domain (SLO metric)
+      - record: oneiric:resolution_latency_p99:5m
+        expr: |
+          histogram_quantile(0.99,
+            sum(rate(oneiric_resolution_duration_seconds_bucket[5m])) by (domain, le)
+          )
+
+      # Resolution throughput (requests/sec) by domain
+      - record: oneiric:resolution_throughput:5m
+        expr: |
+          sum(rate(oneiric_resolution_total[5m])) by (domain)
+
+      # Total resolution throughput
+      - record: oneiric:resolution_throughput_global:5m
+        expr: |
+          sum(rate(oneiric_resolution_total[5m]))
+
+      # Average resolution latency by domain
+      - record: oneiric:resolution_latency_avg:5m
+        expr: |
+          sum(rate(oneiric_resolution_duration_seconds_sum[5m])) by (domain)
+          /
+          sum(rate(oneiric_resolution_duration_seconds_count[5m])) by (domain)
+
+  # Lifecycle metrics aggregation
+  - name: oneiric_lifecycle_aggregates
+    interval: 30s
+    rules:
+      # Swap success rate (5min window)
+      - record: oneiric:lifecycle_swap_success_rate:5m
+        expr: |
+          sum(rate(oneiric_lifecycle_swap_total{outcome="success"}[5m]))
+          /
+          sum(rate(oneiric_lifecycle_swap_total[5m]))
+
+      # Swap success rate by domain
+      - record: oneiric:lifecycle_swap_success_rate_by_domain:5m
+        expr: |
+          sum(rate(oneiric_lifecycle_swap_total{outcome="success"}[5m])) by (domain)
+          /
+          sum(rate(oneiric_lifecycle_swap_total[5m])) by (domain)
+
+      # P50 swap latency
+      - record: oneiric:lifecycle_swap_latency_p50:5m
+        expr: |
+          histogram_quantile(0.50,
+            sum(rate(oneiric_lifecycle_swap_duration_ms_bucket[5m])) by (domain, le)
+          )
+
+      # P95 swap latency (SLO metric)
+      - record: oneiric:lifecycle_swap_latency_p95:5m
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(oneiric_lifecycle_swap_duration_ms_bucket[5m])) by (domain, le)
+          )
+
+      # P99 swap latency
+      - record: oneiric:lifecycle_swap_latency_p99:5m
+        expr: |
+          histogram_quantile(0.99,
+            sum(rate(oneiric_lifecycle_swap_duration_ms_bucket[5m])) by (domain, le)
+          )
+
+      # Health check failure rate (failures/sec)
+      - record: oneiric:lifecycle_health_failures:5m
+        expr: |
+          sum(rate(oneiric_lifecycle_health_check_failures_total[5m]))
+
+      # Health check failure rate by provider
+      - record: oneiric:lifecycle_health_failures_by_provider:5m
+        expr: |
+          sum(rate(oneiric_lifecycle_health_check_failures_total[5m])) by (provider)
+
+      # Rollback rate (rollbacks/sec)
+      - record: oneiric:lifecycle_rollback_rate:5m
+        expr: |
+          sum(rate(oneiric_lifecycle_swap_total{outcome="rollback"}[5m]))
+
+      # Average swap latency by domain
+      - record: oneiric:lifecycle_swap_latency_avg:5m
+        expr: |
+          sum(rate(oneiric_lifecycle_swap_duration_ms_sum[5m])) by (domain)
+          /
+          sum(rate(oneiric_lifecycle_swap_duration_ms_count[5m])) by (domain)
+
+  # Activity state aggregation
+  - name: oneiric_activity_aggregates
+    interval: 30s
+    rules:
+      # Total paused components across all domains
+      - record: oneiric:activity_paused_total:5m
+        expr: |
+          sum(oneiric_activity_paused_components)
+
+      # Total draining components
+      - record: oneiric:activity_draining_total:5m
+        expr: |
+          sum(oneiric_activity_draining_components)
+
+      # Pause/drain event rate (events/sec)
+      - record: oneiric:activity_events:5m
+        expr: |
+          sum(rate(oneiric_activity_pause_events_total[5m])) +
+          sum(rate(oneiric_activity_drain_events_total[5m]))
+
+      # Pause event rate
+      - record: oneiric:activity_pause_rate:5m
+        expr: |
+          sum(rate(oneiric_activity_pause_events_total[5m]))
+
+      # Resume event rate
+      - record: oneiric:activity_resume_rate:5m
+        expr: |
+          sum(rate(oneiric_activity_pause_events_total{state="resumed"}[5m]))
+
+  # Remote sync aggregation
+  - name: oneiric_remote_aggregates
+    interval: 30s
+    rules:
+      # Remote sync success rate (5min window)
+      - record: oneiric:remote_sync_success_rate:5m
+        expr: |
+          sum(rate(oneiric_remote_sync_total{outcome="success"}[5m]))
+          /
+          sum(rate(oneiric_remote_sync_total[5m]))
+
+      # Remote sync success rate by source
+      - record: oneiric:remote_sync_success_rate_by_source:5m
+        expr: |
+          sum(rate(oneiric_remote_sync_total{outcome="success"}[5m])) by (source)
+          /
+          sum(rate(oneiric_remote_sync_total[5m])) by (source)
+
+      # P99 sync latency (latency budget metric)
+      - record: oneiric:remote_sync_latency_p99:5m
+        expr: |
+          histogram_quantile(0.99,
+            sum(rate(oneiric_remote_sync_duration_seconds_bucket[5m])) by (source, le)
+          )
+
+      # P95 sync latency
+      - record: oneiric:remote_sync_latency_p95:5m
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(oneiric_remote_sync_duration_seconds_bucket[5m])) by (source, le)
+          )
+
+      # Average sync latency
+      - record: oneiric:remote_sync_latency_avg:5m
+        expr: |
+          sum(rate(oneiric_remote_sync_duration_seconds_sum[5m]))
+          /
+          sum(rate(oneiric_remote_sync_duration_seconds_count[5m]))
+
+      # Digest verification failure rate
+      - record: oneiric:remote_digest_failure_rate:5m
+        expr: |
+          sum(rate(oneiric_remote_digest_checks_total{outcome="failed"}[5m]))
+
+      # Signature verification failure rate (critical security metric)
+      - record: oneiric:remote_signature_failure_rate:5m
+        expr: |
+          sum(rate(oneiric_remote_signature_verifications_total{outcome="failed"}[5m]))
+
+      # Sync throughput (syncs/hour)
+      - record: oneiric:remote_sync_throughput:1h
+        expr: |
+          sum(rate(oneiric_remote_sync_total[1h])) * 3600
+
+  # System health aggregation
+  - name: oneiric_system_aggregates
+    interval: 60s
+    rules:
+      # Cache growth rate (bytes/hour)
+      - record: oneiric:system_cache_growth_rate:1h
+        expr: |
+          rate(oneiric_system_cache_size_bytes[1h])
+
+      # Total active instances across all domains
+      - record: oneiric:system_active_instances_total:5m
+        expr: |
+          sum(oneiric_lifecycle_active_instances)
+
+      # Active instances by domain
+      - record: oneiric:system_active_instances_by_domain:5m
+        expr: |
+          sum(oneiric_lifecycle_active_instances) by (domain)
+
+      # Memory usage estimate (50MB per instance)
+      - record: oneiric:system_memory_usage_estimate_bytes:5m
+        expr: |
+          sum(oneiric_lifecycle_active_instances) * 50 * 1024 * 1024
+
+  # SLO/SLI calculations (for SLO dashboards)
+  - name: oneiric_slo_metrics
+    interval: 60s
+    rules:
+      # Resolution SLI: P99 latency < 100ms
+      - record: oneiric:sli_resolution_latency:5m
+        expr: |
+          (oneiric:resolution_latency_p99:5m < 0.1)
+
+      # Resolution SLI: Success rate > 99%
+      - record: oneiric:sli_resolution_success:5m
+        expr: |
+          (oneiric:resolution_success_rate_global:5m > 0.99)
+
+      # Lifecycle SLI: Swap P95 latency < 5s
+      - record: oneiric:sli_lifecycle_swap_latency:5m
+        expr: |
+          (oneiric:lifecycle_swap_latency_p95:5m < 5000)
+
+      # Lifecycle SLI: Swap success rate > 95%
+      - record: oneiric:sli_lifecycle_swap_success:5m
+        expr: |
+          (oneiric:lifecycle_swap_success_rate:5m > 0.95)
+
+      # Remote SLI: Sync success rate > 99%
+      - record: oneiric:sli_remote_sync_success:5m
+        expr: |
+          (oneiric:remote_sync_success_rate:5m > 0.99)
+
+      # Remote SLI: Sync P99 latency < 30s
+      - record: oneiric:sli_remote_sync_latency:5m
+        expr: |
+          (oneiric:remote_sync_latency_p99:5m < 30)
+
+      # Overall system health (all SLIs passing)
+      - record: oneiric:sli_system_health:5m
+        expr: |
+          (
+            oneiric:sli_resolution_latency:5m *
+            oneiric:sli_resolution_success:5m *
+            oneiric:sli_lifecycle_swap_latency:5m *
+            oneiric:sli_lifecycle_swap_success:5m *
+            oneiric:sli_remote_sync_success:5m *
+            oneiric:sli_remote_sync_latency:5m
+          )
+
+  # Long-term trends (1h aggregates for capacity planning)
+  - name: oneiric_trends
+    interval: 5m
+    rules:
+      # Resolution throughput (1h average)
+      - record: oneiric:resolution_throughput:1h
+        expr: |
+          sum(rate(oneiric_resolution_total[1h]))
+
+      # Swap throughput (1h average)
+      - record: oneiric:lifecycle_swap_throughput:1h
+        expr: |
+          sum(rate(oneiric_lifecycle_swap_total[1h]))
+
+      # Daily resolution volume estimate
+      - record: oneiric:resolution_daily_volume:24h
+        expr: |
+          sum(rate(oneiric_resolution_total[24h])) * 86400
+
+      # Daily swap volume estimate
+      - record: oneiric:lifecycle_swap_daily_volume:24h
+        expr: |
+          sum(rate(oneiric_lifecycle_swap_total[24h])) * 86400

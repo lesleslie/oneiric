@@ -166,6 +166,39 @@ def get_canonical_manifest_for_signing(manifest_dict: dict) -> str:
     return json.dumps(unsigned, sort_keys=True, separators=(",", ":"))
 
 
+def sanitize_filename(filename: str) -> str:
+    """Sanitize a filename to prevent path traversal attacks.
+
+    Removes dangerous path components like '..' and '/', and null bytes.
+
+    Args:
+        filename: The filename to sanitize
+
+    Returns:
+        Sanitized filename safe for use in file paths
+
+    Examples:
+        >>> sanitize_filename("../../etc/passwd")
+        'etcpasswd'
+        >>> sanitize_filename("normal_file.txt")
+        'normal_file.txt'
+        >>> sanitize_filename("file\\x00.whl")
+        'file.whl'
+    """
+    from pathlib import Path
+
+    # Remove null bytes first
+    filename = filename.replace("\x00", "")
+
+    # Remove any path separators and parent directory references
+    parts = []
+    for part in Path(filename).parts:
+        if part not in (".", "..") and "/" not in part and "\\" not in part:
+            parts.append(part)
+
+    return "".join(parts) if parts else "sanitized_file"
+
+
 def sign_manifest_for_publishing(manifest_dict: dict, private_key_b64: str) -> str:
     """Sign a manifest for publishing (utility for manifest authors).
 

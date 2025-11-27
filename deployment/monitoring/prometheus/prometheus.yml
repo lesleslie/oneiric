@@ -1,0 +1,113 @@
+# Prometheus Configuration for Oneiric
+# Version: 1.0
+# Last Updated: 2025-11-26
+
+# Global configuration
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+
+  # External labels (customize per environment)
+  external_labels:
+    cluster: 'oneiric-prod'
+    environment: 'production'
+    datacenter: 'us-east-1'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - 'alertmanager:9093'
+      timeout: 10s
+      api_version: v2
+
+# Load alert and recording rules
+rule_files:
+  - 'rules/alert_rules.yml'
+  - 'rules/recording_rules.yml'
+
+# Scrape configurations
+scrape_configs:
+  # Oneiric application metrics
+  - job_name: 'oneiric'
+    static_configs:
+      - targets: ['oneiric:8000']
+        labels:
+          service: 'oneiric'
+          app: 'oneiric'
+          tier: 'application'
+    metrics_path: /metrics
+    scrape_interval: 10s  # More frequent for real-time visibility
+    scrape_timeout: 5s
+    honor_labels: true
+    honor_timestamps: true
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+          tier: 'monitoring'
+
+  # Optional: Node exporter (system metrics)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          service: 'node-exporter'
+          tier: 'system'
+
+  # Optional: cAdvisor (container metrics)
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+        labels:
+          service: 'cadvisor'
+          tier: 'system'
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  # Kubernetes service discovery (if applicable)
+  # Uncomment for Kubernetes deployments
+  # - job_name: 'oneiric-k8s'
+  #   kubernetes_sd_configs:
+  #     - role: pod
+  #       namespaces:
+  #         names:
+  #           - oneiric
+  #   relabel_configs:
+  #     - source_labels: [__meta_kubernetes_pod_label_app]
+  #       action: keep
+  #       regex: oneiric
+  #     - source_labels: [__meta_kubernetes_pod_name]
+  #       target_label: pod
+  #     - source_labels: [__meta_kubernetes_namespace]
+  #       target_label: namespace
+
+# Storage configuration
+storage:
+  tsdb:
+    path: /prometheus
+    retention:
+      time: 30d
+      size: 50GB
+
+# Remote write (optional - for long-term storage)
+# remote_write:
+#   - url: "https://thanos-receiver:19291/api/v1/receive"
+#     queue_config:
+#       capacity: 10000
+#       max_shards: 50
+#       min_shards: 1
+#       max_samples_per_send: 5000
+#       batch_send_deadline: 5s
+#       min_backoff: 30ms
+#       max_backoff: 100ms
+
+# Remote read (optional - for querying long-term storage)
+# remote_read:
+#   - url: "https://thanos-query:9090/api/v1/read"
+#     read_recent: true

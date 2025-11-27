@@ -1,0 +1,122 @@
+# AlertManager Configuration for Oneiric
+# Version: 1.0
+# Last Updated: 2025-11-26
+
+global:
+  resolve_timeout: 5m
+  # IMPORTANT: Replace with your actual webhook URLs
+  slack_api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+  pagerduty_url: 'https://events.pagerduty.com/v2/enqueue'
+
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+route:
+  receiver: 'platform-team'
+  group_by: ['alertname', 'component', 'domain']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+
+  routes:
+    # Critical alerts → Page on-call + Slack
+    - match:
+        severity: critical
+      receiver: 'oncall-page'
+      group_wait: 5s
+      group_interval: 5s
+      repeat_interval: 4h
+      continue: true
+
+    # Security alerts → Security team immediately
+    - match:
+        component: security
+      receiver: 'security-team'
+      group_wait: 0s
+      group_interval: 5m
+      repeat_interval: 1h
+      continue: false
+
+    # Warning alerts → Slack only
+    - match:
+        severity: warning
+      receiver: 'platform-slack'
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 24h
+
+    # Info alerts → Low-priority channel
+    - match:
+        severity: info
+      receiver: 'platform-info'
+      group_wait: 5m
+      group_interval: 1h
+      repeat_interval: 24h
+
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'component']
+
+  - source_match:
+      severity: 'warning'
+    target_match:
+      severity: 'info'
+    equal: ['alertname', 'component']
+
+receivers:
+  - name: 'oncall-page'
+    pagerduty_configs:
+      - service_key: 'YOUR_PAGERDUTY_SERVICE_KEY'
+        description: '{{ .GroupLabels.alertname }}: {{ .CommonAnnotations.summary }}'
+        details:
+          severity: '{{ .GroupLabels.severity }}'
+          component: '{{ .GroupLabels.component }}'
+          firing_count: '{{ .Alerts.Firing | len }}'
+          runbook: '{{ .CommonAnnotations.runbook_url }}'
+    slack_configs:
+      - channel: '#oncall-critical'
+        title: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+
+  - name: 'security-team'
+    email_configs:
+      - to: 'security@example.com'
+        headers:
+          Subject: '🔐 SECURITY ALERT: {{ .GroupLabels.alertname }}'
+    slack_configs:
+      - channel: '#security-alerts'
+        title: '🔐 SECURITY: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        color: '#ff0000'
+        send_resolved: true
+
+  - name: 'platform-team'
+    slack_configs:
+      - channel: '#platform-alerts'
+        title: '{{ .GroupLabels.severity | toUpper }}: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+    email_configs:
+      - to: 'platform@example.com'
+        headers:
+          Subject: '[{{ .GroupLabels.severity }}] {{ .GroupLabels.alertname }}'
+
+  - name: 'platform-slack'
+    slack_configs:
+      - channel: '#platform-warnings'
+        title: '⚠️ WARNING: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+        color: '#ff9900'
+        send_resolved: true
+
+  - name: 'platform-info'
+    slack_configs:
+      - channel: '#platform-info'
+        title: 'ℹ️ INFO: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+        color: '#0099ff'
+        send_resolved: false
