@@ -17,6 +17,7 @@ from oneiric.runtime.events import (
     parse_event_filters,
 )
 from oneiric.runtime.supervisor import ServiceSupervisor
+from oneiric.runtime.telemetry import RuntimeTelemetryRecorder
 
 from .base import DomainBridge
 
@@ -31,6 +32,7 @@ class EventBridge(DomainBridge):
         settings: LayerSettings,
         activity_store: DomainActivityStore | None = None,
         supervisor: ServiceSupervisor | None = None,
+        telemetry: RuntimeTelemetryRecorder | None = None,
     ) -> None:
         super().__init__(
             "event",
@@ -41,6 +43,7 @@ class EventBridge(DomainBridge):
             supervisor=supervisor,
         )
         self._dispatcher = EventDispatcher()
+        self._telemetry = telemetry
         self.refresh_dispatcher()
 
     def update_settings(self, settings: LayerSettings) -> None:
@@ -66,7 +69,37 @@ class EventBridge(DomainBridge):
         """Dispatch an event to registered handlers."""
 
         envelope = EventEnvelope(topic=topic, payload=payload, headers=headers or {})
-        return await self._dispatcher.dispatch(envelope)
+        results = await self._dispatcher.dispatch(envelope)
+        if self._telemetry:
+            self._telemetry.record_event_dispatch(topic, results)
+        return results
+
+    def handler_snapshot(self) -> list[dict[str, Any]]:
+        """Return metadata describing registered event handlers."""
+
+        snapshot: list[dict[str, Any]] = []
+        for handler in self._dispatcher.handlers():
+            filters = [
+                {
+                    "path": event_filter.path,
+                    "equals": getattr(event_filter, "equals", None),
+                    "any_of": list(event_filter.any_of) if event_filter.any_of else None,
+                    "exists": event_filter.exists,
+                }
+                for event_filter in handler.filters
+            ]
+            snapshot.append(
+                {
+                    "name": handler.name,
+                    "topics": list(handler.topics) if handler.topics else [],
+                    "max_concurrency": handler.max_concurrency,
+                    "priority": handler.priority,
+                    "fanout_policy": handler.fanout_policy,
+                    "retry_policy": handler.retry_policy or {},
+                    "filters": filters,
+                }
+            )
+        return snapshot
 
     def dispatcher(self) -> EventDispatcher:
         return self._dispatcher

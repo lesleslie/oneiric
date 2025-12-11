@@ -1,9 +1,9 @@
 # Graph Adapters (Neo4j & ArangoDB)
 
-**Last Updated:** 2025-12-10  
+**Last Updated:** 2025-12-10
 **Scope:** Installation, configuration, and manifest guidance for the Oneiric graph adapters (`Neo4jGraphAdapter`, `ArangoDBGraphAdapter`, `DuckDBPGQAdapter`). This document will expand again if additional adapters (e.g., Neptune) are requested.
 
----
+______________________________________________________________________
 
 ## 1. Extras & Installation
 
@@ -27,11 +27,11 @@ pip install 'oneiric[graph-duckdb-pgq]'
 
 Each adapter guards its import and raises a descriptive `LifecycleError` when the driver is missing.
 
-> **Local Neo4j:** the official `neo4j` image exposes Bolt on `7687`. Start it with `docker run --rm -p 7687:7687 -e NEO4J_AUTH=neo4j/test neo4j:5`.  
-> **Local ArangoDB:** `docker run --rm -p 8529:8529 -e ARANGO_ROOT_PASSWORD=test arangodb:3.11`.  
+> **Local Neo4j:** the official `neo4j` image exposes Bolt on `7687`. Start it with `docker run --rm -p 7687:7687 -e NEO4J_AUTH=neo4j/test neo4j:5`.
+> **Local ArangoDB:** `docker run --rm -p 8529:8529 -e ARANGO_ROOT_PASSWORD=test arangodb:3.11`.
 > **Local DuckDB PGQ:** DuckDB runs in-process; create a writable directory and the adapter will bootstrap the PGQ extension automatically.
 
----
+______________________________________________________________________
 
 ## 2. Adapter Overviews
 
@@ -104,7 +104,7 @@ PY
 
 The adapter performs a health check (`RETURN 1`) during initialization, so the CLI run will surface connectivity issues before any mutations occur.
 
----
+______________________________________________________________________
 
 ### ArangoDB
 
@@ -179,7 +179,7 @@ PY
 
 The adapter uses `asyncio.to_thread()` to keep the synchronous python-arango client off the event loop. Health checks run `RETURN 1` by default, so connectivity issues surface immediately.
 
----
+______________________________________________________________________
 
 ### DuckDB PGQ
 
@@ -253,7 +253,7 @@ PY
 
 The adapter keeps the synchronous DuckDB client off the event loop with `asyncio.to_thread`. For production runs, mount the DuckDB database on persistent storage so PGQ traversals have state between restarts.
 
----
+______________________________________________________________________
 
 ## 3. Feature Notes
 
@@ -265,7 +265,7 @@ The adapter keeps the synchronous DuckDB client off the event loop with `asyncio
 - **Structured logging:** all lifecycle events log under `adapter.graph.neo4j` / `adapter.graph.arangodb` / `adapter.graph.duckdb_pgq`.
 - **Serverless posture:** metadata defaults to stack level `30` with priorities `400` (Neo4j), `390` (ArangoDB), and `360` (DuckDB PGQ) so manifests can prioritize them as needed.
 
----
+______________________________________________________________________
 
 ## 4. Verification & Follow-Ups
 

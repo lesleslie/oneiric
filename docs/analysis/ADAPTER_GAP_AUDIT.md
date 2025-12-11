@@ -23,8 +23,8 @@
 ## Actions
 
 1. **Messaging bundle (SendGrid/Mailgun/Twilio):** share HTTP telemetry middleware, provide manifest snippets, and add CLI how-to in `docs/examples/LOCAL_CLI_DEMO.md`. See `docs/implementation/MESSAGING_AND_SCHEDULER_ADAPTER_PLAN.md` for deliverables, owners, and test expectations.
-2. **Scheduler bundle (Cloud Tasks + Pub/Sub):** add adapters plus queue fixtures so DAG orchestration (WS-B) can rely on them. Details in the plan above.
-3. **Docs:** cross-link this audit from `docs/implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md` §5 so the backlog stays visible.
+1. **Scheduler bundle (Cloud Tasks + Pub/Sub):** add adapters plus queue fixtures so DAG orchestration (WS-B) can rely on them. Details in the plan above.
+1. **Docs:** cross-link this audit from `docs/implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md` §5 so the backlog stays visible.
 
 ## Priority Focus (Q1 2026)
 
@@ -35,4 +35,4 @@
 
 Status and owners for each bucket should be updated here as soon as a concrete ETA or design note changes.
 
-Update this file as soon as an adapter lands or gets deprioritized. It replaces scattered TODOs in historical plans and should be referenced in weekly stand-ups.***
+Update this file as soon as an adapter lands or gets deprioritized. It replaces scattered TODOs in historical plans and should be referenced in weekly stand-ups.\*\*\*

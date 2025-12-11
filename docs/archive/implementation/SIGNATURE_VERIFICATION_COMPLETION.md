@@ -278,12 +278,11 @@ This ensures:
 
 ```python
 # Before
-def _parse_manifest(text: str) -> RemoteManifest:
-    ...
+def _parse_manifest(text: str) -> RemoteManifest: ...
+
 
 # After (backward compatible)
-def _parse_manifest(text: str, *, verify_signature: bool = True) -> RemoteManifest:
-    ...
+def _parse_manifest(text: str, *, verify_signature: bool = True) -> RemoteManifest: ...
 ```
 
 **Optional verification bypass:**

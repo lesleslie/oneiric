@@ -179,10 +179,8 @@ assert snapshot["service"]["api"].paused is True
 Multiple domain bridges can share activity store:
 
 ```python
-service_bridge = ServiceBridge(resolver, lifecycle, settings,
-                                activity_store=store)
-task_bridge = TaskBridge(resolver, lifecycle, settings,
-                          activity_store=store)
+service_bridge = ServiceBridge(resolver, lifecycle, settings, activity_store=store)
+task_bridge = TaskBridge(resolver, lifecycle, settings, activity_store=store)
 
 # Both persist to same store
 service_bridge.set_paused("api", True)
@@ -332,6 +330,7 @@ class MockProviderSettings(BaseModel):
     host: str = "localhost"
     port: int = 8080
     timeout: int = 30
+
 
 class CacheAdapterSettings(BaseModel):
     host: str = "localhost"

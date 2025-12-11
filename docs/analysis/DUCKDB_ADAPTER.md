@@ -4,13 +4,14 @@
 **Date:** 2025-11-27
 **Category:** database
 
----
+______________________________________________________________________
 
 ## Overview
 
 DuckDB is an in-process SQL OLAP (Online Analytical Processing) database management system. It's designed for analytical workloads and provides excellent performance for complex queries on structured data.
 
 **Key Features:**
+
 - ✅ **In-Memory & File-Based** - Support for both :memory: and persistent databases
 - ✅ **Columnar Storage** - Optimized for analytical queries
 - ✅ **Extensions** - Modular functionality (httpfs, postgres_scanner, etc.)
@@ -19,25 +20,26 @@ DuckDB is an in-process SQL OLAP (Online Analytical Processing) database managem
 - ✅ **PRAGMA Configuration** - Fine-grained control
 - ✅ **Read-Only Mode** - Safe concurrent access
 
----
+______________________________________________________________________
 
 ## Use Cases
 
 DuckDB is ideal for:
 
 1. **Data Analytics** - Fast aggregations, window functions, complex joins
-2. **Data Pipelines** - ETL/ELT processing with minimal infrastructure
-3. **Data Science** - Seamless integration with pandas and Arrow
-4. **Embedded Analytics** - No server required, embedded in application
-5. **Development/Testing** - Fast in-memory database for tests
-6. **Data Warehousing** - Lightweight alternative to large-scale warehouses
+1. **Data Pipelines** - ETL/ELT processing with minimal infrastructure
+1. **Data Science** - Seamless integration with pandas and Arrow
+1. **Embedded Analytics** - No server required, embedded in application
+1. **Development/Testing** - Fast in-memory database for tests
+1. **Data Warehousing** - Lightweight alternative to large-scale warehouses
 
 **Not Suitable For:**
+
 - High-concurrency write workloads (use PostgreSQL/MySQL)
 - Distributed systems (DuckDB is single-node)
 - Real-time OLTP (use traditional RDBMS)
 
----
+______________________________________________________________________
 
 ## Configuration
 
@@ -75,29 +77,26 @@ from oneiric.adapters.database import DuckDBDatabaseSettings
 
 settings = DuckDBDatabaseSettings(
     database_url="duckdb:///data/warehouse.duckdb",
-
     # Performance tuning
     threads=4,  # Number of threads for query execution
     pragmas={
-        "memory_limit": "4GB",     # Max memory usage
+        "memory_limit": "4GB",  # Max memory usage
         "temp_directory": "/tmp",  # Spill-to-disk location
-        "enable_profiling": "true", # Query profiling
+        "enable_profiling": "true",  # Query profiling
     },
-
     # Extensions
     extensions=[
-        "httpfs",           # Read from HTTP/S3
-        "postgres_scanner", # Query PostgreSQL databases
-        "json",            # JSON functions
-        "parquet",         # Parquet file support
+        "httpfs",  # Read from HTTP/S3
+        "postgres_scanner",  # Query PostgreSQL databases
+        "json",  # JSON functions
+        "parquet",  # Parquet file support
     ],
-
     # Temporary directory (spill-to-disk)
     temp_directory="/tmp/duckdb",
 )
 ```
 
----
+______________________________________________________________________
 
 ## Usage
 
@@ -121,8 +120,7 @@ await adapter.execute("""
 
 # Insert data
 await adapter.execute(
-    "INSERT INTO users VALUES (?, ?, ?, ?)",
-    1, "Alice", 30, "Engineering"
+    "INSERT INTO users VALUES (?, ?, ?, ?)", 1, "Alice", 30, "Engineering"
 )
 
 # Fetch all rows
@@ -182,6 +180,7 @@ print(df.head())
 
 # Use DataFrame for further analysis
 import pandas as pd
+
 print(df.groupby("department")["age"].mean())
 
 # Write DataFrame back to DuckDB
@@ -200,10 +199,11 @@ arrow_table = await adapter.fetch_arrow("SELECT * FROM users")
 # - Process with Arrow compute functions
 
 import pyarrow.parquet as pq
+
 pq.write_table(arrow_table, "users.parquet")
 ```
 
----
+______________________________________________________________________
 
 ## Extensions
 
@@ -216,23 +216,20 @@ settings = DuckDBDatabaseSettings(
     database_url="duckdb:///data/warehouse.duckdb",
     extensions=[
         # File formats
-        "parquet",    # Parquet files
-        "json",       # JSON functions
-        "excel",      # Excel files
-
+        "parquet",  # Parquet files
+        "json",  # JSON functions
+        "excel",  # Excel files
         # Remote access
-        "httpfs",     # HTTP/HTTPS/S3 access
+        "httpfs",  # HTTP/HTTPS/S3 access
         "postgres_scanner",  # Query PostgreSQL
-        "sqlite_scanner",    # Query SQLite
-        "mysql_scanner",     # Query MySQL
-
+        "sqlite_scanner",  # Query SQLite
+        "mysql_scanner",  # Query MySQL
         # Analytics
-        "fts",        # Full-text search
-        "spatial",    # Geospatial functions
-        "tpch",       # TPC-H benchmark queries
-
+        "fts",  # Full-text search
+        "spatial",  # Geospatial functions
+        "tpch",  # TPC-H benchmark queries
         # Machine learning
-        "ml",         # ML models
+        "ml",  # ML models
     ],
 )
 ```
@@ -264,7 +261,7 @@ rows = await adapter.fetch_all("""
 """)
 ```
 
----
+______________________________________________________________________
 
 ## Performance Tuning
 
@@ -275,10 +272,8 @@ settings = DuckDBDatabaseSettings(
     pragmas={
         # Set memory limit
         "memory_limit": "8GB",  # Max memory before spilling to disk
-
         # Set temp directory for spill-to-disk
         "temp_directory": "/fast-ssd/duckdb-temp",
-
         # Enable memory profiling
         "enable_profiling": "true",
     },
@@ -312,6 +307,7 @@ await adapter.fetch_all("SELECT * FROM large_table WHERE condition = true")
 
 # Check profiling output
 import json
+
 with open("/tmp/profile.json") as f:
     profile = json.load(f)
     print(profile)
@@ -330,7 +326,7 @@ for row in rows:
     print(row)
 ```
 
----
+______________________________________________________________________
 
 ## File Formats
 
@@ -384,7 +380,7 @@ await adapter.execute("""
 """)
 ```
 
----
+______________________________________________________________________
 
 ## Transactions
 
@@ -396,7 +392,9 @@ await adapter.execute("BEGIN TRANSACTION")
 
 try:
     # Multiple operations
-    await adapter.execute("INSERT INTO users VALUES (?, ?, ?, ?)", 2, "Bob", 35, "Sales")
+    await adapter.execute(
+        "INSERT INTO users VALUES (?, ?, ?, ?)", 2, "Bob", 35, "Sales"
+    )
     await adapter.execute("UPDATE users SET age = age + 1 WHERE id = 1")
 
     # Commit
@@ -407,7 +405,7 @@ except Exception as exc:
     raise
 ```
 
----
+______________________________________________________________________
 
 ## Health Checks & Lifecycle
 
@@ -431,7 +429,7 @@ print(status.state)  # "ready"
 await lifecycle.cleanup_instance("adapter", "database")
 ```
 
----
+______________________________________________________________________
 
 ## Testing
 
@@ -440,6 +438,7 @@ DuckDB is excellent for testing due to in-memory mode:
 ```python
 import pytest
 from oneiric.adapters.database import DuckDBDatabaseSettings
+
 
 @pytest.fixture
 async def duckdb_adapter(lifecycle):
@@ -468,10 +467,7 @@ async def duckdb_adapter(lifecycle):
 async def test_query(duckdb_adapter):
     """Test DuckDB queries."""
     # Insert
-    await duckdb_adapter.execute(
-        "INSERT INTO test_users VALUES (?, ?)",
-        1, "Alice"
-    )
+    await duckdb_adapter.execute("INSERT INTO test_users VALUES (?, ?)", 1, "Alice")
 
     # Query
     rows = await duckdb_adapter.fetch_all("SELECT * FROM test_users")
@@ -479,37 +475,40 @@ async def test_query(duckdb_adapter):
     assert rows[0][1] == "Alice"
 ```
 
----
+______________________________________________________________________
 
 ## Comparison with Other Databases
 
-| Feature              | DuckDB       | SQLite       | PostgreSQL   |
+| Feature | DuckDB | SQLite | PostgreSQL |
 |---------------------|-------------|--------------|--------------|
-| **Analytics**       | Excellent   | Poor         | Good         |
-| **OLTP**            | Poor        | Good         | Excellent    |
-| **Concurrency**     | Read-heavy  | Limited      | Excellent    |
-| **Memory Usage**    | Configurable| Low          | High         |
-| **Setup**           | Embedded    | Embedded     | Server       |
-| **Extensions**      | Yes         | Limited      | Yes          |
-| **Arrow/Pandas**    | Native      | Manual       | Manual       |
+| **Analytics** | Excellent | Poor | Good |
+| **OLTP** | Poor | Good | Excellent |
+| **Concurrency** | Read-heavy | Limited | Excellent |
+| **Memory Usage** | Configurable| Low | High |
+| **Setup** | Embedded | Embedded | Server |
+| **Extensions** | Yes | Limited | Yes |
+| **Arrow/Pandas** | Native | Manual | Manual |
 
 **Use DuckDB when:**
+
 - Analytical queries are primary workload
 - Embedded database is preferred
 - Working with DataFrames/Arrow
 - Need fast aggregations and joins
 
 **Use SQLite when:**
+
 - Simple OLTP workload
 - Very low memory footprint
 - Minimal dependencies
 
 **Use PostgreSQL when:**
+
 - High write concurrency needed
 - Production OLTP workload
 - Multi-user environment
 
----
+______________________________________________________________________
 
 ## Migration from SQLite
 
@@ -532,7 +531,7 @@ await adapter.execute("""
 await adapter.execute("DETACH sqlite_db")
 ```
 
----
+______________________________________________________________________
 
 ## References
 
@@ -541,7 +540,7 @@ await adapter.execute("DETACH sqlite_db")
 - **ADAPTER_STRATEGY.md** - Adapter porting roadmap
 - **ACB Comparison:** `docs/ACB_COMPARISON.md`
 
----
+______________________________________________________________________
 
 ## Summary
 

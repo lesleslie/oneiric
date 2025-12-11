@@ -4,13 +4,13 @@
 **Status:** Phase 1 Complete
 **Total Adapters Ported:** 5 categories, 6 adapters
 
----
+______________________________________________________________________
 
 ## Overview
 
 Successfully ported high-priority adapters from ACB to Oneiric, following the roadmap defined in `ADAPTER_STRATEGY.md`. All adapters implement Oneiric's lifecycle contract and are production-ready.
 
----
+______________________________________________________________________
 
 ## Adapters Implemented
 
@@ -19,6 +19,7 @@ Successfully ported high-priority adapters from ACB to Oneiric, following the ro
 **Location:** `oneiric/adapters/vector/`
 
 #### Pinecone (`vector/pinecone.py`)
+
 - Managed serverless vector database
 - Serverless & pod-based indexes
 - Namespaces (collections)
@@ -29,6 +30,7 @@ Successfully ported high-priority adapters from ACB to Oneiric, following the ro
 - **Capabilities:** vector_search, batch_operations, metadata_filtering, namespaces, serverless
 
 #### Qdrant (`vector/qdrant.py`)
+
 - High-performance open-source vector search engine
 - HTTP & gRPC protocols
 - Advanced metadata filtering
@@ -41,13 +43,14 @@ Successfully ported high-priority adapters from ACB to Oneiric, following the ro
 
 **Documentation:** `docs/VECTOR_ADAPTERS.md` (550+ lines)
 
----
+______________________________________________________________________
 
 ### 2. DuckDB Database Adapter (1 adapter) ✅
 
 **Location:** `oneiric/adapters/database/`
 
 #### DuckDB (`database/duckdb.py`)
+
 - In-process SQL OLAP database
 - In-memory & file-based modes
 - Columnar storage for analytics
@@ -62,13 +65,14 @@ Successfully ported high-priority adapters from ACB to Oneiric, following the ro
 
 **Documentation:** `docs/DUCKDB_ADAPTER.md` (450+ lines)
 
----
+______________________________________________________________________
 
 ### 3. Embedding Adapters (1 adapter) ✅
 
 **Location:** `oneiric/adapters/embedding/`
 
 #### OpenAI (`embedding/openai.py`)
+
 - High-quality embeddings via OpenAI API
 - Models: text-embedding-3-small, 3-large, ada-002
 - Batch processing (up to 100 texts per request)
@@ -81,13 +85,14 @@ Successfully ported high-priority adapters from ACB to Oneiric, following the ro
 
 **Documentation:** `docs/EMBEDDING_ADAPTERS.md` (550+ lines)
 
----
+______________________________________________________________________
 
 ### 4. NoSQL Adapters (3 adapters) ✅
 
 **Location:** `oneiric/adapters/nosql/`
 
 #### MongoDB (`nosql/mongodb.py`)
+
 - Async client via `motor.motor_asyncio.AsyncIOMotorClient`
 - Pydantic settings covering URI/host credentials, TLS, replica set, auth source
 - CRUD helpers (`find_one`, `find`, `insert_one`, `update_one`, `delete_one`) plus aggregation pipelines
@@ -99,6 +104,7 @@ Successfully ported high-priority adapters from ACB to Oneiric, following the ro
 **Documentation:** Tracked in `docs/analysis/ADAPTER_GAP_AUDIT.md` + `docs/implementation/NOSQL_ADAPTER_SPRINT.md` (NoSQL guide referenced in `docs/analysis/NOSQL_ADAPTERS.md`).
 
 #### DynamoDB (`nosql/dynamodb.py`)
+
 - aioboto3-backed adapter with async CRUD helpers (`get_item`, `put_item`, `update_item`, `delete_item`) plus table scans
 - Pydantic settings for table/region/endpoint/profile + credential overrides
 - Consistent-read toggle and condition expressions for safe writes
@@ -109,6 +115,7 @@ Successfully ported high-priority adapters from ACB to Oneiric, following the ro
 **Documentation:** `docs/analysis/NOSQL_ADAPTERS.md` (MongoDB + DynamoDB sections) + sprint plan updates.
 
 #### Firestore (`nosql/firestore.py`)
+
 - Async Firestore client with collection/document helpers, emulator support, and optional service-account credentials
 - CRUD/query helpers (`get_document`, `set_document`, `delete_document`, `query_documents`) with structured logging spans
 - Lazy import guard referencing `oneiric[nosql-firestore]` extra
@@ -122,12 +129,14 @@ Successfully ported high-priority adapters from ACB to Oneiric, following the ro
 **Location:** `oneiric/adapters/queue/`
 
 #### Kafka (`queue/kafka.py`)
+
 - aiokafka producer/consumer integration with optional SASL auth + security protocol options
 - Publish helper with headers, configurable timeouts; consume helper returning structured records; manual commit API
 - Lazy import guard + optional extra `oneiric[queue-kafka]`
 - Unit tests built on fake producer/consumer implementations (no broker required)
 
 #### RabbitMQ (`queue/rabbitmq.py`)
+
 - aio-pika robust connection handling with durable queue declarations, QoS, and manual ack/reject support
 - Publish helper targeting default or custom exchanges; consume helper returning structured results with ack/reject helpers
 - Optional extra `oneiric[queue-rabbitmq]`; supports Secret Manager-provided AMQP URLs and SSL options
@@ -135,22 +144,25 @@ Successfully ported high-priority adapters from ACB to Oneiric, following the ro
 
 **Documentation:** `docs/analysis/ADAPTER_GAP_AUDIT.md` + manifest snippets + CLI demo updates for streaming queue usage.
 
----
+______________________________________________________________________
 
 ## Architecture Patterns
 
 All ported adapters follow consistent patterns:
 
 ### 1. **Pydantic V2 Settings**
+
 ```python
 class AdapterSettings(BaseModel):
     """Type-safe configuration."""
+
     api_key: Optional[SecretStr] = None
     timeout: float = 30.0
     # ... adapter-specific settings
 ```
 
 ### 2. **Lifecycle Hooks**
+
 ```python
 class Adapter:
     async def init(self) -> None:
@@ -164,6 +176,7 @@ class Adapter:
 ```
 
 ### 3. **AdapterMetadata**
+
 ```python
 metadata = AdapterMetadata(
     category="vector",
@@ -180,6 +193,7 @@ metadata = AdapterMetadata(
 ```
 
 ### 4. **Structured Logging**
+
 ```python
 self._logger = get_logger("adapter.vector.pinecone").bind(
     domain="adapter",
@@ -189,36 +203,41 @@ self._logger = get_logger("adapter.vector.pinecone").bind(
 self._logger.info("adapter-init-success", index=index_name)
 ```
 
----
+______________________________________________________________________
 
 ## Key Improvements from ACB
 
 1. **Simplified Dependencies**
+
    - No ACB dependency injection (`depends`)
    - Direct settings injection via constructor
    - Cleaner initialization flow
 
-2. **Pydantic V2**
+1. **Pydantic V2**
+
    - Modern validation patterns
    - Better type safety
    - `model_config` instead of `class Config`
 
-3. **Native Lifecycle Integration**
+1. **Native Lifecycle Integration**
+
    - Standard `init()`, `health()`, `cleanup()` hooks
    - Integration with `LifecycleManager`
    - Hot-swapping support
 
-4. **Structured Logging**
+1. **Structured Logging**
+
    - Context-aware logging with `structlog`
    - Consistent log event naming
    - Domain/key/provider context
 
-5. **Error Handling**
+1. **Error Handling**
+
    - Consistent `LifecycleError` exceptions
    - Descriptive error messages
    - Import error handling with helpful messages
 
----
+______________________________________________________________________
 
 ## File Organization
 
@@ -243,12 +262,14 @@ oneiric/adapters/
     └── openai.py              # OpenAI embeddings adapter
 ```
 
----
+______________________________________________________________________
 
 ## Documentation
 
 ### Created Documentation (3 files)
+
 1. **`docs/VECTOR_ADAPTERS.md`** (550 lines)
+
    - Architecture overview
    - Pinecone usage guide
    - Qdrant usage guide
@@ -256,7 +277,8 @@ oneiric/adapters/
    - Integration patterns
    - Migration from ACB
 
-2. **`docs/DUCKDB_ADAPTER.md`** (450 lines)
+1. **`docs/DUCKDB_ADAPTER.md`** (450 lines)
+
    - Configuration guide
    - Analytical query patterns
    - Pandas/Arrow integration
@@ -264,7 +286,8 @@ oneiric/adapters/
    - Performance tuning
    - Comparison with SQLite/PostgreSQL
 
-3. **`docs/EMBEDDING_ADAPTERS.md`** (550 lines)
+1. **`docs/EMBEDDING_ADAPTERS.md`** (550 lines)
+
    - OpenAI embeddings usage
    - Model selection guide
    - Vector database integration
@@ -274,11 +297,12 @@ oneiric/adapters/
 
 ### Total Documentation: 1,550 lines
 
----
+______________________________________________________________________
 
 ## Testing Status
 
 ### Test Coverage Needed
+
 - ✅ Base classes implemented with full type hints
 - 📝 Unit tests for vector adapters (pending)
 - 📝 Unit tests for DuckDB adapter (pending)
@@ -286,16 +310,18 @@ oneiric/adapters/
 - 📝 Integration tests (pending)
 
 ### Test Requirements (from ACB)
+
 - Minimum 100 lines per adapter
 - Health check tests
 - Cleanup tests
 - Core functionality tests
 
----
+______________________________________________________________________
 
 ## Usage Examples
 
 ### Vector Database
+
 ```python
 # Activate adapter
 adapter = await lifecycle.activate("adapter", "vector")
@@ -309,6 +335,7 @@ results = await adapter.search("collection", query_vector=[0.15, 0.25, ...], lim
 ```
 
 ### DuckDB
+
 ```python
 # Activate adapter
 adapter = await lifecycle.activate("adapter", "database")
@@ -321,6 +348,7 @@ df = await adapter.fetch_df("SELECT * FROM users")
 ```
 
 ### Embeddings
+
 ```python
 # Activate adapter
 adapter = await lifecycle.activate("adapter", "embedding")
@@ -335,50 +363,58 @@ batch = await adapter.embed_texts(["text1", "text2", "text3"])
 similarity = await adapter.compute_similarity(emb1, emb2, method="cosine")
 ```
 
----
+______________________________________________________________________
 
 ## Adapter Strategy Progress
 
 Following `docs/ADAPTER_STRATEGY.md`:
 
 ### ✅ Completed (High Priority)
+
 1. **Vector Databases** - Pinecone, Qdrant
-2. **Embedding Adapters** - OpenAI
-3. **DuckDB** - Analytical SQL database
+1. **Embedding Adapters** - OpenAI
+1. **DuckDB** - Analytical SQL database
 
 ### 📝 Next Priority (Per Strategy Document)
+
 1. **Embedding Adapters**
+
    - Sentence Transformers (open-source)
    - ONNX (optimized on-device)
    - HuggingFace (variety of models)
 
-2. **AI/LLM Adapters**
+1. **AI/LLM Adapters**
+
    - OpenAI (GPT-4)
    - Anthropic (Claude)
    - Google Gemini
 
-3. **NoSQL Databases**
+1. **NoSQL Databases**
+
    - MongoDB (document store)
    - DynamoDB (AWS)
    - Firestore (GCP)
 
-4. **Graph Databases**
+1. **Graph Databases**
+
    - ✅ Neo4j (async driver adapter with node/relationship helpers + docs)
    - ✅ ArangoDB (python-arango adapter with vertex/edge helpers + docs)
    - ✅ DuckDB PGQ (DuckDB-backed PGQ adapter with ingest/traversal helpers + docs)
 
----
+______________________________________________________________________
 
 ## Migration Notes
 
 ### From ACB to Oneiric
 
 **Settings:**
+
 ```python
 # ACB
 @depends.inject
 def __init__(self, config: Inject[Config]):
     super().__init__(**kwargs)
+
 
 # Oneiric
 def __init__(self, settings: PineconeSettings):
@@ -387,6 +423,7 @@ def __init__(self, settings: PineconeSettings):
 ```
 
 **Logging:**
+
 ```python
 # ACB
 self.logger.info("Message", key=value)
@@ -396,6 +433,7 @@ self._logger.info("event-name", key=value)
 ```
 
 **Error Handling:**
+
 ```python
 # ACB
 raise Exception("Error message")
@@ -404,27 +442,31 @@ raise Exception("Error message")
 raise LifecycleError(f"adapter-operation-failed: {exc}") from exc
 ```
 
----
+______________________________________________________________________
 
 ## Dependencies Added
 
 ### Vector Adapters
+
 - `pinecone-client>=3.0.0` - Pinecone adapter
 - `qdrant-client>=1.7.0` - Qdrant adapter
 
 ### DuckDB Adapter
+
 - `duckdb` - DuckDB database
 - `duckdb-engine` - SQLAlchemy integration (optional)
 
 ### Embedding Adapters
+
 - `openai>=1.0.0` - OpenAI API client
 - `numpy` - Vector operations (already in project)
 
----
+______________________________________________________________________
 
 ## Quality Metrics
 
 ### Code Quality
+
 - ✅ **Type hints** - 100% coverage
 - ✅ **Pydantic validation** - All settings
 - ✅ **Error handling** - Consistent LifecycleError usage
@@ -432,13 +474,14 @@ raise LifecycleError(f"adapter-operation-failed: {exc}") from exc
 - ✅ **Documentation** - Comprehensive docstrings
 
 ### Production Readiness
+
 - ✅ **Lifecycle integration** - Full implementation
 - ✅ **Health checks** - All adapters
 - ✅ **Cleanup** - Proper resource management
 - ✅ **Hot-swapping** - Via LifecycleManager
 - 📝 **Tests** - Pending (next phase)
 
----
+______________________________________________________________________
 
 ## Timeline
 
@@ -448,17 +491,19 @@ raise LifecycleError(f"adapter-operation-failed: {exc}") from exc
 - **Documentation:** 1,550 lines
 - **Code:** ~2,000 lines
 
----
+______________________________________________________________________
 
 ## Next Steps
 
 ### Immediate (Active)
+
 1. Register AI/vector adapters via `builtin_adapter_metadata` and ship dependency extras (`pyproject.toml`).
-2. Add smoke/unit tests for DuckDB, vector adapters, and embedding stack (including `common.py` helpers).
-3. Fix HTTP adapter regression (restore `httpx.AsyncClient`) and repair remote watcher integration tests.
-4. Execute Q1 2026 NoSQL sprint per `docs/implementation/NOSQL_ADAPTER_SPRINT.md` (DynamoDB → Firestore now that MongoDB is live).
+1. Add smoke/unit tests for DuckDB, vector adapters, and embedding stack (including `common.py` helpers).
+1. Fix HTTP adapter regression (restore `httpx.AsyncClient`) and repair remote watcher integration tests.
+1. Execute Q1 2026 NoSQL sprint per `docs/implementation/NOSQL_ADAPTER_SPRINT.md` (DynamoDB → Firestore now that MongoDB is live).
 
 ### Completed Ports (November–December 2025)
+
 - ✅ Sentence Transformers embedding adapter
 - ✅ ONNX embedding adapter
 - ✅ OpenAI LLM adapter
@@ -474,11 +519,12 @@ raise LifecycleError(f"adapter-operation-failed: {exc}") from exc
 | LLM | `gemini` | AI Team (blocked on SDK) | Pending SDK (track monthly) |
 
 ### Long-term (Future)
-1. Deliver remaining DNS/File Transfer/Pulsar adapters.
-2. Add universal query interface (v0.4.0).
-3. Evaluate structured concurrency helpers for adapter orchestration.
 
----
+1. Deliver remaining DNS/File Transfer/Pulsar adapters.
+1. Add universal query interface (v0.4.0).
+1. Evaluate structured concurrency helpers for adapter orchestration.
+
+______________________________________________________________________
 
 ## References
 
@@ -486,7 +532,7 @@ raise LifecycleError(f"adapter-operation-failed: {exc}") from exc
 - **ACB_COMPARISON.md** - Comparison with mature ACB framework
 - **STAGE5_FINAL_AUDIT_REPORT.md** - Production readiness audit
 
----
+______________________________________________________________________
 
 ## Conclusion
 

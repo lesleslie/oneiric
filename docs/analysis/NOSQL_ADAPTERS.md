@@ -1,9 +1,9 @@
 # NoSQL Adapters (MongoDB, DynamoDB, Firestore)
 
-**Last Updated:** 2025-12-09  
+**Last Updated:** 2025-12-09
 **Scope:** Configuration guidance and manifest snippets for the Oneiric NoSQL adapters introduced in the Q1 2026 sprint.
 
----
+______________________________________________________________________
 
 ## 1. Extras & Installation
 
@@ -25,12 +25,12 @@ pip install 'oneiric[nosql]'
 
 Each adapter guards its heavy dependency and raises a descriptive `LifecycleError` if the extra is missing.
 
----
+______________________________________________________________________
 
 ## 2. MongoDB Adapter
 
-**Module:** `oneiric.adapters.nosql.mongodb.MongoDBAdapter`  
-**Extra:** `oneiric[nosql-mongo]`  
+**Module:** `oneiric.adapters.nosql.mongodb.MongoDBAdapter`
+**Extra:** `oneiric[nosql-mongo]`
 **Key settings:** URI or host/port credentials, default collection, TLS toggle, replica set, auth source.
 
 ### Sample configuration (`demo_settings.toml`)
@@ -93,12 +93,12 @@ asyncio.run(main())
 PY
 ```
 
----
+______________________________________________________________________
 
 ## 3. DynamoDB Adapter
 
-**Module:** `oneiric.adapters.nosql.dynamodb.DynamoDBAdapter`  
-**Extra:** `oneiric[nosql-dynamo]`  
+**Module:** `oneiric.adapters.nosql.dynamodb.DynamoDBAdapter`
+**Extra:** `oneiric[nosql-dynamo]`
 **Key settings:** table name, region, optional endpoint URL (LocalStack), AWS creds/profile, consistent reads toggle, primary key field.
 
 ### Sample configuration
@@ -159,12 +159,12 @@ asyncio.run(main())
 PY
 ```
 
----
+______________________________________________________________________
 
 ## 4. Firestore Adapter
 
-**Module:** `oneiric.adapters.nosql.firestore.FirestoreAdapter`  
-**Extra:** `oneiric[nosql-firestore]`  
+**Module:** `oneiric.adapters.nosql.firestore.FirestoreAdapter`
+**Extra:** `oneiric[nosql-firestore]`
 **Key settings:** project ID, collection name, credentials file (optional), emulator host.
 
 ### Sample configuration
@@ -224,13 +224,13 @@ asyncio.run(main())
 PY
 ```
 
----
+______________________________________________________________________
 
 ## 5. Best Practices
 
 1. **Secrets:** Prefer Secret Manager adapters for credentials (Mongo URI, AWS keys) and use inline config only for dev.
-2. **Serverless deployments:** Package manifests with the desired NoSQL adapter and disable remote polling to avoid cold-start penalties.
-3. **Testing:** Use fakes (Mongo) or local emulators (LocalStack/DynamoDB Local) so CI can exercise adapters without real cloud resources.
-4. **Logging:** Adapters emit structured spans (`adapter.nosql.*`) for CRUD operations; scrape them in Cloud Logging / Loki for auditing.
+1. **Serverless deployments:** Package manifests with the desired NoSQL adapter and disable remote polling to avoid cold-start penalties.
+1. **Testing:** Use fakes (Mongo) or local emulators (LocalStack/DynamoDB Local) so CI can exercise adapters without real cloud resources.
+1. **Logging:** Adapters emit structured spans (`adapter.nosql.*`) for CRUD operations; scrape them in Cloud Logging / Loki for auditing.
 
 Keep this file synchronized with future NoSQL additions (Firestore, Cassandra, etc.) so operators have a single source of truth for configuration.

@@ -104,8 +104,7 @@ Purpose: migrate all ACB adapters and action utilities into Oneiric’s unified 
           self._client = await create_pool(...)
           self._logger.info("adapter-init", endpoint=self._settings.url)
 
-      async def health(self) -> bool:
-          ...
+      async def health(self) -> bool: ...
 
       async def cleanup(self) -> None:
           if self._client:

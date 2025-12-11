@@ -415,6 +415,7 @@ ______________________________________________________________________
 
    ```python
    from threading import RLock
+
    # Replace with:
    from multiprocessing import RWLock  # Separate read/write locks
    ```

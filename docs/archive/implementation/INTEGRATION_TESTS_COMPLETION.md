@@ -94,6 +94,7 @@ class TestAdapter:
         self.calls.append(data)
         return f"{self.name}-{data}"
 
+
 # Test service with lifecycle methods
 class TestService:
     def __init__(self, service_id: str = "test"):
@@ -116,7 +117,7 @@ async def test_adapter_full_lifecycle(self, tmp_path):
 
     # Register with different priorities
     register_adapter_metadata(resolver, ..., stack_level=1)  # Low priority
-    register_adapter_metadata(resolver, ..., stack_level=10) # High priority
+    register_adapter_metadata(resolver, ..., stack_level=10)  # High priority
 
     # Resolution picks highest priority
     candidate = resolver.resolve("adapter", "cache")
@@ -138,10 +139,10 @@ async def test_adapter_full_lifecycle(self, tmp_path):
 async def test_all_domains_coordination(self, tmp_path):
     # Register components in all 5 domains
     register_adapter_metadata(...)  # Adapter
-    resolver.register(...)          # Service
-    resolver.register(...)          # Task
-    resolver.register(...)          # Event
-    resolver.register(...)          # Workflow
+    resolver.register(...)  # Service
+    resolver.register(...)  # Task
+    resolver.register(...)  # Event
+    resolver.register(...)  # Workflow
 
     # Create bridges for all domains
     adapter_bridge = AdapterBridge(...)

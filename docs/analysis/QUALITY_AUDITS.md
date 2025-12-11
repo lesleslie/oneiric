@@ -13,5 +13,5 @@ This page replaces the older audit reports (`ARCHITECTURAL_AUDIT_2025.md`, `PYTH
 ## Guidance
 
 1. Use this file + `STAGE5_FINAL_AUDIT_REPORT.md` as the authoritative quality references.
-2. When new audits run, add summaries here and link the full report.
-3. Remove stale references to the deleted audit files from any docs/PR templates.
+1. When new audits run, add summaries here and link the full report.
+1. Remove stale references to the deleted audit files from any docs/PR templates.

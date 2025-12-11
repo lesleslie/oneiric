@@ -211,6 +211,11 @@ def domain_activity_path(settings: OneiricSettings) -> Path:
     return cache / "domain_activity.sqlite"
 
 
+def runtime_observability_path(settings: OneiricSettings) -> Path:
+    cache = Path(settings.remote.cache_dir)
+    return cache / "runtime_telemetry.json"
+
+
 def workflow_checkpoint_path(settings: OneiricSettings) -> Path | None:
     """Resolve workflow checkpoint path (or None when disabled)."""
 

@@ -134,7 +134,9 @@ class RemoteManifestEntry(BaseModel):
             if not payload.get("schema_format"):
                 payload.pop("schema_format", None)
             if descriptor.security:
-                payload["security"] = descriptor.security.model_dump(exclude_none=True)
+                payload["security"] = descriptor.security.model_dump(
+                    exclude_none=True, exclude_unset=True
+                )
             else:
                 payload.pop("security", None)
             if not payload.get("metadata"):

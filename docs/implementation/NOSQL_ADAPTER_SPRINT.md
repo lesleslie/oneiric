@@ -1,18 +1,18 @@
 # NoSQL Adapter Sprint (MongoDB / DynamoDB / Firestore)
 
-**Last Updated:** 2025-12-09  
-**Owners:** Data Platform (Nadia – DRI), Platform Core (support), Runtime Team (test infra)  
+**Last Updated:** 2025-12-09
+**Owners:** Data Platform (Nadia – DRI), Platform Core (support), Runtime Team (test infra)
 **Timeline:** Q1 2026 sprint (kick-off immediately, target code complete by Jan 31)
 
----
+______________________________________________________________________
 
 ## 1. Objectives
 
 1. Deliver production-grade MongoDB, DynamoDB, and Firestore adapters that satisfy the Stage 3 lifecycle contract.
-2. Ship adapter extras + dependency guards so serverless builds stay lean.
-3. Provide end-to-end coverage: unit tests, manifest snippets, CLI demos, and runbook notes.
+1. Ship adapter extras + dependency guards so serverless builds stay lean.
+1. Provide end-to-end coverage: unit tests, manifest snippets, CLI demos, and runbook notes.
 
----
+______________________________________________________________________
 
 ## 2. Deliverables
 
@@ -26,7 +26,7 @@
 | Docs | `docs/analysis/NOSQL_ADAPTERS.md` (usage + config), manifest snippets under `docs/examples/`. Update CLI demo to show `--domain adapter --key nosql`. | Docs Team |
 | CLI proof | `uv run python -m oneiric.cli --demo list --domain adapter` includes the new providers; add manifest snippet referencing `nosql.mongo`. | Platform Core |
 
----
+______________________________________________________________________
 
 ## 3. Implementation Phases
 
@@ -37,8 +37,8 @@
    - `nosql-dynamo = ["aioboto3>=12.0"]`
    - `nosql-firestore = ["google-cloud-firestore>=2.16"]`
    - `nosql = ["oneiric[nosql-mongo,nosql-dynamo,nosql-firestore]"]`
-2. ✅ Add provider metadata (MongoDB) to `oneiric/adapters/bootstrap.py`.
-3. ✅ Create adapter module with lazy import helpers; DynamoDB + Firestore modules follow the same pattern.
+1. ✅ Add provider metadata (MongoDB) to `oneiric/adapters/bootstrap.py`.
+1. ✅ Create adapter module with lazy import helpers; DynamoDB + Firestore modules follow the same pattern.
 
 ### Phase B – Adapter Implementation (Weeks 1-2)
 
@@ -46,11 +46,11 @@
    - Settings: URI, database, default collection, TLS flags.
    - Methods: `find_one`, `find`, `insert_one`, `update_one`, `delete_one`, `aggregate`.
    - Health: ping admin DB.
-2. **DynamoDB** ✅ *(complete; see adapter docs)*
+1. **DynamoDB** ✅ *(complete; see adapter docs)*
    - Settings cover table, region, endpoint override, credentials/profile.
    - Methods implemented: `get_item`, `put_item`, `update_item`, `delete_item`, `scan`.
    - Optional consistent reads + condition expressions supported.
-3. **Firestore** ✅ *(complete)*
+1. **Firestore** ✅ *(complete)*
    - Settings cover project ID, collection name, credentials file, emulator host.
    - Methods implemented: `get_document`, `set_document`, `delete_document`, `query_documents`.
    - Emulator support via `FIRESTORE_EMULATOR_HOST`; lazy import guards for optional extras.
@@ -58,15 +58,15 @@
 ### Phase C – Tests, Docs, Examples (Weeks 2-3)
 
 1. Unit tests mocking client libs (`pytest.importorskip("motor")` etc.) so tests skip when extras missing.
-2. Integration-like tests using in-memory fakes:
+1. Integration-like tests using in-memory fakes:
    - For MongoDB use `mongomock` (optional extra) to keep CI fast.
    - For Dynamo/Firestore rely on stub clients (use simple dataclass to capture requests).
-3. Update docs:
+1. Update docs:
    - `docs/examples/LOCAL_CLI_DEMO.md` – add NoSQL section.
    - `docs/remote/sample_manifest*.yaml` – add entries referencing the new adapters.
-4. CLI transcripts showing `--demo list --domain adapter` includes `nosql.mongo`.
+1. CLI transcripts showing `--demo list --domain adapter` includes `nosql.mongo`.
 
----
+______________________________________________________________________
 
 ## 4. Dependencies & Risks
 
@@ -77,7 +77,7 @@
 | Firestore emulator vs prod differences | Provide `emulator_host` setting and note differences in docs. |
 | Adapter cold start | Lazy import heavy libs (`motor`, `google.cloud`) inside `init`. |
 
----
+______________________________________________________________________
 
 ## 5. Timeline
 
@@ -88,7 +88,7 @@
 | Week 3 (Jan 20) | Firestore adapter + docs updates. |
 | Week 4 (Jan 27) | Buffer for polish, CLI demos, manifest snippets. |
 
----
+______________________________________________________________________
 
 ## 6. Tracking & Evidence
 

@@ -1,11 +1,10 @@
-
 # Embedding Adapters
 
 **Status:** Production Ready
 **Date:** 2025-11-27
 **Adapters:** OpenAI (hosted), Sentence Transformers / ONNX (local, manual install while Python 3.14 wheels are pending)
 
----
+______________________________________________________________________
 
 ## Overview
 
@@ -26,14 +25,16 @@ pip install 'oneiric[ai]'                 # Embedding + LLM extras together
 Use the smaller extras during local smoke tests (e.g., `embedding-openai`) and reserve the meta extras (`embedding`, `ai`) for CI or build images where the broader AI surface is required.
 
 **Implemented Adapters:**
+
 - ✅ **OpenAI** - High-quality embeddings via OpenAI API (text-embedding-3-small, text-embedding-3-large, ada-002)
 - ⚠️ **Sentence Transformers** - Open-source, on-device embeddings (models ready, but Python 3.14 wheels pending upstream)
 - ⚠️ **ONNX Runtime** - Optimized on-device embeddings (requires manual install per `ONNX_GUIDE.md`)
 
 **Planned Adapters (per ADAPTER_STRATEGY.md):**
+
 - 📝 HuggingFace - Wide variety of embedding models once runtime parity lands
 
----
+______________________________________________________________________
 
 ## Architecture
 
@@ -43,6 +44,7 @@ All embedding adapters inherit from `EmbeddingBase` and implement standard lifec
 
 ```python
 from oneiric.adapters.embedding import EmbeddingBase
+
 
 class MyEmbeddingAdapter(EmbeddingBase):
     async def init(self) -> None:
@@ -58,6 +60,7 @@ class MyEmbeddingAdapter(EmbeddingBase):
 ### Common Models
 
 **`EmbeddingResult`** - Single text embedding result:
+
 ```python
 from oneiric.adapters.embedding import EmbeddingResult
 
@@ -67,11 +70,12 @@ result = EmbeddingResult(
     model="text-embedding-3-small",
     dimensions=1536,
     tokens=3,  # Optional token count
-    metadata={"index": 0}
+    metadata={"index": 0},
 )
 ```
 
 **`EmbeddingBatch`** - Batch embedding results:
+
 ```python
 from oneiric.adapters.embedding import EmbeddingBatch
 
@@ -80,11 +84,11 @@ batch = EmbeddingBatch(
     total_tokens=100,
     processing_time=0.5,
     model="text-embedding-3-small",
-    batch_size=10
+    batch_size=10,
 )
 ```
 
----
+______________________________________________________________________
 
 ## OpenAI Embedding Adapter
 
@@ -147,11 +151,7 @@ documents = [
 ]
 
 # Chunk size: 512 characters, overlap: 50 characters
-batches = await adapter.embed_documents(
-    documents,
-    chunk_size=512,
-    chunk_overlap=50
-)
+batches = await adapter.embed_documents(documents, chunk_size=512, chunk_overlap=50)
 
 for i, batch in enumerate(batches):
     print(f"Document {i}: {len(batch.results)} chunks")
@@ -219,7 +219,7 @@ for model in models:
 adapter.metadata.capabilities  # ['batch_embedding', 'vector_normalization', ...]
 ```
 
----
+______________________________________________________________________
 
 ## Integration with Vector Databases
 
@@ -236,9 +236,7 @@ embedding = await embedding_adapter.embed_text(text)
 # Store in vector database
 vector_adapter = await lifecycle.activate("adapter", "vector")
 doc = VectorDocument(
-    id="doc-1",
-    vector=embedding,
-    metadata={"text": text, "category": "tutorial"}
+    id="doc-1", vector=embedding, metadata={"text": text, "category": "tutorial"}
 )
 await vector_adapter.upsert("documents", [doc])
 
@@ -246,9 +244,7 @@ await vector_adapter.upsert("documents", [doc])
 query = "AI tutorial"
 query_embedding = await embedding_adapter.embed_text(query)
 results = await vector_adapter.search(
-    collection="documents",
-    query_vector=query_embedding,
-    limit=5
+    collection="documents", query_vector=query_embedding, limit=5
 )
 
 for result in results:
@@ -256,18 +252,20 @@ for result in results:
     print(f"Text: {result.metadata['text']}")
 ```
 
----
+______________________________________________________________________
 
 ## Model Selection Guide
 
 ### text-embedding-3-small
 
 **Best for:**
+
 - Most use cases (general purpose)
 - Cost-sensitive applications
 - High throughput requirements
 
 **Specs:**
+
 - Dimensions: 1536
 - Max tokens: 8191
 - Cost: $0.00002 per 1k tokens (very cheap)
@@ -276,11 +274,13 @@ for result in results:
 ### text-embedding-3-large
 
 **Best for:**
+
 - Highest accuracy requirements
 - Complex semantic matching
 - Research and benchmarking
 
 **Specs:**
+
 - Dimensions: 3072 (higher capacity)
 - Max tokens: 8191
 - Cost: $0.00013 per 1k tokens
@@ -289,10 +289,12 @@ for result in results:
 ### text-embedding-ada-002
 
 **Best for:**
+
 - Legacy compatibility
 - Existing vector databases with ada-002 embeddings
 
 **Specs:**
+
 - Dimensions: 1536
 - Max tokens: 8191
 - Cost: $0.0001 per 1k tokens
@@ -300,7 +302,7 @@ for result in results:
 
 **Recommendation:** Use `text-embedding-3-small` for most applications. It offers the best price/performance ratio.
 
----
+______________________________________________________________________
 
 ## Performance Tuning
 
@@ -352,7 +354,7 @@ settings = OpenAIEmbeddingSettings(
 # Trade-off: Slightly lower accuracy for faster search + less storage
 ```
 
----
+______________________________________________________________________
 
 ## Lifecycle Integration
 
@@ -375,13 +377,14 @@ status = lifecycle.get_status("adapter", "embedding")
 print(status.state)  # "ready", "failed", "activating"
 ```
 
----
+______________________________________________________________________
 
 ## Testing
 
 ```python
 import pytest
 from oneiric.adapters.embedding import OpenAIEmbeddingSettings
+
 
 @pytest.fixture
 async def embedding_adapter(lifecycle):
@@ -420,7 +423,7 @@ async def test_similarity(embedding_adapter):
     assert similarity > 0.7  # Should be similar
 ```
 
----
+______________________________________________________________________
 
 ## Cost Optimization
 
@@ -429,6 +432,7 @@ async def test_similarity(embedding_adapter):
 ```python
 # Cache embeddings to avoid redundant API calls
 embedding_cache = {}
+
 
 async def get_embedding_cached(text: str) -> list[float]:
     if text in embedding_cache:
@@ -462,7 +466,7 @@ batch = await adapter.embed_texts(texts)  # ~10 API calls (100x fewer)
 # Savings: Use 3-small for most tasks (6.5x cheaper)
 ```
 
----
+______________________________________________________________________
 
 ## Error Handling
 
@@ -482,28 +486,31 @@ except LifecycleError as exc:
         raise
 ```
 
----
+______________________________________________________________________
 
 ## Next Steps
 
 ### High Priority (Next Sprint)
 
 1. **Sentence Transformers Adapter** (per ADAPTER_STRATEGY.md)
+
    - Open-source alternative
    - On-device embeddings
    - No API costs
 
-2. **ONNX Adapter**
+1. **ONNX Adapter**
+
    - Optimized inference
    - Low-latency on-device
    - Mobile/edge deployment
 
-3. **AI/LLM Adapters**
+1. **AI/LLM Adapters**
+
    - OpenAI (GPT-4)
    - Anthropic (Claude)
    - Integration with embedding adapters
 
----
+______________________________________________________________________
 
 ## References
 
@@ -511,7 +518,7 @@ except LifecycleError as exc:
 - **Vector Database Integration:** `docs/VECTOR_ADAPTERS.md`
 - **ADAPTER_STRATEGY.md** - Overall adapter porting roadmap
 
----
+______________________________________________________________________
 
 ## Summary
 

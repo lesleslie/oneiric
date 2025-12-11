@@ -4,7 +4,7 @@
 **Oneiric Version:** 0.2.0 (Production Ready: 95/100)
 **ACB Version:** 0.31.10 (Production: 92/100)
 
----
+______________________________________________________________________
 
 ## Executive Summary
 
@@ -25,7 +25,7 @@
 | **Type Safety** | Registry pattern (manual) | Bevy DI (IDE support) | ACB |
 | **Platform Features** | Infrastructure only | Full platform | ACB |
 
----
+______________________________________________________________________
 
 ## Project Metrics
 
@@ -38,19 +38,21 @@
 | **Version** | 0.2.0 | 0.31.10 (31 releases) |
 | **Audit Score** | 95/100 | 92/100 |
 
----
+______________________________________________________________________
 
 ## What Oneiric Does Better
 
 ### 1. Adapter Resolution & Lifecycle ⭐ **BEST IN CLASS**
 
 **4-Tier Precedence (vs ACB's 2-tier):**
+
 1. **Explicit override** - Config `selections` (`adapters.yml`, `services.yml`, etc.)
-2. **Inferred priority** - `ONEIRIC_STACK_ORDER` env var or path heuristics
-3. **Stack level** - Z-index style layering (candidate `stack_level` metadata)
-4. **Registration order** - Last registered wins (tie-breaker)
+1. **Inferred priority** - `ONEIRIC_STACK_ORDER` env var or path heuristics
+1. **Stack level** - Z-index style layering (candidate `stack_level` metadata)
+1. **Registration order** - Last registered wins (tie-breaker)
 
 **Why This Matters:**
+
 - ✅ **Deterministic** - Clear, traceable decisions
 - ✅ **Explainable** - `explain()` API shows *why* a component was selected
 - ✅ **Multi-tenant** - Per-customer overrides at any tier
@@ -75,6 +77,7 @@ cache = depends.get(Cache)  # Which cache? Why? Unknown.
 ### 2. Hot-Swapping ⭐ **PRODUCTION FEATURE**
 
 **Lifecycle Flow:**
+
 ```
 resolve → instantiate → health_check → pre_swap_hook →
 bind_instance → cleanup_old → post_swap_hook
@@ -96,6 +99,7 @@ await lifecycle.swap("adapter", "cache", provider="memcached")
 ### 3. Modern Adapter Implementations ⭐ **CLEANER CODE**
 
 **All Oneiric adapters have:**
+
 - ✅ Pydantic settings models with validation
 - ✅ Full lifecycle (`init`, `health`, `cleanup`)
 - ✅ Metadata for explainability
@@ -104,6 +108,7 @@ await lifecycle.swap("adapter", "cache", provider="memcached")
 - ✅ Async-first (Python 3.14)
 
 **Example: PostgreSQL Adapter (135 lines vs ACB's ~180 lines)**
+
 ```python
 class PostgreSQLDatabaseSettings(BaseModel):
     database_url: str = Field(default="postgresql://localhost/app")
@@ -115,6 +120,7 @@ class PostgreSQLDatabaseSettings(BaseModel):
         if not value.startswith("postgresql://"):
             raise ValueError("URL must start with postgresql://")
         return value
+
 
 class PostgreSQLDatabaseAdapter:
     metadata = AdapterMetadata(
@@ -177,6 +183,7 @@ results = await vector_db.search(query_vector, top_k=10)
 ### 5. Remote Manifest Delivery ⭐ **PLUGIN MARKETPLACE READY**
 
 **Built-in from day one:**
+
 - ✅ Signed manifests (ED25519)
 - ✅ SHA256 digest verification
 - ✅ HTTP/local file loading
@@ -186,9 +193,7 @@ results = await vector_db.search(query_vector, top_k=10)
 
 ```python
 # Load adapters/services from CDN
-await remote_loader.sync_manifest(
-    "https://cdn.example.com/plugins/manifest.yaml"
-)
+await remote_loader.sync_manifest("https://cdn.example.com/plugins/manifest.yaml")
 
 # Auto-refresh every 5 minutes
 async with remote_loader.watch(refresh_interval=300):
@@ -201,6 +206,7 @@ async with remote_loader.watch(refresh_interval=300):
 ### 6. CLI-First Diagnostics ⭐ **OPERATOR FRIENDLY**
 
 **11 Commands:**
+
 ```bash
 # List all components (active + shadowed)
 oneiric list --domain adapter
@@ -228,27 +234,30 @@ oneiric orchestrate --manifest manifest.yaml
 
 **ACB:** No built-in CLI
 
----
+______________________________________________________________________
 
 ## What ACB Does Better
 
 ### 1. Type-Safe Dependency Injection ⭐ **DEVELOPER EXPERIENCE**
 
 **ACB's Bevy DI with IDE Support:**
+
 ```python
 from acb import depends
+
 
 @depends.inject
 async def process_payment(
     config: Config = depends(),
     cache: Cache = depends(),
-    payment_service: PaymentService = depends()
+    payment_service: PaymentService = depends(),
 ):
     # IDE knows types, autocomplete works, mypy validates
     await payment_service.charge(amount)
 ```
 
 **Oneiric's Registry Pattern:**
+
 ```python
 # Manual resolution, no type hints
 config = await resolver.resolve("config", "app")
@@ -262,6 +271,7 @@ payment_service = await resolver.resolve("service", "payment")
 ### 2. Production Battle-Tested ⭐ **PROVEN STABILITY**
 
 **ACB:**
+
 - ✅ v0.31.10 (31 releases)
 - ✅ Multiple production deployments
 - ✅ 2,206 comprehensive tests
@@ -269,6 +279,7 @@ payment_service = await resolver.resolve("service", "payment")
 - ✅ Community validation
 
 **Oneiric:**
+
 - ⚠️ v0.2.0 (new release)
 - ⚠️ Zero public production usage
 - ⚠️ 526 tests (comprehensive but new)
@@ -279,6 +290,7 @@ payment_service = await resolver.resolve("service", "payment")
 ### 3. Batteries-Included Platform ⭐ **RAPID DEVELOPMENT**
 
 **ACB Provides:**
+
 - ✅ 60+ ready-to-use adapters
 - ✅ Full event system (pub/sub + Redis/RabbitMQ)
 - ✅ Task queue (Celery integration)
@@ -288,6 +300,7 @@ payment_service = await resolver.resolve("service", "payment")
 - ✅ FastBlocks web framework
 
 **Oneiric Provides:**
+
 - ✅ 30+ adapters (infrastructure only)
 - ⚠️ Event bridge (generic, not pub/sub)
 - ⚠️ Task bridge (generic, not queue)
@@ -301,6 +314,7 @@ payment_service = await resolver.resolve("service", "payment")
 ### 4. Simple Convention-Based Discovery
 
 **ACB:**
+
 ```python
 # Simple, works immediately
 Cache = import_adapter("cache")
@@ -309,6 +323,7 @@ await cache.set("key", "value")
 ```
 
 **Oneiric:**
+
 ```python
 # More setup required
 resolver = Resolver()
@@ -319,19 +334,21 @@ await cache_handle.instance.set("key", "value")
 
 **Winner: ACB** - Lower learning curve
 
----
+______________________________________________________________________
 
 ## Recommended Hybrid Approach
 
 ### Use Both - Best of Both Worlds
 
 **Oneiric for Adapters:**
+
 - ✅ Explainability (debug component selection)
 - ✅ Hot-swapping (runtime changes)
 - ✅ Modern implementations (Pydantic, health checks)
 - ✅ NEW categories (embedding, LLM, vector)
 
 **ACB for Services & DI:**
+
 - ✅ Type safety (`Inject[T]` with IDE support)
 - ✅ Proven stability (production-ready)
 - ✅ Event system (if using FastBlocks)
@@ -343,11 +360,13 @@ await cache_handle.instance.set("key", "value")
 # Services: Keep ACB DI (type-safe, fast)
 from acb import depends
 
+
 @depends.inject
 async def process_payment(
-    payment_service: PaymentService = depends()  # Type-safe!
+    payment_service: PaymentService = depends(),  # Type-safe!
 ):
     await payment_service.charge(amount)
+
 
 # Adapters: Use Oneiric (explainable, hot-swappable)
 from oneiric.adapters import AdapterBridge
@@ -364,10 +383,11 @@ await adapter_bridge.swap("cache", provider="memcached")
 
 # Events: Keep ACB (if using FastBlocks)
 from acb.events import create_event, EventPublisher
+
 await publisher.publish(create_event("user.created", {...}))
 ```
 
----
+______________________________________________________________________
 
 ## Migration Strategy
 
@@ -378,18 +398,21 @@ await publisher.publish(create_event("user.created", {...}))
 **Value:** High (explainability + hot-swap)
 
 **Migrate:**
+
 1. ✅ Cache adapters (Redis, Memory)
-2. ✅ Storage adapters (S3, GCS, Local)
-3. ✅ Database adapters (PostgreSQL, MySQL, SQLite)
-4. ✅ Secrets adapters (AWS, GCP, Env, File)
+1. ✅ Storage adapters (S3, GCS, Local)
+1. ✅ Database adapters (PostgreSQL, MySQL, SQLite)
+1. ✅ Secrets adapters (AWS, GCP, Env, File)
 
 **What You Gain:**
+
 - Explainability: Know why components were selected
 - Hot-swapping: Change cache/database without restart
 - Better observability: Health checks, structured logging
 - NEW adapters: Embedding, LLM, Vector DB
 
 **What You Keep:**
+
 - ACB's type-safe DI for services
 - ACB's event system (if using)
 - Proven stability
@@ -401,6 +424,7 @@ await publisher.publish(create_event("user.created", {...}))
 **Value:** Medium (lose type safety)
 
 **Only migrate if:**
+
 - ✅ You need multi-tenant service selection
 - ✅ You need hot-swapping for services
 - ✅ Explainability is critical
@@ -410,13 +434,14 @@ await publisher.publish(create_event("user.created", {...}))
 ### Phase 3: Full Migration (Not Recommended)
 
 **Don't migrate:**
+
 - ❌ Events (ACB's pub/sub is 30x more capable)
 - ❌ Tasks (ACB's queue or use Celery directly)
 - ❌ Workflows (ACB's engine or use Temporal)
 
 **Oneiric provides bridges, not implementations.**
 
----
+______________________________________________________________________
 
 ## Performance Reality
 
@@ -430,46 +455,48 @@ await publisher.publish(create_event("user.created", {...}))
 **Is this relevant?**
 
 **No.** For a typical web request (10 component lookups):
+
 - ACB overhead: **3µs** (0.003ms)
 - Oneiric overhead: **7µs** (0.007ms)
 - **Difference: 4µs** (0.004ms)
 
 Compare to:
+
 - Network I/O: **10-50ms** (10,000-50,000µs)
 - Database query: **5-30ms** (5,000-30,000µs)
 
 **Component resolution is 0.004% of request time.** Completely irrelevant.
 
----
+______________________________________________________________________
 
 ## When to Use What
 
 ### Use Oneiric If:
 
 1. ✅ You need **explainability** (debug component selection in production)
-2. ✅ You need **hot-swapping** (change components without restart)
-3. ✅ You're building **multi-tenant** (different components per tenant)
-4. ✅ You want **remote manifests** (CDN-delivered components)
-5. ✅ You need **NEW adapters** (embedding, LLM, vector DB)
-6. ✅ You want **modern implementations** (Pydantic, health checks, async-first)
+1. ✅ You need **hot-swapping** (change components without restart)
+1. ✅ You're building **multi-tenant** (different components per tenant)
+1. ✅ You want **remote manifests** (CDN-delivered components)
+1. ✅ You need **NEW adapters** (embedding, LLM, vector DB)
+1. ✅ You want **modern implementations** (Pydantic, health checks, async-first)
 
 ### Use ACB If:
 
 1. ✅ You want **type safety** (IDE autocomplete, mypy/pyright)
-2. ✅ You need **proven stability** (v0.31.10, battle-tested)
-3. ✅ You value **simple DI** (`@depends.inject`)
-4. ✅ You're building **standard web apps** (SplashStand, FastBlocks)
-5. ✅ Component selection is **static** (cache=redis, db=postgresql)
-6. ✅ You need **full platform** (events, tasks, workflows, services)
+1. ✅ You need **proven stability** (v0.31.10, battle-tested)
+1. ✅ You value **simple DI** (`@depends.inject`)
+1. ✅ You're building **standard web apps** (SplashStand, FastBlocks)
+1. ✅ Component selection is **static** (cache=redis, db=postgresql)
+1. ✅ You need **full platform** (events, tasks, workflows, services)
 
 ### Use Both (Hybrid) If:
 
 1. ✅ You want **best of both worlds** (type safety + explainability)
-2. ✅ You need **80/20 split** (services via DI, adapters via registry)
-3. ✅ You want **modern adapters** without losing DI
-4. ✅ You can afford **migration cost** (2-3 weeks for adapters)
+1. ✅ You need **80/20 split** (services via DI, adapters via registry)
+1. ✅ You want **modern adapters** without losing DI
+1. ✅ You can afford **migration cost** (2-3 weeks for adapters)
 
----
+______________________________________________________________________
 
 ## Final Recommendations
 
@@ -478,51 +505,58 @@ Compare to:
 **Immediate:** Continue using ACB (stable, proven)
 
 **Q1 2025:** Pilot Oneiric migration for adapters only
+
 - Migrate cache, storage, database adapters
 - Keep ACB DI for services
 - Keep ACB events (if using FastBlocks)
 - **Result:** Best of both worlds
 
 **Q2 2025:** Evaluate results
+
 - If successful: Expand to more projects
 - If issues: Revert and wait for Oneiric 1.0
 
 ### For New Projects
 
 **Recommendation (Current):** Prepare for a full Oneiric cut-over
+
 - Build new features directly on Oneiric, even if some orchestration pieces are still being ported.
 - Keep ACB code paths only as reference; plan to remove them entirely once parity lands.
 
 **Runtime Target:** Cloud Run / serverless-first
+
 - Optimize builds for Cloud Run + buildpacks (no Docker by default, ship Procfile)
 - Keep Oneiric lean for cold starts; treat hot-swapping/watchers as optional
 - Document per-function adapter bundles for FastBlocks-style deployments
 
-**Future Goal:** Single-swoop replacement  
+**Future Goal:** Single-swoop replacement
 Because no production workloads depend on ACB, the plan is to switch to Oneiric-only once event routing, task DAGs, and service supervisors land. There will be no long-lived hybrid deployment.
 
 ### For Oneiric's Future
 
-**Position as (near-term):** "Next-generation adapter layer"  
+**Position as (near-term):** "Next-generation adapter layer"
 **Target state:** Full platform replacement (Oneiric handles adapters + services + tasks + events) once parity work completes.
 
 **Focus on:**
+
 1. ✅ Explainability (unique value proposition)
-2. ✅ Hot-swapping (production feature)
-3. ✅ Modern adapters (Pydantic, health, async)
-4. ✅ Remote delivery (plugin marketplace)
+1. ✅ Hot-swapping (production feature)
+1. ✅ Modern adapters (Pydantic, health, async)
+1. ✅ Remote delivery (plugin marketplace)
 
 **Don't try to replace:**
-1. ❌ Type-safe DI (ACB does this better)
-2. ❌ Full platform features (use specialized tools)
 
----
+1. ❌ Type-safe DI (ACB does this better)
+1. ❌ Full platform features (use specialized tools)
+
+______________________________________________________________________
 
 ## Conclusion
 
 ### The Relationship
 
 **Oneiric and ACB are complementary, not competitive:**
+
 - **ACB** is a batteries-included application platform (like Django)
 - **Oneiric** is infrastructure for building pluggable systems (like setuptools)
 
@@ -547,16 +581,17 @@ Because no production workloads depend on ACB, the plan is to switch to Oneiric-
 **Best Path Forward:**
 
 1. ✅ **Short term:** Hybrid approach (Oneiric adapters + existing ACB services) while parity work happens.
-2. ✅ **Medium term:** Execute the platform parity roadmap (events, task DAGs, service supervisors) with serverless-friendly architecture.
-3. ✅ **Long term:** Retire ACB once Oneiric reaches full feature coverage; all dependent apps (Crackerjack, FastBlocks, session-mgmt-mcp) standardize on Oneiric deployments.
+1. ✅ **Medium term:** Execute the platform parity roadmap (events, task DAGs, service supervisors) with serverless-friendly architecture.
+1. ✅ **Long term:** Retire ACB once Oneiric reaches full feature coverage; all dependent apps (Crackerjack, FastBlocks, session-mgmt-mcp) standardize on Oneiric deployments.
 
 **The world needs both:** ACB for building apps today, Oneiric as the next-generation adapter resolution layer that makes those apps more observable and flexible.
 
----
+______________________________________________________________________
 
 ## Appendix: Quick Reference
 
 ### Oneiric Strengths
+
 - ✅ 4-tier precedence (deterministic, explainable)
 - ✅ Hot-swapping (production-safe runtime changes)
 - ✅ Modern adapters (Pydantic, health, async)
@@ -565,6 +600,7 @@ Because no production workloads depend on ACB, the plan is to switch to Oneiric-
 - ✅ CLI diagnostics (operator-friendly)
 
 ### ACB Strengths
+
 - ✅ Type-safe DI (IDE support, mypy validation)
 - ✅ Battle-tested (31 releases, production proven)
 - ✅ Full platform (events, tasks, workflows, services)
@@ -573,6 +609,7 @@ Because no production workloads depend on ACB, the plan is to switch to Oneiric-
 - ✅ Simple patterns (rapid development)
 
 ### Migration Checklist
+
 - [ ] Audit adapter usage in current projects
 - [ ] Pilot Oneiric with cache/storage adapters
 - [ ] Validate explainability and hot-swap features

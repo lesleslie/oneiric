@@ -32,7 +32,7 @@ These documents remain accurate but are superseded by the streamlined execution 
 ## How to Archive
 
 1. Move the file into this folder (mirror the original subdirectory if needed, e.g., `archive/implementation/`).
-2. Update `docs/README.md` to remove the file from active navigation and add an “Archive” reference pointing here.
-3. Keep a short note in the archived file’s front-matter explaining why it was moved (e.g., “Superseded by STRATEGIC_ROADMAP.md on 2025-12-07.”).
+1. Update `docs/README.md` to remove the file from active navigation and add an “Archive” reference pointing here.
+1. Keep a short note in the archived file’s front-matter explaining why it was moved (e.g., “Superseded by STRATEGIC_ROADMAP.md on 2025-12-07.”).
 
 This workflow keeps Oneiric’s documentation approachable without losing the detailed history that auditors and future maintainers may need.

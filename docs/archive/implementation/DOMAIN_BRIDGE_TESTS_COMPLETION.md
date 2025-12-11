@@ -367,11 +367,13 @@ class MockProviderSettings(BaseModel):
     port: int = 8080
     timeout: int = 30
 
+
 class CacheAdapterSettings(BaseModel):
     host: str = "localhost"
     port: int = 6379
     db: int = 0
     timeout: int = 5
+
 
 class QueueAdapterSettings(BaseModel):
     broker_url: str = "amqp://localhost"

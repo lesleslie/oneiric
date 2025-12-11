@@ -66,16 +66,16 @@ Use Oneiric when you need explainable selection, secure remote packaging, and ru
 - **Layer Oneiric under Airflow or Prefect** to centralize credential management, messaging adapters, and remote manifests while those platforms handle DAG scheduling and UI/alerting.
 - **Use Nitric for greenfield serverless stacks** that need multi-cloud provisioning; adopt Oneiric within Nitric services when you require explainable selection logic, remote manifest delivery, or ED25519-verified component supply chains.
 
----
+______________________________________________________________________
 
-[^oneiric-core]: README.md:11-210; docs/RESOLUTION_LAYER_SPEC.md:1-110
-[^manifest]: docs/REMOTE_MANIFEST_SCHEMA.md:1-200
-[^signatures]: docs/SIGNATURE_VERIFICATION.md:1-200
-[^serverless-plan]: docs/implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md:1-152
-[^strategic-roadmap]: docs/STRATEGIC_ROADMAP.md:1-149
-[^cadence-structure]: https://github.com/cadence-workflow/cadence/blob/master/CONTRIBUTING.md
-[^temporal-overview]: https://docs.temporal.io/workflow-execution
-[^temporal-server]: https://docs.temporal.io/temporal-service/temporal-server
-[^airflow-readme]: https://github.com/apache/airflow/blob/main/README.md
-[^prefect-readme]: https://github.com/prefecthq/prefect/blob/main/README.md
-[^nitric-overview]: https://github.com/nitrictech/nitric/tree/main/docs
+\[^oneiric-core\]: README.md:11-210; docs/RESOLUTION_LAYER_SPEC.md:1-110
+\[^manifest\]: docs/REMOTE_MANIFEST_SCHEMA.md:1-200
+\[^signatures\]: docs/SIGNATURE_VERIFICATION.md:1-200
+\[^serverless-plan\]: docs/implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md:1-152
+\[^strategic-roadmap\]: docs/STRATEGIC_ROADMAP.md:1-149
+\[^cadence-structure\]: https://github.com/cadence-workflow/cadence/blob/master/CONTRIBUTING.md
+\[^temporal-overview\]: https://docs.temporal.io/workflow-execution
+\[^temporal-server\]: https://docs.temporal.io/temporal-service/temporal-server
+\[^airflow-readme\]: https://github.com/apache/airflow/blob/main/README.md
+\[^prefect-readme\]: https://github.com/prefecthq/prefect/blob/main/README.md
+\[^nitric-overview\]: https://github.com/nitrictech/nitric/tree/main/docs

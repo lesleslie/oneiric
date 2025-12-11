@@ -1,5 +1,6 @@
 # Oneiric
 
+![Coverage](https://img.shields.io/badge/coverage-75.5%25-yellow)
 **Explainable component resolution with hot-swapping for Python 3.14+**
 
 > **Status:** Production Ready (v0.2.0) | [Audit Report](docs/STAGE5_FINAL_AUDIT_REPORT.md): 95/100, 526 tests, 83% coverage

@@ -273,6 +273,7 @@ bridge._activity_store.set_paused("test", "cache", paused=True, note="test")
 
 # After:
 from oneiric.runtime.activity import DomainActivity
+
 bridge._activity_store.set("test", "cache", DomainActivity(paused=True, note="test"))
 ```
 
@@ -385,6 +386,7 @@ class MockBridge(DomainBridge):
 ```python
 def mock_settings_loader() -> OneiricSettings:
     return OneiricSettings(config_dir=".", cache_dir=".")
+
 
 def mock_layer_selector(settings: OneiricSettings) -> LayerSettings:
     return LayerSettings(selections={})

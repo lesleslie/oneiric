@@ -14,6 +14,7 @@ from oneiric.core.config import (
     OneiricSettings,
     SecretsHook,
     domain_activity_path,
+    runtime_observability_path,
 )
 from oneiric.core.config import (
     workflow_checkpoint_path as resolve_workflow_checkpoint_path,
@@ -37,6 +38,7 @@ from oneiric.runtime.activity import DomainActivityStore
 from oneiric.runtime.checkpoints import WorkflowCheckpointStore
 from oneiric.runtime.health import RuntimeHealthSnapshot, write_runtime_health
 from oneiric.runtime.supervisor import ServiceSupervisor
+from oneiric.runtime.telemetry import RuntimeTelemetryRecorder
 
 logger = get_logger("runtime.orchestrator")
 
@@ -62,6 +64,7 @@ class RuntimeOrchestrator:
         self._health_path = health_path
         self._health = RuntimeHealthSnapshot()
         self._activity_store = DomainActivityStore(domain_activity_path(settings))
+        self._telemetry = RuntimeTelemetryRecorder(runtime_observability_path(settings))
         self._supervisor_enabled = getattr(settings.profile, "supervisor_enabled", True)
         self._supervisor = (
             ServiceSupervisor(self._activity_store)
@@ -111,6 +114,7 @@ class RuntimeOrchestrator:
             settings.events,
             activity_store=self._activity_store,
             supervisor=self._supervisor,
+            telemetry=self._telemetry,
         )
         self.workflow_bridge = WorkflowBridge(
             resolver,
@@ -121,6 +125,7 @@ class RuntimeOrchestrator:
             checkpoint_store=self._checkpoint_store,
             queue_bridge=self.adapter_bridge,
             supervisor=self._supervisor,
+            telemetry=self._telemetry,
         )
 
         self.bridges: dict[str, DomainBridge | AdapterBridge] = {

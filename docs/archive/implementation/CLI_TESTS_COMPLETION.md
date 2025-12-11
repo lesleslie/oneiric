@@ -283,13 +283,10 @@ assert "demo/cli" in result.stdout
 
 ```python
 def test_with_config(runner, tmp_path):
-    result = runner.invoke(app, [
-        f"--config={tmp_path / 'app.yml'}",
-        "--demo",
-        "status",
-        "--domain",
-        "adapter"
-    ])
+    result = runner.invoke(
+        app,
+        [f"--config={tmp_path / 'app.yml'}", "--demo", "status", "--domain", "adapter"],
+    )
 ```
 
 ### 4. JSON Output Validation

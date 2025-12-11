@@ -4,7 +4,7 @@
 **Date:** 2025-11-27
 **Adapters:** Pinecone, Qdrant, PGVector
 
----
+______________________________________________________________________
 
 ## Overview
 
@@ -23,15 +23,17 @@ pip install 'oneiric[vector]'            # Installs both extras above
 These extras map directly to `pyproject.toml`’s `[project.optional-dependencies]` entries, so upgrading the repo automatically surfaces new versions. The CLI/demo docs cross-link these extras whenever a sample flow uses Pinecone or Qdrant.
 
 **Implemented Adapters:**
+
 - ✅ **Pinecone** - Managed serverless vector database
 - ✅ **Qdrant** - High-performance open-source vector search engine
 - ✅ **PGVector** - Postgres extension with asyncpg pool + pgvector type registration
 
 **Planned Adapters (per ADAPTER_STRATEGY.md):**
+
 - 📝 Weaviate
 - ✅ DuckDB PGQ (now implemented under `graph/duckdb_pgq.py`)
 
----
+______________________________________________________________________
 
 ## Architecture
 
@@ -41,6 +43,7 @@ All vector adapters inherit from `VectorBase` and implement standard lifecycle h
 
 ```python
 from oneiric.adapters.vector import VectorBase
+
 
 class MyVectorAdapter(VectorBase):
     async def init(self) -> None:
@@ -56,17 +59,19 @@ class MyVectorAdapter(VectorBase):
 ### Common Models
 
 **`VectorDocument`** - Document with vector embedding:
+
 ```python
 from oneiric.adapters.vector import VectorDocument
 
 doc = VectorDocument(
     id="doc-123",
     vector=[0.1, 0.2, 0.3, ...],  # Embedding vector
-    metadata={"title": "Example", "author": "Alice"}
+    metadata={"title": "Example", "author": "Alice"},
 )
 ```
 
 **`VectorSearchResult`** - Search result with similarity score:
+
 ```python
 from oneiric.adapters.vector import VectorSearchResult
 
@@ -74,11 +79,11 @@ result = VectorSearchResult(
     id="doc-123",
     score=0.95,  # Similarity score (higher = more similar)
     metadata={"title": "Example"},
-    vector=[0.1, 0.2, ...]  # Optional
+    vector=[0.1, 0.2, ...],  # Optional
 )
 ```
 
----
+______________________________________________________________________
 
 ## Pinecone Adapter
 
@@ -116,20 +121,16 @@ adapter = await lifecycle.activate("adapter", "vector")
 # Upsert documents
 docs = [
     VectorDocument(
-        id="doc-1",
-        vector=[0.1, 0.2, 0.3, ...],
-        metadata={"title": "Document 1"}
+        id="doc-1", vector=[0.1, 0.2, 0.3, ...], metadata={"title": "Document 1"}
     ),
     VectorDocument(
-        id="doc-2",
-        vector=[0.4, 0.5, 0.6, ...],
-        metadata={"title": "Document 2"}
+        id="doc-2", vector=[0.4, 0.5, 0.6, ...], metadata={"title": "Document 2"}
     ),
 ]
 
 doc_ids = await adapter.upsert(
     collection="documents",  # Namespace in Pinecone
-    documents=docs
+    documents=docs,
 )
 
 # Search
@@ -139,7 +140,7 @@ results = await adapter.search(
     query_vector=query_vector,
     limit=10,
     filter_expr={"title": "Document 1"},  # Metadata filter
-    include_vectors=False
+    include_vectors=False,
 )
 
 for result in results:
@@ -159,14 +160,14 @@ for result in results:
 ### Capabilities
 
 ```python
-adapter.has_capability("vector_search")      # True
-adapter.has_capability("batch_operations")   # True
-adapter.has_capability("metadata_filtering") # True
-adapter.has_capability("namespaces")         # True
-adapter.has_capability("serverless")         # True
+adapter.has_capability("vector_search")  # True
+adapter.has_capability("batch_operations")  # True
+adapter.has_capability("metadata_filtering")  # True
+adapter.has_capability("namespaces")  # True
+adapter.has_capability("serverless")  # True
 ```
 
----
+______________________________________________________________________
 
 ## Qdrant Adapter
 
@@ -203,16 +204,13 @@ adapter = await lifecycle.activate("adapter", "vector")
 
 # Create collection
 await adapter.create_collection(
-    name="documents",
-    dimension=1536,
-    distance_metric="cosine"
+    name="documents", dimension=1536, distance_metric="cosine"
 )
 
 # Upsert documents
 docs = [
     VectorDocument(
-        vector=[0.1, 0.2, 0.3, ...],
-        metadata={"category": "tech", "year": 2024}
+        vector=[0.1, 0.2, 0.3, ...], metadata={"category": "tech", "year": 2024}
     )
 ]
 doc_ids = await adapter.upsert("documents", docs)
@@ -223,21 +221,17 @@ results = await adapter.search(
     query_vector=[0.15, 0.25, 0.35, ...],
     limit=10,
     filter_expr={"category": "tech", "year": 2024},
-    score_threshold=0.7  # Min similarity threshold
+    score_threshold=0.7,  # Min similarity threshold
 )
 
 # Scroll through large result sets
 documents, next_offset = await adapter.scroll(
-    collection="documents",
-    limit=100,
-    filter_expr={"category": "tech"}
+    collection="documents", limit=100, filter_expr={"category": "tech"}
 )
 
 # Continue scrolling
 more_docs, next_offset = await adapter.scroll(
-    collection="documents",
-    limit=100,
-    offset=next_offset
+    collection="documents", limit=100, offset=next_offset
 )
 ```
 
@@ -255,15 +249,15 @@ more_docs, next_offset = await adapter.scroll(
 ### Capabilities
 
 ```python
-adapter.has_capability("vector_search")      # True
-adapter.has_capability("batch_operations")   # True
-adapter.has_capability("metadata_filtering") # True
-adapter.has_capability("scroll")             # True
-adapter.has_capability("quantization")       # True
-adapter.has_capability("streaming")          # True
+adapter.has_capability("vector_search")  # True
+adapter.has_capability("batch_operations")  # True
+adapter.has_capability("metadata_filtering")  # True
+adapter.has_capability("scroll")  # True
+adapter.has_capability("quantization")  # True
+adapter.has_capability("streaming")  # True
 ```
 
----
+______________________________________________________________________
 
 ## Common Operations
 
@@ -292,9 +286,7 @@ filtered_count = await adapter.count(collection, filter_expr={"year": 2024})
 ```python
 # Create collection
 await adapter.create_collection(
-    name="documents",
-    dimension=1536,
-    distance_metric="cosine"
+    name="documents", dimension=1536, distance_metric="cosine"
 )
 
 # List collections
@@ -308,20 +300,15 @@ await adapter.delete_collection("documents")
 
 ```python
 # Access collections as attributes
-results = await adapter.documents.search(
-    query_vector=[0.1, 0.2, ...],
-    limit=10
-)
+results = await adapter.documents.search(query_vector=[0.1, 0.2, ...], limit=10)
 
 # Same as
 results = await adapter.search(
-    collection="documents",
-    query_vector=[0.1, 0.2, ...],
-    limit=10
+    collection="documents", query_vector=[0.1, 0.2, ...], limit=10
 )
 ```
 
----
+______________________________________________________________________
 
 ## Metadata Filtering
 
@@ -332,18 +319,10 @@ results = await adapter.search(
 filter_expr = {"category": "tech"}
 
 # Multiple conditions (implicit AND)
-filter_expr = {
-    "category": "tech",
-    "year": 2024
-}
+filter_expr = {"category": "tech", "year": 2024}
 
 # Pinecone filter syntax (advanced)
-filter_expr = {
-    "$and": [
-        {"category": {"$eq": "tech"}},
-        {"year": {"$gte": 2020}}
-    ]
-}
+filter_expr = {"$and": [{"category": {"$eq": "tech"}}, {"year": {"$gte": 2020}}]}
 ```
 
 ### Qdrant
@@ -358,20 +337,20 @@ filter_expr = {"category": ["tech", "science"]}
 # Qdrant automatically converts to Filter(must=[...])
 ```
 
----
+______________________________________________________________________
 
 ## Distance Metrics
 
 All adapters support standard distance metrics:
 
-| Metric       | Description                          | Use Case                    |
+| Metric | Description | Use Case |
 |-------------|--------------------------------------|-----------------------------|
-| `cosine`    | Cosine similarity (angle-based)      | Text embeddings (default)   |
-| `euclidean` | L2 distance (geometric distance)     | Spatial data                |
-| `dot_product` | Dot product (magnitude-aware)      | Normalized embeddings       |
-| `manhattan` | L1 distance (Qdrant only)            | High-dimensional data       |
+| `cosine` | Cosine similarity (angle-based) | Text embeddings (default) |
+| `euclidean` | L2 distance (geometric distance) | Spatial data |
+| `dot_product` | Dot product (magnitude-aware) | Normalized embeddings |
+| `manhattan` | L1 distance (Qdrant only) | High-dimensional data |
 
----
+______________________________________________________________________
 
 ## Performance Tuning
 
@@ -400,30 +379,27 @@ settings = PineconeSettings(
 settings = QdrantSettings(
     # HNSW index tuning
     hnsw_config={
-        "m": 16,               # Links per node (higher = better recall)
-        "ef_construct": 100,   # Build-time accuracy (higher = slower build)
+        "m": 16,  # Links per node (higher = better recall)
+        "ef_construct": 100,  # Build-time accuracy (higher = slower build)
         "full_scan_threshold": 10000,  # Switch to brute force below this
     },
-
     # Quantization (compression)
     enable_quantization=True,
     quantization_config={
         "scalar": {
-            "type": "int8",      # 8-bit quantization
-            "quantile": 0.99,    # Preserve 99% of values
+            "type": "int8",  # 8-bit quantization
+            "quantile": 0.99,  # Preserve 99% of values
             "always_ram": True,  # Keep compressed vectors in RAM
         }
     },
-
     # Storage
     on_disk_vectors=False,  # RAM = fast, disk = large datasets
-
     # Protocol
     prefer_grpc=True,  # gRPC is faster than HTTP
 )
 ```
 
----
+______________________________________________________________________
 
 ## Integration with Lifecycle Manager
 
@@ -450,7 +426,7 @@ status = lifecycle.get_status("adapter", "vector")
 print(status.state)  # "ready", "failed", "activating"
 ```
 
----
+______________________________________________________________________
 
 ## Testing
 
@@ -460,17 +436,14 @@ Vector adapters can be tested with mock embeddings:
 import pytest
 from oneiric.adapters.vector import VectorDocument
 
+
 @pytest.mark.asyncio
 async def test_vector_search(lifecycle):
     adapter = await lifecycle.activate("adapter", "vector")
 
     # Create test documents
     docs = [
-        VectorDocument(
-            id=f"test-{i}",
-            vector=[float(i)] * 1536,
-            metadata={"index": i}
-        )
+        VectorDocument(id=f"test-{i}", vector=[float(i)] * 1536, metadata={"index": i})
         for i in range(10)
     ]
 
@@ -480,9 +453,7 @@ async def test_vector_search(lifecycle):
 
     # Search
     results = await adapter.search(
-        collection="test-collection",
-        query_vector=[5.0] * 1536,
-        limit=3
+        collection="test-collection", query_vector=[5.0] * 1536, limit=3
     )
 
     assert len(results) == 3
@@ -492,22 +463,25 @@ async def test_vector_search(lifecycle):
     await adapter.delete_collection("test-collection")
 ```
 
----
+______________________________________________________________________
 
 ## Next Steps
 
 ### High Priority (Next Sprint)
 
 1. **Embedding Adapters** (per ADAPTER_STRATEGY.md)
+
    - OpenAI embeddings
    - Sentence Transformers
    - ONNX embeddings
 
-2. **PGVector Adapter**
+1. **PGVector Adapter**
+
    - Reuse existing database/postgres adapter
    - Add vector extension support
 
-3. **AI/LLM Adapters**
+1. **AI/LLM Adapters**
+
    - OpenAI (GPT-4, embeddings)
    - Anthropic (Claude)
    - Google Gemini
@@ -520,7 +494,7 @@ async def test_vector_search(lifecycle):
 - **Vector caching** (frequently-accessed vectors)
 - **Automatic reranking** (improve search quality)
 
----
+______________________________________________________________________
 
 ## References
 
@@ -529,7 +503,7 @@ async def test_vector_search(lifecycle):
 - **ADAPTER_STRATEGY.md** - Overall adapter porting roadmap
 - **ACB Comparison:** `docs/ACB_COMPARISON.md`
 
----
+______________________________________________________________________
 
 ## Migration from ACB
 
@@ -538,15 +512,17 @@ If migrating from ACB's vector adapters:
 ### Key Differences
 
 1. **Settings Model** - Pydantic V2 instead of V1
-2. **Lifecycle Hooks** - `init()`, `health()`, `cleanup()` instead of ACB's lifecycle
-3. **No Dependency Injection** - Settings passed directly to constructor
-4. **Simplified Interface** - No advanced features (caching, hybrid search) yet
+1. **Lifecycle Hooks** - `init()`, `health()`, `cleanup()` instead of ACB's lifecycle
+1. **No Dependency Injection** - Settings passed directly to constructor
+1. **Simplified Interface** - No advanced features (caching, hybrid search) yet
 
 ### Migration Example
 
 **ACB:**
+
 ```python
 from acb.depends import depends
+
 
 @depends.inject
 def __init__(self, config: Inject[Config]):
@@ -554,13 +530,14 @@ def __init__(self, config: Inject[Config]):
 ```
 
 **Oneiric:**
+
 ```python
 def __init__(self, settings: PineconeSettings):
     super().__init__(settings)
     self._settings = settings
 ```
 
----
+______________________________________________________________________
 
 ## PGVector Adapter
 
@@ -630,14 +607,14 @@ results = await adapter.search(
 ### Capabilities
 
 ```python
-adapter.has_capability("vector_search")      # True
-adapter.has_capability("batch_operations")   # True
-adapter.has_capability("metadata_filtering") # True
-adapter.has_capability("collections")        # True
-adapter.has_capability("sql")                # True
+adapter.has_capability("vector_search")  # True
+adapter.has_capability("batch_operations")  # True
+adapter.has_capability("metadata_filtering")  # True
+adapter.has_capability("collections")  # True
+adapter.has_capability("sql")  # True
 ```
 
----
+______________________________________________________________________
 
 ## Summary
 
@@ -647,7 +624,7 @@ adapter.has_capability("sql")                # True
 - ✅ **Production-ready** for AI/LLM workloads
 - 📝 **Next:** Weaviate integration; DuckDB PGQ shipped via `graph/duckdb_pgq.py`
 
----
+______________________________________________________________________
 
 ## Related Documentation
 

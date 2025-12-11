@@ -1,22 +1,22 @@
 # Serverless & Parity Execution Plan
 
-**Last Updated:** 2025-12-07  
-**Owners:** Platform Core (runtime + adapters), Docs Team, Deployment Experience  
+**Last Updated:** 2025-12-07
+**Owners:** Platform Core (runtime + adapters), Docs Team, Deployment Experience
 **Purpose:** Capture the post–Track G decisions, codify the “Oneiric replaces ACB” mandate, and lay out the concrete work we must finish so Cloud Run/serverless deployments, orchestration parity, and documentation cleanup converge on the same timeline.
 
----
+______________________________________________________________________
 
 ## 1. Decisions & Guardrails (Recap)
 
 1. **ACB sunset:** Oneiric will replace ACB end-to-end across Crackerjack, FastBlocks, and session-mgmt-mcp. No hybrid “mix adapters/actions” mode will ship because no production workloads force backwards compatibility.
-2. **Serverless-first:** Google Cloud Run (and other buildpack-based runtimes) are the primary deployment targets. Docker compose/Kubernetes docs stay as historical references but the Procfile/buildpack flow is the default.
-3. **Lean adapters/actions:** `_base.py` scaffolding is retired; shared helpers live in `common.py` modules with lazy imports. New adapters/actions must follow that pattern and expose optional extras for heavyweight dependencies.
-4. **Secrets precedence:** Secret Manager adapters (GCP/AWS) and other providers take precedence over plain env vars in serverless profiles; env adapters remain as fallbacks for local dev/testing.
-5. **Observability posture:** Structlog JSON stays on `stdout`; `stderr` is reserved for crashes. Rich/loguru pretty output is allowed only for dev runs. Remote loader remains on `httpx` + `tenacity/aiobreaker`; adapters may wrap other HTTP libs when needed.
-6. **Package scope:** Oneiric ships as a single distribution until orchestration parity is complete; afterwards we can evaluate splitting adapters/actions into extras if it reduces install surface.
-7. **MCP scope:** Oneiric does not host its own MCP server. Crackerjack/FastBlocks can expose MCP endpoints that wrap Oneiric orchestrations if needed; Oneiric focuses on orchestration/core runtime.
+1. **Serverless-first:** Google Cloud Run (and other buildpack-based runtimes) are the primary deployment targets. Docker compose/Kubernetes docs stay as historical references but the Procfile/buildpack flow is the default.
+1. **Lean adapters/actions:** `_base.py` scaffolding is retired; shared helpers live in `common.py` modules with lazy imports. New adapters/actions must follow that pattern and expose optional extras for heavyweight dependencies.
+1. **Secrets precedence:** Secret Manager adapters (GCP/AWS) and other providers take precedence over plain env vars in serverless profiles; env adapters remain as fallbacks for local dev/testing.
+1. **Observability posture:** Structlog JSON stays on `stdout`; `stderr` is reserved for crashes. Rich/loguru pretty output is allowed only for dev runs. Remote loader remains on `httpx` + `tenacity/aiobreaker`; adapters may wrap other HTTP libs when needed.
+1. **Package scope:** Oneiric ships as a single distribution until orchestration parity is complete; afterwards we can evaluate splitting adapters/actions into extras if it reduces install surface.
+1. **MCP scope:** Oneiric does not host its own MCP server. Crackerjack/FastBlocks can expose MCP endpoints that wrap Oneiric orchestrations if needed; Oneiric focuses on orchestration/core runtime.
 
----
+______________________________________________________________________
 
 ## 2. Workstreams
 
@@ -27,7 +27,7 @@
 | **WS-C: Adapter/Action Completeness** | Close the adapter/action gaps between ACB and Oneiric (pgvector, secrets variants, HTTP choices, notification/email, scheduler bridges). | Port remaining ACB adapters/actions, add optional extras, guard imports, add CLI/tests, update manifests. | Adapter Team | Rolling |
 | **WS-D: Documentation & Roadmap Hygiene** | Consolidate redundant docs, surface current plans, and keep Track G follow-ups visible. | Archive week-by-week completion reports into `/docs/archive`, refresh `docs/README.md`, keep roadmap + plan cross-links healthy, capture newly approved decisions. | Docs Team | Dec 2025 |
 
----
+______________________________________________________________________
 
 ## 3. Serverless Profile Blueprint (WS-A)
 
@@ -37,20 +37,20 @@
    - ✅ Add CLI helper: `uv run python -m oneiric.cli manifest pack --output build/manifest.json`.
    - ✅ Ship the global `--profile` flag (default/serverless) so `uv run python -m oneiric.cli orchestrate --profile serverless` is the canonical Cloud Run entrypoint.
    - ✅ CLI + `main.py` now read `ONEIRIC_PROFILE` (and config defaults) so Cloud Run deploys only need an env var instead of duplicating the profile stanza inside the settings file.
-2. **Runtime toggles**
+1. **Runtime toggles**
    - Serverless profile disables file watchers, remote polling, and hot reload (`RuntimeProfileConfig.watchers_enabled=False`, `remote_enabled=False`, `inline_manifest_only=True`). Hot swap stays available for long-lived Crackerjack installs only.
    - Ensure resolver defaults to inline manifests packaged within the container; remote refresh runs only when explicitly enabled.
-3. **Secrets + config**
+1. **Secrets + config**
    - Prioritize `oneiric.adapters.secrets.gcp.SecretManagerSecretsAdapter` (default) → `aws` → `env` fallback.
    - Document secret rotation + caching expectations for Cloud Run revisions.
-4. **Cold start + size**
+1. **Cold start + size**
    - Guard heavy optional dependencies via extras (e.g., `pip install oneiric[vector,pg]`).
    - Document recommended buildpack `BP_KEEP_FILES=/oneiric/` layout and caching strategies.
-5. **Testing**
+1. **Testing**
    - ✅ Add CI job: `uv run pytest -k serverless_profile` covering toggles/manifests (see `.github/workflows/release.yml`).
    - Capture CLI transcript demonstrating a local buildpack deploy.
 
----
+______________________________________________________________________
 
 ## 4. Orchestration Parity Blueprint (WS-B)
 
@@ -75,16 +75,16 @@ All orchestration capabilities ship in Oneiric core. Crackerjack/FastBlocks cons
    - finalize manifest schema additions.
    - Provide CLI `orchestrate --events --print-subscribers`.
    - Document ops playbook for event routing.
-2. **Task DAGs (Feb 2026)**
+1. **Task DAGs (Feb 2026)**
    - `networkx` DAG engine, `sqlite` checkpoint store, CLI `--plan`.
    - Provide Cloud Tasks / Pub/Sub adapters to trigger DAG starts.
-3. **Service supervision (Mar 2026)**
+1. **Service supervision (Mar 2026)**
    - Supervisor loops integrated with resolver, watchers optional per profile.
    - Write doc: `docs/runbooks/SERVICE_SUPERVISOR.md`.
-4. **Migration rehearsals (Apr 2026)**
+1. **Migration rehearsals (Apr 2026)**
    - Crackerjack + FastBlocks runbooks + manifest diffs.
 
----
+______________________________________________________________________
 
 ## 5. Adapter & Action Completeness Checklist (WS-C)
 
@@ -93,33 +93,34 @@ All orchestration capabilities ship in Oneiric core. Crackerjack/FastBlocks cons
 1. **Vector & data science**
    - Port `pgvector` adapter with async pool + metadata (owner: Data Platform).
    - Provide `duckdb` parity tests referencing new `activity.sqlite`.
-2. **Messaging**
+1. **Messaging**
    - ✅ SendGrid/Mailgun/Twilio plus Slack/Teams/webhook adapters shipped with unit tests, CLI demos, and sample manifests. Workflow notify → ChatOps bridging is documented in `docs/examples/LOCAL_CLI_DEMO.md` and referenced in the orchestration parity plan.
    - Next: evaluate `webpush`/mobile push adapters + SecretsHook ergonomics for Teams Graph once requirements land.
-3. **Scheduler/queue**
+1. **Scheduler/queue**
    - ✅ Cloud Tasks + Pub/Sub adapters landed (unit tests + docs). Ensure Redis/NATS integration tests cover parity fixtures under `tests/adapters/`.
-4. **Security**
+1. **Security**
    - Ensure `security.signature`, `security.secure`, `validation.schema` kits all expose CLI and docs.
-5. **HTTP adapters**
+1. **HTTP adapters**
    - Keep `httpx` in runtime critical path; http adapters remain for consumer choice but remote loader will not depend on them (less indirection, faster cold start).
 
 See `docs/analysis/ADAPTER_GAP_AUDIT.md` for the living adapter backlog.
+
 ### Optional / Wave C
 
 1. **Observability exporters** (Logfire, OTLP, Sentry) already ported – add docs referencing serverless profile.
-2. **Feature flag adapters** – only if new projects request them.
+1. **Feature flag adapters** – only if new projects request them.
 
----
+______________________________________________________________________
 
 ## 6. Documentation & Cleanup (WS-D)
 
 1. ✅ **Archive historical completion reports** – `docs/implementation/BUILD_PROGRESS.md`, `UNIFIED_IMPLEMENTATION_PLAN.md`, and every `WEEK*`/`*_COMPLETION` file now live under `docs/archive/implementation/` with an updated index.
-2. **Refresh `docs/README.md`** to link to `STRATEGIC_ROADMAP.md`, this plan, and `ORCHESTRATION_PARITY_PLAN.md`.
-3. **Update sample manifests** with serverless toggles + Procfile references.
-4. **Remove redundant Docker/K8s docs** or mark them as “legacy”; highlight Cloud Run/buildpack flow instead.
-5. **Add decision log** in `docs/STRATEGIC_ROADMAP.md §6` summarizing the bullets from §1 here so newcomers understand the December decisions.
+1. **Refresh `docs/README.md`** to link to `STRATEGIC_ROADMAP.md`, this plan, and `ORCHESTRATION_PARITY_PLAN.md`.
+1. **Update sample manifests** with serverless toggles + Procfile references.
+1. **Remove redundant Docker/K8s docs** or mark them as “legacy”; highlight Cloud Run/buildpack flow instead.
+1. **Add decision log** in `docs/STRATEGIC_ROADMAP.md §6` summarizing the bullets from §1 here so newcomers understand the December decisions.
 
----
+______________________________________________________________________
 
 ## 7. Risks & Mitigations
 
@@ -130,22 +131,22 @@ See `docs/analysis/ADAPTER_GAP_AUDIT.md` for the living adapter backlog.
 | Doc sprawl reappears | Teams lose signal | Calendar reminder for Docs team to snapshot this plan + roadmap whenever major milestones finish. |
 | Buildpack path drift | Deploys break | Add CI smoke test `pack build oneiric:ci` weekly. |
 
----
+______________________________________________________________________
 
 ## 8. Next Actions (Next 2 Weeks)
 
 1. **Serverless profile skeleton (Runtime)**
    - ✅ Implemented profile toggles, env-var fallback, Procfile/guide updates. Next: capture screenshots/logs of a `pack build` + `gcloud run deploy` run to include in the deployment appendix.
-2. **Adapter gap audit (Adapter Team)**
+1. **Adapter gap audit (Adapter Team)**
    - Diff `ACB_ADAPTER_ACTION_IMPLEMENTATION.md` vs current adapters; capture the remaining NoSQL/feature-flag backlog now that Mailgun/Twilio/Slack/Teams/webhook + Cloud Tasks/Pub/Sub shipped.
    - Update `ADAPTER_REMEDIATION_EXECUTION.md` with refreshed evidence + owners.
-3. **Docs hygiene (Docs Team)**
+1. **Docs hygiene (Docs Team)**
    - Move week-by-week completion docs into `/docs/archive`, update links.
    - Cross-link roadmap ↔ parity plan ↔ this document.
-4. **Parity spike (Platform Core)**
+1. **Parity spike (Platform Core)**
    - ✅ `oneiric.runtime.events` + `oneiric.runtime.dag` landed as prototypes with tests (see `tests/runtime/test_parity_prototypes.py`). Update the orchestration parity plan when wiring them into domains.
    - ✅ Scheduler decision: Cloud Tasks is the default for serverless DAG triggers; `apscheduler` remains optional for Crackerjack cron-like flows.
-5. **Roadmap socialization**
+1. **Roadmap socialization**
    - Update `docs/STRATEGIC_ROADMAP.md` and `docs/implementation/ORCHESTRATION_PARITY_PLAN.md` with the new serverless defaults so partner teams know the cut-over path (no hybrid deployment).
    - Share the updated plan + test evidence (pytest `tests/core/test_profiles.py tests/core/test_serverless_profile.py`) in the next stand-up/Crackerjack sync so downstream repos adopt the same defaults.
 
