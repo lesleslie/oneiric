@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, Field
 
@@ -15,7 +14,9 @@ from oneiric.core.resolution import CandidateSource
 
 
 class FileSecretSettings(BaseModel):
-    path: Path = Field(..., description="Path to JSON/TOML file containing key/value secrets.")
+    path: Path = Field(
+        ..., description="Path to JSON/TOML file containing key/value secrets."
+    )
     format: str = Field(
         default="json",
         description="File format: currently supports 'json'.",
@@ -42,7 +43,7 @@ class FileSecretAdapter:
 
     def __init__(self, settings: FileSecretSettings) -> None:
         self._settings = settings
-        self._cache: Dict[str, str] | None = None
+        self._cache: dict[str, str] | None = None
         self._logger = get_logger("adapter.secrets.file").bind(
             domain="adapter",
             key="secrets",
@@ -50,7 +51,9 @@ class FileSecretAdapter:
         )
 
     async def init(self) -> None:
-        self._logger.info("adapter-init", adapter="file-secrets", path=str(self._settings.path))
+        self._logger.info(
+            "adapter-init", adapter="file-secrets", path=str(self._settings.path)
+        )
         if not self._settings.path.exists():
             raise LifecycleError("secrets-file-missing")
         self._load()
@@ -66,7 +69,7 @@ class FileSecretAdapter:
     async def cleanup(self) -> None:
         self._logger.info("adapter-cleanup-complete", adapter="file-secrets")
 
-    def get_secret(self, secret_id: str) -> Optional[str]:
+    def get_secret(self, secret_id: str) -> str | None:
         if self._settings.reload_on_access or self._cache is None:
             self._load(force=True)
         assert self._cache is not None

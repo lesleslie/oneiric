@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Awaitable, Callable, Optional
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -16,13 +17,13 @@ class S3StorageSettings(BaseModel):
     """Settings for the S3-backed storage adapter."""
 
     bucket: str
-    region: Optional[str] = Field(default=None)
-    endpoint_url: Optional[str] = Field(default=None)
-    profile_name: Optional[str] = Field(default=None)
-    access_key_id: Optional[str] = Field(default=None)
-    secret_access_key: Optional[str] = Field(default=None)
-    session_token: Optional[str] = Field(default=None)
-    healthcheck_key: Optional[str] = Field(
+    region: str | None = Field(default=None)
+    endpoint_url: str | None = Field(default=None)
+    profile_name: str | None = Field(default=None)
+    access_key_id: str | None = Field(default=None)
+    secret_access_key: str | None = Field(default=None)
+    session_token: str | None = Field(default=None)
+    healthcheck_key: str | None = Field(
         default=None,
         description="Optional key to fetch during health checks for deeper coverage.",
     )
@@ -103,7 +104,9 @@ class S3StorageAdapter:
         try:
             await client.head_bucket(Bucket=self._settings.bucket)
             if self._settings.healthcheck_key:
-                await client.head_object(Bucket=self._settings.bucket, Key=self._settings.healthcheck_key)
+                await client.head_object(
+                    Bucket=self._settings.bucket, Key=self._settings.healthcheck_key
+                )
             return True
         except Exception as exc:  # pragma: no cover - network error path
             self._logger.warning("adapter-health-error", error=str(exc))
@@ -116,11 +119,15 @@ class S3StorageAdapter:
         self._client_cm = None
         self._logger.info("adapter-cleanup-complete", adapter="s3-storage")
 
-    async def upload(self, key: str, data: bytes, *, content_type: Optional[str] = None) -> None:
+    async def upload(
+        self, key: str, data: bytes, *, content_type: str | None = None
+    ) -> None:
         client = self._ensure_client()
-        await client.put_object(Bucket=self._settings.bucket, Key=key, Body=data, ContentType=content_type)
+        await client.put_object(
+            Bucket=self._settings.bucket, Key=key, Body=data, ContentType=content_type
+        )
 
-    async def download(self, key: str) -> Optional[bytes]:
+    async def download(self, key: str) -> bytes | None:
         client = self._ensure_client()
         try:
             response = await client.get_object(Bucket=self._settings.bucket, Key=key)
@@ -139,7 +146,7 @@ class S3StorageAdapter:
 
     async def list(self, prefix: str = "") -> list[str]:
         client = self._ensure_client()
-        continuation: Optional[str] = None
+        continuation: str | None = None
         items: list[str] = []
         while True:
             kwargs = {

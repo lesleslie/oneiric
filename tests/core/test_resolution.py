@@ -7,15 +7,11 @@ explain API, and priority inference logic.
 from __future__ import annotations
 
 import os
-from typing import Optional
-
-import pytest
 
 from oneiric.core.resolution import (
     Candidate,
     CandidateRegistry,
     CandidateSource,
-    ResolutionExplanation,
     Resolver,
     ResolverSettings,
     infer_priority,
@@ -486,9 +482,7 @@ class TestExplainAPI:
 
     def test_explain_shows_selection_override_reason(self):
         """Explain shows when explicit selection override is used."""
-        settings = ResolverSettings(
-            selections={"adapter": {"cache": "redis"}}
-        )
+        settings = ResolverSettings(selections={"adapter": {"cache": "redis"}})
         registry = CandidateRegistry(settings)
 
         # Register two candidates
@@ -520,7 +514,9 @@ class TestExplainAPI:
         assert winner.provider == "redis"
 
         # Should have reason about override
-        redis_entry = [e for e in explanation.ordered if e.candidate.provider == "redis"][0]
+        redis_entry = [
+            e for e in explanation.ordered if e.candidate.provider == "redis"
+        ][0]
         assert any("matched selection override" in r for r in redis_entry.reasons)
 
     def test_explain_as_dict_serializable(self):

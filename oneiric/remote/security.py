@@ -9,7 +9,6 @@ from __future__ import annotations
 import base64
 import json
 import os
-from typing import Optional
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
@@ -76,8 +75,8 @@ def verify_manifest_signature(
     manifest_data: str,
     signature_b64: str,
     *,
-    trusted_keys: Optional[list[Ed25519PublicKey]] = None,
-) -> tuple[bool, Optional[str]]:
+    trusted_keys: list[Ed25519PublicKey] | None = None,
+) -> tuple[bool, str | None]:
     """Verify manifest signature using ED25519.
 
     Args:
@@ -160,7 +159,11 @@ def get_canonical_manifest_for_signing(manifest_dict: dict) -> str:
         '{"entries":[],"source":"remote"}'
     """
     # Remove signature fields to get the unsigned content
-    unsigned = {k: v for k, v in manifest_dict.items() if k not in ("signature", "signature_algorithm")}
+    unsigned = {
+        k: v
+        for k, v in manifest_dict.items()
+        if k not in ("signature", "signature_algorithm")
+    }
 
     # Canonical JSON: sorted keys, compact (no whitespace)
     return json.dumps(unsigned, sort_keys=True, separators=(",", ":"))
@@ -191,12 +194,14 @@ def sanitize_filename(filename: str) -> str:
     filename = filename.replace("\x00", "")
 
     # Remove any path separators and parent directory references
-    parts = []
-    for part in Path(filename).parts:
-        if part not in (".", "..") and "/" not in part and "\\" not in part:
-            parts.append(part)
-
-    return "".join(parts) if parts else "sanitized_file"
+    return (
+        "".join(
+            part
+            for part in Path(filename).parts
+            if part not in (".", "..") and "/" not in part and "\\" not in part
+        )
+        or "sanitized_file"
+    )
 
 
 def sign_manifest_for_publishing(manifest_dict: dict, private_key_b64: str) -> str:
@@ -221,11 +226,11 @@ def sign_manifest_for_publishing(manifest_dict: dict, private_key_b64: str) -> s
     canonical = get_canonical_manifest_for_signing(manifest_dict)
 
     # Decode private key
-    private_key_bytes = base64.b64decode(private_key_b64)
-    private_key = Ed25519PrivateKey.from_private_bytes(private_key_bytes)
-
     # Sign the canonical JSON
-    signature_bytes = private_key.sign(canonical.encode("utf-8"))
-
-    # Return base64-encoded signature
-    return base64.b64encode(signature_bytes).decode("ascii")
+    return base64.b64encode(
+        (
+            private_key := Ed25519PrivateKey.from_private_bytes(
+                base64.b64decode(private_key_b64)
+            )
+        ).sign(canonical.encode("utf-8"))
+    ).decode("ascii")

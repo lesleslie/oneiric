@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import builtins
 from pathlib import Path
-from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -43,7 +43,7 @@ class LocalStorageAdapter:
         settings_model=LocalStorageSettings,
     )
 
-    def __init__(self, settings: Optional[LocalStorageSettings] = None) -> None:
+    def __init__(self, settings: LocalStorageSettings | None = None) -> None:
         self._settings = settings or LocalStorageSettings()
         self._base_path = self._settings.base_path.expanduser().resolve()
         self._logger = get_logger("adapter.storage.local").bind(
@@ -58,7 +58,9 @@ class LocalStorageAdapter:
             self._base_path.mkdir(parents=True, exist_ok=True)
         elif not self._base_path.exists():
             raise LifecycleError("storage-base-path-missing")
-        self._logger.info("adapter-init", adapter="local-storage", base=str(self._base_path))
+        self._logger.info(
+            "adapter-init", adapter="local-storage", base=str(self._base_path)
+        )
 
     async def health(self) -> bool:
         return self._base_path.exists() and self._base_path.is_dir()
@@ -72,7 +74,7 @@ class LocalStorageAdapter:
             await asyncio.to_thread(self._write_bytes, path, data)
         return str(path)
 
-    async def read(self, key: str) -> Optional[bytes]:
+    async def read(self, key: str) -> bytes | None:
         path = self._resolve_path(key)
         if not path.exists():
             return None
@@ -86,13 +88,12 @@ class LocalStorageAdapter:
         async with self._lock:
             await asyncio.to_thread(path.unlink)
 
-    async def list(self, prefix: Optional[str] = None) -> List[str]:
+    async def list(self, prefix: str | None = None) -> builtins.list[str]:
         async with self._lock:
             return await asyncio.to_thread(self._list_relative_paths, prefix or "")
 
     async def exists(self, key: str) -> bool:
-        path = self._resolve_path(key)
-        return path.exists()
+        return self._resolve_path(key).exists()
 
     def _resolve_path(self, key: str) -> Path:
         normalized = key.strip("/")
@@ -105,8 +106,8 @@ class LocalStorageAdapter:
     def _write_bytes(self, path: Path, data: bytes) -> None:
         path.write_bytes(data)
 
-    def _list_relative_paths(self, prefix: str) -> List[str]:
-        results: List[str] = []
+    def _list_relative_paths(self, prefix: str) -> builtins.list[str]:
+        results: list[str] = []
         base_str = str(self._base_path)
         for item in self._base_path.rglob("*"):
             if not item.is_file():

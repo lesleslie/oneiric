@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, List, Optional, Sequence
+from collections.abc import Callable, Sequence
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -22,24 +23,26 @@ class AdapterMetadata(BaseModel):
     category: str
     provider: str
     factory: FactoryType
-    version: Optional[str] = None
-    description: Optional[str] = None
-    capabilities: List[str] = Field(default_factory=list)
-    stack_level: Optional[int] = None
-    priority: Optional[int] = None
+    version: str | None = None
+    description: str | None = None
+    capabilities: list[str] = Field(default_factory=list)
+    stack_level: int | None = None
+    priority: int | None = None
     source: CandidateSource = CandidateSource.LOCAL_PKG
-    health: Optional[Callable[[], bool]] = None
-    owner: Optional[str] = None
+    health: Callable[[], bool] | None = None
+    owner: str | None = None
     requires_secrets: bool = False
     settings_model: str | type[BaseModel] | None = None
     extras: dict[str, Any] = Field(default_factory=dict)
 
     def to_candidate(self) -> Candidate:
-        settings_model_path: Optional[str]
+        settings_model_path: str | None
         if isinstance(self.settings_model, str):
             settings_model_path = self.settings_model
         elif self.settings_model:
-            settings_model_path = f"{self.settings_model.__module__}.{self.settings_model.__name__}"
+            settings_model_path = (
+                f"{self.settings_model.__module__}.{self.settings_model.__name__}"
+            )
         else:
             settings_model_path = None
         metadata = {
@@ -49,9 +52,10 @@ class AdapterMetadata(BaseModel):
             "owner": self.owner,
             "requires_secrets": self.requires_secrets,
             "settings_model": settings_model_path,
-            **self.extras,
+        } | self.extras
+        metadata = {
+            key: value for key, value in metadata.items() if value not in (None, [], {})
         }
-        metadata = {key: value for key, value in metadata.items() if value not in (None, [], {})}
         return Candidate(
             domain="adapter",
             key=self.category,
@@ -70,12 +74,14 @@ def register_adapter_metadata(
     package_name: str,
     package_path: str,
     adapters: Sequence[AdapterMetadata],
-    priority: Optional[int] = None,
+    priority: int | None = None,
 ) -> None:
     """Helper that registers metadata-driven adapters via register_pkg inference."""
 
     candidates = [metadata.to_candidate() for metadata in adapters]
-    resolver.register_from_pkg(package_name, package_path, candidates, priority=priority)
+    resolver.register_from_pkg(
+        package_name, package_path, candidates, priority=priority
+    )
     logger.info(
         "adapter-metadata-registered",
         package=package_name,

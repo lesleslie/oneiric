@@ -1,0 +1,225 @@
+# Cloud Run Buildpacks Deployment Guide
+
+**Last Updated:** 2025-12-07  
+**Audience:** Platform Core, Runtime Team, DevOps
+
+This guide documents the default deployment flow for Oneiric when targeting Google Cloud Run (or other buildpack-capable serverless platforms). It pairs with the `serverless` runtime profile and the Procfile entry that now ships in the repository.
+
+---
+
+## 1. Overview
+
+| Item | Decision |
+|------|----------|
+| Runtime | Google Cloud Run (container revisions, 0 → N scale) |
+| Build | Cloud Native Buildpacks via `pack` or `gcloud run deploy --source` |
+| Entry point | `uv run python -m oneiric.cli orchestrate --profile serverless` (Procfile `web` process) |
+| Config | Inline manifests baked into the image + Secret Manager adapters (env fallback for local dev) |
+| Remote polling | Disabled by default; enable explicitly per deployment if needed |
+
+The serverless profile disables file watchers and remote refresh loops, keeps runtime secrets stateless, and assumes cold starts should do the minimal amount of work before activating adapters/actions.
+
+---
+
+## 2. Prerequisites
+
+1. **Google Cloud CLI** with `gcloud components install beta` (for `gcloud run`).
+2. **Docker** installed locally (required by buildpacks).
+3. **pack CLI** (`brew install buildpacks/tap/pack` on macOS).
+4. Service account or user with `Cloud Run Admin`, `Artifact Registry Writer`, `Secret Manager Secret Accessor` roles.
+5. Optional: `uv` installed locally for parity with CI commands.
+
+---
+
+## 3. Source Layout & Procfile
+
+The repo ships two Procfile definitions so Cloud Run teams can track serverless-specific changes without colliding with local overrides:
+
+- `Procfile` – default entry consumed automatically by `pack`/`gcloud run deploy --source`
+- `Procfile.cloudrun` – serverless template that stays aligned with roadmap defaults (copy/symlink it into place if a repo needs a dedicated Cloud Run Procfile)
+
+```Procfile
+web: uv run python -m oneiric.cli orchestrate --profile serverless --no-remote
+```
+
+Notes:
+
+- `--profile serverless` applies the watcher/remote toggles baked into `oneiric.core.config`.
+- `--no-remote` keeps remote sync disabled unless you explicitly provide a manifest URL and flip `remote.enabled` back on.
+- The Service Supervisor now runs automatically (even in serverless profile) to enforce pause/drain windows and export `runtime_health.json`. Keep `.oneiric_cache` persisted so `domain_activity.sqlite` and the health snapshot survive across revisions.
+- When customizing the Procfile for a specific service, update both files (or keep a symlink) so future roadmap updates land consistently across local + Cloud Run profiles.
+- Override or extend the command via `--` in `gcloud run deploy` if you need per-service variations.
+
+---
+
+## 4. Building with `pack`
+
+```bash
+# Set registry location (Artifact Registry or GCR)
+export IMAGE=gcr.io/$PROJECT_ID/oneiric-runtime:$(git rev-parse --short HEAD)
+
+# Build using the official Python buildpack + Procfile
+pack build "$IMAGE" \
+  --builder gcr.io/buildpacks/builder:v1 \
+  --env GOOGLE_RUNTIME=python \
+  --env BP_KEEP_FILES=/workspace/.oneiric_cache \
+  --env PYTHONUNBUFFERED=1
+
+# Push image (pack automatically pushes when registry is remote)
+gcloud run deploy oneiric-runtime \
+  --image "$IMAGE" \
+  --region us-central1 \
+  --platform managed \
+  --allow-unauthenticated \
+  --port 8080 \
+  --max-instances 5 \
+  --min-instances 0 \
+  --set-env-vars "ONEIRIC_CONFIG=/workspace/config/serverless.toml"
+```
+
+Recommendations:
+
+- Keep the `.oneiric_cache` directory on disk so cached manifests/activity snapshots survive across revisions. Use `BP_KEEP_FILES` to ensure buildpacks do not prune the cache.
+- Store your serverless-specific settings file under `config/serverless.toml` (checked into the repo or injected at build time); it should pin adapter selections and secret providers for Cloud Run.
+
+---
+
+## 5. Deploying with `gcloud run deploy --source`
+
+For smaller services you can skip explicit image builds:
+
+```bash
+gcloud run deploy oneiric-runtime \
+  --source . \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --set-env-vars "ONEIRIC_PROFILE=serverless" \
+  --set-env-vars "ONEIRIC_CONFIG=/workspace/config/serverless.toml"
+```
+
+Tips:
+
+- `gcloud run deploy --source` detects the Procfile automatically. Ensure the file lives at repo root.
+- Set `ONEIRIC_PROFILE=serverless` to mirror the CLI flag when running under `gcloud run deploy --source` (the CLI flag is still useful for local runs and custom Procfiles). The CLI and `main.py` automatically honor that env var now—no need to duplicate it inside your settings file unless you want to bake the profile permanently.
+
+---
+
+## 6. Secrets & Configuration
+
+1. **Secret Manager adapter** – configure `settings.secrets.provider = "gcp.secret_manager"` and grant the Cloud Run service account `roles/secretmanager.secretAccessor`.
+2. **Inline manifests** – package critical manifest entries into your TOML (or embed as JSON inside the repo); the serverless profile assumes no remote polling unless you opt in.
+3. **Env fallbacks** – keep `.env`-style config limited to local dev. Production deployments should prefer Secret Manager + build-time manifest packaging.
+
+Sample snippet (`config/serverless.toml`):
+
+```toml
+[profile]
+name = "serverless"
+
+[secrets]
+provider = "gcp.secret_manager"
+
+[adapters.selections]
+vector = "pgvector"
+secrets = "gcp"
+queue = "cloudtasks"
+
+[workflows.options]
+queue_category = "queue.scheduler"
+
+[adapters.provider_settings.pgvector]
+dsn = "postgresql://..."
+
+[remote]
+enabled = false
+```
+
+Setting `[workflows.options] queue_category = "queue.scheduler"` keeps workflow enqueue operations pointed at the Cloud Tasks adapter without needing CLI flags. Combine that with `[adapters.selections] queue = "cloudtasks"` (and the corresponding provider settings) so `RuntimeOrchestrator` can resolve the adapter when Cloud Tasks delivers HTTP callbacks.
+
+---
+
+## 7. Inline Manifest Packaging
+
+When remote polling is disabled, bake your manifest into the image so cold starts can activate adapters immediately:
+
+1. Keep manifests under `deployment/manifests/*.yaml`.
+2. Package them into JSON during the build:
+
+```bash
+uv run python -m oneiric.cli manifest pack \
+  --input deployment/manifests/serverless.yaml \
+  --output build/serverless_manifest.json
+```
+
+3. Point `[remote] manifest_url = "file:///workspace/build/serverless_manifest.json"` in `config/serverless.toml`, or copy the JSON alongside your artifact and reference the relative path.
+
+Because remote sync is disabled in the serverless profile, the orchestrator sticks to the packaged manifest until you redeploy.
+
+---
+
+## 8. Verification & Observability
+
+1. Run `uv run pytest -k serverless_profile` before shipping (tests to be expanded alongside profile work).
+2. Use `oneiric.cli health --json` locally to ensure adapters/actions activate without remote polling.
+3. Configure Cloud Run logs to export structlog JSON (`stdout`) to Cloud Logging; reserve `stderr` for fatal errors only.
+4. Mirror Cloud Run deployments by running `uv run python -m oneiric.cli orchestrate --profile serverless --no-remote --health-path /tmp/runtime_health.json` locally, then inspect `oneiric.cli activity --json` and `oneiric.cli health --probe --json` to confirm the Service Supervisor is honoring pause/drain settings.
+5. Inspect the new `profile` and `secrets` blocks in the `health --json` output to verify the serverless toggles (`watchers_enabled`, `remote_enabled`, `inline_manifest_only`) and confirm the Secret Manager adapter reports `status=ready` before shipping.
+
+The orchestrator writes `runtime_health.json` and `domain_activity.sqlite` under `.oneiric_cache/`; Cloud Run operators can tail that directory to confirm the Service Supervisor sees the same state exposed via the CLI.
+
+The orchestrator now exposes an HTTP server when `oneiric.cli orchestrate` runs with the default (or serverless) profile and a listening port is available (`$PORT`, `--http-port`). It serves:
+
+- `GET /healthz` – lightweight readiness probe for Cloud Run.
+- `POST /tasks/workflow` – Cloud Tasks callback that expects the JSON payload emitted by `workflow enqueue`. Point the Cloud Tasks adapter’s `http_target_url` at `https://<service>/tasks/workflow` so DAG runs begin as soon as tasks are delivered.
+
+Disable the server with `--no-http` if you are running the orchestrator outside Cloud Run.
+
+---
+
+## 9. Troubleshooting
+
+| Symptom | Likely Cause | Fix |
+|---------|--------------|-----|
+| Service fails to start with watcher errors | Profile defaulted to `watchers_enabled=True` | Ensure `--profile serverless` (CLI) or `ONEIRIC_PROFILE=serverless` env is set. |
+| Remote sync attempts despite `--no-remote` | `remote.enabled` true in config | Set `[remote] enabled = false` in `serverless.toml` or pass `--no-remote`. |
+| Secret lookup fails | Cloud Run service account missing Secret Manager role | Grant `roles/secretmanager.secretAccessor` and redeploy. |
+| Buildpack purge removes `.oneiric_cache` | `BP_KEEP_FILES` not set | Add `--env BP_KEEP_FILES=/workspace/.oneiric_cache` during pack build. |
+
+---
+
+## 10. Sample Buildpack Transcript
+
+Use this transcript as a reference when validating CI or local builds; the exact log lines will vary per environment, but the sequence (pack → deploy → health check) should match.
+
+```text
+$ export IMAGE=gcr.io/demo-project/oneiric-runtime:$(git rev-parse --short HEAD)
+$ pack build "$IMAGE" --builder gcr.io/buildpacks/builder:v1 \
+    --env GOOGLE_RUNTIME=python \
+    --env BP_KEEP_FILES=/workspace/.oneiric_cache \
+    --env PYTHONUNBUFFERED=1
+===> DETECTING
+[python] Selected Python Buildpack
+...
+===> EXPORTING
+Reusing layer 'launcher'
+Successfully built image gcr.io/demo-project/oneiric-runtime:9f36c2a
+
+$ gcloud run deploy oneiric-runtime --image "$IMAGE" --region us-central1 \
+    --allow-unauthenticated \
+    --set-env-vars "ONEIRIC_PROFILE=serverless" \
+    --set-env-vars "ONEIRIC_CONFIG=/workspace/config/serverless.toml"
+Deploying container...done.
+Service [oneiric-runtime] revision [oneiric-runtime-00004-zol] has been deployed.
+URLs:
+ https://oneiric-runtime-xxxxxxxx-uc.a.run.app
+
+$ uv run python -m oneiric.cli health --json
+{
+  "status": "healthy",
+  "watchers_running": false,
+  "remote_enabled": false,
+  "profile": "serverless"
+}
+```
+
+Keep this document aligned with the runtime roadmap; reference it in release notes whenever deployment behavior changes.

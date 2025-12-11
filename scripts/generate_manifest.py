@@ -15,21 +15,26 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-from typing import Any, Callable, List
 
 import yaml
 
 # Add project root to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from oneiric.adapters.metadata import AdapterMetadata
-from oneiric.adapters.bootstrap import builtin_adapter_metadata
-from oneiric.actions.metadata import ActionMetadata
 from oneiric.actions.bootstrap import builtin_action_metadata
-from oneiric.remote.models import RemoteManifest, RemoteManifestEntry
+from oneiric.actions.metadata import ActionMetadata
+from oneiric.adapters.bootstrap import builtin_adapter_metadata
+from oneiric.adapters.metadata import AdapterMetadata
+from oneiric.remote.models import (
+    CapabilityDescriptor,
+    RemoteManifest,
+    RemoteManifestEntry,
+)
 
 
-def adapter_to_manifest_entry(adapter: AdapterMetadata, version: str) -> RemoteManifestEntry:
+def adapter_to_manifest_entry(
+    adapter: AdapterMetadata, version: str
+) -> RemoteManifestEntry:
     """Convert AdapterMetadata to RemoteManifestEntry with full v2 fields."""
     # Get factory as import path string
     factory_str: str
@@ -46,7 +51,14 @@ def adapter_to_manifest_entry(adapter: AdapterMetadata, version: str) -> RemoteM
         if isinstance(adapter.settings_model, str):
             settings_model_str = adapter.settings_model
         else:
-            settings_model_str = f"{adapter.settings_model.__module__}:{adapter.settings_model.__name__}"
+            settings_model_str = (
+                f"{adapter.settings_model.__module__}:{adapter.settings_model.__name__}"
+            )
+
+    capability_descriptors = [
+        CapabilityDescriptor(name=name, description=None)
+        for name in adapter.capabilities
+    ]
 
     return RemoteManifestEntry(
         domain="adapter",
@@ -57,7 +69,7 @@ def adapter_to_manifest_entry(adapter: AdapterMetadata, version: str) -> RemoteM
         priority=adapter.priority,
         version=adapter.version or version,
         # Adapter-specific v2 fields
-        capabilities=adapter.capabilities or [],
+        capabilities=capability_descriptors,
         owner=adapter.owner,
         requires_secrets=adapter.requires_secrets,
         settings_model=settings_model_str,
@@ -69,7 +81,9 @@ def adapter_to_manifest_entry(adapter: AdapterMetadata, version: str) -> RemoteM
     )
 
 
-def action_to_manifest_entry(action: ActionMetadata, version: str) -> RemoteManifestEntry:
+def action_to_manifest_entry(
+    action: ActionMetadata, version: str
+) -> RemoteManifestEntry:
     """Convert ActionMetadata to RemoteManifestEntry with full v2 fields."""
     # Get factory as import path string
     factory_str: str
@@ -120,29 +134,33 @@ def generate_manifest(
     Returns:
         Generated RemoteManifest
     """
-    entries: List[RemoteManifestEntry] = []
+    entries: list[RemoteManifestEntry] = []
 
     # Generate adapter entries
     if include_adapters:
-        print(f"Scanning builtin adapters...")
+        print("Scanning builtin adapters...")
         for adapter_meta in builtin_adapter_metadata():
             try:
                 entry = adapter_to_manifest_entry(adapter_meta, version)
                 entries.append(entry)
                 print(f"  ✓ adapter/{entry.key} ({entry.provider})")
             except Exception as exc:
-                print(f"  ✗ adapter/{adapter_meta.category} ({adapter_meta.provider}): {exc}")
+                print(
+                    f"  ✗ adapter/{adapter_meta.category} ({adapter_meta.provider}): {exc}"
+                )
 
     # Generate action entries
     if include_actions:
-        print(f"Scanning builtin actions...")
+        print("Scanning builtin actions...")
         for action_meta in builtin_action_metadata():
             try:
                 entry = action_to_manifest_entry(action_meta, version)
                 entries.append(entry)
                 print(f"  ✓ action/{entry.key} ({entry.provider})")
             except Exception as exc:
-                print(f"  ✗ action/{action_meta.action_type} ({action_meta.provider}): {exc}")
+                print(
+                    f"  ✗ action/{action_meta.action_type} ({action_meta.provider}): {exc}"
+                )
 
     manifest = RemoteManifest(source=source, entries=entries)
 

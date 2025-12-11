@@ -20,7 +20,11 @@ async def test_automation_trigger_matches_rules() -> None:
                     "name": "notify-success",
                     "action": "workflow.notify",
                     "conditions": [
-                        {"field": "payload.status", "operator": "equals", "value": "success"},
+                        {
+                            "field": "payload.status",
+                            "operator": "equals",
+                            "value": "success",
+                        },
                         {"field": "env", "operator": "equals", "value": "prod"},
                     ],
                 },
@@ -28,7 +32,11 @@ async def test_automation_trigger_matches_rules() -> None:
                     "name": "retry",
                     "action": "workflow.retry",
                     "conditions": [
-                        {"field": "payload.attempts", "operator": "greater_than", "value": 3},
+                        {
+                            "field": "payload.attempts",
+                            "operator": "greater_than",
+                            "value": 3,
+                        },
                     ],
                 },
             ],
@@ -52,14 +60,22 @@ async def test_automation_trigger_stop_on_first_match() -> None:
                     "name": "retry",
                     "action": "workflow.retry",
                     "conditions": [
-                        {"field": "payload.status", "operator": "equals", "value": "failed"},
+                        {
+                            "field": "payload.status",
+                            "operator": "equals",
+                            "value": "failed",
+                        },
                     ],
                 },
                 {
                     "name": "fallback-notify",
                     "action": "workflow.notify",
                     "conditions": [
-                        {"field": "payload.status", "operator": "equals", "value": "failed"},
+                        {
+                            "field": "payload.status",
+                            "operator": "equals",
+                            "value": "failed",
+                        },
                     ],
                 },
             ],
@@ -75,4 +91,9 @@ async def test_automation_trigger_stop_on_first_match() -> None:
 async def test_automation_trigger_requires_mapping_context() -> None:
     action = AutomationTriggerAction()
     with pytest.raises(LifecycleError):
-        await action.execute({"context": "invalid", "rules": [{"name": "noop", "action": "workflow.notify"}]})
+        await action.execute(
+            {
+                "context": "invalid",
+                "rules": [{"name": "noop", "action": "workflow.notify"}],
+            }
+        )

@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -17,14 +18,20 @@ from oneiric.core.resolution import CandidateSource
 class OTLPObservabilitySettings(BaseModel):
     """Settings for configuring OTLP exporters."""
 
-    endpoint: str = Field(default="http://127.0.0.1:4317", description="OTLP collector endpoint.")
+    endpoint: str = Field(
+        default="http://127.0.0.1:4317", description="OTLP collector endpoint."
+    )
     protocol: str = Field(
         default="grpc",
         pattern="^(grpc|http/protobuf)$",
         description="Protocol used by the OTLP exporter.",
     )
-    headers: Dict[str, str] = Field(default_factory=dict, description="Additional request headers.")
-    insecure: bool = Field(default=False, description="Skip TLS verification when true.")
+    headers: dict[str, str] = Field(
+        default_factory=dict, description="Additional request headers."
+    )
+    insecure: bool = Field(
+        default=False, description="Skip TLS verification when true."
+    )
     service_name: str = Field(default="oneiric")
     environment: str = Field(default="development")
     export_interval_seconds: float = Field(default=10.0, gt=0)
@@ -99,7 +106,9 @@ class OTLPObservabilityAdapter:
                 export_interval_millis=interval_ms,
                 export_timeout_millis=timeout_ms,
             )
-            meter_provider = components.MeterProvider(resource=resource, metric_readers=[reader])
+            meter_provider = components.MeterProvider(
+                resource=resource, metric_readers=[reader]
+            )
             components.metrics_api.set_meter_provider(meter_provider)
             if hasattr(meter_provider, "shutdown"):
                 self._shutdown_callbacks.append(meter_provider.shutdown)
@@ -117,7 +126,7 @@ class OTLPObservabilityAdapter:
         return self._configured
 
     async def cleanup(self) -> None:
-        callbacks = list(self._shutdown_callbacks)
+        callbacks = self._shutdown_callbacks.copy()
         self._shutdown_callbacks.clear()
         for callback in callbacks:
             if callable(callback):
@@ -155,23 +164,23 @@ class OTLPObservabilityAdapter:
         try:  # pragma: no cover - depends on optional OTLP install
             from opentelemetry import metrics as metrics_api
             from opentelemetry import trace as trace_api
-            from opentelemetry.sdk.resources import Resource
-            from opentelemetry.sdk.trace import TracerProvider
-            from opentelemetry.sdk.trace.export import BatchSpanProcessor
-            from opentelemetry.sdk.metrics import MeterProvider
-            from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
-            from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
-                OTLPSpanExporter as GrpcSpanExporter,
-            )
             from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import (
                 OTLPMetricExporter as GrpcMetricExporter,
             )
-            from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
-                OTLPSpanExporter as HttpSpanExporter,
+            from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+                OTLPSpanExporter as GrpcSpanExporter,
             )
             from opentelemetry.exporter.otlp.proto.http.metric_exporter import (
                 OTLPMetricExporter as HttpMetricExporter,
             )
+            from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
+                OTLPSpanExporter as HttpSpanExporter,
+            )
+            from opentelemetry.sdk.metrics import MeterProvider
+            from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+            from opentelemetry.sdk.resources import Resource
+            from opentelemetry.sdk.trace import TracerProvider
+            from opentelemetry.sdk.trace.export import BatchSpanProcessor
         except ModuleNotFoundError as exc:  # pragma: no cover - optional dependency
             raise LifecycleError("opentelemetry-sdk-missing") from exc
 

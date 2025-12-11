@@ -2,19 +2,16 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
-from typing import Any
 
 import pytest
 from pydantic import BaseModel
 
 from oneiric.core.config import LayerSettings
-from oneiric.core.lifecycle import LifecycleManager
+from oneiric.core.lifecycle import LifecycleError, LifecycleManager
 from oneiric.core.resolution import Candidate, CandidateSource, Resolver
 from oneiric.domains.base import DomainBridge, DomainHandle
 from oneiric.runtime.activity import DomainActivity, DomainActivityStore
-
 
 # Test fixtures and helpers
 
@@ -93,7 +90,7 @@ class TestDomainBridgeConstruction:
         resolver = Resolver()
         lifecycle = LifecycleManager(resolver)
         settings = LayerSettings()
-        store_path = tmp_path / "activity.json"
+        store_path = tmp_path / "activity.sqlite"
         activity_store = DomainActivityStore(store_path)
 
         bridge = DomainBridge(
@@ -397,6 +394,56 @@ class TestDomainBridgeUse:
         assert handle.settings.host == "localhost"
         assert handle.settings.port == 8000
 
+    @pytest.mark.asyncio
+    async def test_use_rejected_when_paused(self, tmp_path: Path):
+        """use() raises when the key is paused."""
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        settings = LayerSettings()
+        store = DomainActivityStore(tmp_path / "activity.sqlite")
+        bridge = DomainBridge(
+            "service", resolver, lifecycle, settings, activity_store=store
+        )
+
+        resolver.register(
+            Candidate(
+                domain="service",
+                key="api",
+                provider="fastapi",
+                factory=lambda: MockComponent("api"),
+                source=CandidateSource.MANUAL,
+            )
+        )
+        store.set("service", "api", DomainActivity(paused=True))
+
+        with pytest.raises(LifecycleError, match="service:api is paused"):
+            await bridge.use("api")
+
+    @pytest.mark.asyncio
+    async def test_use_rejected_when_draining(self, tmp_path: Path):
+        """use() raises when the key is draining."""
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        settings = LayerSettings()
+        store = DomainActivityStore(tmp_path / "activity.sqlite")
+        bridge = DomainBridge(
+            "service", resolver, lifecycle, settings, activity_store=store
+        )
+
+        resolver.register(
+            Candidate(
+                domain="service",
+                key="api",
+                provider="fastapi",
+                factory=lambda: MockComponent("api"),
+                source=CandidateSource.MANUAL,
+            )
+        )
+        store.set("service", "api", DomainActivity(draining=True))
+
+        with pytest.raises(LifecycleError, match="service:api is draining"):
+            await bridge.use("api")
+
 
 class TestDomainBridgeListingMethods:
     """Test DomainBridge candidate listing methods."""
@@ -627,7 +674,7 @@ class TestDomainBridgeActivity:
         resolver = Resolver()
         lifecycle = LifecycleManager(resolver)
         settings = LayerSettings()
-        store_path = tmp_path / "activity.json"
+        store_path = tmp_path / "activity.sqlite"
         activity_store = DomainActivityStore(store_path)
 
         bridge = DomainBridge(
@@ -637,29 +684,23 @@ class TestDomainBridgeActivity:
         # Set activity
         bridge.set_paused("api", True, note="maintenance")
 
-        # Verify persisted to file
+        # Verify persisted to sqlite store
         assert store_path.exists()
-        data = json.loads(store_path.read_text())
-        assert data["service"]["api"]["paused"] is True
-        assert data["service"]["api"]["note"] == "maintenance"
+        persisted = DomainActivityStore(store_path)
+        state = persisted.get("service", "api")
+        assert state.paused is True
+        assert state.note == "maintenance"
 
     def test_activity_loads_from_store(self, tmp_path: Path):
         """Activity loads from store on initialization."""
         resolver = Resolver()
         lifecycle = LifecycleManager(resolver)
         settings = LayerSettings()
-        store_path = tmp_path / "activity.json"
+        store_path = tmp_path / "activity.sqlite"
 
         # Pre-populate store
-        store_path.write_text(
-            json.dumps(
-                {
-                    "service": {
-                        "api": {"paused": True, "draining": False, "note": "existing"}
-                    }
-                }
-            )
-        )
+        primer = DomainActivityStore(store_path)
+        primer.set("service", "api", DomainActivity(paused=True, note="existing"))
 
         activity_store = DomainActivityStore(store_path)
         bridge = DomainBridge(

@@ -4,24 +4,24 @@
 **Status:** Production Ready
 **Maintainer:** Platform Team
 
----
+______________________________________________________________________
 
 ## Table of Contents
 
-1. [Overview](#overview)
-2. [Troubleshooting Methodology](#troubleshooting-methodology)
-3. [Quick Reference](#quick-reference)
-4. [Common Issues](#common-issues)
-   - [Resolution Issues](#resolution-issues)
-   - [Lifecycle Issues](#lifecycle-issues)
-   - [Remote Sync Issues](#remote-sync-issues)
-   - [Performance Issues](#performance-issues)
-   - [Configuration Issues](#configuration-issues)
-5. [Diagnostic Commands](#diagnostic-commands)
-6. [Log Analysis](#log-analysis)
-7. [When to Escalate](#when-to-escalate)
+1. \[[#overview|Overview]\]
+1. \[[#troubleshooting-methodology|Troubleshooting Methodology]\]
+1. \[[#quick-reference|Quick Reference]\]
+1. \[[#common-issues|Common Issues]\]
+   - \[[#resolution-issues|Resolution Issues]\]
+   - \[[#lifecycle-issues|Lifecycle Issues]\]
+   - \[[#remote-sync-issues|Remote Sync Issues]\]
+   - \[[#performance-issues|Performance Issues]\]
+   - \[[#configuration-issues|Configuration Issues]\]
+1. \[[#diagnostic-commands|Diagnostic Commands]\]
+1. \[[#log-analysis|Log Analysis]\]
+1. \[[#when-to-escalate|When to Escalate]\]
 
----
+______________________________________________________________________
 
 ## Overview
 
@@ -30,22 +30,22 @@ This guide provides diagnostic steps and solutions for common Oneiric operationa
 ### Using This Guide
 
 1. **Identify symptom** from Quick Reference table
-2. **Follow diagnostic steps** in relevant section
-3. **Apply solution** or escalate if unresolved
-4. **Document findings** for knowledge base
+1. **Follow diagnostic steps** in relevant section
+1. **Apply solution** or escalate if unresolved
+1. **Document findings** for knowledge base
 
----
+______________________________________________________________________
 
 ## Troubleshooting Methodology
 
 ### Standard Approach (DEDUCE)
 
 1. **D**efine the problem - What is the symptom? When did it start?
-2. **E**xamine the system - Check logs, metrics, configuration
-3. **D**etermine root cause - Why is this happening?
-4. **U**nderstand the fix - What needs to change?
-5. **C**orrect the issue - Apply the fix
-6. **E**valuate the solution - Verify problem resolved
+1. **E**xamine the system - Check logs, metrics, configuration
+1. **D**etermine root cause - Why is this happening?
+1. **U**nderstand the fix - What needs to change?
+1. **C**orrect the issue - Apply the fix
+1. **E**valuate the solution - Verify problem resolved
 
 ### Information Gathering Checklist
 
@@ -60,25 +60,25 @@ This guide provides diagnostic steps and solutions for common Oneiric operationa
 - [ ] Recent logs: Check Loki for errors
 ```
 
----
+______________________________________________________________________
 
 ## Quick Reference
 
 | Symptom | Likely Cause | Section | Severity |
 |---------|--------------|---------|----------|
-| Components not resolving | No candidates registered | [Resolution Issues](#resolution-issues) | High |
-| Swaps failing frequently | Health check failures | [Lifecycle Issues](#lifecycle-issues) | High |
-| Remote sync timeouts | Network/firewall issues | [Remote Sync Issues](#remote-sync-issues) | Medium |
-| High P99 latency | Resource contention | [Performance Issues](#performance-issues) | Medium |
-| Config not applying | YAML syntax errors | [Configuration Issues](#configuration-issues) | Low |
-| Logs not visible | Promtail not scraping | [Log Analysis](#log-analysis) | Low |
-| Metrics missing | Prometheus not scraping | [Diagnostic Commands](#diagnostic-commands) | Medium |
+| Components not resolving | No candidates registered | \[[#resolution-issues|Resolution Issues]\] | High |
+| Swaps failing frequently | Health check failures | \[[#lifecycle-issues|Lifecycle Issues]\] | High |
+| Remote sync timeouts | Network/firewall issues | \[[#remote-sync-issues|Remote Sync Issues]\] | Medium |
+| High P99 latency | Resource contention | \[[#performance-issues|Performance Issues]\] | Medium |
+| Config not applying | YAML syntax errors | \[[#configuration-issues|Configuration Issues]\] | Low |
+| Logs not visible | Promtail not scraping | \[[#log-analysis|Log Analysis]\] | Low |
+| Metrics missing | Prometheus not scraping | \[[#diagnostic-commands|Diagnostic Commands]\] | Medium |
 
----
+______________________________________________________________________
 
 ## Common Issues
 
----
+______________________________________________________________________
 
 ## Resolution Issues
 
@@ -136,7 +136,7 @@ ls -la settings/adapters.yml
 cp settings/adapters.yml.example settings/adapters.yml
 ```
 
----
+______________________________________________________________________
 
 ### Issue 2: "Resolution latency high (P99 > 100ms)"
 
@@ -188,7 +188,7 @@ docker stats oneiric
 # If CPU/memory high, scale up
 ```
 
----
+______________________________________________________________________
 
 ### Issue 3: "Shadowed components increasing"
 
@@ -218,7 +218,7 @@ uv run python -m oneiric.cli explain status --domain adapter
 # stack_level=20  # Higher = preferred
 ```
 
----
+______________________________________________________________________
 
 ## Lifecycle Issues
 
@@ -279,7 +279,7 @@ vim settings/app.yml
 docker restart oneiric
 ```
 
----
+______________________________________________________________________
 
 ### Issue 5: "Components stuck in 'activating' state"
 
@@ -313,7 +313,7 @@ vim settings/app.yml
 # lifecycle: { activation_timeout: 30 }
 ```
 
----
+______________________________________________________________________
 
 ### Issue 6: "High rollback rate"
 
@@ -344,7 +344,7 @@ rate(oneiric_lifecycle_swap_total{outcome="rollback"}[5m])
 # Before deploying to production
 ```
 
----
+______________________________________________________________________
 
 ## Remote Sync Issues
 
@@ -415,7 +415,7 @@ vim settings/app.yml
 #   reset_timeout: 120
 ```
 
----
+______________________________________________________________________
 
 ### Issue 8: "Digest verification failures"
 
@@ -448,7 +448,7 @@ uv run python -m oneiric.cli remote-sync --manifest <url>
 # Schedule maintenance window
 ```
 
----
+______________________________________________________________________
 
 ### Issue 9: "Slow remote sync (latency budget exceeded)"
 
@@ -482,7 +482,7 @@ vim settings/app.yml
 # remote: { timeout: 60 }
 ```
 
----
+______________________________________________________________________
 
 ## Performance Issues
 
@@ -539,7 +539,7 @@ kubectl scale deployment oneiric --replicas=3 -n oneiric
 kubectl patch deployment oneiric -p '{"spec":{"template":{"spec":{"containers":[{"name":"oneiric","resources":{"limits":{"cpu":"2000m"}}}]}}}}'
 ```
 
----
+______________________________________________________________________
 
 ### Issue 11: "High memory usage"
 
@@ -577,7 +577,7 @@ memray run -m oneiric.cli orchestrate
 docker update --memory 4g oneiric
 ```
 
----
+______________________________________________________________________
 
 ### Issue 12: "Slow response time (high P99 latency)"
 
@@ -618,7 +618,7 @@ oneiric:remote_sync_latency_p99:5m
 # - Cache manifests longer
 ```
 
----
+______________________________________________________________________
 
 ## Configuration Issues
 
@@ -686,7 +686,7 @@ export ONEIRIC_CONFIG=/app/settings
 docker restart oneiric
 ```
 
----
+______________________________________________________________________
 
 ### Issue 14: "Secrets not loading"
 
@@ -727,7 +727,7 @@ docker exec -it oneiric env | grep SECRET
 # (See MAINTENANCE.md - Secret Rotation)
 ```
 
----
+______________________________________________________________________
 
 ### Issue 15: "Component not found after config change"
 
@@ -763,7 +763,7 @@ uv run python -m oneiric.cli list --domain adapter | grep <provider>
 uv run python -m oneiric.cli swap --domain adapter --key cache --provider <provider>
 ```
 
----
+______________________________________________________________________
 
 ## Diagnostic Commands
 
@@ -843,7 +843,7 @@ memray run --live -m oneiric.cli orchestrate
 docker run --net container:oneiric nicolaka/netshoot tcpdump -i any -w capture.pcap
 ```
 
----
+______________________________________________________________________
 
 ## Log Analysis
 
@@ -896,7 +896,7 @@ docker run --net container:oneiric nicolaka/netshoot tcpdump -i any -w capture.p
 rate({app="oneiric"} | json | level="error" [5m])
 ```
 
----
+______________________________________________________________________
 
 ## When to Escalate
 
@@ -938,7 +938,7 @@ rate({app="oneiric"} | json | level="error" [5m])
 
 See `docs/runbooks/INCIDENT_RESPONSE.md` for full escalation matrix.
 
----
+______________________________________________________________________
 
 ## Additional Resources
 
@@ -951,7 +951,7 @@ See `docs/runbooks/INCIDENT_RESPONSE.md` for full escalation matrix.
   - #platform-oncall (urgent issues)
   - #oneiric-users (user community)
 
----
+______________________________________________________________________
 
 **Document Version:** 1.0
 **Last Reviewed:** 2025-11-26

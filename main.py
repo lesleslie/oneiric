@@ -1,12 +1,18 @@
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
 from oneiric import plugins
-from oneiric.adapters import AdapterMetadata, register_adapter_metadata, register_builtin_adapters
+from oneiric.adapters import (
+    AdapterMetadata,
+    register_adapter_metadata,
+    register_builtin_adapters,
+)
 from oneiric.core.config import (
     SecretsHook,
+    apply_profile_with_fallback,
     lifecycle_snapshot_path,
     load_settings,
     resolver_settings_from_config,
@@ -30,6 +36,7 @@ class DemoAdapter:
 
 async def _async_main() -> None:
     settings = load_settings()
+    settings = apply_profile_with_fallback(settings, os.getenv("ONEIRIC_PROFILE"))
     configure_logging(settings.logging)
     resolver = Resolver(settings=resolver_settings_from_config(settings))
     register_builtin_adapters(resolver)
@@ -78,7 +85,11 @@ async def _async_main() -> None:
 
         if remote_result:
             remote_adapter = next(
-                (entry.key for entry in remote_result.manifest.entries if entry.domain == "adapter"),
+                (
+                    entry.key
+                    for entry in remote_result.manifest.entries
+                    if entry.domain == "adapter"
+                ),
                 None,
             )
             if remote_adapter:

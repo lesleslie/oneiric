@@ -5,10 +5,11 @@ from __future__ import annotations
 import asyncio
 import json
 import time
-from typing import Any, Optional, Sequence
+from collections.abc import Sequence
+from typing import Any
 
-import jwt
 import httpx
+import jwt
 from pydantic import BaseModel, Field
 
 from oneiric.adapters.metadata import AdapterMetadata
@@ -23,7 +24,7 @@ class Auth0IdentitySettings(BaseModel):
     domain: str = Field(description="Auth0 tenant domain, e.g., example.us.auth0.com")
     audience: str = Field(description="Expected audience claim for issued tokens.")
     algorithms: Sequence[str] = Field(default=("RS256",), min_length=1)
-    jwks_url: Optional[str] = Field(
+    jwks_url: str | None = Field(
         default=None,
         description="Override JWKS URL; defaults to https://<domain>/.well-known/jwks.json",
     )
@@ -47,12 +48,17 @@ class Auth0IdentityAdapter:
         settings_model=Auth0IdentitySettings,
     )
 
-    def __init__(self, settings: Auth0IdentitySettings, *, http_client: Optional[httpx.AsyncClient] = None) -> None:
+    def __init__(
+        self,
+        settings: Auth0IdentitySettings,
+        *,
+        http_client: httpx.AsyncClient | None = None,
+    ) -> None:
         self._settings = settings
         self._http_client = http_client
         self._owns_client = http_client is None
         self._jwks: dict[str, Any] | None = None
-        self._jwks_loaded_at: Optional[float] = None
+        self._jwks_loaded_at: float | None = None
         self._jwks_lock = asyncio.Lock()
         self._logger = get_logger("adapter.identity.auth0").bind(
             domain="adapter",
@@ -83,8 +89,7 @@ class Auth0IdentityAdapter:
     async def verify_token(self, token: str) -> dict[str, Any]:
         jwks = await self._fetch_jwks()
         header = jwt.get_unverified_header(token)
-        kid = header.get("kid")
-        if not kid:
+        if not (kid := header.get("kid")):
             raise LifecycleError("token-missing-kid")
         key_data = self._match_key(jwks, kid)
         if not key_data:
@@ -111,7 +116,10 @@ class Auth0IdentityAdapter:
             if not should_refresh and self._jwks:
                 return self._jwks
             client = self._ensure_client()
-            url = self._settings.jwks_url or f"https://{self._settings.domain}/.well-known/jwks.json"
+            url = (
+                self._settings.jwks_url
+                or f"https://{self._settings.domain}/.well-known/jwks.json"
+            )
             response = await client.get(url)
             response.raise_for_status()
             data = response.json()
@@ -121,7 +129,7 @@ class Auth0IdentityAdapter:
             self._jwks_loaded_at = time.monotonic()
             return data
 
-    def _match_key(self, jwks: dict[str, Any], kid: str) -> Optional[dict[str, Any]]:
+    def _match_key(self, jwks: dict[str, Any], kid: str) -> dict[str, Any] | None:
         for entry in jwks.get("keys", []):
             if entry.get("kid") == kid:
                 return entry

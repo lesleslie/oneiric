@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import time
 from collections import OrderedDict
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -18,12 +18,12 @@ from oneiric.core.resolution import CandidateSource
 class MemoryCacheSettings(BaseModel):
     """Provider settings for the memory cache adapter."""
 
-    default_ttl: Optional[float] = Field(
+    default_ttl: float | None = Field(
         default=None,
         ge=0.0,
         description="Optional default TTL (seconds) applied when set() receives no ttl value.",
     )
-    max_entries: Optional[int] = Field(
+    max_entries: int | None = Field(
         default=None,
         ge=1,
         description="Optional cap on stored entries; oldest entries are evicted when exceeded.",
@@ -48,7 +48,7 @@ class MemoryCacheAdapter:
 
     def __init__(self, settings: MemoryCacheSettings | None = None) -> None:
         self._settings = settings or MemoryCacheSettings()
-        self._store: OrderedDict[str, tuple[Any, Optional[float]]] = OrderedDict()
+        self._store: OrderedDict[str, tuple[Any, float | None]] = OrderedDict()
         self._lock = asyncio.Lock()
         self._logger = get_logger("adapter.cache.memory").bind(
             domain="adapter",
@@ -73,7 +73,7 @@ class MemoryCacheAdapter:
             value = self._store.get(key)
             return None if value is None else value[0]
 
-    async def set(self, key: str, value: Any, *, ttl: Optional[float] = None) -> None:
+    async def set(self, key: str, value: Any, *, ttl: float | None = None) -> None:
         expiry = self._expiry_from_ttl(ttl)
         async with self._lock:
             self._purge_expired_locked()
@@ -89,7 +89,7 @@ class MemoryCacheAdapter:
         async with self._lock:
             self._store.clear()
 
-    def _expiry_from_ttl(self, ttl: Optional[float]) -> Optional[float]:
+    def _expiry_from_ttl(self, ttl: float | None) -> float | None:
         target_ttl = ttl if ttl is not None else self._settings.default_ttl
         if target_ttl is None:
             return None
@@ -101,7 +101,11 @@ class MemoryCacheAdapter:
         if not self._store:
             return
         now = time.monotonic()
-        expired = [key for key, (_, expiry) in self._store.items() if expiry is not None and expiry <= now]
+        expired = [
+            key
+            for key, (_, expiry) in self._store.items()
+            if expiry is not None and expiry <= now
+        ]
         for key in expired:
             self._store.pop(key, None)
 

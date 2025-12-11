@@ -30,7 +30,11 @@ def test_file_sink_writes_json_payload(tmp_path: Path) -> None:
     log_file = tmp_path / "oneiric.log"
     config = LoggingConfig(
         emit_json=True,
-        sinks=[LoggingSinkConfig(target="file", path=str(log_file), max_bytes=4096, backup_count=1)],
+        sinks=[
+            LoggingSinkConfig(
+                target="file", path=str(log_file), max_bytes=4096, backup_count=1
+            )
+        ],
     )
     configure_logging(config)
     logger = get_logger("test")
@@ -38,7 +42,7 @@ def test_file_sink_writes_json_payload(tmp_path: Path) -> None:
     _flush_handlers()
     contents = log_file.read_text().strip()
     assert "file-sink" in contents
-    assert "\"domain\": \"adapter\"" in contents
+    assert '"domain": "adapter"' in contents
 
 
 def test_bind_and_clear_log_context() -> None:

@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from oneiric.core.config import OneiricSettings, load_settings
 from oneiric.runtime.watchers import SelectionWatcher
@@ -18,7 +19,13 @@ def _layer_selector(name: str) -> Callable[[OneiricSettings], Any]:
 
 
 class ServiceConfigWatcher(SelectionWatcher):
-    def __init__(self, bridge: DomainBridge, *, settings_loader=load_settings, poll_interval: float = 5.0) -> None:
+    def __init__(
+        self,
+        bridge: DomainBridge,
+        *,
+        settings_loader=load_settings,
+        poll_interval: float = 5.0,
+    ) -> None:
         super().__init__(
             "service",
             bridge,
@@ -29,7 +36,13 @@ class ServiceConfigWatcher(SelectionWatcher):
 
 
 class TaskConfigWatcher(SelectionWatcher):
-    def __init__(self, bridge: DomainBridge, *, settings_loader=load_settings, poll_interval: float = 5.0) -> None:
+    def __init__(
+        self,
+        bridge: DomainBridge,
+        *,
+        settings_loader=load_settings,
+        poll_interval: float = 5.0,
+    ) -> None:
         super().__init__(
             "task",
             bridge,
@@ -40,22 +53,36 @@ class TaskConfigWatcher(SelectionWatcher):
 
 
 class EventConfigWatcher(SelectionWatcher):
-    def __init__(self, bridge: DomainBridge, *, settings_loader=load_settings, poll_interval: float = 5.0) -> None:
+    def __init__(
+        self,
+        bridge: DomainBridge,
+        *,
+        settings_loader=load_settings,
+        poll_interval: float = 5.0,
+    ) -> None:
         super().__init__(
             "event",
             bridge,
             layer_selector=_layer_selector("event"),
             settings_loader=settings_loader,
             poll_interval=poll_interval,
+            refresh_on_every_tick=True,
         )
 
 
 class WorkflowConfigWatcher(SelectionWatcher):
-    def __init__(self, bridge: DomainBridge, *, settings_loader=load_settings, poll_interval: float = 5.0) -> None:
+    def __init__(
+        self,
+        bridge: DomainBridge,
+        *,
+        settings_loader=load_settings,
+        poll_interval: float = 5.0,
+    ) -> None:
         super().__init__(
             "workflow",
             bridge,
             layer_selector=_layer_selector("workflow"),
             settings_loader=settings_loader,
             poll_interval=poll_interval,
+            refresh_on_every_tick=True,
         )

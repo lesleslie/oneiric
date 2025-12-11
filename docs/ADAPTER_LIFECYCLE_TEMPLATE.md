@@ -56,7 +56,9 @@ class RedisCacheAdapter:
         try:
             self._client = redis.Redis.from_url(
                 str(self._settings.url),
-                password=self._settings.password.get_secret_value() if self._settings.password else None,
+                password=self._settings.password.get_secret_value()
+                if self._settings.password
+                else None,
                 client_name=self._settings.client_name,
                 socket_connect_timeout=self._settings.connect_timeout,
                 health_check_interval=int(self._settings.health_timeout),
@@ -94,8 +96,9 @@ class RedisCacheAdapter:
 ```
 
 ### Usage Checklist
+
 1. Define a `BaseModel` settings class for provider-specific knobs.
-2. Bind structured logging context inside `__init__` so lifecycle + resolver metadata appears in every log.
-3. Implement `init`, `health`, and `cleanup` (and optional `pause`, `resume`, `drain`) methods.
-4. Raise `LifecycleError` when initialization or critical calls fail.
-5. Register the adapter via `AdapterMetadata.to_candidate()` + `resolver.register_from_pkg` or the adapters bridge.
+1. Bind structured logging context inside `__init__` so lifecycle + resolver metadata appears in every log.
+1. Implement `init`, `health`, and `cleanup` (and optional `pause`, `resume`, `drain`) methods.
+1. Raise `LifecycleError` when initialization or critical calls fail.
+1. Register the adapter via `AdapterMetadata.to_candidate()` + `resolver.register_from_pkg` or the adapters bridge.

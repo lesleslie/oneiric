@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import inspect
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
+from collections.abc import Iterable, Mapping, Sequence
+from typing import Any
 
 from coredis import Redis
 from coredis.exceptions import RedisError, ResponseError
@@ -19,15 +20,35 @@ from oneiric.core.resolution import CandidateSource
 class RedisStreamsQueueSettings(BaseModel):
     """Settings for the Redis Streams adapter."""
 
-    stream: str = Field(default="oneiric-queue", description="Stream key backing the queue.")
+    stream: str = Field(
+        default="oneiric-queue", description="Stream key backing the queue."
+    )
     group: str = Field(default="oneiric", description="Consumer group name.")
-    consumer: str = Field(default="oneiric-consumer", description="Consumer name for read operations.")
-    url: str = Field(default="redis://localhost:6379/0", description="Redis connection URL.")
-    block_ms: int = Field(default=1000, ge=0, description="Default block duration for reads (milliseconds).")
-    maxlen: Optional[int] = Field(default=None, ge=1, description="Approximate stream max length enforced on enqueue.")
-    auto_create_group: bool = Field(default=True, description="Whether to create the consumer group if missing.")
-    consumer_buffer_size: int = Field(default=1, ge=1, description="Default XREADGROUP count value.")
-    healthcheck_timeout: float = Field(default=2.0, gt=0.0, description="Timeout for health PING probes (seconds).")
+    consumer: str = Field(
+        default="oneiric-consumer", description="Consumer name for read operations."
+    )
+    url: str = Field(
+        default="redis://localhost:6379/0", description="Redis connection URL."
+    )
+    block_ms: int = Field(
+        default=1000,
+        ge=0,
+        description="Default block duration for reads (milliseconds).",
+    )
+    maxlen: int | None = Field(
+        default=None,
+        ge=1,
+        description="Approximate stream max length enforced on enqueue.",
+    )
+    auto_create_group: bool = Field(
+        default=True, description="Whether to create the consumer group if missing."
+    )
+    consumer_buffer_size: int = Field(
+        default=1, ge=1, description="Default XREADGROUP count value."
+    )
+    healthcheck_timeout: float = Field(
+        default=2.0, gt=0.0, description="Timeout for health PING probes (seconds)."
+    )
 
 
 class RedisStreamsQueueAdapter:
@@ -46,9 +67,14 @@ class RedisStreamsQueueAdapter:
         settings_model=RedisStreamsQueueSettings,
     )
 
-    def __init__(self, settings: RedisStreamsQueueSettings | None = None, *, redis_client: Optional[Redis] = None) -> None:
+    def __init__(
+        self,
+        settings: RedisStreamsQueueSettings | None = None,
+        *,
+        redis_client: Redis | None = None,
+    ) -> None:
         self._settings = settings or RedisStreamsQueueSettings()
-        self._client: Optional[Redis] = redis_client
+        self._client: Redis | None = redis_client
         self._owns_client = redis_client is None
         self._logger = get_logger("adapter.queue.redis_streams").bind(
             domain="adapter",
@@ -91,21 +117,24 @@ class RedisStreamsQueueAdapter:
     async def cleanup(self) -> None:
         if self._client and self._owns_client:
             try:
-                close = getattr(self._client, "close", None)
-                if close:
-                    maybe = close()
-                    if inspect.isawaitable(maybe):
-                        await maybe
-                pool = getattr(self._client, "connection_pool", None)
-                if pool:
-                    disconnect = getattr(pool, "disconnect", None)
-                    if disconnect:
-                        maybe = disconnect()
-                        if inspect.isawaitable(maybe):
-                            await maybe
+                await self._close_client_connection()
+                await self._disconnect_connection_pool()
             finally:
                 self._client = None
         self._logger.info("adapter-cleanup-complete", adapter="redis-streams-queue")
+
+    async def _close_client_connection(self) -> None:
+        """Close the Redis client connection if available."""
+        if close := getattr(self._client, "close", None):
+            if inspect.isawaitable(maybe := close()):
+                await maybe
+
+    async def _disconnect_connection_pool(self) -> None:
+        """Disconnect the connection pool if available."""
+        if pool := getattr(self._client, "connection_pool", None):
+            if disconnect := getattr(pool, "disconnect", None):
+                if inspect.isawaitable(maybe := disconnect()):
+                    await maybe
 
     async def enqueue(self, data: Mapping[str, Any]) -> str:
         client = self._ensure_client()
@@ -114,10 +143,14 @@ class RedisStreamsQueueAdapter:
             kwargs["maxlen"] = self._settings.maxlen
             kwargs["approximate"] = True
         message_id = await client.xadd(self._settings.stream, data, **kwargs)
-        self._logger.debug("queue-enqueue", stream=self._settings.stream, message_id=message_id)
+        self._logger.debug(
+            "queue-enqueue", stream=self._settings.stream, message_id=message_id
+        )
         return message_id
 
-    async def read(self, *, count: Optional[int] = None, block_ms: Optional[int] = None) -> List[dict[str, Any]]:
+    async def read(
+        self, *, count: int | None = None, block_ms: int | None = None
+    ) -> list[dict[str, Any]]:
         client = self._ensure_client()
         block = block_ms if block_ms is not None else self._settings.block_ms
         entries = await client.xreadgroup(
@@ -133,11 +166,13 @@ class RedisStreamsQueueAdapter:
         client = self._ensure_client()
         if not message_ids:
             return 0
-        acked = await client.xack(self._settings.stream, self._settings.group, *message_ids)
+        acked = await client.xack(
+            self._settings.stream, self._settings.group, *message_ids
+        )
         self._logger.debug("queue-ack", stream=self._settings.stream, count=acked)
         return acked
 
-    async def pending(self, *, count: int = 10) -> List[dict[str, Any]]:
+    async def pending(self, *, count: int = 10) -> list[dict[str, Any]]:
         client = self._ensure_client()
         response = await client.xpending_range(
             self._settings.stream,
@@ -163,10 +198,12 @@ class RedisStreamsQueueAdapter:
 
     async def _ensure_ping(self) -> None:
         client = self._ensure_client()
-        await asyncio.wait_for(client.ping(), timeout=self._settings.healthcheck_timeout)
+        await asyncio.wait_for(
+            client.ping(), timeout=self._settings.healthcheck_timeout
+        )
 
-    def _format_entries(self, entries: Iterable[Any]) -> List[dict[str, Any]]:
-        formatted: List[dict[str, Any]] = []
+    def _format_entries(self, entries: Iterable[Any]) -> list[dict[str, Any]]:
+        formatted: list[dict[str, Any]] = []
         for stream_key, messages in entries or []:
             if stream_key != self._settings.stream:
                 continue

@@ -1,27 +1,29 @@
-# Kubernetes Deployment Guide
+# Kubernetes Deployment Guide (Legacy)
+
+> **Legacy Notice (2025-12-07):** Oneiric targets Google Cloud Run + buildpacks for production deployments. Use this Kubernetes reference only when maintaining existing clusters or running bespoke orchestrators; new services should follow `docs/deployment/CLOUD_RUN_BUILD.md`.
 
 **Version:** 1.0.0
 **Last Updated:** 2025-11-26
 **Target:** Oneiric v0.1.0+ on Kubernetes 1.28+
 
----
+______________________________________________________________________
 
 ## Table of Contents
 
-1. [Architecture Overview](#architecture-overview)
-2. [Prerequisites](#prerequisites)
-3. [Quick Start](#quick-start)
-4. [Deployment Manifests](#deployment-manifests)
-5. [ConfigMaps & Secrets](#configmaps--secrets)
-6. [Persistent Volumes](#persistent-volumes)
-7. [Services & Ingress](#services--ingress)
-8. [Autoscaling](#autoscaling)
-9. [Monitoring Integration](#monitoring-integration)
-10. [Helm Chart](#helm-chart)
-11. [Production Best Practices](#production-best-practices)
-12. [Troubleshooting](#troubleshooting)
+1. \[[#architecture-overview|Architecture Overview]\]
+1. \[[#prerequisites|Prerequisites]\]
+1. \[[#quick-start|Quick Start]\]
+1. \[[#deployment-manifests|Deployment Manifests]\]
+1. \[[#configmaps--secrets|ConfigMaps & Secrets]\]
+1. \[[#persistent-volumes|Persistent Volumes]\]
+1. \[[#services--ingress|Services & Ingress]\]
+1. \[[#autoscaling|Autoscaling]\]
+1. \[[#monitoring-integration|Monitoring Integration]\]
+1. \[[#helm-chart|Helm Chart]\]
+1. \[[#production-best-practices|Production Best Practices]\]
+1. \[[#troubleshooting|Troubleshooting]\]
 
----
+______________________________________________________________________
 
 ## Architecture Overview
 
@@ -58,7 +60,7 @@
      └─────────────────────────┘
 ```
 
----
+______________________________________________________________________
 
 ## Prerequisites
 
@@ -91,7 +93,7 @@ docker build -t your-registry.com/oneiric:0.1.0 .
 docker push your-registry.com/oneiric:0.1.0
 ```
 
----
+______________________________________________________________________
 
 ## Quick Start
 
@@ -134,7 +136,7 @@ kubectl port-forward svc/oneiric 8000:8000 -n oneiric
 curl http://localhost:8000/health
 ```
 
----
+______________________________________________________________________
 
 ## Deployment Manifests
 
@@ -350,7 +352,7 @@ spec:
       #   workload: oneiric
 ```
 
----
+______________________________________________________________________
 
 ## ConfigMaps & Secrets
 
@@ -425,7 +427,7 @@ kubectl create secret generic oneiric-secrets \
   --namespace oneiric
 ```
 
----
+______________________________________________________________________
 
 ## Persistent Volumes
 
@@ -469,7 +471,7 @@ allowVolumeExpansion: true
 volumeBindingMode: WaitForFirstConsumer
 ```
 
----
+______________________________________________________________________
 
 ## Services & Ingress
 
@@ -562,7 +564,7 @@ spec:
                   number: 8000
 ```
 
----
+______________________________________________________________________
 
 ## Autoscaling
 
@@ -638,7 +640,7 @@ spec:
       app: oneiric
 ```
 
----
+______________________________________________________________________
 
 ## Monitoring Integration
 
@@ -705,7 +707,7 @@ spec:
             summary: "Oneiric pod memory usage is high"
 ```
 
----
+______________________________________________________________________
 
 ## Helm Chart
 
@@ -860,7 +862,7 @@ helm upgrade oneiric oneiric/oneiric \
 helm uninstall oneiric --namespace oneiric
 ```
 
----
+______________________________________________________________________
 
 ## Production Best Practices
 
@@ -901,7 +903,7 @@ helm uninstall oneiric --namespace oneiric
 - Test in staging before production
 - Monitor rollout progress
 
----
+______________________________________________________________________
 
 ## Troubleshooting
 
@@ -956,11 +958,11 @@ kubectl describe ingress oneiric -n oneiric
 kubectl logs -n ingress-nginx deployment/ingress-nginx-controller
 ```
 
----
+______________________________________________________________________
 
 ## Next Steps
 
-- [Systemd Deployment](./SYSTEMD_DEPLOYMENT.md) - Run as systemd service
+- \[[SYSTEMD_DEPLOYMENT|Systemd Deployment]\] - Run as systemd service
 - [Monitoring Setup](../monitoring/MONITORING_SETUP.md) - Configure Prometheus, Grafana, Loki
 - [Runbooks](../runbooks/README.md) - Incident response procedures
-- [Docker Deployment](./DOCKER_DEPLOYMENT.md) - Docker Compose alternative
+- \[[DOCKER_DEPLOYMENT|Docker Deployment]\] - Docker Compose alternative

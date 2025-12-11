@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import os
-
 import pytest
 
-from oneiric.adapters.secrets.env import EnvSecretAdapter, EnvSecretSettings
 from oneiric.adapters import register_builtin_adapters
 from oneiric.adapters.bridge import AdapterBridge
+from oneiric.adapters.secrets.env import EnvSecretAdapter, EnvSecretSettings
 from oneiric.core.config import LayerSettings
 from oneiric.core.lifecycle import LifecycleManager
 from oneiric.core.resolution import Resolver

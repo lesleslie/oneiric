@@ -3,16 +3,13 @@
 from __future__ import annotations
 
 import asyncio
-from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
-from oneiric.adapters.metadata import AdapterMetadata, register_adapter_metadata
 from oneiric.core.config import OneiricSettings
 from oneiric.core.lifecycle import LifecycleManager
 from oneiric.core.resolution import Candidate, Resolver
-
 
 # Test Components
 
@@ -133,7 +130,7 @@ class TestResourceExhaustion:
         )
 
         # Activate
-        instance1 = await lifecycle.activate("adapter", "cache")
+        await lifecycle.activate("adapter", "cache")
         assert len(LeakyAdapter.instances) == 1
 
         # Swap multiple times
@@ -189,13 +186,17 @@ class TestNetworkFailures:
     """Test network failure scenarios."""
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Network tests are flaky - error handling tested in other tests")
+    @pytest.mark.skip(
+        reason="Network tests are flaky - error handling tested in other tests"
+    )
     async def test_remote_fetch_timeout(self, tmp_path):
         """Remote fetch should timeout gracefully."""
         pass
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Network tests are flaky - error handling tested in other tests")
+    @pytest.mark.skip(
+        reason="Network tests are flaky - error handling tested in other tests"
+    )
     async def test_remote_fetch_network_error(self, tmp_path):
         """Remote fetch should handle network errors."""
         pass
@@ -323,11 +324,11 @@ class TestMaliciousInput:
         with open(manifest_file, "w") as f:
             f.write("source: test\nentries:\n")
             for i in range(100000):
-                f.write(f"  - domain: adapter\n")
+                f.write("  - domain: adapter\n")
                 f.write(f"    key: cache-{i}\n")
                 f.write(f"    provider: provider-{i}\n")
-                f.write(f"    factory: tests.integration.test_edge_cases:SlowAdapter\n")
-                f.write(f"    stack_level: 5\n")
+                f.write("    factory: tests.integration.test_edge_cases:SlowAdapter\n")
+                f.write("    stack_level: 5\n")
 
         # Should handle large manifest (may be slow but shouldn't crash)
         # In production, size limits would be enforced
@@ -382,7 +383,7 @@ class TestRollbackScenarios:
             pass  # Expected to fail
 
         # Should still have working instance
-        status = lifecycle.get_status("adapter", "cache")
+        lifecycle.get_status("adapter", "cache")
         # Either rolled back or failed - both are acceptable
 
 

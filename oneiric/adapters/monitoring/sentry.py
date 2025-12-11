@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import os
-from typing import Any, Callable, Dict, Optional
+from collections.abc import Callable
+from typing import Any
 
 from pydantic import BaseModel, Field, SecretStr
 
@@ -22,15 +23,21 @@ except Exception:  # pragma: no cover - optional dependency import
 class SentryMonitoringSettings(BaseModel):
     """Configuration for the Sentry adapter."""
 
-    dsn: Optional[SecretStr] = Field(
+    dsn: SecretStr | None = Field(
         default=None,
         description="Sentry DSN; falls back to SENTRY_DSN env var when omitted.",
     )
-    environment: str = Field(default="development", description="Deployment environment tag.")
-    release: Optional[str] = Field(default=None, description="Optional release identifier.")
+    environment: str = Field(
+        default="development", description="Deployment environment tag."
+    )
+    release: str | None = Field(
+        default=None, description="Optional release identifier."
+    )
     traces_sample_rate: float = Field(default=0.0, ge=0.0, le=1.0)
     profiles_sample_rate: float = Field(default=0.0, ge=0.0, le=1.0)
-    enable_tracing: bool = Field(default=True, description="Toggle Sentry tracing pipelines.")
+    enable_tracing: bool = Field(
+        default=True, description="Toggle Sentry tracing pipelines."
+    )
     attach_stacktrace: bool = Field(default=True)
     send_default_pii: bool = Field(default=False)
 
@@ -63,7 +70,7 @@ class SentryMonitoringAdapter:
     async def init(self) -> None:
         sdk = self._require_sdk()
         dsn = self._resolve_dsn()
-        options: Dict[str, Any] = {
+        options: dict[str, Any] = {
             "dsn": dsn,
             "environment": self._settings.environment,
             "release": self._settings.release,
@@ -79,7 +86,9 @@ class SentryMonitoringAdapter:
         except Exception as exc:  # pragma: no cover - depends on sentry install
             raise LifecycleError("sentry-init-failed") from exc
         self._configured = True
-        self._logger.info("adapter-init", adapter="sentry", environment=self._settings.environment)
+        self._logger.info(
+            "adapter-init", adapter="sentry", environment=self._settings.environment
+        )
 
     async def health(self) -> bool:
         return self._configured

@@ -7,8 +7,8 @@ import hashlib
 import hmac
 import json
 import secrets
-from datetime import datetime, timezone
-from typing import Any, Literal, Optional
+from datetime import UTC, datetime
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -29,7 +29,7 @@ class SecuritySignatureSettings(BaseModel):
         default="hex",
         description="Encoding applied to the digest output.",
     )
-    secret: Optional[str] = Field(
+    secret: str | None = Field(
         default=None,
         description="Default secret used when payload omits 'secret'.",
     )
@@ -100,8 +100,10 @@ class SecuritySignatureAction:
             "header": payload.get("header") or self._settings.header_name,
         }
         if include_timestamp:
-            result["timestamp"] = datetime.now(timezone.utc).isoformat()
-        self._logger.info("security-action-signed", algorithm=algorithm, encoding=encoding)
+            result["timestamp"] = datetime.now(UTC).isoformat()
+        self._logger.info(
+            "security-action-signed", algorithm=algorithm, encoding=encoding
+        )
         return result
 
     def _normalize_message(self, payload: dict) -> bytes:
@@ -119,7 +121,9 @@ class SecuritySignatureAction:
         if isinstance(value, str):
             return value.encode("utf-8")
         try:
-            return json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
+            return json.dumps(value, sort_keys=True, separators=(",", ":")).encode(
+                "utf-8"
+            )
         except TypeError as exc:  # pragma: no cover - serialization edge
             raise LifecycleError("security-signature-message-invalid") from exc
 
@@ -127,7 +131,9 @@ class SecuritySignatureAction:
 class SecuritySecureSettings(BaseModel):
     """Settings controlling secure token/password helpers."""
 
-    token_length: int = Field(default=32, description="Default length for generated tokens.")
+    token_length: int = Field(
+        default=32, description="Default length for generated tokens."
+    )
     password_iterations: int = Field(
         default=100_000,
         description="PBKDF2 iterations applied when hashing passwords.",
@@ -181,7 +187,9 @@ class SecuritySecureAction:
         password = payload.get("password")
         if not isinstance(password, str) or not password:
             raise LifecycleError("security-secure-password-required")
-        iterations = int(payload.get("iterations") or self._settings.password_iterations)
+        iterations = int(
+            payload.get("iterations") or self._settings.password_iterations
+        )
         salt = payload.get("salt")
         if not salt:
             salt = secrets.token_hex(16)
@@ -203,8 +211,13 @@ class SecuritySecureAction:
         password = payload.get("password")
         password_hash = payload.get("hash")
         salt = payload.get("salt")
-        iterations = int(payload.get("iterations") or self._settings.password_iterations)
-        if not all(isinstance(value, str) and value for value in (password, password_hash, salt)):
+        iterations = int(
+            payload.get("iterations") or self._settings.password_iterations
+        )
+        if not all(
+            isinstance(value, str) and value
+            for value in (password, password_hash, salt)
+        ):
             raise LifecycleError("security-secure-verification-input-invalid")
         computed = hashlib.pbkdf2_hmac(
             "sha256",
@@ -216,7 +229,7 @@ class SecuritySecureAction:
         self._logger.info("security-action-password-verify", valid=valid)
         return {
             "status": "password-verify",
-            "valid": bool(valid),
+            "valid": valid,
         }
 
     def _compare(self, payload: dict) -> dict:
@@ -228,5 +241,5 @@ class SecuritySecureAction:
         self._logger.info("security-action-compare", equal=equal)
         return {
             "status": "compare",
-            "equal": bool(equal),
+            "equal": equal,
         }

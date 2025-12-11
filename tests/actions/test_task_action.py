@@ -51,7 +51,9 @@ async def test_task_schedule_cron_window() -> None:
 async def test_task_schedule_via_bridge(tmp_path) -> None:
     resolver = Resolver()
     register_builtin_actions(resolver)
-    lifecycle = LifecycleManager(resolver, status_snapshot_path=str(tmp_path / "status.json"))
+    lifecycle = LifecycleManager(
+        resolver, status_snapshot_path=str(tmp_path / "status.json")
+    )
     settings = LayerSettings(selections={"task.schedule": "builtin-task-schedule"})
     bridge = ActionBridge(resolver, lifecycle, settings)
     with freeze_time("2024-02-01T10:00:00Z"):

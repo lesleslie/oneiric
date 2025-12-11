@@ -1,13 +1,17 @@
 from __future__ import annotations
 
+import base64
+import hashlib
+
 import pytest
 
 from oneiric.actions.bootstrap import register_builtin_actions
 from oneiric.actions.bridge import ActionBridge
-import base64
-import hashlib
-
-from oneiric.actions.compression import CompressionAction, HashAction, HashActionSettings
+from oneiric.actions.compression import (
+    CompressionAction,
+    HashAction,
+    HashActionSettings,
+)
 from oneiric.core.config import LayerSettings
 from oneiric.core.lifecycle import LifecycleManager
 from oneiric.core.resolution import Resolver
@@ -26,7 +30,9 @@ async def test_compression_action_roundtrip() -> None:
 async def test_action_bridge_activates_builtin_compression(tmp_path) -> None:
     resolver = Resolver()
     register_builtin_actions(resolver)
-    lifecycle = LifecycleManager(resolver, status_snapshot_path=str(tmp_path / "status.json"))
+    lifecycle = LifecycleManager(
+        resolver, status_snapshot_path=str(tmp_path / "status.json")
+    )
     settings = LayerSettings(
         selections={"compression.encode": "builtin-compression"},
     )

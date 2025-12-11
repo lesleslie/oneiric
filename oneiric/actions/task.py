@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any, Iterable, Mapping
+from typing import Any
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
@@ -182,41 +183,74 @@ class _CronExpression:
         value = token.strip()
         if value in {"*", "?", ""}:
             return None
+
         allowed: set[int] = set()
         for part in value.split(","):
-            step = 1
-            range_expr = part
-            if "/" in part:
-                base, step_text = part.split("/", 1)
-                range_expr = base or "*"
-                if not step_text:
-                    msg = f"Invalid cron step: {part}"
-                    raise ValueError(msg)
-                step = int(step_text)
-                if step <= 0:
-                    raise ValueError("Cron step must be positive")
-            if range_expr in {"*", "?"}:
-                start, end = minimum, maximum
-            elif "-" in range_expr:
-                start_text, end_text = range_expr.split("-", 1)
-                start = int(start_text)
-                end = int(end_text)
-            else:
-                start = end = int(range_expr)
-            if wrap_sunday:
-                if start < minimum and start != 7:
-                    raise ValueError("Day-of-week values must be between 0 and 7")
-                if end > maximum and end != 7:
-                    raise ValueError("Day-of-week values must be between 0 and 7")
-            else:
-                if start < minimum or end > maximum:
-                    msg = f"Cron value {range_expr} outside bounds {minimum}-{maximum}"
-                    raise ValueError(msg)
-            if start > end:
-                raise ValueError("Cron range start cannot be greater than end")
+            step, range_expr = self._extract_step(part)
+            start, end = self._parse_range(range_expr, minimum, maximum)
+            self._validate_range(start, end, minimum, maximum, range_expr, wrap_sunday)
+
             for candidate in range(start, end + 1, step):
-                allowed.add(self._normalize_weekday(candidate) if wrap_sunday else candidate)
+                normalized = (
+                    self._normalize_weekday(candidate) if wrap_sunday else candidate
+                )
+                allowed.add(normalized)
+
         return sorted(allowed)
+
+    def _extract_step(self, part: str) -> tuple[int, str]:
+        """Extract step value and range expression from cron part."""
+        if "/" not in part:
+            return 1, part
+
+        base, step_text = part.split("/", 1)
+        range_expr = base or "*"
+        if not step_text:
+            raise ValueError(f"Invalid cron step: {part}")
+
+        step = int(step_text)
+        if step <= 0:
+            raise ValueError("Cron step must be positive")
+
+        return step, range_expr
+
+    def _parse_range(
+        self, range_expr: str, minimum: int, maximum: int
+    ) -> tuple[int, int]:
+        """Parse range expression into start and end values."""
+        if range_expr in {"*", "?"}:
+            return minimum, maximum
+
+        if "-" in range_expr:
+            start_text, end_text = range_expr.split("-", 1)
+            return int(start_text), int(end_text)
+
+        value = int(range_expr)
+        return value, value
+
+    def _validate_range(
+        self,
+        start: int,
+        end: int,
+        minimum: int,
+        maximum: int,
+        range_expr: str,
+        wrap_sunday: bool,
+    ) -> None:
+        """Validate range values are within bounds."""
+        if wrap_sunday:
+            if start < minimum and start != 7:
+                raise ValueError("Day-of-week values must be between 0 and 7")
+            if end > maximum and end != 7:
+                raise ValueError("Day-of-week values must be between 0 and 7")
+        else:
+            if start < minimum or end > maximum:
+                raise ValueError(
+                    f"Cron value {range_expr} outside bounds {minimum}-{maximum}"
+                )
+
+        if start > end:
+            raise ValueError("Cron range start cannot be greater than end")
 
     def _normalize_weekday(self, value: int) -> int:
         if value == 7:
@@ -279,7 +313,9 @@ class TaskScheduleAction:
         except Exception as exc:  # pragma: no cover - invalid timezone path
             raise LifecycleError("task-schedule-timezone-invalid") from exc
 
-    def _build_rule(self, request: TaskSchedulePayload, tzinfo: ZoneInfo) -> _ScheduleRule:
+    def _build_rule(
+        self, request: TaskSchedulePayload, tzinfo: ZoneInfo
+    ) -> _ScheduleRule:
         cron_expression = request.cron_expression
         if cron_expression:
             try:
@@ -296,12 +332,16 @@ class TaskScheduleAction:
         if not queue:
             raise LifecycleError("task-schedule-queue-invalid")
         payload = dict(request.payload)
-        priority = request.priority if request.priority is not None else self._settings.default_priority
+        priority = (
+            request.priority
+            if request.priority is not None
+            else self._settings.default_priority
+        )
         start_time = self._coerce_datetime(request.start_time, tzinfo)
         end_time = self._coerce_datetime(request.end_time, tzinfo)
         if end_time and start_time and end_time <= start_time:
             raise LifecycleError("task-schedule-window-invalid")
-        tags = {str(key): str(value) for key, value in request.tags.items()}
+        tags = {key: value for key, value in request.tags.items()}
         tags.setdefault("scheduled", "true")
         tags.setdefault("rule_name", name)
         tags.setdefault("task_type", task_type)
@@ -320,7 +360,9 @@ class TaskScheduleAction:
             tags=tags,
         )
 
-    def _coerce_datetime(self, value: datetime | None, tzinfo: ZoneInfo) -> datetime | None:
+    def _coerce_datetime(
+        self, value: datetime | None, tzinfo: ZoneInfo
+    ) -> datetime | None:
         if value is None:
             return None
         if value.tzinfo is None:
@@ -338,53 +380,104 @@ class TaskScheduleAction:
         base_time: datetime,
         preview_count: int,
     ) -> dict[str, Any]:
-        cron_helper = _CronExpression(rule.cron_expression) if rule.cron_expression else None
-        next_run: datetime | None = None
-        runs_remaining = rule.max_runs
-        limit = preview_count if preview_count > 0 else 0
-        current = base_time
-        upcoming: list[str] = []
-        iterations = 0
-        while True:
-            iterations += 1
-            candidate = self._next_occurrence(current, cron_helper, rule.interval_seconds)
-            if candidate is None:
-                break
-            if rule.end_time and candidate > rule.end_time:
-                break
-            if next_run is None:
-                next_run = candidate
-            if len(upcoming) < limit:
-                upcoming.append(candidate.isoformat())
-            if limit > 0 and len(upcoming) >= limit:
-                break
-            current = candidate
-            if runs_remaining is not None:
-                runs_remaining -= 1
-                if runs_remaining <= 0:
-                    break
-            if limit == 0 and next_run is not None:
-                break
-            if iterations > 10_000:
-                raise LifecycleError("task-schedule-iterations-exceeded")
+        cron_helper = (
+            _CronExpression(rule.cron_expression) if rule.cron_expression else None
+        )
+        next_run, upcoming = self._compute_schedule_runs(
+            rule, cron_helper, base_time, preview_count
+        )
+
         return {
             "status": "scheduled" if next_run else "unscheduled",
-            "rule": {
-                "rule_id": rule.rule_id,
-                "name": rule.name,
-                "task_type": rule.task_type,
-                "queue": rule.queue,
-                "priority": rule.priority,
-                "cron_expression": rule.cron_expression,
-                "interval_seconds": rule.interval_seconds,
-                "start_time": rule.start_time.isoformat() if rule.start_time else None,
-                "end_time": rule.end_time.isoformat() if rule.end_time else None,
-                "max_runs": rule.max_runs,
-                "tags": rule.tags,
-            },
+            "rule": self._build_rule_dict(rule),
             "next_run": next_run.isoformat() if next_run else None,
             "upcoming_runs": upcoming,
             "payload": rule.payload,
+        }
+
+    def _compute_schedule_runs(
+        self,
+        rule: _ScheduleRule,
+        cron_helper: _CronExpression | None,
+        base_time: datetime,
+        preview_count: int,
+    ) -> tuple[datetime | None, list[str]]:
+        """Compute next run and upcoming runs."""
+        state = {
+            "next_run": None,
+            "runs_remaining": rule.max_runs,
+            "limit": max(preview_count, 0),
+            "current": base_time,
+            "upcoming": [],
+            "iterations": 0,
+        }
+
+        while not self._should_stop_schedule_iteration(state, rule):
+            state["iterations"] += 1
+            self._check_iteration_limit(state["iterations"])
+
+            candidate = self._next_occurrence(
+                state["current"], cron_helper, rule.interval_seconds
+            )
+            if not self._is_valid_candidate(candidate, rule):
+                break
+
+            self._update_schedule_state(state, candidate)
+
+            if self._schedule_complete(state):
+                break
+
+        return state["next_run"], state["upcoming"]
+
+    def _check_iteration_limit(self, iterations: int) -> None:
+        if iterations > 10_000:
+            raise LifecycleError("task-schedule-iterations-exceeded")
+
+    def _is_valid_candidate(
+        self, candidate: datetime | None, rule: _ScheduleRule
+    ) -> bool:
+        return candidate is not None and (
+            rule.end_time is None or candidate <= rule.end_time
+        )
+
+    def _update_schedule_state(self, state: dict, candidate: datetime) -> None:
+        if state["next_run"] is None:
+            state["next_run"] = candidate
+
+        if len(state["upcoming"]) < state["limit"]:
+            state["upcoming"].append(candidate.isoformat())
+
+        state["current"] = candidate
+
+        if state["runs_remaining"] is not None:
+            state["runs_remaining"] -= 1
+
+    def _should_stop_schedule_iteration(self, state: dict, rule: _ScheduleRule) -> bool:
+        return False  # Continue by default
+
+    def _schedule_complete(self, state: dict) -> bool:
+        if state["limit"] > 0 and len(state["upcoming"]) >= state["limit"]:
+            return True
+        if state["runs_remaining"] is not None and state["runs_remaining"] <= 0:
+            return True
+        if state["limit"] == 0 and state["next_run"] is not None:
+            return True
+        return False
+
+    def _build_rule_dict(self, rule: _ScheduleRule) -> dict[str, Any]:
+        """Build rule dictionary for response."""
+        return {
+            "rule_id": rule.rule_id,
+            "name": rule.name,
+            "task_type": rule.task_type,
+            "queue": rule.queue,
+            "priority": rule.priority,
+            "cron_expression": rule.cron_expression,
+            "interval_seconds": rule.interval_seconds,
+            "start_time": rule.start_time.isoformat() if rule.start_time else None,
+            "end_time": rule.end_time.isoformat() if rule.end_time else None,
+            "max_runs": rule.max_runs,
+            "tags": rule.tags,
         }
 
     def _next_occurrence(

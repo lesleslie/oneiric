@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import base64
+import bz2
 import hashlib
 import json
-import bz2
 import lzma
 import zlib
 from typing import Literal
@@ -69,7 +69,9 @@ class CompressionAction:
             raw = text.encode("utf-8")
             compressed = self._compress(raw, algorithm)
             token = base64.b64encode(compressed).decode("ascii")
-            self._logger.debug("compression-action-compress", algorithm=algorithm, size=len(token))
+            self._logger.debug(
+                "compression-action-compress", algorithm=algorithm, size=len(token)
+            )
             return {
                 "mode": "compress",
                 "algorithm": algorithm,
@@ -82,9 +84,10 @@ class CompressionAction:
             raw = base64.b64decode(data.encode("ascii"))
         except Exception as exc:  # pragma: no cover - base64 error path
             raise LifecycleError("compression-action-decode-error") from exc
-        decompressed = self._decompress(raw, algorithm)
-        text = decompressed.decode("utf-8")
-        self._logger.debug("compression-action-decompress", algorithm=algorithm, size=len(text))
+        text = self._decompress(raw, algorithm).decode("utf-8")
+        self._logger.debug(
+            "compression-action-decompress", algorithm=algorithm, size=len(text)
+        )
         return {
             "mode": "decompress",
             "algorithm": algorithm,
@@ -195,6 +198,8 @@ class HashAction:
         if isinstance(value, str):
             return value.encode("utf-8")
         try:
-            return json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
+            return json.dumps(value, sort_keys=True, separators=(",", ":")).encode(
+                "utf-8"
+            )
         except TypeError as exc:  # pragma: no cover - serialization edge
             raise LifecycleError("hash-action-value-invalid") from exc

@@ -14,15 +14,21 @@ class DummyNATS:
         self.subscriptions: list[tuple[str, str]] = []
         self.closed = False
 
-    async def publish(self, subject: str, payload: bytes, headers: dict[str, str] | None = None) -> None:
+    async def publish(
+        self, subject: str, payload: bytes, headers: dict[str, str] | None = None
+    ) -> None:
         self.published.append((subject, payload))
 
-    async def subscribe(self, subject: str, queue: str | None = None, cb: Any | None = None) -> str:
+    async def subscribe(
+        self, subject: str, queue: str | None = None, cb: Any | None = None
+    ) -> str:
         self.subscriptions.append((subject, queue or ""))
         await cb(None)  # type: ignore[arg-type]
         return "sid-1"
 
-    async def request(self, subject: str, payload: bytes, timeout: float | None = None) -> str:
+    async def request(
+        self, subject: str, payload: bytes, timeout: float | None = None
+    ) -> str:
         return "response"
 
     async def drain(self) -> None:

@@ -4,21 +4,21 @@
 **Status:** Production Ready
 **Maintainer:** Platform Team
 
----
+______________________________________________________________________
 
 ## Table of Contents
 
-1. [Overview](#overview)
-2. [Quick Start](#quick-start)
-3. [Installation](#installation)
-4. [Configuration](#configuration)
-5. [Metrics Reference](#metrics-reference)
-6. [Recording Rules](#recording-rules)
-7. [Alert Rules](#alert-rules)
-8. [Troubleshooting](#troubleshooting)
-9. [Best Practices](#best-practices)
+1. \[[#overview|Overview]\]
+1. \[[#quick-start|Quick Start]\]
+1. \[[#installation|Installation]\]
+1. \[[#configuration|Configuration]\]
+1. \[[#metrics-reference|Metrics Reference]\]
+1. \[[#recording-rules|Recording Rules]\]
+1. \[[#alert-rules|Alert Rules]\]
+1. \[[#troubleshooting|Troubleshooting]\]
+1. \[[#best-practices|Best Practices]\]
 
----
+______________________________________________________________________
 
 ## Overview
 
@@ -39,7 +39,7 @@ This guide configures Prometheus to monitor Oneiric's resolution layer, lifecycl
 | **Remote Sync** | `oneiric_remote_*` | Manifest loading and artifacts |
 | **System** | `oneiric_system_*` | Runtime health and resources |
 
----
+______________________________________________________________________
 
 ## Quick Start
 
@@ -74,7 +74,7 @@ kubectl get servicemonitor oneiric -n oneiric
 prometheus --config.file=deployment/monitoring/prometheus/prometheus.yml
 ```
 
----
+______________________________________________________________________
 
 ## Installation
 
@@ -124,7 +124,7 @@ cp /path/to/oneiric/deployment/monitoring/prometheus/prometheus.yml ./
 ./prometheus --config.file=prometheus.yml
 ```
 
----
+______________________________________________________________________
 
 ## Configuration
 
@@ -217,7 +217,7 @@ scrape_configs:
         target_label: service
 ```
 
----
+______________________________________________________________________
 
 ## Metrics Reference
 
@@ -271,7 +271,7 @@ rate(oneiric_resolution_duration_seconds_sum[5m])
 sum(oneiric_resolution_shadowed_total) by (domain)
 ```
 
----
+______________________________________________________________________
 
 ### Lifecycle Metrics
 
@@ -335,7 +335,7 @@ sum(oneiric_lifecycle_active_instances) by (domain)
 sum(oneiric_lifecycle_active_instances) * 50 * 1024 * 1024
 ```
 
----
+______________________________________________________________________
 
 ### Activity Metrics
 
@@ -384,7 +384,7 @@ sum(oneiric_activity_paused_components) by (domain)
 **Labels:** `domain`
 **Description:** Number of currently draining components
 
----
+______________________________________________________________________
 
 ### Remote Sync Metrics
 
@@ -456,7 +456,7 @@ oneiric_remote_artifacts_cached
 deriv(oneiric_remote_artifacts_cached[1h])
 ```
 
----
+______________________________________________________________________
 
 ### System Metrics
 
@@ -489,7 +489,7 @@ oneiric_system_cache_size_bytes / (1024^3)
 rate(oneiric_system_cache_size_bytes[1h]) / (1024^2)
 ```
 
----
+______________________________________________________________________
 
 ## Recording Rules
 
@@ -580,7 +580,7 @@ groups:
           sum(rate(oneiric_activity_drain_events_total[5m]))
 ```
 
----
+______________________________________________________________________
 
 ## Alert Rules
 
@@ -765,7 +765,7 @@ groups:
           description: "Components in maintenance mode"
 ```
 
----
+______________________________________________________________________
 
 ## Troubleshooting
 
@@ -791,20 +791,23 @@ journalctl -u prometheus -f
 **Solutions:**
 
 1. **Oneiric not exposing metrics:**
+
    - Check Oneiric is running: `docker ps` or `systemctl status oneiric`
    - Verify port 8000 is accessible
    - Check firewall rules
 
-2. **Prometheus not scraping:**
+1. **Prometheus not scraping:**
+
    - Verify `prometheus.yml` configuration
    - Check network connectivity: `docker network inspect`
    - Restart Prometheus: `docker-compose restart prometheus`
 
-3. **Wrong service name/port:**
+1. **Wrong service name/port:**
+
    - Update `scrape_configs` in `prometheus.yml`
    - Reload config: `curl -X POST http://localhost:9090/-/reload`
 
----
+______________________________________________________________________
 
 ### Metrics Missing Labels
 
@@ -823,14 +826,16 @@ count(oneiric_resolution_total) by (domain, key, provider)
 **Solutions:**
 
 1. **Ensure Oneiric emits labels:**
+
    - Check `oneiric/core/observability.py` metric definitions
    - Verify OpenTelemetry instrumentation
 
-2. **Relabeling config:**
+1. **Relabeling config:**
+
    - Add `relabel_configs` in Prometheus scrape config
    - Drop unnecessary labels to reduce cardinality
 
----
+______________________________________________________________________
 
 ### High Cardinality Warnings
 
@@ -859,13 +864,15 @@ metric_relabel_configs:
 ```
 
 2. **Use recording rules:**
+
    - Pre-aggregate metrics with recording rules
    - Reduces query load and storage
 
-3. **Increase retention:**
+1. **Increase retention:**
+
    - Adjust `--storage.tsdb.retention.time=30d`
 
----
+______________________________________________________________________
 
 ### Alerts Not Firing
 
@@ -887,19 +894,22 @@ curl http://localhost:9093/api/v1/alerts
 **Solutions:**
 
 1. **Verify alert expression:**
+
    - Test query in Prometheus UI (`:9090/graph`)
    - Check `for` duration (may be too long)
 
-2. **Reload rules:**
+1. **Reload rules:**
+
    ```bash
    curl -X POST http://localhost:9090/-/reload
    ```
 
-3. **Check AlertManager configuration:**
+1. **Check AlertManager configuration:**
+
    - Verify routing rules
    - Test notification channels
 
----
+______________________________________________________________________
 
 ## Best Practices
 
@@ -918,6 +928,7 @@ scrape_configs:
 ### 2. Recording Rules
 
 Use recording rules for:
+
 - Frequently queried aggregations
 - Complex PromQL expressions in dashboards
 - Reducing query latency
@@ -977,17 +988,17 @@ basic_auth:
   password_file: /etc/prometheus/.htpasswd
 ```
 
----
+______________________________________________________________________
 
 ## Next Steps
 
 1. **Deploy Prometheus:** Follow installation section
-2. **Verify metrics:** Check `/metrics` endpoint and Prometheus targets
-3. **Configure alerts:** Deploy alert rules and connect AlertManager
-4. **Create dashboards:** Import Grafana dashboards (see `GRAFANA_DASHBOARDS.md`)
-5. **Set up log aggregation:** Configure Loki (see `LOKI_SETUP.md`)
+1. **Verify metrics:** Check `/metrics` endpoint and Prometheus targets
+1. **Configure alerts:** Deploy alert rules and connect AlertManager
+1. **Create dashboards:** Import Grafana dashboards (see `GRAFANA_DASHBOARDS.md`)
+1. **Set up log aggregation:** Configure Loki (see `LOKI_SETUP.md`)
 
----
+______________________________________________________________________
 
 ## Additional Resources
 
@@ -997,7 +1008,7 @@ basic_auth:
 - **Grafana Dashboards:** `docs/monitoring/GRAFANA_DASHBOARDS.md`
 - **Alert Rules Reference:** `deployment/monitoring/prometheus/rules/alert_rules.yml`
 
----
+______________________________________________________________________
 
 **Document Version:** 1.0
 **Last Reviewed:** 2025-11-26

@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-import asyncio
 from dataclasses import dataclass
 from typing import Any
 
 import pytest
 
-from oneiric.adapters.storage.azure import AzureBlobStorageAdapter, AzureBlobStorageSettings
+from oneiric.adapters.storage.azure import (
+    AzureBlobStorageAdapter,
+    AzureBlobStorageSettings,
+)
 from oneiric.adapters.storage.gcs import GCSStorageAdapter, GCSStorageSettings
 from oneiric.adapters.storage.local import LocalStorageAdapter, LocalStorageSettings
 from oneiric.adapters.storage.s3 import S3StorageAdapter, S3StorageSettings
@@ -69,7 +71,9 @@ class _FakeS3Client:
         assert Bucket == self.bucket
         self.objects.pop(Key, None)
 
-    async def list_objects_v2(self, Bucket: str, Prefix: str = "", **_: Any) -> dict[str, Any]:
+    async def list_objects_v2(
+        self, Bucket: str, Prefix: str = "", **_: Any
+    ) -> dict[str, Any]:
         assert Bucket == self.bucket
         contents = [{"Key": key} for key in self.objects if key.startswith(Prefix)]
         return {"Contents": contents, "IsTruncated": False}
@@ -102,7 +106,7 @@ async def test_s3_storage_adapter_uses_client_stub() -> None:
 
 
 class _FakeGCSBlob:
-    def __init__(self, bucket: "_FakeGCSBucket", name: str) -> None:
+    def __init__(self, bucket: _FakeGCSBucket, name: str) -> None:
         self._bucket = bucket
         self.name = name
 
@@ -181,11 +185,13 @@ class _FakeAzureBlob:
 
 
 class _FakeAzureBlobClient:
-    def __init__(self, container: "_FakeAzureContainerClient", name: str) -> None:
+    def __init__(self, container: _FakeAzureContainerClient, name: str) -> None:
         self._container = container
         self._name = name
 
-    async def upload_blob(self, data: bytes, *, overwrite: bool, content_type: str) -> None:
+    async def upload_blob(
+        self, data: bytes, *, overwrite: bool, content_type: str
+    ) -> None:
         if not overwrite and self._name in self._container.objects:
             raise ValueError("blob exists")
         self._container.objects[self._name] = data
@@ -206,7 +212,7 @@ class _FakeAzureBlobIterator:
         self._blobs = blobs
         self._index = 0
 
-    def __aiter__(self) -> "_FakeAzureBlobIterator":
+    def __aiter__(self) -> _FakeAzureBlobIterator:
         return self
 
     async def __anext__(self) -> _FakeAzureBlob:

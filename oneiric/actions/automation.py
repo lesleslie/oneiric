@@ -159,35 +159,52 @@ class AutomationTriggerAction:
                 return False
         return True
 
-    def _condition_matches(self, condition: AutomationCondition, context: Mapping[str, Any]) -> bool:
+    def _condition_matches(
+        self, condition: AutomationCondition, context: Mapping[str, Any]
+    ) -> bool:
         actual = self._resolve_field(context, condition.field)
         op = condition.operator
         expected = condition.value
+
+        # Simple comparison operators
         if op == "equals":
             return actual == expected
         if op == "not_equals":
             return actual != expected
+
+        # Collection operators
         if op == "contains":
             return self._contains(actual, expected)
         if op == "in":
             return self._in_collection(actual, expected)
-        if op == "greater_than":
-            return self._compare(actual, expected, op="gt")
-        if op == "greater_or_equal":
-            return self._compare(actual, expected, op="gte")
-        if op == "less_than":
-            return self._compare(actual, expected, op="lt")
-        if op == "less_or_equal":
-            return self._compare(actual, expected, op="lte")
+
+        # Numeric comparison operators
+        if op in {"greater_than", "greater_or_equal", "less_than", "less_or_equal"}:
+            return self._evaluate_numeric_operator(op, actual, expected)
+
+        # Existence operators
         if op == "exists":
             return actual is not None
         if op == "absent":
             return actual is None
+
+        # Boolean operators
         if op == "truthy":
             return bool(actual)
         if op == "falsy":
             return not bool(actual)
+
         raise LifecycleError("automation-trigger-operator-invalid")
+
+    def _evaluate_numeric_operator(self, op: str, actual: Any, expected: Any) -> bool:
+        """Evaluate numeric comparison operators."""
+        comparison_map = {
+            "greater_than": "gt",
+            "greater_or_equal": "gte",
+            "less_than": "lt",
+            "less_or_equal": "lte",
+        }
+        return self._compare(actual, expected, op=comparison_map[op])
 
     def _contains(self, actual: Any, expected: Any) -> bool:
         if actual is None:
@@ -196,12 +213,16 @@ class AutomationTriggerAction:
             return str(expected) in actual
         if isinstance(actual, Mapping):
             return str(expected) in actual
-        if isinstance(actual, Sequence) and not isinstance(actual, (str, bytes, bytearray)):
+        if isinstance(actual, Sequence) and not isinstance(
+            actual, (str, bytes, bytearray)
+        ):
             return expected in actual
         return False
 
     def _in_collection(self, actual: Any, collection: Any) -> bool:
-        if isinstance(collection, Sequence) and not isinstance(collection, (str, bytes, bytearray)):
+        if isinstance(collection, Sequence) and not isinstance(
+            collection, (str, bytes, bytearray)
+        ):
             return actual in collection
         return False
 
@@ -227,26 +248,44 @@ class AutomationTriggerAction:
         segments = self._split_path(path)
         current: Any = context
         for segment in segments:
-            if isinstance(current, Mapping):
-                if segment in current:
-                    current = current[segment]
-                    continue
+            current = self._resolve_segment(current, segment)
+            if current is None:
                 return None
-            if isinstance(current, Sequence) and not isinstance(current, (str, bytes, bytearray)):
-                try:
-                    index = int(segment)
-                except ValueError:
-                    return None
-                if 0 <= index < len(current):
-                    current = current[index]
-                    continue
-                return None
-            return None
         return current
+
+    def _resolve_segment(self, current: Any, segment: str) -> Any:
+        """Resolve a single segment of a path."""
+        if isinstance(current, Mapping):
+            return current.get(segment)
+
+        if self._is_sequence_not_string(current):
+            return self._resolve_index(current, segment)
+
+        return None
+
+    def _is_sequence_not_string(self, value: Any) -> bool:
+        """Check if value is a sequence but not a string."""
+        return isinstance(value, Sequence) and not isinstance(
+            value, (str, bytes, bytearray)
+        )
+
+    def _resolve_index(self, sequence: Sequence, segment: str) -> Any:
+        """Resolve an index in a sequence."""
+        try:
+            index = int(segment)
+        except ValueError:
+            return None
+
+        if 0 <= index < len(sequence):
+            return sequence[index]
+
+        return None
 
     def _split_path(self, path: str) -> list[str]:
         normalized = path.replace("[", ".").replace("]", ".")
-        segments = [segment.strip() for segment in normalized.split(".") if segment.strip()]
+        segments = [
+            segment.strip() for segment in normalized.split(".") if segment.strip()
+        ]
         return segments
 
 

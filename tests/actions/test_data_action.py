@@ -27,7 +27,12 @@ async def test_data_transform_action_applies_rules() -> None:
     result = await action.execute({"data": {"id": 1, "name": "Oneiric", "extra": True}})
 
     assert result["status"] == "transformed"
-    assert result["data"] == {"id": 1, "full_name": "Oneiric", "status": "pending", "priority": "low"}
+    assert result["data"] == {
+        "id": 1,
+        "full_name": "Oneiric",
+        "status": "pending",
+        "priority": "low",
+    }
     assert result["applied"]["rename_applied"] == 1
     assert result["applied"]["defaults_applied"] == 2
 
@@ -65,7 +70,12 @@ async def test_data_sanitize_action_masks_and_drops() -> None:
     )
 
     payload = {
-        "data": {"id": 1, "secret": "keep", "token": "abc", "email": "user@example.com"},
+        "data": {
+            "id": 1,
+            "secret": "keep",
+            "token": "abc",
+            "email": "user@example.com",
+        },
     }
     result = await action.execute(payload)
 
@@ -114,7 +124,9 @@ async def test_validation_schema_action_valid_payload() -> None:
         ValidationSchemaSettings(
             fields=[
                 ValidationFieldRule(name="id", type="int"),
-                ValidationFieldRule(name="meta", type="dict", required=False, allow_null=True),
+                ValidationFieldRule(
+                    name="meta", type="dict", required=False, allow_null=True
+                ),
             ]
         )
     )

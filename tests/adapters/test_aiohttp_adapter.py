@@ -9,7 +9,9 @@ from oneiric.adapters.http.httpx import HTTPClientSettings
 
 
 class DummyResponse:
-    def __init__(self, status: int = 200, payload: dict[str, Any] | None = None) -> None:
+    def __init__(
+        self, status: int = 200, payload: dict[str, Any] | None = None
+    ) -> None:
         self.status = status
         self._payload = payload or {}
 
@@ -38,7 +40,9 @@ class DummySession:
 @pytest.mark.asyncio
 async def test_aiohttp_adapter_request_and_headers() -> None:
     session = DummySession()
-    settings = HTTPClientSettings(base_url="https://example.com", headers={"X-Test": "1"})
+    settings = HTTPClientSettings(
+        base_url="https://example.com", headers={"X-Test": "1"}
+    )
     adapter = AioHTTPAdapter(settings, session=session)
     await adapter.init()
     response = await adapter.post("/demo", json={"ok": True})
@@ -51,7 +55,9 @@ async def test_aiohttp_adapter_request_and_headers() -> None:
 @pytest.mark.asyncio
 async def test_aiohttp_adapter_health_success() -> None:
     session = DummySession()
-    settings = HTTPClientSettings(base_url="https://example.com", healthcheck_path="/health")
+    settings = HTTPClientSettings(
+        base_url="https://example.com", healthcheck_path="/health"
+    )
     adapter = AioHTTPAdapter(settings, session=session)
     await adapter.init()
     assert await adapter.health() is True

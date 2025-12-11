@@ -36,7 +36,18 @@ class SerializationActionSettings(BaseModel):
 
 
 class SerializationAction:
-    """Action kit that encodes/decodes payloads across common formats."""
+    """Action kit that encodes/decodes payloads across common formats.
+
+    Security Warning:
+        The pickle format can execute arbitrary code during deserialization.
+        Only use pickle with data from trusted sources within your internal
+        workflows. For external data or untrusted sources, use JSON or YAML.
+
+    Supported Formats:
+        - json: Safe for untrusted data, human-readable
+        - yaml: Safe for untrusted data, more flexible than JSON
+        - pickle: TRUSTED DATA ONLY - supports arbitrary Python objects
+    """
 
     metadata = ActionMetadata(
         key="serialization.encode",
@@ -66,6 +77,15 @@ class SerializationAction:
         fmt = (payload.get("format") or self._settings.default_format).lower()
         if fmt not in {"json", "yaml", "pickle"}:
             raise LifecycleError("serialization-unsupported-format")
+
+        # Log security warning when pickle format is used
+        if fmt == "pickle":
+            self._logger.warning(
+                "pickle-format-security-warning",
+                message="Using pickle format - ensure data is from trusted sources only",
+                mode=mode,
+            )
+
         if mode == "encode":
             return await self._encode(fmt, payload)
         if mode == "decode":
@@ -91,7 +111,11 @@ class SerializationAction:
             text = yaml.safe_dump(value, sort_keys=sort_keys)
             data_bytes = text.encode("utf-8")
         else:
+            # Security Note: pickle.dumps is used here for internal workflow serialization.
+            # This format should ONLY be used with trusted data from internal sources.
+            # For external/untrusted data, use JSON or YAML formats instead.
             text = None
+            # nosemgrep: python.lang.security.deserialization.pickle.avoid-pickle
             data_bytes = pickle.dumps(value, protocol=pickle.HIGHEST_PROTOCOL)
         await self._maybe_write_path(payload.get("path"), data_bytes, fmt)
         self._logger.info("serialization-action-encoded", fmt=fmt, mode="encode")
@@ -115,6 +139,10 @@ class SerializationAction:
             text = raw.decode("utf-8")
             data = yaml.safe_load(text)
         else:
+            # Security Note: pickle.loads can execute arbitrary code.
+            # This should ONLY deserialize data from trusted internal sources.
+            # Never use pickle format with data from external or untrusted sources.
+            # nosemgrep: python.lang.security.deserialization.pickle.avoid-pickle
             data = pickle.loads(raw)
         self._logger.info("serialization-action-decoded", fmt=fmt, mode="decode")
         return {
@@ -124,22 +152,41 @@ class SerializationAction:
         }
 
     async def _resolve_source(self, fmt: str, payload: dict) -> bytes:
+        # Read from path if provided
         if path := payload.get("path"):
             return await self._read_path(path, fmt)
+
+        # Extract value from payload
+        value = self._extract_value_from_payload(payload)
+        if value is None:
+            raise LifecycleError("serialization-source-required")
+
+        # Handle text formats
+        if fmt in self._TEXT_FORMATS:
+            return self._process_text_value(value)
+
+        # Handle binary formats (pickle)
+        return self._process_binary_value(value)
+
+    def _extract_value_from_payload(self, payload: dict) -> Any:
+        """Extract value from payload, checking multiple keys."""
         value = payload.get("data")
         if value is None and "text" in payload:
             value = payload["text"]
         if value is None and "value" in payload:
             value = payload["value"]
-        if value is None:
-            raise LifecycleError("serialization-source-required")
-        if fmt in self._TEXT_FORMATS:
-            if isinstance(value, bytes):
-                return value
-            if isinstance(value, str):
-                return value.encode("utf-8")
-            raise LifecycleError("serialization-text-required")
-        # pickle expects binary; support base64 strings for convenience
+        return value
+
+    def _process_text_value(self, value: Any) -> bytes:
+        """Process value for text formats (JSON/YAML)."""
+        if isinstance(value, bytes):
+            return value
+        if isinstance(value, str):
+            return value.encode("utf-8")
+        raise LifecycleError("serialization-text-required")
+
+    def _process_binary_value(self, value: Any) -> bytes:
+        """Process value for binary formats (pickle)."""
         if isinstance(value, bytes):
             return value
         if isinstance(value, str):
@@ -168,4 +215,3 @@ class SerializationAction:
 
 
 __all__ = ["SerializationAction", "SerializationActionSettings"]
-

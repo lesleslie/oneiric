@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -16,15 +16,15 @@ class AzureBlobStorageSettings(BaseModel):
     """Configuration for the Azure Blob adapter."""
 
     container: str = Field(description="Target Azure Blob container name.")
-    connection_string: Optional[str] = Field(
+    connection_string: str | None = Field(
         default=None,
         description="Optional storage connection string used to build the client.",
     )
-    account_url: Optional[str] = Field(
+    account_url: str | None = Field(
         default=None,
         description="Account URL (https://<account>.blob.core.windows.net). Required when no connection string is provided.",
     )
-    credential: Optional[str] = Field(
+    credential: str | None = Field(
         default=None,
         description="Account key or SAS token used with account_url instantiation.",
     )
@@ -77,15 +77,21 @@ class AzureBlobStorageAdapter:
                 raise LifecycleError("azure-storage-blob-missing") from exc
 
             if connection_string:
-                self._client = BlobServiceClient.from_connection_string(connection_string)
+                self._client = BlobServiceClient.from_connection_string(
+                    connection_string
+                )
             elif account_url:
                 if not credential:
                     raise LifecycleError("azure-storage-credential-required")
-                self._client = BlobServiceClient(account_url=account_url, credential=credential)
+                self._client = BlobServiceClient(
+                    account_url=account_url, credential=credential
+                )
             else:
                 raise LifecycleError("azure-storage-client-misconfigured")
 
-        self._container_client = self._client.get_container_client(self._settings.container)
+        self._container_client = self._client.get_container_client(
+            self._settings.container
+        )
         await self._container_client.exists()
         self._logger.info("adapter-init", adapter="azure-blob-storage")
 
@@ -111,29 +117,27 @@ class AzureBlobStorageAdapter:
         key: str,
         data: bytes,
         *,
-        content_type: Optional[str] = None,
+        content_type: str | None = None,
     ) -> None:
-        container = self._ensure_container()
-        blob = container.get_blob_client(key)
-        ctype = content_type or self._settings.default_content_type
-        await blob.upload_blob(data, overwrite=True, content_type=ctype)
+        blob = self._ensure_container().get_blob_client(key)
+        await blob.upload_blob(
+            data,
+            overwrite=True,
+            content_type=content_type or self._settings.default_content_type,
+        )
 
-    async def download(self, key: str) -> Optional[bytes]:
-        container = self._ensure_container()
-        blob = container.get_blob_client(key)
+    async def download(self, key: str) -> bytes | None:
+        blob = self._ensure_container().get_blob_client(key)
         try:
-            downloader = await blob.download_blob()
+            return await (await blob.download_blob()).readall()
         except Exception as exc:
             if self._is_not_found(exc):
                 return None
             raise
-        return await downloader.readall()
 
     async def delete(self, key: str) -> None:
-        container = self._ensure_container()
-        blob = container.get_blob_client(key)
         try:
-            await blob.delete_blob()
+            await self._ensure_container().get_blob_client(key).delete_blob()
         except Exception as exc:
             if not self._is_not_found(exc):
                 raise

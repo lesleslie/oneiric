@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Type
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -13,6 +13,7 @@ from oneiric.core.logging import get_logger
 from oneiric.core.metrics import record_drain_state, record_pause_state
 from oneiric.core.resolution import Candidate, Resolver
 from oneiric.runtime.activity import DomainActivity, DomainActivityStore
+from oneiric.runtime.supervisor import ServiceSupervisor
 
 
 @dataclass
@@ -21,7 +22,7 @@ class DomainHandle:
     key: str
     provider: str
     instance: Any
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
     settings: Any
 
 
@@ -34,20 +35,22 @@ class DomainBridge:
         resolver: Resolver,
         lifecycle: LifecycleManager,
         settings: LayerSettings,
-        activity_store: Optional[DomainActivityStore] = None,
+        activity_store: DomainActivityStore | None = None,
+        supervisor: ServiceSupervisor | None = None,
     ) -> None:
         self.domain = domain
         self.resolver = resolver
         self.lifecycle = lifecycle
         self.settings = settings
         self._logger = get_logger(f"{domain}.bridge")
-        self._settings_models: Dict[str, Type[BaseModel]] = {}
-        self._settings_cache: Dict[str, Any] = {}
+        self._settings_models: dict[str, type[BaseModel]] = {}
+        self._settings_cache: dict[str, Any] = {}
         self._activity_store = activity_store
-        self._activity: Dict[str, DomainActivity] = {}
+        self._activity: dict[str, DomainActivity] = {}
+        self._supervisor = supervisor
         self._refresh_activity_from_store()
 
-    def register_settings_model(self, provider: str, model: Type[BaseModel]) -> None:
+    def register_settings_model(self, provider: str, model: type[BaseModel]) -> None:
         self._settings_models[provider] = model
 
     def update_settings(self, settings: LayerSettings) -> None:
@@ -67,11 +70,14 @@ class DomainBridge:
         self,
         key: str,
         *,
-        provider: Optional[str] = None,
+        provider: str | None = None,
         force_reload: bool = False,
     ) -> DomainHandle:
         configured_provider = provider or self.settings.selections.get(key)
-        candidate = self.resolver.resolve(self.domain, key, provider=configured_provider)
+        self._ensure_activity_allowed(key)
+        candidate = self.resolver.resolve(
+            self.domain, key, provider=configured_provider
+        )
         if not candidate:
             raise LifecycleError(f"No candidate found for {self.domain}:{key}")
         target_provider = candidate.provider or configured_provider
@@ -79,11 +85,15 @@ class DomainBridge:
             raise LifecycleError(f"Candidate missing provider for {self.domain}:{key}")
 
         if force_reload:
-            instance = await self.lifecycle.swap(self.domain, key, provider=target_provider)
+            instance = await self.lifecycle.swap(
+                self.domain, key, provider=target_provider
+            )
         else:
             instance = self.lifecycle.get_instance(self.domain, key)
             if instance is None:
-                instance = await self.lifecycle.activate(self.domain, key, provider=target_provider)
+                instance = await self.lifecycle.activate(
+                    self.domain, key, provider=target_provider
+                )
 
         handle = DomainHandle(
             domain=self.domain,
@@ -108,8 +118,16 @@ class DomainBridge:
     def shadowed_candidates(self) -> list[Candidate]:
         return self.resolver.list_shadowed(self.domain)
 
-    def explain(self, key: str) -> Dict[str, Any]:
+    def explain(self, key: str) -> dict[str, Any]:
         return self.resolver.explain(self.domain, key).as_dict()
+
+    def should_accept_work(self, key: str) -> bool:
+        """Return True when the domain/key is not paused or draining."""
+
+        if self._supervisor:
+            return self._supervisor.should_accept_work(self.domain, key)
+        state = self.activity_state(key)
+        return not state.paused and not state.draining
 
     def activity_state(self, key: str) -> DomainActivity:
         if self._activity_store:
@@ -118,7 +136,9 @@ class DomainBridge:
             return state
         return self._activity.setdefault(key, DomainActivity())
 
-    def set_paused(self, key: str, paused: bool, *, note: Optional[str] = None) -> DomainActivity:
+    def set_paused(
+        self, key: str, paused: bool, *, note: str | None = None
+    ) -> DomainActivity:
         current = self.activity_state(key)
         state = DomainActivity(
             paused=paused,
@@ -135,7 +155,9 @@ class DomainBridge:
         )
         return self.activity_state(key)
 
-    def set_draining(self, key: str, draining: bool, *, note: Optional[str] = None) -> DomainActivity:
+    def set_draining(
+        self, key: str, draining: bool, *, note: str | None = None
+    ) -> DomainActivity:
         current = self.activity_state(key)
         state = DomainActivity(
             paused=current.paused,
@@ -152,9 +174,9 @@ class DomainBridge:
         )
         return self.activity_state(key)
 
-    def activity_snapshot(self) -> Dict[str, DomainActivity]:
+    def activity_snapshot(self) -> dict[str, DomainActivity]:
         self._refresh_activity_from_store()
-        return dict(self._activity)
+        return self._activity.copy()
 
     def _persist_activity(self, key: str, state: DomainActivity) -> None:
         self._activity[key] = state
@@ -165,3 +187,27 @@ class DomainBridge:
         if not self._activity_store:
             return
         self._activity = self._activity_store.all_for_domain(self.domain)
+
+    def _ensure_activity_allowed(self, key: str) -> None:
+        if self.should_accept_work(key):
+            return
+        state = self.activity_state(key)
+        reason = _activity_block_reason(state)
+        self._logger.warning(
+            "domain-activity-blocked",
+            domain=self.domain,
+            key=key,
+            reason=reason,
+        )
+        raise LifecycleError(f"{self.domain}:{key} is {reason}")
+
+
+def _activity_block_reason(state: DomainActivity) -> str:
+    flags: list[str] = []
+    if state.paused:
+        flags.append("paused")
+    if state.draining:
+        flags.append("draining")
+    if not flags:
+        flags.append("unavailable")
+    return " & ".join(flags)

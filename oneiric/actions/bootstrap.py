@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List
 
 from oneiric.core.resolution import Resolver
 
@@ -25,7 +24,7 @@ from .workflow import (
 )
 
 
-def builtin_action_metadata() -> List[ActionMetadata]:
+def builtin_action_metadata() -> list[ActionMetadata]:
     """Return metadata for builtin action kits."""
 
     return [

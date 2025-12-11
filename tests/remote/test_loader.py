@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import hashlib
 import json
 from pathlib import Path
@@ -11,18 +10,16 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 import yaml
 
-from oneiric.core.config import RemoteAuthConfig, RemoteSourceConfig
-from oneiric.core.resolution import Candidate, CandidateSource, Resolver
+from oneiric.core.config import RemoteSourceConfig
+from oneiric.core.resolution import CandidateSource, Resolver
 from oneiric.remote.loader import (
     ArtifactManager,
-    RemoteSyncResult,
     _candidate_from_entry,
     _parse_manifest,
     _validate_entry,
     sync_remote_manifest,
 )
-from oneiric.remote.models import RemoteManifest, RemoteManifestEntry
-
+from oneiric.remote.models import RemoteManifestEntry
 
 # Test helpers
 
@@ -60,7 +57,8 @@ class TestArtifactManager:
 
         assert manager.cache_dir == cache_dir
 
-    def test_fetch_local_file_with_sha256(self, tmp_path):
+    @pytest.mark.asyncio
+    async def test_fetch_local_file_with_sha256(self, tmp_path):
         """ArtifactManager fetches local file and verifies digest."""
         cache_dir = tmp_path / "cache"
         manager = ArtifactManager(str(cache_dir))
@@ -71,7 +69,7 @@ class TestArtifactManager:
         sha256 = hashlib.sha256(b"test content").hexdigest()
 
         # Fetch via file:// URI
-        result = manager.fetch(
+        result = await manager.fetch(
             uri=f"file://{source_file}",
             sha256=sha256,
             headers={},
@@ -82,7 +80,8 @@ class TestArtifactManager:
         assert result.parent == cache_dir
         assert result.name == sha256
 
-    def test_fetch_local_file_digest_mismatch(self, tmp_path):
+    @pytest.mark.asyncio
+    async def test_fetch_local_file_digest_mismatch(self, tmp_path):
         """ArtifactManager raises on digest mismatch."""
         cache_dir = tmp_path / "cache"
         manager = ArtifactManager(str(cache_dir))
@@ -92,13 +91,14 @@ class TestArtifactManager:
         wrong_sha256 = "wrong_digest_here"
 
         with pytest.raises(ValueError, match="Digest mismatch"):
-            manager.fetch(
+            await manager.fetch(
                 uri=f"file://{source_file}",
                 sha256=wrong_sha256,
                 headers={},
             )
 
-    def test_fetch_cached_artifact(self, tmp_path):
+    @pytest.mark.asyncio
+    async def test_fetch_cached_artifact(self, tmp_path):
         """ArtifactManager returns cached artifact if exists."""
         cache_dir = tmp_path / "cache"
         manager = ArtifactManager(str(cache_dir))
@@ -110,7 +110,7 @@ class TestArtifactManager:
         cached_file.write_text("cached content")
 
         # Fetch should return cached file without accessing source
-        result = manager.fetch(
+        result = await manager.fetch(
             uri="https://example.com/artifact.whl",  # Won't be accessed
             sha256=sha256,
             headers={},
@@ -119,14 +119,15 @@ class TestArtifactManager:
         assert result == cached_file
         assert result.read_text() == "cached content"
 
-    def test_fetch_path_traversal_protection(self, tmp_path):
+    @pytest.mark.asyncio
+    async def test_fetch_path_traversal_protection(self, tmp_path):
         """ArtifactManager blocks path traversal attempts."""
         cache_dir = tmp_path / "cache"
         manager = ArtifactManager(str(cache_dir))
 
         # Attempt 1: .. in URI
         with pytest.raises(ValueError, match="Path traversal"):
-            manager.fetch(
+            await manager.fetch(
                 uri="../etc/passwd",
                 sha256=None,
                 headers={},
@@ -134,40 +135,57 @@ class TestArtifactManager:
 
         # Attempt 2: Absolute path outside cache
         with pytest.raises(ValueError, match="Path traversal"):
-            manager.fetch(
+            await manager.fetch(
                 uri="/etc/passwd",
                 sha256=None,
                 headers={},
             )
 
-    def test_fetch_invalid_uri_scheme(self, tmp_path):
+    @pytest.mark.asyncio
+    async def test_fetch_invalid_uri_scheme(self, tmp_path):
         """ArtifactManager rejects unsupported URI schemes."""
         cache_dir = tmp_path / "cache"
         manager = ArtifactManager(str(cache_dir))
 
         with pytest.raises(ValueError, match="(Unsupported URI scheme|Path traversal)"):
-            manager.fetch(
+            await manager.fetch(
                 uri="ftp://example.com/file.txt",
                 sha256=None,
                 headers={},
             )
 
-    @patch("urllib.request.urlopen")
-    def test_fetch_http_artifact(self, mock_urlopen, tmp_path):
-        """ArtifactManager fetches HTTP artifacts."""
+    @pytest.mark.asyncio
+    async def test_fetch_http_artifact(self, tmp_path, monkeypatch):
+        """ArtifactManager fetches HTTP artifacts via httpx."""
         cache_dir = tmp_path / "cache"
         manager = ArtifactManager(str(cache_dir))
 
-        # Mock HTTP response
+        payload = b"http content"
+
+        async def _aiter_bytes():
+            yield payload
+
         mock_response = MagicMock()
-        mock_response.read.return_value = b"http content"
-        mock_response.__enter__.return_value = mock_response
-        mock_response.__exit__.return_value = False
-        mock_urlopen.return_value = mock_response
+        mock_response.aiter_bytes.return_value = _aiter_bytes()
+        mock_response.raise_for_status.return_value = None
 
-        sha256 = hashlib.sha256(b"http content").hexdigest()
+        mock_stream = MagicMock()
+        mock_stream.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_stream.__aexit__ = AsyncMock(return_value=None)
 
-        result = manager.fetch(
+        mock_client = MagicMock()
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=None)
+        mock_client.stream.return_value = mock_stream
+
+        monkeypatch.setattr(
+            "oneiric.remote.loader.httpx.AsyncClient",
+            MagicMock(return_value=mock_client),
+        )
+
+        sha256 = hashlib.sha256(payload).hexdigest()
+
+        result = await manager.fetch(
             uri="https://example.com/artifact.whl",
             sha256=sha256,
             headers={"Authorization": "Bearer token"},
@@ -176,7 +194,7 @@ class TestArtifactManager:
         assert result.exists()
         assert result.read_text() == "http content"
         assert result.name == sha256
-        mock_urlopen.assert_called_once()
+        mock_client.stream.assert_called_once()
 
 
 # Manifest Parsing Tests
@@ -246,7 +264,9 @@ class TestManifestParsing:
         }
 
         # Mock signature verification to succeed
-        with patch("oneiric.remote.loader.verify_manifest_signature", return_value=(True, None)):
+        with patch(
+            "oneiric.remote.loader.verify_manifest_signature", return_value=(True, None)
+        ):
             manifest = _parse_manifest(json.dumps(manifest_dict), verify_signature=True)
 
         assert manifest.signature == "base64-signature"
@@ -356,6 +376,21 @@ class TestCandidateConversion:
             key="cache",
             provider="redis",
             factory="myapp.adapters:RedisCache",
+            capabilities=[
+                {
+                    "name": "kv",
+                    "description": "Key/value",
+                    "event_types": ["cache.hit"],
+                    "payload_schema": {"type": "object"},
+                    "security": {
+                        "classification": "internal",
+                        "auth_required": True,
+                        "scopes": ["cache.read"],
+                    },
+                    "metadata": {"ttl_ms": 1000},
+                },
+                "ttl",
+            ],
         )
 
         candidate = _candidate_from_entry(entry, artifact_path=None)
@@ -366,6 +401,22 @@ class TestCandidateConversion:
         assert candidate.factory == "myapp.adapters:RedisCache"
         assert candidate.source == CandidateSource.REMOTE_MANIFEST
         assert candidate.metadata["source"] == "remote"
+        assert candidate.metadata["capabilities"] == ["kv", "ttl"]
+        assert candidate.metadata["capability_descriptors"] == [
+            {
+                "name": "kv",
+                "description": "Key/value",
+                "event_types": ["cache.hit"],
+                "payload_schema": {"type": "object"},
+                "security": {
+                    "classification": "internal",
+                    "auth_required": True,
+                    "scopes": ["cache.read"],
+                },
+                "metadata": {"ttl_ms": 1000},
+            },
+            {"name": "ttl"},
+        ]
 
     def test_candidate_from_full_entry(self):
         """Convert full entry with all fields to candidate."""
@@ -390,6 +441,34 @@ class TestCandidateConversion:
         assert candidate.metadata["artifact_path"] == "/cache/abc123"
         assert candidate.metadata["version"] == "1.0.0"
         assert candidate.metadata["region"] == "us-east-1"
+
+    def test_candidate_includes_event_and_dag_metadata(self):
+        """Event/DAG specific fields propagate into candidate metadata."""
+        entry = RemoteManifestEntry(
+            domain="event",
+            key="user-handler",
+            provider="demo",
+            factory="demo.handlers:UserHandler",
+            event_topics=["user.created", "user.updated"],
+            event_max_concurrency=5,
+            event_filters=[{"path": "payload.region", "equals": "us"}],
+            event_priority=42,
+            event_fanout_policy="exclusive",
+            dag={"nodes": [{"id": "sync-profile", "task": "profile-sync"}]},
+        )
+
+        candidate = _candidate_from_entry(entry, artifact_path=None)
+
+        assert candidate.metadata["topics"] == ["user.created", "user.updated"]
+        assert candidate.metadata["max_concurrency"] == 5
+        assert candidate.metadata["filters"] == [
+            {"path": "payload.region", "equals": "us"}
+        ]
+        assert candidate.metadata["event_priority"] == 42
+        assert candidate.metadata["fanout_policy"] == "exclusive"
+        assert candidate.metadata["dag"] == {
+            "nodes": [{"id": "sync-profile", "task": "profile-sync"}]
+        }
 
 
 # Remote Sync Tests
@@ -572,7 +651,7 @@ class TestRemoteSync:
             cache_dir=str(cache_dir),
         )
 
-        result = await sync_remote_manifest(resolver, config)
+        await sync_remote_manifest(resolver, config)
 
         # Check telemetry file created
         telemetry_file = cache_dir / "remote_status.json"

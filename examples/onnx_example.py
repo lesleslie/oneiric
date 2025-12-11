@@ -3,7 +3,9 @@
 Example ONNXRuntime script to demonstrate the uvx solution for Python 3.14 compatibility.
 This script would normally fail with Python 3.14 due to ONNXRuntime compatibility issues.
 """
+
 import sys
+
 import onnxruntime as ort
 
 print(f"Python version: {sys.version}")

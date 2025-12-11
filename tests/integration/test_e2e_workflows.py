@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
-from pathlib import Path
-
 import pytest
 
 from oneiric.adapters import AdapterBridge
@@ -14,10 +11,8 @@ from oneiric.core.lifecycle import LifecycleManager
 from oneiric.core.resolution import Candidate, Resolver
 from oneiric.domains import EventBridge, ServiceBridge, TaskBridge, WorkflowBridge
 from oneiric.remote.loader import sync_remote_manifest
-from oneiric.remote.models import RemoteManifest, RemoteManifestEntry
 from oneiric.runtime.activity import DomainActivityStore
 from oneiric.runtime.orchestrator import RuntimeOrchestrator
-
 
 # Test Components
 
@@ -92,7 +87,7 @@ class TestFullLifecycle:
     async def test_adapter_full_lifecycle(self, tmp_path):
         """Complete adapter lifecycle with registration, resolution, and activation."""
         # Setup
-        settings = OneiricSettings(
+        OneiricSettings(
             config_dir=str(tmp_path / "settings"),
             cache_dir=str(tmp_path / "cache"),
         )
@@ -162,7 +157,7 @@ class TestFullLifecycle:
     async def test_service_full_lifecycle(self, tmp_path):
         """Complete service lifecycle with start/stop."""
         # Setup
-        settings = OneiricSettings(
+        OneiricSettings(
             config_dir=str(tmp_path / "settings"),
             cache_dir=str(tmp_path / "cache"),
         )
@@ -205,13 +200,13 @@ class TestMultiDomainOrchestration:
     async def test_all_domains_coordination(self, tmp_path):
         """Test that all 5 domains can be used together."""
         # Setup
-        settings = OneiricSettings(
+        OneiricSettings(
             config_dir=str(tmp_path / "settings"),
             cache_dir=str(tmp_path / "cache"),
         )
         resolver = Resolver()
         lifecycle = LifecycleManager(resolver)
-        activity_store = DomainActivityStore(str(tmp_path / "activity.json"))
+        activity_store = DomainActivityStore(str(tmp_path / "activity.sqlite"))
 
         # Register components in all domains
         register_adapter_metadata(
@@ -278,11 +273,21 @@ class TestMultiDomainOrchestration:
         event_settings = LayerSettings()
         workflow_settings = LayerSettings()
 
-        adapter_bridge = AdapterBridge(resolver, lifecycle, adapter_settings, activity_store=activity_store)
-        service_bridge = ServiceBridge(resolver, lifecycle, service_settings, activity_store=activity_store)
-        task_bridge = TaskBridge(resolver, lifecycle, task_settings, activity_store=activity_store)
-        event_bridge = EventBridge(resolver, lifecycle, event_settings, activity_store=activity_store)
-        workflow_bridge = WorkflowBridge(resolver, lifecycle, workflow_settings, activity_store=activity_store)
+        adapter_bridge = AdapterBridge(
+            resolver, lifecycle, adapter_settings, activity_store=activity_store
+        )
+        service_bridge = ServiceBridge(
+            resolver, lifecycle, service_settings, activity_store=activity_store
+        )
+        task_bridge = TaskBridge(
+            resolver, lifecycle, task_settings, activity_store=activity_store
+        )
+        event_bridge = EventBridge(
+            resolver, lifecycle, event_settings, activity_store=activity_store
+        )
+        workflow_bridge = WorkflowBridge(
+            resolver, lifecycle, workflow_settings, activity_store=activity_store
+        )
 
         # Activate components
         adapter = (await adapter_bridge.use("cache")).instance
@@ -309,7 +314,7 @@ class TestConfigWatcherSwap:
     async def test_config_change_triggers_swap(self, tmp_path):
         """Config file change should trigger automatic swap."""
         # Note: This is a simplified test - full watcher tests are in test_watchers.py
-        settings = OneiricSettings(
+        OneiricSettings(
             config_dir=str(tmp_path / "settings"),
             cache_dir=str(tmp_path / "cache"),
         )
@@ -404,6 +409,86 @@ entries:
             assert instance is not None
             assert instance.name == "remote-redis"
 
+    @pytest.mark.asyncio
+    async def test_remote_manifest_workflow_scheduler_metadata(self, tmp_path):
+        """Workflow metadata from manifest should drive queue selection."""
+        settings = OneiricSettings(
+            config_dir=str(tmp_path / "settings"),
+            cache_dir=str(tmp_path / "cache"),
+        )
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        queue_records: list[dict] = []
+
+        class RecordingQueueAdapter:
+            def __init__(self, records):
+                self.records = records
+
+            async def enqueue(self, payload):
+                self.records.append(payload)
+                return f"task-{len(self.records)}"
+
+        register_adapter_metadata(
+            resolver,
+            package_name="test.queue",
+            package_path=str(tmp_path),
+            adapters=[
+                AdapterMetadata(
+                    category="queue.scheduler",
+                    provider="fake",
+                    stack_level=10,
+                    factory=lambda: RecordingQueueAdapter(queue_records),
+                    description="Fake Cloud Tasks adapter for tests",
+                )
+            ],
+        )
+
+        manifest_file = tmp_path / "workflow_manifest.yaml"
+        manifest_file.write_text(
+            """
+source: remote-workflow
+entries:
+  - domain: workflow
+    key: remote-workflow
+    provider: remote
+    factory: oneiric.remote.samples:demo_remote_workflow
+    metadata:
+      dag:
+        nodes:
+          - id: step-one
+            task: task.extract
+      scheduler:
+        queue_category: queue.scheduler
+        provider: fake
+            """
+        )
+
+        result = await sync_remote_manifest(
+            resolver,
+            settings.remote,
+            manifest_url=str(manifest_file),
+        )
+
+        assert result is not None
+        assert result.registered >= 1
+
+        adapter_bridge = AdapterBridge(resolver, lifecycle, settings.adapters)
+        task_bridge = TaskBridge(resolver, lifecycle, settings.tasks)
+        workflow_bridge = WorkflowBridge(
+            resolver,
+            lifecycle,
+            settings.workflows,
+            task_bridge=task_bridge,
+            queue_bridge=adapter_bridge,
+        )
+        workflow_bridge.refresh_dags()
+
+        enqueue_result = await workflow_bridge.enqueue_workflow("remote-workflow")
+
+        assert enqueue_result["queue_category"] == "queue.scheduler"
+        assert enqueue_result["queue_provider"] == "fake"
+        assert queue_records and queue_records[0]["workflow"] == "remote-workflow"
+
 
 class TestPauseDrainManagement:
     """Test pause/drain state management across lifecycle."""
@@ -414,13 +499,13 @@ class TestPauseDrainManagement:
         from oneiric.runtime.activity import DomainActivity, DomainActivityStore
 
         # Setup
-        settings = OneiricSettings(
+        OneiricSettings(
             config_dir=str(tmp_path / "settings"),
             cache_dir=str(tmp_path / "cache"),
         )
         resolver = Resolver()
         lifecycle = LifecycleManager(resolver)
-        activity_store = DomainActivityStore(str(tmp_path / "activity.json"))
+        activity_store = DomainActivityStore(str(tmp_path / "activity.sqlite"))
 
         # Register providers
         register_adapter_metadata(
@@ -447,7 +532,9 @@ class TestPauseDrainManagement:
         bridge = AdapterBridge(resolver, lifecycle, {}, activity_store=activity_store)
 
         # Pause the cache key
-        activity_store.set("adapter", "cache", DomainActivity(paused=True, note="maintenance"))
+        activity_store.set(
+            "adapter", "cache", DomainActivity(paused=True, note="maintenance")
+        )
 
         # Verify paused
         activity = bridge.activity_state("cache")
@@ -462,19 +549,21 @@ class TestPauseDrainManagement:
         from oneiric.runtime.activity import DomainActivity, DomainActivityStore
 
         # Setup
-        settings = OneiricSettings(
+        OneiricSettings(
             config_dir=str(tmp_path / "settings"),
             cache_dir=str(tmp_path / "cache"),
         )
         resolver = Resolver()
         lifecycle = LifecycleManager(resolver)
-        activity_store = DomainActivityStore(str(tmp_path / "activity.json"))
+        activity_store = DomainActivityStore(str(tmp_path / "activity.sqlite"))
 
         # Create bridge
         bridge = AdapterBridge(resolver, lifecycle, {}, activity_store=activity_store)
 
         # Set draining
-        activity_store.set("adapter", "cache", DomainActivity(draining=True, note="migration"))
+        activity_store.set(
+            "adapter", "cache", DomainActivity(draining=True, note="migration")
+        )
 
         # Verify draining
         activity = bridge.activity_state("cache")
@@ -527,8 +616,12 @@ class TestOrchestratorIntegration:
         assert orchestrator.workflow_bridge is not None
 
         # Verify shared activity store
-        assert orchestrator.adapter_bridge._activity_store is orchestrator._activity_store
-        assert orchestrator.service_bridge._activity_store is orchestrator._activity_store
+        assert (
+            orchestrator.adapter_bridge._activity_store is orchestrator._activity_store
+        )
+        assert (
+            orchestrator.service_bridge._activity_store is orchestrator._activity_store
+        )
 
         # Verify watchers created
         assert len(orchestrator._watchers) == 5

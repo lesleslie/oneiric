@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 from oneiric.core.logging import get_logger
-
 
 TELEMETRY_FILENAME = "remote_status.json"
 telemetry_logger = get_logger("remote.telemetry")
@@ -17,18 +16,18 @@ telemetry_logger = get_logger("remote.telemetry")
 
 @dataclass
 class RemoteSyncTelemetry:
-    last_success_at: Optional[str] = None
-    last_failure_at: Optional[str] = None
+    last_success_at: str | None = None
+    last_failure_at: str | None = None
     consecutive_failures: int = 0
-    last_error: Optional[str] = None
-    last_source: Optional[str] = None
-    last_registered: Optional[int] = None
-    last_duration_ms: Optional[float] = None
-    last_digest_checks: Optional[int] = None
-    last_per_domain: Dict[str, int] = None  # type: ignore[assignment]
-    last_skipped: Optional[int] = None
+    last_error: str | None = None
+    last_source: str | None = None
+    last_registered: int | None = None
+    last_duration_ms: float | None = None
+    last_digest_checks: int | None = None
+    last_per_domain: dict[str, int] = None  # type: ignore[assignment]
+    last_skipped: int | None = None
 
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         data = asdict(self)
         if data.get("last_per_domain") is None:
             data["last_per_domain"] = {}
@@ -50,10 +49,10 @@ def record_remote_success(
     *,
     source: str,
     registered: int,
-    duration_ms: Optional[float] = None,
-    digest_checks: Optional[int] = None,
-    per_domain: Optional[Dict[str, int]] = None,
-    skipped: Optional[int] = None,
+    duration_ms: float | None = None,
+    digest_checks: int | None = None,
+    per_domain: dict[str, int] | None = None,
+    skipped: int | None = None,
 ) -> None:
     telemetry = load_remote_telemetry(cache_dir)
     telemetry.last_success_at = _timestamp()
@@ -107,4 +106,4 @@ def _telemetry_path(cache_dir: str) -> Path:
 
 
 def _timestamp() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()

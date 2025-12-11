@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Callable, Optional
 
 from pydantic import BaseModel, Field, SecretStr
 
@@ -19,7 +18,7 @@ except Exception:  # pragma: no cover - optional dependency
 
 
 class LogfireMonitoringSettings(BaseModel):
-    token: Optional[SecretStr] = Field(
+    token: SecretStr | None = Field(
         default=None,
         description="API token for Logfire; falls back to LOGFIRE_TOKEN env var.",
     )
@@ -61,7 +60,9 @@ class LogfireMonitoringAdapter:
         token = self._resolve_token()
         try:
             logfire.configure(token=token, service_name=self._settings.service_name)
-            self._maybe_call("instrument_system_metrics", self._settings.enable_system_metrics)
+            self._maybe_call(
+                "instrument_system_metrics", self._settings.enable_system_metrics
+            )
             self._maybe_call("instrument_httpx", self._settings.instrument_httpx)
             self._maybe_call("instrument_pydantic", self._settings.instrument_pydantic)
             self._configured = True

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from opentelemetry import metrics
 
 METER = metrics.get_meter("oneiric.core")
@@ -30,19 +28,23 @@ _swap_histogram = METER.create_histogram(
 def record_pause_state(domain: str, paused: bool) -> None:
     """Record a pause/resume operation for the given domain."""
 
-    _pause_counter.add(1, attributes={"domain": domain, "state": "paused" if paused else "resumed"})
+    _pause_counter.add(
+        1, attributes={"domain": domain, "state": "paused" if paused else "resumed"}
+    )
 
 
 def record_drain_state(domain: str, draining: bool) -> None:
     """Record a drain/clear operation for the given domain."""
 
-    _drain_counter.add(1, attributes={"domain": domain, "state": "draining" if draining else "cleared"})
+    _drain_counter.add(
+        1, attributes={"domain": domain, "state": "draining" if draining else "cleared"}
+    )
 
 
 def record_swap_duration(
     domain: str,
     key: str,
-    provider: Optional[str],
+    provider: str | None,
     duration_ms: float,
     *,
     success: bool,

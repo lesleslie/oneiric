@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import pytest
 
-from oneiric.adapters.secrets.aws import AWSSecretManagerAdapter, AWSSecretManagerSettings
+from oneiric.adapters.secrets.aws import (
+    AWSSecretManagerAdapter,
+    AWSSecretManagerSettings,
+)
 from oneiric.core.lifecycle import LifecycleError
 
 

@@ -5,11 +5,14 @@ from __future__ import annotations
 import os
 import threading
 from collections import defaultdict
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, DefaultDict, Dict, Iterable, List, Mapping, MutableMapping, Optional, Tuple
+from typing import (
+    Any,
+)
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -17,7 +20,7 @@ from .logging import get_logger
 from .observability import DecisionEvent, traced_decision
 
 FactoryType = Callable[..., Any] | str
-HealthCheck = Optional[Callable[[], bool]]
+HealthCheck = Callable[[], bool] | None
 
 STACK_ORDER_ENV = "ONEIRIC_STACK_ORDER"
 PATH_PRIORITY_HINTS = [
@@ -44,17 +47,17 @@ class Candidate(BaseModel):
 
     domain: str
     key: str
-    provider: Optional[str] = None
-    priority: Optional[int] = None
-    stack_level: Optional[int] = None
+    provider: str | None = None
+    priority: int | None = None
+    stack_level: int | None = None
     factory: FactoryType
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
     source: CandidateSource = CandidateSource.LOCAL_PKG
-    registered_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    registered_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     health: HealthCheck = None
-    registry_sequence: Optional[int] = Field(default=None, exclude=True)
+    registry_sequence: int | None = Field(default=None, exclude=True)
 
-    def with_priority(self, priority: int) -> "Candidate":
+    def with_priority(self, priority: int) -> Candidate:
         return self.model_copy(update={"priority": priority})
 
 
@@ -62,17 +65,17 @@ class ResolverSettings(BaseModel):
     """Resolver behavior toggles and overrides."""
 
     default_priority: int = 0
-    selections: Dict[str, Dict[str, str]] = Field(default_factory=dict)
+    selections: dict[str, dict[str, str]] = Field(default_factory=dict)
 
-    def selection_for(self, domain: str, key: str) -> Optional[str]:
+    def selection_for(self, domain: str, key: str) -> str | None:
         return self.selections.get(domain, {}).get(key)
 
 
 @dataclass
 class CandidateRank:
     candidate: Candidate
-    score: Tuple[int, int, int, int]
-    reasons: List[str]
+    score: tuple[int, int, int, int]
+    reasons: list[str]
     selected: bool = False
 
 
@@ -80,16 +83,16 @@ class CandidateRank:
 class ResolutionExplanation:
     domain: str
     key: str
-    ordered: List[CandidateRank]
+    ordered: list[CandidateRank]
 
     @property
-    def winner(self) -> Optional[Candidate]:
+    def winner(self) -> Candidate | None:
         for entry in self.ordered:
             if entry.selected:
                 return entry.candidate
         return None
 
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         return {
             "domain": self.domain,
             "key": self.key,
@@ -125,12 +128,14 @@ class CandidateRegistry:
         >>> active = registry.resolve("adapter", "cache")  # Thread-safe
     """
 
-    def __init__(self, settings: Optional[ResolverSettings] = None) -> None:
+    def __init__(self, settings: ResolverSettings | None = None) -> None:
         self.settings = settings or ResolverSettings()
         self._logger = get_logger("resolver")
-        self._candidates: DefaultDict[Tuple[str, str], List[Candidate]] = defaultdict(list)
-        self._active: Dict[Tuple[str, str], Optional[Candidate]] = {}
-        self._shadowed: Dict[Tuple[str, str], List[Candidate]] = {}
+        self._candidates: defaultdict[tuple[str, str], list[Candidate]] = defaultdict(
+            list
+        )
+        self._active: dict[tuple[str, str], Candidate | None] = {}
+        self._shadowed: dict[tuple[str, str], list[Candidate]] = {}
         self._sequence = 0
         self._lock = threading.RLock()  # Reentrant lock for thread safety
 
@@ -164,7 +169,9 @@ class CandidateRegistry:
             )
             self._recompute(stored.domain, stored.key)
 
-    def resolve(self, domain: str, key: str, provider: Optional[str] = None) -> Optional[Candidate]:
+    def resolve(
+        self, domain: str, key: str, provider: str | None = None
+    ) -> Candidate | None:
         """Resolve a candidate (thread-safe).
 
         Args:
@@ -188,7 +195,7 @@ class CandidateRegistry:
                 return None
             return active
 
-    def list_active(self, domain: str) -> List[Candidate]:
+    def list_active(self, domain: str) -> list[Candidate]:
         """List all active candidates for a domain (thread-safe).
 
         Args:
@@ -201,9 +208,13 @@ class CandidateRegistry:
             Acquires lock to ensure consistent snapshot.
         """
         with self._lock:
-            return [cand for (cand_domain, _), cand in self._active.items() if cand_domain == domain and cand]
+            return [
+                cand
+                for (cand_domain, _), cand in self._active.items()
+                if cand_domain == domain and cand
+            ]
 
-    def list_shadowed(self, domain: str) -> List[Candidate]:
+    def list_shadowed(self, domain: str) -> list[Candidate]:
         """List all shadowed candidates for a domain (thread-safe).
 
         Args:
@@ -216,7 +227,7 @@ class CandidateRegistry:
             Acquires lock to ensure consistent snapshot.
         """
         with self._lock:
-            shadowed: List[Candidate] = []
+            shadowed: list[Candidate] = []
             for (cand_domain, _), cands in self._shadowed.items():
                 if cand_domain == domain:
                     shadowed.extend(cands)
@@ -261,10 +272,12 @@ class CandidateRegistry:
     def _score_candidates(self, domain: str, key: str) -> ResolutionExplanation:
         candidates = self._candidates.get((domain, key), [])
         override_provider = self.settings.selection_for(domain, key)
-        ranked: List[CandidateRank] = []
+        ranked: list[CandidateRank] = []
         for cand in candidates:
-            reasons: List[str] = []
-            override_score = int(bool(override_provider and cand.provider == override_provider))
+            reasons: list[str] = []
+            override_score = int(
+                bool(override_provider and cand.provider == override_provider)
+            )
             if override_provider:
                 if override_score:
                     reasons.append(f"matched selection override {override_provider}")
@@ -286,8 +299,8 @@ class CandidateRegistry:
         return ResolutionExplanation(domain=domain, key=key, ordered=ranked)
 
 
-def _env_priority_map() -> Dict[str, int]:
-    mapping: Dict[str, int] = {}
+def _env_priority_map() -> dict[str, int]:
+    mapping: dict[str, int] = {}
     raw = os.getenv(STACK_ORDER_ENV, "")
     if not raw:
         return mapping
@@ -303,7 +316,7 @@ def _env_priority_map() -> Dict[str, int]:
     return mapping
 
 
-def infer_priority(package_name: Optional[str], path: Optional[str]) -> int:
+def infer_priority(package_name: str | None, path: str | None) -> int:
     env_map = _env_priority_map()
     if package_name and package_name in env_map:
         return env_map[package_name]
@@ -321,16 +334,16 @@ def register_pkg(
     package_name: str,
     path: str,
     candidates: Iterable[Candidate],
-    priority: Optional[int] = None,
+    priority: int | None = None,
 ) -> None:
     inferred = priority if priority is not None else infer_priority(package_name, path)
     for cand in candidates:
-        metadata = {"package": package_name, "path": path, **cand.metadata}
+        metadata = {"package": package_name, "path": path} | cand.metadata
         normalized = cand.model_copy(
             update={
                 "priority": cand.priority if cand.priority is not None else inferred,
                 "metadata": metadata,
-                "source": cand.source if cand.source else CandidateSource.LOCAL_PKG,
+                "source": cand.source or CandidateSource.LOCAL_PKG,
             }
         )
         registry.register_candidate(normalized)
@@ -339,7 +352,7 @@ def register_pkg(
 class Resolver:
     """High-level facade that wraps the candidate registry."""
 
-    def __init__(self, settings: Optional[ResolverSettings] = None) -> None:
+    def __init__(self, settings: ResolverSettings | None = None) -> None:
         self.settings = settings or ResolverSettings()
         self.registry = CandidateRegistry(self.settings)
 
@@ -351,17 +364,19 @@ class Resolver:
         package_name: str,
         path: str,
         candidates: Iterable[Candidate],
-        priority: Optional[int] = None,
+        priority: int | None = None,
     ) -> None:
         register_pkg(self.registry, package_name, path, candidates, priority=priority)
 
-    def resolve(self, domain: str, key: str, provider: Optional[str] = None) -> Optional[Candidate]:
+    def resolve(
+        self, domain: str, key: str, provider: str | None = None
+    ) -> Candidate | None:
         return self.registry.resolve(domain, key, provider=provider)
 
-    def list_active(self, domain: str) -> List[Candidate]:
+    def list_active(self, domain: str) -> list[Candidate]:
         return self.registry.list_active(domain)
 
-    def list_shadowed(self, domain: str) -> List[Candidate]:
+    def list_shadowed(self, domain: str) -> list[Candidate]:
         return self.registry.list_shadowed(domain)
 
     def explain(self, domain: str, key: str) -> ResolutionExplanation:

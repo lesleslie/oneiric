@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable, Dict
+from typing import Any
 
 import pytest
 
@@ -30,7 +30,7 @@ class _FakeMetricsAPI:
 
 
 class _FakeTracerProvider:
-    instances: list["_FakeTracerProvider"] = []
+    instances: list[_FakeTracerProvider] = []
 
     def __init__(self, resource: Any) -> None:
         self.resource = resource
@@ -46,7 +46,7 @@ class _FakeTracerProvider:
 
 
 class _FakeMeterProvider:
-    instances: list["_FakeMeterProvider"] = []
+    instances: list[_FakeMeterProvider] = []
 
     def __init__(self, resource: Any, metric_readers: list[Any]) -> None:
         self.resource = resource
@@ -64,14 +64,16 @@ class _FakeBatchProcessor:
 
 
 class _FakeMetricReader:
-    def __init__(self, exporter: Any, *, export_interval_millis: int, export_timeout_millis: int) -> None:
+    def __init__(
+        self, exporter: Any, *, export_interval_millis: int, export_timeout_millis: int
+    ) -> None:
         self.exporter = exporter
         self.export_interval_millis = export_interval_millis
         self.export_timeout_millis = export_timeout_millis
 
 
 class _FakeSpanExporter:
-    instances: list["_FakeSpanExporter"] = []
+    instances: list[_FakeSpanExporter] = []
 
     def __init__(self, **kwargs: Any) -> None:
         self.kwargs = kwargs
@@ -79,7 +81,7 @@ class _FakeSpanExporter:
 
 
 class _FakeMetricExporter:
-    instances: list["_FakeMetricExporter"] = []
+    instances: list[_FakeMetricExporter] = []
 
     def __init__(self, **kwargs: Any) -> None:
         self.kwargs = kwargs
@@ -88,7 +90,7 @@ class _FakeMetricExporter:
 
 @dataclass
 class _FakeResource:
-    attributes: Dict[str, Any]
+    attributes: dict[str, Any]
 
 
 def _fake_components() -> _OTLPComponents:
@@ -137,7 +139,9 @@ async def test_otlp_adapter_configures_traces_and_metrics(monkeypatch) -> None:
 async def test_otlp_adapter_uses_http_exporters(monkeypatch) -> None:
     components = _fake_components()
     adapter = OTLPObservabilityAdapter(
-        OTLPObservabilitySettings(endpoint="http://collector:4318", protocol="http/protobuf")
+        OTLPObservabilitySettings(
+            endpoint="http://collector:4318", protocol="http/protobuf"
+        )
     )
     monkeypatch.setattr(
         OTLPObservabilityAdapter,

@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Literal, Mapping, Optional
+from collections.abc import Mapping
+from typing import Any, Literal
 from urllib.parse import urljoin
 
 import httpx
@@ -17,11 +18,13 @@ from oneiric.core.resolution import CandidateSource
 class HttpActionSettings(BaseModel):
     """Settings for the HTTP fetch action."""
 
-    base_url: Optional[AnyHttpUrl] = Field(
+    base_url: AnyHttpUrl | None = Field(
         default=None,
         description="Optional base URL joined with payload paths.",
     )
-    default_method: Literal["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"] = Field(
+    default_method: Literal[
+        "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"
+    ] = Field(
         default="GET",
         description="Default HTTP method when payload omits 'method'.",
     )
@@ -42,7 +45,7 @@ class HttpActionSettings(BaseModel):
         default=False,
         description="Raise errors when status is >= 400 instead of returning the payload.",
     )
-    default_headers: Dict[str, str] = Field(
+    default_headers: dict[str, str] = Field(
         default_factory=dict,
         description="Headers applied to every request (payload headers merge/override).",
     )
@@ -67,13 +70,21 @@ class HttpFetchAction:
         settings_model=HttpActionSettings,
     )
 
-    _ALLOWED_METHODS: tuple[str, ...] = ("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS")
+    _ALLOWED_METHODS: tuple[str, ...] = (
+        "GET",
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE",
+        "HEAD",
+        "OPTIONS",
+    )
 
     def __init__(
         self,
         settings: HttpActionSettings | None = None,
         *,
-        client: Optional[httpx.AsyncClient] = None,
+        client: httpx.AsyncClient | None = None,
     ) -> None:
         self._settings = settings or HttpActionSettings()
         self._client = client
@@ -81,16 +92,24 @@ class HttpFetchAction:
 
     async def execute(self, payload: dict | None = None) -> dict:
         payload = payload or {}
-        method = (payload.get("method") or self._settings.default_method or "GET").upper()
+        method = (
+            payload.get("method") or self._settings.default_method or "GET"
+        ).upper()
         if method not in self._ALLOWED_METHODS:
             raise LifecycleError("http-action-invalid-method")
         url = self._build_url(payload)
-        params = self._normalize_mapping(payload.get("params") or payload.get("query"), "params")
+        params = self._normalize_mapping(
+            payload.get("params") or payload.get("query"), "params"
+        )
         headers = self._merge_headers(payload.get("headers"))
         timeout = float(payload.get("timeout", self._settings.timeout_seconds))
         verify = bool(payload.get("verify", self._settings.verify_ssl))
-        follow_redirects = bool(payload.get("allow_redirects", self._settings.allow_redirects))
-        raise_for_status = bool(payload.get("raise_for_status", self._settings.raise_for_status))
+        follow_redirects = bool(
+            payload.get("allow_redirects", self._settings.allow_redirects)
+        )
+        raise_for_status = bool(
+            payload.get("raise_for_status", self._settings.raise_for_status)
+        )
         response = await self._send_request(
             method=method,
             url=url,
@@ -144,8 +163,8 @@ class HttpFetchAction:
             return base_url
         raise LifecycleError("http-action-url-required")
 
-    def _merge_headers(self, overrides: Any) -> Dict[str, str]:
-        headers = dict(self._settings.default_headers)
+    def _merge_headers(self, overrides: Any) -> dict[str, str]:
+        headers = self._settings.default_headers.copy()
         if overrides is None:
             return headers
         if isinstance(overrides, Mapping):
@@ -153,7 +172,7 @@ class HttpFetchAction:
             return headers
         raise LifecycleError("http-action-headers-invalid")
 
-    def _normalize_mapping(self, value: Any, field: str) -> Optional[Dict[str, Any]]:
+    def _normalize_mapping(self, value: Any, field: str) -> dict[str, Any] | None:
         if value is None:
             return None
         if isinstance(value, Mapping):
@@ -165,8 +184,8 @@ class HttpFetchAction:
         *,
         method: str,
         url: str,
-        params: Optional[Dict[str, Any]],
-        headers: Dict[str, str],
+        params: dict[str, Any] | None,
+        headers: dict[str, str],
         timeout: float,
         verify: bool,
         follow_redirects: bool,
@@ -196,7 +215,7 @@ class HttpFetchAction:
         ) as client:
             return await client.request(method, url, **request_kwargs)
 
-    async def _elapsed_ms(self, response: httpx.Response) -> Optional[float]:
+    async def _elapsed_ms(self, response: httpx.Response) -> float | None:
         try:
             elapsed = response.elapsed
         except RuntimeError:

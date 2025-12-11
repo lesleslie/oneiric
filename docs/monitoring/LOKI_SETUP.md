@@ -4,20 +4,20 @@
 **Status:** Production Ready
 **Maintainer:** Platform Team
 
----
+______________________________________________________________________
 
 ## Table of Contents
 
-1. [Overview](#overview)
-2. [Quick Start](#quick-start)
-3. [Installation](#installation)
-4. [Configuration](#configuration)
-5. [LogQL Queries](#logql-queries)
-6. [Grafana Integration](#grafana-integration)
-7. [Troubleshooting](#troubleshooting)
-8. [Best Practices](#best-practices)
+1. \[[#overview|Overview]\]
+1. \[[#quick-start|Quick Start]\]
+1. \[[#installation|Installation]\]
+1. \[[#configuration|Configuration]\]
+1. \[[#logql-queries|LogQL Queries]\]
+1. \[[#grafana-integration|Grafana Integration]\]
+1. \[[#troubleshooting|Troubleshooting]\]
+1. \[[#best-practices|Best Practices]\]
 
----
+______________________________________________________________________
 
 ## Overview
 
@@ -41,7 +41,7 @@ Oneiric (structlog JSON)
 - **Grafana Explore:** Interactive log browsing
 - **Alert integration:** LogQL alerts to AlertManager
 
----
+______________________________________________________________________
 
 ## Quick Start
 
@@ -75,7 +75,7 @@ curl -G 'http://localhost:3100/loki/api/v1/query' \
   --data-urlencode 'query={app="oneiric"}' | jq
 ```
 
----
+______________________________________________________________________
 
 ## Installation
 
@@ -136,7 +136,7 @@ chmod +x promtail-linux-amd64
 ./promtail-linux-amd64 -config.file=promtail-config.yml &
 ```
 
----
+______________________________________________________________________
 
 ## Configuration
 
@@ -394,7 +394,7 @@ scrape_configs:
           format: RFC3339
 ```
 
----
+______________________________________________________________________
 
 ## LogQL Queries
 
@@ -534,7 +534,7 @@ sum(count_over_time({app="oneiric"} | json | event="swap-complete" [1h]))
 avg_over_time({app="oneiric"} | json | event="swap-complete" | unwrap duration_ms [5m])
 ```
 
----
+______________________________________________________________________
 
 ## Grafana Integration
 
@@ -554,9 +554,9 @@ datasources:
 **Manual configuration:**
 
 1. **Configuration → Data Sources → Add data source**
-2. **Select "Loki"**
-3. **URL:** `http://loki:3100`
-4. **Save & Test**
+1. **Select "Loki"**
+1. **URL:** `http://loki:3100`
+1. **Save & Test**
 
 ### Grafana Explore
 
@@ -565,6 +565,7 @@ http://localhost:3000/explore?orgId=1&left={"datasource":"Loki","queries":[{"exp
 ```
 
 **Features:**
+
 - **Live tail:** Real-time log streaming
 - **Log context:** View surrounding lines
 - **Label browser:** Explore available labels
@@ -607,7 +608,7 @@ Create alerts using LogQL:
     summary: "Oneiric error rate is {{ $value }}/sec"
 ```
 
----
+______________________________________________________________________
 
 ## Troubleshooting
 
@@ -634,21 +635,24 @@ docker logs promtail
 **Solutions:**
 
 1. **Promtail not scraping:**
+
    - Verify Docker socket mounted: `/var/run/docker.sock`
    - Check container label filters in `promtail-config.yml`
    - Restart Promtail: `docker restart promtail`
 
-2. **Loki not receiving:**
+1. **Loki not receiving:**
+
    - Check network connectivity: `docker network inspect`
    - Verify Loki URL in Promtail config
    - Check Loki logs: `docker logs loki`
 
-3. **Oneiric not logging:**
+1. **Oneiric not logging:**
+
    - Verify Oneiric is running
    - Check log output: `docker logs oneiric`
    - Ensure structlog configured correctly
 
----
+______________________________________________________________________
 
 ### Slow Queries
 
@@ -657,6 +661,7 @@ docker logs promtail
 **Solutions:**
 
 1. **Add time range filter:**
+
    ```logql
    # BAD: No time range
    {app="oneiric"} | json
@@ -665,7 +670,8 @@ docker logs promtail
    {app="oneiric"} | json | __timestamp__ >= 1h
    ```
 
-2. **Use label filters (indexed):**
+1. **Use label filters (indexed):**
+
    ```logql
    # FAST: Label filter
    {app="oneiric", level="error"}
@@ -674,21 +680,23 @@ docker logs promtail
    {app="oneiric"} |= "error"
    ```
 
-3. **Reduce query parallelism:**
+1. **Reduce query parallelism:**
+
    ```yaml
    # loki-config.yml
    limits_config:
      max_query_parallelism: 16  # Reduce from 32
    ```
 
-4. **Enable caching:**
+1. **Enable caching:**
+
    ```yaml
    # loki-config.yml
    query_range:
      cache_results: true
    ```
 
----
+______________________________________________________________________
 
 ### High Storage Usage
 
@@ -697,19 +705,22 @@ docker logs promtail
 **Solutions:**
 
 1. **Enable compaction:**
+
    ```yaml
    compactor:
      retention_enabled: true
      retention_delete_delay: 2h
    ```
 
-2. **Reduce retention period:**
+1. **Reduce retention period:**
+
    ```yaml
    table_manager:
      retention_period: 168h  # 7 days instead of 30
    ```
 
-3. **Implement log sampling:**
+1. **Implement log sampling:**
+
    ```yaml
    # promtail-config.yml
    pipeline_stages:
@@ -718,7 +729,8 @@ docker logs promtail
          action: drop  # Drop debug logs
    ```
 
-4. **Use S3 storage (production):**
+1. **Use S3 storage (production):**
+
    ```yaml
    storage_config:
      aws:
@@ -726,7 +738,7 @@ docker logs promtail
        region: us-east-1
    ```
 
----
+______________________________________________________________________
 
 ## Best Practices
 
@@ -736,7 +748,9 @@ Always use structured logs (JSON):
 
 ```python
 # GOOD: Structured
-logger.info("swap-complete", domain="adapter", key="cache", provider="redis", duration_ms=234)
+logger.info(
+    "swap-complete", domain="adapter", key="cache", provider="redis", duration_ms=234
+)
 
 # BAD: Unstructured
 logger.info("Swapped adapter cache to redis in 234ms")
@@ -799,17 +813,17 @@ loki_ingester_memory_chunks
 loki_request_duration_seconds
 ```
 
----
+______________________________________________________________________
 
 ## Next Steps
 
 1. **Deploy Loki + Promtail:** Follow installation section
-2. **Verify logs flowing:** Check Grafana Explore
-3. **Create log panels:** Add to Grafana dashboards
-4. **Set up log alerts:** Configure LogQL alerts
-5. **Tune retention:** Adjust based on storage constraints
+1. **Verify logs flowing:** Check Grafana Explore
+1. **Create log panels:** Add to Grafana dashboards
+1. **Set up log alerts:** Configure LogQL alerts
+1. **Tune retention:** Adjust based on storage constraints
 
----
+______________________________________________________________________
 
 ## Additional Resources
 
@@ -819,7 +833,7 @@ loki_request_duration_seconds
 - **Grafana Explore:** https://grafana.com/docs/grafana/latest/explore/
 - **Oneiric Prometheus Setup:** `docs/monitoring/PROMETHEUS_SETUP.md`
 
----
+______________________________________________________________________
 
 **Document Version:** 1.0
 **Last Reviewed:** 2025-11-26

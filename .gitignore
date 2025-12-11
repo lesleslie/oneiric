@@ -12,3 +12,9 @@ wheels/
 # Runtime cache
 .oneiric_cache/
 /NOTES.md
+/.obsidian/
+/.claude/
+/.crackerjack/
+/.benchmarks/
+/.complexipy_cache/
+/.smart-env/

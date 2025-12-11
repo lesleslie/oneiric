@@ -1,25 +1,27 @@
-# Docker Deployment Guide
+# Docker Deployment Guide (Legacy)
+
+> **Legacy Notice (2025-12-07):** Cloud Run + buildpack deployments with the Procfile/`--profile serverless` flag are now the primary path. Keep this Docker guide for historical reference when debugging older environments or running local replicas.
 
 **Version:** 1.0.0
 **Last Updated:** 2025-11-26
 **Target:** Oneiric v0.1.0+
 
----
+______________________________________________________________________
 
 ## Table of Contents
 
-1. [Quick Start](#quick-start)
-2. [Production Dockerfile](#production-dockerfile)
-3. [Docker Compose Setup](#docker-compose-setup)
-4. [Environment Configuration](#environment-configuration)
-5. [Secrets Management](#secrets-management)
-6. [Volume Management](#volume-management)
-7. [Health Checks](#health-checks)
-8. [Monitoring Integration](#monitoring-integration)
-9. [Security Hardening](#security-hardening)
-10. [Troubleshooting](#troubleshooting)
+1. \[[#quick-start|Quick Start]\]
+1. \[[#production-dockerfile|Production Dockerfile]\]
+1. \[[#docker-compose-setup|Docker Compose Setup]\]
+1. \[[#environment-configuration|Environment Configuration]\]
+1. \[[#secrets-management|Secrets Management]\]
+1. \[[#volume-management|Volume Management]\]
+1. \[[#health-checks|Health Checks]\]
+1. \[[#monitoring-integration|Monitoring Integration]\]
+1. \[[#security-hardening|Security Hardening]\]
+1. \[[#troubleshooting|Troubleshooting]\]
 
----
+______________________________________________________________________
 
 ## Quick Start
 
@@ -55,7 +57,7 @@ docker-compose logs -f oneiric
 docker-compose down
 ```
 
----
+______________________________________________________________________
 
 ## Production Dockerfile
 
@@ -172,7 +174,7 @@ docker buildx build \
   .
 ```
 
----
+______________________________________________________________________
 
 ## Docker Compose Setup
 
@@ -324,7 +326,7 @@ services:
       - loki
 ```
 
----
+______________________________________________________________________
 
 ## Environment Configuration
 
@@ -391,7 +393,7 @@ PROMETHEUS_METRICS_PORT=9090
 GRAFANA_PASSWORD=secure_password_here
 ```
 
----
+______________________________________________________________________
 
 ## Secrets Management
 
@@ -442,7 +444,7 @@ services:
       - /secure/vault/token:/run/secrets/vault_token:ro
 ```
 
----
+______________________________________________________________________
 
 ## Volume Management
 
@@ -489,7 +491,7 @@ docker run --rm \
   alpine tail -f /logs/oneiric.log
 ```
 
----
+______________________________________________________________________
 
 ## Health Checks
 
@@ -546,7 +548,7 @@ echo "Health check passed"
 exit 0
 ```
 
----
+______________________________________________________________________
 
 ## Monitoring Integration
 
@@ -607,7 +609,7 @@ scrape_configs:
 
 See `docs/monitoring/GRAFANA_DASHBOARDS.md` for dashboard JSON exports.
 
----
+______________________________________________________________________
 
 ## Security Hardening
 
@@ -669,7 +671,7 @@ networks:
     driver: bridge
 ```
 
----
+______________________________________________________________________
 
 ## Troubleshooting
 
@@ -747,11 +749,11 @@ docker exec oneiric nslookup google.com
 docker exec oneiric curl -v https://api.example.com
 ```
 
----
+______________________________________________________________________
 
 ## Next Steps
 
-- [Kubernetes Deployment](./KUBERNETES_DEPLOYMENT.md) - Deploy to Kubernetes clusters
-- [Systemd Service](./SYSTEMD_DEPLOYMENT.md) - Run as systemd service
+- \[[KUBERNETES_DEPLOYMENT|Kubernetes Deployment]\] - Deploy to Kubernetes clusters
+- \[[SYSTEMD_DEPLOYMENT|Systemd Service]\] - Run as systemd service
 - [Monitoring Setup](../monitoring/MONITORING_SETUP.md) - Configure Prometheus, Grafana, Loki
 - [Runbooks](../runbooks/README.md) - Incident response and maintenance procedures

@@ -1,4 +1,9 @@
 source: sample-demo
+# Serverless profile hint: package this manifest into the image and launch via the Procfile entry
+#   web: uv run python -m oneiric.cli orchestrate --profile serverless --no-remote
+# Recommended toggles for Cloud Run / buildpack deployments:
+#   - Disable remote polling/watchers unless explicitly required (manifest bundled at build time)
+#   - Prefer Secret Manager adapters → env vars for configuration
 entries:
   - domain: adapter
     key: remote-demo
@@ -8,6 +13,11 @@ entries:
     priority: 25
     metadata:
       description: Remote demo adapter registered via manifest
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+        procfile_entry: "web: uv run python -m oneiric.cli orchestrate --profile serverless --no-remote"
   - domain: service
     key: remote-status
     provider: remote
@@ -27,6 +37,15 @@ entries:
     provider: remote
     factory: oneiric.remote.samples:demo_remote_event_handler
     stack_level: 3
+    event_topics:
+      - demo.user.created
+      - demo.user.updated
+    event_max_concurrency: 5
+    event_filters:
+      - path: payload.environment
+        any_of: ["prod", "staging"]
+    event_priority: 25
+    event_fanout_policy: exclusive
     metadata:
       description: Remote event handler
   - domain: workflow
@@ -34,8 +53,21 @@ entries:
     provider: remote
     factory: oneiric.remote.samples:demo_remote_workflow
     stack_level: 3
+    dag:
+      nodes:
+        - id: hydrate
+          task: remote-task
+        - id: notify
+          task: remote-task
+          depends_on:
+            - hydrate
+          payload:
+            channel: ops
     metadata:
       description: Remote workflow definition
+      scheduler:
+        queue_category: queue.scheduler
+        provider: cloudtasks
   - domain: action
     key: workflow.audit
     provider: builtin-workflow-audit
@@ -50,6 +82,9 @@ entries:
     stack_level: 3
     metadata:
       description: Builtin workflow notify kit registered remotely
+      notifications:
+        adapter_provider: notifications.slack
+        channel: "deploy"
   - domain: action
     key: workflow.retry
     provider: builtin-workflow-retry
@@ -85,3 +120,179 @@ entries:
     stack_level: 3
     metadata:
       description: Debug console helper action
+  - domain: adapter
+    key: messaging.email
+    provider: sendgrid
+    factory: oneiric.adapters.messaging.sendgrid:SendGridAdapter
+    stack_level: 2
+    metadata:
+      description: SendGrid messaging adapter (defaults to sandbox mode)
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+  - domain: adapter
+    key: messaging.email.mailgun
+    provider: mailgun
+    factory: oneiric.adapters.messaging.mailgun:MailgunAdapter
+    stack_level: 2
+    metadata:
+      description: Mailgun email adapter with sandbox/test mode defaults
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+  - domain: adapter
+    key: messaging.sms
+    provider: twilio
+    factory: oneiric.adapters.messaging.twilio:TwilioAdapter
+    stack_level: 2
+    metadata:
+      description: Twilio SMS adapter (dry-run enabled by default)
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+  - domain: adapter
+    key: queue.scheduler
+    provider: cloudtasks
+    factory: oneiric.adapters.queue.cloudtasks:CloudTasksQueueAdapter
+    stack_level: 2
+    metadata:
+      description: Cloud Tasks queue used to trigger DAG executions
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+  - domain: adapter
+    key: queue.events
+    provider: pubsub
+    factory: oneiric.adapters.queue.pubsub:PubSubQueueAdapter
+    stack_level: 2
+    metadata:
+      description: Pub/Sub topic/subscription pair for event fan-out
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+  - domain: adapter
+    key: notifications.slack
+    provider: slack
+    factory: oneiric.adapters.messaging.slack:SlackAdapter
+    stack_level: 2
+    metadata:
+      description: Slack ChatOps adapter (chat.postMessage)
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+  - domain: adapter
+    key: notifications.teams
+    provider: teams
+    factory: oneiric.adapters.messaging.teams:TeamsAdapter
+    stack_level: 2
+    metadata:
+      description: Microsoft Teams incoming webhook adapter
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+  - domain: adapter
+    key: notifications.webhook
+    provider: webhook
+    factory: oneiric.adapters.messaging.webhook:WebhookAdapter
+    stack_level: 2
+    metadata:
+      description: Generic JSON webhook adapter for PagerDuty/Discord/etc.
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+  - domain: adapter
+    key: nosql.primary
+    provider: mongodb
+    factory: oneiric.adapters.nosql.mongodb:MongoDBAdapter
+    stack_level: 2
+    metadata:
+      description: MongoDB document store for workflow/audit state
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+  - domain: adapter
+    key: nosql.secondary
+    provider: dynamodb
+    factory: oneiric.adapters.nosql.dynamodb:DynamoDBAdapter
+    stack_level: 2
+    metadata:
+      description: DynamoDB table backing workflow state for AWS-first deployments
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+  - domain: adapter
+    key: nosql.firestore
+    provider: firestore
+    factory: oneiric.adapters.nosql.firestore:FirestoreAdapter
+    stack_level: 2
+    metadata:
+      description: Firestore collection for workflow state when deploying on GCP
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+  - domain: adapter
+    key: graph.neo4j
+    provider: neo4j
+    factory: oneiric.adapters.graph.neo4j:Neo4jGraphAdapter
+    stack_level: 2
+    metadata:
+      description: Neo4j graph adapter for knowledge-graph workflows
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+  - domain: adapter
+    key: graph.arangodb
+    provider: arangodb
+    factory: oneiric.adapters.graph.arangodb:ArangoDBGraphAdapter
+    stack_level: 2
+    metadata:
+      description: ArangoDB graph adapter for multi-model workflows
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+  - domain: adapter
+    key: graph.duckdb_pgq
+    provider: duckdb_pgq
+    factory: oneiric.adapters.graph.duckdb_pgq:DuckDBPGQAdapter
+    stack_level: 2
+    metadata:
+      description: DuckDB PGQ adapter for in-process graph analytics
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+  - domain: adapter
+    key: queue.kafka
+    provider: kafka
+    factory: oneiric.adapters.queue.kafka:KafkaQueueAdapter
+    stack_level: 2
+    metadata:
+      description: Kafka topic for streaming workflows
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+  - domain: adapter
+    key: queue.rabbitmq
+    provider: rabbitmq
+    factory: oneiric.adapters.queue.rabbitmq:RabbitMQQueueAdapter
+    stack_level: 2
+    metadata:
+      description: RabbitMQ queue for orchestration fan-out
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false

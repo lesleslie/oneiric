@@ -41,7 +41,9 @@ async def test_workflow_audit_action_redacts_fields() -> None:
 async def test_action_bridge_activates_workflow_audit(tmp_path) -> None:
     resolver = Resolver()
     register_builtin_actions(resolver)
-    lifecycle = LifecycleManager(resolver, status_snapshot_path=str(tmp_path / "status.json"))
+    lifecycle = LifecycleManager(
+        resolver, status_snapshot_path=str(tmp_path / "status.json")
+    )
     settings = LayerSettings(
         selections={"workflow.audit": "builtin-workflow-audit"},
     )
@@ -74,7 +76,9 @@ async def test_workflow_notify_defaults() -> None:
 async def test_workflow_notify_accepts_custom_recipients(tmp_path) -> None:
     resolver = Resolver()
     register_builtin_actions(resolver)
-    lifecycle = LifecycleManager(resolver, status_snapshot_path=str(tmp_path / "status.json"))
+    lifecycle = LifecycleManager(
+        resolver, status_snapshot_path=str(tmp_path / "status.json")
+    )
     settings = LayerSettings(selections={"workflow.notify": "builtin-workflow-notify"})
     bridge = ActionBridge(resolver, lifecycle, settings)
     handle = await bridge.use("workflow.notify")
@@ -109,7 +113,9 @@ async def test_workflow_retry_schedules() -> None:
 async def test_workflow_retry_exhausts(tmp_path) -> None:
     resolver = Resolver()
     register_builtin_actions(resolver)
-    lifecycle = LifecycleManager(resolver, status_snapshot_path=str(tmp_path / "status.json"))
+    lifecycle = LifecycleManager(
+        resolver, status_snapshot_path=str(tmp_path / "status.json")
+    )
     settings = LayerSettings(selections={"workflow.retry": "builtin-workflow-retry"})
     bridge = ActionBridge(resolver, lifecycle, settings)
     handle = await bridge.use("workflow.retry")
@@ -164,8 +170,12 @@ async def test_workflow_orchestrator_builds_schedule() -> None:
 async def test_workflow_orchestrator_via_bridge(tmp_path) -> None:
     resolver = Resolver()
     register_builtin_actions(resolver)
-    lifecycle = LifecycleManager(resolver, status_snapshot_path=str(tmp_path / "status.json"))
-    settings = LayerSettings(selections={"workflow.orchestrate": "builtin-workflow-orchestrator"})
+    lifecycle = LifecycleManager(
+        resolver, status_snapshot_path=str(tmp_path / "status.json")
+    )
+    settings = LayerSettings(
+        selections={"workflow.orchestrate": "builtin-workflow-orchestrator"}
+    )
     bridge = ActionBridge(resolver, lifecycle, settings)
     handle = await bridge.use("workflow.orchestrate")
     plan = await handle.instance.execute(
@@ -174,7 +184,11 @@ async def test_workflow_orchestrator_via_bridge(tmp_path) -> None:
             "version": "1.2.3",
             "metadata": {"env": "test"},
             "steps": [
-                {"step_id": "prepare", "name": "Prepare", "action": "compression.encode"},
+                {
+                    "step_id": "prepare",
+                    "name": "Prepare",
+                    "action": "compression.encode",
+                },
                 {
                     "step_id": "ship",
                     "name": "Ship",

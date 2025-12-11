@@ -24,7 +24,6 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-from typing import Literal
 
 try:
     import boto3  # type: ignore
@@ -65,7 +64,7 @@ def upload_to_s3(
             "boto3 is required for S3 uploads. Install with: pip install boto3"
         )
 
-    print(f"Uploading to S3...")
+    print("Uploading to S3...")
     print(f"  Bucket: {bucket}")
     print(f"  Key: {key}")
     print(f"  Region: {region}")
@@ -80,7 +79,7 @@ def upload_to_s3(
 
     # Upload
     with artifact_path.open("rb") as f:
-        s3.upload_fileobj(f, bucket, key, ExtraArgs=extra_args if extra_args else None)
+        s3.upload_fileobj(f, bucket, key, ExtraArgs=extra_args or None)
 
     url = f"https://{bucket}.s3.{region}.amazonaws.com/{key}"
     print(f"\n✓ Uploaded to S3: {url}")
@@ -114,14 +113,12 @@ def upload_to_gcs(
             "Install with: pip install google-cloud-storage"
         )
 
-    print(f"Uploading to GCS...")
+    print("Uploading to GCS...")
     print(f"  Bucket: {bucket}")
     print(f"  Blob: {blob_name}")
     print(f"  File: {artifact_path} ({artifact_path.stat().st_size} bytes)")
 
-    client = storage.Client()
-    bucket_obj = client.bucket(bucket)
-    blob = bucket_obj.blob(blob_name)
+    blob = storage.Client().bucket(bucket).blob(blob_name)
 
     # Upload
     blob.upload_from_filename(str(artifact_path))
@@ -224,7 +221,7 @@ Installation:
                 args.public_read,
             )
 
-        print(f"\n✓ Upload complete")
+        print("\n✓ Upload complete")
         print(f"  URL: {url}")
 
     except ImportError as exc:

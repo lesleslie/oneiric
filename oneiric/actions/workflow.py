@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from collections.abc import Iterable
+from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
@@ -69,7 +69,9 @@ class WorkflowAuditAction:
             raise LifecycleError("workflow-audit-details-invalid")
         extra_redact = payload.get("redact_fields")
         redact_fields: set[str] = set(self._settings.redact_fields)
-        if isinstance(extra_redact, Iterable) and not isinstance(extra_redact, (str, bytes)):
+        if isinstance(extra_redact, Iterable) and not isinstance(
+            extra_redact, (str, bytes)
+        ):
             redact_fields.update(str(v) for v in extra_redact)
         channel = payload.get("channel") or self._settings.channel
         include_timestamp = payload.get("include_timestamp")
@@ -81,7 +83,7 @@ class WorkflowAuditAction:
             "details": self._redact(details, redact_fields),
         }
         if include_timestamp:
-            record["timestamp"] = datetime.now(timezone.utc).isoformat()
+            record["timestamp"] = datetime.now(UTC).isoformat()
         log_kwargs = {
             "audit_event": event,
             "channel": channel,
@@ -90,12 +92,11 @@ class WorkflowAuditAction:
         if "timestamp" in record:
             log_kwargs["timestamp"] = record["timestamp"]
         self._logger.info("workflow-action-audit", **log_kwargs)
-        return {
-            "status": "recorded",
-            **record,
-        }
+        return {"status": "recorded"} | record
 
-    def _redact(self, details: dict[str, Any], redact_fields: set[str]) -> dict[str, Any]:
+    def _redact(
+        self, details: dict[str, Any], redact_fields: set[str]
+    ) -> dict[str, Any]:
         sanitized: dict[str, Any] = {}
         for key, value in details.items():
             if key in redact_fields:
@@ -104,7 +105,12 @@ class WorkflowAuditAction:
             if isinstance(value, dict):
                 sanitized[key] = self._redact(value, redact_fields)
             elif isinstance(value, list):
-                sanitized[key] = [self._redact(item, redact_fields) if isinstance(item, dict) else item for item in value]
+                sanitized[key] = [
+                    self._redact(item, redact_fields)
+                    if isinstance(item, dict)
+                    else item
+                    for item in value
+                ]
             else:
                 sanitized[key] = value
         return sanitized
@@ -188,14 +194,11 @@ class WorkflowNotifyAction:
             message=message,
             context=context,
         )
-        return {
-            "status": "queued" if recipients else "logged",
-            **record,
-        }
+        return {"status": "queued" if recipients else "logged"} | record
 
     def _normalize_recipients(self, value: Any) -> list[str]:
         if value is None:
-            return list(self._settings.default_recipients)
+            return self._settings.default_recipients.copy()
         if isinstance(value, str):
             return [value]
         if isinstance(value, Iterable) and not isinstance(value, (bytes, bytearray)):
@@ -238,7 +241,9 @@ class WorkflowStepSpec(BaseModel):
         default_factory=dict,
         description="Arbitrary metadata stored alongside the step",
     )
-    tags: list[str] = Field(default_factory=list, description="Tags applied to the step")
+    tags: list[str] = Field(
+        default_factory=list, description="Tags applied to the step"
+    )
 
 
 class WorkflowDefinitionSpec(BaseModel):
@@ -320,12 +325,14 @@ class WorkflowOrchestratorAction:
         schedule = self._build_schedule(
             {step_id: data["depends_on"] for step_id, data in normalized_steps.items()}
         )
-        ordered_steps = [step_id for batch in schedule for step_id in batch]
+        from itertools import chain
+
+        ordered_steps = list(chain.from_iterable(schedule))
         version = definition.version or self._settings.default_version
         result_steps = [
             {
                 "step_id": step_id,
-                "name": data["spec"].name,
+                "name": (data := normalized_steps[step_id])["spec"].name,
                 "action": data["spec"].action,
                 "depends_on": data["depends_on"],
                 "retry_attempts": data["retry_attempts"],
@@ -334,9 +341,10 @@ class WorkflowOrchestratorAction:
                 "tags": data["spec"].tags,
             }
             for step_id in ordered_steps
-            for data in [normalized_steps[step_id]]
         ]
-        graph_dependencies = {step_id: data["depends_on"] for step_id, data in normalized_steps.items()}
+        graph_dependencies = {
+            step_id: data["depends_on"] for step_id, data in normalized_steps.items()
+        }
         dependents: dict[str, list[str]] = {key: [] for key in normalized_steps}
         for step_id, deps in graph_dependencies.items():
             for dep in deps:
@@ -349,16 +357,20 @@ class WorkflowOrchestratorAction:
             "name": definition.name or definition.workflow_id,
             "version": version,
             "run_token": uuid4().hex,
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "step_count": len(normalized_steps),
             "schedule": schedule,
             "ordered_steps": ordered_steps,
             "steps": result_steps,
             "graph": {
                 "dependencies": graph_dependencies,
-                "entry_steps": [step for step, deps in graph_dependencies.items() if not deps],
+                "entry_steps": [
+                    step for step, deps in graph_dependencies.items() if not deps
+                ],
                 "terminal_steps": [
-                    step for step, children in dependents.items() if not children and step in normalized_steps
+                    step
+                    for step, children in dependents.items()
+                    if not children and step in normalized_steps
                 ],
             },
             "context": definition.context,
@@ -390,31 +402,49 @@ class WorkflowOrchestratorAction:
             raise LifecycleError("workflow-orchestrate-steps-required")
         return definition
 
-    def _normalize_steps(self, steps: list[WorkflowStepSpec]) -> dict[str, dict[str, Any]]:
+    def _normalize_steps(
+        self, steps: list[WorkflowStepSpec]
+    ) -> dict[str, dict[str, Any]]:
         normalized: dict[str, dict[str, Any]] = {}
         for step in steps:
-            if step.step_id in normalized:
-                raise LifecycleError("workflow-orchestrate-duplicate-step")
-            depends_on = self._dedupe_dependencies(step.depends_on)
-            if step.step_id in depends_on:
-                raise LifecycleError("workflow-orchestrate-self-dependency")
-            normalized[step.step_id] = {
-                "spec": step,
-                "depends_on": depends_on,
-                "retry_attempts": (
-                    step.retry_attempts if step.retry_attempts is not None else self._settings.default_retry_attempts
-                ),
-                "timeout_seconds": (
-                    step.timeout_seconds
-                    if step.timeout_seconds is not None
-                    else self._settings.default_timeout_seconds
-                ),
-            }
-        for step_id, data in normalized.items():
+            self._validate_step(step, normalized)
+            normalized[step.step_id] = self._build_normalized_step(step)
+        self._validate_dependencies(normalized)
+        return normalized
+
+    def _validate_step(
+        self, step: WorkflowStepSpec, existing: dict[str, dict[str, Any]]
+    ) -> None:
+        """Validate step before normalization."""
+        if step.step_id in existing:
+            raise LifecycleError("workflow-orchestrate-duplicate-step")
+        depends_on = self._dedupe_dependencies(step.depends_on)
+        if step.step_id in depends_on:
+            raise LifecycleError("workflow-orchestrate-self-dependency")
+
+    def _build_normalized_step(self, step: WorkflowStepSpec) -> dict[str, Any]:
+        """Build normalized step dictionary."""
+        return {
+            "spec": step,
+            "depends_on": self._dedupe_dependencies(step.depends_on),
+            "retry_attempts": (
+                step.retry_attempts
+                if step.retry_attempts is not None
+                else self._settings.default_retry_attempts
+            ),
+            "timeout_seconds": (
+                step.timeout_seconds
+                if step.timeout_seconds is not None
+                else self._settings.default_timeout_seconds
+            ),
+        }
+
+    def _validate_dependencies(self, normalized: dict[str, dict[str, Any]]) -> None:
+        """Validate all dependencies exist."""
+        for data in normalized.values():
             for dep in data["depends_on"]:
                 if dep not in normalized:
                     raise LifecycleError("workflow-orchestrate-missing-dependency")
-        return normalized
 
     def _dedupe_dependencies(self, deps: Iterable[str]) -> list[str]:
         cleaned: list[str] = []
@@ -457,11 +487,21 @@ class WorkflowOrchestratorAction:
 class WorkflowRetrySettings(BaseModel):
     """Settings for workflow retry helpers."""
 
-    max_attempts: int = Field(default=3, ge=1, description="Total attempts before exhaust")
-    base_delay_seconds: float = Field(default=1.0, ge=0.0, description="Initial delay in seconds")
-    multiplier: float = Field(default=2.0, ge=1.0, description="Exponential multiplier applied per attempt")
-    max_delay_seconds: float = Field(default=60.0, ge=0.0, description="Upper bound for computed delay")
-    jitter: float = Field(default=0.1, ge=0.0, description="Deterministic jitter factor (0-1)")
+    max_attempts: int = Field(
+        default=3, ge=1, description="Total attempts before exhaust"
+    )
+    base_delay_seconds: float = Field(
+        default=1.0, ge=0.0, description="Initial delay in seconds"
+    )
+    multiplier: float = Field(
+        default=2.0, ge=1.0, description="Exponential multiplier applied per attempt"
+    )
+    max_delay_seconds: float = Field(
+        default=60.0, ge=0.0, description="Upper bound for computed delay"
+    )
+    jitter: float = Field(
+        default=0.1, ge=0.0, description="Deterministic jitter factor (0-1)"
+    )
 
 
 class WorkflowRetryAction:
@@ -495,13 +535,17 @@ class WorkflowRetryAction:
         max_attempts = payload.get("max_attempts", self._settings.max_attempts)
         if not isinstance(max_attempts, int) or max_attempts < 1:
             raise LifecycleError("workflow-retry-max-attempts-invalid")
-        base_delay = float(payload.get("base_delay_seconds", self._settings.base_delay_seconds))
+        base_delay = float(
+            payload.get("base_delay_seconds", self._settings.base_delay_seconds)
+        )
         if base_delay < 0:
             raise LifecycleError("workflow-retry-base-delay-invalid")
         multiplier = float(payload.get("multiplier", self._settings.multiplier))
         if multiplier < 1:
             raise LifecycleError("workflow-retry-multiplier-invalid")
-        max_delay = float(payload.get("max_delay_seconds", self._settings.max_delay_seconds))
+        max_delay = float(
+            payload.get("max_delay_seconds", self._settings.max_delay_seconds)
+        )
         if max_delay < 0:
             raise LifecycleError("workflow-retry-max-delay-invalid")
         jitter = float(payload.get("jitter", self._settings.jitter))
@@ -516,7 +560,7 @@ class WorkflowRetryAction:
             self._logger.info("workflow-action-retry-exhausted", **record)
             return record
         next_attempt = attempt + 1
-        delay = base_delay * (multiplier ** attempt)
+        delay = base_delay * (multiplier**attempt)
         delay = min(delay, max_delay)
         delay = delay * (1 + (0.25 if attempt % 2 == 0 else 0.15) * jitter)
         record.update(

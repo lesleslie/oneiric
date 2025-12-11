@@ -6,8 +6,10 @@ path traversal attacks and enforces cache directory boundaries.
 
 from __future__ import annotations
 
-import pytest
 from pathlib import Path
+
+import httpx
+import pytest
 
 from oneiric.remote.loader import ArtifactManager
 from oneiric.remote.security import sanitize_filename
@@ -16,74 +18,78 @@ from oneiric.remote.security import sanitize_filename
 class TestPathTraversalPrevention:
     """Test path traversal attack prevention."""
 
-    def test_path_traversal_with_double_dot(self, tmp_path):
+    pytestmark = pytest.mark.asyncio
+
+    async def test_path_traversal_with_double_dot(self, tmp_path):
         """Should reject URIs with '..' path components."""
         manager = ArtifactManager(cache_dir=str(tmp_path))
 
         with pytest.raises(ValueError, match="Path traversal"):
-            manager.fetch("../../etc/passwd", None, {})
+            await manager.fetch("../../etc/passwd", None, {})
 
-    def test_path_traversal_with_triple_dot(self, tmp_path):
+    async def test_path_traversal_with_triple_dot(self, tmp_path):
         """Should reject URIs with multiple '..' sequences."""
         manager = ArtifactManager(cache_dir=str(tmp_path))
 
         with pytest.raises(ValueError, match="Path traversal"):
-            manager.fetch("../../../../../../../etc/passwd", None, {})
+            await manager.fetch("../../../../../../../etc/passwd", None, {})
 
-    def test_path_traversal_with_absolute_path(self, tmp_path):
+    async def test_path_traversal_with_absolute_path(self, tmp_path):
         """Should reject absolute paths in URIs."""
         manager = ArtifactManager(cache_dir=str(tmp_path))
 
         with pytest.raises(ValueError, match="Path traversal"):
-            manager.fetch("/etc/passwd", None, {})
+            await manager.fetch("/etc/passwd", None, {})
 
-    def test_path_traversal_with_windows_absolute(self, tmp_path):
+    async def test_path_traversal_with_windows_absolute(self, tmp_path):
         """Should reject Windows-style absolute paths."""
         manager = ArtifactManager(cache_dir=str(tmp_path))
 
         with pytest.raises(ValueError, match="Path traversal"):
-            manager.fetch("C:\\Windows\\System32\\config\\sam", None, {})
+            await manager.fetch("C:\\Windows\\System32\\config\\sam", None, {})
 
-    def test_path_traversal_with_backslash(self, tmp_path):
+    async def test_path_traversal_with_backslash(self, tmp_path):
         """Should reject Windows-style path separators."""
         manager = ArtifactManager(cache_dir=str(tmp_path))
 
         with pytest.raises(ValueError, match="Path traversal"):
-            manager.fetch("..\\..\\windows\\system32", None, {})
+            await manager.fetch("..\\..\\windows\\system32", None, {})
 
-    def test_path_traversal_with_mixed_separators(self, tmp_path):
+    async def test_path_traversal_with_mixed_separators(self, tmp_path):
         """Should reject mixed forward/backslash separators."""
         manager = ArtifactManager(cache_dir=str(tmp_path))
 
         with pytest.raises(ValueError, match="Path traversal"):
-            manager.fetch("../..\\etc/passwd", None, {})
+            await manager.fetch("../..\\etc/passwd", None, {})
 
-    def test_path_traversal_with_url_encoding(self, tmp_path):
+    async def test_path_traversal_with_url_encoding(self, tmp_path):
         """Should reject URL-encoded path traversal attempts."""
         manager = ArtifactManager(cache_dir=str(tmp_path))
 
         # URL-encoded '..' is '%2E%2E'
         with pytest.raises(ValueError, match="Path traversal"):
-            manager.fetch("%2E%2E/%2E%2E/etc/passwd", None, {})
+            await manager.fetch("%2E%2E/%2E%2E/etc/passwd", None, {})
 
-    def test_legitimate_http_url_allowed(self, tmp_path):
+    async def test_legitimate_http_url_allowed(self, tmp_path):
         """Should allow legitimate HTTP URLs."""
         manager = ArtifactManager(cache_dir=str(tmp_path))
 
         # This should NOT raise - it's a legitimate URL
         # (Will fail later due to network, but path validation should pass)
         try:
-            manager.fetch("https://example.com/file.whl", "abc123", {})
+            await manager.fetch("https://example.com/file.whl", "abc123", {})
         except Exception as exc:
             # Should fail on network/digest, not path validation
             assert "Path traversal" not in str(exc)
 
-    def test_legitimate_https_url_with_path(self, tmp_path):
+    async def test_legitimate_https_url_with_path(self, tmp_path):
         """Should allow HTTPS URLs with path components."""
         manager = ArtifactManager(cache_dir=str(tmp_path))
 
         try:
-            manager.fetch("https://cdn.example.com/releases/v1.0.0/package.whl", "abc123", {})
+            await manager.fetch(
+                "https://cdn.example.com/releases/v1.0.0/package.whl", "abc123", {}
+            )
         except Exception as exc:
             assert "Path traversal" not in str(exc)
 
@@ -134,7 +140,7 @@ class TestCacheBoundaryEnforcement:
 
     def test_cache_boundary_enforcement_with_sha256(self, tmp_path):
         """Should ensure all cached files stay within cache directory."""
-        manager = ArtifactManager(cache_dir=str(tmp_path))
+        ArtifactManager(cache_dir=str(tmp_path))
         cache_dir = Path(tmp_path)
 
         # When sha256 is provided, filename is the sha256 (safe)
@@ -146,7 +152,7 @@ class TestCacheBoundaryEnforcement:
     def test_cache_directory_created_with_secure_permissions(self, tmp_path):
         """Should create cache directory with appropriate permissions."""
         cache_dir = tmp_path / "secure_cache"
-        manager = ArtifactManager(cache_dir=str(cache_dir))
+        ArtifactManager(cache_dir=str(cache_dir))
 
         assert cache_dir.exists()
         # Note: Permissions vary by system and umask
@@ -186,27 +192,32 @@ class TestCacheBoundaryEnforcement:
 class TestSecurityEdgeCases:
     """Test security edge cases and unusual inputs."""
 
-    def test_empty_uri(self, tmp_path):
+    @pytest.mark.asyncio
+    async def test_empty_uri(self, tmp_path):
         """Should handle empty URI gracefully."""
         manager = ArtifactManager(cache_dir=str(tmp_path))
 
         with pytest.raises((ValueError, TypeError)):
-            manager.fetch("", None, {})
+            await manager.fetch("", None, {})
 
-    def test_uri_with_unicode_characters(self, tmp_path):
+    @pytest.mark.asyncio
+    async def test_uri_with_unicode_characters(self, tmp_path):
         """Should handle Unicode in URIs."""
         manager = ArtifactManager(cache_dir=str(tmp_path))
 
         # Should not crash on Unicode
         try:
-            manager.fetch("https://example.com/пакет.whl", "abc123", {})
+            await manager.fetch("https://example.com/пакет.whl", "abc123", {})
         except Exception as exc:
             # May fail on network, but shouldn't crash on Unicode
-            assert isinstance(exc, (ValueError, ConnectionError, OSError))
+            assert isinstance(
+                exc,
+                (ValueError, ConnectionError, OSError, httpx.HTTPError),
+            )
 
     def test_very_long_filename(self, tmp_path):
         """Should handle very long filenames."""
-        manager = ArtifactManager(cache_dir=str(tmp_path))
+        ArtifactManager(cache_dir=str(tmp_path))
         long_name = "a" * 1000 + ".whl"
 
         # Should handle long filenames (may fail on filesystem limits)
@@ -220,7 +231,7 @@ class TestSecurityEdgeCases:
 
     def test_null_byte_injection(self, tmp_path):
         """Should prevent null byte injection attacks."""
-        manager = ArtifactManager(cache_dir=str(tmp_path))
+        ArtifactManager(cache_dir=str(tmp_path))
 
         # Null byte injection: file.whl\x00.txt
         # Should sanitize to file.whl.txt

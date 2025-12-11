@@ -1,8 +1,8 @@
 """Action kit utilities."""
 
+from .bootstrap import builtin_action_metadata, register_builtin_actions
 from .bridge import ActionBridge
 from .metadata import ActionMetadata, register_action_metadata
-from .bootstrap import builtin_action_metadata, register_builtin_actions
 
 __all__ = [
     "ActionMetadata",

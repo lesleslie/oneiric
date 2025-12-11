@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import json
-import os
-from pathlib import Path
 
-import pytest
-
-from oneiric.runtime.health import RuntimeHealthSnapshot, load_runtime_health, write_runtime_health
+from oneiric.runtime.health import (
+    RuntimeHealthSnapshot,
+    load_runtime_health,
+    write_runtime_health,
+)
 
 
 class TestRuntimeHealthSnapshot:

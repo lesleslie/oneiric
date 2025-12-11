@@ -10,7 +10,9 @@ from oneiric.core.lifecycle import LifecycleError
 
 @pytest.mark.asyncio
 async def test_debug_console_action_emits_and_scrubs(monkeypatch) -> None:
-    action = DebugConsoleAction(DebugConsoleSettings(echo=False, include_timestamp=False))
+    action = DebugConsoleAction(
+        DebugConsoleSettings(echo=False, include_timestamp=False)
+    )
     captured: dict[str, object] = {}
     monkeypatch.setattr(
         action,
@@ -41,7 +43,9 @@ async def test_debug_console_action_echoes(monkeypatch) -> None:
     buffer = io.StringIO()
     monkeypatch.setattr("sys.stdout", buffer)
 
-    await action.execute({"message": "ping", "prefix": "[test]", "details": {"value": 1}})
+    await action.execute(
+        {"message": "ping", "prefix": "[test]", "details": {"value": 1}}
+    )
 
     output = buffer.getvalue()
     assert "[test] ping" in output

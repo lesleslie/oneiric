@@ -72,9 +72,7 @@ from oneiric.remote.loader import sync_remote_manifest
 
 # Signature verification happens automatically during sync
 result = await sync_remote_manifest(
-    resolver,
-    config,
-    manifest_url="https://example.com/manifest.json"
+    resolver, config, manifest_url="https://example.com/manifest.json"
 )
 ```
 
@@ -98,7 +96,7 @@ public_key = private_key.public_key()
 
 # Export for storage/distribution
 private_key_bytes = private_key.private_bytes_raw()  # 64 bytes
-public_key_bytes = public_key.public_bytes_raw()     # 32 bytes
+public_key_bytes = public_key.public_bytes_raw()  # 32 bytes
 
 private_key_b64 = base64.b64encode(private_key_bytes).decode("ascii")
 public_key_b64 = base64.b64encode(public_key_bytes).decode("ascii")
@@ -238,9 +236,7 @@ This ensures that:
 
 ```python
 def verify_manifest_signature(
-    manifest_data: str,
-    signature_b64: str,
-    trusted_keys: list[Ed25519PublicKey]
+    manifest_data: str, signature_b64: str, trusted_keys: list[Ed25519PublicKey]
 ) -> tuple[bool, Optional[str]]:
     """
     1. Decode base64 signature
@@ -277,9 +273,7 @@ keys = load_trusted_public_keys()
 
 # Manual verification
 is_valid, error = verify_manifest_signature(
-    manifest_text,
-    signature_b64,
-    trusted_keys=keys
+    manifest_text, signature_b64, trusted_keys=keys
 )
 ```
 
@@ -340,6 +334,7 @@ is_valid, error = verify_manifest_signature(
 ```python
 # Check environment variable
 import os
+
 print(os.environ.get("ONEIRIC_TRUSTED_PUBLIC_KEYS"))
 
 # Should output: "base64-key-1,base64-key-2"
@@ -394,6 +389,7 @@ Enable debug logging to see signature verification details:
 
 ```python
 import logging
+
 logging.getLogger("remote.security").setLevel(logging.DEBUG)
 ```
 
@@ -418,6 +414,7 @@ import os
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from oneiric.remote.security import sign_manifest_for_publishing
 
+
 def publish_signed_manifest(manifest_path: str, private_key_b64: str, output_path: str):
     """Sign and publish a manifest."""
 
@@ -441,20 +438,23 @@ def publish_signed_manifest(manifest_path: str, private_key_b64: str, output_pat
 
     return manifest
 
+
 if __name__ == "__main__":
     # Get private key from environment
     private_key_b64 = os.environ.get("MANIFEST_SIGNING_KEY")
     if not private_key_b64:
         # Generate new key for testing
         private_key = Ed25519PrivateKey.generate()
-        private_key_b64 = base64.b64encode(private_key.private_bytes_raw()).decode("ascii")
+        private_key_b64 = base64.b64encode(private_key.private_bytes_raw()).decode(
+            "ascii"
+        )
         print(f"Generated new key: {private_key_b64}")
 
     # Sign and publish
     publish_signed_manifest(
         manifest_path="manifests/production.json",
         private_key_b64=private_key_b64,
-        output_path="manifests/production_signed.json"
+        output_path="manifests/production_signed.json",
     )
 ```
 
@@ -469,6 +469,7 @@ import os
 from oneiric.core.resolution import Resolver
 from oneiric.core.config import Settings
 from oneiric.remote.loader import sync_remote_manifest
+
 
 async def consume_signed_manifest(manifest_url: str):
     """Load and verify a signed manifest."""
@@ -487,9 +488,7 @@ async def consume_signed_manifest(manifest_url: str):
     # Sync manifest (signature verification happens automatically)
     try:
         result = await sync_remote_manifest(
-            resolver,
-            settings.remote,
-            manifest_url=manifest_url
+            resolver, settings.remote, manifest_url=manifest_url
         )
 
         if result:
@@ -501,10 +500,13 @@ async def consume_signed_manifest(manifest_url: str):
         print(f"❌ Manifest verification failed: {e}")
         raise
 
+
 if __name__ == "__main__":
-    asyncio.run(consume_signed_manifest(
-        manifest_url="https://example.com/manifests/production.json"
-    ))
+    asyncio.run(
+        consume_signed_manifest(
+            manifest_url="https://example.com/manifests/production.json"
+        )
+    )
 ```
 
 ## Testing

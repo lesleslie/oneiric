@@ -2,17 +2,25 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 from urllib.parse import urljoin
 
-import aiohttp
-from aiohttp import ClientResponse
+try:  # Optional dependency used only when the adapter is instantiated.
+    import aiohttp
+    from aiohttp import ClientResponse
 
-from .httpx import HTTPClientSettings
+    _AIOHTTP_AVAILABLE = True
+except ImportError:  # pragma: no cover - optional dependency
+    aiohttp = None  # type: ignore
+    ClientResponse = Any  # type: ignore
+    _AIOHTTP_AVAILABLE = False
+
 from oneiric.adapters.metadata import AdapterMetadata
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
+
+from .httpx import HTTPClientSettings
 
 
 class AioHTTPAdapter:
@@ -31,9 +39,18 @@ class AioHTTPAdapter:
         settings_model=HTTPClientSettings,
     )
 
-    def __init__(self, settings: HTTPClientSettings | None = None, *, session: Optional[aiohttp.ClientSession] = None) -> None:
+    def __init__(
+        self,
+        settings: HTTPClientSettings | None = None,
+        *,
+        session: aiohttp.ClientSession | None = None,
+    ) -> None:
+        if not _AIOHTTP_AVAILABLE:
+            raise LifecycleError(
+                "aiohttp-not-installed: pip install oneiric[http-aiohttp]"
+            )
         self._settings = settings or HTTPClientSettings()
-        self._session: Optional[aiohttp.ClientSession] = session
+        self._session: aiohttp.ClientSession | None = session
         self._owns_session = session is None
         self._logger = get_logger("adapter.http.aiohttp").bind(
             domain="adapter",
@@ -52,7 +69,11 @@ class AioHTTPAdapter:
             )
         else:
             self._session.headers.update(self._settings.headers)
-        self._logger.info("adapter-init", adapter="aiohttp", base_url=str(self._settings.base_url or ""))
+        self._logger.info(
+            "adapter-init",
+            adapter="aiohttp",
+            base_url=str(self._settings.base_url or ""),
+        )
 
     async def health(self) -> bool:
         if not self._settings.base_url:
@@ -91,6 +112,8 @@ class AioHTTPAdapter:
         return self._session
 
     def _resolve_url(self, url: str) -> str:
-        if self._settings.base_url and not url.lower().startswith(("http://", "https://")):
+        if self._settings.base_url and not url.lower().startswith(
+            ("http://", "https://")
+        ):
             return urljoin(str(self._settings.base_url), url)
         return url

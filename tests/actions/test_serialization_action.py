@@ -5,7 +5,10 @@ import json
 
 import pytest
 
-from oneiric.actions.serialization import SerializationAction, SerializationActionSettings
+from oneiric.actions.serialization import (
+    SerializationAction,
+    SerializationActionSettings,
+)
 from oneiric.core.lifecycle import LifecycleError
 
 
@@ -14,7 +17,9 @@ async def test_serialization_action_json_roundtrip(tmp_path) -> None:
     action = SerializationAction(SerializationActionSettings(default_format="json"))
     path = tmp_path / "payload.json"
 
-    encoded = await action.execute({"value": {"id": 1, "name": "Oneiric"}, "path": path})
+    encoded = await action.execute(
+        {"value": {"id": 1, "name": "Oneiric"}, "path": path}
+    )
 
     assert encoded["format"] == "json"
     assert json.loads(encoded["text"]) == {"id": 1, "name": "Oneiric"}
@@ -29,12 +34,16 @@ async def test_serialization_action_json_roundtrip(tmp_path) -> None:
 async def test_serialization_action_yaml_text_payload() -> None:
     action = SerializationAction()
 
-    encoded = await action.execute({"format": "yaml", "value": {"items": [1, 2], "flag": True}})
+    encoded = await action.execute(
+        {"format": "yaml", "value": {"items": [1, 2], "flag": True}}
+    )
 
     assert encoded["format"] == "yaml"
     assert "items" in encoded["text"]
 
-    decoded = await action.execute({"mode": "decode", "format": "yaml", "text": encoded["text"]})
+    decoded = await action.execute(
+        {"mode": "decode", "format": "yaml", "text": encoded["text"]}
+    )
     assert decoded["data"]["items"] == [1, 2]
 
 
@@ -49,7 +58,9 @@ async def test_serialization_action_pickle_base64() -> None:
     raw = base64.b64decode(token)
     assert len(raw) > 0
 
-    decoded = await action.execute({"mode": "decode", "format": "pickle", "data": token})
+    decoded = await action.execute(
+        {"mode": "decode", "format": "pickle", "data": token}
+    )
     assert decoded["data"] == payload
 
 

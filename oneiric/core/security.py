@@ -8,10 +8,12 @@ from __future__ import annotations
 
 import os
 import re
-from typing import Optional
+from typing import Any
 
 # Factory string format: module.path:function_name
-FACTORY_PATTERN = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)*:[a-zA-Z_][a-zA-Z0-9_]*$")
+FACTORY_PATTERN = re.compile(
+    r"^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)*:[a-zA-Z_][a-zA-Z0-9_]*$"
+)
 
 # Default safe prefixes (allow only oneiric and explicitly approved packages)
 DEFAULT_ALLOWED_PREFIXES = [
@@ -35,8 +37,8 @@ BLOCKED_MODULES = [
 
 def validate_factory_string(
     factory: str,
-    allowed_prefixes: Optional[list[str]] = None,
-) -> tuple[bool, Optional[str]]:
+    allowed_prefixes: list[str] | None = None,
+) -> tuple[bool, str | None]:
     """Validate factory string format and module path.
 
     Args:
@@ -58,17 +60,25 @@ def validate_factory_string(
     """
     # Format validation
     if not FACTORY_PATTERN.match(factory):
-        return False, f"Invalid factory format: {factory}. Expected 'module.path:function'"
+        return (
+            False,
+            f"Invalid factory format: {factory}. Expected 'module.path:function'",
+        )
 
     module_path, _, attr = factory.partition(":")
 
     # Check against blocked modules first (highest priority)
     for blocked in BLOCKED_MODULES:
         if module_path == blocked or module_path.startswith(f"{blocked}."):
-            return False, f"Factory module '{module_path}' is blocked for security reasons"
+            return (
+                False,
+                f"Factory module '{module_path}' is blocked for security reasons",
+            )
 
     # Check against allowlist
-    prefixes = allowed_prefixes if allowed_prefixes is not None else DEFAULT_ALLOWED_PREFIXES
+    prefixes = (
+        allowed_prefixes if allowed_prefixes is not None else DEFAULT_ALLOWED_PREFIXES
+    )
 
     # If allowlist is empty, reject all
     if not prefixes:
@@ -119,7 +129,7 @@ def load_factory_allowlist() -> list[str]:
     return DEFAULT_ALLOWED_PREFIXES.copy()
 
 
-def validate_key_format(key: str, allow_dots: bool = True) -> tuple[bool, Optional[str]]:
+def validate_key_format(key: str, allow_dots: bool = True) -> tuple[bool, str | None]:
     """Validate component key format (prevent path traversal).
 
     Args:
@@ -156,7 +166,7 @@ def validate_key_format(key: str, allow_dots: bool = True) -> tuple[bool, Option
     return True, None
 
 
-def validate_priority_bounds(priority: int) -> tuple[bool, Optional[str]]:
+def validate_priority_bounds(priority: Any) -> tuple[bool, str | None]:
     """Validate priority is within acceptable bounds.
 
     Args:
@@ -171,13 +181,17 @@ def validate_priority_bounds(priority: int) -> tuple[bool, Optional[str]]:
     if not isinstance(priority, int):
         return False, f"Priority must be integer, got {type(priority).__name__}"
 
+    # Type guard satisfied - priority is int
     if priority < MIN_PRIORITY or priority > MAX_PRIORITY:
-        return False, f"Priority {priority} out of bounds [{MIN_PRIORITY}, {MAX_PRIORITY}]"
+        return (
+            False,
+            f"Priority {priority} out of bounds [{MIN_PRIORITY}, {MAX_PRIORITY}]",
+        )
 
     return True, None
 
 
-def validate_stack_level_bounds(stack_level: int) -> tuple[bool, Optional[str]]:
+def validate_stack_level_bounds(stack_level: Any) -> tuple[bool, str | None]:
     """Validate stack_level is within acceptable bounds.
 
     Args:
@@ -192,6 +206,7 @@ def validate_stack_level_bounds(stack_level: int) -> tuple[bool, Optional[str]]:
     if not isinstance(stack_level, int):
         return False, f"Stack level must be integer, got {type(stack_level).__name__}"
 
+    # Type guard satisfied - stack_level is int
     if stack_level < MIN_STACK_LEVEL or stack_level > MAX_STACK_LEVEL:
         return (
             False,

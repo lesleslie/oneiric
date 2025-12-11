@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-import pytest
-
 from oneiric import plugins
 from oneiric.adapters.metadata import AdapterMetadata
 from oneiric.core.config import PluginsConfig
@@ -32,7 +30,9 @@ class DummyEntryPoints:
 
 def test_iter_entry_points_modern_api(monkeypatch):
     entries = [DummyEntryPoint("plugin", lambda: 1)]
-    monkeypatch.setattr(plugins.metadata, "entry_points", lambda: DummyEntryPoints(entries))
+    monkeypatch.setattr(
+        plugins.metadata, "entry_points", lambda: DummyEntryPoints(entries)
+    )
 
     result = plugins.iter_entry_points("oneiric.adapters")
 
@@ -42,7 +42,9 @@ def test_iter_entry_points_modern_api(monkeypatch):
 
 def test_iter_entry_points_legacy_api(monkeypatch):
     entries = [DummyEntryPoint("legacy", lambda: 2)]
-    monkeypatch.setattr(plugins.metadata, "entry_points", lambda: {"oneiric.adapters": entries})
+    monkeypatch.setattr(
+        plugins.metadata, "entry_points", lambda: {"oneiric.adapters": entries}
+    )
 
     result = plugins.iter_entry_points("oneiric.adapters")
 
@@ -86,7 +88,9 @@ def test_register_entrypoint_plugins_registers_candidates(monkeypatch):
         plugins,
         "_load_entry_point_factories",
         lambda group: [
-            plugins._FactoryLoadResult(group=group, entry_point="demo", factory=lambda: candidate)
+            plugins._FactoryLoadResult(
+                group=group, entry_point="demo", factory=lambda: candidate
+            )
         ],
     )
 
@@ -100,13 +104,17 @@ def test_register_entrypoint_plugins_registers_candidates(monkeypatch):
 def test_register_entrypoint_plugins_handles_adapter_metadata(monkeypatch):
     resolver = Resolver()
     config = PluginsConfig(auto_load=True)
-    metadata = AdapterMetadata(category="demo", provider="plugin", factory=lambda: object())
+    metadata = AdapterMetadata(
+        category="demo", provider="plugin", factory=lambda: object()
+    )
 
     monkeypatch.setattr(
         plugins,
         "_load_entry_point_factories",
         lambda group: [
-            plugins._FactoryLoadResult(group=group, entry_point="adapter_meta", factory=lambda: metadata)
+            plugins._FactoryLoadResult(
+                group=group, entry_point="adapter_meta", factory=lambda: metadata
+            )
         ]
         if group == plugins.DEFAULT_ENTRY_POINT_GROUPS[0]
         else [],
@@ -126,7 +134,9 @@ def test_register_entrypoint_plugins_records_errors(monkeypatch):
         plugins,
         "_load_entry_point_factories",
         lambda group: [
-            plugins._FactoryLoadResult(group=group, entry_point="broken", factory=lambda: None)
+            plugins._FactoryLoadResult(
+                group=group, entry_point="broken", factory=lambda: None
+            )
         ],
     )
 

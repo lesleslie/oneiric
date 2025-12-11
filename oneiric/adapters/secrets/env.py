@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import os
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
 from oneiric.adapters.metadata import AdapterMetadata
-from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
 
@@ -54,7 +52,9 @@ class EnvSecretAdapter:
         self._logger.info("adapter-init", adapter="env-secrets")
 
     async def health(self) -> bool:
-        missing = [key for key in self._settings.required_keys if self.get_secret(key) is None]
+        missing = [
+            key for key in self._settings.required_keys if self.get_secret(key) is None
+        ]
         if missing:
             self._logger.warning("secrets-missing-required", missing=missing)
             return False
@@ -63,7 +63,7 @@ class EnvSecretAdapter:
     async def cleanup(self) -> None:
         self._logger.info("adapter-cleanup-complete", adapter="env-secrets")
 
-    def get_secret(self, secret_id: str) -> Optional[str]:
+    def get_secret(self, secret_id: str) -> str | None:
         key = self._compose_env_key(secret_id)
         return os.getenv(key)
 

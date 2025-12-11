@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import json
-import os
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
-
+from typing import Any
 
 RUNTIME_HEALTH_FILENAME = "runtime_health.json"
 
@@ -17,15 +15,15 @@ RUNTIME_HEALTH_FILENAME = "runtime_health.json"
 class RuntimeHealthSnapshot:
     watchers_running: bool = False
     remote_enabled: bool = False
-    last_remote_sync_at: Optional[str] = None
-    last_remote_error: Optional[str] = None
-    orchestrator_pid: Optional[int] = None
-    updated_at: Optional[str] = None
-    last_remote_registered: Optional[int] = None
-    last_remote_per_domain: Dict[str, int] = None  # type: ignore[assignment]
-    last_remote_skipped: Optional[int] = None
-    last_remote_duration_ms: Optional[float] = None
-    activity_state: Dict[str, Dict[str, Any]] = None  # type: ignore[assignment]
+    last_remote_sync_at: str | None = None
+    last_remote_error: str | None = None
+    orchestrator_pid: int | None = None
+    updated_at: str | None = None
+    last_remote_registered: int | None = None
+    last_remote_per_domain: dict[str, int] = None  # type: ignore[assignment]
+    last_remote_skipped: int | None = None
+    last_remote_duration_ms: float | None = None
+    activity_state: dict[str, dict[str, Any]] = None  # type: ignore[assignment]
 
     def as_dict(self) -> dict[str, Any]:
         data = asdict(self)
@@ -47,7 +45,9 @@ def load_runtime_health(path: str | Path) -> RuntimeHealthSnapshot:
     if not isinstance(data, dict):
         return RuntimeHealthSnapshot()
     snapshot = RuntimeHealthSnapshot()
-    snapshot.watchers_running = bool(data.get("watchers_running", snapshot.watchers_running))
+    snapshot.watchers_running = bool(
+        data.get("watchers_running", snapshot.watchers_running)
+    )
     snapshot.remote_enabled = bool(data.get("remote_enabled", snapshot.remote_enabled))
     snapshot.last_remote_sync_at = data.get("last_remote_sync_at")
     snapshot.last_remote_error = data.get("last_remote_error")
@@ -71,7 +71,7 @@ def write_runtime_health(path: str | Path, snapshot: RuntimeHealthSnapshot) -> N
 
 
 def _timestamp() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def default_runtime_health_path(cache_dir: str | Path) -> Path:

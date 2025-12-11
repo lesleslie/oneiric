@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import sys
-from datetime import datetime, timezone
-from typing import Any, Dict, Iterable, Literal, Optional
+from collections.abc import Iterable
+from datetime import UTC, datetime
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -94,20 +95,17 @@ class DebugConsoleAction:
             "details": self._scrub(details, scrub_fields),
         }
         if include_timestamp:
-            record["timestamp"] = datetime.now(timezone.utc).isoformat()
+            record["timestamp"] = datetime.now(UTC).isoformat()
         self._emit_log(level, record)
         if echo:
             self._echo(record)
-        return {
-            "status": "emitted",
-            **record,
-        }
+        return {"status": "emitted"} | record
 
-    def _emit_log(self, level: str, record: Dict[str, Any]) -> None:
+    def _emit_log(self, level: str, record: dict[str, Any]) -> None:
         method = getattr(self._logger, level, self._logger.info)
         method("debug-console", **record)
 
-    def _echo(self, record: Dict[str, Any]) -> None:
+    def _echo(self, record: dict[str, Any]) -> None:
         prefix = record.get("prefix") or ""
         message = record.get("message", "")
         timestamp = record.get("timestamp")
@@ -129,14 +127,21 @@ class DebugConsoleAction:
         if isinstance(payload_value, str):
             scrub.add(payload_value)
             return scrub
-        if isinstance(payload_value, Iterable) and not isinstance(payload_value, (bytes, bytearray)):
+        if isinstance(payload_value, Iterable) and not isinstance(
+            payload_value, (bytes, bytearray)
+        ):
             scrub.update(str(item) for item in payload_value)
             return scrub
         raise LifecycleError("debug-console-scrub-invalid")
 
     def _scrub(self, value: Any, scrub_fields: set[str]) -> Any:
         if isinstance(value, dict):
-            return {key: ("***" if key in scrub_fields else self._scrub(inner, scrub_fields)) for key, inner in value.items()}
+            return {
+                key: (
+                    "***" if key in scrub_fields else self._scrub(inner, scrub_fields)
+                )
+                for key, inner in value.items()
+            }
         if isinstance(value, list):
             return [self._scrub(item, scrub_fields) for item in value]
         return value

@@ -7,12 +7,11 @@ swapping across all domains (adapters, actions, services, tasks, events, workflo
 from __future__ import annotations
 
 import asyncio
+
 import pytest
-import yaml
-from pathlib import Path
 
 from oneiric.adapters.bridge import AdapterBridge
-from oneiric.actions.bridge import ActionBridge
+from oneiric.core.config import RemoteSourceConfig
 from oneiric.core.lifecycle import LifecycleManager
 from oneiric.core.resolution import Resolver
 from oneiric.remote.loader import sync_remote_manifest
@@ -27,7 +26,7 @@ class TestRemoteManifestHotReload:
         """Should swap adapter when remote manifest updates with higher precedence."""
         resolver = Resolver()
         lifecycle = LifecycleManager(resolver, status_snapshot_path=None)
-        adapter_bridge = AdapterBridge(resolver, lifecycle, {})
+        AdapterBridge(resolver, lifecycle, {})
 
         # Initial manifest with memory cache (stack_level=10)
         manifest_v1 = RemoteManifest(
@@ -43,8 +42,43 @@ class TestRemoteManifestHotReload:
             ],
         )
 
+        from oneiric.core.config import RemoteSourceConfig
+
+        config = RemoteSourceConfig(
+            manifest_url="test-url",  # Placeholder URL
+            cache_dir=str(tmp_path),
+            enabled=True,
+            refresh_interval=30.0,
+            max_retries=3,
+            retry_base_delay=1.0,
+            retry_max_delay=10.0,
+            retry_jitter=True,
+            verify_tls=True,
+            circuit_breaker_threshold=5,
+            circuit_breaker_reset=60.0,
+        )
+
+        # Save manifest to a temporary file
+        manifest_file = tmp_path / "manifest_v1.json"
+        manifest_file.write_text(manifest_v1.model_dump_json())
+
+        from oneiric.core.config import RemoteSourceConfig
+
+        config = RemoteSourceConfig(
+            manifest_url=f"file://{manifest_file}",
+            cache_dir=str(tmp_path),
+            enabled=True,
+            refresh_interval=30.0,
+            max_retries=3,
+            retry_base_delay=1.0,
+            retry_max_delay=10.0,
+            retry_jitter=True,
+            verify_tls=True,
+            circuit_breaker_threshold=5,
+            circuit_breaker_reset=60.0,
+        )
         # Sync v1
-        result = await sync_remote_manifest(resolver, manifest_v1, str(tmp_path))
+        result = await sync_remote_manifest(resolver, config)
         assert result.registered == 1
         assert result.per_domain["adapter"] == 1
 
@@ -69,8 +103,25 @@ class TestRemoteManifestHotReload:
             ],
         )
 
+        # Save manifest_v2 to a temporary file
+        manifest_file_v2 = tmp_path / "manifest_v2.json"
+        manifest_file_v2.write_text(manifest_v2.model_dump_json())
+
+        config_v2 = RemoteSourceConfig(
+            manifest_url=f"file://{manifest_file_v2}",
+            cache_dir=str(tmp_path),
+            enabled=True,
+            refresh_interval=30.0,
+            max_retries=3,
+            retry_base_delay=1.0,
+            retry_max_delay=10.0,
+            retry_jitter=True,
+            verify_tls=True,
+            circuit_breaker_threshold=5,
+            circuit_breaker_reset=60.0,
+        )
         # Sync v2
-        result = await sync_remote_manifest(resolver, manifest_v2, str(tmp_path))
+        result = await sync_remote_manifest(resolver, config_v2)
         assert result.registered == 1
 
         # Re-resolve should get upgraded version now
@@ -84,7 +135,7 @@ class TestRemoteManifestHotReload:
     async def test_remote_action_registration(self, tmp_path):
         """Should register actions from remote manifest."""
         resolver = Resolver()
-        lifecycle = LifecycleManager(resolver, status_snapshot_path=None)
+        LifecycleManager(resolver, status_snapshot_path=None)
 
         # Manifest with multiple actions
         manifest = RemoteManifest(
@@ -108,8 +159,24 @@ class TestRemoteManifestHotReload:
             ],
         )
 
+        manifest_actions = tmp_path / "manifest_actions.json"
+        manifest_actions.write_text(manifest.model_dump_json())
+
+        from oneiric.core.config import RemoteSourceConfig
+
+        config = RemoteSourceConfig(
+            manifest_url=f"file://{manifest_actions}",
+            cache_dir=str(tmp_path),
+            enabled=True,
+            refresh_interval=30.0,
+            max_retries=3,
+            retry_base_delay=1.0,
+            retry_max_delay=10.0,
+            retry_jitter=True,
+            verify_tls=True,
+        )
         # Sync
-        result = await sync_remote_manifest(resolver, manifest, str(tmp_path))
+        result = await sync_remote_manifest(resolver, config)
         assert result.registered == 2
         assert result.per_domain["action"] == 2
 
@@ -178,8 +245,24 @@ class TestRemoteManifestHotReload:
             ],
         )
 
-        # Sync
-        result = await sync_remote_manifest(resolver, manifest, str(tmp_path))
+        manifest_path = tmp_path / "manifest_all_domains.json"
+        manifest_path.write_text(manifest.model_dump_json())
+
+        from oneiric.core.config import RemoteSourceConfig
+
+        config = RemoteSourceConfig(
+            manifest_url=f"file://{manifest_path}",
+            cache_dir=str(tmp_path),
+            enabled=True,
+            refresh_interval=30.0,
+            max_retries=3,
+            retry_base_delay=1.0,
+            retry_max_delay=10.0,
+            retry_jitter=True,
+            verify_tls=True,
+        )
+
+        result = await sync_remote_manifest(resolver, config)
         assert result.registered == 6
         assert result.per_domain == {
             "adapter": 1,
@@ -214,7 +297,11 @@ class TestRemoteManifestHotReload:
                     factory="oneiric.adapters.cache.redis:RedisCacheAdapter",
                     version="1.0.0",
                     # Adapter-specific metadata
-                    capabilities=["kv", "ttl", "tracking"],
+                    capabilities=[
+                        {"name": "kv", "metadata": {"schema": "kv"}},
+                        "ttl",
+                        "tracking",
+                    ],
                     owner="Platform Core Team",
                     requires_secrets=True,
                     settings_model="oneiric.adapters.cache.redis:RedisSettings",
@@ -230,8 +317,24 @@ class TestRemoteManifestHotReload:
             ],
         )
 
-        # Sync
-        result = await sync_remote_manifest(resolver, manifest, str(tmp_path))
+        manifest_path = tmp_path / "manifest_metadata.json"
+        manifest_path.write_text(manifest.model_dump_json())
+
+        from oneiric.core.config import RemoteSourceConfig
+
+        config = RemoteSourceConfig(
+            manifest_url=f"file://{manifest_path}",
+            cache_dir=str(tmp_path),
+            enabled=True,
+            refresh_interval=30.0,
+            max_retries=3,
+            retry_base_delay=1.0,
+            retry_max_delay=10.0,
+            retry_jitter=True,
+            verify_tls=True,
+        )
+
+        result = await sync_remote_manifest(resolver, config)
         assert result.registered == 1
 
         # Verify metadata propagation
@@ -239,14 +342,24 @@ class TestRemoteManifestHotReload:
         assert decision is not None
         assert decision.metadata["version"] == "1.0.0"
         assert decision.metadata["capabilities"] == ["kv", "ttl", "tracking"]
+        assert decision.metadata["capability_descriptors"] == [
+            {"name": "kv", "metadata": {"schema": "kv"}},
+            {"name": "ttl"},
+            {"name": "tracking"},
+        ]
         assert decision.metadata["owner"] == "Platform Core Team"
         assert decision.metadata["requires_secrets"] is True
-        assert decision.metadata["settings_model"] == "oneiric.adapters.cache.redis:RedisSettings"
+        assert (
+            decision.metadata["settings_model"]
+            == "oneiric.adapters.cache.redis:RedisSettings"
+        )
         assert decision.metadata["requires"] == ["redis>=5.0.0", "coredis>=4.0.0"]
         assert decision.metadata["python_version"] == ">=3.14"
         assert decision.metadata["os_platform"] == ["linux", "darwin"]
         assert decision.metadata["license"] == "MIT"
-        assert decision.metadata["documentation_url"] == "https://docs.example.com/redis"
+        assert (
+            decision.metadata["documentation_url"] == "https://docs.example.com/redis"
+        )
 
 
 class TestRemoteCacheInvalidation:
@@ -257,7 +370,7 @@ class TestRemoteCacheInvalidation:
         """Should reject manifest entry if cached artifact digest doesn't match."""
         from oneiric.remote.loader import ArtifactManager
 
-        manager = ArtifactManager(cache_dir=str(tmp_path))
+        ArtifactManager(cache_dir=str(tmp_path))
 
         # Create fake cached file with wrong content
         fake_cache = tmp_path / "abc123"
@@ -265,9 +378,10 @@ class TestRemoteCacheInvalidation:
 
         # Attempt to validate digest
         expected_digest = "def456"  # Different from filename
-        with pytest.raises(ValueError, match="SHA256 mismatch"):
+        with pytest.raises(ValueError, match="Digest mismatch"):
             # This would be called internally during fetch
             from oneiric.remote.loader import _assert_digest
+
             _assert_digest(fake_cache, expected_digest)
 
     def test_cache_directory_permissions(self, tmp_path):
@@ -275,7 +389,7 @@ class TestRemoteCacheInvalidation:
         from oneiric.remote.loader import ArtifactManager
 
         cache_dir = tmp_path / "artifact_cache"
-        manager = ArtifactManager(cache_dir=str(cache_dir))
+        ArtifactManager(cache_dir=str(cache_dir))
 
         assert cache_dir.exists()
         assert cache_dir.is_dir()
@@ -305,8 +419,25 @@ class TestSignatureVerificationFailures:
             signature=None,  # No signature
         )
 
+        # Save manifest to temporary file
+        manifest_file = tmp_path / "manifest_unsigned.json"
+        manifest_file.write_text(manifest.model_dump_json())
+
+        config = RemoteSourceConfig(
+            manifest_url=f"file://{manifest_file}",
+            cache_dir=str(tmp_path),
+            enabled=True,
+            refresh_interval=30.0,
+            max_retries=3,
+            retry_base_delay=1.0,
+            retry_max_delay=10.0,
+            retry_jitter=True,
+            verify_tls=True,
+            circuit_breaker_threshold=5,
+            circuit_breaker_reset=60.0,
+        )
         # Should sync successfully (no verification required by default)
-        result = await sync_remote_manifest(resolver, manifest, str(tmp_path))
+        result = await sync_remote_manifest(resolver, config)
         assert result.registered == 1
 
     def test_invalid_signature_format_rejected(self):
@@ -372,10 +503,43 @@ class TestConcurrentRemoteSync:
             ],
         )
 
+        # Save manifests to temporary files
+        manifest_file1 = tmp_path / "manifest1.json"
+        manifest_file1.write_text(manifest1.model_dump_json())
+        manifest_file2 = tmp_path / "manifest2.json"
+        manifest_file2.write_text(manifest2.model_dump_json())
+
+        config1 = RemoteSourceConfig(
+            manifest_url=f"file://{manifest_file1}",
+            cache_dir=str(tmp_path),
+            enabled=True,
+            refresh_interval=30.0,
+            max_retries=3,
+            retry_base_delay=1.0,
+            retry_max_delay=10.0,
+            retry_jitter=True,
+            verify_tls=True,
+            circuit_breaker_threshold=5,
+            circuit_breaker_reset=60.0,
+        )
+        config2 = RemoteSourceConfig(
+            manifest_url=f"file://{manifest_file2}",
+            cache_dir=str(tmp_path),
+            enabled=True,
+            refresh_interval=30.0,
+            max_retries=3,
+            retry_base_delay=1.0,
+            retry_max_delay=10.0,
+            retry_jitter=True,
+            verify_tls=True,
+            circuit_breaker_threshold=5,
+            circuit_breaker_reset=60.0,
+        )
+
         # Run concurrent syncs
         results = await asyncio.gather(
-            sync_remote_manifest(resolver, manifest1, str(tmp_path)),
-            sync_remote_manifest(resolver, manifest2, str(tmp_path)),
+            sync_remote_manifest(resolver, config1),
+            sync_remote_manifest(resolver, config2),
         )
 
         # Both should succeed
@@ -408,7 +572,24 @@ class TestConcurrentRemoteSync:
                 ],
             )
 
-            result = await sync_remote_manifest(resolver, manifest, str(tmp_path))
+            # Save manifest to temporary file for each version
+            manifest_file = tmp_path / f"manifest_v{version}.json"
+            manifest_file.write_text(manifest.model_dump_json())
+
+            config = RemoteSourceConfig(
+                manifest_url=f"file://{manifest_file}",
+                cache_dir=str(tmp_path),
+                enabled=True,
+                refresh_interval=30.0,
+                max_retries=3,
+                retry_base_delay=1.0,
+                retry_max_delay=10.0,
+                retry_jitter=True,
+                verify_tls=True,
+                circuit_breaker_threshold=5,
+                circuit_breaker_reset=60.0,
+            )
+            result = await sync_remote_manifest(resolver, config)
             assert result.registered == 1
 
         # Final version should win
@@ -445,7 +626,24 @@ class TestManifestValidation:
             ],
         )
 
-        result = await sync_remote_manifest(resolver, manifest, str(tmp_path))
+        # Save manifest to temporary file
+        manifest_file = tmp_path / "manifest_invalid_domain.json"
+        manifest_file.write_text(manifest.model_dump_json())
+
+        config = RemoteSourceConfig(
+            manifest_url=f"file://{manifest_file}",
+            cache_dir=str(tmp_path),
+            enabled=True,
+            refresh_interval=30.0,
+            max_retries=3,
+            retry_base_delay=1.0,
+            retry_max_delay=10.0,
+            retry_jitter=True,
+            verify_tls=True,
+            circuit_breaker_threshold=5,
+            circuit_breaker_reset=60.0,
+        )
+        result = await sync_remote_manifest(resolver, config)
         # Only valid entry should register
         assert result.registered == 1
         assert result.skipped == 1
@@ -460,7 +658,24 @@ class TestManifestValidation:
             entries=[],  # No entries
         )
 
-        result = await sync_remote_manifest(resolver, manifest, str(tmp_path))
+        # Save manifest to temporary file
+        manifest_file = tmp_path / "manifest_empty.json"
+        manifest_file.write_text(manifest.model_dump_json())
+
+        config = RemoteSourceConfig(
+            manifest_url=f"file://{manifest_file}",
+            cache_dir=str(tmp_path),
+            enabled=True,
+            refresh_interval=30.0,
+            max_retries=3,
+            retry_base_delay=1.0,
+            retry_max_delay=10.0,
+            retry_jitter=True,
+            verify_tls=True,
+            circuit_breaker_threshold=5,
+            circuit_breaker_reset=60.0,
+        )
+        result = await sync_remote_manifest(resolver, config)
         assert result.registered == 0
         assert result.skipped == 0
         assert len(result.per_domain) == 0
@@ -490,7 +705,24 @@ class TestManifestValidation:
             ],
         )
 
-        result = await sync_remote_manifest(resolver, manifest, str(tmp_path))
+        # Save manifest to temporary file
+        manifest_file = tmp_path / "manifest_duplicate_entries.json"
+        manifest_file.write_text(manifest.model_dump_json())
+
+        config = RemoteSourceConfig(
+            manifest_url=f"file://{manifest_file}",
+            cache_dir=str(tmp_path),
+            enabled=True,
+            refresh_interval=30.0,
+            max_retries=3,
+            retry_base_delay=1.0,
+            retry_max_delay=10.0,
+            retry_jitter=True,
+            verify_tls=True,
+            circuit_breaker_threshold=5,
+            circuit_breaker_reset=60.0,
+        )
+        result = await sync_remote_manifest(resolver, config)
         # Both register
         assert result.registered == 2
 

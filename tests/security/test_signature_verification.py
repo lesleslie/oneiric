@@ -9,7 +9,6 @@ from __future__ import annotations
 import base64
 import json
 
-import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from oneiric.remote.security import (
@@ -50,7 +49,9 @@ class TestSignatureVerification:
         signature_b64 = base64.b64encode(signature_bytes).decode("ascii")
 
         # Verify signature
-        is_valid, error = verify_manifest_signature(canonical, signature_b64, trusted_keys=[public_key])
+        is_valid, error = verify_manifest_signature(
+            canonical, signature_b64, trusted_keys=[public_key]
+        )
         assert is_valid
         assert error is None
 
@@ -63,7 +64,14 @@ class TestSignatureVerification:
         # Create and sign original manifest
         manifest = {
             "source": "test-remote",
-            "entries": [{"domain": "adapter", "key": "cache", "provider": "redis", "factory": "oneiric.demo:RedisAdapter"}],
+            "entries": [
+                {
+                    "domain": "adapter",
+                    "key": "cache",
+                    "provider": "redis",
+                    "factory": "oneiric.demo:RedisAdapter",
+                }
+            ],
         }
         canonical = get_canonical_manifest_for_signing(manifest)
         signature_bytes = private_key.sign(canonical.encode("utf-8"))
@@ -74,7 +82,9 @@ class TestSignatureVerification:
         tampered_canonical = get_canonical_manifest_for_signing(manifest)
 
         # Verification should fail
-        is_valid, error = verify_manifest_signature(tampered_canonical, signature_b64, trusted_keys=[public_key])
+        is_valid, error = verify_manifest_signature(
+            tampered_canonical, signature_b64, trusted_keys=[public_key]
+        )
         assert not is_valid
         assert "signature mismatch" in error
 
@@ -92,7 +102,9 @@ class TestSignatureVerification:
         signature_b64 = base64.b64encode(signature_bytes).decode("ascii")
 
         # Verification should fail (wrong key)
-        is_valid, error = verify_manifest_signature(canonical, signature_b64, trusted_keys=[public_key2])
+        is_valid, error = verify_manifest_signature(
+            canonical, signature_b64, trusted_keys=[public_key2]
+        )
         assert not is_valid
         assert "signature mismatch" in error
 
@@ -116,7 +128,9 @@ class TestSignatureVerification:
 
         # Verify with multiple keys (key1 is in the list)
         is_valid, error = verify_manifest_signature(
-            canonical, signature_b64, trusted_keys=[public_key2, public_key1, public_key3]
+            canonical,
+            signature_b64,
+            trusted_keys=[public_key2, public_key1, public_key3],
         )
         assert is_valid
         assert error is None
@@ -127,7 +141,9 @@ class TestSignatureVerification:
         canonical = get_canonical_manifest_for_signing(manifest)
         signature_b64 = "fake-signature"
 
-        is_valid, error = verify_manifest_signature(canonical, signature_b64, trusted_keys=[])
+        is_valid, error = verify_manifest_signature(
+            canonical, signature_b64, trusted_keys=[]
+        )
         assert not is_valid
         assert "No trusted public keys" in error
 
@@ -137,7 +153,9 @@ class TestSignatureVerification:
         manifest = {"source": "test", "entries": []}
         canonical = get_canonical_manifest_for_signing(manifest)
 
-        is_valid, error = verify_manifest_signature(canonical, "", trusted_keys=[public_key])
+        is_valid, error = verify_manifest_signature(
+            canonical, "", trusted_keys=[public_key]
+        )
         assert not is_valid
         assert "empty" in error.lower()
 
@@ -147,7 +165,9 @@ class TestSignatureVerification:
         manifest = {"source": "test", "entries": []}
         canonical = get_canonical_manifest_for_signing(manifest)
 
-        is_valid, error = verify_manifest_signature(canonical, "not-valid-base64!@#", trusted_keys=[public_key])
+        is_valid, error = verify_manifest_signature(
+            canonical, "not-valid-base64!@#", trusted_keys=[public_key]
+        )
         assert not is_valid
         assert "Invalid base64" in error
 
@@ -262,7 +282,9 @@ class TestPublicKeyLoading:
         invalid_key = "not-valid-base64!@#"
 
         # Set environment with both
-        monkeypatch.setenv("ONEIRIC_TRUSTED_PUBLIC_KEYS", f"{valid_key_b64},{invalid_key}")
+        monkeypatch.setenv(
+            "ONEIRIC_TRUSTED_PUBLIC_KEYS", f"{valid_key_b64},{invalid_key}"
+        )
 
         # Load keys (should skip invalid)
         keys = load_trusted_public_keys()
@@ -296,7 +318,14 @@ class TestManifestSigningUtility:
         # Create manifest
         manifest = {
             "source": "test-publisher",
-            "entries": [{"domain": "adapter", "key": "cache", "provider": "redis", "factory": "oneiric.demo:RedisAdapter"}],
+            "entries": [
+                {
+                    "domain": "adapter",
+                    "key": "cache",
+                    "provider": "redis",
+                    "factory": "oneiric.demo:RedisAdapter",
+                }
+            ],
         }
 
         # Sign manifest
@@ -304,7 +333,9 @@ class TestManifestSigningUtility:
 
         # Verify signature
         canonical = get_canonical_manifest_for_signing(manifest)
-        is_valid, error = verify_manifest_signature(canonical, signature_b64, trusted_keys=[public_key])
+        is_valid, error = verify_manifest_signature(
+            canonical, signature_b64, trusted_keys=[public_key]
+        )
         assert is_valid
         assert error is None
 
@@ -327,5 +358,7 @@ class TestManifestSigningUtility:
 
         # Verify by extracting canonical form
         canonical = get_canonical_manifest_for_signing(manifest)
-        is_valid, error = verify_manifest_signature(canonical, signature, trusted_keys=[public_key])
+        is_valid, error = verify_manifest_signature(
+            canonical, signature, trusted_keys=[public_key]
+        )
         assert is_valid

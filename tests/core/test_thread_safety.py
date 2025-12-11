@@ -7,10 +7,7 @@ concurrent operations without race conditions or data corruption.
 from __future__ import annotations
 
 import threading
-import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-
-import pytest
 
 from oneiric.core.resolution import Candidate, CandidateRegistry, CandidateSource
 
@@ -51,7 +48,9 @@ class TestCandidateRegistryThreadSafety:
         expected_count = num_threads * registrations_per_thread
         actual_count = len(registry._candidates)
 
-        assert actual_count == expected_count, f"Expected {expected_count} unique keys, got {actual_count}"
+        assert actual_count == expected_count, (
+            f"Expected {expected_count} unique keys, got {actual_count}"
+        )
 
     def test_concurrent_registrations_same_key(self):
         """Concurrent registrations for the same key handled correctly."""
@@ -197,7 +196,9 @@ class TestCandidateRegistryThreadSafety:
 
         # Run concurrent operations
         with ThreadPoolExecutor(max_workers=10) as executor:
-            futures = [executor.submit(register_and_resolve, i) for i in range(num_operations)]
+            futures = [
+                executor.submit(register_and_resolve, i) for i in range(num_operations)
+            ]
 
             # Wait for all to complete
             for future in as_completed(futures):
@@ -227,7 +228,12 @@ class TestCandidateRegistryThreadSafety:
             """Explain resolution from a thread."""
             explanation = registry.explain("adapter", "cache")
             with results_lock:
-                results.append((explanation.winner.provider if explanation.winner else None, len(explanation.ordered)))
+                results.append(
+                    (
+                        explanation.winner.provider if explanation.winner else None,
+                        len(explanation.ordered),
+                    )
+                )
 
         # Run concurrent explains
         threads = []
@@ -368,7 +374,9 @@ class TestCandidateRegistryThreadSafety:
 
         # Run concurrent mixed operations
         with ThreadPoolExecutor(max_workers=20) as executor:
-            futures = [executor.submit(mixed_operation, i) for i in range(num_operations)]
+            futures = [
+                executor.submit(mixed_operation, i) for i in range(num_operations)
+            ]
 
             for future in as_completed(futures):
                 future.result()  # Collect any exceptions

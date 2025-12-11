@@ -17,7 +17,11 @@ async def test_event_dispatch_dry_run() -> None:
             "payload": {"service": "oneiric", "status": "ok"},
             "hooks": [
                 {"name": "audit", "url": "https://hooks.example.com/audit"},
-                {"name": "ops", "url": "https://hooks.example.com/ops", "enabled": False},
+                {
+                    "name": "ops",
+                    "url": "https://hooks.example.com/ops",
+                    "enabled": False,
+                },
             ],
         }
     )
@@ -35,10 +39,26 @@ async def test_event_dispatch_executes_hooks() -> None:
         assert body["topic"] == "deploys.completed"
         return httpx.Response(200, json={"ok": True})
 
-    transport = httpx.MockTransport(handler)
+    # For httpx 1.0.dev3 compatibility, use client mocking instead of transport
+    from unittest.mock import AsyncMock, Mock
+
+    # Create a mock response
+    mock_response = Mock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {"ok": True}
+
+    # Create a mock client without spec to allow arbitrary attributes
+    mock_client = Mock()
+    mock_client.request = AsyncMock(return_value=mock_response)
+    mock_client.get = AsyncMock(return_value=mock_response)
+    mock_client.post = AsyncMock(return_value=mock_response)
+    mock_client.aclose = AsyncMock()
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=None)
+
     action = EventDispatchAction(
         EventDispatchSettings(dry_run=False),
-        client_factory=lambda: httpx.AsyncClient(transport=transport),
+        client_factory=lambda: mock_client,
     )
     result = await action.execute(
         {

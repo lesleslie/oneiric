@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import time
-from typing import Any, Awaitable, Callable, Dict, Optional, Tuple
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -18,14 +19,22 @@ class AWSSecretManagerSettings(BaseModel):
     """Settings for interacting with AWS Secrets Manager."""
 
     region: str = Field(description="AWS region where the secrets live.")
-    endpoint_url: Optional[str] = Field(default=None, description="Optional custom endpoint (e.g., LocalStack).")
-    profile_name: Optional[str] = Field(default=None, description="AWS profile name for credential discovery.")
-    access_key_id: Optional[str] = Field(default=None)
-    secret_access_key: Optional[str] = Field(default=None)
-    session_token: Optional[str] = Field(default=None)
+    endpoint_url: str | None = Field(
+        default=None, description="Optional custom endpoint (e.g., LocalStack)."
+    )
+    profile_name: str | None = Field(
+        default=None, description="AWS profile name for credential discovery."
+    )
+    access_key_id: str | None = Field(default=None)
+    secret_access_key: str | None = Field(default=None)
+    session_token: str | None = Field(default=None)
     cache_ttl_seconds: int = Field(default=60, ge=0)
-    healthcheck_secret: Optional[str] = Field(default=None, description="Optional secret name probed during health checks.")
-    version_stage: Optional[str] = Field(default=None, description="Optional version stage filter (e.g., AWSCURRENT).")
+    healthcheck_secret: str | None = Field(
+        default=None, description="Optional secret name probed during health checks."
+    )
+    version_stage: str | None = Field(
+        default=None, description="Optional version stage filter (e.g., AWSCURRENT)."
+    )
 
 
 class AWSSecretManagerAdapter:
@@ -55,7 +64,7 @@ class AWSSecretManagerAdapter:
         self._client = client
         self._client_factory = client_factory
         self._client_cm: Any | None = None
-        self._cache: Dict[str, Tuple[str, float]] = {}
+        self._cache: dict[str, tuple[str, float]] = {}
         self._cache_lock = asyncio.Lock()
         self._logger = get_logger("adapter.secrets.aws").bind(
             domain="adapter",
@@ -75,13 +84,13 @@ class AWSSecretManagerAdapter:
         except ModuleNotFoundError as exc:  # pragma: no cover - optional dependency
             raise LifecycleError("aioboto3-missing") from exc
 
-        session_kwargs: Dict[str, Any] = {
+        session_kwargs: dict[str, Any] = {
             "region_name": self._settings.region,
         }
         if self._settings.profile_name:
             session_kwargs["profile_name"] = self._settings.profile_name
         session = aioboto3.Session(**session_kwargs)
-        client_kwargs: Dict[str, Any] = {
+        client_kwargs: dict[str, Any] = {
             "service_name": "secretsmanager",
             "endpoint_url": self._settings.endpoint_url,
             "aws_access_key_id": self._settings.access_key_id,
@@ -118,14 +127,14 @@ class AWSSecretManagerAdapter:
         self,
         name: str,
         *,
-        version_stage: Optional[str] = None,
+        version_stage: str | None = None,
         allow_missing: bool = False,
-    ) -> Optional[str]:
+    ) -> str | None:
         cached = await self._get_cached(name, version_stage)
         if cached is not None:
             return cached
         client = self._ensure_client()
-        request: Dict[str, Any] = {"SecretId": name}
+        request: dict[str, Any] = {"SecretId": name}
         stage = version_stage or self._settings.version_stage
         if stage:
             request["VersionStage"] = stage
@@ -144,7 +153,7 @@ class AWSSecretManagerAdapter:
             raise LifecycleError("aws-secret-client-not-initialized")
         return self._client
 
-    def _extract_secret(self, response: Dict[str, Any]) -> str:
+    def _extract_secret(self, response: dict[str, Any]) -> str:
         if "SecretString" in response:
             return str(response["SecretString"])
         if "SecretBinary" in response:
@@ -162,7 +171,7 @@ class AWSSecretManagerAdapter:
             return "ResourceNotFound" in message or "404" in message
         return False
 
-    async def _get_cached(self, name: str, version_stage: Optional[str]) -> Optional[str]:
+    async def _get_cached(self, name: str, version_stage: str | None) -> str | None:
         async with self._cache_lock:
             key = self._cache_key(name, version_stage)
             cached = self._cache.get(key)
@@ -174,7 +183,9 @@ class AWSSecretManagerAdapter:
                 return None
             return value
 
-    async def _set_cached(self, name: str, version_stage: Optional[str], value: str) -> None:
+    async def _set_cached(
+        self, name: str, version_stage: str | None, value: str
+    ) -> None:
         if self._settings.cache_ttl_seconds == 0:
             return
         async with self._cache_lock:
@@ -182,5 +193,5 @@ class AWSSecretManagerAdapter:
             expires_at = time.monotonic() + self._settings.cache_ttl_seconds
             self._cache[key] = (value, expires_at)
 
-    def _cache_key(self, name: str, version_stage: Optional[str]) -> str:
+    def _cache_key(self, name: str, version_stage: str | None) -> str:
         return f"{name}:{version_stage or self._settings.version_stage or 'default'}"

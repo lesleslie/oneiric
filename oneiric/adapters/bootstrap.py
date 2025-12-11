@@ -3,21 +3,48 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Iterable, List
 
 from oneiric.core.resolution import Resolver
 
 from .cache import MemoryCacheAdapter, RedisCacheAdapter
-from .database import MySQLDatabaseAdapter, PostgresDatabaseAdapter, SQLiteDatabaseAdapter
+from .database import (
+    DuckDBDatabaseAdapter,
+    MySQLDatabaseAdapter,
+    PostgresDatabaseAdapter,
+    SQLiteDatabaseAdapter,
+)
+from .embedding import (
+    ONNXEmbeddingAdapter,
+    OpenAIEmbeddingAdapter,
+    SentenceTransformersAdapter,
+)
+from .graph import ArangoDBGraphAdapter, DuckDBPGQAdapter, Neo4jGraphAdapter
 from .http import AioHTTPAdapter, HTTPClientAdapter
 from .identity import Auth0IdentityAdapter
+from .llm import AnthropicLLM, OpenAILLMAdapter
+from .messaging import (
+    MailgunAdapter,
+    SendGridAdapter,
+    SlackAdapter,
+    TeamsAdapter,
+    TwilioAdapter,
+    WebhookAdapter,
+)
 from .metadata import AdapterMetadata, register_adapter_metadata
 from .monitoring import (
     LogfireMonitoringAdapter,
     OTLPObservabilityAdapter,
     SentryMonitoringAdapter,
 )
-from .queue import NATSQueueAdapter, RedisStreamsQueueAdapter
+from .nosql.dynamodb import DynamoDBAdapter
+from .nosql.firestore import FirestoreAdapter
+from .nosql.mongodb import MongoDBAdapter
+from .queue import (
+    CloudTasksQueueAdapter,
+    NATSQueueAdapter,
+    PubSubQueueAdapter,
+    RedisStreamsQueueAdapter,
+)
 from .secrets import (
     AWSSecretManagerAdapter,
     EnvSecretAdapter,
@@ -31,9 +58,10 @@ from .storage import (
     LocalStorageAdapter,
     S3StorageAdapter,
 )
+from .vector import PineconeAdapter, QdrantAdapter
 
 
-def builtin_adapter_metadata() -> List[AdapterMetadata]:
+def builtin_adapter_metadata() -> list[AdapterMetadata]:
     """Return metadata for built-in adapters shipped with Oneiric."""
 
     return [
@@ -45,11 +73,21 @@ def builtin_adapter_metadata() -> List[AdapterMetadata]:
         AzureBlobStorageAdapter.metadata,
         RedisStreamsQueueAdapter.metadata,
         NATSQueueAdapter.metadata,
+        CloudTasksQueueAdapter.metadata,
+        PubSubQueueAdapter.metadata,
         HTTPClientAdapter.metadata,
         AioHTTPAdapter.metadata,
         PostgresDatabaseAdapter.metadata,
         MySQLDatabaseAdapter.metadata,
         SQLiteDatabaseAdapter.metadata,
+        DuckDBDatabaseAdapter.metadata,
+        PineconeAdapter.metadata,
+        QdrantAdapter.metadata,
+        OpenAIEmbeddingAdapter.metadata,
+        SentenceTransformersAdapter.metadata,
+        ONNXEmbeddingAdapter.metadata,
+        OpenAILLMAdapter.metadata,
+        AnthropicLLM.metadata,
         Auth0IdentityAdapter.metadata,
         EnvSecretAdapter.metadata,
         FileSecretAdapter.metadata,
@@ -59,6 +97,18 @@ def builtin_adapter_metadata() -> List[AdapterMetadata]:
         LogfireMonitoringAdapter.metadata,
         OTLPObservabilityAdapter.metadata,
         SentryMonitoringAdapter.metadata,
+        SendGridAdapter.metadata,
+        MailgunAdapter.metadata,
+        TwilioAdapter.metadata,
+        SlackAdapter.metadata,
+        TeamsAdapter.metadata,
+        WebhookAdapter.metadata,
+        MongoDBAdapter.metadata,
+        DynamoDBAdapter.metadata,
+        FirestoreAdapter.metadata,
+        Neo4jGraphAdapter.metadata,
+        ArangoDBGraphAdapter.metadata,
+        DuckDBPGQAdapter.metadata,
     ]
 
 

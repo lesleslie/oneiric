@@ -4,22 +4,22 @@
 **Status:** Production Ready
 **Maintainer:** Platform Team
 
----
+______________________________________________________________________
 
 ## Table of Contents
 
-1. [Overview](#overview)
-2. [Quick Start](#quick-start)
-3. [Installation](#installation)
-4. [Configuration](#configuration)
-5. [Routing Rules](#routing-rules)
-6. [Notification Channels](#notification-channels)
-7. [Escalation Policies](#escalation-policies)
-8. [Silencing Alerts](#silencing-alerts)
-9. [Troubleshooting](#troubleshooting)
-10. [Best Practices](#best-practices)
+1. \[[#overview|Overview]\]
+1. \[[#quick-start|Quick Start]\]
+1. \[[#installation|Installation]\]
+1. \[[#configuration|Configuration]\]
+1. \[[#routing-rules|Routing Rules]\]
+1. \[[#notification-channels|Notification Channels]\]
+1. \[[#escalation-policies|Escalation Policies]\]
+1. \[[#silencing-alerts|Silencing Alerts]\]
+1. \[[#troubleshooting|Troubleshooting]\]
+1. \[[#best-practices|Best Practices]\]
 
----
+______________________________________________________________________
 
 ## Overview
 
@@ -33,7 +33,7 @@ AlertManager handles alerts from Prometheus and Loki, routing them to appropriat
 - **Silencing:** Temporarily mute alerts during maintenance
 - **Escalation:** Auto-escalates critical alerts if unacknowledged
 
----
+______________________________________________________________________
 
 ## Quick Start
 
@@ -73,7 +73,7 @@ curl -X POST http://localhost:9093/api/v2/alerts \
 # Verify notification received (check Slack/email)
 ```
 
----
+______________________________________________________________________
 
 ## Installation
 
@@ -117,7 +117,7 @@ cd alertmanager-*
 ./alertmanager --config.file=alertmanager.yml &
 ```
 
----
+______________________________________________________________________
 
 ## Configuration
 
@@ -332,7 +332,7 @@ receivers:
       - to: 'infrastructure@example.com'
 ```
 
----
+______________________________________________________________________
 
 ## Routing Rules
 
@@ -379,7 +379,7 @@ routes:
     receiver: 'oncall-rotation'
 ```
 
----
+______________________________________________________________________
 
 ## Notification Channels
 
@@ -388,8 +388,8 @@ routes:
 **Setup:**
 
 1. **Create Slack App:** https://api.slack.com/apps
-2. **Enable Incoming Webhooks**
-3. **Add webhook URL to AlertManager config**
+1. **Enable Incoming Webhooks**
+1. **Add webhook URL to AlertManager config**
 
 **Configuration:**
 
@@ -414,8 +414,8 @@ slack_configs:
 **Setup:**
 
 1. **Create PagerDuty Service**
-2. **Get Integration Key**
-3. **Add to AlertManager config**
+1. **Get Integration Key**
+1. **Add to AlertManager config**
 
 **Configuration:**
 
@@ -461,7 +461,7 @@ webhook_configs:
       bearer_token: 'YOUR_BEARER_TOKEN'
 ```
 
----
+______________________________________________________________________
 
 ## Escalation Policies
 
@@ -505,21 +505,21 @@ routes:
         receiver: 'oncall-page'
 ```
 
----
+______________________________________________________________________
 
 ## Silencing Alerts
 
 ### Via UI
 
 1. **Access AlertManager UI:** http://localhost:9093
-2. **Click "Silences" tab**
-3. **New Silence**
+1. **Click "Silences" tab**
+1. **New Silence**
    - **Matchers:** `alertname="OneiricHealthCheck"`, `domain="adapter"`
    - **Start:** Now
    - **Duration:** 1h
    - **Creator:** Your name
    - **Comment:** "Maintenance window for adapter health checks"
-4. **Create**
+1. **Create**
 
 ### Via CLI (amtool)
 
@@ -565,7 +565,7 @@ curl http://localhost:9093/api/v2/silences | jq
 curl -X DELETE http://localhost:9093/api/v2/silence/<id>
 ```
 
----
+______________________________________________________________________
 
 ## Troubleshooting
 
@@ -592,10 +592,10 @@ curl http://localhost:9093/api/v2/status
 **Solutions:**
 
 1. **Alert rules not loaded:** Reload Prometheus config
-2. **Alert expression not firing:** Test query in Prometheus UI
-3. **AlertManager not reachable:** Check network connectivity
+1. **Alert expression not firing:** Test query in Prometheus UI
+1. **AlertManager not reachable:** Check network connectivity
 
----
+______________________________________________________________________
 
 ### Notifications Not Sent
 
@@ -618,11 +618,11 @@ curl -X POST http://localhost:9093/api/v2/alerts \
 **Solutions:**
 
 1. **Webhook URL invalid:** Verify Slack/PagerDuty webhook
-2. **Receiver misconfigured:** Check `alertmanager.yml` syntax
-3. **Silenced:** Check active silences
-4. **Routing mismatch:** Verify route matchers
+1. **Receiver misconfigured:** Check `alertmanager.yml` syntax
+1. **Silenced:** Check active silences
+1. **Routing mismatch:** Verify route matchers
 
----
+______________________________________________________________________
 
 ## Best Practices
 
@@ -661,17 +661,17 @@ curl -X POST http://localhost:9093/api/v2/alerts \
 - **Simulate incidents:** Practice escalation procedures
 - **Review logs:** Check AlertManager logs for errors
 
----
+______________________________________________________________________
 
 ## Next Steps
 
 1. **Configure notification channels:** Set up Slack/PagerDuty/email webhooks
-2. **Customize routing:** Adjust routes for your team structure
-3. **Test alerting:** Send test alerts and verify delivery
-4. **Create runbooks:** Ensure all alerts link to runbooks
-5. **Monitor AlertManager:** Add AlertManager metrics to dashboards
+1. **Customize routing:** Adjust routes for your team structure
+1. **Test alerting:** Send test alerts and verify delivery
+1. **Create runbooks:** Ensure all alerts link to runbooks
+1. **Monitor AlertManager:** Add AlertManager metrics to dashboards
 
----
+______________________________________________________________________
 
 ## Additional Resources
 
@@ -681,7 +681,7 @@ curl -X POST http://localhost:9093/api/v2/alerts \
 - **PagerDuty Integration:** https://www.pagerduty.com/docs/guides/prometheus-integration-guide/
 - **Oneiric Alert Rules:** `deployment/monitoring/prometheus/rules/alert_rules.yml`
 
----
+______________________________________________________________________
 
 **Document Version:** 1.0
 **Last Reviewed:** 2025-11-26

@@ -1,16 +1,16 @@
 """Resolver-backed bridges for services, tasks, events, and workflows."""
 
 from .base import DomainBridge, DomainHandle
+from .events import EventBridge
 from .services import ServiceBridge
 from .tasks import TaskBridge
-from .events import EventBridge
-from .workflows import WorkflowBridge
 from .watchers import (
+    EventConfigWatcher,
     ServiceConfigWatcher,
     TaskConfigWatcher,
-    EventConfigWatcher,
     WorkflowConfigWatcher,
 )
+from .workflows import WorkflowBridge
 
 __all__ = [
     "DomainBridge",

@@ -4,21 +4,21 @@
 **Status:** Production Ready
 **Maintainer:** Platform Team
 
----
+______________________________________________________________________
 
 ## Table of Contents
 
-1. [Overview](#overview)
-2. [Quick Start](#quick-start)
-3. [Dashboard Catalog](#dashboard-catalog)
-4. [Installation](#installation)
-5. [Dashboard Details](#dashboard-details)
-6. [Custom Queries](#custom-queries)
-7. [Alerting Integration](#alerting-integration)
-8. [Troubleshooting](#troubleshooting)
-9. [Best Practices](#best-practices)
+1. \[[#overview|Overview]\]
+1. \[[#quick-start|Quick Start]\]
+1. \[[#dashboard-catalog|Dashboard Catalog]\]
+1. \[[#installation|Installation]\]
+1. \[[#dashboard-details|Dashboard Details]\]
+1. \[[#custom-queries|Custom Queries]\]
+1. \[[#alerting-integration|Alerting Integration]\]
+1. \[[#troubleshooting|Troubleshooting]\]
+1. \[[#best-practices|Best Practices]\]
 
----
+______________________________________________________________________
 
 ## Overview
 
@@ -35,7 +35,7 @@ This guide provides production-ready Grafana dashboards for monitoring Oneiric's
 | **Activity** | Pause/drain state | Activity | State transitions |
 | **Performance** | Latency/throughput analysis | All | SLO breaches |
 
----
+______________________________________________________________________
 
 ## Quick Start
 
@@ -56,12 +56,12 @@ open http://localhost:3000
 ### Import Dashboards (Manual)
 
 1. **Login to Grafana:** http://localhost:3000
-2. **Navigate:** Dashboards → Import
-3. **Upload JSON:** Select dashboard file from `deployment/monitoring/grafana/dashboards/`
-4. **Configure:**
+1. **Navigate:** Dashboards → Import
+1. **Upload JSON:** Select dashboard file from `deployment/monitoring/grafana/dashboards/`
+1. **Configure:**
    - Select Prometheus data source
    - Set folder (e.g., "Oneiric")
-5. **Import**
+1. **Import**
 
 ### Kubernetes Deployment
 
@@ -79,7 +79,7 @@ data:
     {{ .Files.Get "dashboards/oneiric-overview.json" | nindent 4 }}
 ```
 
----
+______________________________________________________________________
 
 ## Dashboard Catalog
 
@@ -94,47 +94,55 @@ data:
 **Panels:**
 
 1. **System Status** (Stat)
+
    - Current state: UP/DOWN
    - Uptime
    - Active instances
    - SLO health score
 
-2. **Traffic Overview** (Graph)
+1. **Traffic Overview** (Graph)
+
    - Resolution throughput (req/sec)
    - Swap operations (ops/min)
    - Remote sync frequency
 
-3. **Error Rates** (Graph)
+1. **Error Rates** (Graph)
+
    - Resolution failures
    - Swap failures
    - Health check failures
    - Remote sync failures
 
-4. **Latency P99** (Graph)
+1. **Latency P99** (Graph)
+
    - Resolution latency
    - Swap duration
    - Remote sync duration
 
-5. **Recent Alerts** (Alert List)
+1. **Recent Alerts** (Alert List)
+
    - Critical alerts (last 24h)
    - Warning alerts (last 24h)
 
-6. **Resource Usage** (Gauge)
+1. **Resource Usage** (Gauge)
+
    - Active instances
    - Cache size
    - Memory estimate
 
-7. **Component Distribution** (Pie Chart)
+1. **Component Distribution** (Pie Chart)
+
    - Active by domain
    - Shadowed count
 
-8. **Activity State** (Table)
+1. **Activity State** (Table)
+
    - Paused components
    - Draining components
 
 **Target Audience:** SRE, Platform Team, Management
 
----
+______________________________________________________________________
 
 ### 2. Resolution Dashboard
 
@@ -147,50 +155,58 @@ data:
 **Panels:**
 
 1. **Resolution Success Rate** (Gauge + Graph)
+
    - Current: 99.5%
    - Target: > 99%
    - Trend (24h)
 
-2. **Resolution Throughput by Domain** (Stacked Graph)
+1. **Resolution Throughput by Domain** (Stacked Graph)
+
    - adapter
    - service
    - task
    - event
    - workflow
 
-3. **Resolution Latency Heatmap** (Heatmap)
+1. **Resolution Latency Heatmap** (Heatmap)
+
    - P50, P95, P99 distribution
    - Color-coded by latency bands
 
-4. **Resolution Latency Percentiles** (Graph)
+1. **Resolution Latency Percentiles** (Graph)
+
    - P50 (green)
    - P95 (yellow)
    - P99 (red, SLO line at 100ms)
 
-5. **Top Resolved Components** (Table)
+1. **Top Resolved Components** (Table)
+
    - Domain
    - Key
    - Provider
    - Requests/sec
    - Avg latency
 
-6. **Resolution Failures by Domain** (Bar Gauge)
+1. **Resolution Failures by Domain** (Bar Gauge)
+
    - Failure count per domain
 
-7. **Shadowed Components** (Table)
+1. **Shadowed Components** (Table)
+
    - Domain
    - Key
    - Shadowed provider
    - Stack level
    - Priority
 
-8. **Resolution Errors Over Time** (Graph)
+1. **Resolution Errors Over Time** (Graph)
+
    - Failed resolutions (line)
    - Error annotations
 
 **Target Audience:** Backend Developers, Platform Engineers
 
----
+______________________________________________________________________
 
 ### 3. Lifecycle Dashboard
 
@@ -203,54 +219,63 @@ data:
 **Panels:**
 
 1. **Swap Success Rate** (Gauge + Graph)
+
    - Current: 98%
    - Target: > 95%
    - Trend (24h)
 
-2. **Swap Operations Timeline** (Graph)
+1. **Swap Operations Timeline** (Graph)
+
    - Successful swaps (green)
    - Failed swaps (red)
    - Rollbacks (yellow)
 
-3. **Swap Latency Percentiles** (Graph)
+1. **Swap Latency Percentiles** (Graph)
+
    - P50 (green)
    - P95 (yellow, SLO line at 5s)
    - P99 (red)
 
-4. **Swap Duration Heatmap** (Heatmap)
+1. **Swap Duration Heatmap** (Heatmap)
+
    - Distribution across domains
    - Color-coded by duration (ms)
 
-5. **Active Instances by Domain** (Stacked Graph)
+1. **Active Instances by Domain** (Stacked Graph)
+
    - adapter
    - service
    - task
    - event
    - workflow
 
-6. **Health Check Failures** (Graph)
+1. **Health Check Failures** (Graph)
+
    - Failures/sec by provider
    - Threshold line
 
-7. **Swap Failure Reasons** (Table)
+1. **Swap Failure Reasons** (Table)
+
    - Domain
    - Key
    - Provider
    - Error type
    - Last occurrence
 
-8. **Rollback Events** (Timeline)
+1. **Rollback Events** (Timeline)
+
    - Rollback annotations
    - Reason
    - Domain/key
 
-9. **Lifecycle State Transitions** (Sankey Diagram)
+1. **Lifecycle State Transitions** (Sankey Diagram)
+
    - pending → activating → ready
    - activating → failed → rollback
 
 **Target Audience:** DevOps, SRE, Platform Engineers
 
----
+______________________________________________________________________
 
 ### 4. Remote Sync Dashboard
 
@@ -263,57 +288,67 @@ data:
 **Panels:**
 
 1. **Sync Success Rate** (Gauge + Graph)
+
    - Current: 99.8%
    - Target: > 99%
    - Trend (24h)
 
-2. **Last Sync Status** (Stat)
+1. **Last Sync Status** (Stat)
+
    - Last sync time
    - Duration
    - Status (success/failed)
 
-3. **Sync Latency vs Budget** (Graph)
+1. **Sync Latency vs Budget** (Graph)
+
    - P99 sync latency
    - Latency budget (30s line)
    - Budget violations highlighted
 
-4. **Sync Frequency** (Graph)
+1. **Sync Frequency** (Graph)
+
    - Syncs/hour
    - Refresh interval setting
 
-5. **Artifacts Cached** (Graph + Stat)
+1. **Artifacts Cached** (Graph + Stat)
+
    - Total artifacts
    - Cache size (GB)
    - Growth rate
 
-6. **Digest Verification Status** (Table)
+1. **Digest Verification Status** (Table)
+
    - Artifact
    - SHA256
    - Status
    - Verification time
 
-7. **Signature Verification** (Graph)
+1. **Signature Verification** (Graph)
+
    - Successful verifications (green)
    - Failed verifications (red, critical)
 
-8. **Remote Sources** (Table)
+1. **Remote Sources** (Table)
+
    - Source URL
    - Last sync
    - Success rate
    - Avg latency
 
-9. **Sync Errors** (Logs Panel)
+1. **Sync Errors** (Logs Panel)
+
    - Error messages from Loki
    - Filter: `{app="oneiric"} |= "remote-sync-error"`
 
-10. **Cache Operations** (Graph)
-    - Cache hits
-    - Cache misses
-    - Evictions
+1. **Cache Operations** (Graph)
+
+   - Cache hits
+   - Cache misses
+   - Evictions
 
 **Target Audience:** Security Team, SRE, Platform Engineers
 
----
+______________________________________________________________________
 
 ### 5. Activity State Dashboard
 
@@ -326,46 +361,53 @@ data:
 **Panels:**
 
 1. **Activity Summary** (Stats Row)
+
    - Total paused
    - Total draining
    - Active (normal)
 
-2. **Paused Components** (Table)
+1. **Paused Components** (Table)
+
    - Domain
    - Key
    - Reason/note
    - Paused since
    - Duration
 
-3. **Draining Components** (Table)
+1. **Draining Components** (Table)
+
    - Domain
    - Key
    - Reason/note
    - Draining since
    - Duration
 
-4. **Pause/Drain Events Over Time** (Graph)
+1. **Pause/Drain Events Over Time** (Graph)
+
    - Pause events
    - Resume events
    - Drain started
    - Drain completed
 
-5. **Activity State Distribution** (Pie Chart)
+1. **Activity State Distribution** (Pie Chart)
+
    - Active
    - Paused
    - Draining
 
-6. **Activity Timeline** (Annotations)
+1. **Activity Timeline** (Annotations)
+
    - Pause/resume events
    - Maintenance windows
 
-7. **Long-Running Paused Components** (Alert)
+1. **Long-Running Paused Components** (Alert)
+
    - Paused > 1 hour
    - May indicate forgotten maintenance mode
 
 **Target Audience:** Operations, SRE, Platform Engineers
 
----
+______________________________________________________________________
 
 ### 6. Performance Dashboard
 
@@ -378,11 +420,13 @@ data:
 **Panels:**
 
 1. **SLO Health Score** (Gauge)
+
    - Overall system health (0-100%)
    - Based on all SLIs
    - Color thresholds: Green > 95%, Yellow > 90%, Red < 90%
 
-2. **SLI Compliance** (Stat Panels Row)
+1. **SLI Compliance** (Stat Panels Row)
+
    - Resolution latency SLI: ✓/✗
    - Resolution success SLI: ✓/✗
    - Lifecycle swap latency SLI: ✓/✗
@@ -390,34 +434,40 @@ data:
    - Remote sync latency SLI: ✓/✗
    - Remote sync success SLI: ✓/✗
 
-3. **Latency Breakdown** (Graph)
+1. **Latency Breakdown** (Graph)
+
    - Resolution P99
    - Swap P95
    - Remote sync P99
    - SLO lines overlaid
 
-4. **Throughput Metrics** (Graph)
+1. **Throughput Metrics** (Graph)
+
    - Resolution req/sec
    - Swap ops/min
    - Remote sync syncs/hour
 
-5. **Error Budget Consumption** (Graph)
+1. **Error Budget Consumption** (Graph)
+
    - Resolution error budget remaining
    - Lifecycle error budget remaining
    - Remote error budget remaining
 
-6. **Capacity Metrics** (Graph)
+1. **Capacity Metrics** (Graph)
+
    - Active instances
    - Memory usage estimate
    - Cache size
 
-7. **Resource Utilization** (Gauges Row)
+1. **Resource Utilization** (Gauges Row)
+
    - CPU (from cAdvisor)
    - Memory (from cAdvisor)
    - Disk I/O
    - Network I/O
 
-8. **Query Performance** (Table)
+1. **Query Performance** (Table)
+
    - Top slowest operations
    - Domain
    - Operation
@@ -426,7 +476,7 @@ data:
 
 **Target Audience:** Performance Engineers, SRE, Architects
 
----
+______________________________________________________________________
 
 ## Installation
 
@@ -454,13 +504,13 @@ Dashboards auto-loaded from `deployment/monitoring/grafana/dashboards/`.
 ### Option 2: Manual Import
 
 1. **Download dashboard JSON**
-2. **Login to Grafana:** http://localhost:3000
-3. **Import:**
+1. **Login to Grafana:** http://localhost:3000
+1. **Import:**
    - Click **+** → Import
    - Upload JSON file
    - Select Prometheus data source
    - Set folder: "Oneiric"
-4. **Save**
+1. **Save**
 
 ### Option 3: Terraform Provisioning
 
@@ -488,7 +538,7 @@ kubectl label configmap oneiric-dashboards \
   grafana_dashboard=1 -n monitoring
 ```
 
----
+______________________________________________________________________
 
 ## Custom Queries
 
@@ -558,7 +608,7 @@ time() - oneiric_activity_pause_timestamp_seconds
 oneiric_activity_draining_operations_remaining / rate(oneiric_activity_draining_operations_completed[5m])
 ```
 
----
+______________________________________________________________________
 
 ## Alerting Integration
 
@@ -615,7 +665,7 @@ Dashboards automatically show alert firing events as annotations:
 }
 ```
 
----
+______________________________________________________________________
 
 ## Troubleshooting
 
@@ -641,15 +691,18 @@ docker restart grafana
 **Diagnosis:**
 
 1. **Check Prometheus data source:**
+
    - Configuration → Data Sources → Prometheus
    - Test connection (should show "Data source is working")
 
-2. **Verify metrics exist:**
+1. **Verify metrics exist:**
+
    ```bash
    curl http://localhost:9090/api/v1/label/__name__/values | grep oneiric
    ```
 
-3. **Check time range:**
+1. **Check time range:**
+
    - Ensure dashboard time range includes data
    - Try "Last 5 minutes"
 
@@ -666,13 +719,16 @@ docker restart grafana
 **Solutions:**
 
 1. **Use recording rules:**
+
    - Pre-compute expensive queries
    - Reduce dashboard query load
 
-2. **Decrease time range:**
+1. **Decrease time range:**
+
    - Use shorter time windows (e.g., 1h instead of 24h)
 
-3. **Increase Prometheus resources:**
+1. **Increase Prometheus resources:**
+
    ```yaml
    # docker-compose.yml
    services:
@@ -683,7 +739,8 @@ docker restart grafana
              memory: 4G
    ```
 
-4. **Optimize queries:**
+1. **Optimize queries:**
+
    - Use `rate()` instead of `irate()` for smoother graphs
    - Add `by (label)` to reduce cardinality
 
@@ -704,13 +761,14 @@ oneiric_resolution_duration_seconds_bucket
 - **Increase bucket resolution** for finer-grained percentiles
 - **Use recording rules** to avoid repeated heavy calculations
 
----
+______________________________________________________________________
 
 ## Best Practices
 
 ### 1. Dashboard Organization
 
 - **Folder structure:**
+
   ```
   Oneiric/
   ├── Overview (default)
@@ -728,13 +786,16 @@ oneiric_resolution_duration_seconds_bucket
 ### 2. Panel Design
 
 - **Use consistent colors:**
+
   - Green: Success/healthy
   - Yellow: Warning
   - Red: Critical/error
   - Blue: Informational
 
 - **Add SLO lines:** Overlay target thresholds on graphs
+
 - **Include units:** Always specify units (ms, req/sec, GB)
+
 - **Tooltips:** Enable shared crosshair for time-series comparison
 
 ### 3. Variables
@@ -791,17 +852,17 @@ Configure useful presets:
 - **Text annotations** for important events
 - **High-contrast mode** support
 
----
+______________________________________________________________________
 
 ## Next Steps
 
 1. **Import dashboards:** Follow installation section
-2. **Customize:** Adjust thresholds/colors for your environment
-3. **Set up alerts:** Configure AlertManager (see `ALERTING_SETUP.md`)
-4. **Create custom views:** Add panels specific to your use case
-5. **Export & version control:** Save dashboard JSON to Git
+1. **Customize:** Adjust thresholds/colors for your environment
+1. **Set up alerts:** Configure AlertManager (see `ALERTING_SETUP.md`)
+1. **Create custom views:** Add panels specific to your use case
+1. **Export & version control:** Save dashboard JSON to Git
 
----
+______________________________________________________________________
 
 ## Additional Resources
 
@@ -811,7 +872,7 @@ Configure useful presets:
 - **Oneiric Runbooks:** `docs/runbooks/INCIDENT_RESPONSE.md`
 - **Dashboard JSON Files:** `deployment/monitoring/grafana/dashboards/`
 
----
+______________________________________________________________________
 
 **Document Version:** 1.0
 **Last Reviewed:** 2025-11-26

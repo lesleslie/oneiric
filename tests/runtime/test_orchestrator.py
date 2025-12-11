@@ -2,18 +2,15 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
-from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from oneiric.core.config import OneiricSettings, RemoteSourceConfig
+from oneiric.core.config import OneiricSettings
 from oneiric.core.lifecycle import LifecycleManager
 from oneiric.core.resolution import Resolver
 from oneiric.runtime.orchestrator import RuntimeOrchestrator
-
 
 # Test helpers
 
@@ -62,11 +59,17 @@ class TestRuntimeOrchestratorInit:
         orchestrator = RuntimeOrchestrator(settings, resolver, lifecycle, secrets)
 
         # All bridges share same activity store (via private _activity_store)
-        assert orchestrator.adapter_bridge._activity_store is orchestrator._activity_store
-        assert orchestrator.service_bridge._activity_store is orchestrator._activity_store
+        assert (
+            orchestrator.adapter_bridge._activity_store is orchestrator._activity_store
+        )
+        assert (
+            orchestrator.service_bridge._activity_store is orchestrator._activity_store
+        )
         assert orchestrator.task_bridge._activity_store is orchestrator._activity_store
         assert orchestrator.event_bridge._activity_store is orchestrator._activity_store
-        assert orchestrator.workflow_bridge._activity_store is orchestrator._activity_store
+        assert (
+            orchestrator.workflow_bridge._activity_store is orchestrator._activity_store
+        )
 
     def test_init_creates_five_watchers(self, tmp_path):
         """RuntimeOrchestrator creates 5 selection watchers."""
@@ -100,6 +103,20 @@ class TestRuntimeOrchestratorInit:
         )
 
         assert orchestrator._health_path == str(health_path)
+
+    def test_workflow_bridge_uses_adapter_queue_bridge(self, tmp_path):
+        """WorkflowBridge reuses AdapterBridge for queue operations."""
+        settings = OneiricSettings(
+            config_dir=str(tmp_path / "settings"),
+            cache_dir=str(tmp_path / "cache"),
+        )
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        secrets = MockSecrets()
+
+        orchestrator = RuntimeOrchestrator(settings, resolver, lifecycle, secrets)
+
+        assert orchestrator.workflow_bridge._queue_bridge is orchestrator.adapter_bridge
 
 
 class TestRuntimeOrchestratorStartStop:
@@ -252,7 +269,9 @@ class TestRuntimeOrchestratorStartStop:
         await orchestrator.stop()
 
         # Remote sync task cancelled (check if None after stop or if still exists and is cancelled)
-        assert orchestrator._remote_task is None or orchestrator._remote_task.cancelled()
+        assert (
+            orchestrator._remote_task is None or orchestrator._remote_task.cancelled()
+        )
 
 
 class TestRuntimeOrchestratorContext:
@@ -344,7 +363,10 @@ class TestRuntimeOrchestratorSyncRemote:
             skipped=0,
         )
 
-        with patch("oneiric.runtime.orchestrator.sync_remote_manifest", return_value=mock_result):
+        with patch(
+            "oneiric.runtime.orchestrator.sync_remote_manifest",
+            return_value=mock_result,
+        ):
             await orchestrator.sync_remote(manifest_url)
 
         # Health snapshot updated

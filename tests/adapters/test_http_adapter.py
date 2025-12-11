@@ -1,41 +1,43 @@
 from __future__ import annotations
 
+from unittest.mock import AsyncMock, Mock
+
 import pytest
-import httpx
 
 from oneiric.adapters.http import HTTPClientAdapter, HTTPClientSettings
 
 
-def _mock_transport(status_code: int = 200, json_payload: dict | None = None) -> httpx.MockTransport:
-    async def handler(request: httpx.Request) -> httpx.Response:
-        payload = json_payload if json_payload is not None else {"path": request.url.path}
-        return httpx.Response(status_code=status_code, json=payload)
-
-    return httpx.MockTransport(handler)
-
-
 @pytest.mark.asyncio
 async def test_httpx_adapter_performs_requests() -> None:
-    transport = _mock_transport(json_payload={"ok": True})
-    adapter = HTTPClientAdapter(
-        HTTPClientSettings(base_url="https://example.com"),
-        transport=transport,
-    )
-    await adapter.init()
+    mock_response = Mock()
+    mock_response.json.return_value = {"ok": True}
+
+    adapter = HTTPClientAdapter(HTTPClientSettings(base_url="https://example.com"))
+
+    mock_client = AsyncMock()
+    mock_client.get.return_value = mock_response
+    adapter._client = mock_client
+
     response = await adapter.get("/ping")
-    assert response.json() == {"ok": True}
+    assert response is mock_response
+    mock_client.get.assert_awaited_once_with("/ping")
     await adapter.cleanup()
 
 
 @pytest.mark.asyncio
 async def test_httpx_adapter_health_checks_with_base_url() -> None:
-    transport = _mock_transport(status_code=204)
+    mock_response = Mock()
+    mock_response.status_code = 204
+
     adapter = HTTPClientAdapter(
         HTTPClientSettings(base_url="https://example.com", healthcheck_path="/health"),
-        transport=transport,
     )
-    await adapter.init()
+    mock_client = AsyncMock()
+    mock_client.get.return_value = mock_response
+    adapter._client = mock_client
+
     assert await adapter.health() is True
+    mock_client.get.assert_awaited_once_with("/health")
     await adapter.cleanup()
 
 

@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from oneiric.core.config import LayerSettings
 from oneiric.core.lifecycle import LifecycleManager
 from oneiric.core.resolution import Resolver
 from oneiric.domains.base import DomainBridge
 from oneiric.runtime.activity import DomainActivityStore
+from oneiric.runtime.supervisor import ServiceSupervisor
 
 
 class ActionBridge(DomainBridge):
@@ -20,7 +19,8 @@ class ActionBridge(DomainBridge):
         lifecycle: LifecycleManager,
         settings: LayerSettings,
         *,
-        activity_store: Optional[DomainActivityStore] = None,
+        activity_store: DomainActivityStore | None = None,
+        supervisor: ServiceSupervisor | None = None,
     ) -> None:
         super().__init__(
             domain="action",
@@ -28,4 +28,5 @@ class ActionBridge(DomainBridge):
             lifecycle=lifecycle,
             settings=settings,
             activity_store=activity_store,
+            supervisor=supervisor,
         )

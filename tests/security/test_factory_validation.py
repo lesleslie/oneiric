@@ -94,7 +94,10 @@ class TestFactoryValidation:
 
     def test_callable_factory_bypasses_validation(self):
         """Callable factories don't need string validation."""
-        factory = lambda: {"type": "test"}
+
+        def factory():
+            return {"type": "test"}
+
         result = resolve_factory(factory)
         assert result is factory
         assert callable(result)

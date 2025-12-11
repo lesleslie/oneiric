@@ -5,8 +5,14 @@ from typing import Any
 import pytest
 
 from oneiric.adapters.database.mysql import MySQLDatabaseAdapter, MySQLDatabaseSettings
-from oneiric.adapters.database.postgres import PostgresDatabaseAdapter, PostgresDatabaseSettings
-from oneiric.adapters.database.sqlite import SQLiteDatabaseAdapter, SQLiteDatabaseSettings
+from oneiric.adapters.database.postgres import (
+    PostgresDatabaseAdapter,
+    PostgresDatabaseSettings,
+)
+from oneiric.adapters.database.sqlite import (
+    SQLiteDatabaseAdapter,
+    SQLiteDatabaseSettings,
+)
 
 
 class _DummyPgConnection:
@@ -52,7 +58,9 @@ async def test_postgres_adapter_executes_and_fetches() -> None:
     async def pool_factory(**_: Any) -> _DummyPgPool:
         return pool
 
-    adapter = PostgresDatabaseAdapter(PostgresDatabaseSettings(), pool_factory=pool_factory)
+    adapter = PostgresDatabaseAdapter(
+        PostgresDatabaseSettings(), pool_factory=pool_factory
+    )
     await adapter.init()
     assert await adapter.health()
     await adapter.execute("UPDATE foo SET bar=1")
@@ -136,7 +144,9 @@ async def test_sqlite_adapter_roundtrip(tmp_path) -> None:
     settings = SQLiteDatabaseSettings(path=str(tmp_path / "db.sqlite3"))
     adapter = SQLiteDatabaseAdapter(settings)
     await adapter.init()
-    await adapter.execute("CREATE TABLE IF NOT EXISTS foo (id INTEGER PRIMARY KEY, value TEXT)")
+    await adapter.execute(
+        "CREATE TABLE IF NOT EXISTS foo (id INTEGER PRIMARY KEY, value TEXT)"
+    )
     await adapter.execute("INSERT INTO foo(value) VALUES (?)", "hello")
     rows = await adapter.fetch_all("SELECT value FROM foo")
     assert rows[0][0] == "hello"

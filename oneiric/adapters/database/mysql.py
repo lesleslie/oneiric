@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Awaitable, Callable, Optional
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -18,7 +19,7 @@ class MySQLDatabaseSettings(BaseModel):
     host: str = "localhost"
     port: int = 3306
     user: str = "root"
-    password: Optional[str] = None
+    password: str | None = None
     database: str = "mysql"
     min_size: int = Field(default=1, ge=1)
     max_size: int = Field(default=5, ge=1)

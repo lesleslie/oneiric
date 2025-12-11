@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Awaitable, Callable, Optional
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -15,18 +16,18 @@ from oneiric.core.resolution import CandidateSource
 class PostgresDatabaseSettings(BaseModel):
     """Configuration for the Postgres adapter."""
 
-    dsn: Optional[str] = Field(
+    dsn: str | None = Field(
         default=None,
         description="Optional DSN string; overrides host/port/database if provided.",
     )
     host: str = "localhost"
     port: int = 5432
     user: str = "postgres"
-    password: Optional[str] = None
+    password: str | None = None
     database: str = "postgres"
     min_size: int = Field(default=1, ge=1)
     max_size: int = Field(default=10, ge=1)
-    statement_timeout_ms: Optional[int] = Field(default=None, ge=1)
+    statement_timeout_ms: int | None = Field(default=None, ge=1)
     ssl: bool = False
 
 
@@ -50,7 +51,7 @@ class PostgresDatabaseAdapter:
         self,
         settings: PostgresDatabaseSettings,
         *,
-        pool_factory: Optional[Callable[..., Awaitable[Any]]] = None,
+        pool_factory: Callable[..., Awaitable[Any]] | None = None,
     ) -> None:
         self._settings = settings
         self._pool_factory = pool_factory

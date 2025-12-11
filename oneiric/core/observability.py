@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any, Dict, Iterator, Mapping, Optional
+from typing import Any
 
 from opentelemetry import trace
 from opentelemetry.trace import Span, Tracer
@@ -24,12 +25,12 @@ _config = ObservabilityConfig()
 _logger = get_logger("observability")
 
 
-def configure_observability(config: Optional[ObservabilityConfig] = None) -> None:
+def configure_observability(config: ObservabilityConfig | None = None) -> None:
     global _config
     _config = config or ObservabilityConfig()
 
 
-def get_tracer(component: Optional[str] = None) -> Tracer:
+def get_tracer(component: str | None = None) -> Tracer:
     scope = component or _config.instrumentation_scope
     return trace.get_tracer(scope)
 
@@ -38,11 +39,11 @@ def get_tracer(component: Optional[str] = None) -> Tracer:
 class DecisionEvent:
     domain: str
     key: str
-    provider: Optional[str]
+    provider: str | None
     decision: str
     details: Mapping[str, Any]
 
-    def as_attributes(self) -> Dict[str, Any]:
+    def as_attributes(self) -> dict[str, Any]:
         attrs = {
             "domain": self.domain,
             "key": self.key,

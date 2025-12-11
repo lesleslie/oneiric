@@ -4,24 +4,24 @@
 **Status:** Production Ready
 **Maintainer:** Platform Team
 
----
+______________________________________________________________________
 
 ## Table of Contents
 
-1. [Overview](#overview)
-2. [Incident Severity Levels](#incident-severity-levels)
-3. [General Incident Response Process](#general-incident-response-process)
-4. [Runbook Index](#runbook-index)
-5. [Runbooks](#runbooks)
-   - [1. Resolution Failures](#runbook-1-resolution-failures)
-   - [2. Hot-Swap Failures](#runbook-2-hot-swap-failures)
-   - [3. Remote Sync Failures](#runbook-3-remote-sync-failures)
-   - [4. Cache Corruption](#runbook-4-cache-corruption)
-   - [5. Memory Exhaustion](#runbook-5-memory-exhaustion)
-6. [Post-Incident Review](#post-incident-review)
-7. [Escalation Matrix](#escalation-matrix)
+1. \[[#overview|Overview]\]
+1. \[[#incident-severity-levels|Incident Severity Levels]\]
+1. \[[#general-incident-response-process|General Incident Response Process]\]
+1. \[[#runbook-index|Runbook Index]\]
+1. \[[#runbooks|Runbooks]\]
+   - \[[#runbook-1-resolution-failures|1. Resolution Failures]\]
+   - \[[#runbook-2-hot-swap-failures|2. Hot-Swap Failures]\]
+   - \[[#runbook-3-remote-sync-failures|3. Remote Sync Failures]\]
+   - \[[#runbook-4-cache-corruption|4. Cache Corruption]\]
+   - \[[#runbook-5-memory-exhaustion|5. Memory Exhaustion]\]
+1. \[[#post-incident-review|Post-Incident Review]\]
+1. \[[#escalation-matrix|Escalation Matrix]\]
 
----
+______________________________________________________________________
 
 ## Overview
 
@@ -37,13 +37,13 @@ This document provides step-by-step incident response procedures for common Onei
 
 | Alert | Runbook | Severity | Response Time |
 |-------|---------|----------|---------------|
-| `OneiricResolutionFailureRateHigh` | [#1](#runbook-1-resolution-failures) | Critical | < 5 min |
-| `OneiricLifecycleSwapFailureRateHigh` | [#2](#runbook-2-hot-swap-failures) | Critical | < 5 min |
-| `OneiricRemoteSyncConsecutiveFailures` | [#3](#runbook-3-remote-sync-failures) | Critical | < 15 min |
-| `OneiricDigestVerificationFailed` | [#4](#runbook-4-cache-corruption) | Critical | < 5 min |
-| `OneiricActiveInstancesExtremelyHigh` | [#5](#runbook-5-memory-exhaustion) | Critical | < 10 min |
+| `OneiricResolutionFailureRateHigh` | \[[#runbook-1-resolution-failures|#1]\] | Critical | < 5 min |
+| `OneiricLifecycleSwapFailureRateHigh` | \[[#runbook-2-hot-swap-failures|#2]\] | Critical | < 5 min |
+| `OneiricRemoteSyncConsecutiveFailures` | \[[#runbook-3-remote-sync-failures|#3]\] | Critical | < 15 min |
+| `OneiricDigestVerificationFailed` | \[[#runbook-4-cache-corruption|#4]\] | Critical | < 5 min |
+| `OneiricActiveInstancesExtremelyHigh` | \[[#runbook-5-memory-exhaustion|#5]\] | Critical | < 10 min |
 
----
+______________________________________________________________________
 
 ## Incident Severity Levels
 
@@ -75,62 +75,62 @@ This document provides step-by-step incident response procedures for common Onei
 - **Notification:** Slack info channel
 - **Examples:** Info alerts, maintenance notifications
 
----
+______________________________________________________________________
 
 ## General Incident Response Process
 
 ### Phase 1: Acknowledge (< 5 min)
 
 1. **Acknowledge alert** in PagerDuty/AlertManager
-2. **Join incident channel** (Slack #incident-response)
-3. **Announce response:** "I'm investigating [INCIDENT]"
-4. **Silence related alerts** to reduce noise
+1. **Join incident channel** (Slack #incident-response)
+1. **Announce response:** "I'm investigating [INCIDENT]"
+1. **Silence related alerts** to reduce noise
 
 ### Phase 2: Diagnose (< 15 min)
 
 1. **Check monitoring:** Grafana dashboards, Prometheus alerts
-2. **Review logs:** Loki queries for errors
-3. **Identify root cause:** Use runbook diagnosis section
-4. **Update incident channel** with findings
+1. **Review logs:** Loki queries for errors
+1. **Identify root cause:** Use runbook diagnosis section
+1. **Update incident channel** with findings
 
 ### Phase 3: Resolve (Variable)
 
 1. **Follow runbook resolution steps**
-2. **Document actions taken** in incident channel
-3. **Verify fix:** Check metrics/logs for improvement
-4. **Update stakeholders** on progress
+1. **Document actions taken** in incident channel
+1. **Verify fix:** Check metrics/logs for improvement
+1. **Update stakeholders** on progress
 
 ### Phase 4: Verify (< 10 min)
 
 1. **Confirm resolution:** Metrics/alerts return to normal
-2. **Test functionality:** Run smoke tests
-3. **Monitor for recurrence:** Watch for 30 minutes
-4. **Remove silences** if stable
+1. **Test functionality:** Run smoke tests
+1. **Monitor for recurrence:** Watch for 30 minutes
+1. **Remove silences** if stable
 
 ### Phase 5: Close (< 30 min)
 
 1. **Update incident ticket** with resolution
-2. **Schedule post-incident review** (within 48 hours)
-3. **Document learnings** in incident log
-4. **Close alerts** in AlertManager
+1. **Schedule post-incident review** (within 48 hours)
+1. **Document learnings** in incident log
+1. **Close alerts** in AlertManager
 
----
+______________________________________________________________________
 
 ## Runbook Index
 
 | # | Runbook | Symptoms | Severity | Est. Time |
 |---|---------|----------|----------|-----------|
-| 1 | [Resolution Failures](#runbook-1-resolution-failures) | Components not resolving, errors | P0 | 15-30 min |
-| 2 | [Hot-Swap Failures](#runbook-2-hot-swap-failures) | Swaps failing, rollbacks | P0 | 20-45 min |
-| 3 | [Remote Sync Failures](#runbook-3-remote-sync-failures) | Cannot fetch manifests | P1 | 15-30 min |
-| 4 | [Cache Corruption](#runbook-4-cache-corruption) | Digest mismatches | P0 | 10-20 min |
-| 5 | [Memory Exhaustion](#runbook-5-memory-exhaustion) | OOMKilled, high memory | P0 | 20-40 min |
+| 1 | \[[#runbook-1-resolution-failures|Resolution Failures]\] | Components not resolving, errors | P0 | 15-30 min |
+| 2 | \[[#runbook-2-hot-swap-failures|Hot-Swap Failures]\] | Swaps failing, rollbacks | P0 | 20-45 min |
+| 3 | \[[#runbook-3-remote-sync-failures|Remote Sync Failures]\] | Cannot fetch manifests | P1 | 15-30 min |
+| 4 | \[[#runbook-4-cache-corruption|Cache Corruption]\] | Digest mismatches | P0 | 10-20 min |
+| 5 | \[[#runbook-5-memory-exhaustion|Memory Exhaustion]\] | OOMKilled, high memory | P0 | 20-40 min |
 
----
+______________________________________________________________________
 
 ## Runbooks
 
----
+______________________________________________________________________
 
 ## Runbook 1: Resolution Failures
 
@@ -350,10 +350,10 @@ uv run python -m oneiric.cli explain status --domain adapter
 ### Prevention
 
 1. **Implement registration tests:** Unit tests verify candidates registered
-2. **Config validation:** CI/CD validates YAML syntax before deploy
-3. **Health check tuning:** Increase timeouts if providers slow to initialize
-4. **Monitoring:** Alert on low candidate counts per domain
-5. **Documentation:** Document registration process for each domain
+1. **Config validation:** CI/CD validates YAML syntax before deploy
+1. **Health check tuning:** Increase timeouts if providers slow to initialize
+1. **Monitoring:** Alert on low candidate counts per domain
+1. **Documentation:** Document registration process for each domain
 
 ### Escalation
 
@@ -362,7 +362,7 @@ uv run python -m oneiric.cli explain status --domain adapter
 - **After 1 hour:** Escalate to Engineering Manager
 - **Contact:** platform-team@example.com, Slack #platform-oncall
 
----
+______________________________________________________________________
 
 ## Runbook 2: Hot-Swap Failures
 
@@ -571,10 +571,10 @@ uv run python -m oneiric.cli status --domain adapter --key cache
 ### Prevention
 
 1. **Health check tuning:** Increase timeouts for slow-initializing providers
-2. **Factory validation:** Unit tests verify factory imports work
-3. **Staged rollout:** Test swaps in staging before production
-4. **Monitoring:** Alert on high rollback rates
-5. **Cleanup hardening:** Ensure cleanup logic handles errors gracefully
+1. **Factory validation:** Unit tests verify factory imports work
+1. **Staged rollout:** Test swaps in staging before production
+1. **Monitoring:** Alert on high rollback rates
+1. **Cleanup hardening:** Ensure cleanup logic handles errors gracefully
 
 ### Escalation
 
@@ -583,7 +583,7 @@ uv run python -m oneiric.cli status --domain adapter --key cache
 - **After 1 hour:** Escalate to Provider Owner
 - **Contact:** devops-team@example.com, Slack #devops-oncall
 
----
+______________________________________________________________________
 
 ## Runbook 3: Remote Sync Failures
 
@@ -733,6 +733,7 @@ vim settings/app.yml
 ```
 
 **Security Note:** Signature verification failures may indicate:
+
 - Key rotation (legitimate)
 - MITM attack (security breach)
 - Manifest corruption (integrity issue)
@@ -810,10 +811,10 @@ uv run python -m oneiric.cli list --domain adapter
 ### Prevention
 
 1. **Network monitoring:** Alert on DNS failures, connection timeouts
-2. **Key rotation process:** Document procedure, test before production
-3. **Manifest validation:** CI/CD validates manifest syntax before publish
-4. **Circuit breaker tuning:** Adjust thresholds based on network reliability
-5. **Artifact integrity:** Implement checksum verification in upload pipeline
+1. **Key rotation process:** Document procedure, test before production
+1. **Manifest validation:** CI/CD validates manifest syntax before publish
+1. **Circuit breaker tuning:** Adjust thresholds based on network reliability
+1. **Artifact integrity:** Implement checksum verification in upload pipeline
 
 ### Escalation
 
@@ -823,7 +824,7 @@ uv run python -m oneiric.cli list --domain adapter
 - **If security issue:** Immediately escalate to Security Team
 - **Contact:** infrastructure-team@example.com, Slack #infra-oncall
 
----
+______________________________________________________________________
 
 ## Runbook 4: Cache Corruption
 
@@ -1003,11 +1004,11 @@ curl http://alertmanager:9093/api/v2/alerts | jq '.[] | select(.labels.component
 ### Prevention
 
 1. **Disk monitoring:** Alert on disk errors, SMART failures
-2. **Manifest signing:** Always verify ED25519 signatures
-3. **Network security:** Use TLS, certificate pinning
-4. **Access control:** Restrict who can publish manifests
-5. **Audit logging:** Log all manifest/artifact changes
-6. **Incident response drills:** Practice security scenarios
+1. **Manifest signing:** Always verify ED25519 signatures
+1. **Network security:** Use TLS, certificate pinning
+1. **Access control:** Restrict who can publish manifests
+1. **Audit logging:** Log all manifest/artifact changes
+1. **Incident response drills:** Practice security scenarios
 
 ### Escalation
 
@@ -1019,7 +1020,7 @@ curl http://alertmanager:9093/api/v2/alerts | jq '.[] | select(.labels.component
 
 **NOTE:** This is a security incident. Follow your organization's security incident response procedures.
 
----
+______________________________________________________________________
 
 ## Runbook 5: Memory Exhaustion
 
@@ -1224,10 +1225,10 @@ kubectl get events -n oneiric | grep OOMKilled
 ### Prevention
 
 1. **Cleanup enforcement:** Unit tests verify cleanup called after swaps
-2. **Memory limits:** Set appropriate limits per environment
-3. **Monitoring:** Alert on high instance counts before critical
-4. **Resource pooling:** Reuse instances where possible
-5. **Profiling:** Regular memory profiling in staging
+1. **Memory limits:** Set appropriate limits per environment
+1. **Monitoring:** Alert on high instance counts before critical
+1. **Resource pooling:** Reuse instances where possible
+1. **Profiling:** Regular memory profiling in staging
 
 ### Escalation
 
@@ -1236,7 +1237,7 @@ kubectl get events -n oneiric | grep OOMKilled
 - **After 1 hour:** Escalate to Engineering Manager
 - **Contact:** platform-team@example.com, sre-team@example.com, Slack #platform-oncall
 
----
+______________________________________________________________________
 
 ## Post-Incident Review
 
@@ -1304,7 +1305,7 @@ After resolving any P0 or P1 incident, schedule a post-incident review within 48
 [Key takeaways and learnings]
 ```
 
----
+______________________________________________________________________
 
 ## Escalation Matrix
 
@@ -1325,7 +1326,7 @@ After resolving any P0 or P1 incident, schedule a post-incident review within 48
 | **Infrastructure** | infra@example.com | #infra-oncall | infra-escalation |
 | **SRE** | sre@example.com | #sre-oncall | sre-escalation |
 
----
+______________________________________________________________________
 
 ## Additional Resources
 
@@ -1336,7 +1337,7 @@ After resolving any P0 or P1 incident, schedule a post-incident review within 48
 - **Maintenance Runbooks:** `docs/runbooks/MAINTENANCE.md`
 - **Troubleshooting Guide:** `docs/runbooks/TROUBLESHOOTING.md`
 
----
+______________________________________________________________________
 
 **Document Version:** 1.0
 **Last Reviewed:** 2025-11-26

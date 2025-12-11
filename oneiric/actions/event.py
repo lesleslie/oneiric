@@ -5,10 +5,10 @@ from __future__ import annotations
 import asyncio
 import json
 import time
-from collections.abc import AsyncIterator, Iterable, Mapping
+from collections.abc import AsyncIterator, Callable, Iterable, Mapping
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
-from typing import Any, Callable
+from datetime import UTC, datetime
+from typing import Any
 from uuid import uuid4
 
 import httpx
@@ -129,7 +129,7 @@ class EventDispatchAction:
             "event_id": payload.get("event_id") or uuid4().hex,
             "topic": topic,
             "source": payload.get("source") or self._settings.default_source,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "payload": dict(raw_data),
             "metadata": dict(metadata),
         }
@@ -137,7 +137,11 @@ class EventDispatchAction:
         delivered = sum(1 for result in hook_results if result["status"] == "delivered")
         skipped = sum(1 for result in hook_results if result["status"] == "skipped")
         failed = sum(1 for result in hook_results if result["status"] == "failed")
-        status = "dispatched" if delivered else ("skipped" if hooks and skipped == len(hooks) else "queued")
+        status = (
+            "dispatched"
+            if delivered
+            else ("skipped" if hooks and skipped == len(hooks) else "queued")
+        )
         self._logger.info(
             "event-action-dispatch",
             topic=topic,
@@ -187,7 +191,9 @@ class EventDispatchAction:
             results.append(self._hook_result(hook, status="skipped", reason="disabled"))
         if dry_run:
             for hook in enabled_hooks:
-                results.append(self._hook_result(hook, status="skipped", reason="dry-run"))
+                results.append(
+                    self._hook_result(hook, status="skipped", reason="dry-run")
+                )
             return results
         semaphore = asyncio.Semaphore(max(1, self._settings.concurrency))
         async with self._acquire_client() as client:
@@ -218,7 +224,7 @@ class EventDispatchAction:
         async with semaphore:
             started = time.perf_counter()
             headers = {"content-type": "application/json"}
-            headers.update({str(key): str(value) for key, value in hook.headers.items()})
+            headers.update({key: value for key, value in hook.headers.items()})
             if hook.secret:
                 headers.setdefault("x-hook-secret", hook.secret)
             try:

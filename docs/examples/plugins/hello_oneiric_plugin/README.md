@@ -10,8 +10,8 @@ payloads can bundle `AdapterMetadata` and complete `Candidate` objects.
    ```bash
    uv pip install -e docs/examples/plugins/hello_oneiric_plugin
    ```
-2. Set `plugins.auto_load = true` in your `settings.toml` or pass `--demo` to the CLI.
-3. Run any CLI command (e.g., `oneiric plugins`) to verify the plugin is discovered.
+1. Set `plugins.auto_load = true` in your `settings.toml` or pass `--demo` to the CLI.
+1. Run any CLI command (e.g., `oneiric plugins`) to verify the plugin is discovered.
 
 ## Files
 
@@ -30,9 +30,11 @@ payloads can bundle `AdapterMetadata` and complete `Candidate` objects.
 ## Testing the Plugin
 
 Activate the demo adapter via the CLI:
+
 ```bash
 oneiric --demo plugins
 oneiric --demo list --domain adapter --shadowed
 ```
+
 You should see the `hello.entrypoint` provider available. The same package can be
 referenced inside manifests by provider name to route real traffic.

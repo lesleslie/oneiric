@@ -3,18 +3,18 @@
 from __future__ import annotations
 
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 
 import pytest
 
-from oneiric.core.config import RemoteSourceConfig, ResolverSettings
+from oneiric.core.config import RemoteSourceConfig
 from oneiric.core.lifecycle import LifecycleManager
 from oneiric.core.resolution import Candidate, Resolver
 
 
 @pytest.fixture
-def temp_dir() -> Generator[Path, None, None]:
+def temp_dir() -> Generator[Path]:
     """Create a temporary directory for test files."""
     with tempfile.TemporaryDirectory() as tmpdir:
         yield Path(tmpdir)

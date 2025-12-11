@@ -15,6 +15,10 @@ retry_jitter = 0.2
 circuit_breaker_threshold = 4
 circuit_breaker_reset = 45.0
 
+[runtime_paths]
+workflow_checkpoints_enabled = true
+workflow_checkpoints_path = ".oneiric_cache/workflow_checkpoints.sqlite"
+
 [logging]
 level = "INFO"
 emit_json = true
@@ -32,8 +36,149 @@ backup_count = 2
 [plugins]
 auto_load = true
 
+[workflows.options]
+# Route workflow enqueue defaults through the Cloud Tasks adapter registered as queue.scheduler.
+queue_category = "queue.scheduler"
+
 [adapters.selections]
 demo = "builtin"
+messaging = "sendgrid"
+nosql = "mongodb"
+graph = "neo4j"
+# Uncomment the next lines when rehearsing vector/embedding adapters (requires optional extras).
+# vector = "pinecone"
+# embedding = "openai"
+
+[adapters.provider_settings.sendgrid]
+# Replace with a Secret Manager reference or keep sandbox_mode=true for dry-run sends.
+api_key = "replace-me"
+from_email = "noreply@example.com"
+from_name = "Oneiric Demo"
+sandbox_mode = true
+
+[adapters.provider_settings.mailgun]
+# Sandbox domain is provided by Mailgun. Keep test_mode=true for local runs.
+api_key = "replace-me"
+domain = "sandbox123.mailgun.org"
+from_email = "noreply@example.com"
+from_name = "Oneiric Demo"
+test_mode = true
+tags = ["demo"]
+
+[adapters.provider_settings.twilio]
+account_sid = "ACXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+auth_token = "replace-me"
+from_number = "+15550001111"
+dry_run = true
+
+[adapters.provider_settings.mongodb]
+# Point at a local MongoDB instance. For Atlas/remote clusters, use the URI + TLS flags.
+uri = "mongodb://localhost:27017"
+database = "oneiric_demo"
+default_collection = "workflow_state"
+tls = false
+
+[adapters.provider_settings.dynamodb]
+# For LocalStack/local testing. Remove endpoint_url when targeting AWS.
+table_name = "oneiric-demo-table"
+region_name = "us-east-1"
+endpoint_url = "http://localhost:4566"
+aws_access_key_id = "test"
+aws_secret_access_key = "test"
+consistent_reads = true
+
+[adapters.provider_settings.firestore]
+project_id = "oneiric-demo"
+collection = "workflow_state"
+# credentials_file can be omitted when running on GCP with ADC.
+credentials_file = ""
+emulator_host = ""
+
+[adapters.provider_settings.neo4j]
+# Bolt URI + credentials for the local Neo4j container (see docs/examples/LOCAL_CLI_DEMO.md).
+uri = "bolt://localhost:7687"
+database = "neo4j"
+username = "neo4j"
+password = "test"
+encrypted = false
+
+[adapters.provider_settings.duckdb_pgq]
+# DuckDB PGQ runs in-process; point this at a writable path when sharing graphs.
+database = ".oneiric_cache/graphs.duckdb"
+edge_table = "pgq_edges"
+source_column = "source_id"
+target_column = "target_id"
+install_pgq = true
+
+[adapters.provider_settings.cloudtasks]
+project_id = "demo-project"
+location = "us-central1"
+queue = "orchestrator-demo"
+http_target_url = "https://example.com/hooks/dag"
+service_account_email = "tasks-invoker@demo-project.iam.gserviceaccount.com"
+
+[adapters.provider_settings.pubsub]
+project_id = "demo-project"
+topic = "workflow-start"
+subscription = "workflow-start-local"
+
+[adapters.provider_settings.kafka]
+bootstrap_servers = ["localhost:9092"]
+topic = "oneiric-demo"
+group_id = "oneiric-demo"
+client_id = "oneiric-local"
+
+[adapters.provider_settings.rabbitmq]
+url = "amqp://guest:guest@localhost/"
+queue = "oneiric-demo"
+prefetch_count = 10
+durable = true
+
+[adapters.provider_settings.slack]
+token = "xoxb-your-token"
+default_channel = "#platform-alerts"
+
+[adapters.provider_settings.teams]
+webhook_url = "https://example.webhook.office.com/webhookb2/demo"
+
+[adapters.provider_settings.webhook]
+url = "https://hooks.example.com/notify"
+method = "POST"
+headers = {X-API-Key = "replace-me"}
+
+[adapters.provider_settings.pinecone]
+# Requires `pip install 'oneiric[vector-pinecone]'` and a Pinecone project.
+api_key = "replace-me"
+index_name = "oneiric-demo"
+environment = "us-west1-gcp-free"
+serverless = true
+cloud = "aws"
+region = "us-east-1"
+
+[adapters.provider_settings.qdrant]
+# Use the official docker image (`docker run -p 6333:6333 qdrant/qdrant`) or a managed cluster.
+url = "http://localhost:6333"
+api_key = ""
+default_collection = "oneiric-demo"
+prefer_grpc = false
+
+[adapters.provider_settings.openai]
+# Shared by the LLM + embedding adapters; populate via Secret Manager for production.
+api_key = "replace-me"
+organization = ""
+model = "text-embedding-3-small"
+
+[adapters.provider_settings.sentence_transformers]
+# Local embedding adapter that downloads models on demand.
+model = "all-MiniLM-L6-v2"
+device = "auto"
+cache_folder = ".oneiric_cache/sentence-transformers"
+
+[adapters.provider_settings.onnx]
+# Drop a converted ONNX model in `.oneiric_cache/onnx/` to keep demos self-contained.
+model_path = ".oneiric_cache/onnx/all-MiniLM-L6-v2.onnx"
+tokenizer_name = "sentence-transformers/all-MiniLM-L6-v2"
+providers = ["CPUExecutionProvider"]
 
 [services.selections]
 status = "cli"

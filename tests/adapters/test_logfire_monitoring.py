@@ -1,10 +1,13 @@
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from oneiric.adapters.monitoring.logfire import LogfireMonitoringAdapter, LogfireMonitoringSettings
+from oneiric.adapters.monitoring.logfire import (
+    LogfireMonitoringAdapter,
+    LogfireMonitoringSettings,
+)
 
 
 @pytest.mark.asyncio

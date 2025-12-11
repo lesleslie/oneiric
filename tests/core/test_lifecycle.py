@@ -9,7 +9,6 @@ from __future__ import annotations
 import asyncio
 import json
 from pathlib import Path
-from typing import Any, Optional
 
 import pytest
 
@@ -257,7 +256,9 @@ class TestLifecycleActivation:
         outcomes = []
         monkeypatch.setattr(
             "oneiric.core.lifecycle.record_swap_duration",
-            lambda domain, key, provider, duration_ms, success: outcomes.append(success),
+            lambda domain, key, provider, duration_ms, success: outcomes.append(
+                success
+            ),
         )
 
         with pytest.raises(LifecycleError):
@@ -517,7 +518,9 @@ class TestLifecycleHotSwap:
         await lifecycle.activate("adapter", "cache", provider="redis")
 
         # Force swap to memcached (skip health check)
-        instance = await lifecycle.swap("adapter", "cache", provider="memcached", force=True)
+        instance = await lifecycle.swap(
+            "adapter", "cache", provider="memcached", force=True
+        )
         assert instance.name == "memcached"
 
     @pytest.mark.asyncio
@@ -566,7 +569,11 @@ class TestLifecycleHooks:
         old_instance_captured = None
 
         async def pre_swap(candidate, new_instance, old_instance):
-            nonlocal pre_swap_called, candidate_captured, new_instance_captured, old_instance_captured
+            nonlocal \
+                pre_swap_called, \
+                candidate_captured, \
+                new_instance_captured, \
+                old_instance_captured
             pre_swap_called = True
             candidate_captured = candidate
             new_instance_captured = new_instance
@@ -618,7 +625,11 @@ class TestLifecycleHooks:
         old_instance_captured = None
 
         async def post_swap(candidate, new_instance, old_instance):
-            nonlocal post_swap_called, candidate_captured, new_instance_captured, old_instance_captured
+            nonlocal \
+                post_swap_called, \
+                candidate_captured, \
+                new_instance_captured, \
+                old_instance_captured
             post_swap_called = True
             candidate_captured = candidate
             new_instance_captured = new_instance

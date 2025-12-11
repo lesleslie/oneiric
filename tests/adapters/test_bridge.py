@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import pytest
@@ -13,7 +12,6 @@ from oneiric.core.config import LayerSettings
 from oneiric.core.lifecycle import LifecycleError, LifecycleManager
 from oneiric.core.resolution import Candidate, CandidateSource, Resolver
 from oneiric.runtime.activity import DomainActivity, DomainActivityStore
-
 
 # Test fixtures
 
@@ -86,10 +84,12 @@ class TestAdapterBridgeConstruction:
         resolver = Resolver()
         lifecycle = LifecycleManager(resolver)
         settings = LayerSettings()
-        store_path = tmp_path / "activity.json"
+        store_path = tmp_path / "activity.sqlite"
         activity_store = DomainActivityStore(store_path)
 
-        bridge = AdapterBridge(resolver, lifecycle, settings, activity_store=activity_store)
+        bridge = AdapterBridge(
+            resolver, lifecycle, settings, activity_store=activity_store
+        )
 
         assert bridge._activity_store is activity_store
 
@@ -114,7 +114,9 @@ class TestAdapterBridgeSettings:
         resolver = Resolver()
         lifecycle = LifecycleManager(resolver)
         settings = LayerSettings(
-            provider_settings={"redis": {"host": "cache.example.com", "port": 6380, "db": 2}}
+            provider_settings={
+                "redis": {"host": "cache.example.com", "port": 6380, "db": 2}
+            }
         )
         bridge = AdapterBridge(resolver, lifecycle, settings)
         bridge.register_settings_model("redis", CacheAdapterSettings)
@@ -164,7 +166,9 @@ class TestAdapterBridgeSettings:
         parsed1 = bridge.get_settings("redis")
         assert parsed1.host == "localhost"
 
-        settings2 = LayerSettings(provider_settings={"redis": {"host": "cache.example.com"}})
+        settings2 = LayerSettings(
+            provider_settings={"redis": {"host": "cache.example.com"}}
+        )
         bridge.update_settings(settings2)
 
         parsed2 = bridge.get_settings("redis")
@@ -329,7 +333,9 @@ class TestAdapterBridgeUse:
         settings = LayerSettings()
         bridge = AdapterBridge(resolver, lifecycle, settings)
 
-        with pytest.raises(LifecycleError, match="No adapter candidate found for missing"):
+        with pytest.raises(
+            LifecycleError, match="No adapter candidate found for missing"
+        ):
             await bridge.use("missing")
 
     @pytest.mark.asyncio
@@ -358,6 +364,52 @@ class TestAdapterBridgeUse:
         assert isinstance(handle.settings, CacheAdapterSettings)
         assert handle.settings.host == "cache.example.com"
         assert handle.settings.port == 6380
+
+    @pytest.mark.asyncio
+    async def test_use_rejected_when_paused(self, tmp_path: Path):
+        """use() raises when adapter is paused."""
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        settings = LayerSettings()
+        store = DomainActivityStore(tmp_path / "activity.sqlite")
+        bridge = AdapterBridge(resolver, lifecycle, settings, activity_store=store)
+
+        resolver.register(
+            Candidate(
+                domain="adapter",
+                key="cache",
+                provider="redis",
+                factory=lambda: MockAdapter("redis"),
+                source=CandidateSource.MANUAL,
+            )
+        )
+        store.set("adapter", "cache", DomainActivity(paused=True))
+
+        with pytest.raises(LifecycleError, match="adapter:cache is paused"):
+            await bridge.use("cache")
+
+    @pytest.mark.asyncio
+    async def test_use_rejected_when_draining(self, tmp_path: Path):
+        """use() raises when adapter is draining."""
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        settings = LayerSettings()
+        store = DomainActivityStore(tmp_path / "activity.sqlite")
+        bridge = AdapterBridge(resolver, lifecycle, settings, activity_store=store)
+
+        resolver.register(
+            Candidate(
+                domain="adapter",
+                key="cache",
+                provider="redis",
+                factory=lambda: MockAdapter("redis"),
+                source=CandidateSource.MANUAL,
+            )
+        )
+        store.set("adapter", "cache", DomainActivity(draining=True))
+
+        with pytest.raises(LifecycleError, match="adapter:cache is draining"):
+            await bridge.use("cache")
 
 
 class TestAdapterBridgeListingMethods:
@@ -538,33 +590,35 @@ class TestAdapterBridgeActivity:
         resolver = Resolver()
         lifecycle = LifecycleManager(resolver)
         settings = LayerSettings()
-        store_path = tmp_path / "activity.json"
+        store_path = tmp_path / "activity.sqlite"
         activity_store = DomainActivityStore(store_path)
 
-        bridge = AdapterBridge(resolver, lifecycle, settings, activity_store=activity_store)
+        bridge = AdapterBridge(
+            resolver, lifecycle, settings, activity_store=activity_store
+        )
 
         bridge.set_paused("cache", True, note="maintenance")
 
         assert store_path.exists()
-        data = json.loads(store_path.read_text())
-        assert data["adapter"]["cache"]["paused"] is True
-        assert data["adapter"]["cache"]["note"] == "maintenance"
+        persisted = DomainActivityStore(store_path)
+        state = persisted.get("adapter", "cache")
+        assert state.paused is True
+        assert state.note == "maintenance"
 
     def test_activity_loads_from_store(self, tmp_path: Path):
         """Activity loads from store on initialization."""
         resolver = Resolver()
         lifecycle = LifecycleManager(resolver)
         settings = LayerSettings()
-        store_path = tmp_path / "activity.json"
+        store_path = tmp_path / "activity.sqlite"
 
-        store_path.write_text(
-            json.dumps(
-                {"adapter": {"cache": {"paused": True, "draining": False, "note": "existing"}}}
-            )
-        )
+        primer = DomainActivityStore(store_path)
+        primer.set("adapter", "cache", DomainActivity(paused=True, note="existing"))
 
         activity_store = DomainActivityStore(store_path)
-        bridge = AdapterBridge(resolver, lifecycle, settings, activity_store=activity_store)
+        bridge = AdapterBridge(
+            resolver, lifecycle, settings, activity_store=activity_store
+        )
 
         state = bridge.activity_state("cache")
         assert state.paused is True

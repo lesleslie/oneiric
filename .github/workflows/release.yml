@@ -33,6 +33,11 @@ jobs:
           uv run pytest tests/ -v
           echo "✓ All tests passed"
 
+      - name: Serverless profile smoke
+        run: |
+          uv run pytest -k serverless_profile
+          echo "✓ Serverless profile checks passed"
+
       - name: Build wheel package
         run: |
           uv build

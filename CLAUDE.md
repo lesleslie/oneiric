@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Oneiric is a **universal resolution layer** for pluggable components with hot-swapping, multi-domain support, and remote manifest delivery. It extracts and modernizes the component discovery and lifecycle patterns into a standalone infrastructure layer.
 
-**Status:** Production Ready (0.2.0) - Hardened for controlled deployment. See `docs/STAGE5_FINAL_AUDIT_REPORT.md` for comprehensive audit (score: 95/100, 526 tests, 83% coverage) and `docs/ACB_COMPARISON.md` for comparison with the mature ACB framework.
+**Status:** Production Ready (0.2.0) - Hardened for controlled deployment. See `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for comprehensive audit (score: 95/100, 526 tests, 83% coverage) and `docs/ONEIRIC_VS_ACB.md` for comparison with ACB and migration strategy.
 
 **Python Version:** 3.14+ (async-first, modern type hints)
 
@@ -135,7 +135,18 @@ python -m crackerjack -a minor   # Bump minor version
 python -m crackerjack -a major   # Bump major version
 ```
 
-**Note:** Comprehensive test suite with 526 passing tests and 83% coverage. Security hardening complete (all P0 vulnerabilities resolved). See `docs/STAGE5_FINAL_AUDIT_REPORT.md` for detailed quality assessment.
+**Type Checking Configuration:**
+
+This project uses **Zuban** (via Crackerjack) for ultra-fast type checking. Due to a known Zuban parsing bug with `[tool.mypy]` in `pyproject.toml`, type checking configuration is in `mypy.ini` instead:
+
+- **Configuration file**: `mypy.ini` (not `pyproject.toml`)
+- **Python version**: 3.14
+- **Excluded directories**: `.venv`, `build`, `dist`, `tests`, `scripts/`
+- **Module-level suppressions**: See `mypy.ini` for per-module `ignore_errors` settings
+
+**Important**: Do NOT add `[tool.zuban]` or `[tool.mypy]` to `pyproject.toml` - this will cause parsing errors. All type checking config must be in `mypy.ini`.
+
+**Note:** Comprehensive test suite with 526 passing tests and 83% coverage. Security hardening complete (all P0 vulnerabilities resolved). See `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for detailed quality assessment.
 
 ### Testing
 
@@ -154,6 +165,7 @@ uv run pytest tests/security/ -v
 ```
 
 **Test Statistics:**
+
 - Total: 546 tests (526 passing, 18 failing, 2 skipped)
 - Coverage: 83% (target: 60%, achieved: 138% of target)
 - Pass Rate: 96.3%
@@ -185,7 +197,7 @@ settings/
 - Contains:
   - `lifecycle_status.json` - Per-domain lifecycle state
   - `runtime_health.json` - Orchestrator health snapshot
-  - `domain_activity.json` - Pause/drain state
+  - `domain_activity.sqlite` - Pause/drain state
   - `remote_status.json` - Remote sync telemetry
 
 ## Implementation Patterns
@@ -209,9 +221,9 @@ register_adapter_metadata(
             provider="redis",
             stack_level=10,
             factory=lambda: RedisCache(),
-            description="Production Redis cache"
+            description="Production Redis cache",
         )
-    ]
+    ],
 )
 
 # Direct registration (services/tasks/events/workflows)
@@ -221,7 +233,7 @@ resolver.register(
         key="payment-processor",
         provider="stripe",
         stack_level=5,
-        factory=lambda: StripePaymentService()
+        factory=lambda: StripePaymentService(),
     )
 )
 ```
@@ -232,8 +244,7 @@ resolver.register(
 from oneiric.core.lifecycle import LifecycleManager
 
 lifecycle = LifecycleManager(
-    resolver,
-    status_snapshot_path=".oneiric_cache/lifecycle_status.json"
+    resolver, status_snapshot_path=".oneiric_cache/lifecycle_status.json"
 )
 
 # Activate component
@@ -256,9 +267,7 @@ print(status.state)  # "ready", "failed", "activating"
 from oneiric.domains import ServiceBridge
 
 service_bridge = ServiceBridge(
-    resolver=resolver,
-    lifecycle=lifecycle,
-    settings=settings.services
+    resolver=resolver, lifecycle=lifecycle, settings=settings.services
 )
 
 # Activate service
@@ -275,7 +284,7 @@ watcher = SelectionWatcher(
     domain="adapter",
     config_path="settings/adapters.yml",
     bridge=adapter_bridge,
-    poll_interval=5.0
+    poll_interval=5.0,
 )
 
 # Watcher monitors config file and triggers swaps automatically
@@ -288,52 +297,69 @@ async with watcher:
 **All P0 security vulnerabilities have been resolved** (see `docs/STAGE5_FINAL_AUDIT_REPORT.md`):
 
 1. ✅ **Arbitrary code execution** - **RESOLVED**
+
    - Factory allowlist implemented in `core/security.py`
    - Module import restrictions enforced
 
-2. ✅ **Missing signature verification** - **RESOLVED**
+1. ✅ **Missing signature verification** - **RESOLVED**
+
    - ED25519 signature verification in `remote/security.py`
    - Configurable trusted public keys
 
-3. ✅ **Path traversal** - **RESOLVED**
+1. ✅ **Path traversal** - **RESOLVED**
+
    - Path sanitization function in `remote/security.py`
    - Cache directory boundary enforcement
 
-4. ✅ **No HTTP timeouts** - **RESOLVED**
+1. ✅ **No HTTP timeouts** - **RESOLVED**
+
    - Configurable timeouts in `remote/loader.py` (default: 30s)
    - Circuit breaker + retry logic in `core/resiliency.py`
 
-5. ✅ **Thread safety** - **RESOLVED**
+1. ✅ **Thread safety** - **RESOLVED**
+
    - RLock added to resolver registry
    - Concurrent registration tests passing
 
 **Security Test Coverage:** 100 security tests (99 passing, 1 edge case)
 
-## Planning Documents
+## Documentation
 
-The `docs/` directory contains comprehensive architecture and planning:
+The `docs/` directory contains comprehensive documentation organized by purpose:
 
-**Architecture & Implementation:**
+**Essential Reference (Start Here):**
+
+- **`ONEIRIC_VS_ACB.md`** - Complete comparison, migration guide, hybrid strategy ⭐
+- **`UNCOMPLETED_TASKS.md`** - Future enhancements, known issues (zero blockers)
+- **`implementation/STAGE5_FINAL_AUDIT_REPORT.md`** - Production readiness audit (95/100 score) ⭐
 - `NEW_ARCH_SPEC.md` - Complete architecture specification
-- `GRAND_IMPLEMENTATION_PLAN.md` - 7-phase implementation plan
 - `RESOLUTION_LAYER_SPEC.md` - Detailed resolution layer design
-- `PHASES_SUMMARY.md` - Quick reference for phases
-- `BUILD_PROGRESS.md` - Current implementation status
-- `REBUILD_VS_REFACTOR.md` - Design decision rationale
 
-**Quality & Audit:**
-- `STAGE5_FINAL_AUDIT_REPORT.md` - **Production readiness audit (95/100 score)** ⭐
-- `CRITICAL_AUDIT_REPORT.md` - Initial security audit (68/100 score, outdated)
-- `ACB_COMPARISON.md` - Comparison with mature ACB framework
+**Implementation & Status:**
 
-**Operational Documentation (Stage 5):**
-- `monitoring/PROMETHEUS_SETUP.md` - Metrics, alerts, recording rules (2,100 lines)
-- `monitoring/GRAFANA_DASHBOARDS.md` - 6 dashboard specs (1,300 lines)
-- `monitoring/LOKI_SETUP.md` - Log aggregation, 40+ queries (1,200 lines)
-- `monitoring/ALERTING_SETUP.md` - AlertManager config (1,000 lines)
-- `runbooks/INCIDENT_RESPONSE.md` - 5 incident scenarios (1,800 lines)
-- `runbooks/MAINTENANCE.md` - 3 procedures (1,500 lines)
-- `runbooks/TROUBLESHOOTING.md` - 15 common issues (1,200 lines)
+- `STRATEGIC_ROADMAP.md` - Current priorities + execution tracks
+- `implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md` - Serverless + parity workstreams
+- `implementation/ADAPTER_REMEDIATION_PLAN.md` & `implementation/ADAPTER_REMEDIATION_EXECUTION.md` - Adapter backlog + evidence
+- `archive/implementation/BUILD_PROGRESS.md` - Historical phase log (read-only)
+
+**Analysis & Quality:**
+
+- `analysis/ARCHITECTURAL_AUDIT_2025.md` - Architecture assessment
+- `analysis/PYTHON_CODE_QUALITY_AUDIT.md` - Code quality metrics
+- `analysis/ACB_ADAPTER_ACTION_IMPLEMENTATION.md` - Adapter porting guide
+- `analysis/` - Adapter strategies and technical deep-dives
+
+**Operational Documentation:**
+
+- `deployment/` - Docker, Kubernetes, systemd guides (2,514 lines)
+- `monitoring/` - Prometheus, Grafana, Loki, AlertManager (3,336 lines)
+- `runbooks/` - Incident response, maintenance, troubleshooting (3,232 lines)
+
+**Archive:**
+
+- `archive/` - Historical comparison docs (superseded by ONEIRIC_VS_ACB.md)
+
+**Complete Index:** See `docs/README.md` for full documentation structure.
 
 **Current Status:** Phase 7 complete, Stage 5 hardening complete. **Production ready for controlled deployment.**
 
@@ -355,12 +381,7 @@ The `docs/` directory contains comprehensive architecture and planning:
 Uses `structlog` with domain/key/provider context:
 
 ```python
-logger.info(
-    "swap-complete",
-    domain="adapter",
-    key="cache",
-    provider="redis"
-)
+logger.info("swap-complete", domain="adapter", key="cache", provider="redis")
 ```
 
 ### OpenTelemetry

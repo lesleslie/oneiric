@@ -1,0 +1,251 @@
+# Oneiric Documentation
+
+**Version:** 0.2.0 (Production Ready: 95/100)
+**Last Updated:** 2025-12-07
+
+---
+
+## Quick Navigation
+
+### 🚀 Start Here
+
+- **[[ONEIRIC_VS_ACB|ONEIRIC_VS_ACB.md]]** – Cut-over mandate + comparison vs ACB
+- **[[STRATEGIC_ROADMAP|STRATEGIC_ROADMAP.md]]** – Vision, execution tracks, and milestones
+- **[[SERVERLESS_AND_PARITY_EXECUTION_PLAN|SERVERLESS_AND_PARITY_EXECUTION_PLAN.md]]** – Serverless + parity workstreams and next actions
+- **[[ORCHESTRATION_PARITY_PLAN|ORCHESTRATION_PARITY_PLAN.md]]** – Events, DAGs, and supervisor roadmap
+- **[[CLOUD_RUN_BUILD|deployment/CLOUD_RUN_BUILD.md]]** – Cloud Run/buildpack deployment guide (Procfile-first)
+- **[[UNCOMPLETED_TASKS|UNCOMPLETED_TASKS.md]]** – Open work items (reference only)
+
+### 🧱 Architecture References
+
+- **[[NEW_ARCH_SPEC|NEW_ARCH_SPEC.md]]** – Core architecture
+- **[[RESOLUTION_LAYER_SPEC|RESOLUTION_LAYER_SPEC.md]]** – Resolver internals
+- **[[REMOTE_MANIFEST_SCHEMA|REMOTE_MANIFEST_SCHEMA.md]]** – Manifest format
+- **[[SIGNATURE_VERIFICATION|SIGNATURE_VERIFICATION.md]]** – Signature + security system
+- **[[NOSQL_ADAPTERS|analysis/NOSQL_ADAPTERS.md]]** – MongoDB/DynamoDB configuration + manifests
+- **[[GRAPH_ADAPTERS|analysis/GRAPH_ADAPTERS.md]]** – Neo4j configuration, manifests, and CLI usage
+
+### 📊 Status & Quality
+
+- **[[STAGE5_FINAL_AUDIT_REPORT|implementation/STAGE5_FINAL_AUDIT_REPORT.md]]** – Production readiness audit (95/100) ⭐
+- **[[QUALITY_AUDITS|analysis/QUALITY_AUDITS.md]]** – Summary of architecture/code/test audits
+- **[[STRATEGIC_ROADMAP|STRATEGIC_ROADMAP.md]]** – Live execution tracks + status (supersedes the old build progress log)
+- **[[BUILD_PROGRESS|archive/implementation/BUILD_PROGRESS.md]]** – Historical phase log (reference only)
+
+---
+
+## Documentation Structure
+
+### `/` (Root) - Essential Documents
+
+**Quick Reference:**
+- **ONEIRIC_VS_ACB.md** – Cut-over strategy and comparison
+- **STRATEGIC_ROADMAP.md** – Current priorities (Cloud Run/serverless, parity milestones)
+- **UNCOMPLETED_TASKS.md** – Future work, known issues, recommendations
+- **NEW_ARCH_SPEC.md** – Architecture overview
+- **RESOLUTION_LAYER_SPEC.md** – Resolution system design
+- **REMOTE_MANIFEST_SCHEMA.md** – Remote manifest format
+- **SIGNATURE_VERIFICATION.md** – Security and signature system
+- **OBSERVABILITY_GUIDE.md** – Logging, metrics, tracing
+- **REBUILD_VS_REFACTOR.md** – Design decision rationale
+- **ACB_COMPARISON.md** – Original comparison (superseded by ONEIRIC_VS_ACB.md; kept for history)
+
+### `/implementation/` - Plans & Execution
+
+**Living Documents:**
+- **SERVERLESS_AND_PARITY_EXECUTION_PLAN.md** – Serverless profile, Cloud Run posture, adapter/action parity
+- **ORCHESTRATION_PARITY_PLAN.md** – Events, DAGs, service supervisors
+- **ADAPTER_REMEDIATION_PLAN.md** / **ADAPTER_REMEDIATION_EXECUTION.md** – Adapter backlog & progress evidence
+- **GRAPH_ADAPTER_PLAN.md** – ArangoDB/DuckDB PGQ delivery plan
+- **MESSAGING_AND_SCHEDULER_ADAPTER_PLAN.md** – Delivery plan for SendGrid/Mailgun/Twilio + Cloud Tasks/Pub/Sub adapters
+- **STAGE5_FINAL_AUDIT_REPORT.md** – Production readiness audit (95/100) ⭐
+- **LOGGING_OBSERVABILITY_PLAN.md** – Observability planning (still relevant for Track G follow-ups)
+- **RESOLUTION_LAYER_PLAN.md** / **PLUGIN_ENTRYPOINT_PLAN.md** – Reference designs for resolver + plugin extensions
+
+**Historical References (archived):**
+- `docs/archive/implementation/BUILD_PROGRESS.md` – Phase-by-phase implementation log
+- `docs/archive/implementation/UNIFIED_IMPLEMENTATION_PLAN.md` – Consolidated strategy (superseded)
+- `docs/archive/implementation/WEEK*.md` and `docs/archive/implementation/*_COMPLETION.md` – Test completion + audit reports
+
+### `/analysis/` - Audits & Technical Analysis
+
+**Quality Audits:**
+- **QUALITY_AUDITS.md** - Summary of architecture/code/test audits (full detail in Stage 5 report)
+
+**Adapter Analysis:**
+- **ACB_ADAPTER_ACTION_IMPLEMENTATION.md** - Adapter/action porting documentation
+- **ADAPTER_GAP_AUDIT.md** - Live table of missing ACB adapters/actions
+- **ADAPTER_OBSOLESCENCE_ANALYSIS.md** - Adapter deprecation analysis
+- **ADAPTER_PORT_SUMMARY.md** - Adapter migration summary
+- **ADAPTER_STRATEGY.md** - Adapter design strategy
+- **NOSQL_ADAPTERS.md** - Configuration reference for MongoDB/DynamoDB adapters
+- **GRAPH_ADAPTERS.md** - Graph adapter configuration (Neo4j) and manifest snippets
+- **DUCKDB_ADAPTER.md** - DuckDB analytics adapter
+- **EMBEDDING_ADAPTERS.md** - Embedding adapter implementations (OpenAI, SentenceTransformers, ONNX)
+- **VECTOR_ADAPTERS.md** - Vector DB adapters (Pinecone, Qdrant)
+
+### `/archive/` - Historical Records
+
+- **archive/README.md** - Index of completion reports and plans slated for long-term storage.
+
+### `/deployment/` - Production Operations
+
+**Deployment Guides:**
+- **CLOUD_RUN_BUILD.md** - Buildpack + Procfile deployment guide for Cloud Run (default path)
+- **DOCKER_DEPLOYMENT.md** *(legacy)* - Containerization reference for older stacks
+- **KUBERNETES_DEPLOYMENT.md** *(legacy)* - K8s manifests/operators kept for maintenance
+- **SYSTEMD_DEPLOYMENT.md** - Linux systemd services (still used for local agents)
+
+### `/monitoring/` - Observability Stack
+
+**Monitoring Setup:**
+- **PROMETHEUS_SETUP.md** - Metrics, alerts, recording rules (1,004 lines)
+- **GRAFANA_DASHBOARDS.md** - 6 dashboard specifications (818 lines)
+- **LOKI_SETUP.md** - Log aggregation, 40+ queries (826 lines)
+- **ALERTING_SETUP.md** - AlertManager configuration (688 lines)
+
+### `/runbooks/` - Operational Procedures
+
+**Incident Management:**
+- **INCIDENT_RESPONSE.md** - 5 incident scenarios (1,344 lines)
+- **MAINTENANCE.md** - 3 maintenance procedures (929 lines)
+- **TROUBLESHOOTING.md** - 15 common issues (959 lines)
+
+### `/examples/` - Tutorials & Samples
+
+**Sample Code:**
+- **LOCAL_CLI_DEMO.md** - CLI usage examples
+- **plugins/hello_oneiric_plugin/** - Example plugin implementation
+
+---
+
+## Key Documents by Use Case
+
+### For New Users
+
+1. **[[ONEIRIC_VS_ACB|ONEIRIC_VS_ACB.md]]** - Understand Oneiric vs ACB relationship
+2. **[[NEW_ARCH_SPEC|NEW_ARCH_SPEC.md]]** - Learn core architecture
+3. **[[LOCAL_CLI_DEMO|examples/LOCAL_CLI_DEMO.md]]** - Try CLI commands
+4. **[[OBSERVABILITY_GUIDE|OBSERVABILITY_GUIDE.md]]** - Set up logging/metrics
+
+### For Operators
+
+1. **[deployment/](deployment/)** - Choose deployment method (Docker, K8s, systemd)
+2. **[monitoring/](monitoring/)** - Set up observability stack
+3. **[runbooks/](runbooks/)** - Incident response procedures
+4. **[[UNCOMPLETED_TASKS|UNCOMPLETED_TASKS.md]]** - Known issues and limitations
+
+### For Developers
+
+1. **[[RESOLUTION_LAYER_SPEC|RESOLUTION_LAYER_SPEC.md]]** - Resolution system internals
+2. **[[REMOTE_MANIFEST_SCHEMA|REMOTE_MANIFEST_SCHEMA.md]]** - Remote manifest format
+3. **[[SIGNATURE_VERIFICATION|SIGNATURE_VERIFICATION.md]]** - Security implementation
+4. **[implementation/](implementation/)** - Active plans (serverless/parity, adapter remediation); completion reports now live in [archive/implementation/](archive/implementation/)
+5. **[analysis/](analysis/)** - Code quality and audit reports
+
+### For Migration from ACB
+
+1. **[[ONEIRIC_VS_ACB|ONEIRIC_VS_ACB.md]]** - Complete migration/cut-over guide
+2. **[[ACB_ADAPTER_ACTION_IMPLEMENTATION|analysis/ACB_ADAPTER_ACTION_IMPLEMENTATION.md]]** - Adapter porting details
+3. **[[UNCOMPLETED_TASKS|UNCOMPLETED_TASKS.md]]** - Remaining parity items (spoiler: nothing critical)
+
+### For Project Planning
+
+1. **[[STAGE5_FINAL_AUDIT_REPORT|implementation/STAGE5_FINAL_AUDIT_REPORT.md]]** - Production readiness (95/100)
+2. **[[STRATEGIC_ROADMAP|STRATEGIC_ROADMAP.md]]** - Current strategic priorities
+3. **[[SERVERLESS_AND_PARITY_EXECUTION_PLAN|implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md]]** - Serverless + parity execution plan
+4. **[[ORCHESTRATION_PARITY_PLAN|implementation/ORCHESTRATION_PARITY_PLAN.md]]** - Orchestration parity roadmap
+5. **[[UNCOMPLETED_TASKS|UNCOMPLETED_TASKS.md]]** - Future enhancements + known issues
+6. **[[BUILD_PROGRESS|archive/implementation/BUILD_PROGRESS.md]]** - Historical phase log
+
+---
+
+## Quick Stats
+
+**Production Readiness:**
+- ✅ **95/100** audit score (Excellent)
+- ✅ **526 tests** passing (96.3% pass rate)
+- ✅ **83% coverage** (138% of 60% target)
+- ✅ **Zero critical blockers**
+- ✅ **All P0 security vulnerabilities resolved**
+
+**Documentation Completeness:**
+- ✅ Comprehensive operational runbooks (3,232 lines)
+- ✅ Complete monitoring setup (3,336 lines)
+- ✅ Detailed deployment guides (2,514 lines)
+- ✅ Thorough implementation tracking (dozens of completion reports)
+
+**Code Quality:**
+- ✅ **Zero TODOs/FIXMEs** in production code
+- ✅ **Modern Python** (3.14+, async-first)
+- ✅ **Type-safe** (Pydantic throughout)
+- ✅ **Observable** (structlog, OpenTelemetry)
+
+---
+
+## Document Maintenance
+
+### Outdated Documents
+
+**Superseded (now in `docs/archive/implementation/`):**
+- `BUILD_PROGRESS.md`, `UNIFIED_IMPLEMENTATION_PLAN.md`, weekly summaries, and every `*_COMPLETION.md` test report now live in `archive/implementation/`.
+- Historical comparison docs remain available under `archive/` (superseded by ONEIRIC_VS_ACB.md).
+
+**Outdated Audits (see STAGE5_FINAL_AUDIT_REPORT.md + QUALITY_AUDITS.md):**
+- Older audit files were removed; the summaries now live in `analysis/QUALITY_AUDITS.md`.
+
+### Living Documents (Updated Regularly)
+
+- **STRATEGIC_ROADMAP.md** - Updated as priorities shift
+- **implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md** - Updated whenever serverless/parity scope changes
+- **implementation/ORCHESTRATION_PARITY_PLAN.md** - Updated as events/DAGs/supervisor work lands
+- **implementation/ADAPTER_REMEDIATION_PLAN.md** / **ADAPTER_REMEDIATION_EXECUTION.md** - Updated with adapter progress
+- **UNCOMPLETED_TASKS.md** - Updated quarterly
+- **STAGE5_FINAL_AUDIT_REPORT.md** - Updated with each release
+- **ONEIRIC_VS_ACB.md** - Updated as ACB evolves
+
+### Static Reference Documents
+
+- NEW_ARCH_SPEC.md
+- RESOLUTION_LAYER_SPEC.md
+- REMOTE_MANIFEST_SCHEMA.md
+- SIGNATURE_VERIFICATION.md
+
+### Archive Workflow
+
+- Follow `archive/README.md` when moving phased completion reports or superseded plans so the active docs stay concise without losing historical detail.
+
+---
+
+## Contributing to Documentation
+
+### Adding New Docs
+
+**Categorize by purpose:**
+- `/` - Core architecture and essential reference
+- `/implementation/` - Build progress, plans, completion reports
+- `/analysis/` - Audits, quality assessments, technical analysis
+- `/deployment/` - Deployment guides and operations
+- `/monitoring/` - Observability stack configuration
+- `/runbooks/` - Operational procedures
+- `/examples/` - Tutorials and sample code
+
+### Updating Docs
+
+**When updating major docs, also update:**
+1. This README.md (Quick Navigation, Key Documents sections)
+2. /Users/les/Projects/oneiric/README.md (main project README)
+3. /Users/les/Projects/oneiric/CLAUDE.md (project instructions)
+
+---
+
+## Feedback & Questions
+
+For questions about documentation:
+1. Check this README for document location
+2. Start with ONEIRIC_VS_ACB.md for general overview
+3. Refer to UNCOMPLETED_TASKS.md for known limitations
+4. Check implementation/ for build status
+5. Review analysis/ for quality assessments
+
+**Documentation is production-ready.** All critical operational docs are complete and comprehensive.

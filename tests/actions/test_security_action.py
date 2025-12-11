@@ -18,7 +18,9 @@ from oneiric.core.lifecycle import LifecycleError
 @pytest.mark.asyncio
 async def test_security_signature_action_hex() -> None:
     action = SecuritySignatureAction(
-        SecuritySignatureSettings(secret="demo", include_timestamp=False, algorithm="sha256", encoding="hex")
+        SecuritySignatureSettings(
+            secret="demo", include_timestamp=False, algorithm="sha256", encoding="hex"
+        )
     )
 
     result = await action.execute({"message": "hello world"})

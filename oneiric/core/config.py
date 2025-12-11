@@ -6,15 +6,18 @@ import inspect
 import json
 import os
 import tomllib
+from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any, Dict, Mapping, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
-from .logging import LoggingConfig, get_logger
-from .lifecycle import LifecycleManager, LifecycleError
 from oneiric.runtime.health import default_runtime_health_path
+
+from .lifecycle import LifecycleError, LifecycleManager
+from .logging import LoggingConfig, get_logger
 from .resolution import ResolverSettings
+from .secrets_cache import SecretValueCache
 
 logger = get_logger("config")
 
@@ -26,40 +29,59 @@ class AppConfig(BaseModel):
 
 
 class LayerSettings(BaseModel):
-    selections: Dict[str, str] = Field(default_factory=dict, description="category -> provider mapping")
-    provider_settings: Dict[str, Dict[str, Any]] = Field(
+    selections: dict[str, str] = Field(
+        default_factory=dict, description="category -> provider mapping"
+    )
+    provider_settings: dict[str, dict[str, Any]] = Field(
         default_factory=dict,
         description="per-provider configuration payloads",
+    )
+    options: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Domain-specific configuration knobs (e.g., workflow queue defaults).",
     )
 
 
 class SecretsConfig(BaseModel):
     domain: str = "adapter"
     key: str = "secrets"
-    provider: Optional[str] = None
-    inline: Dict[str, str] = Field(default_factory=dict)
+    provider: str | None = None
+    inline: dict[str, str] = Field(default_factory=dict)
+    cache_ttl_seconds: float = Field(
+        default=600.0,
+        ge=0.0,
+        description="Number of seconds to cache resolved secrets (0 disables cache).",
+    )
 
 
 class RemoteAuthConfig(BaseModel):
     header_name: str = "Authorization"
-    secret_id: Optional[str] = None
-    token: Optional[str] = None
+    secret_id: str | None = None
+    token: str | None = None
 
 
 class RemoteSourceConfig(BaseModel):
     enabled: bool = False
-    manifest_url: Optional[str] = None
+    manifest_url: str | None = None
     cache_dir: str = ".oneiric_cache"
     verify_tls: bool = True
     auth: RemoteAuthConfig = Field(default_factory=RemoteAuthConfig)
-    refresh_interval: Optional[float] = Field(
+    refresh_interval: float | None = Field(
         default=300.0,
         description="Optional interval (seconds) to re-sync remote manifests; disabled when null.",
     )
-    max_retries: int = Field(default=3, description="Number of retry attempts for remote fetches.")
-    retry_base_delay: float = Field(default=1.0, description="Base delay (seconds) for retry backoff.")
-    retry_max_delay: float = Field(default=30.0, description="Maximum delay (seconds) between retries.")
-    retry_jitter: float = Field(default=0.25, description="Jitter factor added to retry sleep.")
+    max_retries: int = Field(
+        default=3, description="Number of retry attempts for remote fetches."
+    )
+    retry_base_delay: float = Field(
+        default=1.0, description="Base delay (seconds) for retry backoff."
+    )
+    retry_max_delay: float = Field(
+        default=30.0, description="Maximum delay (seconds) between retries."
+    )
+    retry_jitter: float = Field(
+        default=0.25, description="Jitter factor added to retry sleep."
+    )
     circuit_breaker_threshold: int = Field(
         default=5,
         description="Consecutive failures before opening the remote circuit breaker.",
@@ -108,6 +130,24 @@ class PluginsConfig(BaseModel):
     )
 
 
+class RuntimeProfileConfig(BaseModel):
+    name: str = "default"
+    watchers_enabled: bool = True
+    remote_enabled: bool = True
+    inline_manifest_only: bool = False
+    supervisor_enabled: bool = True
+
+
+class RuntimePathsConfig(BaseModel):
+    """Filesystem locations + toggles for runtime persistence helpers."""
+
+    workflow_checkpoints_enabled: bool = True
+    workflow_checkpoints_path: str | None = Field(
+        default=None,
+        description="Override path for workflow checkpoint SQLite store.",
+    )
+
+
 class OneiricSettings(BaseModel):
     app: AppConfig = Field(default_factory=AppConfig)
     adapters: LayerSettings = Field(default_factory=LayerSettings)
@@ -121,12 +161,14 @@ class OneiricSettings(BaseModel):
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     lifecycle: LifecycleConfig = Field(default_factory=LifecycleConfig)
     plugins: PluginsConfig = Field(default_factory=PluginsConfig)
+    profile: RuntimeProfileConfig = Field(default_factory=RuntimeProfileConfig)
+    runtime_paths: RuntimePathsConfig = Field(default_factory=RuntimePathsConfig)
 
 
-def load_settings(path: Optional[str | Path] = None) -> OneiricSettings:
+def load_settings(path: str | Path | None = None) -> OneiricSettings:
     """Load settings from TOML/JSON file and environment overrides."""
 
-    data: Dict[str, Any] = {}
+    data: dict[str, Any] = {}
     config_path = path or os.getenv("ONEIRIC_CONFIG")
     if config_path:
         file = Path(config_path)
@@ -166,7 +208,61 @@ def runtime_health_path(settings: OneiricSettings) -> Path:
 
 def domain_activity_path(settings: OneiricSettings) -> Path:
     cache = Path(settings.remote.cache_dir)
-    return cache / "domain_activity.json"
+    return cache / "domain_activity.sqlite"
+
+
+def workflow_checkpoint_path(settings: OneiricSettings) -> Path | None:
+    """Resolve workflow checkpoint path (or None when disabled)."""
+
+    if not settings.runtime_paths.workflow_checkpoints_enabled:
+        return None
+    override = settings.runtime_paths.workflow_checkpoints_path
+    if override:
+        return Path(override)
+    cache = Path(settings.remote.cache_dir)
+    return cache / "workflow_checkpoints.sqlite"
+
+
+def apply_runtime_profile(
+    settings: OneiricSettings, profile_name: str | None
+) -> OneiricSettings:
+    """Return a copy of settings with the requested runtime profile applied."""
+
+    target = (profile_name or settings.profile.name or "default").lower()
+    updated = settings.model_copy(deep=True)
+    if target in ("", "default"):
+        updated.profile = RuntimeProfileConfig()
+        if profile_name:
+            logger.info("runtime-profile-applied", profile="default")
+        return updated
+    if target == "serverless":
+        updated.profile = RuntimeProfileConfig(
+            name="serverless",
+            watchers_enabled=False,
+            remote_enabled=False,
+            inline_manifest_only=True,
+            supervisor_enabled=True,
+        )
+        updated.remote.enabled = False
+        updated.remote.refresh_interval = None
+        logger.info("runtime-profile-applied", profile="serverless")
+        return updated
+    raise ValueError(f"Unknown runtime profile: {profile_name}")
+
+
+def apply_profile_with_fallback(
+    settings: OneiricSettings, profile_name: str | None
+) -> OneiricSettings:
+    """Apply an explicit or configured runtime profile if necessary."""
+
+    explicit = profile_name or ""
+    if explicit:
+        return apply_runtime_profile(settings, explicit)
+
+    configured = settings.profile.name or "default"
+    if configured.lower() != "default":
+        return apply_runtime_profile(settings, configured)
+    return settings
 
 
 class SecretsHook:
@@ -176,22 +272,55 @@ class SecretsHook:
         self.lifecycle = lifecycle
         self.config = config
         self._logger = get_logger("secrets")
+        self._cache = SecretValueCache(config.cache_ttl_seconds)
+        self._default_cache_key = config.provider or f"{config.domain}:{config.key}"
+        self._prefetched = False
 
-    async def get(self, secret_id: str) -> Optional[str]:
+    async def get(self, secret_id: str) -> str | None:
         if secret_id in self.config.inline:
             return self.config.inline[secret_id]
+        cache_key = self._cache_key()
+        hit, cached_value = self._cache.get(cache_key, secret_id)
+        if hit:
+            self._logger.debug(
+                "secret-cache-hit", secret_id=secret_id, provider=cache_key
+            )
+            return cached_value
         provider = await self._ensure_provider()
         if provider is None:
             return None
         getter = getattr(provider, "get_secret", None)
         if not callable(getter):
-            raise LifecycleError("Configured secrets adapter does not implement 'get_secret'")
+            raise LifecycleError(
+                "Configured secrets adapter does not implement 'get_secret'"
+            )
         value = getter(secret_id)
-        return await _maybe_await(value)
+        resolved = await _maybe_await(value)
+        self._cache.set(cache_key, secret_id, resolved)
+        return resolved
 
-    async def _ensure_provider(self) -> Optional[Any]:
+    async def prefetch(self) -> bool:
+        """Ensure the configured provider is activated before first use."""
+
+        provider = await self._ensure_provider()
+        ready = provider is not None
+        if ready:
+            self._logger.debug(
+                "secrets-prefetched",
+                provider=self.config.provider or self._default_cache_key,
+            )
+        return ready
+
+    @property
+    def prefetched(self) -> bool:
+        """Return True when the secrets provider has been activated."""
+
+        return self._prefetched
+
+    async def _ensure_provider(self) -> Any | None:
         instance = self.lifecycle.get_instance(self.config.domain, self.config.key)
         if instance:
+            self._prefetched = True
             return instance
         provider_id = self.config.provider
         if not provider_id:
@@ -202,19 +331,48 @@ class SecretsHook:
             self.config.key,
             provider=provider_id,
         )
+        if instance is not None:
+            self._prefetched = True
         return instance
 
+    def invalidate(
+        self,
+        keys: Sequence[str] | None = None,
+        provider: str | None = None,
+    ) -> int:
+        """Invalidate cached secret values. Returns number of entries removed."""
+        provider_key = self._cache_key(provider) if provider else None
+        removed = self._cache.invalidate(keys, provider_key)
+        self._logger.info(
+            "secrets-cache-invalidated",
+            removed=removed,
+            provider=provider_key or "*",
+            keys="*" if keys is None else list(keys),
+        )
+        return removed
 
-def _env_overrides(prefix: str = "ONEIRIC_") -> Dict[str, Any]:
-    overrides: Dict[str, Any] = {}
+    def _cache_key(self, override: str | None = None) -> str:
+        return (override or self._default_cache_key or "default").lower()
+
+
+def _env_overrides(prefix: str = "ONEIRIC_") -> dict[str, Any]:
+    overrides: dict[str, Any] = {}
     for key, value in os.environ.items():
         if not key.startswith(prefix):
             continue
         path = key[len(prefix) :].lower().split("__")
+        coerced = _coerce_env_value(value)
+        if len(path) == 1 and path[0] == "profile":
+            profile_section = overrides.setdefault("profile", {})
+            if isinstance(profile_section, dict):
+                profile_section["name"] = coerced
+            else:
+                overrides["profile"] = {"name": coerced}
+            continue
         cursor = overrides
         for part in path[:-1]:
             cursor = cursor.setdefault(part, {})
-        cursor[path[-1]] = _coerce_env_value(value)
+        cursor[path[-1]] = coerced
     return overrides
 
 
@@ -232,7 +390,7 @@ def _coerce_env_value(value: str) -> Any:
     return value
 
 
-def _read_file(path: Path) -> Dict[str, Any]:
+def _read_file(path: Path) -> dict[str, Any]:
     content = path.read_text()
     if path.suffix in {".toml", ".tml"}:
         return tomllib.loads(content)
@@ -243,8 +401,8 @@ def _read_file(path: Path) -> Dict[str, Any]:
     return tomllib.loads(content)
 
 
-def _deep_merge(base: Mapping[str, Any], override: Mapping[str, Any]) -> Dict[str, Any]:
-    result: Dict[str, Any] = dict(base)
+def _deep_merge(base: Mapping[str, Any], override: Mapping[str, Any]) -> dict[str, Any]:
+    result: dict[str, Any] = dict(base)
     for key, value in override.items():
         if (
             key in result

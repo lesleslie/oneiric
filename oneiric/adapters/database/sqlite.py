@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Awaitable, Callable, Optional
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -15,8 +16,10 @@ from oneiric.core.resolution import CandidateSource
 class SQLiteDatabaseSettings(BaseModel):
     """Configuration for the SQLite adapter."""
 
-    path: str = Field(default=":memory:", description="Path to the SQLite database file.")
-    isolation_level: Optional[str] = Field(default=None)
+    path: str = Field(
+        default=":memory:", description="Path to the SQLite database file."
+    )
+    isolation_level: str | None = Field(default=None)
     pragmas: dict[str, str | int | float] = Field(default_factory=dict)
 
 
@@ -61,11 +64,15 @@ class SQLiteDatabaseAdapter:
             except ModuleNotFoundError as exc:  # pragma: no cover - defensive
                 raise LifecycleError("aiosqlite-missing") from exc
             factory = aiosqlite.connect
-        self._conn = await factory(self._settings.path, isolation_level=self._settings.isolation_level)
+        self._conn = await factory(
+            self._settings.path, isolation_level=self._settings.isolation_level
+        )
         for pragma, value in self._settings.pragmas.items():
             await self._conn.execute(f"PRAGMA {pragma}={value}")
         await self._conn.commit()
-        self._logger.info("adapter-init", adapter="sqlite-database", path=self._settings.path)
+        self._logger.info(
+            "adapter-init", adapter="sqlite-database", path=self._settings.path
+        )
 
     async def health(self) -> bool:
         conn = self._ensure_conn()

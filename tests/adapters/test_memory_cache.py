@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import asyncio
 import itertools
+
 import pytest
 
 from oneiric.adapters.bootstrap import register_builtin_adapters
 from oneiric.adapters.cache.memory import MemoryCacheAdapter, MemoryCacheSettings
-from oneiric.core.lifecycle import LifecycleManager
 from oneiric.core.resolution import Resolver
 
 

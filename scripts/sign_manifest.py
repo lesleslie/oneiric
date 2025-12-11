@@ -93,15 +93,15 @@ def sign_manifest(
     # Load private key
     print(f"\nLoading private key: {private_key_path}")
     private_key = load_private_key(private_key_path)
-    print(f"  Algorithm: ED25519")
+    print("  Algorithm: ED25519")
 
     # Get canonical manifest for signing
-    print(f"\nGenerating canonical representation...")
+    print("\nGenerating canonical representation...")
     canonical = get_canonical_manifest_for_signing(manifest)
     print(f"  Canonical bytes: {len(canonical)} chars")
 
     # Sign
-    print(f"\nSigning manifest...")
+    print("\nSigning manifest...")
     signature_bytes = private_key.sign(canonical.encode())
     signature_b64 = base64.b64encode(signature_bytes).decode()
 

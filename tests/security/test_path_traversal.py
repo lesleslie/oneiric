@@ -15,7 +15,9 @@ from oneiric.remote.loader import ArtifactManager
 class TestPathTraversalPrevention:
     """Test path traversal attack prevention."""
 
-    def test_normal_filename_allowed(self, cache_dir):
+    pytestmark = pytest.mark.asyncio
+
+    async def test_normal_filename_allowed(self, cache_dir):
         """Normal filenames work correctly."""
         manager = ArtifactManager(cache_dir=str(cache_dir))
         # SHA256 hash is safe (all hex characters)
@@ -23,37 +25,37 @@ class TestPathTraversalPrevention:
         destination = (manager.cache_dir / sha256).resolve()
         assert destination.is_relative_to(manager.cache_dir.resolve())
 
-    def test_parent_directory_blocked(self, cache_dir):
+    async def test_parent_directory_blocked(self, cache_dir):
         """Parent directory traversal blocked."""
         manager = ArtifactManager(cache_dir=str(cache_dir))
         with pytest.raises(ValueError, match="Path traversal"):
-            manager.fetch(uri="../../etc/passwd", sha256=None, headers={})
+            await manager.fetch(uri="../../etc/passwd", sha256=None, headers={})
 
-    def test_absolute_path_blocked(self, cache_dir):
+    async def test_absolute_path_blocked(self, cache_dir):
         """Absolute paths blocked."""
         manager = ArtifactManager(cache_dir=str(cache_dir))
         with pytest.raises(ValueError, match="Path traversal"):
-            manager.fetch(uri="/etc/passwd", sha256=None, headers={})
+            await manager.fetch(uri="/etc/passwd", sha256=None, headers={})
 
-    def test_dotdot_in_filename_blocked(self, cache_dir):
+    async def test_dotdot_in_filename_blocked(self, cache_dir):
         """Filenames containing .. are blocked."""
         manager = ArtifactManager(cache_dir=str(cache_dir))
         with pytest.raises(ValueError, match="Path traversal"):
-            manager.fetch(uri="file..txt", sha256=None, headers={})
+            await manager.fetch(uri="file..txt", sha256=None, headers={})
 
-    def test_forward_slash_in_filename_blocked(self, cache_dir):
+    async def test_forward_slash_in_filename_blocked(self, cache_dir):
         """Filenames containing / are blocked."""
         manager = ArtifactManager(cache_dir=str(cache_dir))
         with pytest.raises(ValueError, match="Path traversal"):
-            manager.fetch(uri="subdir/evil.txt", sha256=None, headers={})
+            await manager.fetch(uri="subdir/evil.txt", sha256=None, headers={})
 
-    def test_backslash_in_filename_blocked(self, cache_dir):
+    async def test_backslash_in_filename_blocked(self, cache_dir):
         """Filenames containing backslash are blocked (Windows paths)."""
         manager = ArtifactManager(cache_dir=str(cache_dir))
         with pytest.raises(ValueError, match="Path traversal"):
-            manager.fetch(uri="subdir\\evil.txt", sha256=None, headers={})
+            await manager.fetch(uri="subdir\\evil.txt", sha256=None, headers={})
 
-    def test_sha256_bypasses_filename_validation(self, cache_dir):
+    async def test_sha256_bypasses_filename_validation(self, cache_dir):
         """When SHA256 provided, filename is the hash (safe)."""
         manager = ArtifactManager(cache_dir=str(cache_dir))
         sha256 = "b" * 64  # Valid hex string
@@ -128,26 +130,34 @@ class TestKeyFormatValidation:
 class TestPathTraversalAttackScenarios:
     """Test realistic path traversal attack scenarios."""
 
-    def test_linux_etc_passwd_attack(self, cache_dir):
+    pytestmark = pytest.mark.asyncio
+
+    async def test_linux_etc_passwd_attack(self, cache_dir):
         """Block attempts to access /etc/passwd."""
         manager = ArtifactManager(cache_dir=str(cache_dir))
         with pytest.raises(ValueError, match="Path traversal"):
-            manager.fetch(uri="../../../../etc/passwd", sha256=None, headers={})
+            await manager.fetch(uri="../../../../etc/passwd", sha256=None, headers={})
 
-    def test_windows_system32_attack(self, cache_dir):
+    async def test_windows_system32_attack(self, cache_dir):
         """Block attempts to access Windows system files."""
         manager = ArtifactManager(cache_dir=str(cache_dir))
         with pytest.raises(ValueError, match="Path traversal"):
-            manager.fetch(uri="..\\..\\..\\Windows\\System32\\config\\SAM", sha256=None, headers={})
+            await manager.fetch(
+                uri="..\\..\\..\\Windows\\System32\\config\\SAM",
+                sha256=None,
+                headers={},
+            )
 
-    def test_home_directory_attack(self, cache_dir):
+    async def test_home_directory_attack(self, cache_dir):
         """Block attempts to access home directory files."""
         manager = ArtifactManager(cache_dir=str(cache_dir))
         with pytest.raises(ValueError, match="Path traversal"):
-            manager.fetch(uri="../../.ssh/id_rsa", sha256=None, headers={})
+            await manager.fetch(uri="../../.ssh/id_rsa", sha256=None, headers={})
 
-    def test_cron_backdoor_attack(self, cache_dir):
+    async def test_cron_backdoor_attack(self, cache_dir):
         """Block attempts to write to cron.d."""
         manager = ArtifactManager(cache_dir=str(cache_dir))
         with pytest.raises(ValueError, match="Path traversal"):
-            manager.fetch(uri="../../../etc/cron.d/backdoor", sha256=None, headers={})
+            await manager.fetch(
+                uri="../../../etc/cron.d/backdoor", sha256=None, headers={}
+            )

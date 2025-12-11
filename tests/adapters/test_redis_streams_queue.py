@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from collections import defaultdict
-from typing import Any, Dict, List
+from typing import Any
 
 import pytest
 from coredis.exceptions import ResponseError
@@ -20,16 +20,18 @@ class InMemoryPool:
 
 class InMemoryRedisStreamsClient:
     def __init__(self) -> None:
-        self.streams: Dict[str, List[tuple[str, Dict[str, Any]]]] = defaultdict(list)
-        self.groups: Dict[str, set[str]] = defaultdict(set)
-        self.pending: Dict[str, dict[str, Any]] = {}
+        self.streams: dict[str, list[tuple[str, dict[str, Any]]]] = defaultdict(list)
+        self.groups: dict[str, set[str]] = defaultdict(set)
+        self.pending: dict[str, dict[str, Any]] = {}
         self._counter = 0
         self.connection_pool = InMemoryPool()
 
     async def ping(self) -> bool:
         return True
 
-    async def xgroup_create(self, stream: str, group: str, *, id: str, mkstream: bool) -> None:
+    async def xgroup_create(
+        self, stream: str, group: str, *, id: str, mkstream: bool
+    ) -> None:
         key = f"{stream}:{group}"
         if key in self.groups:
             raise ResponseError("BUSYGROUP")
@@ -37,16 +39,36 @@ class InMemoryRedisStreamsClient:
         if mkstream and stream not in self.streams:
             self.streams[stream] = []
 
-    async def xadd(self, stream: str, data: Dict[str, Any], **kwargs: Any) -> str:
+    async def xadd(self, stream: str, data: dict[str, Any], **kwargs: Any) -> str:
         self._counter += 1
         message_id = f"0-{self._counter}"
         self.streams[stream].append((message_id, dict(data)))
-        self.pending.setdefault(message_id, {"acked": False, "consumer": None, "delivery_count": 0, "payload": dict(data)})
+        self.pending.setdefault(
+            message_id,
+            {
+                "acked": False,
+                "consumer": None,
+                "delivery_count": 0,
+                "payload": dict(data),
+            },
+        )
         return message_id
 
-    async def xreadgroup(self, group: str, consumer: str, *, streams: dict[str, str], count: int, block: int) -> list[Any]:
+    async def xreadgroup(
+        self,
+        group: str,
+        consumer: str,
+        *,
+        streams: dict[str, str],
+        count: int,
+        block: int,
+    ) -> list[Any]:
         stream = next(iter(streams.keys()))
-        available = [entry for entry in self.streams[stream] if not self.pending[entry[0]]["acked"]]
+        available = [
+            entry
+            for entry in self.streams[stream]
+            if not self.pending[entry[0]]["acked"]
+        ]
         selection = available[:count]
         results = [(stream, selection)] if selection else []
         for message_id, _ in selection:
@@ -66,7 +88,9 @@ class InMemoryRedisStreamsClient:
                 acked += 1
         return acked
 
-    async def xpending_range(self, stream: str, group: str, *, min: str, max: str, count: int) -> list[tuple[str, str | None, int, int]]:
+    async def xpending_range(
+        self, stream: str, group: str, *, min: str, max: str, count: int
+    ) -> list[tuple[str, str | None, int, int]]:
         rows: list[tuple[str, str | None, int, int]] = []
         for message_id, meta in list(self.pending.items())[:count]:
             if not meta["acked"]:
@@ -81,7 +105,9 @@ class InMemoryRedisStreamsClient:
 async def test_enqueue_read_and_ack_cycle() -> None:
     client = InMemoryRedisStreamsClient()
     adapter = RedisStreamsQueueAdapter(
-        RedisStreamsQueueSettings(stream="jobs", group="workers", consumer="c1", auto_create_group=True),
+        RedisStreamsQueueSettings(
+            stream="jobs", group="workers", consumer="c1", auto_create_group=True
+        ),
         redis_client=client,
     )
     await adapter.init()

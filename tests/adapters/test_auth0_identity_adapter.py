@@ -13,8 +13,12 @@ from oneiric.adapters.identity.auth0 import Auth0IdentityAdapter, Auth0IdentityS
 def _build_jwk(public_pem: bytes, kid: str) -> dict[str, str]:
     public_key = serialization.load_pem_public_key(public_pem)
     numbers = public_key.public_numbers()
-    n = base64.urlsafe_b64encode(numbers.n.to_bytes((numbers.n.bit_length() + 7) // 8, "big")).rstrip(b"=")
-    e = base64.urlsafe_b64encode(numbers.e.to_bytes((numbers.e.bit_length() + 7) // 8, "big")).rstrip(b"=")
+    n = base64.urlsafe_b64encode(
+        numbers.n.to_bytes((numbers.n.bit_length() + 7) // 8, "big")
+    ).rstrip(b"=")
+    e = base64.urlsafe_b64encode(
+        numbers.e.to_bytes((numbers.e.bit_length() + 7) // 8, "big")
+    ).rstrip(b"=")
     return {
         "kty": "RSA",
         "alg": "RS256",
@@ -60,11 +64,17 @@ async def test_auth0_adapter_verifies_token_with_cached_jwks() -> None:
     )
     jwk = _build_jwk(public_pem, "demo-key")
     client = _DummyHTTPClient(_DummyResponse({"keys": [jwk]}))
-    settings = Auth0IdentitySettings(domain="tenant.us.auth0.com", audience="api://default")
+    settings = Auth0IdentitySettings(
+        domain="tenant.us.auth0.com", audience="api://default"
+    )
     adapter = Auth0IdentityAdapter(settings, http_client=client)
     await adapter.init()
     token = jwt.encode(
-        {"sub": "user-1", "aud": "api://default", "iss": "https://tenant.us.auth0.com/"},
+        {
+            "sub": "user-1",
+            "aud": "api://default",
+            "iss": "https://tenant.us.auth0.com/",
+        },
         key=private_key,
         algorithm="RS256",
         headers={"kid": "demo-key"},

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, Mapping, Optional
-from typing import Literal
+from collections.abc import Iterable, Mapping
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -16,7 +16,7 @@ from oneiric.core.resolution import CandidateSource
 class DataTransformSettings(BaseModel):
     """Settings governing field selection/renaming/defaults."""
 
-    include_fields: Optional[list[str]] = Field(
+    include_fields: list[str] | None = Field(
         default=None,
         description="When set, only these fields survive the transform.",
     )
@@ -24,11 +24,11 @@ class DataTransformSettings(BaseModel):
         default_factory=list,
         description="Fields dropped from the payload.",
     )
-    rename_fields: Dict[str, str] = Field(
+    rename_fields: dict[str, str] = Field(
         default_factory=dict,
         description="Field rename map (source -> destination).",
     )
-    defaults: Dict[str, Any] = Field(
+    defaults: dict[str, Any] = Field(
         default_factory=dict,
         description="Default values applied when keys are missing.",
     )
@@ -62,10 +62,18 @@ class DataTransformAction:
         record = payload.get("data") or payload.get("record")
         if not isinstance(record, Mapping):
             raise LifecycleError("data-transform-record-required")
-        include_fields = self._coerce_optional_list(payload.get("include_fields"), default=self._settings.include_fields)
-        exclude_fields = self._coerce_list(payload.get("exclude_fields"), default=self._settings.exclude_fields)
-        rename_fields = self._coerce_mapping(payload.get("rename_fields"), default=self._settings.rename_fields)
-        defaults = self._coerce_mapping(payload.get("defaults"), default=self._settings.defaults)
+        include_fields = self._coerce_optional_list(
+            payload.get("include_fields"), default=self._settings.include_fields
+        )
+        exclude_fields = self._coerce_list(
+            payload.get("exclude_fields"), default=self._settings.exclude_fields
+        )
+        rename_fields = self._coerce_mapping(
+            payload.get("rename_fields"), default=self._settings.rename_fields
+        )
+        defaults = self._coerce_mapping(
+            payload.get("defaults"), default=self._settings.defaults
+        )
         result = self._apply_include(record, include_fields)
         if exclude_fields:
             for field in exclude_fields:
@@ -98,7 +106,9 @@ class DataTransformAction:
             },
         }
 
-    def _apply_include(self, record: Mapping[str, Any], include_fields: Optional[list[str]]) -> Dict[str, Any]:
+    def _apply_include(
+        self, record: Mapping[str, Any], include_fields: list[str] | None
+    ) -> dict[str, Any]:
         if include_fields:
             return {field: record[field] for field in include_fields if field in record}
         return dict(record)
@@ -107,8 +117,8 @@ class DataTransformAction:
         self,
         value: Any,
         *,
-        default: Optional[list[str]],
-    ) -> Optional[list[str]]:
+        default: list[str] | None,
+    ) -> list[str] | None:
         if value is None:
             return list(default) if default else None
         if isinstance(value, str):
@@ -118,11 +128,13 @@ class DataTransformAction:
             return coerced
         raise LifecycleError("data-transform-list-invalid")
 
-    def _coerce_list(self, value: Any, *, default: Optional[list[str]]) -> list[str]:
+    def _coerce_list(self, value: Any, *, default: list[str] | None) -> list[str]:
         result = self._coerce_optional_list(value, default=default)
         return result or []
 
-    def _coerce_mapping(self, value: Any, *, default: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    def _coerce_mapping(
+        self, value: Any, *, default: dict[str, Any] | None
+    ) -> dict[str, Any]:
         if value is None:
             return dict(default) if default else {}
         if isinstance(value, Mapping):
@@ -133,7 +145,7 @@ class DataTransformAction:
 class DataSanitizeSettings(BaseModel):
     """Settings controlling sanitization behavior."""
 
-    allow_fields: Optional[list[str]] = Field(
+    allow_fields: list[str] | None = Field(
         default=None,
         description="Optional allowlist restricting which fields survive sanitization.",
     )
@@ -180,53 +192,99 @@ class DataSanitizeAction:
 
     async def execute(self, payload: dict | None = None) -> dict:
         payload = payload or {}
+        record = self._extract_record(payload)
+        params = self._extract_sanitize_params(payload)
+
+        normalize = self._make_normalizer(params["case_sensitive"])
+        field_sets = self._normalize_field_sets(params, normalize)
+
+        sanitized = self._filter_allowed_fields(record, field_sets["allow"], normalize)
+        removed = self._drop_fields(sanitized, field_sets["drop"], normalize)
+        masked = self._mask_fields(
+            sanitized, field_sets["mask"], params["mask_value"], normalize
+        )
+
+        self._log_results(removed, masked, field_sets["allow"])
+        return self._build_result(sanitized, removed, masked, params["allow_fields"])
+
+    def _extract_record(self, payload: dict) -> Mapping:
         record = payload.get("data") or payload.get("record")
         if not isinstance(record, Mapping):
             raise LifecycleError("data-sanitize-record-required")
+        return record
+
+    def _extract_sanitize_params(self, payload: dict) -> dict:
         case_sensitive = payload.get("case_sensitive")
         if case_sensitive is None:
             case_sensitive = self._settings.case_sensitive
-        allow_fields = self._coerce_optional_list(
-            payload.get("allow_fields"),
-            default=self._settings.allow_fields,
-        )
-        drop_fields = self._coerce_list(payload.get("drop_fields"), default=self._settings.drop_fields)
-        mask_fields = self._coerce_list(payload.get("mask_fields"), default=self._settings.mask_fields)
-        mask_value = payload.get("mask_value", self._settings.mask_value)
+        return {
+            "case_sensitive": case_sensitive,
+            "allow_fields": self._coerce_optional_list(
+                payload.get("allow_fields"), default=self._settings.allow_fields
+            ),
+            "drop_fields": self._coerce_list(
+                payload.get("drop_fields"), default=self._settings.drop_fields
+            ),
+            "mask_fields": self._coerce_list(
+                payload.get("mask_fields"), default=self._settings.mask_fields
+            ),
+            "mask_value": payload.get("mask_value", self._settings.mask_value),
+        }
 
+    def _make_normalizer(self, case_sensitive: bool):
         def normalize(name: Any) -> str:
             key = str(name)
             return key if case_sensitive else key.lower()
 
-        normalized_allow = {normalize(field) for field in allow_fields} if allow_fields else None
-        normalized_drop = {normalize(field) for field in drop_fields}
-        normalized_mask = {normalize(field) for field in mask_fields}
+        return normalize
 
+    def _normalize_field_sets(self, params: dict, normalize) -> dict:
+        return {
+            "allow": {normalize(f) for f in params["allow_fields"]}
+            if params["allow_fields"]
+            else None,
+            "drop": {normalize(f) for f in params["drop_fields"]},
+            "mask": {normalize(f) for f in params["mask_fields"]},
+        }
+
+    def _filter_allowed_fields(
+        self, record: Mapping, allow_set: set | None, normalize
+    ) -> dict:
         sanitized = {}
         for key, value in record.items():
-            normalized_key = normalize(key)
-            if normalized_allow is not None and normalized_key not in normalized_allow:
-                continue
-            sanitized[str(key)] = value
+            if allow_set is None or normalize(key) in allow_set:
+                sanitized[str(key)] = value
+        return sanitized
 
+    def _drop_fields(self, sanitized: dict, drop_set: set, normalize) -> int:
         removed = 0
         for key in list(sanitized.keys()):
-            if normalize(key) in normalized_drop:
+            if normalize(key) in drop_set:
                 sanitized.pop(key)
                 removed += 1
+        return removed
 
+    def _mask_fields(
+        self, sanitized: dict, mask_set: set, mask_value: Any, normalize
+    ) -> int:
         masked = 0
         for key in sanitized.keys():
-            if normalize(key) in normalized_mask:
+            if normalize(key) in mask_set:
                 sanitized[key] = mask_value
                 masked += 1
+        return masked
 
+    def _log_results(self, removed: int, masked: int, allow_set: set | None) -> None:
         self._logger.info(
             "data-action-sanitize",
             removed=removed,
             masked=masked,
-            allow_count=len(normalized_allow) if normalized_allow else None,
+            allow_count=len(allow_set) if allow_set else None,
         )
+
+    def _build_result(
+        self, sanitized: dict, removed: int, masked: int, allow_fields
+    ) -> dict:
         return {
             "status": "sanitized",
             "data": sanitized,
@@ -241,8 +299,8 @@ class DataSanitizeAction:
         self,
         value: Any,
         *,
-        default: Optional[list[str]],
-    ) -> Optional[list[str]]:
+        default: list[str] | None,
+    ) -> list[str] | None:
         if value is None:
             return list(default) if default else None
         if isinstance(value, str):
@@ -251,7 +309,7 @@ class DataSanitizeAction:
             return [str(item) for item in value]
         raise LifecycleError("data-sanitize-list-invalid")
 
-    def _coerce_list(self, value: Any, *, default: Optional[list[str]]) -> list[str]:
+    def _coerce_list(self, value: Any, *, default: list[str] | None) -> list[str]:
         result = self._coerce_optional_list(value, default=default)
         return result or []
 
@@ -260,7 +318,9 @@ class ValidationFieldRule(BaseModel):
     """Rule describing a field requirement."""
 
     name: str
-    type: Literal["str", "int", "float", "bool", "dict", "list", "any"] = Field(default="str")
+    type: Literal["str", "int", "float", "bool", "dict", "list", "any"] = Field(
+        default="str"
+    )
     required: bool = Field(default=True)
     allow_null: bool = Field(default=False)
 
@@ -317,38 +377,21 @@ class ValidationSchemaAction:
         record = payload.get("data") or payload.get("record")
         if not isinstance(record, Mapping):
             raise LifecycleError("validation-schema-record-required")
+
         fields = self._resolve_fields(payload.get("fields"))
-        allow_extra = payload.get("allow_extra")
-        if allow_extra is None:
-            allow_extra = self._settings.allow_extra
-        fail_fast = payload.get("fail_fast")
-        if fail_fast is None:
-            fail_fast = self._settings.fail_fast
+        allow_extra = self._get_allow_extra(payload)
+        fail_fast = self._get_fail_fast(payload)
+
         errors: list[str] = []
         validated: dict[str, Any] = {}
         required_names = {rule.name for rule in fields if rule.required}
 
-        for rule in fields:
-            value = record.get(rule.name)
-            if value is None:
-                if not rule.allow_null and rule.required:
-                    errors.append(f"{rule.name} missing")
-                    if fail_fast:
-                        break
-                validated[rule.name] = value
-                continue
-            expected = self._TYPE_MAP.get(rule.type, (object,))
-            if not isinstance(value, expected):
-                errors.append(f"{rule.name} invalid-type")
-                if fail_fast:
-                    break
-                continue
-            validated[rule.name] = value
+        # Validate field rules
+        errors, validated = self._validate_fields(record, fields, fail_fast)
 
+        # Check for extra fields
         if not allow_extra:
-            extra = [str(key) for key in record.keys() if key not in {rule.name for rule in fields}]
-            if extra:
-                errors.append(f"unexpected-fields: {','.join(extra)}")
+            self._check_extra_fields(record, fields, errors)
 
         status = "valid" if not errors else "invalid"
         self._logger.info(
@@ -364,9 +407,76 @@ class ValidationSchemaAction:
             "errors": errors,
         }
 
+    def _get_allow_extra(self, payload: dict) -> bool:
+        """Extract allow_extra setting from payload or settings."""
+        allow_extra = payload.get("allow_extra")
+        return self._settings.allow_extra if allow_extra is None else allow_extra
+
+    def _get_fail_fast(self, payload: dict) -> bool:
+        """Extract fail_fast setting from payload or settings."""
+        fail_fast = payload.get("fail_fast")
+        return self._settings.fail_fast if fail_fast is None else fail_fast
+
+    def _validate_fields(
+        self,
+        record: Mapping[str, Any],
+        fields: list[ValidationFieldRule],
+        fail_fast: bool,
+    ) -> tuple[list[str], dict[str, Any]]:
+        """Validate fields against rules."""
+        errors: list[str] = []
+        validated: dict[str, Any] = {}
+
+        for rule in fields:
+            value = record.get(rule.name)
+            error = self._validate_single_field(rule, value)
+
+            if error:
+                errors.append(error)
+                if fail_fast:
+                    break
+                if value is None:
+                    validated[rule.name] = value
+            else:
+                validated[rule.name] = value
+
+        return errors, validated
+
+    def _validate_single_field(
+        self, rule: ValidationFieldRule, value: Any
+    ) -> str | None:
+        """Validate a single field and return error message if invalid."""
+        if value is None:
+            if not rule.allow_null and rule.required:
+                return f"{rule.name} missing"
+            return None
+
+        expected = self._TYPE_MAP.get(rule.type, (object,))
+        if not isinstance(value, expected):
+            return f"{rule.name} invalid-type"
+
+        return None
+
+    def _check_extra_fields(
+        self,
+        record: Mapping[str, Any],
+        fields: list[ValidationFieldRule],
+        errors: list[str],
+    ) -> None:
+        """Check for unexpected fields not in schema."""
+        field_names = {rule.name for rule in fields}
+        extra = [key for key in record.keys() if key not in field_names]
+        if extra:
+            errors.append(f"unexpected-fields: {','.join(extra)}")
+
     def _resolve_fields(self, payload_fields: Any) -> list[ValidationFieldRule]:
         if payload_fields is None:
-            return list(self._settings.fields)
+            return self._settings.fields.copy()
         if isinstance(payload_fields, Iterable):
-            return [ValidationFieldRule(**item) if not isinstance(item, ValidationFieldRule) else item for item in payload_fields]
+            return [
+                ValidationFieldRule(**item)
+                if not isinstance(item, ValidationFieldRule)
+                else item
+                for item in payload_fields
+            ]
         raise LifecycleError("validation-schema-fields-invalid")

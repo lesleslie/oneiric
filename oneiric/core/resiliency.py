@@ -1,12 +1,20 @@
-"""Resiliency helpers (circuit breaker + retry utilities)."""
+"""Resiliency helpers backed by aiobreaker and tenacity."""
 
 from __future__ import annotations
 
-import asyncio
 import inspect
-import random
-import time
-from typing import Awaitable, Callable, Optional, TypeVar
+from collections.abc import Awaitable, Callable
+from datetime import timedelta
+from typing import TypeVar
+
+from aiobreaker import CircuitBreaker as _AioCircuitBreaker
+from aiobreaker import CircuitBreakerError as _AioCircuitBreakerError
+from tenacity import (
+    AsyncRetrying,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential_jitter,
+)
 
 T = TypeVar("T")
 
@@ -22,7 +30,7 @@ class CircuitBreakerOpen(Exception):
 
 
 class CircuitBreaker:
-    """Simple async-aware circuit breaker."""
+    """Thin wrapper around :mod:`aiobreaker` with Oneiric semantics."""
 
     def __init__(
         self,
@@ -32,49 +40,31 @@ class CircuitBreaker:
         recovery_time: float = 60.0,
     ) -> None:
         self.name = name
-        self.failure_threshold = max(failure_threshold, 1)
-        self.recovery_time = max(recovery_time, 1.0)
-        self._failures = 0
-        self._opened_at: Optional[float] = None
-        self._lock = asyncio.Lock()
+        self._breaker = _AioCircuitBreaker(
+            fail_max=max(failure_threshold, 1),
+            timeout_duration=timedelta(seconds=max(recovery_time, 0.1)),
+            name=name,
+        )
 
     async def call(self, func: Callable[[], Awaitable[T] | T]) -> T:
-        await self._ensure_available()
-        try:
+        async def _execute() -> T:
             result = func()
             if inspect.isawaitable(result):
-                result = await result  # type: ignore[assignment]
-        except Exception:
-            await self._record_failure()
-            raise
-        await self._record_success()
-        return result
+                return await result  # type: ignore[return-value]
+            return result  # type: ignore[return-value]
 
-    async def _ensure_available(self) -> None:
-        async with self._lock:
-            if self._opened_at is None:
-                return
-            elapsed = time.monotonic() - self._opened_at
-            if elapsed >= self.recovery_time:
-                self._opened_at = None
-                self._failures = 0
-                return
-            raise CircuitBreakerOpen(self.name, retry_after=self.recovery_time - elapsed)
-
-    async def _record_failure(self) -> None:
-        async with self._lock:
-            self._failures += 1
-            if self._failures >= self.failure_threshold:
-                self._opened_at = time.monotonic()
-
-    async def _record_success(self) -> None:
-        async with self._lock:
-            self._failures = 0
-            self._opened_at = None
+        try:
+            return await self._breaker.call_async(_execute)
+        except (
+            _AioCircuitBreakerError
+        ) as exc:  # pragma: no cover - exercised in runtime tests
+            retry_after = getattr(exc, "time_remaining", None)
+            retry_seconds = retry_after.total_seconds() if retry_after else 0.0
+            raise CircuitBreakerOpen(self.name, retry_seconds) from exc
 
     @property
     def is_open(self) -> bool:
-        return self._opened_at is not None
+        return self._breaker.current_state.name == "OPEN"
 
 
 async def run_with_retry(
@@ -85,23 +75,23 @@ async def run_with_retry(
     max_delay: float = 30.0,
     jitter: float = 0.25,
 ) -> T:
-    """Execute operation with exponential backoff + jitter."""
+    """Execute an operation with exponential backoff + jitter via tenacity."""
 
-    delay = max(base_delay, 0.0)
-    max_delay = max(max_delay, delay or 0.1)
-    last_error: Optional[Exception] = None
-    for attempt in range(1, max(attempts, 1) + 1):
-        try:
+    attempts = max(attempts, 1)
+    initial_delay = max(base_delay, 0.0) or 0.1
+    max_delay = max(max_delay, initial_delay)
+    wait = wait_exponential_jitter(initial=initial_delay, max=max_delay, jitter=jitter)
+
+    async for attempt in AsyncRetrying(
+        stop=stop_after_attempt(attempts),
+        wait=wait,
+        retry=retry_if_exception_type(Exception),
+        reraise=True,
+    ):
+        with attempt:
             result = operation()
             if inspect.isawaitable(result):
                 result = await result  # type: ignore[assignment]
             return result
-        except Exception as exc:  # pragma: no cover - exercised via callers
-            last_error = exc
-            if attempt >= attempts:
-                raise
-            sleep_for = min(max_delay, delay * (2 ** (attempt - 1)))
-            jitter_offset = random.uniform(0, jitter) if jitter else 0.0
-            await asyncio.sleep(sleep_for + jitter_offset)
-    assert last_error is not None  # pragma: no cover - guarded above
-    raise last_error
+
+    raise RuntimeError("unreachable")  # pragma: no cover - satisfied by AsyncRetrying

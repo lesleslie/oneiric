@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Dict
-
 from opentelemetry import metrics
 
 METER_NAME = "oneiric.remote"
@@ -59,7 +57,7 @@ def record_digest_checks_metric(*, url: str, count: int) -> None:
     _digest_counter.add(count, attributes={"url": url})
 
 
-def _success_attributes(source: str, url: str) -> Dict[str, str]:
+def _success_attributes(source: str, url: str) -> dict[str, str]:
     return {"source": source or "unknown", "url": url}
 
 

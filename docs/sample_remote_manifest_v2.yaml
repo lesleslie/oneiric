@@ -5,6 +5,11 @@ source: oneiric-production-v2
 signature: "base64-encoded-ed25519-signature-placeholder"
 signature_algorithm: ed25519
 
+# Serverless profile note:
+#   - Inline this manifest when building Cloud Run images
+#   - Launch via Procfile entry `web: uv run python -m oneiric.cli orchestrate --profile serverless --no-remote`
+#   - Keep `remote_refresh` disabled by default for the serverless profile
+
 entries:
   # ==============================================================================
   # ADAPTER EXAMPLES - Full metadata with all Stage 4 fields
@@ -45,6 +50,11 @@ entries:
       description: "Production Redis cache with client-side tracking and pub-sub"
       health_check_timeout: 5.0
       connection_pool_size: 10
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+        procfile_entry: "web: uv run python -m oneiric.cli orchestrate --profile serverless --no-remote"
       max_connections: 50
 
   # PostgreSQL Database Adapter - Full example
@@ -127,6 +137,307 @@ entries:
       description: "Auth0 JWT validation with JWKS caching"
       jwks_cache_ttl: 3600
 
+  # SendGrid Messaging Adapter - Email delivery
+  - domain: adapter
+    key: messaging.email
+    provider: sendgrid
+    factory: oneiric.adapters.messaging.sendgrid:SendGridAdapter
+    stack_level: 20
+    priority: 320
+    version: "1.0.0"
+
+    capabilities: ["email", "transactional", "sandbox-mode"]
+    owner: "Messaging Team"
+    requires_secrets: true
+    settings_model: "oneiric.adapters.messaging.sendgrid:SendGridSettings"
+
+    requires:
+      - "email-validator>=2.2.0"
+
+    metadata:
+      description: "SendGrid transactional email adapter (sandbox by default)"
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+        procfile_entry: "web: uv run python -m oneiric.cli orchestrate --profile serverless --no-remote"
+
+  # Mailgun Messaging Adapter
+  - domain: adapter
+    key: messaging.email.mailgun
+    provider: mailgun
+    factory: oneiric.adapters.messaging.mailgun:MailgunAdapter
+    stack_level: 20
+    priority: 325
+    version: "1.0.0"
+
+    capabilities: ["email", "sandbox-mode", "custom-args"]
+    owner: "Messaging Team"
+    requires_secrets: true
+    settings_model: "oneiric.adapters.messaging.mailgun:MailgunSettings"
+
+    metadata:
+      description: "Mailgun email adapter with sandbox/test mode defaults"
+      test_mode: true
+      tags: ["demo"]
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+
+  # Twilio SMS Adapter
+  - domain: adapter
+    key: messaging.sms
+    provider: twilio
+    factory: oneiric.adapters.messaging.twilio:TwilioAdapter
+    stack_level: 20
+    priority: 330
+    version: "1.0.0"
+
+    capabilities: ["sms", "notifications", "dry-run"]
+    owner: "Messaging Team"
+    requires_secrets: true
+    settings_model: "oneiric.adapters.messaging.twilio:TwilioSettings"
+
+    metadata:
+      description: "Twilio SMS adapter with dry-run + webhook signature helpers"
+      dry_run: true
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+
+  # MongoDB NoSQL Adapter
+  - domain: adapter
+    key: nosql.primary
+    provider: mongodb
+    factory: oneiric.adapters.nosql.mongodb:MongoDBAdapter
+    stack_level: 25
+    priority: 340
+    version: "1.0.0"
+
+    capabilities: ["documents", "aggregation", "filtering"]
+    owner: "Data Platform Team"
+    requires_secrets: true
+    settings_model: "oneiric.adapters.nosql.mongodb:MongoDBSettings"
+
+    requires:
+      - "motor>=3.6.0"
+
+    metadata:
+      description: "MongoDB document store for workflow state + audit trails"
+      default_collection: "workflow_state"
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+
+  # DynamoDB NoSQL Adapter
+  - domain: adapter
+    key: nosql.secondary
+    provider: dynamodb
+    factory: oneiric.adapters.nosql.dynamodb:DynamoDBAdapter
+    stack_level: 25
+    priority: 345
+    version: "1.0.0"
+
+    capabilities: ["documents", "key-value", "scan", "conditional_writes"]
+    owner: "Data Platform Team"
+    requires_secrets: true
+    settings_model: "oneiric.adapters.nosql.dynamodb:DynamoDBSettings"
+
+    requires:
+      - "aioboto3>=15.5.0"
+
+    metadata:
+      description: "DynamoDB table for workflow state (useful for AWS-first runtimes)"
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+
+  # Firestore NoSQL Adapter
+  - domain: adapter
+    key: nosql.firestore
+    provider: firestore
+    factory: oneiric.adapters.nosql.firestore:FirestoreAdapter
+    stack_level: 25
+    priority: 345
+    version: "1.0.0"
+
+    capabilities: ["documents", "query", "serverless"]
+    owner: "Data Platform Team"
+    requires_secrets: true
+    settings_model: "oneiric.adapters.nosql.firestore:FirestoreSettings"
+
+    requires:
+      - "google-cloud-firestore>=2.16.0"
+
+    metadata:
+      description: "Firestore collection for workflow state (Cloud Run friendly)"
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+
+  # Cloud Tasks Queue Adapter
+  - domain: adapter
+    key: queue.scheduler
+    provider: cloudtasks
+    factory: oneiric.adapters.queue.cloudtasks:CloudTasksQueueAdapter
+    stack_level: 30
+    priority: 380
+    version: "1.0.0"
+
+    capabilities: ["queue", "scheduler", "serverless"]
+    owner: "Platform Core Team"
+    requires_secrets: true
+    settings_model: "oneiric.adapters.queue.cloudtasks:CloudTasksQueueSettings"
+
+    metadata:
+      description: "Cloud Tasks adapter for DAG triggers"
+      http_target_url: "https://example.com/hooks/dag"
+      service_account_email: "tasks@project.iam.gserviceaccount.com"
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+
+  # Pub/Sub Queue Adapter
+  - domain: adapter
+    key: queue.events
+    provider: pubsub
+    factory: oneiric.adapters.queue.pubsub:PubSubQueueAdapter
+    stack_level: 30
+    priority: 385
+    version: "1.0.0"
+
+    capabilities: ["queue", "pubsub", "events"]
+    owner: "Platform Core Team"
+    requires_secrets: true
+    settings_model: "oneiric.adapters.queue.pubsub:PubSubQueueSettings"
+
+    metadata:
+      description: "Pub/Sub topic/subscription used for DAG/event fan-out"
+      topic: "workflow-start"
+      subscription: "workflow-start-workers"
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+
+  # Kafka Queue Adapter
+  - domain: adapter
+    key: queue.kafka
+    provider: kafka
+    factory: oneiric.adapters.queue.kafka:KafkaQueueAdapter
+    stack_level: 30
+    priority: 360
+    version: "1.0.0"
+
+    capabilities: ["queue", "streaming"]
+    owner: "Messaging Team"
+    requires_secrets: true
+    settings_model: "oneiric.adapters.queue.kafka:KafkaQueueSettings"
+
+    requires:
+      - "aiokafka>=0.10.0"
+
+    metadata:
+      description: "Kafka topic for streaming workflow triggers"
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+
+  # RabbitMQ Queue Adapter
+  - domain: adapter
+    key: queue.rabbitmq
+    provider: rabbitmq
+    factory: oneiric.adapters.queue.rabbitmq:RabbitMQQueueAdapter
+    stack_level: 30
+    priority: 365
+    version: "1.0.0"
+
+    capabilities: ["queue"]
+    owner: "Messaging Team"
+    requires_secrets: true
+    settings_model: "oneiric.adapters.queue.rabbitmq:RabbitMQQueueSettings"
+
+    requires:
+      - "aio-pika>=9.4.0"
+
+    metadata:
+      description: "RabbitMQ queue for AWS/on-prem orchestrations"
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+
+  # Slack Notifications Adapter
+  - domain: adapter
+    key: notifications.slack
+    provider: slack
+    factory: oneiric.adapters.messaging.slack:SlackAdapter
+    stack_level: 20
+    priority: 360
+    version: "1.0.0"
+
+    capabilities: ["notifications", "chatops"]
+    owner: "Messaging Team"
+    requires_secrets: true
+    settings_model: "oneiric.adapters.messaging.slack:SlackSettings"
+
+    metadata:
+      description: "Slack chat.postMessage adapter"
+      default_channel: "#platform-alerts"
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+
+  # Teams Notifications Adapter
+  - domain: adapter
+    key: notifications.teams
+    provider: teams
+    factory: oneiric.adapters.messaging.teams:TeamsAdapter
+    stack_level: 20
+    priority: 365
+    version: "1.0.0"
+
+    capabilities: ["notifications", "chatops"]
+    owner: "Messaging Team"
+    requires_secrets: true
+    settings_model: "oneiric.adapters.messaging.teams:TeamsSettings"
+
+    metadata:
+      description: "Microsoft Teams incoming webhook adapter"
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+
+  # Generic Webhook Adapter
+  - domain: adapter
+    key: notifications.webhook
+    provider: webhook
+    factory: oneiric.adapters.messaging.webhook:WebhookAdapter
+    stack_level: 20
+    priority: 368
+    version: "1.0.0"
+
+    capabilities: ["notifications", "webhook"]
+    owner: "Messaging Team"
+    requires_secrets: false
+    settings_model: "oneiric.adapters.messaging.webhook:WebhookSettings"
+
+    metadata:
+      description: "Generic JSON webhook adapter"
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+
   # Sentry Monitoring Adapter - Observability example
   - domain: adapter
     key: monitoring
@@ -169,9 +480,10 @@ entries:
     side_effect_free: false  # Makes HTTP requests (side effect)
     timeout_seconds: 30.0
     retry_policy:
-      max_attempts: 3
-      backoff_multiplier: 2.0
-      max_backoff: 60.0
+      attempts: 3
+      base_delay: 0.5
+      max_delay: 60.0
+      jitter: 0.2
       retriable_status_codes: [429, 500, 502, 503, 504]
 
     requires:
@@ -262,9 +574,10 @@ entries:
     side_effect_free: false  # Schedules tasks (side effect)
     timeout_seconds: 120.0
     retry_policy:
-      max_attempts: 5
-      backoff_multiplier: 1.5
-      max_backoff: 300.0
+      attempts: 5
+      base_delay: 0.5
+      max_delay: 300.0
+      jitter: 0.1
 
     python_version: ">=3.14"
 
@@ -316,14 +629,34 @@ entries:
     side_effect_free: false
     timeout_seconds: 30.0
     retry_policy:
-      max_attempts: 3
-      backoff_multiplier: 2.0
+      attempts: 3
+      base_delay: 0.5
+      max_delay: 5.0
+      jitter: 0.1
 
     requires:
       - "sendgrid>=6.11.0"
 
     metadata:
       description: "Email sending via SendGrid"
+  - domain: task
+    key: extract-task
+    provider: dag-worker
+    factory: example.tasks.pipeline:ExtractStage
+    stack_level: 10
+    version: "1.0.0"
+
+    metadata:
+      description: "Pipeline extract stage"
+  - domain: task
+    key: load-task
+    provider: dag-worker
+    factory: example.tasks.pipeline:LoadStage
+    stack_level: 10
+    version: "1.0.0"
+
+    metadata:
+      description: "Pipeline load stage"
 
   - domain: event
     key: webhook.dispatch
@@ -334,6 +667,23 @@ entries:
 
     side_effect_free: false
     timeout_seconds: 60.0
+
+    event_topics:
+      - webhook.received
+      - webhook.retry
+    event_max_concurrency: 10
+    event_filters:
+      - path: payload.account_region
+        any_of: ["us", "ca"]
+      - path: headers.trace_id
+        exists: true
+    event_priority: 75
+    event_fanout_policy: exclusive
+    retry_policy:
+      attempts: 3
+      base_delay: 0.25
+      max_delay: 3.0
+      jitter: 0.1
 
     metadata:
       description: "HTTP webhook dispatcher with concurrent delivery"
@@ -357,3 +707,23 @@ entries:
     metadata:
       description: "Multi-stage data processing pipeline"
       max_parallel_stages: 5
+      scheduler:
+        queue_category: queue.scheduler
+        provider: cloudtasks
+    dag:
+      nodes:
+        - id: extract
+          task: extract-task
+          retry_policy:
+            attempts: 3
+            base_delay: 0.2
+            max_delay: 2.0
+            jitter: 0.1
+        - id: load
+          task: load-task
+          depends_on: ["extract"]
+          retry_policy:
+            attempts: 2
+            base_delay: 0.1
+            max_delay: 1.0
+            jitter: 0.05

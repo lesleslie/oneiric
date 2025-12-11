@@ -3,7 +3,7 @@ name = "oneiric"
 version = "0.2.0"
 description = "Universal resolution layer for pluggable components with hot-swapping and remote manifest delivery"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.13"
 dependencies = [
     "pydantic>=2.12.5",
     "structlog>=25.5.0",
@@ -13,7 +13,14 @@ dependencies = [
     "cryptography>=46.0.3",
     "google-cloud-storage>=3.6.0",
     "google-cloud-secret-manager>=2.25.0",
-    "httpx>=1.0.dev3",
+    "email-validator>=2.2.0",
+    "numpy>=1.26.0",
+    "tenacity>=9.1.0",
+    "aiobreaker>=1.2.0",
+    "watchfiles>=1.1.0",
+    "anyio>=4.6.0",
+    "msgspec>=0.18.6",
+    "networkx>=3.2.0",
 ]
 
 [dependency-groups]
@@ -24,22 +31,142 @@ dev = [
     "pytest-timeout>=2.4.0",
     "freezegun>=1.5.5",
     "uv-bump>=0.3.1",
+    "crackerjack>=0.1.0",
 ]
-actions = []
-adapters = [
-    "aiohttp>=3.13.2",
-    "aioboto3>=15.5.0",
+cache = [
+    "coredis>=5.3.0",
+]
+database = [
+    "asyncpg>=0.31.0",
     "aiomysql>=0.3.2",
     "aiosqlite>=0.21.0",
+]
+"database-postgres" = [
     "asyncpg>=0.31.0",
-    "azure-storage-blob>=12.27.1",
-    "coredis>=5.3.0",
+]
+"database-mysql" = [
+    "aiomysql>=0.3.2",
+]
+"database-sqlite" = [
+    "aiosqlite>=0.21.0",
+]
+"http-aiohttp" = [
+    "aiohttp>=3.13.2",
+]
+"identity-auth0" = [
+    "PyJWT>=2.8",
+]
+monitoring = [
     "logfire>=4.15.1",
-    "nats-py>=2.12.0",
     "opentelemetry-exporter-otlp>=1.38.0",
     "opentelemetry-sdk>=1.38.0",
-    "PyJWT>=2.8",
     "sentry-sdk>=3.0.0a7",
+]
+"monitoring-logfire" = [
+    "logfire>=4.15.1",
+]
+"monitoring-otlp" = [
+    "opentelemetry-exporter-otlp>=1.38.0",
+    "opentelemetry-sdk>=1.38.0",
+]
+"monitoring-sentry" = [
+    "sentry-sdk>=3.0.0a7",
+]
+"queue-nats" = [
+    "nats-py>=2.12.0",
+]
+storage = [
+    "aioboto3>=15.5.0",
+    "azure-storage-blob>=12.27.1",
+]
+"storage-azure" = [
+    "azure-storage-blob>=12.27.1",
+]
+"storage-s3" = [
+    "aioboto3>=15.5.0",
+]
+ai = [
+    "openai>=1.12.0",
+    "anthropic>=0.34.0",
+]
+embedding = [
+    "openai>=1.12.0",
+]
+"embedding-openai" = [
+    "openai>=1.12.0",
+]
+graph-arangodb = [
+    "python-arango>=8.0.1",
+]
+"graph-duckdb-pgq" = [
+    "duckdb>=1.0.0",
+]
+"graph-neo4j" = [
+    "neo4j>=5.22.0",
+]
+llm = [
+    "openai>=1.12.0",
+    "anthropic>=0.34.0",
+]
+"llm-anthropic" = [
+    "anthropic>=0.34.0",
+]
+"llm-openai" = [
+    "openai>=1.12.0",
+]
+"messaging-mailgun" = [
+    "httpx>=0.27.2",
+]
+"messaging-sendgrid" = [
+    "email-validator>=2.2.0",
+    "httpx>=0.27.2",
+]
+"messaging-twilio" = [
+    "httpx>=0.27.2",
+]
+nosql = [
+    "motor>=3.6.0",
+    "aioboto3>=15.5.0",
+    "google-cloud-firestore>=2.16.0",
+]
+"nosql-dynamo" = [
+    "aioboto3>=15.5.0",
+]
+"nosql-firestore" = [
+    "google-cloud-firestore>=2.16.0",
+]
+"nosql-mongo" = [
+    "motor>=3.6.0",
+]
+"queue-kafka" = [
+    "aiokafka>=0.10.0",
+]
+"queue-rabbitmq" = [
+    "aio-pika>=9.4.0",
+]
+"queue-streaming" = [
+    "aiokafka>=0.10.0",
+    "aio-pika>=9.4.0",
+]
+"scheduler-gcp" = [
+    "google-cloud-pubsub>=2.27.1",
+    "google-cloud-tasks>=2.16.0",
+]
+"vector" = [
+    "pinecone-client>=3.1.0",
+    "qdrant-client>=1.7.3",
+    "pgvector>=0.2.4",
+    "asyncpg>=0.31.0",
+]
+"vector-pinecone" = [
+    "pinecone-client>=3.1.0",
+]
+"vector-pgvector" = [
+    "pgvector>=0.2.4",
+    "asyncpg>=0.31.0",
+]
+"vector-qdrant" = [
+    "qdrant-client>=1.7.3",
 ]
 
 [project.scripts]
@@ -52,6 +179,9 @@ ONNXRuntime-Compatibility = "https://github.com/microsoft/onnxruntime/issues/new
 [tool.uv]
 package = true
 prerelease = "allow"
+
+[tool.setuptools.packages.find]
+include = ["oneiric*"]
 
 
 [tool.pytest.ini_options]
@@ -110,7 +240,7 @@ show-fixes = true
 output-format = "full"
 
 [tool.ruff.format]
-"docstring - code-format" = true
+docstring-code-format = true
 
 [tool.ruff.lint]
 extend-select = [
@@ -125,4 +255,32 @@ ignore = [
 ]
 fixable = [
     "ALL",
+]
+
+[tool.crackerjack]
+# Disable zuban temporarily due to bug with .venv exclusion
+# https://github.com/RobertCraigie/zuban/issues/XXX
+comprehensive_hooks = [
+    "bandit",
+    "skylos",
+    "xenon",
+    "flake8",
+    "pyright",
+    "basedpyright",
+    "refurb",
+    "complexipy",
+    "shellcheck",
+    "gitleaks",
+]
+
+# NOTE: Zuban configuration moved to mypy.ini due to parsing bug
+# See: https://github.com/RobertCraigie/zuban/issues/XXX
+# Zuban v0.3.0 has a bug parsing [tool.zuban] from pyproject.toml
+# Error: "Expected tool.mypy to be simple table in pyproject.toml"
+# Use mypy.ini for zuban type checking configuration
+
+[tool.refurb]
+ignore = [
+    "FURB184",  # Assignment chaining - optional style preference
+    "FURB111",  # Replace lambda with object - test mocking pattern
 ]

@@ -6,13 +6,17 @@ import logging
 import logging.handlers
 import sys
 from pathlib import Path
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 from urllib.parse import urlparse
 
 import structlog
 from opentelemetry import trace
 from pydantic import BaseModel, Field
-from structlog.contextvars import bind_contextvars, clear_contextvars, unbind_contextvars
+from structlog.contextvars import (
+    bind_contextvars,
+    clear_contextvars,
+    unbind_contextvars,
+)
 from structlog.stdlib import BoundLogger
 
 DEFAULT_LOGGER_NAME = "oneiric"
@@ -27,7 +31,7 @@ class LoggingSinkConfig(BaseModel):
         description="Handler target (stdout/stderr/file/http).",
     )
     level: str = Field(default="INFO", description="Minimum level for this sink.")
-    path: Optional[str] = Field(default=None, description="File path when target=file.")
+    path: str | None = Field(default=None, description="File path when target=file.")
     max_bytes: int = Field(
         default=DEFAULT_FILE_SIZE,
         description="Max bytes for rotating file handler (target=file).",
@@ -36,7 +40,7 @@ class LoggingSinkConfig(BaseModel):
         default=5,
         description="Number of rotated files to keep (target=file).",
     )
-    endpoint: Optional[str] = Field(
+    endpoint: str | None = Field(
         default=None,
         description="HTTP(S) endpoint when target=http (e.g., https://logs.local/ingest).",
     )
@@ -73,10 +77,12 @@ class LoggingConfig(BaseModel):
     )
 
 
-def _otel_context_processor(logger: Any, method_name: str, event_dict: dict[str, Any]) -> dict[str, Any]:
-    span = trace.get_current_span()
-    context = span.get_span_context()
-    if context and context.is_valid:
+def _otel_context_processor(
+    logger: Any, method_name: str, event_dict: dict[str, Any]
+) -> dict[str, Any]:
+    if (
+        context := (span := trace.get_current_span()).get_span_context()
+    ) and context.is_valid:
         event_dict.setdefault("trace_id", f"{context.trace_id:032x}")
         event_dict.setdefault("span_id", f"{context.span_id:016x}")
     return event_dict
@@ -93,46 +99,66 @@ def _load_extra_processors(names: list[str]) -> list[Any]:
 
 def _build_handlers(cfg: LoggingConfig) -> list[logging.Handler]:
     sinks = cfg.sinks or [LoggingSinkConfig()]
-    handlers: list[logging.Handler] = []
-    for sink in sinks:
-        target = sink.target
-        if target == "stdout":
-            handler: logging.Handler = logging.StreamHandler(sys.stdout)
-        elif target == "stderr":
-            handler = logging.StreamHandler(sys.stderr)
-        elif target == "file":
-            path = Path(sink.path or "oneiric.log")
-            path.parent.mkdir(parents=True, exist_ok=True)
-            handler = logging.handlers.RotatingFileHandler(
-                path,
-                maxBytes=max(sink.max_bytes, 1024),
-                backupCount=max(sink.backup_count, 1),
-                encoding="utf-8",
-            )
-        elif target == "http":
-            if not sink.endpoint:
-                raise ValueError("HTTP sink requires 'endpoint'.")
-            parsed = urlparse(sink.endpoint)
-            if parsed.scheme not in {"http", "https"}:
-                raise ValueError("HTTP sink endpoint must be http(s).")
-            host = parsed.netloc
-            url = parsed.path or "/"
-            handler = logging.handlers.HTTPHandler(
-                host,
-                url,
-                method=(sink.method or "POST").upper(),
-                secure=parsed.scheme == "https",
-            )
-        else:
-            raise ValueError(f"Unsupported logging target: {target}")
-
-        handler.setLevel(getattr(logging, sink.level.upper(), logging.INFO))
-        handler.setFormatter(logging.Formatter("%(message)s"))
-        handlers.append(handler)
-    return handlers
+    return [_create_handler(sink) for sink in sinks]
 
 
-def configure_logging(config: Optional[LoggingConfig] = None) -> None:
+def _create_handler(sink: LoggingSinkConfig) -> logging.Handler:
+    """Create a logging handler from sink configuration."""
+    handler = _create_handler_for_target(sink)
+    handler.setLevel(getattr(logging, sink.level.upper(), logging.INFO))
+    handler.setFormatter(logging.Formatter("%(message)s"))
+    return handler
+
+
+def _create_handler_for_target(sink: LoggingSinkConfig) -> logging.Handler:
+    """Create handler based on target type."""
+    target = sink.target
+
+    if target == "stdout":
+        return logging.StreamHandler(sys.stdout)
+
+    if target == "stderr":
+        return logging.StreamHandler(sys.stderr)
+
+    if target == "file":
+        return _create_file_handler(sink)
+
+    if target == "http":
+        return _create_http_handler(sink)
+
+    raise ValueError(f"Unsupported logging target: {target}")
+
+
+def _create_file_handler(sink: LoggingSinkConfig) -> logging.Handler:
+    """Create rotating file handler."""
+    path = Path(sink.path or "oneiric.log")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return logging.handlers.RotatingFileHandler(
+        path,
+        maxBytes=max(sink.max_bytes, 1024),
+        backupCount=max(sink.backup_count, 1),
+        encoding="utf-8",
+    )
+
+
+def _create_http_handler(sink: LoggingSinkConfig) -> logging.Handler:
+    """Create HTTP handler."""
+    if not sink.endpoint:
+        raise ValueError("HTTP sink requires 'endpoint'.")
+
+    parsed = urlparse(sink.endpoint)
+    if parsed.scheme not in {"http", "https"}:
+        raise ValueError("HTTP sink endpoint must be http(s).")
+
+    return logging.handlers.HTTPHandler(
+        parsed.netloc,
+        parsed.path or "/",
+        method=(sink.method or "POST").upper(),
+        secure=parsed.scheme == "https",
+    )
+
+
+def configure_logging(config: LoggingConfig | None = None) -> None:
     """Configure structlog and the stdlib logging bridge."""
 
     cfg = config or LoggingConfig()
@@ -160,12 +186,18 @@ def configure_logging(config: Optional[LoggingConfig] = None) -> None:
         processor_chain.append(structlog.dev.ConsoleRenderer())
 
     handlers = _build_handlers(cfg)
-    logging.basicConfig(level=getattr(logging, cfg.level.upper(), logging.INFO), handlers=handlers, force=True)
+    logging.basicConfig(
+        level=getattr(logging, cfg.level.upper(), logging.INFO),
+        handlers=handlers,
+        force=True,
+    )
 
     structlog.configure(
         processors=processor_chain,
         logger_factory=structlog.stdlib.LoggerFactory(),
-        wrapper_class=structlog.make_filtering_bound_logger(getattr(logging, cfg.level.upper(), logging.INFO)),
+        wrapper_class=structlog.make_filtering_bound_logger(
+            getattr(logging, cfg.level.upper(), logging.INFO)
+        ),
         cache_logger_on_first_use=True,
     )
 
@@ -187,7 +219,7 @@ def clear_log_context(*keys: str) -> None:
         clear_contextvars()
 
 
-def get_logger(name: Optional[str] = None, **initial_values: Any) -> BoundLogger:
+def get_logger(name: str | None = None, **initial_values: Any) -> BoundLogger:
     """Return a structlog bound logger configured for the service."""
 
     logger = structlog.get_logger(name or DEFAULT_LOGGER_NAME)

@@ -17,7 +17,9 @@ async def test_sentry_adapter_initializes_with_env(monkeypatch) -> None:
     fake_sdk.init = MagicMock()
     fake_sdk.flush = MagicMock()
     with patch("oneiric.adapters.monitoring.sentry.sentry_sdk", fake_sdk):
-        settings = SentryMonitoringSettings(dsn=None, environment="prod", traces_sample_rate=1.0)
+        settings = SentryMonitoringSettings(
+            dsn=None, environment="prod", traces_sample_rate=1.0
+        )
         adapter = SentryMonitoringAdapter(settings)
         monkeypatch.setenv("SENTRY_DSN", "https://example@sentry")
         await adapter.init()

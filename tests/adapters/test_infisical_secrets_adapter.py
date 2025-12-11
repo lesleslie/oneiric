@@ -4,7 +4,10 @@ from typing import Any
 
 import pytest
 
-from oneiric.adapters.secrets.infisical import InfisicalSecretAdapter, InfisicalSecretSettings
+from oneiric.adapters.secrets.infisical import (
+    InfisicalSecretAdapter,
+    InfisicalSecretSettings,
+)
 
 
 class _DummyResponse:
@@ -25,7 +28,9 @@ class _DummyHTTPClient:
         self.requests: list[dict[str, Any]] = []
         self.closed = False
 
-    async def post(self, url: str, json: dict[str, Any], headers: dict[str, str]) -> _DummyResponse:
+    async def post(
+        self, url: str, json: dict[str, Any], headers: dict[str, str]
+    ) -> _DummyResponse:
         self.requests.append({"url": url, "json": json, "headers": headers})
         if json["secretName"] == "missing":
             return _DummyResponse(404, {})

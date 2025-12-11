@@ -5,12 +5,19 @@ from __future__ import annotations
 import asyncio
 import os
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
-from typing import Dict, Optional
+from datetime import UTC, datetime
+from pathlib import Path
 
 from oneiric.adapters import AdapterBridge
 from oneiric.adapters.watcher import AdapterConfigWatcher
-from oneiric.core.config import OneiricSettings, SecretsHook, domain_activity_path
+from oneiric.core.config import (
+    OneiricSettings,
+    SecretsHook,
+    domain_activity_path,
+)
+from oneiric.core.config import (
+    workflow_checkpoint_path as resolve_workflow_checkpoint_path,
+)
 from oneiric.core.lifecycle import LifecycleManager
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import Resolver
@@ -27,7 +34,9 @@ from oneiric.domains import (
 )
 from oneiric.remote import sync_remote_manifest
 from oneiric.runtime.activity import DomainActivityStore
+from oneiric.runtime.checkpoints import WorkflowCheckpointStore
 from oneiric.runtime.health import RuntimeHealthSnapshot, write_runtime_health
+from oneiric.runtime.supervisor import ServiceSupervisor
 
 logger = get_logger("runtime.orchestrator")
 
@@ -42,7 +51,9 @@ class RuntimeOrchestrator:
         lifecycle: LifecycleManager,
         secrets: SecretsHook,
         *,
-        health_path: Optional[str] = None,
+        health_path: str | None = None,
+        workflow_checkpoint_path: str | None = None,
+        enable_workflow_checkpoints: bool | None = None,
     ) -> None:
         self.settings = settings
         self.resolver = resolver
@@ -51,39 +62,68 @@ class RuntimeOrchestrator:
         self._health_path = health_path
         self._health = RuntimeHealthSnapshot()
         self._activity_store = DomainActivityStore(domain_activity_path(settings))
+        self._supervisor_enabled = getattr(settings.profile, "supervisor_enabled", True)
+        self._supervisor = (
+            ServiceSupervisor(self._activity_store)
+            if self._supervisor_enabled
+            else None
+        )
+        resolved_checkpoint_path = (
+            Path(workflow_checkpoint_path)
+            if workflow_checkpoint_path
+            else resolve_workflow_checkpoint_path(settings)
+        )
+        checkpoints_enabled = (
+            settings.runtime_paths.workflow_checkpoints_enabled
+            if enable_workflow_checkpoints is None
+            else enable_workflow_checkpoints
+        )
+        self._checkpoint_store = (
+            WorkflowCheckpointStore(resolved_checkpoint_path)
+            if checkpoints_enabled and resolved_checkpoint_path
+            else None
+        )
 
         self.adapter_bridge = AdapterBridge(
             resolver,
             lifecycle,
             settings.adapters,
             activity_store=self._activity_store,
+            supervisor=self._supervisor,
         )
         self.service_bridge = ServiceBridge(
             resolver,
             lifecycle,
             settings.services,
             activity_store=self._activity_store,
+            supervisor=self._supervisor,
         )
         self.task_bridge = TaskBridge(
             resolver,
             lifecycle,
             settings.tasks,
             activity_store=self._activity_store,
+            supervisor=self._supervisor,
         )
         self.event_bridge = EventBridge(
             resolver,
             lifecycle,
             settings.events,
             activity_store=self._activity_store,
+            supervisor=self._supervisor,
         )
         self.workflow_bridge = WorkflowBridge(
             resolver,
             lifecycle,
             settings.workflows,
             activity_store=self._activity_store,
+            task_bridge=self.task_bridge,
+            checkpoint_store=self._checkpoint_store,
+            queue_bridge=self.adapter_bridge,
+            supervisor=self._supervisor,
         )
 
-        self.bridges: Dict[str, DomainBridge | AdapterBridge] = {
+        self.bridges: dict[str, DomainBridge | AdapterBridge] = {
             "adapter": self.adapter_bridge,
             "service": self.service_bridge,
             "task": self.task_bridge,
@@ -91,16 +131,21 @@ class RuntimeOrchestrator:
             "workflow": self.workflow_bridge,
         }
 
-        self._watchers = [
-            AdapterConfigWatcher(self.adapter_bridge),
-            ServiceConfigWatcher(self.service_bridge),
-            TaskConfigWatcher(self.task_bridge),
-            EventConfigWatcher(self.event_bridge),
-            WorkflowConfigWatcher(self.workflow_bridge),
-        ]
-        self._remote_task: Optional[asyncio.Task[None]] = None
+        self._watchers_enabled = getattr(settings.profile, "watchers_enabled", True)
+        self._watchers = (
+            [
+                AdapterConfigWatcher(self.adapter_bridge),
+                ServiceConfigWatcher(self.service_bridge),
+                TaskConfigWatcher(self.task_bridge),
+                EventConfigWatcher(self.event_bridge),
+                WorkflowConfigWatcher(self.workflow_bridge),
+            ]
+            if self._watchers_enabled
+            else []
+        )
+        self._remote_task: asyncio.Task[None] | None = None
 
-    async def sync_remote(self, manifest_url: Optional[str] = None):
+    async def sync_remote(self, manifest_url: str | None = None):
         """Run a single remote sync and refresh runtime health metadata."""
 
         try:
@@ -122,21 +167,30 @@ class RuntimeOrchestrator:
                 last_remote_skipped=result.skipped,
                 last_remote_duration_ms=result.duration_ms,
             )
+            self.event_bridge.refresh_dispatcher()
+            self.workflow_bridge.refresh_dags()
         return result
 
     async def start(
         self,
         *,
-        manifest_url: Optional[str] = None,
-        refresh_interval_override: Optional[float] = None,
+        manifest_url: str | None = None,
+        refresh_interval_override: float | None = None,
         enable_remote: bool = True,
     ) -> None:
         """Start config watchers and (optionally) the remote refresh loop."""
 
-        for watcher in self._watchers:
-            await watcher.start()
+        if self._watchers_enabled:
+            for watcher in self._watchers:
+                await watcher.start()
+        try:
+            await self.secrets.prefetch()
+        except Exception as exc:  # pragma: no cover - defensive log
+            logger.warning("secrets-prefetch-failed", error=str(exc))
+        if self._supervisor:
+            await self._supervisor.start()
         self._update_health(
-            watchers_running=True,
+            watchers_running=self._watchers_enabled,
             remote_enabled=enable_remote,
             orchestrator_pid=os.getpid(),
         )
@@ -157,24 +211,26 @@ class RuntimeOrchestrator:
     async def stop(self) -> None:
         """Stop config watchers and cancel any running remote loop."""
 
-        for watcher in self._watchers:
-            await watcher.stop()
+        if self._watchers_enabled:
+            for watcher in self._watchers:
+                await watcher.stop()
+        if self._supervisor:
+            await self._supervisor.stop()
         if self._remote_task:
             self._remote_task.cancel()
             await asyncio.gather(self._remote_task, return_exceptions=True)
             self._remote_task = None
         self._update_health(watchers_running=False, remote_enabled=False)
 
-    async def __aenter__(self) -> "RuntimeOrchestrator":
+    async def __aenter__(self) -> RuntimeOrchestrator:
         await self.start()
         return self
 
-    async def __aexit__(self, exc_type, exc, tb) -> Optional[bool]:
+    async def __aexit__(self, exc_type, exc, tb) -> bool | None:
         await self.stop()
         return None
 
-
-    async def _remote_loop(self, manifest_url: Optional[str], interval: float) -> None:
+    async def _remote_loop(self, manifest_url: str | None, interval: float) -> None:
         """Background task that periodically refreshes the remote manifest."""
 
         if not manifest_url:
@@ -194,49 +250,76 @@ class RuntimeOrchestrator:
     def _update_health(
         self,
         *,
-        watchers_running: Optional[bool] = None,
-        remote_enabled: Optional[bool] = None,
-        last_remote_sync_at: Optional[str] = None,
-        last_remote_error: Optional[str] = None,
-        orchestrator_pid: Optional[int] = None,
-        last_remote_registered: Optional[int] = None,
-        last_remote_per_domain: Optional[Dict[str, int]] = None,
-        last_remote_skipped: Optional[int] = None,
-        last_remote_duration_ms: Optional[float] = None,
+        watchers_running: bool | None = None,
+        remote_enabled: bool | None = None,
+        last_remote_sync_at: str | None = None,
+        last_remote_error: str | None = None,
+        orchestrator_pid: int | None = None,
+        last_remote_registered: int | None = None,
+        last_remote_per_domain: dict[str, int] | None = None,
+        last_remote_skipped: int | None = None,
+        last_remote_duration_ms: float | None = None,
     ) -> None:
         """Persist runtime health snapshot updates to disk."""
-
         if not self._health_path:
             return
-        if watchers_running is not None:
-            self._health.watchers_running = watchers_running
-        if remote_enabled is not None:
-            self._health.remote_enabled = remote_enabled
-        if last_remote_sync_at is not None:
-            self._health.last_remote_sync_at = last_remote_sync_at
-        if last_remote_error is not None:
-            self._health.last_remote_error = last_remote_error
-        if orchestrator_pid is not None:
-            self._health.orchestrator_pid = orchestrator_pid
-        if last_remote_registered is not None:
-            self._health.last_remote_registered = last_remote_registered
-        if last_remote_per_domain is not None:
-            self._health.last_remote_per_domain = last_remote_per_domain
-        if last_remote_skipped is not None:
-            self._health.last_remote_skipped = last_remote_skipped
-        if last_remote_duration_ms is not None:
-            self._health.last_remote_duration_ms = last_remote_duration_ms
-        if self._activity_store:
-            snapshot = self._activity_store.snapshot()
-            self._health.activity_state = {
-                domain: {
-                    key: state.as_dict()
-                    for key, state in entries.items()
-                }
-                for domain, entries in snapshot.items()
-                if entries
-            }
+
+        self._apply_health_updates(
+            watchers_running,
+            remote_enabled,
+            last_remote_sync_at,
+            last_remote_error,
+            orchestrator_pid,
+            last_remote_registered,
+            last_remote_per_domain,
+            last_remote_skipped,
+            last_remote_duration_ms,
+        )
+        self._update_activity_state()
         write_runtime_health(self._health_path, self._health)
+
+    def _apply_health_updates(
+        self,
+        watchers_running: bool | None,
+        remote_enabled: bool | None,
+        last_remote_sync_at: str | None,
+        last_remote_error: str | None,
+        orchestrator_pid: int | None,
+        last_remote_registered: int | None,
+        last_remote_per_domain: dict[str, int] | None,
+        last_remote_skipped: int | None,
+        last_remote_duration_ms: float | None,
+    ) -> None:
+        """Apply individual health field updates."""
+        updates = [
+            ("watchers_running", watchers_running),
+            ("remote_enabled", remote_enabled),
+            ("last_remote_sync_at", last_remote_sync_at),
+            ("last_remote_error", last_remote_error),
+            ("orchestrator_pid", orchestrator_pid),
+            ("last_remote_registered", last_remote_registered),
+            ("last_remote_per_domain", last_remote_per_domain),
+            ("last_remote_skipped", last_remote_skipped),
+            ("last_remote_duration_ms", last_remote_duration_ms),
+        ]
+        for field_name, value in updates:
+            if value is not None:
+                setattr(self._health, field_name, value)
+
+    def _update_activity_state(self) -> None:
+        """Update activity state from activity store."""
+        snapshot = None
+        if self._supervisor:
+            snapshot = self._supervisor.snapshot()
+        elif self._activity_store:
+            snapshot = self._activity_store.snapshot()
+        if snapshot is None:
+            return
+        self._health.activity_state = {
+            domain: {key: state.as_dict() for key, state in entries.items()}
+            for domain, entries in snapshot.items()
+            if entries
+        }
 
 
 @asynccontextmanager
@@ -252,4 +335,4 @@ async def orchestrated_runtime(
 
 
 def _timestamp() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()

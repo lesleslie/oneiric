@@ -7,33 +7,47 @@ import importlib
 import inspect
 import json
 import math
-from dataclasses import dataclass
+import os
+from collections.abc import Iterable
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any
 
 import typer
+import yaml
 
 from oneiric import plugins
+from oneiric.actions import ActionBridge, register_builtin_actions
 from oneiric.adapters import AdapterBridge
 from oneiric.adapters.metadata import AdapterMetadata, register_adapter_metadata
-from oneiric.actions import ActionBridge, register_builtin_actions
 from oneiric.core.config import (
     OneiricSettings,
     SecretsHook,
+    apply_profile_with_fallback,
     domain_activity_path,
     lifecycle_snapshot_path,
     load_settings,
     resolver_settings_from_config,
     runtime_health_path,
+    workflow_checkpoint_path,
 )
-from oneiric.core.lifecycle import LifecycleError, LifecycleManager, LifecycleSafetyOptions, LifecycleStatus
+from oneiric.core.lifecycle import (
+    LifecycleError,
+    LifecycleManager,
+    LifecycleSafetyOptions,
+    LifecycleStatus,
+)
 from oneiric.core.logging import configure_logging, get_logger
 from oneiric.core.resolution import Candidate, Resolver
 from oneiric.domains import EventBridge, ServiceBridge, TaskBridge, WorkflowBridge
 from oneiric.remote import load_remote_telemetry, remote_sync_loop, sync_remote_manifest
+from oneiric.remote.models import RemoteManifest
 from oneiric.runtime.activity import DomainActivityStore
+from oneiric.runtime.checkpoints import WorkflowCheckpointStore
+from oneiric.runtime.events import HandlerResult
 from oneiric.runtime.health import load_runtime_health
 from oneiric.runtime.orchestrator import RuntimeOrchestrator
+from oneiric.runtime.scheduler import SchedulerHTTPServer, WorkflowTaskProcessor
 
 logger = get_logger("cli")
 
@@ -42,6 +56,14 @@ DOMAINS = ("adapter", "service", "task", "event", "workflow", "action")
 DEFAULT_REMOTE_REFRESH_INTERVAL = 300.0
 
 app = typer.Typer(help="Oneiric runtime management CLI.")
+manifest_app = typer.Typer(help="Manifest utilities (packaging, inspection).")
+secrets_app = typer.Typer(help="Secrets cache + rotation helpers.")
+event_app = typer.Typer(help="Event dispatcher helpers.")
+workflow_app = typer.Typer(help="Workflow DAG helpers.")
+app.add_typer(manifest_app, name="manifest")
+app.add_typer(secrets_app, name="secrets")
+app.add_typer(event_app, name="event")
+app.add_typer(workflow_app, name="workflow")
 
 
 @dataclass
@@ -49,14 +71,20 @@ class CLIState:
     settings: OneiricSettings
     resolver: Resolver
     lifecycle: LifecycleManager
-    bridges: Dict[
+    bridges: dict[
         str,
-        AdapterBridge | ServiceBridge | TaskBridge | EventBridge | WorkflowBridge | ActionBridge,
+        AdapterBridge
+        | ServiceBridge
+        | TaskBridge
+        | EventBridge
+        | WorkflowBridge
+        | ActionBridge,
     ]
     plugin_report: plugins.PluginRegistrationReport
+    secrets: SecretsHook
 
 
-def _build_lifecycle_options(config: Optional[object]) -> LifecycleSafetyOptions:
+def _build_lifecycle_options(config: object | None) -> LifecycleSafetyOptions:
     if not config:
         return LifecycleSafetyOptions()
     return LifecycleSafetyOptions(
@@ -68,8 +96,8 @@ def _build_lifecycle_options(config: Optional[object]) -> LifecycleSafetyOptions
     )
 
 
-def _swap_latency_summary(statuses: Iterable[LifecycleStatus]) -> Dict[str, Any]:
-    durations: List[float] = []
+def _swap_latency_summary(statuses: Iterable[LifecycleStatus]) -> dict[str, Any]:
+    durations: list[float] = []
     successes = 0
     failures = 0
     for status in statuses:
@@ -87,7 +115,7 @@ def _swap_latency_summary(statuses: Iterable[LifecycleStatus]) -> Dict[str, Any]
     }
 
 
-def _percentile(data: List[float], percentile: float) -> Optional[float]:
+def _percentile(data: list[float], percentile: float) -> float | None:
     if not data:
         return None
     k = (len(data) - 1) * percentile
@@ -100,7 +128,7 @@ def _percentile(data: List[float], percentile: float) -> Optional[float]:
     return d0 + d1
 
 
-def _format_swap_summary(summary: Dict[str, Any]) -> str:
+def _format_swap_summary(summary: dict[str, Any]) -> str:
     samples = summary.get("samples", 0)
     if not samples:
         return "Swap latency: no samples recorded yet."
@@ -118,26 +146,28 @@ def _format_swap_summary(summary: Dict[str, Any]) -> str:
     return " ".join(parts)
 
 
-def _activity_summary_for_bridge(bridge) -> Dict[str, int]:
+def _activity_summary_for_bridge(bridge) -> dict[str, int]:
     snapshot_fn = getattr(bridge, "activity_snapshot", None)
     if not callable(snapshot_fn):
         return {"paused": 0, "draining": 0}
     snapshot = snapshot_fn()
     paused = sum(1 for state in snapshot.values() if getattr(state, "paused", False))
-    draining = sum(1 for state in snapshot.values() if getattr(state, "draining", False))
+    draining = sum(
+        1 for state in snapshot.values() if getattr(state, "draining", False)
+    )
     return {"paused": paused, "draining": draining}
 
 
-def _format_activity_summary(summary: Dict[str, int]) -> str:
-    return (
-        "Activity state: paused={paused} draining={draining}".format(
-            paused=summary.get("paused", 0),
-            draining=summary.get("draining", 0),
-        )
+def _format_activity_summary(summary: dict[str, int]) -> str:
+    return "Activity state: paused={paused} draining={draining}".format(
+        paused=summary.get("paused", 0),
+        draining=summary.get("draining", 0),
     )
 
 
-def _activity_counts_from_mapping(activity_state: Dict[str, Dict[str, Any]]) -> Dict[str, int]:
+def _activity_counts_from_mapping(
+    activity_state: dict[str, dict[str, Any]],
+) -> dict[str, int]:
     paused = 0
     draining = 0
     for entries in activity_state.values():
@@ -149,17 +179,19 @@ def _activity_counts_from_mapping(activity_state: Dict[str, Dict[str, Any]]) -> 
     return {"paused": paused, "draining": draining}
 
 
-def _format_remote_budget_line(remote_config, last_duration: Optional[float]) -> str:
+def _format_remote_budget_line(remote_config, last_duration: float | None) -> str:
     budget = getattr(remote_config, "latency_budget_ms", 0) or 0
     budget_text = f"{budget:.0f}ms" if budget else "n/a"
     if last_duration is None:
         return f"Remote latency budget={budget_text} (no syncs yet)"
     duration_text = f"{last_duration:.1f}ms"
     status = "OK" if not budget or last_duration <= budget else "EXCEEDED"
-    return f"Remote latency budget={budget_text}; last_duration={duration_text} ({status})"
+    return (
+        f"Remote latency budget={budget_text}; last_duration={duration_text} ({status})"
+    )
 
 
-def _parse_payload(raw: Optional[str]) -> Dict[str, Any]:
+def _parse_payload(raw: str | None) -> dict[str, Any]:
     if not raw:
         return {}
     try:
@@ -171,7 +203,39 @@ def _parse_payload(raw: Optional[str]) -> Dict[str, Any]:
     return data
 
 
-async def _invoke_action(handle, payload: Dict[str, Any]) -> Any:
+def _parse_csv(raw: str | None) -> list[str]:
+    if not raw:
+        return []
+    return [item.strip() for item in raw.split(",") if item.strip()]
+
+
+def _event_results_payload(results: list[HandlerResult]) -> list[dict[str, Any]]:
+    return [
+        {
+            "handler": result.handler,
+            "success": result.success,
+            "duration_ms": result.duration * 1000.0,
+            "value": result.value,
+            "error": result.error,
+            "attempts": result.attempts,
+        }
+        for result in results
+    ]
+
+
+def _load_manifest_from_path(path: Path) -> RemoteManifest:
+    """Load manifest JSON/YAML into a RemoteManifest model."""
+    text = path.read_text()
+    try:
+        return RemoteManifest.model_validate_json(text)
+    except ValueError:
+        loaded = yaml.safe_load(text)
+        if not isinstance(loaded, dict):
+            raise typer.BadParameter("Manifest must be a JSON or YAML mapping")
+        return RemoteManifest.model_validate(loaded)
+
+
+async def _invoke_action(handle, payload: dict[str, Any]) -> Any:
     executor = getattr(handle.instance, "execute", None)
     if not callable(executor):
         raise LifecycleError("Selected action does not expose 'execute'")
@@ -184,12 +248,47 @@ async def _invoke_action(handle, payload: Dict[str, Any]) -> Any:
 async def _action_invoke_runner(
     bridge: ActionBridge,
     key: str,
-    payload: Dict[str, Any],
+    payload: dict[str, Any],
     *,
-    provider: Optional[str],
+    provider: str | None,
 ) -> Any:
     handle = await bridge.use(key, provider=provider)
     return await _invoke_action(handle, payload)
+
+
+async def _event_emit_runner(
+    bridge: EventBridge,
+    topic: str,
+    payload: dict[str, Any],
+    headers: dict[str, Any],
+) -> list[HandlerResult]:
+    return await bridge.emit(topic, payload, headers=headers)
+
+
+async def _workflow_run_runner(
+    bridge: WorkflowBridge,
+    key: str,
+    context: dict[str, Any] | None,
+):
+    return await bridge.execute_dag(key, context=context)
+
+
+async def _workflow_enqueue_runner(
+    bridge: WorkflowBridge,
+    key: str,
+    *,
+    context: dict[str, Any] | None,
+    queue_category: str | None,
+    provider: str | None,
+    metadata: dict[str, Any] | None,
+) -> dict[str, Any]:
+    return await bridge.enqueue_workflow(
+        key,
+        context=context,
+        queue_category=queue_category,
+        provider=provider,
+        metadata=metadata,
+    )
 
 
 @dataclass
@@ -228,24 +327,40 @@ class DemoCLIWorkflow:
 class DemoCLIEventHandler:
     name: str = "cli-event"
 
-    def handle(self, payload: dict) -> dict:
-        return {"name": self.name, "payload": payload}
+    def handle(self, envelope) -> dict:
+        return {
+            "name": self.name,
+            "topic": getattr(envelope, "topic", "unknown"),
+            "payload": getattr(envelope, "payload", {}),
+        }
 
 
 @dataclass
 class DemoCLIAction:
     name: str = "cli-action"
 
-    async def execute(self, payload: Optional[dict] = None) -> dict:
+    async def execute(self, payload: dict | None = None) -> dict:
         return {"name": self.name, "payload": payload or {}}
 
 
+@dataclass
+class DemoCLIQueue:
+    records: list[dict[str, Any]] = field(default_factory=list)
+
+    async def enqueue(self, payload: dict[str, Any]) -> str:
+        self.records.append(payload)
+        return f"demo-queue-{len(self.records)}"
+
+
 def _initialize_state(
-    config_path: Optional[str],
+    config_path: str | None,
     imports: Iterable[str],
     demo: bool,
+    profile: str | None = None,
 ) -> CLIState:
     settings = load_settings(config_path)
+    env_profile = os.getenv("ONEIRIC_PROFILE")
+    settings = apply_profile_with_fallback(settings, profile or env_profile)
     configure_logging(settings.logging)
     resolver = Resolver(settings=resolver_settings_from_config(settings))
     _import_modules(imports)
@@ -263,7 +378,14 @@ def _initialize_state(
                     stack_level=5,
                     factory=lambda: DemoCLIAdapter("hello from CLI"),
                     description="CLI demo adapter",
-                )
+                ),
+                AdapterMetadata(
+                    category="queue",
+                    provider="cli",
+                    stack_level=5,
+                    factory=DemoCLIQueue,
+                    description="CLI demo queue adapter",
+                ),
             ],
         )
         resolver.register(
@@ -271,7 +393,7 @@ def _initialize_state(
                 domain="service",
                 key="status",
                 provider="cli",
-                factory=lambda: DemoCLIService(),
+                factory=DemoCLIService,
                 stack_level=5,
             )
         )
@@ -280,7 +402,7 @@ def _initialize_state(
                 domain="task",
                 key="demo-task",
                 provider="cli",
-                factory=lambda: DemoCLITask(),
+                factory=DemoCLITask,
                 stack_level=5,
             )
         )
@@ -289,7 +411,8 @@ def _initialize_state(
                 domain="event",
                 key="demo.event",
                 provider="cli",
-                factory=lambda: DemoCLIEventHandler(),
+                factory=DemoCLIEventHandler,
+                metadata={"topics": ["cli.event"]},
                 stack_level=5,
             )
         )
@@ -298,7 +421,18 @@ def _initialize_state(
                 domain="workflow",
                 key="demo-workflow",
                 provider="cli",
-                factory=lambda: DemoCLIWorkflow(),
+                factory=DemoCLIWorkflow,
+                metadata={
+                    "dag": {
+                        "nodes": [
+                            {"id": "demo-step", "task": "demo-task"},
+                        ]
+                    },
+                    "scheduler": {
+                        "queue_category": "queue",
+                        "provider": "cli",
+                    },
+                },
                 stack_level=5,
             )
         )
@@ -307,7 +441,7 @@ def _initialize_state(
                 domain="action",
                 key="demo-action",
                 provider="cli",
-                factory=lambda: DemoCLIAction(),
+                factory=DemoCLIAction,
                 stack_level=5,
             )
         )
@@ -317,17 +451,48 @@ def _initialize_state(
         safety=_build_lifecycle_options(settings.lifecycle),
     )
     activity_store = DomainActivityStore(domain_activity_path(settings))
-    bridges: Dict[
+    checkpoint_path = workflow_checkpoint_path(settings)
+    checkpoint_store = (
+        WorkflowCheckpointStore(checkpoint_path) if checkpoint_path else None
+    )
+    adapter_bridge = AdapterBridge(
+        resolver, lifecycle, settings.adapters, activity_store=activity_store
+    )
+    task_bridge = TaskBridge(
+        resolver, lifecycle, settings.tasks, activity_store=activity_store
+    )
+    workflow_bridge = WorkflowBridge(
+        resolver,
+        lifecycle,
+        settings.workflows,
+        activity_store=activity_store,
+        task_bridge=task_bridge,
+        checkpoint_store=checkpoint_store,
+        queue_bridge=adapter_bridge,
+    )
+    bridges: dict[
         str,
-        AdapterBridge | ServiceBridge | TaskBridge | EventBridge | WorkflowBridge | ActionBridge,
+        AdapterBridge
+        | ServiceBridge
+        | TaskBridge
+        | EventBridge
+        | WorkflowBridge
+        | ActionBridge,
     ] = {
-        "adapter": AdapterBridge(resolver, lifecycle, settings.adapters, activity_store=activity_store),
-        "service": ServiceBridge(resolver, lifecycle, settings.services, activity_store=activity_store),
-        "task": TaskBridge(resolver, lifecycle, settings.tasks, activity_store=activity_store),
-        "event": EventBridge(resolver, lifecycle, settings.events, activity_store=activity_store),
-        "workflow": WorkflowBridge(resolver, lifecycle, settings.workflows, activity_store=activity_store),
-        "action": ActionBridge(resolver, lifecycle, settings.actions, activity_store=activity_store),
+        "adapter": adapter_bridge,
+        "service": ServiceBridge(
+            resolver, lifecycle, settings.services, activity_store=activity_store
+        ),
+        "task": task_bridge,
+        "event": EventBridge(
+            resolver, lifecycle, settings.events, activity_store=activity_store
+        ),
+        "workflow": workflow_bridge,
+        "action": ActionBridge(
+            resolver, lifecycle, settings.actions, activity_store=activity_store
+        ),
     }
+    secrets = SecretsHook(lifecycle, settings.secrets)
 
     return CLIState(
         settings=settings,
@@ -335,6 +500,7 @@ def _initialize_state(
         lifecycle=lifecycle,
         bridges=bridges,
         plugin_report=plugin_report,
+        secrets=secrets,
     )
 
 
@@ -352,7 +518,7 @@ def _normalize_domain(value: str) -> str:
     return lowered
 
 
-def _coerce_domain(value: Optional[str]) -> Optional[str]:
+def _coerce_domain(value: str | None) -> str | None:
     if value is None:
         return None
     return _normalize_domain(value)
@@ -397,7 +563,7 @@ async def _handle_swap(
     domain: str,
     key: str,
     *,
-    provider: Optional[str],
+    provider: str | None,
     force: bool,
 ) -> None:
     instance = await lifecycle.swap(domain, key, provider=provider, force=force)
@@ -408,12 +574,12 @@ async def _handle_remote_sync(
     resolver: Resolver,
     settings: OneiricSettings,
     lifecycle: LifecycleManager,
+    secrets: SecretsHook,
     *,
-    manifest_override: Optional[str],
+    manifest_override: str | None,
     watch: bool,
-    refresh_interval: Optional[float],
+    refresh_interval: float | None,
 ) -> None:
-    secrets = SecretsHook(lifecycle, settings.secrets)
     if watch:
         await sync_remote_manifest(
             resolver,
@@ -446,41 +612,64 @@ async def _handle_remote_sync(
         if not result:
             print("Remote sync skipped.")
         else:
-            print(f"Remote sync complete: {result.registered} candidates from {result.manifest.source}.")
+            print(
+                f"Remote sync complete: {result.registered} candidates from {result.manifest.source}."
+            )
 
 
 async def _handle_orchestrate(
     settings: OneiricSettings,
     resolver: Resolver,
     lifecycle: LifecycleManager,
+    secrets: SecretsHook,
     *,
-    manifest_override: Optional[str],
-    refresh_interval: Optional[float],
+    manifest_override: str | None,
+    refresh_interval: float | None,
     disable_remote: bool,
+    workflow_checkpoint_override: str | None,
+    disable_workflow_checkpoints: bool,
+    http_port: int | None,
+    http_host: str,
+    enable_http: bool,
 ) -> None:
-    secrets = SecretsHook(lifecycle, settings.secrets)
+    resolved_http_port = _resolve_http_port(http_port) if enable_http else None
     orchestrator = RuntimeOrchestrator(
         settings,
         resolver,
         lifecycle,
         secrets,
         health_path=str(runtime_health_path(settings)),
+        workflow_checkpoint_path=workflow_checkpoint_override,
+        enable_workflow_checkpoints=not disable_workflow_checkpoints,
     )
+    http_server: SchedulerHTTPServer | None = None
     try:
         await orchestrator.start(
             manifest_url=manifest_override,
             refresh_interval_override=refresh_interval,
             enable_remote=not disable_remote,
         )
+        if enable_http and resolved_http_port is not None:
+            processor = WorkflowTaskProcessor(orchestrator.workflow_bridge)
+            http_server = SchedulerHTTPServer(
+                processor,
+                host=http_host,
+                port=resolved_http_port,
+            )
+            await http_server.start()
         logger.info(
             "orchestrator-running",
             remote_enabled=not disable_remote,
             refresh_interval=refresh_interval or settings.remote.refresh_interval,
+            http_enabled=enable_http,
+            http_port=resolved_http_port,
         )
         await _wait_forever()
     except KeyboardInterrupt:
         logger.info("orchestrator-shutdown-requested")
     finally:
+        if http_server:
+            await http_server.stop()
         await orchestrator.stop()
         logger.info("orchestrator-stopped")
 
@@ -496,42 +685,82 @@ async def _wait_forever() -> None:
 def _handle_remote_status(settings: OneiricSettings, *, as_json: bool) -> None:
     telemetry = load_remote_telemetry(settings.remote.cache_dir)
     payload = telemetry.as_dict()
+
     if as_json:
         print(json.dumps(payload, indent=2))
         return
-    print(f"Cache dir: {settings.remote.cache_dir}")
-    manifest_url = settings.remote.manifest_url or "not configured"
-    print(f"Manifest URL: {manifest_url}")
-    print("  " + _format_remote_budget_line(settings.remote, payload.get("last_duration_ms")))
+
+    _print_remote_config(settings, payload)
+
     if not telemetry.last_success_at and not telemetry.last_failure_at:
         print("  No remote refresh telemetry recorded yet.")
         return
+
     if telemetry.last_success_at:
-        duration = telemetry.last_duration_ms
-        digest = telemetry.last_digest_checks
-        metric_parts = [f"registered={telemetry.last_registered or 0}"]
-        if duration is not None:
-            metric_parts.append(f"duration_ms={duration:.2f}")
-        if digest is not None:
-            metric_parts.append(f"digest_checks={digest}")
-        metrics = " ".join(metric_parts)
-        print(
-            f"Last success: {telemetry.last_success_at} from {telemetry.last_source or 'unknown'}; "
-            f"{metrics}"
-        )
-        per_domain = telemetry.last_per_domain or {}
-        if per_domain:
-            print("Per-domain registrations:")
-            for domain, count in per_domain.items():
-                print(f"  - {domain}: {count}")
-        if telemetry.last_skipped:
-            print(f"Skipped entries: {telemetry.last_skipped}")
+        _print_remote_success_status(telemetry)
+
     if telemetry.last_failure_at:
-        print(
-            "Last failure: "
-            f"{telemetry.last_failure_at} (error={telemetry.last_error or 'unknown'}; "
-            f"consecutive_failures={telemetry.consecutive_failures})"
-        )
+        _print_remote_failure_status(telemetry)
+
+
+def _resolve_http_port(port_option: int | None) -> int:
+    if port_option is not None:
+        return port_option
+    env_port = os.getenv("PORT")
+    if env_port:
+        try:
+            return int(env_port)
+        except ValueError:
+            logger.warning("invalid-port-env", value=env_port)
+    return 8080
+
+
+def _print_remote_config(settings: OneiricSettings, payload: dict[str, Any]) -> None:
+    """Print remote configuration details."""
+    print(f"Cache dir: {settings.remote.cache_dir}")
+    manifest_url = settings.remote.manifest_url or "not configured"
+    print(f"Manifest URL: {manifest_url}")
+    print(
+        "  "
+        + _format_remote_budget_line(settings.remote, payload.get("last_duration_ms"))
+    )
+
+
+def _print_remote_success_status(telemetry) -> None:
+    """Print last successful sync status."""
+    metrics = _build_remote_metrics(telemetry)
+    print(
+        f"Last success: {telemetry.last_success_at} from {telemetry.last_source or 'unknown'}; "
+        f"{metrics}"
+    )
+
+    per_domain = telemetry.last_per_domain or {}
+    if per_domain:
+        print("Per-domain registrations:")
+        for domain, count in per_domain.items():
+            print(f"  - {domain}: {count}")
+
+    if telemetry.last_skipped:
+        print(f"Skipped entries: {telemetry.last_skipped}")
+
+
+def _print_remote_failure_status(telemetry) -> None:
+    """Print last failed sync status."""
+    print(
+        "Last failure: "
+        f"{telemetry.last_failure_at} (error={telemetry.last_error or 'unknown'}; "
+        f"consecutive_failures={telemetry.consecutive_failures})"
+    )
+
+
+def _build_remote_metrics(telemetry) -> str:
+    """Build metrics string for remote sync."""
+    metric_parts = [f"registered={telemetry.last_registered or 0}"]
+    if telemetry.last_duration_ms is not None:
+        metric_parts.append(f"duration_ms={telemetry.last_duration_ms:.2f}")
+    if telemetry.last_digest_checks is not None:
+        metric_parts.append(f"digest_checks={telemetry.last_digest_checks}")
+    return " ".join(metric_parts)
 
 
 def _handle_status(
@@ -539,31 +768,32 @@ def _handle_status(
     lifecycle: LifecycleManager,
     *,
     domain: str,
-    key: Optional[str],
+    key: str | None,
     as_json: bool,
     settings: OneiricSettings,
     include_shadowed: bool,
 ) -> None:
     keys = _status_keys(bridge, key)
-    shadowed_map: Dict[str, list[Candidate]] = {}
+    shadowed_map: dict[str, list[Candidate]] = {}
     for cand in bridge.shadowed_candidates():
         shadowed_map.setdefault(cand.key, []).append(cand)
-    records = []
-    for item in keys:
-        records.append(
-            _build_status_record(
-                bridge,
-                lifecycle,
-                key=item,
-                shadowed=len(shadowed_map.get(item, [])),
-                shadowed_details=shadowed_map.get(item, []),
-                include_shadowed=include_shadowed,
-            )
+    records = [
+        _build_status_record(
+            bridge,
+            lifecycle,
+            key=item,
+            shadowed=len(shadowed_map.get(item, [])),
+            shadowed_details=shadowed_map.get(item, []),
+            include_shadowed=include_shadowed,
         )
-    domain_statuses = [status for status in lifecycle.all_statuses() if status.domain == domain]
+        for item in keys
+    ]
+    domain_statuses = [
+        status for status in lifecycle.all_statuses() if status.domain == domain
+    ]
     swap_summary = _swap_latency_summary(domain_statuses)
     activity_summary = _activity_summary_for_bridge(bridge)
-    payload: Dict[str, Any] = {
+    payload: dict[str, Any] = {
         "domain": domain,
         "status": records,
         "summary": {
@@ -589,58 +819,89 @@ def _handle_status(
     for record in records:
         _print_status_record(record)
     if domain == "adapter":
-        _print_remote_summary(payload["remote_telemetry"], settings.remote.cache_dir, settings.remote)
+        _print_remote_summary(
+            payload["remote_telemetry"], settings.remote.cache_dir, settings.remote
+        )
 
 
 def _handle_health(
     lifecycle: LifecycleManager,
     *,
-    domain: Optional[str],
-    key: Optional[str],
+    domain: str | None,
+    key: str | None,
     as_json: bool,
     probe: bool,
-) -> tuple[List[Dict[str, Any]], Dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    statuses = _filter_health_statuses(lifecycle, domain, key)
+    summary = _swap_latency_summary(statuses)
+    payload = [status.as_dict() for status in statuses]
+
+    if probe and payload:
+        _add_probe_results(lifecycle, payload)
+
+    if as_json:
+        return payload, summary
+
+    _print_health_statuses(payload)
+    return payload, summary
+
+
+def _filter_health_statuses(
+    lifecycle: LifecycleManager, domain: str | None, key: str | None
+):
+    """Filter lifecycle statuses by domain and key."""
     statuses = lifecycle.all_statuses()
     if domain:
         statuses = [status for status in statuses if status.domain == domain]
     if key:
         statuses = [status for status in statuses if status.key == key]
-    summary = _swap_latency_summary(statuses)
-    payload = [status.as_dict() for status in statuses]
-    if probe and payload:
-        probe_results = asyncio.run(_probe_lifecycle_entries(lifecycle, payload))
-        for entry in payload:
-            entry["probe_result"] = probe_results.get((entry["domain"], entry["key"]))
-    if as_json:
-        return payload, summary
+    return statuses
+
+
+def _add_probe_results(
+    lifecycle: LifecycleManager, payload: list[dict[str, Any]]
+) -> None:
+    """Add probe results to payload entries."""
+    probe_results = asyncio.run(_probe_lifecycle_entries(lifecycle, payload))
+    for entry in payload:
+        entry["probe_result"] = probe_results.get((entry["domain"], entry["key"]))
+
+
+def _print_health_statuses(payload: list[dict[str, Any]]) -> None:
+    """Print health status entries to console."""
     if not payload:
         print("No lifecycle statuses recorded yet.")
-        return payload, summary
+        return
+
     for entry in payload:
-        state = entry["state"]
-        current = entry.get("current_provider")
-        pending = entry.get("pending_provider") or "none"
-        print(
-            f"{entry['domain']}:{entry['key']} state={state} current={current or 'n/a'} "
-            f"pending={pending}"
-        )
-        if entry.get("last_health_at"):
-            print(f"  last_health={entry['last_health_at']}")
-        if entry.get("last_activated_at"):
-            print(f"  last_activated={entry['last_activated_at']}")
-        if entry.get("last_error"):
-            print(f"  last_error={entry['last_error']}")
-        if entry.get("probe_result") is not None:
-            print(f"  probe_result={entry['probe_result']}")
-    return payload, summary
+        _print_health_entry(entry)
 
 
-def _status_keys(bridge, key: Optional[str]) -> list[str]:
+def _print_health_entry(entry: dict[str, Any]) -> None:
+    """Print a single health status entry."""
+    state = entry["state"]
+    current = entry.get("current_provider")
+    pending = entry.get("pending_provider") or "none"
+    print(
+        f"{entry['domain']}:{entry['key']} state={state} current={current or 'n/a'} "
+        f"pending={pending}"
+    )
+
+    if entry.get("last_health_at"):
+        print(f"  last_health={entry['last_health_at']}")
+    if entry.get("last_activated_at"):
+        print(f"  last_activated={entry['last_activated_at']}")
+    if entry.get("last_error"):
+        print(f"  last_error={entry['last_error']}")
+    if entry.get("probe_result") is not None:
+        print(f"  probe_result={entry['probe_result']}")
+
+
+def _status_keys(bridge, key: str | None) -> list[str]:
     if key:
         return [key]
     keys = set(bridge.settings.selections.keys())
-    for cand in bridge.active_candidates():
-        keys.add(cand.key)
+    keys.update(cand.key for cand in bridge.active_candidates())
     return sorted(keys)
 
 
@@ -650,15 +911,15 @@ def _build_status_record(
     *,
     key: str,
     shadowed: int,
-    shadowed_details: Optional[list[Candidate]] = None,
+    shadowed_details: list[Candidate] | None = None,
     include_shadowed: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     candidate = bridge.resolver.resolve(bridge.domain, key)
     configured = bridge.settings.selections.get(key)
     instance = lifecycle.get_instance(bridge.domain, key)
     lifecycle_status = lifecycle.get_status(bridge.domain, key)
     activity = bridge.activity_state(key)
-    record: Dict[str, Any] = {
+    record: dict[str, Any] = {
         "key": key,
         "configured_provider": configured,
         "shadowed": shadowed,
@@ -669,11 +930,13 @@ def _build_status_record(
         },
     }
     if not candidate:
-        record.update({
-            "state": "unresolved",
-            "message": "No registered candidate",
-            "instance_state": "absent",
-        })
+        record.update(
+            {
+                "state": "unresolved",
+                "message": "No registered candidate",
+                "instance_state": "absent",
+            }
+        )
         if lifecycle_status:
             record["lifecycle"] = lifecycle_status.as_dict()
         return record
@@ -694,11 +957,13 @@ def _build_status_record(
     if lifecycle_status:
         record["lifecycle"] = lifecycle_status.as_dict()
     if include_shadowed and shadowed_details:
-        record["shadowed_details"] = [_candidate_summary(cand) for cand in shadowed_details]
+        record["shadowed_details"] = [
+            _candidate_summary(cand) for cand in shadowed_details
+        ]
     return record
 
 
-def _print_status_record(record: Dict[str, Any]) -> None:
+def _print_status_record(record: dict[str, Any]) -> None:
     key = record["key"]
     state = record["state"]
     configured = record.get("configured_provider")
@@ -706,7 +971,8 @@ def _print_status_record(record: Dict[str, Any]) -> None:
     selection_note = " (selection)" if record.get("selection_applied") else ""
     print(
         f"- {key}: state={state} provider={provider} "
-        f"configured={configured or 'auto'} shadowed={record['shadowed']}" + selection_note
+        f"configured={configured or 'auto'} shadowed={record['shadowed']}"
+        + selection_note
     )
     if state == "unresolved":
         print(f"    reason: {record.get('message')}")
@@ -741,46 +1007,78 @@ def _print_status_record(record: Dict[str, Any]) -> None:
             )
 
 
-def _activity_summary(bridges: Dict[str, AdapterBridge | ServiceBridge | TaskBridge | EventBridge | WorkflowBridge]) -> Dict[str, Any]:
-    report: Dict[str, Any] = {"domains": {}, "totals": {"paused": 0, "draining": 0, "note_only": 0}}
+def _activity_summary(
+    bridges: dict[
+        str, AdapterBridge | ServiceBridge | TaskBridge | EventBridge | WorkflowBridge
+    ],
+) -> dict[str, Any]:
+    report: dict[str, Any] = {
+        "domains": {},
+        "totals": {"paused": 0, "draining": 0, "note_only": 0},
+    }
     for domain, bridge in bridges.items():
-        snapshot = bridge.activity_snapshot()
-        rows = []
-        counts = {"paused": 0, "draining": 0, "note_only": 0}
-        for key, state in sorted(snapshot.items()):
-            if not state.paused and not state.draining and not state.note:
-                continue
-            if state.paused:
-                counts["paused"] += 1
-            if state.draining:
-                counts["draining"] += 1
-            if state.note and not state.paused and not state.draining:
-                counts["note_only"] += 1
-            rows.append(
-                {
-                    "key": key,
-                    "paused": state.paused,
-                    "draining": state.draining,
-                    "note": state.note,
-                }
-            )
-        if rows:
-            report["domains"][domain] = {
-                "counts": counts,
-                "entries": rows,
-            }
-            report["totals"]["paused"] += counts["paused"]
-            report["totals"]["draining"] += counts["draining"]
-            report["totals"]["note_only"] += counts["note_only"]
+        domain_report = _build_domain_activity_report(bridge)
+        if domain_report:
+            report["domains"][domain] = domain_report
+            _update_totals(report["totals"], domain_report["counts"])
     return report
 
 
-def _print_activity_report(report: Dict[str, Any]) -> None:
-    domains: Dict[str, Any] = report.get("domains") or {}
+def _build_domain_activity_report(bridge) -> dict[str, Any] | None:
+    """Build activity report for a single domain."""
+    snapshot = bridge.activity_snapshot()
+    rows = []
+    counts = {"paused": 0, "draining": 0, "note_only": 0}
+
+    for key, state in sorted(snapshot.items()):
+        if not (state.paused or state.draining or state.note):
+            continue
+
+        _update_state_counts(counts, state)
+        rows.append(
+            {
+                "key": key,
+                "paused": state.paused,
+                "draining": state.draining,
+                "note": state.note,
+            }
+        )
+
+    if not rows:
+        return None
+
+    return {"counts": counts, "entries": rows}
+
+
+def _update_state_counts(counts: dict[str, int], state) -> None:
+    """Update counts based on state flags."""
+    if state.paused:
+        counts["paused"] += 1
+    if state.draining:
+        counts["draining"] += 1
+    if state.note and not state.paused and not state.draining:
+        counts["note_only"] += 1
+
+
+def _update_totals(totals: dict[str, int], counts: dict[str, int]) -> None:
+    """Add domain counts to totals."""
+    totals["paused"] += counts["paused"]
+    totals["draining"] += counts["draining"]
+    totals["note_only"] += counts["note_only"]
+
+
+def _print_activity_report(report: dict[str, Any]) -> None:
+    domains: dict[str, Any] = report.get("domains") or {}
     if not domains:
         print("No paused or draining keys recorded.")
         return
-    totals = report.get("totals", {})
+
+    _print_activity_totals(report.get("totals", {}))
+    _print_domain_activity_reports(domains)
+
+
+def _print_activity_totals(totals: dict[str, int]) -> None:
+    """Print overall activity totals."""
     print(
         "Total activity: paused={paused} draining={draining} note-only={notes}".format(
             paused=totals.get("paused", 0),
@@ -788,32 +1086,56 @@ def _print_activity_report(report: Dict[str, Any]) -> None:
             notes=totals.get("note_only", 0),
         )
     )
+
+
+def _print_domain_activity_reports(domains: dict[str, Any]) -> None:
+    """Print per-domain activity reports."""
     for domain in sorted(domains.keys()):
-        counts = domains[domain].get("counts", {})
-        print(
-            f"{domain} activity: paused={counts.get('paused', 0)} "
-            f"draining={counts.get('draining', 0)} note-only={counts.get('note_only', 0)}"
-        )
-        for entry in domains[domain].get("entries", []):
-            status_bits = []
-            if entry["paused"]:
-                status_bits.append("paused")
-            if entry["draining"]:
-                status_bits.append("draining")
-            status = ", ".join(status_bits) or "note-only"
-            note = entry.get("note")
-            note_part = f" note={note}" if note else ""
-            print(f"  - {entry['key']}: {status}{note_part}")
+        _print_domain_activity(domain, domains[domain])
 
 
-def _print_remote_summary(telemetry: Dict[str, Any], cache_dir: str, remote_config) -> None:
+def _print_domain_activity(domain: str, domain_data: dict[str, Any]) -> None:
+    """Print activity report for a single domain."""
+    counts = domain_data.get("counts", {})
+    print(
+        f"{domain} activity: paused={counts.get('paused', 0)} "
+        f"draining={counts.get('draining', 0)} note-only={counts.get('note_only', 0)}"
+    )
+
+    for entry in domain_data.get("entries", []):
+        _print_activity_entry(entry)
+
+
+def _print_activity_entry(entry: dict[str, Any]) -> None:
+    """Print a single activity entry."""
+    status = _format_entry_status(entry)
+    note_part = f" note={entry['note']}" if entry.get("note") else ""
+    print(f"  - {entry['key']}: {status}{note_part}")
+
+
+def _format_entry_status(entry: dict[str, Any]) -> str:
+    """Format status string from entry flags."""
+    status_bits = []
+    if entry["paused"]:
+        status_bits.append("paused")
+    if entry["draining"]:
+        status_bits.append("draining")
+    return ", ".join(status_bits) or "note-only"
+
+
+def _print_remote_summary(
+    telemetry: dict[str, Any], cache_dir: str, remote_config
+) -> None:
     print(f"Remote telemetry cache: {cache_dir}")
     last_success = telemetry.get("last_success_at")
     last_failure = telemetry.get("last_failure_at")
     if not last_success and not last_failure:
         print("  No remote refresh telemetry yet.")
         return
-    print("  " + _format_remote_budget_line(remote_config, telemetry.get("last_duration_ms")))
+    print(
+        "  "
+        + _format_remote_budget_line(remote_config, telemetry.get("last_duration_ms"))
+    )
     if last_success:
         print(
             f"  Last success {last_success} (source={telemetry.get('last_source') or 'unknown'}, "
@@ -826,58 +1148,181 @@ def _print_remote_summary(telemetry: Dict[str, Any], cache_dir: str, remote_conf
         )
 
 
-def _print_runtime_health(snapshot: Dict[str, Any], cache_dir: str, remote_config) -> None:
+def _print_runtime_health(
+    snapshot: dict[str, Any], cache_dir: str, remote_config
+) -> None:
     print(f"Runtime health cache: {cache_dir}")
+    _print_runtime_status(snapshot)
+    _print_remote_budget_if_present(snapshot, remote_config)
+    _print_remote_sync_info(snapshot)
+    _print_remote_duration_info(snapshot, remote_config)
+    _print_remote_domain_counts(snapshot)
+    _print_remote_skipped(snapshot)
+
+
+def _print_runtime_status(snapshot: dict[str, Any]) -> None:
+    """Print runtime status (watchers, remote, orchestrator)."""
     watchers = "running" if snapshot.get("watchers_running") else "stopped"
     remote = "enabled" if snapshot.get("remote_enabled") else "disabled"
     pid = snapshot.get("orchestrator_pid") or "n/a"
     print(f"  watchers={watchers} remote={remote} orchestrator_pid={pid}")
+
+
+def _print_remote_budget_if_present(snapshot: dict[str, Any], remote_config) -> None:
+    """Print remote budget line if duration is present."""
     if snapshot.get("last_remote_duration_ms") is not None:
-        print("  " + _format_remote_budget_line(remote_config, snapshot.get("last_remote_duration_ms")))
+        print(
+            "  "
+            + _format_remote_budget_line(
+                remote_config, snapshot.get("last_remote_duration_ms")
+            )
+        )
+
+
+def _print_remote_sync_info(snapshot: dict[str, Any]) -> None:
+    """Print remote sync timestamp, error, and registration count."""
     if snapshot.get("last_remote_sync_at"):
         print(f"  last_remote_sync={snapshot['last_remote_sync_at']}")
     if snapshot.get("last_remote_error"):
         print(f"  last_remote_error={snapshot['last_remote_error']}")
     if snapshot.get("last_remote_registered") is not None:
         print(f"  last_remote_registered={snapshot['last_remote_registered']}")
+
+
+def _print_remote_duration_info(snapshot: dict[str, Any], remote_config) -> None:
+    """Print remote duration with budget comparison."""
     duration = snapshot.get("last_remote_duration_ms")
-    if duration is not None:
-        budget = getattr(remote_config, "latency_budget_ms", None) or 0
-        budget_text = f"{budget:.0f}ms" if budget else "n/a"
-        warning = " ⚠ exceeds budget" if budget and duration > budget else ""
-        print(f"  last_remote_duration={duration:.1f}ms (budget={budget_text}){warning}")
+    if duration is None:
+        return
+
+    budget = getattr(remote_config, "latency_budget_ms", None) or 0
+    budget_text = f"{budget:.0f}ms" if budget else "n/a"
+    warning = " ⚠ exceeds budget" if budget and duration > budget else ""
+    print(f"  last_remote_duration={duration:.1f}ms (budget={budget_text}){warning}")
+
+
+def _print_remote_domain_counts(snapshot: dict[str, Any]) -> None:
+    """Print per-domain registration counts."""
     per_domain = snapshot.get("last_remote_per_domain") or {}
-    if per_domain:
-        print("  last_remote_per_domain:")
-        for domain, count in per_domain.items():
-            print(f"    - {domain}: {count}")
+    if not per_domain:
+        return
+
+    print("  last_remote_per_domain:")
+    for domain, count in per_domain.items():
+        print(f"    - {domain}: {count}")
+
+
+def _print_remote_skipped(snapshot: dict[str, Any]) -> None:
+    """Print skipped remote count if present."""
     if snapshot.get("last_remote_skipped"):
         print(f"  last_remote_skipped={snapshot['last_remote_skipped']}")
+
     activity = snapshot.get("activity_state") or {}
-    if activity:
-        summary = _activity_counts_from_mapping(activity)
-        print(
-            "  activity-summary: paused={paused} draining={draining}".format(
-                paused=summary.get("paused", 0),
-                draining=summary.get("draining", 0),
-            )
+    if not activity:
+        return
+
+    _print_activity_summary(activity)
+    _print_domain_activity_details(activity)
+
+
+def _profile_metadata(profile) -> dict[str, Any]:
+    if not profile:
+        return {}
+    return {
+        "name": getattr(profile, "name", "default") or "default",
+        "watchers_enabled": bool(getattr(profile, "watchers_enabled", True)),
+        "remote_enabled": bool(getattr(profile, "remote_enabled", True)),
+        "inline_manifest_only": bool(getattr(profile, "inline_manifest_only", False)),
+        "supervisor_enabled": bool(getattr(profile, "supervisor_enabled", True)),
+    }
+
+
+def _print_profile_summary(metadata: dict[str, Any]) -> None:
+    if not metadata:
+        return
+    watchers = "on" if metadata.get("watchers_enabled") else "off"
+    remote = "on" if metadata.get("remote_enabled") else "off"
+    inline = "yes" if metadata.get("inline_manifest_only") else "no"
+    supervisor = "on" if metadata.get("supervisor_enabled") else "off"
+    print(
+        "Profile: {name} watchers={watchers} remote={remote} inline-manifest={inline} supervisor={supervisor}".format(
+            name=metadata.get("name", "default"),
+            watchers=watchers,
+            remote=remote,
+            inline=inline,
+            supervisor=supervisor,
         )
-        print("  domain_activity:")
-        for domain, entries in activity.items():
-            for key, state in entries.items():
-                status = []
-                if state.get("paused"):
-                    status.append("paused")
-                if state.get("draining"):
-                    status.append("draining")
-                note = state.get("note")
-                status_str = ",".join(status) if status else "note"
-                suffix = f" note={note}" if note else ""
-                print(f"    - {domain}:{key} {status_str}{suffix}")
+    )
 
 
-async def _probe_lifecycle_entries(lifecycle: LifecycleManager, entries: list[Dict[str, Any]]) -> Dict[tuple[str, str], Optional[bool]]:
-    results: Dict[tuple[str, str], Optional[bool]] = {}
+def _secrets_metadata(config, hook: SecretsHook) -> dict[str, Any]:
+    provider = config.provider or f"{config.domain}:{config.key}"
+    return {
+        "provider": provider,
+        "cache_ttl_seconds": config.cache_ttl_seconds,
+        "inline_entries": len(config.inline),
+        "prefetched": getattr(hook, "prefetched", False),
+    }
+
+
+def _print_secrets_summary(metadata: dict[str, Any]) -> None:
+    if not metadata:
+        return
+    prefetched = "ready" if metadata.get("prefetched") else "pending"
+    inline = metadata.get("inline_entries", 0)
+    ttl = metadata.get("cache_ttl_seconds")
+    ttl_text = f"{ttl:.0f}s" if ttl is not None else "n/a"
+    print(
+        "Secrets: provider={provider} cache_ttl={ttl} inline_entries={inline} status={status}".format(
+            provider=metadata.get("provider", "inline"),
+            ttl=ttl_text,
+            inline=inline,
+            status=prefetched,
+        )
+    )
+
+
+def _print_activity_summary(activity: dict[str, Any]) -> None:
+    """Print activity summary counts."""
+    summary = _activity_counts_from_mapping(activity)
+    print(
+        "  activity-summary: paused={paused} draining={draining}".format(
+            paused=summary.get("paused", 0),
+            draining=summary.get("draining", 0),
+        )
+    )
+
+
+def _print_domain_activity_details(activity: dict[str, Any]) -> None:
+    """Print per-domain activity details."""
+    print("  domain_activity:")
+    for domain, entries in activity.items():
+        for key, state in entries.items():
+            status_str = _format_activity_status(state)
+            note_suffix = _format_activity_note(state)
+            print(f"    - {domain}:{key} {status_str}{note_suffix}")
+
+
+def _format_activity_status(state: dict[str, Any]) -> str:
+    """Format activity status flags."""
+    status = []
+    if state.get("paused"):
+        status.append("paused")
+    if state.get("draining"):
+        status.append("draining")
+    return ",".join(status) if status else "note"
+
+
+def _format_activity_note(state: dict[str, Any]) -> str:
+    """Format activity note suffix."""
+    note = state.get("note")
+    return f" note={note}" if note else ""
+
+
+async def _probe_lifecycle_entries(
+    lifecycle: LifecycleManager, entries: list[dict[str, Any]]
+) -> dict[tuple[str, str], bool | None]:
+    results: dict[tuple[str, str], bool | None] = {}
     for entry in entries:
         domain = entry.get("domain")
         key = entry.get("key")
@@ -888,7 +1333,7 @@ async def _probe_lifecycle_entries(lifecycle: LifecycleManager, entries: list[Di
     return results
 
 
-def _candidate_summary(candidate: Candidate) -> Dict[str, Any]:
+def _candidate_summary(candidate: Candidate) -> dict[str, Any]:
     return {
         "provider": candidate.provider,
         "priority": candidate.priority,
@@ -901,32 +1346,46 @@ def _candidate_summary(candidate: Candidate) -> Dict[str, Any]:
 @app.callback(invoke_without_command=True)
 def cli_root(
     ctx: typer.Context,
-    config: Optional[str] = typer.Option(
+    config: str | None = typer.Option(
         None,
         "--config",
         help="Path to settings file.",
         metavar="PATH",
     ),
-    imports: Optional[List[str]] = typer.Option(
+    imports: list[str] | None = typer.Option(
         None,
         "--import",
         metavar="MODULE",
         help="Module(s) to import for adapter registration side-effects.",
         show_default=False,
     ),
-    demo: bool = typer.Option(False, "--demo", help="Register built-in demo providers."),
+    profile: str | None = typer.Option(
+        None,
+        "--profile",
+        metavar="NAME",
+        help="Runtime profile to apply (default, serverless).",
+        show_default=False,
+        case_sensitive=False,
+    ),
+    demo: bool = typer.Option(
+        False, "--demo", help="Register built-in demo providers."
+    ),
 ) -> None:
     if ctx.invoked_subcommand is None:
         typer.echo(ctx.get_help())
         raise typer.Exit()
-    ctx.obj = _initialize_state(config, imports or [], demo)
+    ctx.obj = _initialize_state(config, imports or [], demo, profile)
 
 
 @app.command("list")
 def list_command(
     ctx: typer.Context,
-    domain: str = typer.Option("adapter", "--domain", help="Domain to list.", case_sensitive=False),
-    shadowed: bool = typer.Option(False, "--shadowed", help="Include shadowed candidates."),
+    domain: str = typer.Option(
+        "adapter", "--domain", help="Domain to list.", case_sensitive=False
+    ),
+    shadowed: bool = typer.Option(
+        False, "--shadowed", help="Include shadowed candidates."
+    ),
 ) -> None:
     state = _state(ctx)
     domain = _normalize_domain(domain)
@@ -936,7 +1395,9 @@ def list_command(
 @app.command("plugins")
 def plugins_command(
     ctx: typer.Context,
-    json_output: bool = typer.Option(False, "--json", help="Emit plugin diagnostics as JSON."),
+    json_output: bool = typer.Option(
+        False, "--json", help="Emit plugin diagnostics as JSON."
+    ),
 ) -> None:
     state = _state(ctx)
     report = state.plugin_report or plugins.PluginRegistrationReport.empty()
@@ -964,13 +1425,17 @@ def plugins_command(
 @app.command("action-invoke")
 def action_invoke(
     ctx: typer.Context,
-    key: str = typer.Argument(..., help="Action key to invoke (e.g., compression.encode)."),
-    payload: Optional[str] = typer.Option(
+    key: str = typer.Argument(
+        ..., help="Action key to invoke (e.g., compression.encode)."
+    ),
+    payload: str | None = typer.Option(
         None,
         "--payload",
         help="JSON payload passed to the action (defaults to {}).",
     ),
-    provider: Optional[str] = typer.Option(None, "--provider", help="Override provider selection."),
+    provider: str | None = typer.Option(
+        None, "--provider", help="Override provider selection."
+    ),
     json_output: bool = typer.Option(False, "--json", help="Emit JSON result."),
 ) -> None:
     state = _state(ctx)
@@ -987,11 +1452,67 @@ def action_invoke(
         typer.echo(result)
 
 
+@event_app.command("emit")
+def event_emit_command(
+    ctx: typer.Context,
+    topic: str = typer.Argument(..., help="Topic/subject to emit."),
+    payload: str | None = typer.Option(
+        None,
+        "--payload",
+        help="JSON payload for the event (defaults to {}).",
+    ),
+    headers: str | None = typer.Option(
+        None,
+        "--headers",
+        help="Optional JSON headers (defaults to {}).",
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Emit results as JSON."),
+) -> None:
+    state = _state(ctx)
+    bridge = state.bridges.get("event")
+    if not bridge:
+        raise typer.BadParameter("Event domain is not initialized")
+    payload_map = _parse_payload(payload)
+    headers_map = _parse_payload(headers)
+    results = asyncio.run(
+        _event_emit_runner(bridge, topic, payload_map, headers=headers_map)
+    )
+    if json_output:
+        typer.echo(
+            json.dumps(
+                {
+                    "topic": topic,
+                    "matched_handlers": len(results),
+                    "results": _event_results_payload(results),
+                },
+                indent=2,
+                default=str,
+            )
+        )
+        return
+    if not results:
+        typer.echo(f"No event handlers matched topic '{topic}'.")
+        return
+    typer.echo(f"Dispatched to {len(results)} handler(s) for topic '{topic}'.")
+    for result in results:
+        status = "ok" if result.success else "error"
+        suffix = f" attempts={result.attempts}"
+        if result.success and result.value is not None:
+            suffix += f" value={result.value}"
+        elif not result.success and result.error:
+            suffix += f" error={result.error}"
+        typer.echo(
+            f"- {result.handler}: {status} duration={result.duration * 1000:.1f}ms{suffix}"
+        )
+
+
 @app.command()
 def explain(
     ctx: typer.Context,
     key: str = typer.Argument(..., help="Domain key (category/service_id/etc)."),
-    domain: str = typer.Option("adapter", "--domain", help="Domain to inspect.", case_sensitive=False),
+    domain: str = typer.Option(
+        "adapter", "--domain", help="Domain to inspect.", case_sensitive=False
+    ),
 ) -> None:
     state = _state(ctx)
     domain = _normalize_domain(domain)
@@ -1002,30 +1523,40 @@ def explain(
 def swap(
     ctx: typer.Context,
     key: str = typer.Argument(..., help="Domain key (category/service_id/etc)."),
-    domain: str = typer.Option("adapter", "--domain", help="Domain to target.", case_sensitive=False),
-    provider: Optional[str] = typer.Option(None, "--provider", help="Provider to target (optional)."),
-    force: bool = typer.Option(False, "--force", help="Force swap even if health fails."),
+    domain: str = typer.Option(
+        "adapter", "--domain", help="Domain to target.", case_sensitive=False
+    ),
+    provider: str | None = typer.Option(
+        None, "--provider", help="Provider to target (optional)."
+    ),
+    force: bool = typer.Option(
+        False, "--force", help="Force swap even if health fails."
+    ),
 ) -> None:
     state = _state(ctx)
     domain = _normalize_domain(domain)
-    asyncio.run(_handle_swap(state.lifecycle, domain, key, provider=provider, force=force))
+    asyncio.run(
+        _handle_swap(state.lifecycle, domain, key, provider=provider, force=force)
+    )
 
 
 @app.command("pause")
 def pause_command(
     ctx: typer.Context,
     key: str = typer.Argument(..., help="Domain key to pause/resume."),
-    domain: str = typer.Option("adapter", "--domain", help="Domain to target.", case_sensitive=False),
-    note: Optional[str] = typer.Option(None, "--note", help="Optional note to attach to the pause state."),
+    domain: str = typer.Option(
+        "adapter", "--domain", help="Domain to target.", case_sensitive=False
+    ),
+    note: str | None = typer.Option(
+        None, "--note", help="Optional note to attach to the pause state."
+    ),
     resume: bool = typer.Option(False, "--resume", help="Resume (unpause) the target."),
 ) -> None:
     state = _state(ctx)
     domain = _normalize_domain(domain)
-    bridge = state.bridges[domain]
-    activity = bridge.set_paused(key, paused=not resume, note=note)
     typer.echo(
         f"{'Resumed' if resume else 'Paused'} {domain}:{key} "
-        f"(note={activity.note or 'none'})"
+        f"(note={(activity := state.bridges[domain].set_paused(key, paused=not resume, note=note)).note or 'none'})"
     )
 
 
@@ -1033,26 +1564,32 @@ def pause_command(
 def drain_command(
     ctx: typer.Context,
     key: str = typer.Argument(..., help="Domain key to mark draining."),
-    domain: str = typer.Option("adapter", "--domain", help="Domain to target.", case_sensitive=False),
-    note: Optional[str] = typer.Option(None, "--note", help="Optional note to attach to the draining state."),
+    domain: str = typer.Option(
+        "adapter", "--domain", help="Domain to target.", case_sensitive=False
+    ),
+    note: str | None = typer.Option(
+        None, "--note", help="Optional note to attach to the draining state."
+    ),
     clear: bool = typer.Option(False, "--clear", help="Clear draining state."),
 ) -> None:
     state = _state(ctx)
     domain = _normalize_domain(domain)
-    bridge = state.bridges[domain]
-    activity = bridge.set_draining(key, draining=not clear, note=note)
     typer.echo(
         f"{'Cleared' if clear else 'Marked'} draining for {domain}:{key} "
-        f"(note={activity.note or 'none'})"
+        f"(note={(activity := state.bridges[domain].set_draining(key, draining=not clear, note=note)).note or 'none'})"
     )
 
 
 @app.command("remote-sync")
 def remote_sync_command(
     ctx: typer.Context,
-    manifest: Optional[str] = typer.Option(None, "--manifest", help="Override manifest URL/path.", metavar="URI"),
-    watch: bool = typer.Option(False, "--watch", help="Keep refreshing manifests using settings."),
-    refresh_interval: Optional[float] = typer.Option(
+    manifest: str | None = typer.Option(
+        None, "--manifest", help="Override manifest URL/path.", metavar="URI"
+    ),
+    watch: bool = typer.Option(
+        False, "--watch", help="Keep refreshing manifests using settings."
+    ),
+    refresh_interval: float | None = typer.Option(
         None,
         "--refresh-interval",
         help="Override refresh interval (seconds) when running with --watch.",
@@ -1065,6 +1602,7 @@ def remote_sync_command(
             state.resolver,
             state.settings,
             state.lifecycle,
+            state.secrets,
             manifest_override=manifest,
             watch=watch,
             refresh_interval=refresh_interval,
@@ -1072,38 +1610,188 @@ def remote_sync_command(
     )
 
 
-@app.command()
-def orchestrate(
+@workflow_app.command("run")
+def workflow_run_command(
     ctx: typer.Context,
-    manifest: Optional[str] = typer.Option(None, "--manifest", help="Override manifest URL/path.", metavar="URI"),
-    refresh_interval: Optional[float] = typer.Option(
+    key: str = typer.Argument(..., help="Workflow key to execute."),
+    context_payload: str | None = typer.Option(
         None,
-        "--refresh-interval",
-        help="Override remote refresh interval (seconds) for the orchestrator.",
-        metavar="SECONDS",
+        "--context",
+        help="JSON context passed to DAG nodes (optional).",
     ),
-    no_remote: bool = typer.Option(False, "--no-remote", help="Disable remote sync/refresh."),
+    json_output: bool = typer.Option(False, "--json", help="Emit DAG results as JSON."),
 ) -> None:
     state = _state(ctx)
-    asyncio.run(
-        _handle_orchestrate(
-            state.settings,
-            state.resolver,
-            state.lifecycle,
-            manifest_override=manifest,
-            refresh_interval=refresh_interval,
-            disable_remote=no_remote,
+    bridge = state.bridges.get("workflow")
+    if not bridge:
+        raise typer.BadParameter("Workflow domain is not initialized")
+    context = _parse_payload(context_payload) if context_payload is not None else None
+    results = asyncio.run(_workflow_run_runner(bridge, key, context=context))
+    if json_output:
+        typer.echo(
+            json.dumps({"workflow": key, "results": results}, indent=2, default=str)
+        )
+        return
+    if not results:
+        typer.echo(f"Workflow {key} did not return any DAG results.")
+        return
+    typer.echo(f"Workflow {key} completed with {len(results)} node result(s):")
+    for node_key, value in results.items():
+        typer.echo(f"- {node_key}: {value}")
+
+
+@workflow_app.command("enqueue")
+def workflow_enqueue_command(
+    ctx: typer.Context,
+    key: str = typer.Argument(..., help="Workflow key to enqueue."),
+    queue_category: str | None = typer.Option(
+        None,
+        "--queue-category",
+        "-q",
+        help="Adapter category used for queue resolution (defaults to 'queue').",
+    ),
+    provider: str | None = typer.Option(
+        None,
+        "--provider",
+        "-p",
+        help="Queue adapter provider override (optional).",
+    ),
+    context_payload: str | None = typer.Option(
+        None,
+        "--context",
+        help="JSON context passed to the DAG run when dequeued.",
+    ),
+    metadata_payload: str | None = typer.Option(
+        None,
+        "--metadata",
+        help="Additional JSON metadata stored with the queue job.",
+    ),
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        help="Emit enqueue metadata as JSON.",
+    ),
+) -> None:
+    state = _state(ctx)
+    bridge = state.bridges.get("workflow")
+    if not bridge:
+        raise typer.BadParameter("Workflow domain is not initialized")
+    context = _parse_payload(context_payload) if context_payload else None
+    metadata = _parse_payload(metadata_payload) if metadata_payload else None
+    result = asyncio.run(
+        _workflow_enqueue_runner(
+            bridge,
+            key,
+            context=context,
+            queue_category=queue_category,
+            provider=provider,
+            metadata=metadata,
+        )
+    )
+    if json_output:
+        typer.echo(json.dumps(result, indent=2))
+        return
+    typer.echo(
+        "Queued workflow {workflow} (run_id={run_id}) via {queue_provider}".format(
+            **result
         )
     )
 
 
 @app.command()
+def orchestrate(
+    ctx: typer.Context,
+    manifest: str | None = typer.Option(
+        None, "--manifest", help="Override manifest URL/path.", metavar="URI"
+    ),
+    refresh_interval: float | None = typer.Option(
+        None,
+        "--refresh-interval",
+        help="Override remote refresh interval (seconds) for the orchestrator.",
+        metavar="SECONDS",
+    ),
+    no_remote: bool = typer.Option(
+        False, "--no-remote", help="Disable remote sync/refresh."
+    ),
+    workflow_checkpoints: Path | None = typer.Option(
+        None,
+        "--workflow-checkpoints",
+        metavar="PATH",
+        help="Path to workflow checkpoint SQLite store (defaults to cache dir).",
+    ),
+    no_workflow_checkpoints: bool = typer.Option(
+        False,
+        "--no-workflow-checkpoints",
+        help="Disable workflow DAG checkpoint persistence.",
+    ),
+    http_port: int | None = typer.Option(
+        None,
+        "--http-port",
+        metavar="PORT",
+        help="Run the builtin scheduler HTTP server on this port (defaults to $PORT or 8080 when enabled).",
+    ),
+    http_host: str = typer.Option(
+        "0.0.0.0",
+        "--http-host",
+        help="Interface for the scheduler HTTP server.",
+    ),
+    no_http: bool = typer.Option(
+        False,
+        "--no-http",
+        help="Disable the builtin scheduler HTTP server (Cloud Tasks callbacks).",
+    ),
+) -> None:
+    state = _state(ctx)
+    profile_remote_enabled = getattr(state.settings.profile, "remote_enabled", True)
+    disable_remote = no_remote or not profile_remote_enabled
+    checkpoint_override = str(workflow_checkpoints) if workflow_checkpoints else None
+    asyncio.run(
+        _handle_orchestrate(
+            state.settings,
+            state.resolver,
+            state.lifecycle,
+            state.secrets,
+            manifest_override=manifest,
+            refresh_interval=refresh_interval,
+            disable_remote=disable_remote,
+            workflow_checkpoint_override=checkpoint_override,
+            disable_workflow_checkpoints=no_workflow_checkpoints,
+            http_port=http_port,
+            http_host=http_host,
+            enable_http=_http_server_enabled(state.settings, http_port, no_http),
+        )
+    )
+
+
+def _http_server_enabled(
+    settings: OneiricSettings, http_port_option: int | None, no_http_flag: bool
+) -> bool:
+    if no_http_flag:
+        return False
+    if http_port_option is not None:
+        return True
+    env_port = os.getenv("PORT")
+    if env_port:
+        return True
+    profile_name = settings.profile.name.lower() if settings.profile.name else ""
+    return profile_name == "serverless"
+
+
+@app.command()
 def status(
     ctx: typer.Context,
-    domain: str = typer.Option("adapter", "--domain", help="Domain to inspect.", case_sensitive=False),
-    key: Optional[str] = typer.Option(None, "--key", help="Domain key to inspect (optional)."),
-    json_output: bool = typer.Option(False, "--json", help="Emit status payload as JSON."),
-    show_shadowed: bool = typer.Option(False, "--shadowed", help="Include details for shadowed candidates."),
+    domain: str = typer.Option(
+        "adapter", "--domain", help="Domain to inspect.", case_sensitive=False
+    ),
+    key: str | None = typer.Option(
+        None, "--key", help="Domain key to inspect (optional)."
+    ),
+    json_output: bool = typer.Option(
+        False, "--json", help="Emit status payload as JSON."
+    ),
+    show_shadowed: bool = typer.Option(
+        False, "--shadowed", help="Include details for shadowed candidates."
+    ),
 ) -> None:
     state = _state(ctx)
     domain = _normalize_domain(domain)
@@ -1121,7 +1809,9 @@ def status(
 @app.command("activity")
 def activity_command(
     ctx: typer.Context,
-    json_output: bool = typer.Option(False, "--json", help="Emit activity summary as JSON."),
+    json_output: bool = typer.Option(
+        False, "--json", help="Emit activity summary as JSON."
+    ),
 ) -> None:
     state = _state(ctx)
     report = _activity_summary(state.bridges)
@@ -1134,10 +1824,16 @@ def activity_command(
 @app.command()
 def health(
     ctx: typer.Context,
-    domain: Optional[str] = typer.Option(None, "--domain", help="Filter to a single domain.", case_sensitive=False),
-    key: Optional[str] = typer.Option(None, "--key", help="Filter to a specific key."),
-    json_output: bool = typer.Option(False, "--json", help="Emit health payload as JSON."),
-    probe: bool = typer.Option(False, "--probe", help="Run live health probes for active instances."),
+    domain: str | None = typer.Option(
+        None, "--domain", help="Filter to a single domain.", case_sensitive=False
+    ),
+    key: str | None = typer.Option(None, "--key", help="Filter to a specific key."),
+    json_output: bool = typer.Option(
+        False, "--json", help="Emit health payload as JSON."
+    ),
+    probe: bool = typer.Option(
+        False, "--probe", help="Run live health probes for active instances."
+    ),
 ) -> None:
     state = _state(ctx)
     domain = _coerce_domain(domain)
@@ -1148,7 +1844,11 @@ def health(
         as_json=json_output,
         probe=probe,
     )
-    runtime_snapshot = load_runtime_health(runtime_health_path(state.settings)).as_dict()
+    runtime_snapshot = load_runtime_health(
+        runtime_health_path(state.settings)
+    ).as_dict()
+    profile_metadata = _profile_metadata(state.settings.profile)
+    secrets_metadata = _secrets_metadata(state.settings.secrets, state.secrets)
     if json_output:
         print(
             json.dumps(
@@ -1156,13 +1856,19 @@ def health(
                     "lifecycle": lifecycle_payload,
                     "lifecycle_summary": lifecycle_summary,
                     "runtime": runtime_snapshot,
+                    "profile": profile_metadata,
+                    "secrets": secrets_metadata,
                 },
                 indent=2,
             )
         )
         return
     print(_format_swap_summary(lifecycle_summary))
-    _print_runtime_health(runtime_snapshot, state.settings.remote.cache_dir, state.settings.remote)
+    _print_runtime_health(
+        runtime_snapshot, state.settings.remote.cache_dir, state.settings.remote
+    )
+    _print_profile_summary(profile_metadata)
+    _print_secrets_summary(secrets_metadata)
 
 
 @app.command("remote-status")
@@ -1172,6 +1878,73 @@ def remote_status_command(
 ) -> None:
     state = _state(ctx)
     _handle_remote_status(state.settings, as_json=json_output)
+
+
+@manifest_app.command("pack")
+def manifest_pack(
+    input_path: Path = typer.Option(
+        Path("docs/sample_remote_manifest.yaml"),
+        "--input",
+        "-i",
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+        help="Path to manifest YAML/JSON file.",
+    ),
+    output_path: Path = typer.Option(
+        Path("build/manifest.json"),
+        "--output",
+        "-o",
+        file_okay=True,
+        dir_okay=False,
+        writable=True,
+        help="Destination JSON file (use '-' for stdout).",
+    ),
+    pretty: bool = typer.Option(True, "--pretty/--compact", help="Format JSON output."),
+    stdout: bool = typer.Option(
+        False, "--stdout", help="Write JSON to stdout regardless of output path."
+    ),
+) -> None:
+    """Package a manifest file into canonical JSON for serverless builds."""
+    manifest = _load_manifest_from_path(input_path)
+    if stdout or str(output_path) == "-":
+        typer.echo(payload := manifest.model_dump_json(indent=2 if pretty else None))
+        return
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(
+        payload := manifest.model_dump_json(indent=2 if pretty else None)
+    )
+    typer.echo(f"Packed manifest {input_path} -> {output_path}")
+
+
+@secrets_app.command("rotate")
+def secrets_rotate_command(
+    ctx: typer.Context,
+    keys: str | None = typer.Option(
+        None,
+        "--keys",
+        help="Comma-separated secret IDs to invalidate.",
+        metavar="ID1,ID2",
+    ),
+    provider: str | None = typer.Option(
+        None,
+        "--provider",
+        help="Override secrets provider identifier when clearing cache.",
+    ),
+    all_keys: bool = typer.Option(
+        False, "--all", help="Invalidate the entire cache for the configured provider."
+    ),
+) -> None:
+    state = _state(ctx)
+    parsed_keys = _parse_csv(keys)
+    if not all_keys and not parsed_keys:
+        raise typer.BadParameter("Specify --keys or --all when rotating secrets.")
+    removed = state.secrets.invalidate(
+        keys=None if all_keys else parsed_keys, provider=provider
+    )
+    typer.echo(f"Invalidated {removed} cached secret value(s).")
 
 
 def main() -> None:

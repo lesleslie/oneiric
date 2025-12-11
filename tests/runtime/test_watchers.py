@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -13,7 +11,6 @@ from oneiric.core.lifecycle import LifecycleManager
 from oneiric.core.resolution import Resolver
 from oneiric.domains.base import DomainBridge
 from oneiric.runtime.watchers import SelectionWatcher
-
 
 # Test helpers
 
@@ -46,7 +43,7 @@ def mock_layer_selector(settings: OneiricSettings) -> LayerSettings:
 
 def mock_settings_loader() -> OneiricSettings:
     """Mock settings loader."""
-    return OneiricSettings(config_dir=".", cache_dir=".")
+    return OneiricSettings()
 
 
 # SelectionWatcher Tests
@@ -229,11 +226,13 @@ class TestSelectionWatcherActivityState:
 
         resolver = Resolver()
         lifecycle = LifecycleManager(resolver)
-        activity_store = DomainActivityStore(str(tmp_path / "activity.json"))
+        activity_store = DomainActivityStore(str(tmp_path / "activity.sqlite"))
         bridge = MockBridge(resolver, lifecycle, activity_store=activity_store)
 
         # Pause the cache key
-        bridge._activity_store.set("test", "cache", DomainActivity(paused=True, note="test"))
+        bridge._activity_store.set(
+            "test", "cache", DomainActivity(paused=True, note="test")
+        )
 
         def layer_selector(settings: OneiricSettings) -> LayerSettings:
             return LayerSettings(selections={"cache": "redis"})
@@ -260,11 +259,13 @@ class TestSelectionWatcherActivityState:
 
         resolver = Resolver()
         lifecycle = LifecycleManager(resolver)
-        activity_store = DomainActivityStore(str(tmp_path / "activity.json"))
+        activity_store = DomainActivityStore(str(tmp_path / "activity.sqlite"))
         bridge = MockBridge(resolver, lifecycle, activity_store=activity_store)
 
         # Set draining state
-        bridge._activity_store.set("test", "cache", DomainActivity(draining=True, note="test"))
+        bridge._activity_store.set(
+            "test", "cache", DomainActivity(draining=True, note="test")
+        )
 
         def layer_selector(settings: OneiricSettings) -> LayerSettings:
             return LayerSettings(selections={"cache": "redis"})
@@ -283,3 +284,35 @@ class TestSelectionWatcherActivityState:
 
         # Swap may be delayed but not immediately called
         # (exact behavior depends on drain delay)
+        bridge.lifecycle.swap.assert_not_called()
+
+
+class TestSelectionWatcherRefreshOnEveryTick:
+    """Tests for refresh_on_every_tick behavior."""
+
+    @pytest.mark.asyncio
+    async def test_refresh_triggers_update_without_selection_change(self):
+        """refresh_on_every_tick calls update_settings even without selection diffs."""
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        bridge = MockBridge(resolver, lifecycle)
+
+        def layer_selector(settings: OneiricSettings) -> LayerSettings:
+            return LayerSettings(selections={"cache": "redis"})
+
+        watcher = SelectionWatcher(
+            name="test",
+            bridge=bridge,
+            layer_selector=layer_selector,
+            settings_loader=mock_settings_loader,
+            refresh_on_every_tick=True,
+        )
+
+        original_update = bridge.update_settings
+        bridge.update_settings = MagicMock(wraps=original_update)
+        bridge.lifecycle.swap = AsyncMock()
+
+        await watcher.run_once()
+
+        bridge.update_settings.assert_called_once()
+        bridge.lifecycle.swap.assert_not_called()

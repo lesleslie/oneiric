@@ -3,10 +3,7 @@
 from __future__ import annotations
 
 import base64
-import json
-import os
 
-import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PrivateKey,
     Ed25519PublicKey,
@@ -18,7 +15,6 @@ from oneiric.remote.security import (
     sign_manifest_for_publishing,
     verify_manifest_signature,
 )
-
 
 # Test helpers
 

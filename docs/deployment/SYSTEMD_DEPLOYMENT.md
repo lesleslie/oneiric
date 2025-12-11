@@ -4,23 +4,23 @@
 **Last Updated:** 2025-11-26
 **Target:** Oneiric v0.1.0+ on Linux with systemd
 
----
+______________________________________________________________________
 
 ## Table of Contents
 
-1. [Overview](#overview)
-2. [Prerequisites](#prerequisites)
-3. [Quick Start](#quick-start)
-4. [Systemd Service Configuration](#systemd-service-configuration)
-5. [Installation](#installation)
-6. [Service Management](#service-management)
-7. [Configuration](#configuration)
-8. [Logging](#logging)
-9. [Security Hardening](#security-hardening)
-10. [Monitoring Integration](#monitoring-integration)
-11. [Troubleshooting](#troubleshooting)
+1. \[[#overview|Overview]\]
+1. \[[#prerequisites|Prerequisites]\]
+1. \[[#quick-start|Quick Start]\]
+1. \[[#systemd-service-configuration|Systemd Service Configuration]\]
+1. \[[#installation|Installation]\]
+1. \[[#service-management|Service Management]\]
+1. \[[#configuration|Configuration]\]
+1. \[[#logging|Logging]\]
+1. \[[#security-hardening|Security Hardening]\]
+1. \[[#monitoring-integration|Monitoring Integration]\]
+1. \[[#troubleshooting|Troubleshooting]\]
 
----
+______________________________________________________________________
 
 ## Overview
 
@@ -33,7 +33,7 @@ Running Oneiric as a systemd service provides:
 - **Logging Integration:** Centralized logging via journald
 - **Health Monitoring:** Watchdog support for hanging processes
 
----
+______________________________________________________________________
 
 ## Prerequisites
 
@@ -64,7 +64,7 @@ sudo useradd -r -s /bin/false -m -d /opt/oneiric oneiric
 id oneiric
 ```
 
----
+______________________________________________________________________
 
 ## Quick Start
 
@@ -119,7 +119,7 @@ sudo -u oneiric uv run python -m oneiric.cli health --probe
 sudo journalctl -u oneiric -f
 ```
 
----
+______________________________________________________________________
 
 ## Systemd Service Configuration
 
@@ -290,7 +290,7 @@ CapabilityBoundingSet=
 WantedBy=multi-user.target
 ```
 
----
+______________________________________________________________________
 
 ## Installation
 
@@ -378,7 +378,7 @@ echo "==> Installation complete!"
 echo "View logs: sudo journalctl -u oneiric -f"
 ```
 
----
+______________________________________________________________________
 
 ## Service Management
 
@@ -430,7 +430,7 @@ sudo systemctl list-dependencies oneiric
 sudo systemctl list-dependencies --reverse oneiric
 ```
 
----
+______________________________________________________________________
 
 ## Configuration
 
@@ -488,7 +488,7 @@ sudo chown -R oneiric:oneiric /opt/oneiric/settings
 sudo chmod -R 640 /opt/oneiric/settings/*.yml
 ```
 
----
+______________________________________________________________________
 
 ## Logging
 
@@ -552,7 +552,7 @@ sudo systemctl restart systemd-journald
 sudo journalctl --disk-usage
 ```
 
----
+______________________________________________________________________
 
 ## Security Hardening
 
@@ -619,7 +619,7 @@ sudo nano /etc/apparmor.d/opt.oneiric
 sudo apparmor_parser -r /etc/apparmor.d/opt.oneiric
 ```
 
----
+______________________________________________________________________
 
 ## Monitoring Integration
 
@@ -693,7 +693,7 @@ fi
 OnFailure=oneiric-failure-notify.service
 ```
 
----
+______________________________________________________________________
 
 ## Troubleshooting
 
@@ -781,11 +781,11 @@ cd /opt/oneiric
 uv run python -m oneiric.cli health --probe
 ```
 
----
+______________________________________________________________________
 
 ## Next Steps
 
-- [Docker Deployment](./DOCKER_DEPLOYMENT.md) - Container-based deployment
-- [Kubernetes Deployment](./KUBERNETES_DEPLOYMENT.md) - Orchestrated deployment
+- \[[DOCKER_DEPLOYMENT|Docker Deployment]\] - Container-based deployment
+- \[[KUBERNETES_DEPLOYMENT|Kubernetes Deployment]\] - Orchestrated deployment
 - [Monitoring Setup](../monitoring/MONITORING_SETUP.md) - Configure metrics and alerting
 - [Runbooks](../runbooks/README.md) - Incident response procedures

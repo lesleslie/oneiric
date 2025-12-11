@@ -16,7 +16,9 @@ from oneiric.core.resolution import Resolver
 @pytest.mark.asyncio
 async def test_redis_cache_set_get_and_ttl() -> None:
     fake = FakeRedis(decode_responses=True)
-    adapter = RedisCacheAdapter(RedisCacheSettings(key_prefix="demo:"), redis_client=fake)
+    adapter = RedisCacheAdapter(
+        RedisCacheSettings(key_prefix="demo:"), redis_client=fake
+    )
     await adapter.init()
     await adapter.set("foo", "bar", ttl=0.1)
     assert await adapter.get("foo") == "bar"

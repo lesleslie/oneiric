@@ -4,21 +4,21 @@
 **Status:** Production Ready
 **Maintainer:** Platform Team
 
----
+______________________________________________________________________
 
 ## Table of Contents
 
-1. [Overview](#overview)
-2. [Maintenance Windows](#maintenance-windows)
-3. [Pre-Maintenance Checklist](#pre-maintenance-checklist)
-4. [Runbooks](#runbooks)
-   - [1. Version Upgrade](#runbook-1-version-upgrade)
-   - [2. Cache Cleanup](#runbook-2-cache-cleanup)
-   - [3. Secret Rotation](#runbook-3-secret-rotation)
-5. [Post-Maintenance Checklist](#post-maintenance-checklist)
-6. [Rollback Procedures](#rollback-procedures)
+1. \[[#overview|Overview]\]
+1. \[[#maintenance-windows|Maintenance Windows]\]
+1. \[[#pre-maintenance-checklist|Pre-Maintenance Checklist]\]
+1. \[[#runbooks|Runbooks]\]
+   - \[[#runbook-1-version-upgrade|1. Version Upgrade]\]
+   - \[[#runbook-2-cache-cleanup|2. Cache Cleanup]\]
+   - \[[#runbook-3-secret-rotation|3. Secret Rotation]\]
+1. \[[#post-maintenance-checklist|Post-Maintenance Checklist]\]
+1. \[[#rollback-procedures|Rollback Procedures]\]
 
----
+______________________________________________________________________
 
 ## Overview
 
@@ -28,11 +28,11 @@ This document provides step-by-step procedures for planned maintenance operation
 
 | # | Runbook | Frequency | Duration | Downtime |
 |---|---------|-----------|----------|----------|
-| 1 | [Version Upgrade](#runbook-1-version-upgrade) | Monthly | 30-60 min | 0-5 min |
-| 2 | [Cache Cleanup](#runbook-2-cache-cleanup) | Weekly | 15-30 min | 0 min |
-| 3 | [Secret Rotation](#runbook-3-secret-rotation) | Quarterly | 30-45 min | 5-10 min |
+| 1 | \[[#runbook-1-version-upgrade|Version Upgrade]\] | Monthly | 30-60 min | 0-5 min |
+| 2 | \[[#runbook-2-cache-cleanup|Cache Cleanup]\] | Weekly | 15-30 min | 0 min |
+| 3 | \[[#runbook-3-secret-rotation|Secret Rotation]\] | Quarterly | 30-45 min | 5-10 min |
 
----
+______________________________________________________________________
 
 ## Maintenance Windows
 
@@ -51,7 +51,7 @@ This document provides step-by-step procedures for planned maintenance operation
 - **Notification:** 1 hour advance (if possible)
 - **Communication:** Status page + Slack + Email
 
----
+______________________________________________________________________
 
 ## Pre-Maintenance Checklist
 
@@ -114,11 +114,11 @@ ls -lh /backups/oneiric/
 # Send test message to Slack #maintenance-updates
 ```
 
----
+______________________________________________________________________
 
 ## Runbooks
 
----
+______________________________________________________________________
 
 ## Runbook 1: Version Upgrade
 
@@ -390,7 +390,7 @@ echo "v0.2.0 deployed to production on $(date)" >> CHANGELOG.md
 # Slack: "Oneiric upgraded to v0.2.0 successfully"
 ```
 
----
+______________________________________________________________________
 
 ## Runbook 2: Cache Cleanup
 
@@ -573,7 +573,7 @@ uv run python -m oneiric.cli remote-sync --manifest <url>
 cp /tmp/oneiric-cache-backup-20251126/<artifact> .oneiric_cache/artifacts/
 ```
 
----
+______________________________________________________________________
 
 ## Runbook 3: Secret Rotation
 
@@ -829,7 +829,7 @@ uv run python -m oneiric.cli health --probe
 # Email: security@example.com
 ```
 
----
+______________________________________________________________________
 
 ## Post-Maintenance Checklist
 
@@ -878,7 +878,7 @@ curl -X DELETE http://alertmanager:9093/api/v2/silence/<silence-id>
 # Ensure: No degradation or issues
 ```
 
----
+______________________________________________________________________
 
 ## Rollback Procedures
 
@@ -911,7 +911,7 @@ Issue detected during/after maintenance
 | **Cache Cleanup** | None (safe operation) | - |
 | **Secret Rotation** | Security Lead + Platform Lead | security-lead@example.com |
 
----
+______________________________________________________________________
 
 ## Additional Resources
 
@@ -921,7 +921,7 @@ Issue detected during/after maintenance
 - **Monitoring Dashboards:** http://grafana:3000/dashboards
 - **On-Call Schedule:** https://pagerduty.com/schedules
 
----
+______________________________________________________________________
 
 **Document Version:** 1.0
 **Last Reviewed:** 2025-11-26
