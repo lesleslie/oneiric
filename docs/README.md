@@ -1,7 +1,7 @@
 # Oneiric Documentation
 
 **Version:** 0.2.0 (Production Ready: 95/100)
-**Last Updated:** 2025-12-07
+**Last Updated:** 2025-12-11
 
 ______________________________________________________________________
 
@@ -10,11 +10,24 @@ ______________________________________________________________________
 ### 🚀 Start Here
 
 - **\[[ONEIRIC_VS_ACB|ONEIRIC_VS_ACB.md]\]** – Cut-over mandate + comparison vs ACB
-- **\[[STRATEGIC_ROADMAP|STRATEGIC_ROADMAP.md]\]** – Vision, execution tracks, and milestones
+- **\[[STRATEGIC_ROADMAP|STRATEGIC_ROADMAP.md]\]** – Vision, execution tracks, and milestones (kept in sync with the tracker below)
 - **\[[SERVERLESS_AND_PARITY_EXECUTION_PLAN|SERVERLESS_AND_PARITY_EXECUTION_PLAN.md]\]** – Serverless + parity workstreams and next actions
 - **\[[ORCHESTRATION_PARITY_PLAN|ORCHESTRATION_PARITY_PLAN.md]\]** – Events, DAGs, and supervisor roadmap
+- **\[[IMPLEMENTATION_PHASE_TRACKER|IMPLEMENTATION_PHASE_TRACKER.md]\]** – Delivery phases, owners, and latest status for every roadmap item
+- **\[[CUTOVER_VALIDATION_CHECKLIST|implementation/CUTOVER_VALIDATION_CHECKLIST.md]\]** – Artifact checklist (manifest, DAG/events JSON, telemetry, ChatOps)
 - **\[[CLOUD_RUN_BUILD|deployment/CLOUD_RUN_BUILD.md]\]** – Cloud Run/buildpack deployment guide (Procfile-first)
 - **\[[UNCOMPLETED_TASKS|UNCOMPLETED_TASKS.md]\]** – Open work items (reference only)
+
+### 📌 Roadmap & Plan Crosswalk
+
+| Reference | Purpose | Status Source |
+|-----------|---------|----------------|
+| **\[[STRATEGIC_ROADMAP|STRATEGIC_ROADMAP.md]\]** | Principles, recent decisions, execution tracks | Mirrors **\[[IMPLEMENTATION_PHASE_TRACKER|IMPLEMENTATION_PHASE_TRACKER.md]\]** |
+| **\[[SERVERLESS_AND_PARITY_EXECUTION_PLAN|implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md]\]** | Serverless profile + adapter/action remediation blueprint | Status rolls up to the tracker |
+| **\[[ORCHESTRATION_PARITY_PLAN|implementation/ORCHESTRATION_PARITY_PLAN.md]\]** | Event dispatcher, DAG runtime, supervisor milestones | Status rolls up to the tracker |
+| **\[[IMPLEMENTATION_PHASE_TRACKER|IMPLEMENTATION_PHASE_TRACKER.md]\]** | Phase-by-phase owner + status table | Pulls inputs from the roadmap + plans above |
+
+Use this table (and the links above) as the navigation loop: roadmap → plan → tracker → back to this index.
 
 ### 🧱 Architecture References
 
@@ -60,9 +73,7 @@ ______________________________________________________________________
 - **ADAPTER_REMEDIATION_PLAN.md** / **ADAPTER_REMEDIATION_EXECUTION.md** – Adapter backlog & progress evidence
 - **GRAPH_ADAPTER_PLAN.md** – ArangoDB/DuckDB PGQ delivery plan
 - **MESSAGING_AND_SCHEDULER_ADAPTER_PLAN.md** – Delivery plan for SendGrid/Mailgun/Twilio + Cloud Tasks/Pub/Sub adapters
-- **STAGE5_FINAL_AUDIT_REPORT.md** – Production readiness audit (95/100) ⭐
-- **LOGGING_OBSERVABILITY_PLAN.md** – Observability planning (still relevant for Track G follow-ups)
-- **RESOLUTION_LAYER_PLAN.md** / **PLUGIN_ENTRYPOINT_PLAN.md** – Reference designs for resolver + plugin extensions
+- **implementation/STAGE5_FINAL_AUDIT_REPORT.md** – Production readiness audit (95/100) ⭐
 
 **Historical References (archived):**
 
@@ -86,6 +97,7 @@ ______________________________________________________________________
 - **NOSQL_ADAPTERS.md** - Configuration reference for MongoDB/DynamoDB adapters
 - **GRAPH_ADAPTERS.md** - Graph adapter configuration (Neo4j) and manifest snippets
 - **DUCKDB_ADAPTER.md** - DuckDB analytics adapter
+- **DNS_FILE_TRANSFER_ADAPTER_PLAN.md** - Blueprint + history for Cloudflare/Route53 DNS and FTP/SFTP/SCP/HTTP/HTTPS file transfer adapters (Wave C backlog sign-off)
 - **EMBEDDING_ADAPTERS.md** - Embedding adapter implementations (OpenAI, SentenceTransformers, ONNX)
 - **VECTOR_ADAPTERS.md** - Vector DB adapters (Pinecone, Qdrant)
 
@@ -98,8 +110,6 @@ ______________________________________________________________________
 **Deployment Guides:**
 
 - **CLOUD_RUN_BUILD.md** - Buildpack + Procfile deployment guide for Cloud Run (default path)
-- **DOCKER_DEPLOYMENT.md** *(legacy)* - Containerization reference for older stacks
-- **KUBERNETES_DEPLOYMENT.md** *(legacy)* - K8s manifests/operators kept for maintenance
 - **SYSTEMD_DEPLOYMENT.md** - Linux systemd services (still used for local agents)
 
 ### `/monitoring/` - Observability Stack
@@ -118,12 +128,19 @@ ______________________________________________________________________
 - **INCIDENT_RESPONSE.md** - 5 incident scenarios (1,344 lines)
 - **MAINTENANCE.md** - 3 maintenance procedures (929 lines)
 - **TROUBLESHOOTING.md** - 15 common issues (959 lines)
+- **SERVICE_SUPERVISOR.md** - Pause/drain workflow, CLI proofs, Cloud Run guidance
 
 ### `/examples/` - Tutorials & Samples
 
-**Sample Code:**
+**Sample Code + Runbooks:**
 
-- **LOCAL_CLI_DEMO.md** - CLI usage examples
+- **LOCAL_CLI_DEMO.md** - CLI usage examples (now covers ChatOps replay flags)
+- **CRACKERJACK_OBSERVABILITY.md** - Crackerjack DAG/event/telemetry capture workflow
+- **FASTBLOCKS_OBSERVABILITY.md** - Fastblocks parity inspector checklist + CLI commands
+- **SESSION_MGMT_MCP_OBSERVABILITY.md** - Session-Mgmt MCP observability and ChatOps transcript capture
+- **EVENT_ROUTING_OBSERVABILITY.md** - Event subscriber inspector + CLI emit proof for parity reviews
+- **FASTBLOCKS_PARITY_FIXTURE.yaml** - Shared manifest used by docs, CLI demos, and migration tests
+- **sample_remote_manifest.yaml / sample_remote_manifest_v2.yaml** - Canonical manifests with serverless profile toggles, Procfile-ready metadata, and full adapter coverage for local rehearsals
 - **plugins/hello_oneiric_plugin/** - Example plugin implementation
 
 ______________________________________________________________________
@@ -139,7 +156,7 @@ ______________________________________________________________________
 
 ### For Operators
 
-1. **[deployment/](deployment/)** - Choose deployment method (Docker, K8s, systemd)
+1. **[deployment/](deployment/)** - Choose deployment method (Cloud Run or systemd)
 1. **[monitoring/](monitoring/)** - Set up observability stack
 1. **[runbooks/](runbooks/)** - Incident response procedures
 1. **\[[UNCOMPLETED_TASKS|UNCOMPLETED_TASKS.md]\]** - Known issues and limitations
@@ -156,6 +173,9 @@ ______________________________________________________________________
 
 1. **\[[ONEIRIC_VS_ACB|ONEIRIC_VS_ACB.md]\]** - Complete migration/cut-over guide
 1. **\[[ACB_ADAPTER_ACTION_IMPLEMENTATION|analysis/ACB_ADAPTER_ACTION_IMPLEMENTATION.md]\]** - Adapter porting details
+1. **\[[CUTOVER_VALIDATION_CHECKLIST|implementation/CUTOVER_VALIDATION_CHECKLIST.md]\]** - Required artifacts before flipping to Oneiric
+1. **\[[FASTBLOCKS_PARITY_FIXTURE|examples/FASTBLOCKS_PARITY_FIXTURE.yaml]\]** - Canonical manifest mirrored in CI + docs
+1. **`docs/examples/*_OBSERVABILITY.md`** - Repo-specific DAG/event/telemetry/ChatOps capture instructions
 1. **\[[UNCOMPLETED_TASKS|UNCOMPLETED_TASKS.md]\]** - Remaining parity items (spoiler: nothing critical)
 
 ### For Project Planning
@@ -164,6 +184,7 @@ ______________________________________________________________________
 1. **\[[STRATEGIC_ROADMAP|STRATEGIC_ROADMAP.md]\]** - Current strategic priorities
 1. **\[[SERVERLESS_AND_PARITY_EXECUTION_PLAN|implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md]\]** - Serverless + parity execution plan
 1. **\[[ORCHESTRATION_PARITY_PLAN|implementation/ORCHESTRATION_PARITY_PLAN.md]\]** - Orchestration parity roadmap
+1. **\[[CUTOVER_VALIDATION_CHECKLIST|implementation/CUTOVER_VALIDATION_CHECKLIST.md]\]** - Migration validation workflow + repo sign-off table
 1. **\[[UNCOMPLETED_TASKS|UNCOMPLETED_TASKS.md]\]** - Future enhancements + known issues
 1. **\[[BUILD_PROGRESS|archive/implementation/BUILD_PROGRESS.md]\]** - Historical phase log
 
@@ -174,16 +195,23 @@ ______________________________________________________________________
 **Production Readiness:**
 
 - ✅ **95/100** audit score (Excellent)
+
 - ✅ **526 tests** passing (96.3% pass rate)
+
 - ✅ **83% coverage** (138% of 60% target)
+
 - ✅ **Zero critical blockers**
+
 - ✅ **All P0 security vulnerabilities resolved**
 
-**Documentation Completeness:**
+- **Documentation Completeness:**
 
 - ✅ Comprehensive operational runbooks (3,232 lines)
+
 - ✅ Complete monitoring setup (3,336 lines)
-- ✅ Detailed deployment guides (2,514 lines)
+
+- ✅ Detailed deployment guides (Cloud Run + systemd)
+
 - ✅ Thorough implementation tracking (dozens of completion reports)
 
 **Code Quality:**
@@ -204,7 +232,7 @@ ______________________________________________________________________
 - `BUILD_PROGRESS.md`, `UNIFIED_IMPLEMENTATION_PLAN.md`, weekly summaries, and every `*_COMPLETION.md` test report now live in `archive/implementation/`.
 - Historical comparison docs remain available under `archive/` (superseded by ONEIRIC_VS_ACB.md).
 
-**Outdated Audits (see STAGE5_FINAL_AUDIT_REPORT.md + QUALITY_AUDITS.md):**
+**Outdated Audits (see implementation/STAGE5_FINAL_AUDIT_REPORT.md + QUALITY_AUDITS.md):**
 
 - Older audit files were removed; the summaries now live in `analysis/QUALITY_AUDITS.md`.
 
@@ -215,7 +243,7 @@ ______________________________________________________________________
 - **implementation/ORCHESTRATION_PARITY_PLAN.md** - Updated as events/DAGs/supervisor work lands
 - **implementation/ADAPTER_REMEDIATION_PLAN.md** / **ADAPTER_REMEDIATION_EXECUTION.md** - Updated with adapter progress
 - **UNCOMPLETED_TASKS.md** - Updated quarterly
-- **STAGE5_FINAL_AUDIT_REPORT.md** - Updated with each release
+- **implementation/STAGE5_FINAL_AUDIT_REPORT.md** - Updated with each release
 - **ONEIRIC_VS_ACB.md** - Updated as ACB evolves
 
 ### Static Reference Documents

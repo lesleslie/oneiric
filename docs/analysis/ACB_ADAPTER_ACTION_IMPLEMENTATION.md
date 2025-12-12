@@ -72,7 +72,7 @@ Purpose: migrate all ACB adapters and action utilities into Oneiric’s unified 
 - [x] Draft provider metadata schema updates (capabilities, version, stack_level, source) – to be codified in `oneiric/adapters/metadata.py`.
 - [x] Outline lifecycle wrapper template structure: async `init/health/cleanup/pause/resume`, structlog context bind, shared retry helpers.
 - [x] Publish concrete wrapper template (code snippet) via `docs/ADAPTER_LIFECYCLE_TEMPLATE.md`.
-- [x] Document structlog processor chain + optional Logly sink integration requirements (extend `docs/LOGGING_OBSERVABILITY_PLAN.md` reference).
+- [x] Document structlog processor chain + optional Logly sink integration requirements (see `docs/OBSERVABILITY_GUIDE.md` for details).
 - [x] Define action runner contracts per domain (`tasks`, `events`, `workflows`) with lifecycle expectations and health semantics (see notes below).
 - [x] Update CLI diagnostics/observability docs (`docs/OBSERVABILITY_GUIDE.md`) to reflect migration inspection commands.
 
@@ -110,7 +110,7 @@ Purpose: migrate all ACB adapters and action utilities into Oneiric’s unified 
           if self._client:
               await self._client.close()
   ```
-- **Structlog Processors**: standard chain = `[structlog.processors.add_log_level, add_timestamp, structlog.processors.StackInfoRenderer(), structlog.processors.dict_tracebacks, JSONRenderer()]` plus optional Logly exporter; document referencing `docs/LOGGING_OBSERVABILITY_PLAN.md`.
+- **Structlog Processors**: standard chain = `[structlog.processors.add_log_level, add_timestamp, structlog.processors.StackInfoRenderer(), structlog.processors.dict_tracebacks, JSONRenderer()]` plus optional Logly exporter; document referencing `docs/OBSERVABILITY_GUIDE.md`.
 - **Action Runner Contract Draft**:
   - Action metadata includes `domains: list[str]`, `capabilities: list[str]`, `side_effect_free: bool`, `requires_secrets: bool`.
   - Resolver exposes `resolve_action(domain, key, capability=None)` returning a callable plus lifecycle guard.
@@ -165,6 +165,22 @@ Purpose: migrate all ACB adapters and action utilities into Oneiric’s unified 
 - [x] Metrics/tracing bridges — delivered via the OTLP adapter (`oneiric/adapters/monitoring/otlp.py`) so traces/metrics reach any collector with resolver-managed lifecycle + tests/docs.
 - [x] Misc/edge integrations (feature flags, payment, etc.) — deferred to Stage 3+ after review; tracked separately now that observability parity is complete.
 
+### Vector & Data Science Snapshot (December 2025)
+
+| Adapter | Module | Tests / Docs | Notes |
+|---------|--------|--------------|-------|
+| Vector (pgvector) | `oneiric.adapters.vector.pgvector.PgvectorAdapter` | `tests/adapters/test_pgvector_adapter.py`, README quick start, `docs/examples/FASTBLOCKS_PARITY_FIXTURE.yaml` | Asyncpg pool factory + pgvector registration helper; ships create/upsert/search/list/delete/count APIs and manifest/CLI coverage. |
+| Database (DuckDB) | `oneiric.adapters.database.duckdb.DuckDBDatabaseAdapter` | `tests/adapters/test_duckdb_adapter.py`, `docs/analysis/DUCKDB_ADAPTER.md` | Default in-process analytics adapter with lifecycle hooks, extension loading, and structured logging. |
+| Graph (DuckDB PGQ) | `oneiric.adapters.graph.duckdb_pgq.DuckDBPGQAdapter` | `tests/adapters/graph/test_duckdb_pgq_adapter.py`, `docs/analysis/GRAPH_ADAPTERS.md` | Provides ingest/query helpers for PGQ tables; referenced in sample manifests and CLI demos. |
+| DNS (Route53) | `oneiric.adapters.dns.route53.Route53DNSAdapter` | `tests/adapters/test_route53_dns_adapter.py` | aioboto3-backed adapter for record CRUD, aligning with the DNS/File Transfer blueprint. |
+| File transfer (FTP) | `oneiric.adapters.file_transfer.ftp.FTPFileTransferAdapter` | `tests/adapters/test_ftp_file_transfer_adapter.py`, `docs/examples/LOCAL_CLI_DEMO.md` §10 | aioftp-powered adapter offering upload/download/delete/list helpers with SecretsHook-ready settings. |
+| File transfer (SFTP) | `oneiric.adapters.file_transfer.sftp.SFTPFileTransferAdapter` | `tests/adapters/test_sftp_file_transfer_adapter.py` | asyncssh-backed adapter mirroring the FTP API for secure transfers. |
+| File transfer (SCP) | `oneiric.adapters.file_transfer.scp.SCPFileTransferAdapter` | `tests/adapters/test_scp_file_transfer_adapter.py`, `docs/sample_remote_manifest.yaml` | asyncssh SCP helper for SSH-based uploads/downloads plus manifest + telemetry docs. |
+| File transfer (HTTP download) | `oneiric.adapters.file_transfer.http_artifact.HTTPArtifactAdapter` | `tests/adapters/test_http_artifact_adapter.py` | httpx-based adapter for artifact downloads with optional SHA256 validation. |
+| File transfer (HTTPS upload) | `oneiric.adapters.file_transfer.http_upload.HTTPSUploadAdapter` | `tests/adapters/test_https_upload_adapter.py`, `docs/examples/LOCAL_CLI_DEMO.md` §10 | httpx AsyncClient upload helper with auth headers + CLI/demo coverage. |
+
+Remaining Phase 3 backlog (DNS, FileTransfer, optional Wave C messaging adapters) stays tracked in `docs/analysis/ADAPTER_GAP_AUDIT.md`. Update both files whenever new adapters land or downstream repos request additional providers.
+
 For each checkbox above, completion requires:
 
 1. Provider metadata & settings model (`settings.py` per provider or inline).
@@ -204,7 +220,7 @@ Each action migration step delivers:
 1. Health/pause/drain hooks implemented.
 1. CLI coverage (list/show/trigger) updated.
 
-### Stage 4 – Remote & Packaging (Status: ☑ COMPLETE - See docs/STAGE4_REMOTE_PACKAGING_PLAN.md)
+### Stage 4 – Remote & Packaging (Status: ☑ COMPLETE - See docs/implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md)
 
 - [x] Remote manifest schema extended with migrated adapters/actions metadata (Task 1: ✅ COMPLETE)
   - [x] Update `RemoteManifestEntry` with capabilities, owner, requires_secrets, settings_model fields
@@ -230,7 +246,7 @@ Each action migration step delivers:
   - [x] Test signature verification failure handling
   - [x] Test concurrent remote sync safety
 
-**Detailed Plan:** See `docs/STAGE4_REMOTE_PACKAGING_PLAN.md` for complete implementation guide (10 working days / 2 weeks)
+**Detailed Plan:** See `docs/implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md` for the complete implementation guide (10 working days / 2 weeks)
 
 ### Stage 5 – Hardening & Completion
 

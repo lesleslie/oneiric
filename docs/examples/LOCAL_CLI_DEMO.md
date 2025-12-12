@@ -28,11 +28,60 @@ In a second shell, run the CLI against the same config to view health snapshots 
 ONEIRIC_CONFIG=~/.oneiric.toml uv run python -m oneiric.cli status --domain adapter
 ONEIRIC_CONFIG=~/.oneiric.toml uv run python -m oneiric.cli health --probe --json
 ONEIRIC_CONFIG=~/.oneiric.toml uv run python -m oneiric.cli activity --json
+cat .oneiric_cache/runtime_health.json
 ```
 
 Persisted telemetry lives under the cache directory configured in the sample file; open `.oneiric_cache/demo.log` to review the JSON log stream with trace context.
 
-Tip: to simulate the serverless profile and the Service Supervisor loop that enforces pause/drain state in Cloud Run, start the orchestrator with `uv run python -m oneiric.cli orchestrate --profile serverless --no-remote --health-path /tmp/runtime_health.json` and then re-run the `health --probe`/`activity --json` commands above. The CLI output will reflect the same `runtime_health.json` snapshot and supervisor decisions that Cloud Run uses for readiness checks, and you’ll see the new `Profile:` + `Secrets:` status blocks showing which toggles and secret providers are active.
+Tip: to simulate the serverless profile and the Service Supervisor loop that enforces pause/drain state in Cloud Run, start the orchestrator with `uv run python -m oneiric.cli orchestrate --profile serverless --no-remote --health-path /tmp/runtime_health.json` and then re-run the `health --probe`/`activity --json` commands above. The CLI output will reflect the same `runtime_health.json` snapshot and supervisor decisions that Cloud Run uses for readiness checks, and you’ll see the new `Profile:`, `Secrets:`, and `lifecycle_state` blocks showing which toggles, secret providers, and paused/draining lifecycle entries are active.
+Follow up with `ONEIRIC_CONFIG=docs/examples/demo_settings.toml uv run python -m oneiric.cli supervisor-info` to confirm whether the supervisor loop is enabled via the profile, runtime config, or `ONEIRIC_RUNTIME_SUPERVISOR__ENABLED` override.
+
+Example transcript (captured after running the short orchestrator bootstrap helper in this repo):
+
+```bash
+ONEIRIC_CONFIG=docs/examples/demo_settings.toml \
+uv run python -m oneiric.cli --demo activity --json
+```
+
+```json
+{
+  "domains": {
+    "adapter": {
+      "counts": {"paused": 0, "draining": 0, "note_only": 1},
+      "entries": [
+        {"key": "demo", "paused": false, "draining": false, "note": "migration"}
+      ]
+    }
+  },
+  "totals": {"paused": 0, "draining": 0, "note_only": 1}
+}
+```
+
+```bash
+ONEIRIC_CONFIG=docs/examples/demo_settings.toml \
+uv run python -m oneiric.cli --demo health --probe --json
+```
+
+```json
+{
+  "runtime": {
+    "watchers_running": false,
+    "remote_enabled": false,
+    "activity_state": {"adapter": {"demo": {"paused": false, "draining": false}}},
+    "lifecycle_state": {
+      "adapter": {
+        "demo": {"state": "ready", "current_provider": "cli"},
+        "queue": {"state": "ready", "current_provider": "cli"}
+      },
+      "service": {"status": {"state": "ready", "current_provider": "cli"}}
+    }
+  },
+  "profile": {"name": "default", "watchers_enabled": true, "remote_enabled": true},
+  "secrets": {"provider": "adapter:secrets", "status": "pending"}
+}
+```
+
+These commands provide the artifacts referenced in the parity plan’s validation checklist (activity summary + health snapshot with `lifecycle_state`) and act as the baseline transcript Cloud Run teams should attach to their rehearsals.
 
 ## 4. SendGrid messaging adapter smoke test
 
@@ -299,6 +348,81 @@ PY
 
 Swap `provider="pubsub"` to publish a DAG start event into Pub/Sub (the adapter supports `read` + `ack` when a subscription is configured). In Cloud Run, point `http_target_url` at your orchestrator ingress and ensure the service account listed in the settings has the `Cloud Tasks Enqueuer` role.
 
+## 10. File Transfer adapters (FTP/SFTP/SCP/HTTPS)
+
+Set `[adapters.selections] file_transfer` to `ftp`, `sftp`, `scp`, or `https-upload` and populate the matching `[adapters.provider_settings]` entry. Install `aioftp` for FTP and `asyncssh` for SFTP/SCP environments that need SSH transports.
+
+```bash
+ONEIRIC_CONFIG=docs/examples/demo_settings.toml uv run python - <<'PY'
+import asyncio
+
+from oneiric.adapters import AdapterBridge, register_builtin_adapters
+from oneiric.core.config import load_settings
+from oneiric.core.lifecycle import LifecycleManager
+from oneiric.core.resolution import Resolver
+
+
+async def demo(provider: str) -> None:
+    settings = load_settings()
+    resolver = Resolver()
+    register_builtin_adapters(resolver)
+    lifecycle = LifecycleManager(resolver)
+    bridge = AdapterBridge(resolver, lifecycle, settings.adapters)
+
+    handle = await bridge.use("file_transfer", provider=provider)
+    await handle.instance.upload("demo.txt", b"hello from oneiric")
+    data = await handle.instance.download("demo.txt")
+    print(provider, "downloaded:", data.decode())
+    await handle.instance.delete("demo.txt")
+
+
+async def main() -> None:
+    await demo("ftp")   # swap to "sftp" or "scp" once optional deps are installed
+
+
+asyncio.run(main())
+PY
+```
+
+When `provider="scp"` you can drive the same snippet against hosts that only expose SSH (no FTP daemon) while keeping manifest metadata identical across transports.
+
+### HTTPS uploads
+
+Use the HTTPS upload adapter for signed bundle pushes or vendors that expose pre-signed URLs. No optional dependency is required because the adapter relies on httpx.
+
+```bash
+ONEIRIC_CONFIG=docs/examples/demo_settings.toml uv run python - <<'PY'
+import asyncio
+
+from oneiric.adapters import AdapterBridge, register_builtin_adapters
+from oneiric.core.config import load_settings
+from oneiric.core.lifecycle import LifecycleManager
+from oneiric.core.resolution import Resolver
+
+
+async def main() -> None:
+    settings = load_settings()
+    resolver = Resolver()
+    register_builtin_adapters(resolver)
+    lifecycle = LifecycleManager(resolver)
+    bridge = AdapterBridge(resolver, lifecycle, settings.adapters)
+
+    handle = await bridge.use("file_transfer", provider="https-upload")
+    location = await handle.instance.upload(
+        "/artifacts/demo.bin",
+        b"release-bytes",
+        content_type="application/octet-stream",
+        extra_headers={"X-Dry-Run": "1"},
+    )
+    print("uploaded:", location)
+
+
+asyncio.run(main())
+PY
+```
+
+Point `base_url` at your artifact endpoint (or presigned domain) and the adapter handles auth headers + TLS validation automatically.
+
 ## 10. Streaming queues (Kafka + RabbitMQ)
 
 Install the `queue-streaming` extra (`pip install 'oneiric[queue-streaming]'`) and run local brokers (e.g., Redpanda/Confluent for Kafka, the official RabbitMQ Docker image for AMQP). Select the provider via the settings:
@@ -408,51 +532,30 @@ This adapter keeps the orchestrator lean while still covering ad-hoc integration
 
 ## 13. Workflow notify → Slack/Teams bridge
 
-Workflows often emit structured notifications via the builtin `workflow.notify` action. The new ChatOps adapters can consume that payload by translating it into `NotificationMessage`. Here’s a tiny harness that logs the notification (via the action) and forwards it to Slack:
+Workflows emit structured notifications via the builtin `workflow.notify` action. The CLI can now forward those payloads directly to Slack/Teams/Webhook adapters using the manifest metadata on each workflow:
 
 ```bash
-ONEIRIC_CONFIG=~/.oneiric.toml uv run python - <<'PY'
-import asyncio
-
-from oneiric.actions.workflow import WorkflowNotifyAction
-from oneiric.adapters import AdapterBridge, register_builtin_adapters
-from oneiric.adapters.messaging.common import NotificationMessage
-from oneiric.core.config import load_settings
-from oneiric.core.lifecycle import LifecycleManager
-from oneiric.core.resolution import Resolver
-
-
-async def main() -> None:
-    settings = load_settings()
-    resolver = Resolver()
-    register_builtin_adapters(resolver)
-    lifecycle = LifecycleManager(resolver)
-    bridge = AdapterBridge(resolver, lifecycle, settings.adapters)
-
-    notify = WorkflowNotifyAction()
-    record = await notify.execute({
-        "message": "Deploy complete",
-        "channel": "deploy",
-        "level": "info",
-        "context": {"service": "demo", "revision": "2025-12-09"},
-    })
-
-    slack = await bridge.use("messaging", provider="slack")
-    await slack.instance.send_notification(
-        NotificationMessage(
-            target="#platform-alerts",
-            title=f"[{record['level'].upper()}] {record['channel']}",
-            text=record["message"],
-            extra_payload={"blocks": []},
-        )
-    )
-
-
-asyncio.run(main())
-PY
+ONEIRIC_CONFIG=~/.oneiric.toml \
+uv run python -m oneiric.cli \
+  action-invoke workflow.notify \
+  --payload '{"channel":"deploys","message":"Demo deploy finished"}' \
+  --workflow fastblocks.workflows.fulfillment \
+  --send-notification \
+  --json
 ```
 
-Swap `provider="teams"` or `"webhook"` to forward the same notification elsewhere. The orchestration parity plan assumes this pattern when wiring DAG/service supervisors to surface events without relying on legacy ACB integrations.
+The `--workflow` flag looks up `metadata.notifications` on the workflow candidate. Example:
+
+```yaml
+metadata:
+  notifications:
+    adapter_provider: notifications.fastblocks-slack
+    channel: "#platform-alerts"
+    title_template: "[{level}] Fastblocks"
+    include_context: true
+```
+
+Override the adapter key (`--notify-adapter`) or ChatOps target (`--notify-target`) as needed. The same metadata is consumed by the runtime’s `NotificationRouter`, so orchestrator runs and CLI demos produce identical ChatOps output without bespoke scripts.
 
 ## 14. Vector adapters (Pinecone + Qdrant)
 
@@ -592,3 +695,23 @@ ONEIRIC_CONFIG=~/.oneiric.toml uv run python -m oneiric.cli workflow run remote-
 Each DAG node references a task key (e.g., `remote-task`). The workflow bridge uses the task bridge to activate task implementations and run them in topological order, returning per-node results.
 
 Workflow checkpoints automatically persist to the SQLite file referenced under `[runtime_paths]` in `docs/examples/demo_settings.toml` (defaults to `.oneiric_cache/workflow_checkpoints.sqlite`). Override it via the same settings block or pass `--workflow-checkpoints PATH` / `--no-workflow-checkpoints` to `oneiric.cli orchestrate` when running long-lived deployments.
+
+## 18. Orchestrator inspectors + telemetry
+
+Borrow the new observability inspectors before/after running the orchestrator so MCP parity reviews have the same context locally:
+
+```bash
+# Human-readable DAG summaries (use --inspect-json for machine output)
+uv run python -m oneiric.cli --demo orchestrate --print-dag --workflow remote-workflow
+
+# Event handler table + filters (JSON for dashboards)
+uv run python -m oneiric.cli --demo orchestrate --events --inspect-json \
+  > artifacts/demo_events.json
+```
+
+Every dispatch/run updates `.oneiric_cache/runtime_telemetry.json`, which shares the same schema as `remote_status.json`:
+
+- `last_event` — handler attempts, duration, errors.
+- `last_workflow` — per-node durations, retries, queue metadata.
+
+Attach the telemetry snapshot and CLI output to parity PRs so reviewers can diff the inspector data without launching ACB’s MCP dashboards.

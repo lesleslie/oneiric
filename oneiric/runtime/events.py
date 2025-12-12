@@ -153,6 +153,11 @@ class EventDispatcher:
         self._handlers.append(handler)
         self._handlers.sort(key=lambda item: item.priority, reverse=True)
 
+    def handlers(self) -> tuple[EventHandler, ...]:
+        """Return snapshot of registered handlers."""
+
+        return tuple(self._handlers)
+
     async def dispatch(self, envelope: EventEnvelope) -> list[HandlerResult]:
         """Dispatch an event to all interested handlers."""
 

@@ -8,7 +8,7 @@ import inspect
 import json
 import math
 import os
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -29,6 +29,7 @@ from oneiric.core.config import (
     load_settings,
     resolver_settings_from_config,
     runtime_health_path,
+    runtime_observability_path,
     workflow_checkpoint_path,
 )
 from oneiric.core.lifecycle import (
@@ -46,8 +47,10 @@ from oneiric.runtime.activity import DomainActivityStore
 from oneiric.runtime.checkpoints import WorkflowCheckpointStore
 from oneiric.runtime.events import HandlerResult
 from oneiric.runtime.health import load_runtime_health
+from oneiric.runtime.notifications import NotificationRoute, NotificationRouter
 from oneiric.runtime.orchestrator import RuntimeOrchestrator
 from oneiric.runtime.scheduler import SchedulerHTTPServer, WorkflowTaskProcessor
+from oneiric.runtime.telemetry import load_runtime_telemetry
 
 logger = get_logger("cli")
 
@@ -82,6 +85,7 @@ class CLIState:
     ]
     plugin_report: plugins.PluginRegistrationReport
     secrets: SecretsHook
+    notification_router: NotificationRouter
 
 
 def _build_lifecycle_options(config: object | None) -> LifecycleSafetyOptions:
@@ -158,6 +162,73 @@ def _activity_summary_for_bridge(bridge) -> dict[str, int]:
     return {"paused": paused, "draining": draining}
 
 
+def _default_notification_adapter_key(settings: OneiricSettings) -> str | None:
+    selections = getattr(settings.adapters, "selections", {}) or {}
+    for key in selections:
+        if key.startswith("notifications"):
+            return key
+    return None
+
+
+def _derive_notification_route(
+    state: CLIState,
+    *,
+    workflow_key: str | None,
+    notify_adapter: str | None,
+    notify_target: str | None,
+    force_send: bool,
+) -> NotificationRoute | None:
+    should_send = force_send or any(
+        value is not None for value in (workflow_key, notify_adapter, notify_target)
+    )
+    if not should_send:
+        return None
+
+    adapter_key = notify_adapter
+    adapter_provider: str | None = None
+    channel: str | None = None
+    target_hint: str | None = None
+    title_template: str | None = None
+    include_context = True
+    extra_payload: dict[str, Any] | None = None
+
+    if workflow_key:
+        candidate = state.resolver.resolve("workflow", workflow_key)
+        if not candidate:
+            raise typer.BadParameter(
+                f"Workflow '{workflow_key}' is not registered; cannot derive notification metadata."
+            )
+        metadata = candidate.metadata.get("notifications")
+        if isinstance(metadata, Mapping):
+            adapter_key = adapter_key or metadata.get("adapter_provider")
+            adapter_key = (
+                adapter_key or metadata.get("adapter") or metadata.get("adapter_key")
+            )
+            adapter_provider = metadata.get("provider")
+            channel = metadata.get("channel")
+            target_hint = metadata.get("target")
+            include_context = bool(metadata.get("include_context", True))
+            title_template = metadata.get("title_template") or metadata.get("title")
+            raw_payload = metadata.get("extra_payload")
+            extra_payload = raw_payload if isinstance(raw_payload, dict) else None
+        else:
+            channel = None
+
+    target = notify_target or target_hint or channel
+    if adapter_key is None and not force_send:
+        return None
+
+    return NotificationRoute(
+        adapter_key=adapter_key,
+        adapter_provider=adapter_provider,
+        target=target,
+        channel=None if target else channel,
+        title_template=title_template,
+        include_context=include_context,
+        extra_payload=extra_payload,
+    )
+
+
 def _format_activity_summary(summary: dict[str, int]) -> str:
     return "Activity state: paused={paused} draining={draining}".format(
         paused=summary.get("paused", 0),
@@ -177,6 +248,17 @@ def _activity_counts_from_mapping(
             if state.get("draining"):
                 draining += 1
     return {"paused": paused, "draining": draining}
+
+
+def _lifecycle_counts_from_mapping(
+    lifecycle_state: dict[str, dict[str, Any]],
+) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for entries in lifecycle_state.values():
+        for state in entries.values():
+            label = state.get("state") or "unknown"
+            counts[label] = counts.get(label, 0) + 1
+    return counts
 
 
 def _format_remote_budget_line(remote_config, last_duration: float | None) -> str:
@@ -251,9 +333,18 @@ async def _action_invoke_runner(
     payload: dict[str, Any],
     *,
     provider: str | None,
+    notification_router: NotificationRouter | None = None,
+    notification_route: NotificationRoute | None = None,
 ) -> Any:
     handle = await bridge.use(key, provider=provider)
-    return await _invoke_action(handle, payload)
+    result = await _invoke_action(handle, payload)
+    if (
+        key == "workflow.notify"
+        and notification_router is not None
+        and notification_route is not None
+    ):
+        await notification_router.send(result, notification_route)
+    return result
 
 
 async def _event_emit_runner(
@@ -458,6 +549,10 @@ def _initialize_state(
     adapter_bridge = AdapterBridge(
         resolver, lifecycle, settings.adapters, activity_store=activity_store
     )
+    notification_router = NotificationRouter(
+        adapter_bridge,
+        default_adapter_key=_default_notification_adapter_key(settings),
+    )
     task_bridge = TaskBridge(
         resolver, lifecycle, settings.tasks, activity_store=activity_store
     )
@@ -501,6 +596,7 @@ def _initialize_state(
         bridges=bridges,
         plugin_report=plugin_report,
         secrets=secrets,
+        notification_router=notification_router,
     )
 
 
@@ -631,6 +727,10 @@ async def _handle_orchestrate(
     http_port: int | None,
     http_host: str,
     enable_http: bool,
+    print_dag: bool,
+    workflow_filters: Sequence[str],
+    inspect_events: bool,
+    inspect_json: bool,
 ) -> None:
     resolved_http_port = _resolve_http_port(http_port) if enable_http else None
     orchestrator = RuntimeOrchestrator(
@@ -642,6 +742,21 @@ async def _handle_orchestrate(
         workflow_checkpoint_path=workflow_checkpoint_override,
         enable_workflow_checkpoints=not disable_workflow_checkpoints,
     )
+    if print_dag or inspect_events:
+        telemetry = load_runtime_telemetry(runtime_observability_path(settings))
+        payload: dict[str, Any] = {}
+        if print_dag:
+            payload["workflows"] = _workflow_inspector_summary(
+                orchestrator.workflow_bridge,
+                workflow_filters,
+                telemetry.last_workflow,
+            )
+        if inspect_events:
+            payload["events"] = _event_inspector_summary(
+                orchestrator.event_bridge, telemetry.last_event
+            )
+        _emit_inspector_payload(payload, inspect_json)
+        return
     http_server: SchedulerHTTPServer | None = None
     try:
         await orchestrator.start(
@@ -761,6 +876,204 @@ def _build_remote_metrics(telemetry) -> str:
     if telemetry.last_digest_checks is not None:
         metric_parts.append(f"digest_checks={telemetry.last_digest_checks}")
     return " ".join(metric_parts)
+
+
+def _workflow_inspector_summary(
+    bridge: WorkflowBridge,
+    filters: Sequence[str],
+    last_run: dict[str, Any] | None,
+) -> dict[str, Any]:
+    specs = bridge.dag_specs()
+    targets = _workflow_target_keys(filters, specs.keys())
+    summary: dict[str, Any] = {}
+    missing: list[str] = []
+    default_queue = getattr(bridge, "_queue_category", None)
+    for key in targets:
+        dag_spec = specs.get(key)
+        if not dag_spec:
+            missing.append(key)
+            continue
+        summary[key] = _build_workflow_summary(
+            key,
+            dag_spec,
+            last_run if last_run and last_run.get("workflow") == key else None,
+            default_queue,
+        )
+    if not summary and not missing:
+        for key, dag_spec in specs.items():
+            summary[key] = _build_workflow_summary(
+                key,
+                dag_spec,
+                last_run if last_run and last_run.get("workflow") == key else None,
+                default_queue,
+            )
+    return {"summary": summary, "missing": missing}
+
+
+def _workflow_target_keys(
+    filters: Sequence[str], available: Iterable[str]
+) -> list[str]:
+    include_all = not filters
+    targets: list[str] = []
+    seen: set[str] = set()
+    for entry in filters:
+        lowered = entry.lower()
+        if lowered in {"all", "*"}:
+            include_all = True
+            continue
+        if entry not in seen:
+            targets.append(entry)
+            seen.add(entry)
+    if include_all:
+        for key in available:
+            if key not in seen:
+                targets.append(key)
+                seen.add(key)
+    return targets
+
+
+def _build_workflow_summary(
+    workflow_key: str,
+    dag_spec: dict[str, Any],
+    last_run: dict[str, Any] | None,
+    default_queue: str | None,
+) -> dict[str, Any]:
+    nodes_raw = dag_spec.get("nodes") or dag_spec.get("tasks") or []
+    nodes: list[dict[str, Any]] = []
+    edges = 0
+    if isinstance(nodes_raw, Sequence):
+        for entry in nodes_raw:
+            if not isinstance(entry, Mapping):
+                continue
+            node_id = entry.get("id") or entry.get("key")
+            if not node_id:
+                continue
+            depends = entry.get("depends_on") or []
+            if isinstance(depends, Sequence) and not isinstance(depends, (str, bytes)):
+                depends_list = list(depends)
+            elif depends:
+                depends_list = [depends]
+            else:
+                depends_list = []
+            edges += len(depends_list)
+            node_entry: dict[str, Any] = {
+                "id": str(node_id),
+                "task": entry.get("task"),
+                "depends_on": depends_list,
+            }
+            retry_policy = entry.get("retry_policy")
+            if retry_policy:
+                node_entry["retry_policy"] = retry_policy
+            nodes.append(node_entry)
+    entry_nodes = [node["id"] for node in nodes if not node["depends_on"]]
+    summary: dict[str, Any] = {
+        "node_count": len(nodes),
+        "edge_count": edges,
+        "entry_nodes": entry_nodes,
+        "queue_category": dag_spec.get("queue_category") or default_queue,
+        "nodes": nodes,
+    }
+    if last_run and last_run.get("workflow") == workflow_key:
+        summary["last_run"] = last_run
+    return summary
+
+
+def _event_inspector_summary(
+    bridge: EventBridge, last_event: dict[str, Any] | None
+) -> dict[str, Any]:
+    return {
+        "handlers": bridge.handler_snapshot(),
+        "last_event": last_event or {},
+    }
+
+
+def _emit_inspector_payload(payload: dict[str, Any], json_output: bool) -> None:
+    if json_output:
+        print(json.dumps(payload, indent=2))
+        return
+    workflows = payload.get("workflows")
+    events = payload.get("events")
+    if workflows is not None:
+        _print_workflow_inspector(workflows)
+    if workflows is not None and events is not None:
+        print("")
+    if events is not None:
+        _print_event_inspector(events)
+
+
+def _print_workflow_inspector(data: dict[str, Any]) -> None:
+    summary = data.get("summary") or {}
+    if not summary:
+        print("No workflow DAGs registered.")
+    else:
+        print("Workflow DAGs:")
+        for workflow_key in sorted(summary):
+            record = summary[workflow_key]
+            queue = record.get("queue_category") or "queue"
+            entry_nodes = record.get("entry_nodes") or []
+            entry_text = ", ".join(entry_nodes) if entry_nodes else "n/a"
+            print(
+                f"- {workflow_key}: nodes={record.get('node_count', 0)} edges={record.get('edge_count', 0)} queue={queue} entry={entry_text}"
+            )
+            for node in record.get("nodes", []):
+                depends = node.get("depends_on") or []
+                depends_text = ", ".join(depends) if depends else "root"
+                retry_policy = node.get("retry_policy")
+                retry_text = f" retry={retry_policy}" if retry_policy else ""
+                print(
+                    f"    · {node.get('id')}: task={node.get('task')} depends_on={depends_text}{retry_text}"
+                )
+            last_run = record.get("last_run")
+            if last_run:
+                duration = float(last_run.get("total_duration_ms", 0.0))
+                recorded = last_run.get("recorded_at", "n/a")
+                print(f"    last_run: duration={duration:.1f}ms recorded_at={recorded}")
+    missing = data.get("missing") or []
+    if missing:
+        print("Missing workflow keys: " + ", ".join(sorted(missing)))
+
+
+def _print_event_inspector(data: dict[str, Any]) -> None:
+    handlers = data.get("handlers") or []
+    if not handlers:
+        print("No event handlers registered.")
+    else:
+        print("Event handlers:")
+        for handler in handlers:
+            topics = handler.get("topics") or ["*"]
+            topics_text = ", ".join(topics)
+            print(
+                f"- {handler.get('name')}: topics={topics_text} priority={handler.get('priority', 0)} max_concurrency={handler.get('max_concurrency', 1)} fanout={handler.get('fanout_policy', 'broadcast')}"
+            )
+            retry_policy = handler.get("retry_policy")
+            if retry_policy:
+                print(f"    retry_policy={retry_policy}")
+            filters = handler.get("filters") or []
+            if filters:
+                print("    filters:")
+                for clause in filters:
+                    parts = [clause.get("path")]
+                    if clause.get("equals") is not None:
+                        parts.append(f"== {clause['equals']}")
+                    if clause.get("any_of"):
+                        parts.append(f"in {clause['any_of']}")
+                    exists = clause.get("exists")
+                    if exists is True:
+                        parts.append("exists")
+                    elif exists is False:
+                        parts.append("missing")
+                    print("      - " + " ".join(part for part in parts if part))
+    last_event = data.get("last_event") or {}
+    if last_event:
+        print(
+            "Last event: topic={topic} matched={matched} failures={failures} duration={duration:.1f}ms recorded_at={recorded}".format(
+                topic=last_event.get("topic", "unknown"),
+                matched=last_event.get("matched_handlers", 0),
+                failures=last_event.get("failures", 0),
+                duration=float(last_event.get("total_duration_ms", 0.0)),
+                recorded=last_event.get("recorded_at", "n/a"),
+            )
+        )
 
 
 def _handle_status(
@@ -1158,6 +1471,8 @@ def _print_runtime_health(
     _print_remote_duration_info(snapshot, remote_config)
     _print_remote_domain_counts(snapshot)
     _print_remote_skipped(snapshot)
+    _print_activity_snapshot(snapshot)
+    _print_lifecycle_snapshot(snapshot)
 
 
 def _print_runtime_status(snapshot: dict[str, Any]) -> None:
@@ -1217,12 +1532,42 @@ def _print_remote_skipped(snapshot: dict[str, Any]) -> None:
     if snapshot.get("last_remote_skipped"):
         print(f"  last_remote_skipped={snapshot['last_remote_skipped']}")
 
+
+def _print_activity_snapshot(snapshot: dict[str, Any]) -> None:
+    """Print persisted pause/drain state."""
     activity = snapshot.get("activity_state") or {}
     if not activity:
         return
 
     _print_activity_summary(activity)
     _print_domain_activity_details(activity)
+
+
+def _print_lifecycle_snapshot(snapshot: dict[str, Any]) -> None:
+    """Print lifecycle status summary/details."""
+    lifecycle_state = snapshot.get("lifecycle_state") or {}
+    if not lifecycle_state:
+        return
+
+    totals = _lifecycle_counts_from_mapping(lifecycle_state)
+    if totals:
+        summary = ", ".join(
+            f"{state}={count}" for state, count in sorted(totals.items())
+        )
+        print(f"  lifecycle-summary: {summary}")
+    print("  lifecycle_state:")
+    for domain, entries in sorted(lifecycle_state.items()):
+        for key, state in sorted(entries.items()):
+            current = state.get("current_provider") or "n/a"
+            pending = state.get("pending_provider") or "none"
+            status = state.get("state") or "unknown"
+            print(
+                f"    - {domain}:{key} state={status} current={current} pending={pending}"
+            )
+            if state.get("last_health_at"):
+                print(f"      last_health={state['last_health_at']}")
+            if state.get("last_error"):
+                print(f"      last_error={state['last_error']}")
 
 
 def _profile_metadata(profile) -> dict[str, Any]:
@@ -1437,14 +1782,50 @@ def action_invoke(
         None, "--provider", help="Override provider selection."
     ),
     json_output: bool = typer.Option(False, "--json", help="Emit JSON result."),
+    workflow_key: str | None = typer.Option(
+        None,
+        "--workflow",
+        help="Workflow key (for workflow.notify) that provides notification metadata.",
+    ),
+    notify_adapter: str | None = typer.Option(
+        None,
+        "--notify-adapter",
+        help="Adapter key to forward workflow.notify payloads to.",
+    ),
+    notify_target: str | None = typer.Option(
+        None,
+        "--notify-target",
+        help="Override ChatOps target/channel for workflow.notify payloads.",
+    ),
+    send_notification: bool = typer.Option(
+        False,
+        "--send-notification/--no-send-notification",
+        help="Forward workflow.notify payloads to the resolved ChatOps adapter.",
+    ),
 ) -> None:
     state = _state(ctx)
     bridge = state.bridges.get("action")
     if not bridge:
         raise typer.BadParameter("Actions domain is not initialized")
     payload_map = _parse_payload(payload)
+    notification_route = None
+    if key == "workflow.notify":
+        notification_route = _derive_notification_route(
+            state,
+            workflow_key=workflow_key,
+            notify_adapter=notify_adapter,
+            notify_target=notify_target,
+            force_send=send_notification,
+        )
     result = asyncio.run(
-        _action_invoke_runner(bridge, key, payload_map, provider=provider)
+        _action_invoke_runner(
+            bridge,
+            key,
+            payload_map,
+            provider=provider,
+            notification_router=state.notification_router,
+            notification_route=notification_route,
+        )
     )
     if json_output:
         typer.echo(json.dumps(result, indent=2, sort_keys=True))
@@ -1740,6 +2121,27 @@ def orchestrate(
         "--no-http",
         help="Disable the builtin scheduler HTTP server (Cloud Tasks callbacks).",
     ),
+    print_dag: bool = typer.Option(
+        False,
+        "--print-dag",
+        help="Print workflow DAG summary and exit.",
+    ),
+    workflow_filter: list[str] | None = typer.Option(
+        None,
+        "--workflow",
+        metavar="KEY",
+        help="Filter --print-dag output to specific workflow key(s).",
+    ),
+    events_inspector: bool = typer.Option(
+        False,
+        "--events",
+        help="Print registered event handlers and exit.",
+    ),
+    inspect_json: bool = typer.Option(
+        False,
+        "--inspect-json",
+        help="Emit inspector payloads as JSON (requires --print-dag and/or --events).",
+    ),
 ) -> None:
     state = _state(ctx)
     profile_remote_enabled = getattr(state.settings.profile, "remote_enabled", True)
@@ -1759,6 +2161,10 @@ def orchestrate(
             http_port=http_port,
             http_host=http_host,
             enable_http=_http_server_enabled(state.settings, http_port, no_http),
+            print_dag=print_dag,
+            workflow_filters=tuple(workflow_filter or ()),
+            inspect_events=events_inspector,
+            inspect_json=inspect_json,
         )
     )
 
@@ -1775,6 +2181,27 @@ def _http_server_enabled(
         return True
     profile_name = settings.profile.name.lower() if settings.profile.name else ""
     return profile_name == "serverless"
+
+
+@app.command("supervisor-info")
+def supervisor_info(ctx: typer.Context) -> None:
+    """Show the current supervisor feature flag + env overrides."""
+    state = _state(ctx)
+    profile_toggle = getattr(state.settings.profile, "supervisor_enabled", True)
+    runtime_toggle = getattr(
+        state.settings.runtime_supervisor, "enabled", profile_toggle
+    )
+    poll_interval = getattr(state.settings.runtime_supervisor, "poll_interval", 2.0)
+    env_override = os.getenv("ONEIRIC_RUNTIME_SUPERVISOR__ENABLED")
+    print(
+        "Supervisor toggles: profile={profile} runtime={runtime} poll_interval={interval:.2f}s".format(
+            profile="on" if profile_toggle else "off",
+            runtime="on" if runtime_toggle else "off",
+            interval=poll_interval,
+        )
+    )
+    if env_override is not None:
+        print(f"Env override: ONEIRIC_RUNTIME_SUPERVISOR__ENABLED={env_override}")
 
 
 @app.command()

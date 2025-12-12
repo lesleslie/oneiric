@@ -2,14 +2,14 @@
 
 **Last Updated:** 2025-12-07
 **Owners:** Platform Core (runtime + adapters), Docs Team, Deployment Experience
-**Purpose:** Capture the post–Track G decisions, codify the “Oneiric replaces ACB” mandate, and lay out the concrete work we must finish so Cloud Run/serverless deployments, orchestration parity, and documentation cleanup converge on the same timeline.
+**Purpose:** Capture the post–Track G decisions, codify the “Oneiric replaces ACB” mandate, and lay out the concrete work we must finish so Cloud Run/serverless deployments, orchestration parity, and documentation cleanup converge on the same timeline. Strategic context sits in \[\[STRATEGIC_ROADMAP|`docs/STRATEGIC_ROADMAP.md`\]\]; milestone status for every item below is tracked in \[\[IMPLEMENTATION_PHASE_TRACKER|`docs/IMPLEMENTATION_PHASE_TRACKER.md`\]\]. For navigation help (and links to related architecture/runbook docs) see \[\[README|`docs/README.md`\]\].
 
 ______________________________________________________________________
 
 ## 1. Decisions & Guardrails (Recap)
 
 1. **ACB sunset:** Oneiric will replace ACB end-to-end across Crackerjack, FastBlocks, and session-mgmt-mcp. No hybrid “mix adapters/actions” mode will ship because no production workloads force backwards compatibility.
-1. **Serverless-first:** Google Cloud Run (and other buildpack-based runtimes) are the primary deployment targets. Docker compose/Kubernetes docs stay as historical references but the Procfile/buildpack flow is the default.
+1. **Serverless-first:** Google Cloud Run (and other buildpack-based runtimes) are the primary deployment targets. The Docker/Kubernetes docs were removed; Procfile/buildpack is the only supported deployment path alongside systemd for local agents.
 1. **Lean adapters/actions:** `_base.py` scaffolding is retired; shared helpers live in `common.py` modules with lazy imports. New adapters/actions must follow that pattern and expose optional extras for heavyweight dependencies.
 1. **Secrets precedence:** Secret Manager adapters (GCP/AWS) and other providers take precedence over plain env vars in serverless profiles; env adapters remain as fallbacks for local dev/testing.
 1. **Observability posture:** Structlog JSON stays on `stdout`; `stderr` is reserved for crashes. Rich/loguru pretty output is allowed only for dev runs. Remote loader remains on `httpx` + `tenacity/aiobreaker`; adapters may wrap other HTTP libs when needed.
@@ -40,8 +40,10 @@ ______________________________________________________________________
 1. **Runtime toggles**
    - Serverless profile disables file watchers, remote polling, and hot reload (`RuntimeProfileConfig.watchers_enabled=False`, `remote_enabled=False`, `inline_manifest_only=True`). Hot swap stays available for long-lived Crackerjack installs only.
    - Ensure resolver defaults to inline manifests packaged within the container; remote refresh runs only when explicitly enabled.
+   - Surface the toggle status through `oneiric cli supervisor-info`, which echoes the profile default, `RuntimeSupervisorConfig.enabled`, and any `ONEIRIC_RUNTIME_SUPERVISOR__ENABLED` override so Cloud Run runbooks can capture the exact posture before deploys.
 1. **Secrets + config**
    - Prioritize `oneiric.adapters.secrets.gcp.SecretManagerSecretsAdapter` (default) → `aws` → `env` fallback.
+   - Document the precedence order (Secret Manager → environment variables → manifest overrides) and reference the `Profile`, `Secrets`, and `lifecycle_state` sections emitted by `oneiric cli health --probe --json` so ops teams can verify serverless posture before deploys (capture the output in release notes alongside `supervisor-info` so the enabling proof is self-contained).
    - Document secret rotation + caching expectations for Cloud Run revisions.
 1. **Cold start + size**
    - Guard heavy optional dependencies via extras (e.g., `pip install oneiric[vector,pg]`).
@@ -117,7 +119,7 @@ ______________________________________________________________________
 1. ✅ **Archive historical completion reports** – `docs/implementation/BUILD_PROGRESS.md`, `UNIFIED_IMPLEMENTATION_PLAN.md`, and every `WEEK*`/`*_COMPLETION` file now live under `docs/archive/implementation/` with an updated index.
 1. **Refresh `docs/README.md`** to link to `STRATEGIC_ROADMAP.md`, this plan, and `ORCHESTRATION_PARITY_PLAN.md`.
 1. **Update sample manifests** with serverless toggles + Procfile references.
-1. **Remove redundant Docker/K8s docs** or mark them as “legacy”; highlight Cloud Run/buildpack flow instead.
+1. **Remove redundant Docker/K8s docs** or mark them as “legacy”; highlight Cloud Run/buildpack flow instead. ✅ Done – only Cloud Run + systemd guides remain under `docs/deployment/`.
 1. **Add decision log** in `docs/STRATEGIC_ROADMAP.md §6` summarizing the bullets from §1 here so newcomers understand the December decisions.
 
 ______________________________________________________________________
@@ -127,7 +129,7 @@ ______________________________________________________________________
 | Risk | Impact | Mitigation |
 |------|--------|------------|
 | Adapter extras bloat cold starts | Slower Cloud Run revisions | Guard heavy deps w/ extras, document `pip install oneiric[vector,pg]`. |
-| Untested queue/storage adapters block parity | Cut-over slips | Establish weekly adapter parity review vs `ACB_ADAPTER_ACTION_IMPLEMENTATION.md`. |
+| Untested queue/storage adapters block parity | Cut-over slips | Establish weekly adapter parity review vs `docs/analysis/ACB_ADAPTER_ACTION_IMPLEMENTATION.md`. |
 | Doc sprawl reappears | Teams lose signal | Calendar reminder for Docs team to snapshot this plan + roadmap whenever major milestones finish. |
 | Buildpack path drift | Deploys break | Add CI smoke test `pack build oneiric:ci` weekly. |
 
@@ -138,7 +140,7 @@ ______________________________________________________________________
 1. **Serverless profile skeleton (Runtime)**
    - ✅ Implemented profile toggles, env-var fallback, Procfile/guide updates. Next: capture screenshots/logs of a `pack build` + `gcloud run deploy` run to include in the deployment appendix.
 1. **Adapter gap audit (Adapter Team)**
-   - Diff `ACB_ADAPTER_ACTION_IMPLEMENTATION.md` vs current adapters; capture the remaining NoSQL/feature-flag backlog now that Mailgun/Twilio/Slack/Teams/webhook + Cloud Tasks/Pub/Sub shipped.
+   - Diff `docs/analysis/ACB_ADAPTER_ACTION_IMPLEMENTATION.md` vs current adapters; capture the remaining NoSQL/feature-flag backlog now that Mailgun/Twilio/Slack/Teams/webhook + Cloud Tasks/Pub/Sub shipped.
    - Update `ADAPTER_REMEDIATION_EXECUTION.md` with refreshed evidence + owners.
 1. **Docs hygiene (Docs Team)**
    - Move week-by-week completion docs into `/docs/archive`, update links.

@@ -1,7 +1,7 @@
 # Observability Guide
 
 This guide explains how to configure Oneiric's structured logging, context helpers,
-and the new resiliency controls for remote manifest fetches.
+the resiliency controls for remote manifest fetches, and the runtime telemetry + ChatOps notification helpers introduced in 0.2.0.
 
 ## Structured Logging Setup
 
@@ -93,6 +93,22 @@ retry outcomes and circuit-breaker events in real time.
   CLI or automation. Use these metrics to correlate incidents with runtime
   controls such as pause/drain.
 
+## Runtime Telemetry + Inspectors
+
+- `oneiric.cli orchestrate --print-dag [--workflow KEY ...]` prints the active DAG graph (nodes, dependencies, retry policy, queue metadata) without starting the orchestrator loop. Pass `--inspect-json` to capture the payload for dashboards.
+- `oneiric.cli orchestrate --events` performs the same inspection for event handlers (topics, fanout policy, concurrency, filters).
+- Both commands exit immediately, making them safe to run in CI to snapshot runtime wiring before deploying.
+- Every dispatch/run updates `.oneiric_cache/runtime_telemetry.json` with the last event dispatch + workflow execution (handler attempts/failures, per-node durations). CLI inspectors trigger the same writes so you can capture artifacts without letting the orchestrator loop run indefinitely.
+- Forward the telemetry JSON to Logfire/OTLP collectors if you want historical graphs without scraping CLI commands; the runtime recorder also emits structured `runtime-event-telemetry` and `runtime-workflow-telemetry` logs for Logfire dashboards.
+- For migration evidence, copy `.oneiric_cache/runtime_telemetry.json` into the repo-specific folders under `docs/examples/` (see the Crackerjack/Fastblocks/Session‑Mgmt guides). `tests/integration/test_migration_parity.py` consumes the same fixture to ensure telemetry + manifests stay aligned.
+
+### CLI Notification Replay
+
+- `uv run python -m oneiric.cli action-invoke workflow.notify --workflow fastblocks.workflows.fulfillment --payload '{"message":"Deploy ready","channel":"deploys"}' --send-notification --json`
+  replays the ChatOps path using the `NotificationRouter`; the CLI routes through the same adapters (`--notify-adapter` / `--notify-target` override defaults) used by orchestrator workflows.
+- Add `--workflow KEY` so the router pulls metadata (`adapter_provider`, `channel`, templates) from the DAG spec; runtimes and CLI demos stay in sync.
+- Include the transcript (JSON or text) alongside telemetry and DAG/event payloads so reviewers can confirm Slack/Teams/Webhook output matches expectations.
+
 ## CLI Diagnostics & Dashboards
 
 - `oneiric.cli status` now prints swap latency percentiles (p50/p95/p99) and
@@ -113,6 +129,7 @@ retry outcomes and circuit-breaker events in real time.
 - `oneiric.cli activity --json` outputs per-domain pause/drain counts along with
   the individual entries, making it trivial to chart how many services are in a
   maintenance state at any given time.
+- Pair those commands with the repo-specific parity guides under `docs/examples/*_OBSERVABILITY.md`; they spell out which artifacts (DAG JSON, event JSON, telemetry, ChatOps transcript) must accompany Crackerjack/Fastblocks/Session‑Mgmt rehearsals.
 
 ### Tracking Adapter/Action Migration
 

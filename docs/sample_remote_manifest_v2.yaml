@@ -205,6 +205,46 @@ entries:
       serverless:
         profile: serverless
         remote_refresh_enabled: false
+      watchers_enabled: false
+
+  # SCP File Transfer Adapter
+  - domain: adapter
+    key: file_transfer.scp
+    provider: scp
+    factory: oneiric.adapters.file_transfer.scp:SCPFileTransferAdapter
+    stack_level: 15
+    priority: 340
+
+    capabilities: ["upload", "download", "delete", "list"]
+    owner: "Infra Team"
+    requires_secrets: true
+    settings_model: "oneiric.adapters.file_transfer.scp:SCPFileTransferSettings"
+
+    metadata:
+      description: "SSH-based file transfer adapter used when FTP servers are unavailable"
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+
+  # HTTPS Upload Adapter
+  - domain: adapter
+    key: file_transfer.https_upload
+    provider: https-upload
+    factory: oneiric.adapters.file_transfer.http_upload:HTTPSUploadAdapter
+    stack_level: 15
+    priority: 335
+
+    capabilities: ["upload"]
+    owner: "Platform Core"
+    requires_secrets: false
+    settings_model: "oneiric.adapters.file_transfer.http_upload:HTTPSUploadSettings"
+
+    metadata:
+      description: "httpx-powered HTTPS uploader for signed artifact pushes"
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
         watchers_enabled: false
 
   # MongoDB NoSQL Adapter

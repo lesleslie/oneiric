@@ -21,13 +21,15 @@ Use this folder to stage legacy completion reports, phased implementation summar
 
 ## Historical Plans
 
-- `docs/implementation/ADAPTER_MIGRATION_PLAN.md`
-- `docs/implementation/ADAPTER_DISCOVERY_AND_HOT_SWAP_PLAN.md`
-- `docs/implementation/LOGGING_OBSERVABILITY_PLAN.md`
-- `docs/implementation/RESOLUTION_LAYER_PLAN.md`
-- `docs/implementation/PLUGIN_ENTRYPOINT_PLAN.md`
+The following plans have been deleted as they were superseded by the streamlined execution plan:
 
-These documents remain accurate but are superseded by the streamlined execution plan. Move them here once the team confirms no open action items rely on them.
+- ~~`docs/implementation/ADAPTER_MIGRATION_PLAN.md`~~ - Deleted (superseded by ADAPTER_REMEDIATION_PLAN.md)
+- ~~`docs/implementation/ADAPTER_DISCOVERY_AND_HOT_SWAP_PLAN.md`~~ - Deleted (functionality now in core resolution layer)
+- ~~`docs/implementation/LOGGING_OBSERVABILITY_PLAN.md`~~ - Deleted (superseded by OBSERVABILITY_GUIDE.md)
+- ~~`docs/implementation/RESOLUTION_LAYER_PLAN.md`~~ - Deleted (superseded by RESOLUTION_LAYER_SPEC.md)
+- ~~`docs/implementation/PLUGIN_ENTRYPOINT_PLAN.md`~~ - Deleted (functionality deferred to future enhancement)
+
+Historical content available in git history if needed.
 
 ## How to Archive
 

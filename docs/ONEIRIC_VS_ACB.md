@@ -203,7 +203,16 @@ async with remote_loader.watch(refresh_interval=300):
 
 **ACB:** No equivalent - components are local only
 
-### 6. CLI-First Diagnostics ⭐ **OPERATOR FRIENDLY**
+### 6. Observability & Tooling ⭐ **INSPECT ANYTHING LIVE**
+
+- ✅ **Runtime inspectors:** `uv run python -m oneiric.cli orchestrate --print-dag` prints the active DAG graph (nodes, dependencies, retry policy, queue metadata) without launching the orchestrator. `--events` surfaces event handlers (topics, concurrency, filters). Add `--inspect-json` to feed the payload straight into MCP dashboards.
+- ✅ **Telemetry snapshots:** every event dispatch and workflow run updates `.oneiric_cache/runtime_telemetry.json` (same shape as `remote_status.json`) with handler attempts, failures, and node-level latencies. Dashboards can consume it alongside remote telemetry with zero extra wiring.
+- ✅ **Structured exporters:** the dispatcher + DAG executor emit `runtime-event-telemetry` and `runtime-workflow-telemetry` logs that Logfire/OTLP adapters forward to Crackerjack dashboards automatically.
+- ✅ **Runbooks:** new repo guides (Crackerjack, Fastblocks, session-mgmt-mcp) walk through capturing inspector output + telemetry before deploying, so every parity review ships with reproducible artifacts.
+
+> **ACB counterpart:** relies on bespoke MCP dashboards; there’s no CLI inspector or portable JSON snapshot.
+
+### 7. CLI-First Diagnostics ⭐ **OPERATOR FRIENDLY**
 
 **11 Commands:**
 

@@ -209,6 +209,108 @@ entries:
         remote_refresh_enabled: false
         watchers_enabled: false
   - domain: adapter
+    key: dns.cloudflare
+    provider: cloudflare
+    factory: oneiric.adapters.dns.cloudflare:CloudflareDNSAdapter
+    stack_level: 2
+    metadata:
+      description: Cloudflare DNS management adapter
+      capabilities:
+        - name: record.manage
+        - name: record.list
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+  - domain: adapter
+    key: dns.route53
+    provider: route53
+    factory: oneiric.adapters.dns.route53:Route53DNSAdapter
+    stack_level: 2
+    metadata:
+      description: AWS Route53 DNS adapter
+      capabilities:
+        - name: record.manage
+        - name: record.list
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+  - domain: adapter
+    key: file_transfer.default
+    provider: ftp
+    factory: oneiric.adapters.file_transfer.ftp:FTPFileTransferAdapter
+    stack_level: 2
+    metadata:
+      description: FTP file transfer adapter for artifact sync flows
+      capabilities:
+        - name: upload
+        - name: download
+        - name: delete
+        - name: list
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+  - domain: adapter
+    key: file_transfer.sftp
+    provider: sftp
+    factory: oneiric.adapters.file_transfer.sftp:SFTPFileTransferAdapter
+    stack_level: 2
+    metadata:
+      description: SFTP adapter for secure artifact uploads
+      capabilities:
+        - name: upload
+        - name: download
+        - name: delete
+        - name: list
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+  - domain: adapter
+    key: file_transfer.http
+    provider: http
+    factory: oneiric.adapters.file_transfer.http_artifact:HTTPArtifactAdapter
+    stack_level: 2
+    metadata:
+      description: HTTP artifact adapter with checksum validation
+      capabilities:
+        - name: download
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+  - domain: adapter
+    key: file_transfer.scp
+    provider: scp
+    factory: oneiric.adapters.file_transfer.scp:SCPFileTransferAdapter
+    stack_level: 2
+    metadata:
+      description: SCP adapter for SSH-based artifact sync
+      capabilities:
+        - name: upload
+        - name: download
+        - name: delete
+        - name: list
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+  - domain: adapter
+    key: file_transfer.https_upload
+    provider: https-upload
+    factory: oneiric.adapters.file_transfer.http_upload:HTTPSUploadAdapter
+    stack_level: 2
+    metadata:
+      description: HTTPS upload adapter for signed artifact pushes
+      capabilities:
+        - name: upload
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+  - domain: adapter
     key: nosql.primary
     provider: mongodb
     factory: oneiric.adapters.nosql.mongodb:MongoDBAdapter

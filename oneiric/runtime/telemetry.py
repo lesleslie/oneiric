@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from oneiric.core.logging import get_logger
 
@@ -86,9 +87,7 @@ class RuntimeTelemetryRecorder:
 
     # internal -----------------------------------------------------------------
 
-    def _event_payload(
-        self, topic: str, results: Sequence[Any]
-    ) -> dict[str, Any]:
+    def _event_payload(self, topic: str, results: Sequence[Any]) -> dict[str, Any]:
         handlers: list[dict[str, Any]] = []
         failures = 0
         total_duration = 0.0
@@ -144,6 +143,7 @@ class RuntimeTelemetryRecorder:
                     "depends_on": list(depends),
                     "duration_ms": duration_ms,
                     "attempts": int(results.get(f"{node_id}__attempts") or 0),
+                    "retry_policy": entry.get("retry_policy") or None,
                 }
             )
         entry_nodes = [node["node"] for node in nodes if not node["depends_on"]]

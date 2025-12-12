@@ -294,7 +294,7 @@ async with watcher:
 
 ## Security Hardening ✅ COMPLETE
 
-**All P0 security vulnerabilities have been resolved** (see `docs/STAGE5_FINAL_AUDIT_REPORT.md`):
+**All P0 security vulnerabilities have been resolved** (see `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md`):
 
 1. ✅ **Arbitrary code execution** - **RESOLVED**
 
@@ -344,8 +344,7 @@ The `docs/` directory contains comprehensive documentation organized by purpose:
 
 **Analysis & Quality:**
 
-- `analysis/ARCHITECTURAL_AUDIT_2025.md` - Architecture assessment
-- `analysis/PYTHON_CODE_QUALITY_AUDIT.md` - Code quality metrics
+- `analysis/QUALITY_AUDITS.md` - Quality audit summary (replaces older audit reports)
 - `analysis/ACB_ADAPTER_ACTION_IMPLEMENTATION.md` - Adapter porting guide
 - `analysis/` - Adapter strategies and technical deep-dives
 

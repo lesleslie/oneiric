@@ -166,6 +166,26 @@ dag:
       task: extract-task           # Task domain key to execute
       depends_on: []               # Optional dependencies
       payload: {key: value}        # Optional payload override passed to the task
+  retry_policy:
+    attempts: 3
+    base_delay: 0.5
+    max_delay: 2.0
+  scheduler:
+    category: queue.scheduler
+    provider: cloudtasks
+
+event_metadata:
+  - topic: fastblocks.order.created
+    handler: fastblocks.events.order-handler
+    event_filters:
+      - path: payload.region
+        any_of: ["us", "ca"]
+    event_priority: 50
+    event_fanout_policy: exclusive
+    retry_policy:
+      attempts: 3
+      base_delay: 0.5
+      jitter: 0.2
 ```
 
 ______________________________________________________________________
@@ -549,7 +569,7 @@ ______________________________________________________________________
 ## See Also
 
 - `docs/sample_remote_manifest_v2.yaml` - Complete examples
-- `docs/STAGE4_REMOTE_PACKAGING_PLAN.md` - Implementation details
+- `docs/implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md` - Remote packaging + Cloud Run parity details
 - `oneiric/remote/models.py` - Pydantic schema source
 - `oneiric/remote/loader.py` - Loading implementation
 - `oneiric/remote/security.py` - Signature verification

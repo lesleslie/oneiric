@@ -785,7 +785,8 @@ ______________________________________________________________________
 
 ## Next Steps
 
-- \[[DOCKER_DEPLOYMENT|Docker Deployment]\] - Container-based deployment
-- \[[KUBERNETES_DEPLOYMENT|Kubernetes Deployment]\] - Orchestrated deployment
-- [Monitoring Setup](../monitoring/MONITORING_SETUP.md) - Configure metrics and alerting
-- [Runbooks](../runbooks/README.md) - Incident response procedures
+- \[[CLOUD_RUN_BUILD]\] - Serverless buildpack deployment guide
+- \[[PROMETHEUS_SETUP|Prometheus Setup]\] - Configure metrics and alerting
+- \[[INCIDENT_RESPONSE|Incident Response]\] - Incident response procedures
+- \[[MAINTENANCE]\] - Maintenance runbooks
+- \[[TROUBLESHOOTING]\] - Troubleshooting guide

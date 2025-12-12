@@ -30,6 +30,7 @@ class TestRuntimeHealthSnapshot:
         assert snapshot.last_remote_per_domain is None
         assert snapshot.last_remote_skipped is None
         assert snapshot.activity_state is None
+        assert snapshot.lifecycle_state is None
 
     def test_health_snapshot_with_values(self):
         """RuntimeHealthSnapshot accepts all fields."""
@@ -47,6 +48,11 @@ class TestRuntimeHealthSnapshot:
             activity_state={
                 "adapter:cache": {"paused": False, "draining": False},
             },
+            lifecycle_state={
+                "adapter": {
+                    "cache": {"state": "ready", "current_provider": "demo"},
+                }
+            },
         )
 
         assert snapshot.watchers_running is True
@@ -57,6 +63,9 @@ class TestRuntimeHealthSnapshot:
         assert snapshot.last_remote_per_domain == {"adapter": 5, "service": 5}
         assert snapshot.last_remote_skipped == 2
         assert snapshot.last_remote_duration_ms == 123.4
+        assert snapshot.lifecycle_state == {
+            "adapter": {"cache": {"state": "ready", "current_provider": "demo"}}
+        }
 
     def test_as_dict(self):
         """RuntimeHealthSnapshot.as_dict() serializes to dict."""
@@ -76,6 +85,7 @@ class TestRuntimeHealthSnapshot:
         assert data["orchestrator_pid"] == 12345
         assert data["last_remote_registered"] == 10
         assert data["last_remote_per_domain"] == {"adapter": 5}
+        assert data["lifecycle_state"] == {}
 
 
 class TestLoadRuntimeHealth:
@@ -93,6 +103,9 @@ class TestLoadRuntimeHealth:
             "last_remote_skipped": 2,
             "updated_at": "2025-01-15T10:00:00Z",
             "last_remote_duration_ms": 250.0,
+            "lifecycle_state": {
+                "adapter": {"cache": {"state": "ready", "current_provider": "demo"}}
+            },
         }
         health_file.write_text(json.dumps(health_data))
 
@@ -104,6 +117,9 @@ class TestLoadRuntimeHealth:
         assert snapshot.last_remote_registered == 10
         assert snapshot.last_remote_per_domain == {"adapter": 5}
         assert snapshot.last_remote_duration_ms == 250.0
+        assert snapshot.lifecycle_state == {
+            "adapter": {"cache": {"state": "ready", "current_provider": "demo"}}
+        }
 
     def test_load_from_nonexistent_file(self, tmp_path):
         """load_runtime_health() returns defaults if file missing."""
@@ -198,6 +214,19 @@ class TestWriteRuntimeHealth:
         # Verify no temp file left behind
         temp_files = list(health_file.parent.glob("*.tmp"))
         assert len(temp_files) == 0
+
+    def test_write_includes_lifecycle_state(self, tmp_path):
+        """write_runtime_health() persists lifecycle summary."""
+        health_file = tmp_path / "health.json"
+        snapshot = RuntimeHealthSnapshot(
+            watchers_running=True,
+            lifecycle_state={"adapter": {"cache": {"state": "ready"}}},
+        )
+
+        write_runtime_health(str(health_file), snapshot)
+
+        data = json.loads(health_file.read_text())
+        assert data["lifecycle_state"]["adapter"]["cache"]["state"] == "ready"
 
     def test_write_with_activity_state(self, tmp_path):
         """write_runtime_health() persists activity state."""

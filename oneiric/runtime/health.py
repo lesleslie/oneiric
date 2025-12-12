@@ -24,6 +24,7 @@ class RuntimeHealthSnapshot:
     last_remote_skipped: int | None = None
     last_remote_duration_ms: float | None = None
     activity_state: dict[str, dict[str, Any]] = None  # type: ignore[assignment]
+    lifecycle_state: dict[str, dict[str, Any]] = None  # type: ignore[assignment]
 
     def as_dict(self) -> dict[str, Any]:
         data = asdict(self)
@@ -31,6 +32,8 @@ class RuntimeHealthSnapshot:
             data["last_remote_per_domain"] = {}
         if data.get("activity_state") is None:
             data["activity_state"] = {}
+        if data.get("lifecycle_state") is None:
+            data["lifecycle_state"] = {}
         return data
 
 
@@ -58,6 +61,7 @@ def load_runtime_health(path: str | Path) -> RuntimeHealthSnapshot:
     snapshot.last_remote_skipped = data.get("last_remote_skipped")
     snapshot.last_remote_duration_ms = data.get("last_remote_duration_ms")
     snapshot.activity_state = data.get("activity_state") or {}
+    snapshot.lifecycle_state = data.get("lifecycle_state") or {}
     return snapshot
 
 

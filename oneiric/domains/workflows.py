@@ -14,6 +14,7 @@ from oneiric.runtime.activity import DomainActivityStore
 from oneiric.runtime.checkpoints import WorkflowCheckpointStore
 from oneiric.runtime.dag import DAGTask, build_graph, execute_dag
 from oneiric.runtime.supervisor import ServiceSupervisor
+from oneiric.runtime.telemetry import RuntimeTelemetryRecorder
 
 from .base import DomainBridge
 from .tasks import TaskBridge
@@ -36,6 +37,7 @@ class WorkflowBridge(DomainBridge):
         queue_bridge: AdapterBridge | None = None,
         queue_category: str | None = "queue",
         supervisor: ServiceSupervisor | None = None,
+        telemetry: RuntimeTelemetryRecorder | None = None,
     ) -> None:
         super().__init__(
             "workflow",
@@ -54,6 +56,7 @@ class WorkflowBridge(DomainBridge):
             self._queue_category_override
             or self._queue_category_from_settings(settings)
         )
+        self._telemetry = telemetry
         self.refresh_dags()
 
     def update_settings(self, settings: LayerSettings) -> None:
@@ -69,6 +72,11 @@ class WorkflowBridge(DomainBridge):
             if dag_spec:
                 dag_map[candidate.key] = dag_spec
         self._dag_specs = dag_map
+
+    def dag_specs(self) -> dict[str, dict[str, Any]]:
+        """Return a snapshot of known DAG specifications."""
+
+        return dict(self._dag_specs)
 
     async def execute_dag(
         self,
@@ -92,7 +100,12 @@ class WorkflowBridge(DomainBridge):
         checkpoint_data = self._load_checkpoint_data(workflow_key, checkpoint)
 
         # Execute DAG with checkpoint handling
-        return await self._execute_with_checkpoint(graph, workflow_key, checkpoint_data)
+        results = await self._execute_with_checkpoint(
+            graph, workflow_key, checkpoint_data
+        )
+        if self._telemetry:
+            self._telemetry.record_workflow_execution(workflow_key, dag_spec, results)
+        return results
 
     async def enqueue_workflow(
         self,

@@ -16,6 +16,9 @@
 | Notifications | `slack`, `teams`, `webhooks` | ChatOps | ✅ **Shipped** in `oneiric.adapters.messaging.{slack,teams,webhook}` (Dec 2025) | Platform Core | CLI demos + sample manifests updated; adapters support NotificationMessage + serverless profiles. |
 | Scheduler | `cloudtasks`, `pubsub` | DAG triggers | ✅ **Shipped** in `oneiric.adapters.queue.cloudtasks` + `.pubsub` (Dec 2025) | Platform Core | Async-friendly queue adapters powering DAG/event triggers with manifest + CLI coverage. |
 | Queue | `kafka`, `rabbitmq` | Streaming queues | ✅ **Shipped** in `oneiric.adapters.queue.kafka` + `.rabbitmq` (Dec 2025) | Platform Core | aiokafka + aio-pika adapters with publish/consume helpers, optional extras, unit tests, and manifest/config updates. |
+| DNS | `cloudflare` | Record management | ✅ **Shipped** in `oneiric.adapters.dns.cloudflare` (Dec 2025) | Platform Core | HTTPX-based adapter with create/update/delete/list helpers, SecretsHook support, tests + manifest snippets forthcoming. |
+| DNS | `route53` | Record management | ✅ **Shipped** in `oneiric.adapters.dns.route53` (Dec 2025) | Platform Core | aioboto3-backed adapter with change set helpers and lifecycle coverage. |
+| File transfer | `ftp`, `sftp`, `scp`, `http`, `https-upload` | Artifact sync | ✅ **Shipped** in `oneiric.adapters.file_transfer.{ftp,sftp,scp,http_artifact,http_upload}` (Dec 2025) | Infra | FTP (aioftp), SFTP/SCP (asyncssh), HTTP artifact downloads, and HTTPS upload adapters now ship with manifests/tests + CLI docs. |
 | Email fallback | `console` | Dev/test email | ⚠️ Legacy (ACB) | Docs Team | Decide whether to keep (useful for demos) or replace with structured logging recipe. |
 | Storage extras | `filesystem.archive` | Package artifacts | ⚠️ On hold | Data Platform | Evaluate after serverless profile if archival storage still needed. |
 | Identity | `cloudflare` | Token validation | ⚠️ On hold | Security | Auth0 already ported; Cloudflare only needed if FastBlocks requests it. |
@@ -31,7 +34,7 @@
 | Workstream | Providers | Status | Owner | ETA/Notes |
 |------------|-----------|--------|-------|-----------|
 | **Graph DB / Feature stores** | Neo4j (✅), ArangoDB (✅), DuckDB PGQ (✅) | ✅ Complete | Data Platform | All graph adapters landed Dec 2025; PGQ adapter documents in `GRAPH_ADAPTERS.md`. |
-| **DNS/File transfer** | Cloudflare DNS, Route53, FTP/SFTP | 💤 Wave C | Security/Infra | Only advance if FastBlocks or Crackerjack raise hard requirements; otherwise leave as optional Wave C backlog. |
+| **DNS/File transfer** | Cloudflare DNS, Route53, FTP/SFTP/SCP/HTTPS | ✅ Complete | Security/Infra | Cloudflare + Route53 DNS plus FTP/SFTP/SCP/HTTP download/HTTPS upload adapters landed; next evaluation focuses on optional transports (webpush, feature flags). |
 
 Status and owners for each bucket should be updated here as soon as a concrete ETA or design note changes.
 

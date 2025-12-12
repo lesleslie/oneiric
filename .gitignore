@@ -18,3 +18,11 @@ wheels/
 /.benchmarks/
 /.complexipy_cache/
 /.smart-env/
+
+# Coverage reports
+.coverage
+.coverage.*
+coverage.xml
+coverage.json
+htmlcov/
+.pytest_cache/

@@ -1,0 +1,178 @@
+source: fastblocks-parity
+entries:
+  - domain: adapter
+    key: notifications.fastblocks-slack
+    provider: slack
+    factory: oneiric.remote.samples:demo_remote_adapter
+    stack_level: 5
+    metadata:
+      description: Slack adapter stub used during Fastblocks migration rehearsals
+      environment: fastblocks
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+  - domain: adapter
+    key: queue.scheduler
+    provider: cloudtasks
+    factory: oneiric.adapters.queue.cloudtasks:CloudTasksQueueAdapter
+    stack_level: 3
+    metadata:
+      description: Queue adapter stub that allows workflow enqueue tests to run locally
+      serverless:
+        profile: serverless
+        remote_refresh_enabled: false
+        watchers_enabled: false
+  - domain: service
+    key: fastblocks.inventory.service
+    provider: fastblocks
+    factory: oneiric.remote.samples:demo_remote_service
+    stack_level: 4
+    metadata:
+      description: Inventory service placeholder exercised by Fastblocks parity runs
+      owner: fastblocks
+      serverless:
+        profile: serverless
+        supervisor_managed: true
+  - domain: task
+    key: fastblocks.tasks.stage-order
+    provider: fastblocks
+    factory: oneiric.remote.samples:demo_remote_task
+    stack_level: 4
+    metadata:
+      description: Prepares order payloads before notifying downstream systems
+      task_type: hydration
+  - domain: task
+    key: fastblocks.tasks.notify
+    provider: fastblocks
+    factory: oneiric.remote.samples:demo_remote_task
+    stack_level: 4
+    metadata:
+      description: Sends ChatOps updates after the order DAG completes
+      task_type: notification
+  - domain: event
+    key: fastblocks.order.created
+    provider: fastblocks
+    factory: oneiric.remote.samples:demo_remote_event_handler
+    stack_level: 4
+    event_topics:
+      - fastblocks.order.created
+    event_max_concurrency: 5
+    event_filters:
+      - path: payload.tenant
+        any_of: ["fastblocks"]
+    metadata:
+      description: Bridges Fastblocks MCP events into the shared orchestrator
+      workflows:
+        triggers:
+          - fastblocks.workflows.fulfillment
+  - domain: workflow
+    key: fastblocks.workflows.fulfillment
+    provider: fastblocks
+    factory: oneiric.remote.samples:demo_remote_workflow
+    stack_level: 4
+    dag:
+      nodes:
+        - id: stage
+          task: fastblocks.tasks.stage-order
+          payload:
+            stage: inventory
+        - id: notify
+          task: fastblocks.tasks.notify
+          depends_on:
+            - stage
+          payload:
+            channel: releases
+            severity: info
+    metadata:
+      description: Fastblocks fulfillment DAG used for cross-repo migration validation
+      scheduler:
+        queue_category: queue.scheduler
+        provider: cloudtasks
+      notifications:
+        adapter_provider: notifications.fastblocks-slack
+        channel: deploys
+  - domain: adapter
+    key: dns.cloudflare
+    provider: cloudflare
+    factory: oneiric.adapters.dns.cloudflare:CloudflareDNSAdapter
+    stack_level: 3
+    metadata:
+      description: Cloudflare DNS adapter used for parity rehearsals
+      capabilities:
+        - name: record.manage
+        - name: record.list
+  - domain: adapter
+    key: dns.route53
+    provider: route53
+    factory: oneiric.adapters.dns.route53:Route53DNSAdapter
+    stack_level: 3
+    metadata:
+      description: Route53 DNS adapter for AWS parity tests
+      capabilities:
+        - name: record.manage
+        - name: record.list
+  - domain: adapter
+    key: file_transfer.demo
+    provider: ftp
+    factory: oneiric.adapters.file_transfer.ftp:FTPFileTransferAdapter
+    stack_level: 3
+    metadata:
+      description: FTP adapter for artifact sync parity tests
+      capabilities:
+        - name: upload
+        - name: download
+        - name: delete
+        - name: list
+  - domain: adapter
+    key: file_transfer.sftp
+    provider: sftp
+    factory: oneiric.adapters.file_transfer.sftp:SFTPFileTransferAdapter
+    stack_level: 3
+    metadata:
+      description: SFTP adapter for artifact sync parity
+      capabilities:
+        - name: upload
+        - name: download
+        - name: delete
+        - name: list
+  - domain: adapter
+    key: file_transfer.http
+    provider: http
+    factory: oneiric.adapters.file_transfer.http_artifact:HTTPArtifactAdapter
+    stack_level: 3
+    metadata:
+      description: HTTP artifact adapter with SHA256 validation
+      capabilities:
+        - name: download
+  - domain: adapter
+    key: file_transfer.scp
+    provider: scp
+    factory: oneiric.adapters.file_transfer.scp:SCPFileTransferAdapter
+    stack_level: 3
+    metadata:
+      description: SCP adapter for SSH-based artifact sync
+      capabilities:
+        - name: upload
+        - name: download
+        - name: delete
+        - name: list
+  - domain: adapter
+    key: file_transfer.https_upload
+    provider: https-upload
+    factory: oneiric.adapters.file_transfer.http_upload:HTTPSUploadAdapter
+    stack_level: 3
+    metadata:
+      description: HTTPS upload adapter for signed release bundles
+      capabilities:
+        - name: upload
+  - domain: action
+    key: workflow.notify
+    provider: builtin-workflow-notify
+    factory: oneiric.actions.workflow:WorkflowNotifyAction
+    stack_level: 3
+    metadata:
+      description: Builtin workflow notify kit invoked by Fastblocks migrations
+      notifications:
+        adapter_provider: notifications.fastblocks-slack
+        channel: deploys

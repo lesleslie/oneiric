@@ -2,7 +2,7 @@
 
 **Last Updated:** 2025-12-06
 **Owner:** Platform Core & Runtime Team
-**Purpose:** Outline the remaining work to bring Oneiric's events, tasks, and service orchestration capabilities to full parity with ACB so Crackerjack, Fastblocks, and session-mgmt-mcp can run solely on Oneiric.
+**Purpose:** Outline the remaining work to bring Oneiric's events, tasks, and service orchestration capabilities to full parity with ACB so Crackerjack, Fastblocks, and session-mgmt-mcp can run solely on Oneiric. Strategic priorities are summarized in \[\[STRATEGIC_ROADMAP|`docs/STRATEGIC_ROADMAP.md`\]\] and every milestone in this plan rolls up to \[\[IMPLEMENTATION_PHASE_TRACKER|`docs/IMPLEMENTATION_PHASE_TRACKER.md`\]\]. For the broader documentation index (architecture specs, runbooks, observability guides) see \[\[README|`docs/README.md`\]\].
 
 ______________________________________________________________________
 
@@ -13,6 +13,8 @@ ______________________________________________________________________
 1. **Remote/resiliency modernized** – httpx + tenacity/aiobreaker loader, sqlite activity store, and watchfiles-based watchers are complete (Track G follow-up), so event/task orchestration can lean on the updated runtime primitives without bespoke patches.
 1. **Parity prototypes landed** – `oneiric.runtime.events.EventDispatcher` and `oneiric.runtime.dag` implement the reference event fan-out and DAG execution loops with accompanying tests (`tests/runtime/test_parity_prototypes.py`). These spikes validate the anyio + msgspec + networkx approach ahead of production integration.
 1. **Dispatcher/DAG wired into runtime + CLI** – `EventBridge` and `WorkflowBridge` now rebuild handler sets/DAG specs after every manifest or watcher refresh, the orchestrator triggers those refreshes, and the CLI exposes `event emit` + `workflow run` commands (with JSON output) so manifests can exercise fan-out/DAGs without bespoke scripts. Docs (`README.md`, `docs/examples/LOCAL_CLI_DEMO.md`) and tests (`tests/cli/test_commands.py::TestEventWorkflowCommands`) cover the new flows.
+   - README `Quick Start` now includes `event emit` and `workflow run` commands so parity rehearsals can reuse a common set of snippets alongside the serverless quickstart.
+   - CLI also exposes `workflow plan` (documented in README + Fastblocks observability guide) so contributors can inspect DAG topology/metadata without executing nodes; attach its JSON output to parity issues before running workflows.
 1. **Handler resiliency + telemetry** – Event handlers can define `retry_policy` metadata (attempts/base/max delay/jitter). The dispatcher runs them through `run_with_retry`, logs structured `event-handler-*` telemetry, and surfaces attempt counts in CLI JSON so manifest operators can see when retries kick in (`tests/runtime/test_parity_prototypes.py` cover success/failure paths). Telemetry also ships via OTLP/Logfire spans (`get_tracer("runtime.events")`).
 1. **DAG retries + checkpoints** – Workflow DAG nodes now accept the same `retry_policy` metadata as actions/events plus an optional checkpoint mapping so partially-complete runs can resume without re-running succeeded nodes. `oneiric.runtime.dag.execute_dag` persists per-node durations/attempts and raises `DAGExecutionError` when retries exhaust; `WorkflowBridge.execute_dag` exposes the checkpoint hook. Docs + sample manifests include retry examples; tests cover success, resume, and failure exhaust paths.
 
@@ -58,19 +60,23 @@ ______________________________________________________________________
 - ✅ `DomainActivityStore` + CLI pause/drain commands already persist flags per domain key (`oneiric.runtime.activity`, `oneiric.cli activity/pause/drain`) and `RuntimeOrchestrator` exports the current snapshot to `runtime_health.json`.
 - ✅ `LifecycleManager` exports uniform status payloads + health probes, so the supervisor layer can reuse those results when gating restarts/draining.
 - ✅ `SecretsHook.prefetch()` now warms the configured secrets adapter during orchestrator start, and the CLI `health` command emits `profile` + `secrets` metadata (including provider readiness) so operators can confirm serverless toggles and Secret Manager status without digging into logs.
-- ⏳ The orchestrator still treats bridges in isolation—there is no shared "ServiceSupervisor" that enforces draining windows, schedules coordinated swaps, or broadcasts activity deltas to adapters/tasks/services.
-- ⏳ Serverless profile toggles exist (watchers/remote disabled by default) but the Procfile/buildpack docs and CLI help need supervisor-specific guidance (e.g., when to rely on manifest snapshots vs. remote refresh).
+- ✅ `RuntimeHealthSnapshot` now merges supervisor pause/drain state with lifecycle statuses; `oneiric cli health` prints the new `lifecycle_state` block so Cloud Run probes and Crackerjack dashboards can reason about draining windows without scraping multiple files.
+- ✅ The orchestrator now registers each bridge with the shared `ServiceSupervisor`, which polls the activity store, blocks dispatch via `should_accept_work()`, and broadcasts pause/drain deltas to domain bridges so adapters/tasks/services consume the same throttling decisions without bespoke refresh logic.
+- ✅ Serverless profile toggles remain the default and the Procfile/buildpack docs (`docs/deployment/CLOUD_RUN_BUILD.md`) plus the CLI demo now call out the supervisor loop, `--health-path`, and cache requirements so Cloud Run teams know when to rely on manifest snapshots vs. remote refresh.
+- ✅ README + `docs/examples/LOCAL_CLI_DEMO.md` now surface `supervisor-info`, `activity`, and `health --probe --json` transcripts required for GA proofs, and `docs/deployment/CLOUD_RUN_BUILD.md` embeds the same CLI evidence in the sample buildpack transcript.
+- ✅ `docs/runbooks/SERVICE_SUPERVISOR.md` documents the pause/drain workflow, CLI proofs, and Cloud Run expectations so operators have a single reference during cut-over rehearsals.
 
 #### Implementation Plan
 
 1. **Supervisor loop + activity enforcement**
 
-   - Introduce `oneiric.runtime.supervisor.ServiceSupervisor` that is instantiated by `RuntimeOrchestrator.start()` and runs a lightweight `anyio` TaskGroup to:
-     - watch the shared `DomainActivityStore` for pause/drain deltas (poll + sqlite triggers) and update per-domain throttles for adapters/services/tasks/workflows.
+   - Introduce `oneiric.runtime.supervisor.ServiceSupervisor` that is instantiated by `RuntimeOrchestrator.start()` and runs a lightweight polling loop to:
+     - watch the shared `DomainActivityStore` for pause/drain deltas and update per-domain throttles for adapters/services/tasks/workflows (the supervisor now exposes listener hooks so bridges consume activity deltas immediately).
      - coordinate draining: once a domain is marked draining, stop accepting new work (event/task dispatch), await `LifecycleManager` instance drains, and surface the progress through the CLI (`oneiric cli activity --json` + `health --probe`).
-     - consolidate lifecycle status + runtime health JSON into one snapshot (PID, watchers, remote sync telemetry, activity counts) so Cloud Run health probes and Crackerjack dashboards can read a single file.
-   - Extend bridges with a `should_accept_work()` helper that consults supervisor state; dispatcher/DAG executors must exit early when paused/draining.
-   - Tests: new `tests/runtime/test_supervisor.py` covering pause/drain enforcement, draining timeouts, and health snapshot updates; update CLI integration tests to assert supervisor-blocked dispatch.
+     - ✅ consolidate lifecycle status + runtime health JSON into one snapshot (PID, watchers, remote sync telemetry, activity counts, lifecycle statuses) so Cloud Run health probes and Crackerjack dashboards can read a single file.
+   - Extend bridges with a `should_accept_work()` helper that consults supervisor state; dispatcher/DAG executors must exit early when paused/draining (now wired via supervisor listeners so adapters/tasks/services share throttling state).
+   - Document the operator touchpoints for the new flag: `oneiric cli supervisor-info` reports whether the supervisor loop is enabled (from profile, config, or `ONEIRIC_RUNTIME_SUPERVISOR__ENABLED`), so parity runbooks reference a single command when validating Cloud Run toggles.
+   - Tests: ✅ `tests/runtime/test_supervisor.py` covers pause/drain enforcement + listener deltas, and `tests/runtime/test_orchestrator.py::test_supervisor_disabled_*` plus `test_health_snapshot_includes_activity_state` assert the orchestrator obeys the `runtime.supervisor.enabled` flag and persists supervisor activity into `runtime_health.json`. CLI demos are updated to guide operators through the same verification flow.
 
 1. **Serverless profile hardening**
 
@@ -81,15 +87,17 @@ ______________________________________________________________________
 1. **Secrets + config + remote optionality**
 
    - Wire supervisor startup to the secrets hook so it can prefetch Secret Manager values needed for health probes (e.g., adapters that require credentials to run `ping()` methods) without blocking first request.
-   - Document the precedence order (Secret Manager → env vars → manifest overrides) inside this plan and `SERVERLESS_AND_PARITY_EXECUTION_PLAN.md`, highlighting how serverless runs default to manifest snapshots with remote refresh opt-in.
+   - Document the precedence order (Secret Manager → env vars → manifest overrides) inside this plan and `SERVERLESS_AND_PARITY_EXECUTION_PLAN.md`, highlighting how serverless runs default to manifest snapshots with remote refresh opt-in. Operators should run `oneiric cli health --probe --json` (or the `uv run ... --demo` equivalent) before deploys to capture the `secrets` block showing provider + status.
    - Extend `oneiric.cli health --probe` to optionally emit secret/provider metadata (sanitized) so ops can confirm which secret providers are active in serverless vs. long-running profiles.
    - ✅ The CLI now prints `profile` + `secrets` blocks (JSON and human output) and the serverless docs instruct operators to verify the `status=ready` Secret Manager indicator before deploys.
 
 1. **Rollout + validation**
 
-   - Feature-flag the supervisor loop behind `runtime.supervisor.enabled` for one release; enable it by default once tests and docs land.
-   - Capture CLI transcripts (`activity`, `health --probe`, orchestrator logs) and include them in `docs/examples/LOCAL_CLI_DEMO.md` + this plan to prove parity.
-   - Coordinate with Crackerjack/Fastblocks to add regression tests that start the supervisor-enabled orchestrator inside CI (using `uv run python -m oneiric.cli orchestrate --profile serverless --no-remote --workflow-checkpoints disabled`) and assert the runtime health payload includes pause/drain state + remote sync telemetry.
+   - Feature-flag the supervisor loop behind `runtime.supervisor.enabled` for one release; enable it by default once tests and docs land. Capture the expected CLI proof (sample `supervisor-info`, `activity --json`, `health --probe --json` output) in `docs/examples/LOCAL_CLI_DEMO.md` so downstream repos can paste the same transcript into their Cloud Run smoke tests.
+   - ✅ Capture CLI transcripts (`activity`, `health --probe`, orchestrator logs) and include them in `docs/examples/LOCAL_CLI_DEMO.md` so teams can attach the same JSON artifacts to their Cloud Run rehearsals.
+   - ✅ Integration coverage (`tests/integration/test_supervisor_orchestrate.py`) now boots the supervisor-enabled orchestrator, enforces pause/drain via the `service` bridge, and verifies `runtime_health.json` mirrors the activity store. The default `uv run pytest` CI job exercises this suite, so downstream repos can rely on the bundled transcripts + tests instead of wiring bespoke supervisor smoke loops.
+   - ✅ README serverless quickstart + `docs/deployment/CLOUD_RUN_BUILD.md` transcripts show the GA workflow: run `supervisor-info`, `health --probe --json`, and include the outputs with deploy tickets so supervisors are validated alongside serverless toggles/secrets.
+   - ✅ `docs/examples/LOCAL_CLI_DEMO.md` now instructs operators to dump `.oneiric_cache/runtime_health.json` after running the CLI probes so GA evidence contains both the structured CLI output and the persisted health snapshot used by Cloud Run.
 
 #### P3 Deliverables & Owners
 
@@ -98,25 +106,29 @@ ______________________________________________________________________
 | Supervisor runtime | `oneiric.runtime.supervisor.ServiceSupervisor`, bridge gating, lifecycle drain orchestration | New runtime module + tests (`tests/runtime/test_supervisor.py`), bridge helper APIs, orchestrator wiring | Platform Core (Runtime) | Pause/drain state blocks dispatch; runtime health JSON mirrors supervisor state; tests cover drain + resume |
 | Serverless ergonomics | Profile wiring + docs updates | `RuntimeProfileConfig` refactor, `README.md`, `docs/deployment/CLOUD_RUN_BUILD.md`, Procfile samples, CLI help | Platform Core + Docs | Serverless profile instructions mention supervisor; Procfile/CLI examples run supervisor loop; buildpack guide references activity/health paths |
 | Secrets/config posture | Secrets preload + probe metadata | `oneiric.core.config` profile precedence docs, CLI `health --probe` metadata enhancements, plan cross-links | Platform Core (Config) | Health probe output shows secrets provider info; docs explain Secret Manager precedence |
-| Validation | CI smoke + demo evidence | `tests/integration/test_supervisor_orchestrate.py`, CI job hooking `uv run python -m oneiric.cli orchestrate --profile serverless --no-remote --health-path ...`, updated `docs/examples/LOCAL_CLI_DEMO.md` transcript | Platform Core + QA | Supervisor-enabled orchestrator passes CI and documented demo |
+| Validation | CI smoke + demo evidence | ✅ `tests/integration/test_supervisor_orchestrate.py`, default `uv run pytest` pipeline, updated `docs/examples/LOCAL_CLI_DEMO.md` transcript | Platform Core + QA | Supervisor-enabled orchestrator passes CI and documented demo |
+
+**Phase status:** ✅ All exit criteria for P3 are satisfied (supervisor enforcement, serverless ergonomics, secrets precedence, and validation evidence), so this workstream is considered complete.
 
 ### P4 – Observability & Tooling
 
-- **CLI enhancements:** add `oneiric.cli orchestrate --print-dag` and `--events` inspectors to mirror ACB's MCP dashboards.
-- **Telemetry:** reuse `oneiric.remote.telemetry` sinks + OTLP/Logfire adapters for task timing + event retries, emitting structured logs compatible with Crackerjack dashboards.
-- **Docs:** capture parity status plus migration steps in `docs/ONEIRIC_VS_ACB.md` and new how-to guides per repo (Crackerjack, Fastblocks, session-mgmt-mcp).
-- **ChatOps:** wire the new Slack/Teams/webhook adapters into workflow notify hooks so orchestration events surface consistently across repos.
+- ✅ **CLI enhancements:** `oneiric.cli orchestrate --print-dag` and `--events` now stream inspector payloads (human or `--inspect-json`) without booting the runtime loop. Inspectors surface DAG topology, queue metadata, handler concurrency, filters, and the supervisor’s pause/drain snapshot so MCP dashboards can render parity views.
+- ✅ **Telemetry:** a new `runtime_telemetry.json` sink (mirroring the remote telemetry writer) records event handler attempts + workflow node durations. The dispatcher + DAG engine feed the recorder, and Logfire/OTLP exporters pick up the structured logs for Crackerjack dashboards.
+- ✅ **Docs:** `docs/ONEIRIC_VS_ACB.md`, the parity plan, and repo-specific guides (Crackerjack, Fastblocks, session-mgmt-mcp) document how to capture DAG/Event inspectors, where telemetry lives, and how to replay the flows with `uv run python -m oneiric.cli`.
+- ✅ **Event routing runbook:** `docs/examples/EVENT_ROUTING_OBSERVABILITY.md` now walks through the subscriber inspector, CLI `event emit`, and telemetry capture required for M1 proofs.
+- ✅ **Workflow/DAG observability:** `docs/examples/FASTBLOCKS_OBSERVABILITY.md` includes `workflow run` + `workflow enqueue` commands, checkpoint capture instructions, and telemetry artifacts so the M2 DAG runtime deliverables have concrete evidence.
+- ✅ **ChatOps:** the existing Slack/Teams/Webhook adapters stay wired to `workflow.notify`, and the new documentation walks platform teams through forwarding inspector + telemetry output into their ChatOps rooms alongside the notification payloads.
 
 ### P6 – ChatOps Integration
 
-- **Action → Adapter bridge:** `workflow.notify` produces a structured record; orchestrators should translate that record into `NotificationMessage` instances and invoke the selected messaging adapter (Slack/Teams/Webhook) via `AdapterBridge`. The sample script in `docs/examples/LOCAL_CLI_DEMO.md` demonstrates the hand-off.
-- **Manifest hints:** remote manifests may annotate workflows/tasks with `metadata.notifications.provider = "slack"` (or teams/webhook) so the orchestrator knows which adapter to resolve. Document this convention alongside the DAG manifest schema updates.
-- **Serverless posture:** notification adapters obey the same serverless constraints (Secret Manager first, watchers disabled). Ensure Cloud Run profiles ship with at least one ChatOps adapter configured so parity tests can assert notifications without hitting ACB.
+- ✅ **Action → Adapter bridge:** a new `NotificationRouter` (see `oneiric/runtime/notifications.py`) converts `workflow.notify` payloads into `NotificationMessage` objects and forwards them via `AdapterBridge`. The CLI’s `action-invoke workflow.notify` command now emits to ChatOps when `--workflow`/`--send-notification` flags are provided, and tests cover the router + route derivation.
+- ✅ **Manifest hints:** workflow candidates can set `metadata.notifications` (adapter key/provider overrides, default channel/target, title templates, context flags, extra payload) and the CLI resolves those hints automatically. The parity fixture (`docs/examples/FASTBLOCKS_PARITY_FIXTURE.yaml`) and observability guides document the schema so manifests stay self-describing.
+- ✅ **Serverless posture:** observability guides + LOCAL_CLI_DEMO now describe how to configure Slack/Teams/Webhook adapters in serverless profiles, reuse Secret Manager, and capture CLI transcripts that include the ChatOps dispatch so Cloud Run rehearsals prove parity without ACB.
 
 ### P5 – Migration & Validation
 
-- **Test suites:** create cross-repo fixtures (e.g., Fastblocks workflow) that run on both ACB and Oneiric to validate behavior before the cut-over.
-- **Cut-over checklist:** document prerequisites (adapter coverage, manifest snapshots, CLI transcripts) and add an appendix to this plan when each sibling repo is ready.
+- ✅ **Parity fixture:** `docs/examples/FASTBLOCKS_PARITY_FIXTURE.yaml` now mirrors the Fastblocks DAG (event trigger, tasks, notify action, queue adapter). `tests/integration/test_migration_parity.py` exercises the manifest through `RuntimeOrchestrator.sync_remote`, ensuring each domain registers and the DAG cache refreshes.
+- ✅ **Cut-over checklist:** `docs/implementation/CUTOVER_VALIDATION_CHECKLIST.md` lists the adapter coverage, manifest snapshot, CLI transcript, and telemetry artifacts each repo must attach before switching from ACB. The table at the end tracks Crackerjack, Fastblocks, and session-mgmt readiness.
 
 ______________________________________________________________________
 
@@ -134,7 +146,7 @@ ______________________________________________________________________
 ## 4. Dependencies & Open Questions
 
 - **Existing libs:** `anyio`, `networkx`, `msgspec`, `tenacity`, `sqlite3` already approved; Cloud Tasks is the default scheduler for serverless triggers, while `apscheduler` remains under evaluation for long-lived cron workloads (Crackerjack/local dev).
-- **Secrets strategy:** confirm Secret Manager usage for Crackerjack + Fastblocks so we can drop legacy `.env` readers during migration; env adapters stay for dev/local-only use.
+- **Secrets strategy:** ✅ Crackerjack and Fastblocks both run on Secret Manager, so migration docs can describe the Secret Manager → env → manifest precedence without calling out `.env` stopgaps beyond local dev.
 - **Testing infra:** coordinate with Crackerjack QA for shared parity fixtures.
 
 ______________________________________________________________________

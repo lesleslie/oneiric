@@ -2,7 +2,7 @@
 
 **Last Updated:** 2025-12-09
 **Audience:** Platform Core, Runtime Team, Docs Team
-**Purpose:** Provide a concise, up-to-date map of Oneiric’s end-state vision, near-term priorities, and how existing plans fit together so contributors don’t have to chase multiple documents.
+**Purpose:** Provide a concise, up-to-date map of Oneiric’s end-state vision, near-term priorities, and how existing plans fit together so contributors don’t have to chase multiple documents. Progress for every track is mirrored in \[\[IMPLEMENTATION_PHASE_TRACKER|`docs/IMPLEMENTATION_PHASE_TRACKER.md`\]\], while detailed execution steps live in \[\[SERVERLESS_AND_PARITY_EXECUTION_PLAN|`docs/implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md`\]\] and \[\[ORCHESTRATION_PARITY_PLAN|`docs/implementation/ORCHESTRATION_PARITY_PLAN.md`\]\]. For a full documentation index (architecture, reference, runbooks), start with \[\[README|`docs/README.md`\]\].
 
 ______________________________________________________________________
 
@@ -19,7 +19,7 @@ ______________________________________________________________________
 ## Recent Decisions (December 2025)
 
 1. **Track G follow-up:** Runtime modernization (httpx loader, tenacity/aiobreaker, watchfiles, sqlite activity store) is complete. Follow-on work is captured in `docs/implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md`.
-1. **Serverless baseline:** Cloud Run + buildpacks with Procfile launches are the default deployment story. Docker/K8s docs remain as legacy references.
+1. **Serverless baseline:** Cloud Run + buildpacks with Procfile launches are the default deployment story. Legacy Docker/K8s docs have been removed; use Cloud Run or systemd guidance only.
 1. **Secrets + config:** Serverless profile prefers Secret Manager adapters → env adapters as fallback; inline manifests are packaged inside the build artifact.
 1. **Adapter hygiene:** `_base.py` helpers are retired; `common.py` modules own shared logic with lazy imports. Guard optional dependencies via extras.
 1. **ACB sunset:** Oneiric replaces ACB in a single cut-over. No re-integration into ACB or hybrid MCP server strategy is planned; Crackerjack/FastBlocks expose MCP layers if desired.
@@ -69,7 +69,7 @@ ______________________________________________________________________
 |-------|-------------|-----------------|
 | Strategy vs ACB | `docs/ONEIRIC_VS_ACB.md` | `docs/ACB_COMPARISON.md` (historical) |
 | Adapter remediation | `docs/implementation/ADAPTER_REMEDIATION_PLAN.md` | `docs/implementation/ADAPTER_REMEDIATION_EXECUTION.md` |
-| Deployment | `README.md` (Operations) | `Procfile`, `docs/deployment/` (Docker/K8s/systemd) |
+| Deployment | `README.md` (Operations) | `Procfile`, `docs/deployment/` (Cloud Run/systemd) |
 | Roadmaps | `docs/implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md`, this file | `docs/archive/implementation/UNIFIED_IMPLEMENTATION_PLAN.md` (historical), `docs/archive/implementation/BUILD_PROGRESS.md` |
 | Orchestration parity | `docs/implementation/ORCHESTRATION_PARITY_PLAN.md` | `docs/STRATEGIC_ROADMAP.md §3`, `docs/implementation/ADAPTER_REMEDIATION_EXECUTION.md §7` |
 | Serverless profile design | `docs/implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md` | Update this doc + remediation plan when spec lands |
@@ -97,6 +97,6 @@ ______________________________________________________________________
 | Secret Manager adapters take precedence over env vars | Keeps serverless deployments stateless + compliant | `oneiric.core.config`, serverless profile blueprint |
 | `_base.py` helpers retired in favor of `common.py` modules | Reduce heavy imports + align with lazy extras | `docs/implementation/ADAPTER_REMEDIATION_EXECUTION.md` §4 |
 | Remote loader uses `httpx` + `tenacity/aiobreaker`; watchers default off in serverless profile | Track G modernization eliminates bespoke infra and optimizes cold starts | `oneiric/remote/loader.py`, `docs/implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md` |
-| Legacy Docker/K8s docs kept only for reference | Cloud Run/buildpack path is now canonical | `docs/deployment/CLOUD_RUN_BUILD.md`, `docs/deployment/DOCKER_DEPLOYMENT.md` (legacy notice) |
+| Cloud Run/buildpack path is canonical | Docker/K8s docs removed; only Cloud Run/systemd remain | `docs/deployment/CLOUD_RUN_BUILD.md`, `docs/deployment/SYSTEMD_DEPLOYMENT.md` |
 | Slack/Teams/webhook adapters deliver ChatOps parity | Enables Oneiric-based orchestrations to emit notifications without ACB | `docs/implementation/MESSAGING_AND_SCHEDULER_ADAPTER_PLAN.md`, `docs/examples/LOCAL_CLI_DEMO.md` |
 | Messaging + scheduler adapters promoted to built-ins | Ensures serverless profile ships with Mailgun, Twilio, Cloud Tasks, Pub/Sub ready for orchestration parity | `docs/implementation/MESSAGING_AND_SCHEDULER_ADAPTER_PLAN.md`, `docs/examples/LOCAL_CLI_DEMO.md` |

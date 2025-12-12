@@ -13,10 +13,19 @@ from .database import (
     PostgresDatabaseAdapter,
     SQLiteDatabaseAdapter,
 )
+from .dns import CloudflareDNSAdapter
+from .dns.route53 import Route53DNSAdapter
 from .embedding import (
     ONNXEmbeddingAdapter,
     OpenAIEmbeddingAdapter,
     SentenceTransformersAdapter,
+)
+from .file_transfer import (
+    FTPFileTransferAdapter,
+    HTTPArtifactAdapter,
+    HTTPSUploadAdapter,
+    SCPFileTransferAdapter,
+    SFTPFileTransferAdapter,
 )
 from .graph import ArangoDBGraphAdapter, DuckDBPGQAdapter, Neo4jGraphAdapter
 from .http import AioHTTPAdapter, HTTPClientAdapter
@@ -109,6 +118,13 @@ def builtin_adapter_metadata() -> list[AdapterMetadata]:
         Neo4jGraphAdapter.metadata,
         ArangoDBGraphAdapter.metadata,
         DuckDBPGQAdapter.metadata,
+        CloudflareDNSAdapter.metadata,
+        Route53DNSAdapter.metadata,
+        FTPFileTransferAdapter.metadata,
+        SFTPFileTransferAdapter.metadata,
+        SCPFileTransferAdapter.metadata,
+        HTTPArtifactAdapter.metadata,
+        HTTPSUploadAdapter.metadata,
     ]
 
 

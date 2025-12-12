@@ -148,6 +148,28 @@ class RuntimePathsConfig(BaseModel):
     )
 
 
+class RuntimeSupervisorConfig(BaseModel):
+    """Supervisor loop feature flag + tuning knobs."""
+
+    enabled: bool = True
+    poll_interval: float = Field(
+        default=2.0,
+        ge=0.1,
+        description="Seconds between supervisor poll iterations.",
+    )
+
+
+class RuntimeSupervisorConfig(BaseModel):
+    """Supervisor loop feature flag + tuning knobs."""
+
+    enabled: bool = True
+    poll_interval: float = Field(
+        default=2.0,
+        ge=0.1,
+        description="Seconds between supervisor poll iterations.",
+    )
+
+
 class OneiricSettings(BaseModel):
     app: AppConfig = Field(default_factory=AppConfig)
     adapters: LayerSettings = Field(default_factory=LayerSettings)
@@ -163,6 +185,12 @@ class OneiricSettings(BaseModel):
     plugins: PluginsConfig = Field(default_factory=PluginsConfig)
     profile: RuntimeProfileConfig = Field(default_factory=RuntimeProfileConfig)
     runtime_paths: RuntimePathsConfig = Field(default_factory=RuntimePathsConfig)
+    runtime_supervisor: RuntimeSupervisorConfig = Field(
+        default_factory=RuntimeSupervisorConfig
+    )
+    runtime_supervisor: RuntimeSupervisorConfig = Field(
+        default_factory=RuntimeSupervisorConfig
+    )
 
 
 def load_settings(path: str | Path | None = None) -> OneiricSettings:
@@ -250,6 +278,7 @@ def apply_runtime_profile(
         )
         updated.remote.enabled = False
         updated.remote.refresh_interval = None
+        updated.runtime_supervisor.enabled = True
         logger.info("runtime-profile-applied", profile="serverless")
         return updated
     raise ValueError(f"Unknown runtime profile: {profile_name}")

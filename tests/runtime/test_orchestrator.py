@@ -7,9 +7,15 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from oneiric.core.config import OneiricSettings
-from oneiric.core.lifecycle import LifecycleManager
+from oneiric.core.config import (
+    OneiricSettings,
+    RemoteSourceConfig,
+    RuntimeProfileConfig,
+    RuntimeSupervisorConfig,
+)
+from oneiric.core.lifecycle import LifecycleManager, LifecycleStatus
 from oneiric.core.resolution import Resolver
+from oneiric.runtime.activity import DomainActivity
 from oneiric.runtime.orchestrator import RuntimeOrchestrator
 
 # Test helpers
@@ -117,6 +123,55 @@ class TestRuntimeOrchestratorInit:
         orchestrator = RuntimeOrchestrator(settings, resolver, lifecycle, secrets)
 
         assert orchestrator.workflow_bridge._queue_bridge is orchestrator.adapter_bridge
+
+    def test_supervisor_disabled_via_profile(self, tmp_path):
+        """Profile toggle can disable the supervisor entirely."""
+
+        settings = OneiricSettings(
+            remote=RemoteSourceConfig(cache_dir=str(tmp_path / "cache")),
+            profile=RuntimeProfileConfig(
+                name="default",
+                watchers_enabled=True,
+                remote_enabled=True,
+                supervisor_enabled=False,
+            ),
+        )
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        secrets = MockSecrets()
+
+        orchestrator = RuntimeOrchestrator(settings, resolver, lifecycle, secrets)
+
+        assert orchestrator._supervisor is None
+        assert orchestrator._supervisor_enabled is False
+        assert all(
+            getattr(bridge, "_supervisor", None) is None
+            for bridge in orchestrator.bridges.values()
+        )
+
+    def test_supervisor_disabled_via_runtime_config(self, tmp_path):
+        """RuntimeSupervisorConfig overrides the profile toggle."""
+
+        settings = OneiricSettings(
+            remote=RemoteSourceConfig(cache_dir=str(tmp_path / "cache")),
+            profile=RuntimeProfileConfig(
+                name="default",
+                watchers_enabled=True,
+                remote_enabled=True,
+                supervisor_enabled=True,
+            ),
+            runtime_supervisor=RuntimeSupervisorConfig(
+                enabled=False, poll_interval=1.0
+            ),
+        )
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        secrets = MockSecrets()
+
+        orchestrator = RuntimeOrchestrator(settings, resolver, lifecycle, secrets)
+
+        assert orchestrator._supervisor is None
+        assert orchestrator._supervisor_enabled is False
 
 
 class TestRuntimeOrchestratorStartStop:
@@ -472,3 +527,61 @@ class TestRuntimeOrchestratorHealthSnapshot:
         # Health snapshot shows stopped
         health_data = json.loads(health_path.read_text())
         assert health_data["watchers_running"] is False
+
+    @pytest.mark.asyncio
+    async def test_health_snapshot_includes_lifecycle_state(self, tmp_path):
+        """Health snapshot records lifecycle status entries."""
+        settings = OneiricSettings(
+            config_dir=str(tmp_path / "settings"),
+            cache_dir=str(tmp_path / "cache"),
+        )
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        secrets = MockSecrets()
+        health_path = tmp_path / "health.json"
+
+        status = LifecycleStatus(domain="adapter", key="cache", state="ready")
+        lifecycle._status[(status.domain, status.key)] = status  # type: ignore[attr-defined]
+
+        orchestrator = RuntimeOrchestrator(
+            settings, resolver, lifecycle, secrets, health_path=str(health_path)
+        )
+
+        for watcher in orchestrator._watchers:
+            watcher.start = AsyncMock()
+            watcher.stop = AsyncMock()
+
+        await orchestrator.start(enable_remote=False)
+        await orchestrator.stop()
+
+        health_data = json.loads(health_path.read_text())
+        lifecycle_state = health_data.get("lifecycle_state") or {}
+        assert lifecycle_state["adapter"]["cache"]["state"] == "ready"
+
+    def test_health_snapshot_includes_activity_state(self, tmp_path):
+        """Health snapshot records supervisor activity entries."""
+
+        settings = OneiricSettings(
+            remote=RemoteSourceConfig(cache_dir=str(tmp_path / "cache"))
+        )
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        secrets = MockSecrets()
+        health_path = tmp_path / "health.json"
+
+        orchestrator = RuntimeOrchestrator(
+            settings, resolver, lifecycle, secrets, health_path=str(health_path)
+        )
+
+        orchestrator._activity_store.set(
+            "service", "api", DomainActivity(paused=True, note="maint")
+        )
+        if orchestrator._supervisor:
+            orchestrator._supervisor.refresh()
+
+        orchestrator._update_health(watchers_running=True, remote_enabled=False)
+
+        health_data = json.loads(health_path.read_text())
+        activity_state = health_data.get("activity_state") or {}
+        assert activity_state["service"]["api"]["paused"] is True
+        assert activity_state["service"]["api"]["note"] == "maint"

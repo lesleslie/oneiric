@@ -1,203 +1,81 @@
 # Documentation Audit & Streamlining Summary
 
-**Date:** 2025-12-02
+**Date:** 2025-12-11
 **Auditor:** Claude Code (Documentation Specialist)
-**Scope:** Complete documentation audit and reorganization
+**Scope:** Documentation audit + observability/cut-over updates aligned with recent runtime changes
 
 ______________________________________________________________________
 
 ## Executive Summary
 
-**Objective:** Audit and streamline `/docs/` directory to eliminate redundancy, organize content, and create clear navigation.
+**Objective:** Keep `/docs/` in lock-step with the new runtime telemetry + notification router work and the repo-specific migration fixtures.
 
 **Results:**
 
-- ✅ **Created** 3 new essential documents
-- ✅ **Organized** 69 documents into logical structure
-- ✅ **Consolidated** 7 redundant comparison docs into 1 authoritative guide
-- ✅ **Archived** historical docs (7 files)
-- ✅ **Updated** all doc references in README.md and CLAUDE.md
-- ✅ **Zero blockers found** - project is production-ready
+- ✅ **Added** repo-specific observability runbooks (Crackerjack, Fastblocks, Session‑Mgmt) + a shared parity fixture
+- ✅ **Documented** the cut-over validation workflow + CLI commands now powering ChatOps and telemetry captures
+- ✅ **Updated** the docs index, observability guide, and quality roadmap to link the new assets
+- ✅ **Archived** superseded comparison/audit docs in git history (unchanged)
+- ✅ **Zero blockers found** – documentation coverage still mirrors production-ready code
 
 ______________________________________________________________________
 
 ## What Changed
 
-### 1. New Essential Documents Created
+### 1. New & Updated Essential Documents
 
-#### ONEIRIC_VS_ACB.md (17,868 lines) ⭐ **AUTHORITATIVE**
+#### Repo-Specific Observability Kits (⭐ **New**)
 
-**Location:** `docs/ONEIRIC_VS_ACB.md`
+**Locations:**
 
-**Purpose:** Single source of truth for Oneiric vs ACB comparison
+- `docs/examples/CRACKERJACK_OBSERVABILITY.md`
+- `docs/examples/FASTBLOCKS_OBSERVABILITY.md`
+- `docs/examples/SESSION_MGMT_MCP_OBSERVABILITY.md`
 
-**Consolidates:**
+**Purpose:** Each runbook now walks through the CLI inspectors (`orchestrate --print-dag`, `--events --inspect-json`), runtime telemetry capture, and ChatOps replay commands that ship with the new `NotificationRouter`. Every checklist references the exact CLI payloads to attach to Crackerjack/Fastblocks/Session‑Mgmt parity reviews so stakeholders can diff DAGs, handlers, and ChatOps transcripts side-by-side with ACB.
 
-- ACB_COMPARISON.md (original comprehensive comparison)
-- ADAPTER_COMPARISON.md (adapter-specific comparison)
-- FEATURE_COMPARISON_HONEST.md (honest feature assessment)
-- HONEST_95_PERCENT_CLAIM.md (scope reality check)
-- ACB_REPLACEMENT_ANALYSIS.md (migration analysis)
-- ACB_REDESIGN_ANALYSIS.md (ground-up redesign)
-- PERFORMANCE_ANALYSIS.md (registry vs DI performance)
+**Why This Matters:** The runtime changes introduced `runtime_telemetry.json` snapshots + CLI‑triggered ChatOps notifications. These guides give every repo the precise steps (and commands) needed to produce those artifacts before a migration sign-off.
 
-**Contents:**
+#### FASTBLOCKS_PARITY_FIXTURE.yaml + CUTOVER_VALIDATION_CHECKLIST.md (⭐ **New**)
 
-- Complete comparison (metrics, architecture, features)
-- What Oneiric does better (adapters, resolution, hot-swap, NEW categories)
-- What ACB does better (type safety, platform features, battle-tested)
-- Recommended hybrid approach (best of both worlds)
-- Migration strategy (adapters to Oneiric, keep ACB for services)
-- Performance reality (2-5x slower but irrelevant in practice)
-- Use case analysis (when to use each)
+**Locations:**
 
-**Why This Matters:** Eliminates confusion from 7 overlapping comparison docs with sometimes contradictory information.
+- `docs/examples/FASTBLOCKS_PARITY_FIXTURE.yaml`
+- `docs/implementation/CUTOVER_VALIDATION_CHECKLIST.md`
 
-#### UNCOMPLETED_TASKS.md (10,302 lines) ⭐ **ESSENTIAL**
+**Purpose:** The shared manifest keeps Fastblocks DAGs identical between ACB and Oneiric. The checklist wires that manifest into repeatable validation steps (manifest snapshot, CLI transcripts, telemetry archive, ChatOps replay). `tests/integration/test_migration_parity.py` now consumes the fixture to guarantee `RuntimeOrchestrator.sync_remote` registers every required domain before we even run the manual checklist.
 
-**Location:** `docs/UNCOMPLETED_TASKS.md`
+**Why This Matters:** Migration evidence is no longer ad-hoc screenshots—CI, docs, and runtime code now share the same fixture + commands.
 
-**Purpose:** Single inventory of all pending work, future enhancements, and known issues
+#### docs/README.md + OBSERVABILITY_GUIDE.md (⭐ **Refreshed**)
 
-**Key Findings:**
+- The docs index links the new runbooks/fixture + calls out the ChatOps replay workflow so engineers land on the right instructions immediately.
+- The observability guide now documents the runtime telemetry recorder, CLI inspectors, and ChatOps router flags (`action-invoke workflow.notify --workflow ... --send-notification`) so operators understand how the new helpers work across CLI demos and orchestrator loops.
 
-- **Zero critical blockers** - project is production-ready
-- **Zero high-priority gaps** - all essential features complete
-- **3 medium-priority items** - test fixes, secrets rotation, load testing (all deferred to v0.2.1/v0.3.0)
-- **10+ low-priority enhancements** - nice-to-have features
+#### ONEIRIC_VS_ACB.md / UNCOMPLETED_TASKS.md (⭐ **Continuing References**)
 
-**Contents:**
-
-- Future enhancements (structured concurrency, durable execution)
-- Minor test failures (18 failing, 96.3% pass rate, non-blocking)
-- Production deployment tasks (all complete)
-- Remote manifest enhancements (quality-of-life improvements)
-- Code quality improvements (already excellent 95/100)
-
-**Why This Matters:** Provides clear transparency on what's NOT done, proving production-readiness.
-
-#### docs/README.md (Documentation Index) ⭐ **NAVIGATION**
-
-**Location:** `docs/README.md`
-
-**Purpose:** Complete documentation index with quick navigation
-
-**Contents:**
-
-- Quick navigation (start here section)
-- Documentation structure (all subdirectories)
-- Key documents by use case (new users, operators, developers, migration, planning)
-- Quick stats (production readiness, documentation completeness, code quality)
-- Document maintenance (outdated docs, living docs, static reference)
-
-**Why This Matters:** Makes it easy to find the right documentation for any task.
+Both documents remain authoritative. They were cross-checked to ensure no stale references to removed audits exist, and they now point readers at the new migration fixture + repo-specific evidence when discussing parity progress.
 
 ### 2. Documentation Structure Reorganized
 
-**Before:**
+### 2. Documentation Structure Revisited
 
-```
-docs/
-└── 69 files (flat, no organization)
-```
+The directory layout introduced earlier still stands (root essentials + `implementation/`, `analysis/`, `deployment/`, `monitoring/`, `runbooks/`, `examples/`). The 2025-12-11 audit adds the following highlights:
 
-**After:**
+- `/examples/` now hosts **five** living guides: the original CLI demo, the plugin sample, and the three new observability checklists + parity fixture. The README links each guide in the “Examples” section so repo owners can jump straight to their artifact recipes.
+- `/implementation/` gained **CUTOVER_VALIDATION_CHECKLIST.md**, which links directly to the new integration test + fixture. This document is the single source of truth for migration evidence, so other planning docs (strategic roadmap, orchestration parity) now reference it instead of older spreadsheet links.
+- `/analysis/QUALITY_AUDITS.md` and the root README were scrubbed for stale references to deleted audit files; both now point to Stage 5 + the new parity fixture whenever quality evidence is mentioned.
+- `/archive/` retains the superseded completion reports. No changes were required, but README callouts now mark them as “historical” to avoid confusion when linking from PRs.
 
-```
-docs/
-├── Essential docs (13 files - kept at root for easy access)
-├── architecture/ (empty - core docs at root)
-├── implementation/ (32 files - build progress, completion reports)
-├── analysis/ (12 files - audits, adapter strategies)
-├── archive/ (7 files - superseded comparison docs)
-├── deployment/ (3 files - Docker, K8s, systemd)
-├── monitoring/ (4 files - Prometheus, Grafana, Loki, Alerts)
-├── runbooks/ (3 files - Incident, Maintenance, Troubleshooting)
-└── examples/ (2 files - CLI demo, plugin example)
-```
+### 3. Updated References & Cross-Links
 
-#### Root Level (Essential Reference)
+- ✅ `docs/README.md` now references every repo-specific observability kit, the parity fixture, and the cut-over checklist.
+- ✅ `docs/OBSERVABILITY_GUIDE.md` explains how `NotificationRouter` + CLI flags forward `workflow.notify` payloads and where the runtime telemetry recorder writes JSON snapshots.
+- ✅ `docs/examples/LOCAL_CLI_DEMO.md` gained CLI snippets showing how to replay ChatOps payloads (`--workflow`, `--notify-adapter`, `--send-notification`).
+- ✅ `docs/examples/*` parity guides cross-link `tests/integration/test_migration_parity.py` so engineers know CI enforces the same manifest used in manual rehearsals.
 
-**13 files - Quick access to core documentation:**
+With these changes, every new runtime capability (telemetry recorder, notification router, parity fixture) has at least one corresponding document, example, and test reference.
 
-- ONEIRIC_VS_ACB.md ⭐ (consolidated comparison)
-- UNCOMPLETED_TASKS.md ⭐ (pending work inventory)
-- README.md (documentation index)
-- NEW_ARCH_SPEC.md (architecture spec)
-- RESOLUTION_LAYER_SPEC.md (resolution design)
-- REMOTE_MANIFEST_SCHEMA.md (manifest format)
-- SIGNATURE_VERIFICATION.md (security system)
-- OBSERVABILITY_GUIDE.md (logging, metrics)
-- REBUILD_VS_REFACTOR.md (design rationale)
-- ACB_COMPARISON.md (original comparison - kept for reference)
-- ADAPTER_LIFECYCLE_TEMPLATE.md (adapter template)
-- AI_AGENT_COMPATIBILITY.md (AI agent guidance)
-- BUILD_PROMPTS.md (build guidance)
-
-#### /implementation/ (Build Progress & Plans)
-
-**32 files - organized by purpose:**
-
-**Major Phases & Plans:**
-
-- archive/implementation/BUILD_PROGRESS.md - Phase-by-phase implementation log (historical)
-- archive/implementation/UNIFIED_IMPLEMENTATION_PLAN.md - Consolidated implementation strategy (historical)
-- STRATEGIC_ROADMAP.md - Current priorities (Cloud Run/serverless, parity milestones)
-- ADAPTER_REMEDIATION_PLAN.md / ADAPTER_REMEDIATION_EXECUTION.md - Active workstreams
-
-**Stage Completion Reports:**
-
-- STAGE5_FINAL_AUDIT_REPORT.md ⭐ (95/100 score)
-
-**Test Completion Reports (9 files):**
-
-- archive/implementation/CLI_TESTS_COMPLETION.md (79% coverage, 41 tests)
-- archive/implementation/DOMAIN_BRIDGE_TESTS_COMPLETION.md (44 tests)
-- archive/implementation/INTEGRATION_TESTS_COMPLETION.md (23 tests, 8 passing)
-- archive/implementation/LIFECYCLE_TESTS_COMPLETION.md (68 tests)
-- archive/implementation/REMOTE_TESTS_COMPLETION.md (55 tests)
-- archive/implementation/RUNTIME_TESTS_COMPLETION.md (39 tests)
-- archive/implementation/SIGNATURE_VERIFICATION_COMPLETION.md (100 tests)
-- archive/implementation/THREAD_SAFETY_COMPLETION.md (concurrency tests)
-- archive/implementation/WEEK_3_4_SUMMARY.md, archive/implementation/WEEK1_SECURITY_COMPLETION.md
-
-**Feature Plans:**
-
-- LOGGING_OBSERVABILITY_PLAN.md
-- PLUGIN_ENTRYPOINT_PLAN.md
-- RESOLUTION_LAYER_PLAN.md
-
-#### /analysis/ (Audits & Technical Analysis)
-
-**Docs of note:**
-
-**Quality Audits:**
-
-- QUALITY_AUDITS.md - Summary of architecture/code/test audits (full detail in STAGE5_FINAL_AUDIT_REPORT)
-
-**Adapter Analysis:**
-
-- ACB_ADAPTER_ACTION_IMPLEMENTATION.md - Adapter/action porting guide
-- ADAPTER_OBSOLESCENCE_ANALYSIS.md - Deprecation analysis
-- ADAPTER_PORT_SUMMARY.md - Migration summary
-- ADAPTER_STRATEGY.md - Design strategy
-- DUCKDB_ADAPTER.md - DuckDB analytics adapter
-- EMBEDDING_ADAPTERS.md - Embedding adapters (OpenAI, SentenceTransformers, ONNX)
-- VECTOR_ADAPTERS.md - Vector DB adapters (Pinecone, Qdrant)
-
-#### /deployment/, /monitoring/, /runbooks/ (Unchanged)
-
-**10 files - production-ready operational docs:**
-
-- Kept as-is (comprehensive, well-organized)
-- Combined 9,082 lines of operational documentation
-
-### 3. Updated References
-
-**README.md (main project README):**
-
-- ✅ Updated "Documentation" section with new structure
-- ✅ Fixed all doc paths (implementation/, analysis/, archive/ subdirectories)
 - ✅ Added links to ONEIRIC_VS_ACB.md and UNCOMPLETED_TASKS.md
 - ✅ Updated performance analysis reference (now in archive/)
 
@@ -240,7 +118,7 @@ ______________________________________________________________________
 - ✅ Architecture specifications (complete)
 - ✅ Implementation plans (complete)
 - ✅ Operational runbooks (production-ready)
-- ✅ Deployment guides (Docker, K8s, systemd)
+- ✅ Deployment guides (Cloud Run + systemd)
 - ✅ Monitoring setup (Prometheus, Grafana, Loki, AlertManager)
 - ✅ Migration guides (ACB → Oneiric)
 - ✅ Quality audits (95/100 score)
@@ -291,11 +169,11 @@ ______________________________________________________________________
 1. ✅ **Start with ONEIRIC_VS_ACB.md** - Complete comparison and migration guide
 1. ✅ **Read UNCOMPLETED_TASKS.md** - Understand what's NOT done (nothing critical)
 1. ✅ **Check docs/README.md** - Navigate to specific documentation
-1. ✅ **Review STAGE5_FINAL_AUDIT_REPORT.md** - Production readiness audit (95/100)
+1. ✅ **Review docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md** - Production readiness audit (95/100)
 
 ### For Production Deployment
 
-1. ✅ **Deployment:** See `docs/deployment/` (Docker, K8s, systemd guides)
+1. ✅ **Deployment:** See `docs/deployment/` (Cloud Run + systemd guides)
 1. ✅ **Monitoring:** See `docs/monitoring/` (Prometheus, Grafana, Loki, Alerts)
 1. ✅ **Operations:** See `docs/runbooks/` (Incident, Maintenance, Troubleshooting)
 

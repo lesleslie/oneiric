@@ -3,13 +3,26 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
+import itertools
 import threading
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 
 from oneiric.core.logging import get_logger
 
 from .activity import DomainActivity, DomainActivityStore
 
 logger = get_logger("runtime.supervisor")
+
+
+ListenerCallback = Callable[[str, str, DomainActivity], Awaitable[None] | None]
+
+
+@dataclass
+class _Listener:
+    domain: str | None
+    callback: ListenerCallback
 
 
 class ServiceSupervisor:
@@ -27,6 +40,8 @@ class ServiceSupervisor:
         self._lock = threading.RLock()
         self._task: asyncio.Task[None] | None = None
         self._stopped = asyncio.Event()
+        self._listeners: dict[int, _Listener] = {}
+        self._listener_seq = itertools.count(1)
         self.refresh()
 
     async def start(self) -> None:
@@ -55,14 +70,47 @@ class ServiceSupervisor:
         """Refresh cached activity state from the backing store."""
 
         snapshot = self._activity_store.snapshot()
+        deltas = self._calculate_deltas(snapshot)
         with self._lock:
             self._state = snapshot
+        if deltas:
+            self._notify_listeners(deltas)
 
     def snapshot(self) -> dict[str, dict[str, DomainActivity]]:
         """Return an in-memory snapshot of the current state."""
 
         with self._lock:
             return {domain: state.copy() for domain, state in self._state.items()}
+
+    def add_listener(
+        self,
+        callback: ListenerCallback,
+        *,
+        domain: str | None = None,
+        fire_immediately: bool = False,
+    ) -> Callable[[], None]:
+        """Register a callback invoked when activity entries change.
+
+        Returns a callable that removes the listener when invoked.
+        """
+
+        token = next(self._listener_seq)
+        with self._lock:
+            self._listeners[token] = _Listener(domain=domain, callback=callback)
+            current_snapshot = None if not fire_immediately else self._state.copy()
+
+        if current_snapshot:
+            for current_domain, entries in current_snapshot.items():
+                if domain and current_domain != domain:
+                    continue
+                for key, state in entries.items():
+                    self._dispatch_listener(callback, current_domain, key, state)
+
+        def _remove() -> None:
+            with self._lock:
+                self._listeners.pop(token, None)
+
+        return _remove
 
     def should_accept_work(self, domain: str, key: str) -> bool:
         """Return True when the domain/key is neither paused nor draining."""
@@ -80,6 +128,58 @@ class ServiceSupervisor:
         if state is None:
             return DomainActivity()
         return state
+
+    def _calculate_deltas(
+        self, fresh: dict[str, dict[str, DomainActivity]]
+    ) -> list[tuple[str, str, DomainActivity]]:
+        deltas: list[tuple[str, str, DomainActivity]] = []
+        with self._lock:
+            previous = {
+                domain: entries.copy() for domain, entries in self._state.items()
+            }
+        for domain, entries in fresh.items():
+            old_entries = previous.get(domain, {})
+            for key, state in entries.items():
+                if old_entries.get(key) != state:
+                    deltas.append((domain, key, state))
+        for domain, entries in previous.items():
+            new_entries = fresh.get(domain, {})
+            for key in entries:
+                if key not in new_entries:
+                    deltas.append((domain, key, DomainActivity()))
+        return deltas
+
+    def _notify_listeners(self, deltas: list[tuple[str, str, DomainActivity]]) -> None:
+        if not deltas:
+            return
+        with self._lock:
+            listeners = list(self._listeners.values())
+        if not listeners:
+            return
+        for domain, key, state in deltas:
+            for listener in listeners:
+                if listener.domain and listener.domain != domain:
+                    continue
+                self._dispatch_listener(listener.callback, domain, key, state)
+
+    def _dispatch_listener(
+        self,
+        callback: ListenerCallback,
+        domain: str,
+        key: str,
+        state: DomainActivity,
+    ) -> None:
+        try:
+            result = callback(domain, key, state)
+            if inspect.isawaitable(result):
+                asyncio.create_task(result)
+        except Exception as exc:  # pragma: no cover - defensive log
+            logger.warning(
+                "supervisor-listener-error",
+                domain=domain,
+                key=key,
+                error=str(exc),
+            )
 
     async def _poll_loop(self) -> None:
         """Background loop that refreshes state on an interval."""

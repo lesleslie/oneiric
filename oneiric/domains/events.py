@@ -10,6 +10,7 @@ from oneiric.core.lifecycle import LifecycleError, LifecycleManager
 from oneiric.core.resolution import Candidate, Resolver
 from oneiric.runtime.activity import DomainActivityStore
 from oneiric.runtime.events import (
+    _UNSET,
     EventDispatcher,
     EventEnvelope,
     EventHandler,
@@ -79,15 +80,21 @@ class EventBridge(DomainBridge):
 
         snapshot: list[dict[str, Any]] = []
         for handler in self._dispatcher.handlers():
-            filters = [
-                {
-                    "path": event_filter.path,
-                    "equals": getattr(event_filter, "equals", None),
-                    "any_of": list(event_filter.any_of) if event_filter.any_of else None,
-                    "exists": event_filter.exists,
-                }
-                for event_filter in handler.filters
-            ]
+            filters: list[dict[str, Any]] = []
+            for event_filter in handler.filters:
+                equals_value = getattr(event_filter, "equals", None)
+                if equals_value is _UNSET:
+                    equals_value = None
+                filters.append(
+                    {
+                        "path": event_filter.path,
+                        "equals": equals_value,
+                        "any_of": (
+                            list(event_filter.any_of) if event_filter.any_of else None
+                        ),
+                        "exists": event_filter.exists,
+                    }
+                )
             snapshot.append(
                 {
                     "name": handler.name,

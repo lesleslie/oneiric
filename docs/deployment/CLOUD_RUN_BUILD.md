@@ -46,7 +46,9 @@ Notes:
 
 - `--profile serverless` applies the watcher/remote toggles baked into `oneiric.core.config`.
 - `--no-remote` keeps remote sync disabled unless you explicitly provide a manifest URL and flip `remote.enabled` back on.
-- The Service Supervisor now runs automatically (even in serverless profile) to enforce pause/drain windows and export `runtime_health.json`. Keep `.oneiric_cache` persisted so `domain_activity.sqlite` and the health snapshot survive across revisions.
+- The Service Supervisor now runs automatically (even in serverless profile) to enforce pause/drain windows and export `runtime_health.json` (which now includes both `activity_state` and `lifecycle_state`). Keep `.oneiric_cache` persisted so `domain_activity.sqlite` and the health snapshot survive across revisions.
+- If you need to temporarily disable the supervisor loop (for staged rollouts or debugging), set `ONEIRIC_RUNTIME_SUPERVISOR__ENABLED=false` when launching `oneiric.cli orchestrate`; leave it unset (default `true`) for normal serverless/Cloud Run deploys.
+- To confirm which toggle is in effect (profile default vs. runtime config vs. env override), run `uv run python -m oneiric.cli supervisor-info` against the same config before deploying and capture the output in your release notes.
 - When customizing the Procfile for a specific service, update both files (or keep a symlink) so future roadmap updates land consistently across local + Cloud Run profiles.
 - Override or extend the command via `--` in `gcloud run deploy` if you need per-service variations.
 
@@ -109,6 +111,7 @@ ______________________________________________________________________
 1. **Secret Manager adapter** – configure `settings.secrets.provider = "gcp.secret_manager"` and grant the Cloud Run service account `roles/secretmanager.secretAccessor`.
 1. **Inline manifests** – package critical manifest entries into your TOML (or embed as JSON inside the repo); the serverless profile assumes no remote polling unless you opt in.
 1. **Env fallbacks** – keep `.env`-style config limited to local dev. Production deployments should prefer Secret Manager + build-time manifest packaging.
+1. **Precedence & verification** – Secret Manager overrides env vars, which override manifest defaults; run `uv run python -m oneiric.cli health --probe --json` (or `--demo health --probe --json`) before deploys to capture the `secrets` block and confirm the expected provider is `status=ready`. Pair it with `uv run python -m oneiric.cli supervisor-info` so release notes show both the runtime profile and the current supervisor toggle.
 
 Sample snippet (`config/serverless.toml`):
 
@@ -136,6 +139,20 @@ enabled = false
 
 Setting `[workflows.options] queue_category = "queue.scheduler"` keeps workflow enqueue operations pointed at the Cloud Tasks adapter without needing CLI flags. Combine that with `[adapters.selections] queue = "cloudtasks"` (and the corresponding provider settings) so `RuntimeOrchestrator` can resolve the adapter when Cloud Tasks delivers HTTP callbacks.
 
+Before shipping a revision, run:
+
+```bash
+ONEIRIC_PROFILE=serverless uv run python -m oneiric.cli supervisor-info --json
+ONEIRIC_PROFILE=serverless uv run python -m oneiric.cli health --probe --json --manifest build/serverless_manifest.json
+```
+
+Capture both outputs (or screenshots) alongside the deploy ticket so auditors can confirm:
+
+- profile toggles (`watchers_enabled`, `remote_enabled`, `inline_manifest_only`)
+- supervisor override (`runtime.supervisor.enabled`)
+- Secret Manager readiness (`"secrets": {"provider": "gcp.secret_manager", "status": "ready"}`)
+- lifecycle and pause/drain state.
+
 ______________________________________________________________________
 
 ## 7. Inline Manifest Packaging
@@ -160,12 +177,12 @@ ______________________________________________________________________
 ## 8. Verification & Observability
 
 1. Run `uv run pytest -k serverless_profile` before shipping (tests to be expanded alongside profile work).
-1. Use `oneiric.cli health --json` locally to ensure adapters/actions activate without remote polling.
+1. Use `oneiric.cli supervisor-info --json` followed by `oneiric.cli health --probe --json` locally to ensure adapters/actions activate without remote polling and the serverless toggles are correct.
 1. Configure Cloud Run logs to export structlog JSON (`stdout`) to Cloud Logging; reserve `stderr` for fatal errors only.
 1. Mirror Cloud Run deployments by running `uv run python -m oneiric.cli orchestrate --profile serverless --no-remote --health-path /tmp/runtime_health.json` locally, then inspect `oneiric.cli activity --json` and `oneiric.cli health --probe --json` to confirm the Service Supervisor is honoring pause/drain settings.
-1. Inspect the new `profile` and `secrets` blocks in the `health --json` output to verify the serverless toggles (`watchers_enabled`, `remote_enabled`, `inline_manifest_only`) and confirm the Secret Manager adapter reports `status=ready` before shipping.
+1. Inspect the new `profile`, `secrets`, and `lifecycle_state` blocks in the `health --probe --json` output to verify the serverless toggles (`watchers_enabled`, `remote_enabled`, `inline_manifest_only`), confirm the Secret Manager adapter reports `status=ready`, and ensure lifecycle entries are paused/draining as expected before shipping.
 
-The orchestrator writes `runtime_health.json` and `domain_activity.sqlite` under `.oneiric_cache/`; Cloud Run operators can tail that directory to confirm the Service Supervisor sees the same state exposed via the CLI.
+The orchestrator writes `runtime_health.json` (with supervisor + lifecycle metadata) and `domain_activity.sqlite` under `.oneiric_cache/`; Cloud Run operators can tail that directory to confirm the Service Supervisor sees the same state exposed via the CLI.
 
 The orchestrator now exposes an HTTP server when `oneiric.cli orchestrate` runs with the default (or serverless) profile and a listening port is available (`$PORT`, `--http-port`). It serves:
 
@@ -213,12 +230,38 @@ Service [oneiric-runtime] revision [oneiric-runtime-00004-zol] has been deployed
 URLs:
  https://oneiric-runtime-xxxxxxxx-uc.a.run.app
 
-$ uv run python -m oneiric.cli health --json
+$ ONEIRIC_PROFILE=serverless uv run python -m oneiric.cli supervisor-info --json
+{
+  "profile_default": "serverless",
+  "runtime_config": "serverless",
+  "env_override": null,
+  "supervisor_enabled": true,
+  "watchers_enabled": false,
+  "remote_enabled": false,
+  "inline_manifest_only": true
+}
+
+$ ONEIRIC_PROFILE=serverless uv run python -m oneiric.cli health --probe --json \
+    --manifest build/serverless_manifest.json
 {
   "status": "healthy",
-  "watchers_running": false,
-  "remote_enabled": false,
-  "profile": "serverless"
+  "profile": {
+    "name": "serverless",
+    "watchers_enabled": false,
+    "remote_enabled": false,
+    "inline_manifest_only": true
+  },
+  "secrets": {
+    "provider": "gcp.secret_manager",
+    "status": "ready"
+  },
+  "lifecycle_state": {
+    "activity_state": "accepting",
+    "supervisor": {
+      "enabled": true,
+      "last_update": "2025-12-09T18:22:14Z"
+    }
+  }
 }
 ```
 

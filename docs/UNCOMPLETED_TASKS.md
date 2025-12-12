@@ -56,7 +56,7 @@ Current signature verification is **production-ready**. These are advanced secur
 
 ______________________________________________________________________
 
-## 3. Minor Test Failures (From STAGE5_FINAL_AUDIT_REPORT.md)
+## 3. Minor Test Failures (From docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md)
 
 ### Priority: MEDIUM (Non-Blocking Issues)
 
@@ -82,7 +82,7 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-## 4. Production Deployment Tasks (From STAGE4_COMPLETION_SUMMARY.md)
+## 4. Production Deployment Tasks (From docs/implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md)
 
 ### Priority: HIGH (Production Operations)
 
@@ -102,7 +102,7 @@ These are **operational documentation** tasks, not code features:
 
 ______________________________________________________________________
 
-## 5. Remote Manifest Enhancements (From STAGE4_REMOTE_PACKAGING_PLAN.md)
+## 5. Remote Manifest Enhancements (From docs/REMOTE_MANIFEST_SCHEMA.md + parity follow-ups)
 
 ### Priority: LOW (Quality-of-Life Improvements)
 

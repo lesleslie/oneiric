@@ -5,13 +5,15 @@ from __future__ import annotations
 import io
 import json
 from contextlib import redirect_stdout
+from types import SimpleNamespace
 
 import pytest
 from typer.testing import CliRunner
 
 from oneiric import plugins
-from oneiric.cli import _print_runtime_health, app
+from oneiric.cli import _derive_notification_route, _print_runtime_health, app
 from oneiric.core.config import OneiricSettings
+from oneiric.core.resolution import Candidate, Resolver
 
 # Test fixtures
 
@@ -886,6 +888,62 @@ class TestOrchestrateCommand:
         # (would run forever)
         pass
 
+    @staticmethod
+    def _write_runtime_config(tmp_path):
+        cache_dir = tmp_path / "cache"
+        config_path = tmp_path / "settings.toml"
+        config_path.write_text(f'[remote]\ncache_dir = "{cache_dir}"\n')
+        return config_path
+
+    def test_orchestrate_print_dag_inspector(self, runner, tmp_path):
+        """--print-dag outputs workflow DAG metadata and exits."""
+        config_path = self._write_runtime_config(tmp_path)
+        result = runner.invoke(
+            app,
+            [
+                f"--config={config_path}",
+                "--demo",
+                "orchestrate",
+                "--print-dag",
+                "--workflow",
+                "demo-workflow",
+            ],
+        )
+
+        assert result.exit_code == 0
+        assert "Workflow DAGs:" in result.stdout
+        assert "demo-workflow" in result.stdout
+
+    def test_orchestrate_events_inspector_json(self, runner, tmp_path):
+        """--events inspector emits JSON when requested."""
+        config_path = self._write_runtime_config(tmp_path)
+        result = runner.invoke(
+            app,
+            [
+                f"--config={config_path}",
+                "--demo",
+                "orchestrate",
+                "--events",
+                "--inspect-json",
+            ],
+        )
+
+        assert result.exit_code == 0
+        stdout_text = "\n".join(
+            line for line in result.stdout.splitlines() if line.strip()
+        )
+        while stdout_text:
+            try:
+                payload = json.loads(stdout_text)
+                break
+            except json.JSONDecodeError:
+                newline_idx = stdout_text.find("\n")
+                if newline_idx == -1:
+                    raise
+                stdout_text = stdout_text[newline_idx + 1 :]
+        assert "events" in payload
+        assert payload["events"]["handlers"]
+
 
 class TestCLIHelpers:
     """Test CLI helper functions."""
@@ -910,6 +968,63 @@ class TestCLIHelpers:
         result = runner.invoke(app, ["--import", "json", "list", "--domain", "adapter"])
 
         assert result.exit_code == 0
+
+
+class TestNotificationRouting:
+    """Tests for workflow notify routing helpers."""
+
+    def test_route_derives_from_workflow_metadata(self):
+        resolver = Resolver()
+        resolver.register(
+            Candidate(
+                domain="workflow",
+                key="demo-workflow",
+                provider="cli",
+                factory=lambda: None,
+                metadata={
+                    "notifications": {
+                        "adapter_provider": "notifications.chatops",
+                        "channel": "#deploys",
+                        "title_template": "[{level}] {channel}",
+                        "include_context": False,
+                        "extra_payload": {"color": "good"},
+                    }
+                },
+            )
+        )
+        state = SimpleNamespace(
+            resolver=resolver,
+            notification_router=SimpleNamespace(default_adapter_key=None),
+        )
+
+        route = _derive_notification_route(
+            state,
+            workflow_key="demo-workflow",
+            notify_adapter=None,
+            notify_target=None,
+            force_send=True,
+        )
+
+        assert route is not None
+        assert route.adapter_key == "notifications.chatops"
+        assert route.target == "#deploys"
+        assert route.include_context is False
+        assert route.title_template == "[{level}] {channel}"
+        assert route.extra_payload == {"color": "good"}
+
+    def test_route_skips_without_hints(self):
+        state = SimpleNamespace(
+            resolver=Resolver(),
+            notification_router=SimpleNamespace(default_adapter_key=None),
+        )
+        route = _derive_notification_route(
+            state,
+            workflow_key=None,
+            notify_adapter=None,
+            notify_target=None,
+            force_send=False,
+        )
+        assert route is None
 
 
 class TestDomainNormalization:

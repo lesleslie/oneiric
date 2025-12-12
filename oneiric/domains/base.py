@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -48,6 +49,13 @@ class DomainBridge:
         self._activity_store = activity_store
         self._activity: dict[str, DomainActivity] = {}
         self._supervisor = supervisor
+        self._supervisor_unsubscribe: Callable[[], None] | None = None
+        if self._supervisor:
+            self._supervisor_unsubscribe = self._supervisor.add_listener(
+                self._handle_supervisor_update,
+                domain=self.domain,
+                fire_immediately=True,
+            )
         self._refresh_activity_from_store()
 
     def register_settings_model(self, provider: str, model: type[BaseModel]) -> None:
@@ -200,6 +208,18 @@ class DomainBridge:
             reason=reason,
         )
         raise LifecycleError(f"{self.domain}:{key} is {reason}")
+
+    def _handle_supervisor_update(
+        self, domain: str, key: str, state: DomainActivity
+    ) -> None:
+        """Sync internal cache when supervisor broadcasts updates."""
+
+        if domain != self.domain:
+            return
+        if state.is_default():
+            self._activity.pop(key, None)
+        else:
+            self._activity[key] = state
 
 
 def _activity_block_reason(state: DomainActivity) -> str:

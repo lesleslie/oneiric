@@ -12,6 +12,7 @@ from oneiric.core.lifecycle import LifecycleError, LifecycleManager
 from oneiric.core.resolution import Candidate, CandidateSource, Resolver
 from oneiric.domains.base import DomainBridge, DomainHandle
 from oneiric.runtime.activity import DomainActivity, DomainActivityStore
+from oneiric.runtime.supervisor import ServiceSupervisor
 
 # Test fixtures and helpers
 
@@ -711,3 +712,27 @@ class TestDomainBridgeActivity:
         state = bridge.activity_state("api")
         assert state.paused is True
         assert state.note == "existing"
+
+    def test_supervisor_updates_activity_without_store(self, tmp_path: Path):
+        """Supervisor listeners keep bridges in sync even without a store."""
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        settings = LayerSettings()
+        activity_store = DomainActivityStore(tmp_path / "activity.sqlite")
+        supervisor = ServiceSupervisor(activity_store)
+
+        bridge = DomainBridge(
+            "service",
+            resolver,
+            lifecycle,
+            settings,
+            activity_store=None,
+            supervisor=supervisor,
+        )
+
+        activity_store.set("service", "api", DomainActivity(paused=True, note="maint"))
+        supervisor.refresh()
+
+        cached = bridge._activity["api"]  # type: ignore[attr-defined]
+        assert cached.paused is True
+        assert cached.note == "maint"

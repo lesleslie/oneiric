@@ -7,6 +7,7 @@ import os
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from oneiric.adapters import AdapterBridge
 from oneiric.adapters.watcher import AdapterConfigWatcher
@@ -65,9 +66,16 @@ class RuntimeOrchestrator:
         self._health = RuntimeHealthSnapshot()
         self._activity_store = DomainActivityStore(domain_activity_path(settings))
         self._telemetry = RuntimeTelemetryRecorder(runtime_observability_path(settings))
-        self._supervisor_enabled = getattr(settings.profile, "supervisor_enabled", True)
+        supervisor_cfg = getattr(settings, "runtime_supervisor", None)
+        self._supervisor_enabled = bool(
+            getattr(settings.profile, "supervisor_enabled", True)
+            and (getattr(supervisor_cfg, "enabled", True))
+        )
+        poll_interval = (
+            getattr(supervisor_cfg, "poll_interval", 2.0) if supervisor_cfg else 2.0
+        )
         self._supervisor = (
-            ServiceSupervisor(self._activity_store)
+            ServiceSupervisor(self._activity_store, poll_interval=poll_interval)
             if self._supervisor_enabled
             else None
         )
@@ -281,6 +289,7 @@ class RuntimeOrchestrator:
             last_remote_duration_ms,
         )
         self._update_activity_state()
+        self._update_lifecycle_state()
         write_runtime_health(self._health_path, self._health)
 
     def _apply_health_updates(
@@ -325,6 +334,18 @@ class RuntimeOrchestrator:
             for domain, entries in snapshot.items()
             if entries
         }
+
+    def _update_lifecycle_state(self) -> None:
+        """Record lifecycle manager status entries."""
+        statuses = self.lifecycle.all_statuses()
+        if not statuses:
+            self._health.lifecycle_state = {}
+            return
+        lifecycle_map: dict[str, dict[str, Any]] = {}
+        for status in statuses:
+            domain_entries = lifecycle_map.setdefault(status.domain, {})
+            domain_entries[status.key] = status.as_dict()
+        self._health.lifecycle_state = lifecycle_map
 
 
 @asynccontextmanager

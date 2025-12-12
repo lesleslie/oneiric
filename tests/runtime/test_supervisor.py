@@ -38,6 +38,38 @@ async def test_supervisor_polling_and_decisions(tmp_path):
     await supervisor.stop()
 
 
+@pytest.mark.asyncio
+async def test_supervisor_notifies_listeners(tmp_path):
+    """Supervisor listeners receive pause/drain deltas."""
+
+    store = DomainActivityStore(tmp_path / "activity.sqlite")
+    supervisor = ServiceSupervisor(store, poll_interval=0.01)
+    events: list[tuple[str, str, DomainActivity]] = []
+
+    def listener(domain: str, key: str, state: DomainActivity) -> None:
+        events.append((domain, key, state))
+
+    supervisor.add_listener(listener, fire_immediately=True)
+    await supervisor.start()
+
+    store.set("service", "api", DomainActivity(paused=True))
+    await asyncio.sleep(0.05)
+
+    assert any(
+        domain == "service" and key == "api" and state.paused
+        for domain, key, state in events
+    )
+
+    store.set("service", "api", DomainActivity())
+    await asyncio.sleep(0.05)
+    assert any(
+        domain == "service" and key == "api" and not state.paused and not state.draining
+        for domain, key, state in events
+    )
+
+    await supervisor.stop()
+
+
 def test_supervisor_snapshot(tmp_path):
     """snapshot() returns in-memory state."""
 

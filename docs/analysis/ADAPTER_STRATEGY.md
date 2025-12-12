@@ -402,10 +402,10 @@ ______________________________________________________________________
 - Port ACB's `dns/cloudflare.py`, `dns/route53.py`, `dns/gcdns.py`
 - **Rationale:** Infrastructure automation
 
-**8. FTP/SFTP** (Legacy integrations)
+**8. File transfer adapters (FTP/SFTP/SCP/HTTPS)** – ✅ Complete
 
-- Port ACB's `ftpd/ftp.py`, `ftpd/sftp.py`
-- **Rationale:** Many enterprises still use FTP
+- FTP, SFTP, SCP, and HTTPS upload/download adapters all ship in-tree with optional dependency guards.
+- **Rationale:** Legacy artifact flows and staged cut-overs require multiple transport options.
 
 **9. Search Engines** (Full-text search)
 
@@ -444,7 +444,7 @@ ______________________________________________________________________
 | `graph/duckdb_pgq.py` | ✅ Complete | Data Platform | DuckDB PGQ adapter with ingest/query helpers + docs/tests (Dec 2025). |
 | `llm/gemini.py` | ❌ Pending | AI Platform | Completes Wave C LLM kits |
 | `dns/cloudflare.py`, `dns/route53.py`, `dns/gcdns.py` | ❌ Pending | Infra Team | Needed for DevOps parity |
-| `ftpd/ftp.py`, `ftpd/sftp.py` | ❌ Pending | Infra Team | Legacy integrations |
+| `ftpd/ftp.py`, `ftpd/sftp.py`, `ftpd/scp.py`, `ftpd/https_upload.py` | ✅ Complete | Infra Team | FTP/SFTP/SCP/HTTPS transports landed with resolver metadata, manifests, docs, and tests (Dec 2025). |
 | `messaging/kafka.py`, `messaging/rabbitmq.py` | ✅ Complete | Runtime Team | aiokafka + aio-pika adapters with publish/consume helpers (Dec 2025). |
 | `messaging/pulsar.py` | ❌ Pending | Runtime Team | Optional follow-up if demand emerges. |
 

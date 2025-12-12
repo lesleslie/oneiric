@@ -31,7 +31,8 @@ dev = [
     "pytest-timeout>=2.4.0",
     "freezegun>=1.5.5",
     "uv-bump>=0.3.1",
-    "crackerjack>=0.1.0",
+    "crackerjack>=0.45.2",
+    "session-buddy>=0.10.0",
 ]
 cache = [
     "coredis>=5.3.0",
@@ -151,6 +152,10 @@ nosql = [
 "scheduler-gcp" = [
     "google-cloud-pubsub>=2.27.1",
     "google-cloud-tasks>=2.16.0",
+]
+"file-transfer" = [
+    "aioftp>=0.23.3",
+    "asyncssh>=2.15.0",
 ]
 "vector" = [
     "pinecone-client>=3.1.0",
@@ -284,3 +289,11 @@ ignore = [
     "FURB184",  # Assignment chaining - optional style preference
     "FURB111",  # Replace lambda with object - test mocking pattern
 ]
+
+[tool.complexipy]
+# Temporary increased threshold while refactoring complex functions
+# Target: reduce to 10 over time through incremental refactoring
+# Note: CLI formatting functions (_print_*) have higher inherent complexity
+# due to multiple conditional output paths - these are candidates for
+# future refactoring using a table-driven or template-based approach
+max_complexity = 35
