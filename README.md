@@ -10,10 +10,10 @@ ______________________________________________________________________
 
 ## Roadmap & Phase Tracking
 
-- MARKER — living priorities, principles, and recent decisions.
-- \[[SERVERLESS_AND_PARITY_EXECUTION_PLAN|Serverless & Parity Execution Plan]\] — Cloud Run profile + adapter/action remediation blueprint.
-- \[[ORCHESTRATION_PARITY_PLAN|Orchestration Parity Plan]\] — event dispatcher, DAG runtime, and supervisor milestones.
-- \[[IMPLEMENTATION_PHASE_TRACKER|Implementation Phase Tracker]\] — numbered delivery phases with owners/status for every outstanding item.
+- [Strategic Roadmap](docs/STRATEGIC_ROADMAP.md) — living priorities, principles, and recent decisions.
+- [Serverless & Parity Execution Plan](docs/implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md) — Cloud Run profile + adapter/action remediation blueprint.
+- [Orchestration Parity Plan](docs/implementation/ORCHESTRATION_PARITY_PLAN.md) — event dispatcher, DAG runtime, and supervisor milestones.
+- [Implementation Phase Tracker](docs/IMPLEMENTATION_PHASE_TRACKER.md) — numbered delivery phases with owners/status for every outstanding item.
 
 ______________________________________________________________________
 

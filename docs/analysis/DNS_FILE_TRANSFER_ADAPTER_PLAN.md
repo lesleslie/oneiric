@@ -1,6 +1,6 @@
 # DNS & File Transfer Adapter Plan
 
-**Last Updated:** 2025-12-10  
+**Last Updated:** 2025-12-10
 **Owners:** Platform Core (DNS), Infra/Messaging (File Transfer)
 
 This document captures the original Wave C backlog tracked in the adapter gap audit: Route53 DNS plus file transfer adapters. Cloudflare DNS, Route53 DNS, and every file transfer transport (FTP/SFTP/SCP/HTTP download/HTTPS upload) now ship in-tree; the blueprint below documents the implementation for future reference.

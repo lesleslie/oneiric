@@ -1,6 +1,6 @@
 # Oneiric Delivery Phase Tracker
 
-**Last Updated:** 2025-12-09  
+**Last Updated:** 2025-12-09
 **Source Docs:** `docs/README.md`, `docs/STRATEGIC_ROADMAP.md`, `docs/implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md`, `docs/implementation/ORCHESTRATION_PARITY_PLAN.md`, `docs/UNCOMPLETED_TASKS.md`
 
 This tracker distills the outstanding roadmap work into numbered phases so we can quickly see what remains, who owns it, and how close we are to the cut-over.
@@ -19,8 +19,8 @@ ______________________________________________________________________
 **Kickoff Checklist**
 
 1. Confirm owners for each open row and note blockers in stand-up doc.
-2. Schedule Cloud Run transcript capture session; assign reviewer for doc updates.
-3. Create README/deployment doc TODO comments referencing this tracker so changes do not get lost.
+1. Schedule Cloud Run transcript capture session; assign reviewer for doc updates.
+1. Create README/deployment doc TODO comments referencing this tracker so changes do not get lost.
 
 **Exit Criteria:** Serverless deployers can follow README + Cloud Run guide without referencing historical Docker/K8s docs; proofs (CLI snippets/screenshots) live in docs/examples/runbooks.
 
@@ -38,8 +38,8 @@ ______________________________________________________________________
 **Kickoff Checklist**
 
 1. Hold parity sync to validate milestone dates and owners.
-2. Ensure runtime prototypes have open tracking issues linked here.
-3. Verify CLI/tests referenced in each milestone already exist or have tickets.
+1. Ensure runtime prototypes have open tracking issues linked here.
+1. Verify CLI/tests referenced in each milestone already exist or have tickets.
 
 **Dependencies:** `oneiric.runtime.events`, `oneiric.runtime.dag`, Cloud Tasks/PubSub adapters, `docs/examples/FASTBLOCKS_PARITY_FIXTURE.yaml`, cut-over checklist.
 
@@ -57,8 +57,8 @@ ______________________________________________________________________
 **Kickoff Checklist**
 
 1. Re-run adapter gap audit and paste deltas into `ADAPTER_REMEDIATION_EXECUTION.md`.
-2. Assign engineering owners for pgvector/duckdb tasks with ETA.
-3. Decide whether Wave C evaluation requires product input; if so schedule review.
+1. Assign engineering owners for pgvector/duckdb tasks with ETA.
+1. Decide whether Wave C evaluation requires product input; if so schedule review.
 
 **Exit Criteria:** Adapter gap audit shows parity with ACB for required domains; Wave C backlog scoped with owners.
 
@@ -71,13 +71,13 @@ ______________________________________________________________________
 | Refresh `docs/README.md` with roadmap/execution plan links | ✅ Complete | Quick nav now links to roadmap, execution plan, parity plan, and tracker |
 | Ensure sample manifests (including serverless toggles + Procfile refs) stay current | ✅ Complete | `sample_remote_manifest*.yaml` referenced in docs index; entries list FTP/SFTP/SCP/HTTPS adapters + serverless toggles |
 | Archive older weekly completion reports into `docs/archive/` | ✅ Complete | already moved per WS-D |
-| Maintain cross-links between roadmap ↔ parity plan ↔ execution plan | ⏳ Ongoing | Roadmap + plans link to tracker and docs index; keep in sync with future decisions |
+| Maintain cross-links between roadmap ↔ parity plan ↔ execution plan | ✅ Complete | Roadmap + plans link to tracker and docs index; docs index links back to roadmap/plan loop |
 
 **Kickoff Checklist**
 
 1. Create doc issue list with owners for README/sample manifest updates.
-2. Run link audit (e.g., `mdbook-linkcheck` or custom script) to find stale references.
-3. Add reminder in Docs team calendar to revisit this phase monthly.
+1. Run link audit (e.g., `mdbook-linkcheck` or custom script) to find stale references.
+1. Add reminder in Docs team calendar to revisit this phase monthly.
 
 **Exit Criteria:** Contributors can navigate from docs index → roadmap → execution plans without stale/legacy references.
 
@@ -95,8 +95,8 @@ ______________________________________________________________________
 **Kickoff Checklist**
 
 1. File test-flake issues referencing failing suites; attach current CI logs.
-2. Draft design note for secrets rotation + load test approach (owner + target release).
-3. Engage comms team to prepare outline for ACB deprecation notices once parity dates firm up.
+1. Draft design note for secrets rotation + load test approach (owner + target release).
+1. Engage comms team to prepare outline for ACB deprecation notices once parity dates firm up.
 
 **Exit Criteria:** Patch release closes flakiness, v0.3.0 delivers rotation + load tests, comms ready for final cut-over.
 

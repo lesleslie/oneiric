@@ -1,6 +1,6 @@
 # Event Routing Observability Demo
 
-**Last Updated:** 2025-12-09  
+**Last Updated:** 2025-12-09
 **Purpose:** Show how to inspect event subscribers, emit events, and capture telemetry evidence using the built-in CLI commands and the Fastblocks parity fixture.
 
 ______________________________________________________________________

@@ -9,41 +9,41 @@ ______________________________________________________________________
 
 ### 🚀 Start Here
 
-- **\[[ONEIRIC_VS_ACB|ONEIRIC_VS_ACB.md]\]** – Cut-over mandate + comparison vs ACB
-- **\[[STRATEGIC_ROADMAP|STRATEGIC_ROADMAP.md]\]** – Vision, execution tracks, and milestones (kept in sync with the tracker below)
-- **\[[SERVERLESS_AND_PARITY_EXECUTION_PLAN|SERVERLESS_AND_PARITY_EXECUTION_PLAN.md]\]** – Serverless + parity workstreams and next actions
-- **\[[ORCHESTRATION_PARITY_PLAN|ORCHESTRATION_PARITY_PLAN.md]\]** – Events, DAGs, and supervisor roadmap
-- **\[[IMPLEMENTATION_PHASE_TRACKER|IMPLEMENTATION_PHASE_TRACKER.md]\]** – Delivery phases, owners, and latest status for every roadmap item
-- **\[[CUTOVER_VALIDATION_CHECKLIST|implementation/CUTOVER_VALIDATION_CHECKLIST.md]\]** – Artifact checklist (manifest, DAG/events JSON, telemetry, ChatOps)
-- **\[[CLOUD_RUN_BUILD|deployment/CLOUD_RUN_BUILD.md]\]** – Cloud Run/buildpack deployment guide (Procfile-first)
-- **\[[UNCOMPLETED_TASKS|UNCOMPLETED_TASKS.md]\]** – Open work items (reference only)
+- [ONEIRIC_VS_ACB.md](ONEIRIC_VS_ACB.md) – Cut-over mandate + comparison vs ACB
+- [STRATEGIC_ROADMAP.md](STRATEGIC_ROADMAP.md) – Vision, execution tracks, and milestones (kept in sync with the tracker below)
+- [implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md](implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md) – Serverless + parity workstreams and next actions
+- [implementation/ORCHESTRATION_PARITY_PLAN.md](implementation/ORCHESTRATION_PARITY_PLAN.md) – Events, DAGs, and supervisor roadmap
+- [IMPLEMENTATION_PHASE_TRACKER.md](IMPLEMENTATION_PHASE_TRACKER.md) – Delivery phases, owners, and latest status for every roadmap item
+- [implementation/CUTOVER_VALIDATION_CHECKLIST.md](implementation/CUTOVER_VALIDATION_CHECKLIST.md) – Artifact checklist (manifest, DAG/events JSON, telemetry, ChatOps)
+- [deployment/CLOUD_RUN_BUILD.md](deployment/CLOUD_RUN_BUILD.md) – Cloud Run/buildpack deployment guide (Procfile-first)
+- [UNCOMPLETED_TASKS.md](UNCOMPLETED_TASKS.md) – Open work items (reference only)
 
 ### 📌 Roadmap & Plan Crosswalk
 
 | Reference | Purpose | Status Source |
 |-----------|---------|----------------|
-| **\[[STRATEGIC_ROADMAP|STRATEGIC_ROADMAP.md]\]** | Principles, recent decisions, execution tracks | Mirrors **\[[IMPLEMENTATION_PHASE_TRACKER|IMPLEMENTATION_PHASE_TRACKER.md]\]** |
-| **\[[SERVERLESS_AND_PARITY_EXECUTION_PLAN|implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md]\]** | Serverless profile + adapter/action remediation blueprint | Status rolls up to the tracker |
-| **\[[ORCHESTRATION_PARITY_PLAN|implementation/ORCHESTRATION_PARITY_PLAN.md]\]** | Event dispatcher, DAG runtime, supervisor milestones | Status rolls up to the tracker |
-| **\[[IMPLEMENTATION_PHASE_TRACKER|IMPLEMENTATION_PHASE_TRACKER.md]\]** | Phase-by-phase owner + status table | Pulls inputs from the roadmap + plans above |
+| **[STRATEGIC_ROADMAP.md](STRATEGIC_ROADMAP.md)** | Principles, recent decisions, execution tracks | Mirrors **[IMPLEMENTATION_PHASE_TRACKER.md](IMPLEMENTATION_PHASE_TRACKER.md)** |
+| **[implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md](implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md)** | Serverless profile + adapter/action remediation blueprint | Status rolls up to the tracker |
+| **[implementation/ORCHESTRATION_PARITY_PLAN.md](implementation/ORCHESTRATION_PARITY_PLAN.md)** | Event dispatcher, DAG runtime, supervisor milestones | Status rolls up to the tracker |
+| **[IMPLEMENTATION_PHASE_TRACKER.md](IMPLEMENTATION_PHASE_TRACKER.md)** | Phase-by-phase owner + status table | Pulls inputs from the roadmap + plans above |
 
 Use this table (and the links above) as the navigation loop: roadmap → plan → tracker → back to this index.
 
 ### 🧱 Architecture References
 
-- **\[[NEW_ARCH_SPEC|NEW_ARCH_SPEC.md]\]** – Core architecture
-- **\[[RESOLUTION_LAYER_SPEC|RESOLUTION_LAYER_SPEC.md]\]** – Resolver internals
-- **\[[REMOTE_MANIFEST_SCHEMA|REMOTE_MANIFEST_SCHEMA.md]\]** – Manifest format
-- **\[[SIGNATURE_VERIFICATION|SIGNATURE_VERIFICATION.md]\]** – Signature + security system
-- **\[[NOSQL_ADAPTERS|analysis/NOSQL_ADAPTERS.md]\]** – MongoDB/DynamoDB configuration + manifests
-- **\[[GRAPH_ADAPTERS|analysis/GRAPH_ADAPTERS.md]\]** – Neo4j configuration, manifests, and CLI usage
+- **[NEW_ARCH_SPEC.md](NEW_ARCH_SPEC.md)** – Core architecture
+- **[RESOLUTION_LAYER_SPEC.md](RESOLUTION_LAYER_SPEC.md)** – Resolver internals
+- **[REMOTE_MANIFEST_SCHEMA.md](REMOTE_MANIFEST_SCHEMA.md)** – Manifest format
+- **[SIGNATURE_VERIFICATION.md](SIGNATURE_VERIFICATION.md)** – Signature + security system
+- **[analysis/NOSQL_ADAPTERS.md](analysis/NOSQL_ADAPTERS.md)** – MongoDB/DynamoDB configuration + manifests
+- **[analysis/GRAPH_ADAPTERS.md](analysis/GRAPH_ADAPTERS.md)** – Neo4j configuration, manifests, and CLI usage
 
 ### 📊 Status & Quality
 
-- **\[[STAGE5_FINAL_AUDIT_REPORT|implementation/STAGE5_FINAL_AUDIT_REPORT.md]\]** – Production readiness audit (95/100) ⭐
-- **\[[QUALITY_AUDITS|analysis/QUALITY_AUDITS.md]\]** – Summary of architecture/code/test audits
-- **\[[STRATEGIC_ROADMAP|STRATEGIC_ROADMAP.md]\]** – Live execution tracks + status (supersedes the old build progress log)
-- **\[[BUILD_PROGRESS|archive/implementation/BUILD_PROGRESS.md]\]** – Historical phase log (reference only)
+- **[implementation/STAGE5_FINAL_AUDIT_REPORT.md](implementation/STAGE5_FINAL_AUDIT_REPORT.md)** – Production readiness audit (95/100) ⭐
+- **[analysis/QUALITY_AUDITS.md](analysis/QUALITY_AUDITS.md)** – Summary of architecture/code/test audits
+- **[STRATEGIC_ROADMAP.md](STRATEGIC_ROADMAP.md)** – Live execution tracks + status (supersedes the old build progress log)
+- **[archive/implementation/BUILD_PROGRESS.md](archive/implementation/BUILD_PROGRESS.md)** – Historical phase log (reference only)
 
 ______________________________________________________________________
 
@@ -149,44 +149,44 @@ ______________________________________________________________________
 
 ### For New Users
 
-1. **\[[ONEIRIC_VS_ACB|ONEIRIC_VS_ACB.md]\]** - Understand Oneiric vs ACB relationship
-1. **\[[NEW_ARCH_SPEC|NEW_ARCH_SPEC.md]\]** - Learn core architecture
-1. **\[[LOCAL_CLI_DEMO|examples/LOCAL_CLI_DEMO.md]\]** - Try CLI commands
-1. **\[[OBSERVABILITY_GUIDE|OBSERVABILITY_GUIDE.md]\]** - Set up logging/metrics
+1. **[ONEIRIC_VS_ACB.md](ONEIRIC_VS_ACB.md)** - Understand Oneiric vs ACB relationship
+1. **[NEW_ARCH_SPEC.md](NEW_ARCH_SPEC.md)** - Learn core architecture
+1. **[examples/LOCAL_CLI_DEMO.md](examples/LOCAL_CLI_DEMO.md)** - Try CLI commands
+1. **[OBSERVABILITY_GUIDE.md](OBSERVABILITY_GUIDE.md)** - Set up logging/metrics
 
 ### For Operators
 
 1. **[deployment/](deployment/)** - Choose deployment method (Cloud Run or systemd)
 1. **[monitoring/](monitoring/)** - Set up observability stack
 1. **[runbooks/](runbooks/)** - Incident response procedures
-1. **\[[UNCOMPLETED_TASKS|UNCOMPLETED_TASKS.md]\]** - Known issues and limitations
+1. **[UNCOMPLETED_TASKS.md](UNCOMPLETED_TASKS.md)** - Known issues and limitations
 
 ### For Developers
 
-1. **\[[RESOLUTION_LAYER_SPEC|RESOLUTION_LAYER_SPEC.md]\]** - Resolution system internals
-1. **\[[REMOTE_MANIFEST_SCHEMA|REMOTE_MANIFEST_SCHEMA.md]\]** - Remote manifest format
-1. **\[[SIGNATURE_VERIFICATION|SIGNATURE_VERIFICATION.md]\]** - Security implementation
+1. **[RESOLUTION_LAYER_SPEC.md](RESOLUTION_LAYER_SPEC.md)** - Resolution system internals
+1. **[REMOTE_MANIFEST_SCHEMA.md](REMOTE_MANIFEST_SCHEMA.md)** - Remote manifest format
+1. **[SIGNATURE_VERIFICATION.md](SIGNATURE_VERIFICATION.md)** - Security implementation
 1. **[implementation/](implementation/)** - Active plans (serverless/parity, adapter remediation); completion reports now live in [archive/implementation/](archive/implementation/)
 1. **[analysis/](analysis/)** - Code quality and audit reports
 
 ### For Migration from ACB
 
-1. **\[[ONEIRIC_VS_ACB|ONEIRIC_VS_ACB.md]\]** - Complete migration/cut-over guide
-1. **\[[ACB_ADAPTER_ACTION_IMPLEMENTATION|analysis/ACB_ADAPTER_ACTION_IMPLEMENTATION.md]\]** - Adapter porting details
-1. **\[[CUTOVER_VALIDATION_CHECKLIST|implementation/CUTOVER_VALIDATION_CHECKLIST.md]\]** - Required artifacts before flipping to Oneiric
-1. **\[[FASTBLOCKS_PARITY_FIXTURE|examples/FASTBLOCKS_PARITY_FIXTURE.yaml]\]** - Canonical manifest mirrored in CI + docs
+1. **[ONEIRIC_VS_ACB.md](ONEIRIC_VS_ACB.md)** - Complete migration/cut-over guide
+1. **[analysis/ACB_ADAPTER_ACTION_IMPLEMENTATION.md](analysis/ACB_ADAPTER_ACTION_IMPLEMENTATION.md)** - Adapter porting details
+1. **[implementation/CUTOVER_VALIDATION_CHECKLIST.md](implementation/CUTOVER_VALIDATION_CHECKLIST.md)** - Required artifacts before flipping to Oneiric
+1. **[examples/FASTBLOCKS_PARITY_FIXTURE.yaml](examples/FASTBLOCKS_PARITY_FIXTURE.yaml)** - Canonical manifest mirrored in CI + docs
 1. **`docs/examples/*_OBSERVABILITY.md`** - Repo-specific DAG/event/telemetry/ChatOps capture instructions
-1. **\[[UNCOMPLETED_TASKS|UNCOMPLETED_TASKS.md]\]** - Remaining parity items (spoiler: nothing critical)
+1. **[UNCOMPLETED_TASKS.md](UNCOMPLETED_TASKS.md)** - Remaining parity items (spoiler: nothing critical)
 
 ### For Project Planning
 
-1. **\[[STAGE5_FINAL_AUDIT_REPORT|implementation/STAGE5_FINAL_AUDIT_REPORT.md]\]** - Production readiness (95/100)
-1. **\[[STRATEGIC_ROADMAP|STRATEGIC_ROADMAP.md]\]** - Current strategic priorities
-1. **\[[SERVERLESS_AND_PARITY_EXECUTION_PLAN|implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md]\]** - Serverless + parity execution plan
-1. **\[[ORCHESTRATION_PARITY_PLAN|implementation/ORCHESTRATION_PARITY_PLAN.md]\]** - Orchestration parity roadmap
-1. **\[[CUTOVER_VALIDATION_CHECKLIST|implementation/CUTOVER_VALIDATION_CHECKLIST.md]\]** - Migration validation workflow + repo sign-off table
-1. **\[[UNCOMPLETED_TASKS|UNCOMPLETED_TASKS.md]\]** - Future enhancements + known issues
-1. **\[[BUILD_PROGRESS|archive/implementation/BUILD_PROGRESS.md]\]** - Historical phase log
+1. **[implementation/STAGE5_FINAL_AUDIT_REPORT.md](implementation/STAGE5_FINAL_AUDIT_REPORT.md)** - Production readiness (95/100)
+1. **[STRATEGIC_ROADMAP.md](STRATEGIC_ROADMAP.md)** - Current strategic priorities
+1. **[implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md](implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md)** - Serverless + parity execution plan
+1. **[implementation/ORCHESTRATION_PARITY_PLAN.md](implementation/ORCHESTRATION_PARITY_PLAN.md)** - Orchestration parity roadmap
+1. **[implementation/CUTOVER_VALIDATION_CHECKLIST.md](implementation/CUTOVER_VALIDATION_CHECKLIST.md)** - Migration validation workflow + repo sign-off table
+1. **[UNCOMPLETED_TASKS.md](UNCOMPLETED_TASKS.md)** - Future enhancements + known issues
+1. **[archive/implementation/BUILD_PROGRESS.md](archive/implementation/BUILD_PROGRESS.md)** - Historical phase log
 
 ______________________________________________________________________
 

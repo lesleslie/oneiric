@@ -13,11 +13,11 @@ This checklist captures the artifacts every repo must produce before we switch i
 Perform the following before declaring a repo ready for cut-over:
 
 1. **Adapter coverage:** Confirm every adapter referenced by the manifest exists in Oneiric (or has a stub equivalent) and that `oneiric.core.lifecycle` can activate the providers without manual environment tweaks.
-2. **Manifest snapshot:** Store the exact manifest (or canonical YAML diff) in the repo’s observability folder so reviewers know which keys/providers were used during the rehearsal.
-3. **CLI transcript:** Run `uv run python -m oneiric.cli orchestrate --print-dag --workflow fastblocks.workflows.fulfillment --inspect-json --manifest docs/examples/FASTBLOCKS_PARITY_FIXTURE.yaml` and attach the output (plain text or JSON) to the change request.
-4. **Event inspector:** Capture `uv run python -m oneiric.cli orchestrate --events --inspect-json --manifest docs/examples/FASTBLOCKS_PARITY_FIXTURE.yaml` so parity reviews include queue/topic fan-out details.
-5. **ChatOps replay:** `uv run python -m oneiric.cli action-invoke workflow.notify --workflow fastblocks.workflows.fulfillment --payload '{"message":"Deploy ready","channel":"deploys"}' --send-notification --json` produces the Slack/Teams/Webhook transcript via `NotificationRouter`; include it with the parity artifacts (override adapters/targets via CLI flags if needed, the router path stays identical).
-6. **Telemetry archive:** After a local orchestrator loop (or CI dry run), copy `.oneiric_cache/runtime_telemetry.json` into the runbook folder and reference it in the PR description.
+1. **Manifest snapshot:** Store the exact manifest (or canonical YAML diff) in the repo’s observability folder so reviewers know which keys/providers were used during the rehearsal.
+1. **CLI transcript:** Run `uv run python -m oneiric.cli orchestrate --print-dag --workflow fastblocks.workflows.fulfillment --inspect-json --manifest docs/examples/FASTBLOCKS_PARITY_FIXTURE.yaml` and attach the output (plain text or JSON) to the change request.
+1. **Event inspector:** Capture `uv run python -m oneiric.cli orchestrate --events --inspect-json --manifest docs/examples/FASTBLOCKS_PARITY_FIXTURE.yaml` so parity reviews include queue/topic fan-out details.
+1. **ChatOps replay:** `uv run python -m oneiric.cli action-invoke workflow.notify --workflow fastblocks.workflows.fulfillment --payload '{"message":"Deploy ready","channel":"deploys"}' --send-notification --json` produces the Slack/Teams/Webhook transcript via `NotificationRouter`; include it with the parity artifacts (override adapters/targets via CLI flags if needed, the router path stays identical).
+1. **Telemetry archive:** After a local orchestrator loop (or CI dry run), copy `.oneiric_cache/runtime_telemetry.json` into the runbook folder and reference it in the PR description.
 
 ## 3. Repo Sign-off Table
 

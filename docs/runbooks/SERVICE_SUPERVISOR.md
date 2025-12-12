@@ -1,6 +1,6 @@
 # Service Supervisor Runbook
 
-**Last Updated:** 2025-12-09  
+**Last Updated:** 2025-12-09
 **Audience:** Runtime operators, Cloud Run deployers, site reliability owners
 
 The Service Supervisor coordinates pause/drain state, health probes, and dispatch gating across adapters, services, tasks, events, and workflows. This runbook explains how to operate the supervisor in both long-lived (systemd) and serverless (Cloud Run) environments.
