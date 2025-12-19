@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from oneiric import plugins
 from oneiric.adapters import AdapterBridge
 from oneiric.adapters.watcher import AdapterConfigWatcher
 from oneiric.core.config import (
@@ -37,6 +38,7 @@ from oneiric.domains import (
 from oneiric.remote import sync_remote_manifest
 from oneiric.runtime.activity import DomainActivityStore
 from oneiric.runtime.checkpoints import WorkflowCheckpointStore
+from oneiric.runtime.durable import WorkflowExecutionStore
 from oneiric.runtime.health import RuntimeHealthSnapshot, write_runtime_health
 from oneiric.runtime.supervisor import ServiceSupervisor
 from oneiric.runtime.telemetry import RuntimeTelemetryRecorder
@@ -62,6 +64,7 @@ class RuntimeOrchestrator:
         self.resolver = resolver
         self.lifecycle = lifecycle
         self.secrets = secrets
+        plugins.register_entrypoint_plugins(resolver, settings.plugins)
         self._health_path = health_path
         self._health = RuntimeHealthSnapshot()
         self._activity_store = DomainActivityStore(domain_activity_path(settings))
@@ -91,6 +94,11 @@ class RuntimeOrchestrator:
         )
         self._checkpoint_store = (
             WorkflowCheckpointStore(resolved_checkpoint_path)
+            if checkpoints_enabled and resolved_checkpoint_path
+            else None
+        )
+        self._execution_store = (
+            WorkflowExecutionStore(resolved_checkpoint_path)
             if checkpoints_enabled and resolved_checkpoint_path
             else None
         )
@@ -131,6 +139,7 @@ class RuntimeOrchestrator:
             activity_store=self._activity_store,
             task_bridge=self.task_bridge,
             checkpoint_store=self._checkpoint_store,
+            execution_store=self._execution_store,
             queue_bridge=self.adapter_bridge,
             supervisor=self._supervisor,
             telemetry=self._telemetry,
@@ -157,6 +166,7 @@ class RuntimeOrchestrator:
             else []
         )
         self._remote_task: asyncio.Task[None] | None = None
+        self._secrets_task: asyncio.Task[None] | None = None
 
     async def sync_remote(self, manifest_url: str | None = None):
         """Run a single remote sync and refresh runtime health metadata."""
@@ -220,6 +230,12 @@ class RuntimeOrchestrator:
                     self._remote_loop(target_url, interval),
                     name="remote.sync.loop",
                 )
+        secrets_interval = self.settings.secrets.refresh_interval
+        if secrets_interval:
+            self._secrets_task = asyncio.create_task(
+                self._secrets_loop(secrets_interval),
+                name="secrets.refresh.loop",
+            )
 
     async def stop(self) -> None:
         """Stop config watchers and cancel any running remote loop."""
@@ -233,7 +249,20 @@ class RuntimeOrchestrator:
             self._remote_task.cancel()
             await asyncio.gather(self._remote_task, return_exceptions=True)
             self._remote_task = None
+        if self._secrets_task:
+            self._secrets_task.cancel()
+            await asyncio.gather(self._secrets_task, return_exceptions=True)
+            self._secrets_task = None
         self._update_health(watchers_running=False, remote_enabled=False)
+
+    async def _secrets_loop(self, interval: float) -> None:
+        while True:
+            await asyncio.sleep(interval)
+            try:
+                await self.secrets.rotate(include_provider_cache=True)
+                logger.info("secrets-rotation-complete", interval=interval)
+            except Exception as exc:  # pragma: no cover - background loop
+                logger.warning("secrets-rotation-failed", error=str(exc))
 
     async def __aenter__(self) -> RuntimeOrchestrator:
         await self.start()

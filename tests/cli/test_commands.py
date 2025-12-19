@@ -8,6 +8,9 @@ from contextlib import redirect_stdout
 from types import SimpleNamespace
 
 import pytest
+import yaml
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from typer.testing import CliRunner
 
 from oneiric import plugins
@@ -266,6 +269,61 @@ class TestManifestCommands:
         packed = json.loads(output_path.read_text())
         assert packed["source"] == "serverless"
         assert packed["entries"][0]["domain"] == "adapter"
+
+    def test_manifest_export_outputs_yaml(self, runner, tmp_path):
+        """manifest export writes manifest content."""
+        output_path = tmp_path / "export.yaml"
+        result = runner.invoke(
+            app,
+            [
+                "manifest",
+                "export",
+                "--output",
+                str(output_path),
+                "--version",
+                "1.0.0",
+                "--no-actions",
+            ],
+        )
+
+        assert result.exit_code == 0
+        payload = yaml.safe_load(output_path.read_text())
+        assert payload["source"] == "oneiric-production"
+        assert payload["entries"]
+
+    def test_manifest_sign_writes_signature(self, runner, tmp_path):
+        """manifest sign adds signature fields."""
+        manifest_source = tmp_path / "manifest.yaml"
+        manifest_source.write_text("source: test\nentries: []\n")
+
+        private_key = Ed25519PrivateKey.generate()
+        key_bytes = private_key.private_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PrivateFormat.Raw,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
+        key_path = tmp_path / "signing.key"
+        key_path.write_bytes(key_bytes)
+
+        output_path = tmp_path / "signed.yaml"
+        result = runner.invoke(
+            app,
+            [
+                "manifest",
+                "sign",
+                "--input",
+                str(manifest_source),
+                "--private-key",
+                str(key_path),
+                "--output",
+                str(output_path),
+            ],
+        )
+
+        assert result.exit_code == 0
+        payload = yaml.safe_load(output_path.read_text())
+        assert payload["signature_algorithm"] == "ed25519"
+        assert payload["signature"]
 
 
 class TestSecretsCommands:
@@ -672,7 +730,9 @@ class TestActivityCommand:
         """activity command handles no paused/draining keys."""
         config_file = tmp_path / "settings.toml"
         cache_dir = tmp_path / "cache"
-        config_file.write_text(f'[remote]\ncache_dir = "{cache_dir}"\n')
+        config_file.write_text(
+            f'[remote]\ncache_dir = "{cache_dir}"\nallow_file_uris = true\n'
+        )
         result = runner.invoke(app, [f"--config={config_file}", "--demo", "activity"])
 
         assert result.exit_code == 0
@@ -682,7 +742,9 @@ class TestActivityCommand:
         """activity command shows paused keys."""
         config_file = tmp_path / "settings.toml"
         cache_dir = tmp_path / "cache"
-        config_file.write_text(f'[remote]\ncache_dir = "{cache_dir}"\n')
+        config_file.write_text(
+            f'[remote]\ncache_dir = "{cache_dir}"\nallow_file_uris = true\n'
+        )
         # Pause a key first
         runner.invoke(
             app,
@@ -706,7 +768,9 @@ class TestActivityCommand:
         """activity command supports JSON output."""
         config_file = tmp_path / "settings.toml"
         cache_dir = tmp_path / "cache"
-        config_file.write_text(f'[remote]\ncache_dir = "{cache_dir}"\n')
+        config_file.write_text(
+            f'[remote]\ncache_dir = "{cache_dir}"\nallow_file_uris = true\n'
+        )
         result = runner.invoke(
             app, [f"--config={config_file}", "--demo", "activity", "--json"]
         )
@@ -726,7 +790,9 @@ class TestRemoteStatusCommand:
         """remote-status command handles no telemetry."""
         config_file = tmp_path / "settings.toml"
         cache_dir = tmp_path / "cache"
-        config_file.write_text(f'[remote]\ncache_dir = "{cache_dir}"\n')
+        config_file.write_text(
+            f'[remote]\ncache_dir = "{cache_dir}"\nallow_file_uris = true\n'
+        )
         result = runner.invoke(
             app, [f"--config={config_file}", "--demo", "remote-status"]
         )
@@ -759,7 +825,9 @@ class TestRemoteSyncCommand:
         manifest_file.write_text("source: test\nentries: []\n")
         config_file = tmp_path / "settings.toml"
         cache_dir = tmp_path / "cache"
-        config_file.write_text(f'[remote]\ncache_dir = "{cache_dir}"\n')
+        config_file.write_text(
+            f'[remote]\ncache_dir = "{cache_dir}"\nallow_file_uris = true\n'
+        )
 
         result = runner.invoke(
             app,

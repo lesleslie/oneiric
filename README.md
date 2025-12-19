@@ -2,7 +2,7 @@
 
 **Explainable component resolution, lifecycle management, and remote delivery for Python 3.14+ runtimes**
 
-> **Status:** Production Ready (v0.2.0) — 95/100 in `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md`, 526 tests, 83 % coverage.
+> **Status:** Production Ready (audit v0.2.0, current v0.2.3) — see `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for audit metrics and `coverage.json` for the latest coverage snapshot.
 
 Oneiric extracts the resolver/lifecycle core from ACB and turns it into a stand-alone platform. Register adapters/services/tasks/events/workflows/actions, explain every decision, hot‑swap providers, stream telemetry, replay workflow notifications, and hydrate new capabilities from signed remote manifests.
 
@@ -40,7 +40,7 @@ ______________________________________________________________________
 | **Tasks** | Async runners + queue metadata and retry controls | `task.schedule`, Cloud Tasks schedulers, Pub/Sub dispatch |
 | **Events** | Dispatcher with filters, fan-out policies, retry, and observability metrics | `event.dispatch`, webhook fan-out, queue listeners |
 | **Workflows** | DAG execution/enqueueing, queue adapter selection, checkpoints, telemetry | Demo workflows + remote DAGs from manifests (`fastblocks.workflows.fulfillment`, etc.) |
-| **Actions** | Action bridge plus kits for workflow audit/retry/notify, http.fetch, security.signature, data.transform, compression.encode/hash, debug.console, etc. |
+| **Actions** | Action bridge plus kits for compression encode/hash, workflow audit/orchestrate/notify/retry, http.fetch, security signature/secure, serialization encode/decode, data transform/sanitize, validation schema, task scheduling, event dispatch, automation triggers, debug console, etc. |
 
 All domains share the same resolver semantics, lifecycle orchestration, logging, and activity controls.
 
@@ -77,7 +77,7 @@ uv run python -m oneiric.cli orchestrate --print-dag --workflow fastblocks.workf
 uv run python -m oneiric.cli orchestrate --events --inspect-json
 
 # Remote sync (file or HTTPS manifest)
-uv run python -m oneiric.cli remote-sync --manifest docs/sample_remote_manifest.yaml --refresh-interval 120
+uv run python -m oneiric.cli remote-sync --manifest docs/sample_remote_manifest.yaml --watch --refresh-interval 120
 
 # Emit events (fan-out/filters/retry proof)
 uv run python -m oneiric.cli event emit \
@@ -92,14 +92,14 @@ uv run python -m oneiric.cli workflow run \
   --json
 
 # Inspect DAG plan/topology without executing
-uv run python -m oneiric.cli workflow plan \
+uv run python -m oneiric.cli orchestrate \
+  --print-dag \
   --workflow fastblocks.workflows.fulfillment \
-  --profile serverless \
-  --json
+  --inspect-json
 
-# The plan output lists node order, dependency edges, queue category/provider fallbacks,
+# The inspector output lists node order, dependency edges, queue category/provider fallbacks,
 # retry/checkpoint metadata, and notification hints derived from the manifest. Attach this
-# JSON to parity issues alongside the `--print-dag` snapshot before executing workflows.
+# JSON to parity issues alongside the CLI `status --json` snapshot before executing workflows.
 
 # Replay workflow.notify payloads through ChatOps adapters
 uv run python -m oneiric.cli action-invoke workflow.notify \
@@ -229,7 +229,7 @@ ______________________________________________________________________
 
 ## License & Support
 
-- **License:** MIT (see `LICENSE`).
+- **License:** BSD-3-Clause (see `LICENSE`).
 - **Issues:** https://github.com/lesleslie/oneiric/issues
 - **Docs:** Start with `docs/README.md` and the Stage 5 audit for readiness evidence.
 

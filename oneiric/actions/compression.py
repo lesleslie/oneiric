@@ -13,6 +13,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from oneiric.actions.metadata import ActionMetadata
+from oneiric.actions.payloads import normalize_payload
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
@@ -57,7 +58,7 @@ class CompressionAction:
         self._logger = get_logger("action.compression")
 
     async def execute(self, payload: dict | None = None) -> dict:
-        payload = payload or {}
+        payload = normalize_payload(payload)
         mode = payload.get("mode", "compress")
         algorithm = payload.get("algorithm", self._settings.algorithm)
         if mode not in {"compress", "decompress"}:
@@ -162,7 +163,7 @@ class HashAction:
         self._logger = get_logger("action.compression.hash")
 
     async def execute(self, payload: dict | None = None) -> dict:
-        payload = payload or {}
+        payload = normalize_payload(payload)
         algorithm = (payload.get("algorithm") or self._settings.algorithm).lower()
         if algorithm not in self._ALGORITHMS:
             raise LifecycleError("hash-action-algorithm-invalid")

@@ -1,7 +1,7 @@
 # Oneiric Documentation
 
-**Version:** 0.2.0 (Production Ready: 95/100)
-**Last Updated:** 2025-12-11
+**Version:** 0.2.3 (Audit: 95/100 at v0.2.0)
+**Last Updated:** 2025-12-19
 
 ______________________________________________________________________
 
@@ -42,8 +42,14 @@ Use this table (and the links above) as the navigation loop: roadmap → plan �
 
 - **[implementation/STAGE5_FINAL_AUDIT_REPORT.md](implementation/STAGE5_FINAL_AUDIT_REPORT.md)** – Production readiness audit (95/100) ⭐
 - **[analysis/QUALITY_AUDITS.md](analysis/QUALITY_AUDITS.md)** – Summary of architecture/code/test audits
+- **[LOAD_TESTING.md](LOAD_TESTING.md)** – Load testing harness + CLI usage
 - **[STRATEGIC_ROADMAP.md](STRATEGIC_ROADMAP.md)** – Live execution tracks + status (supersedes the old build progress log)
 - **[archive/implementation/BUILD_PROGRESS.md](archive/implementation/BUILD_PROGRESS.md)** – Historical phase log (reference only)
+
+### 🤖 AI & Agent Notes
+
+- **[ai/AI_AGENT_COMPATIBILITY.md](ai/AI_AGENT_COMPATIBILITY.md)** – Guidance for agent integrations and safety constraints
+- **[ai/ONNX_GUIDE.md](ai/ONNX_GUIDE.md)** – Local ONNX runtime setup for embeddings
 
 ______________________________________________________________________
 
@@ -62,7 +68,7 @@ ______________________________________________________________________
 - **SIGNATURE_VERIFICATION.md** – Security and signature system
 - **OBSERVABILITY_GUIDE.md** – Logging, metrics, tracing
 - **REBUILD_VS_REFACTOR.md** – Design decision rationale
-- **ACB_COMPARISON.md** – Original comparison (superseded by ONEIRIC_VS_ACB.md; kept for history)
+- **archive/ACB_COMPARISON.md** – Original comparison (superseded by ONEIRIC_VS_ACB.md; kept for history)
 
 ### `/implementation/` - Plans & Execution
 
@@ -71,8 +77,8 @@ ______________________________________________________________________
 - **SERVERLESS_AND_PARITY_EXECUTION_PLAN.md** – Serverless profile, Cloud Run posture, adapter/action parity
 - **ORCHESTRATION_PARITY_PLAN.md** – Events, DAGs, service supervisors
 - **ADAPTER_REMEDIATION_PLAN.md** / **ADAPTER_REMEDIATION_EXECUTION.md** – Adapter backlog & progress evidence
-- **GRAPH_ADAPTER_PLAN.md** – ArangoDB/DuckDB PGQ delivery plan
-- **MESSAGING_AND_SCHEDULER_ADAPTER_PLAN.md** – Delivery plan for SendGrid/Mailgun/Twilio + Cloud Tasks/Pub/Sub adapters
+- **archive/implementation/GRAPH_ADAPTER_PLAN.md** – ArangoDB/DuckDB PGQ delivery plan (historical)
+- **archive/implementation/MESSAGING_AND_SCHEDULER_ADAPTER_PLAN.md** – Delivery plan for SendGrid/Mailgun/Twilio + Cloud Tasks/Pub/Sub adapters (historical)
 - **implementation/STAGE5_FINAL_AUDIT_REPORT.md** – Production readiness audit (95/100) ⭐
 
 **Historical References (archived):**
@@ -97,13 +103,15 @@ ______________________________________________________________________
 - **NOSQL_ADAPTERS.md** - Configuration reference for MongoDB/DynamoDB adapters
 - **GRAPH_ADAPTERS.md** - Graph adapter configuration (Neo4j) and manifest snippets
 - **DUCKDB_ADAPTER.md** - DuckDB analytics adapter
-- **DNS_FILE_TRANSFER_ADAPTER_PLAN.md** - Blueprint + history for Cloudflare/Route53 DNS and FTP/SFTP/SCP/HTTP/HTTPS file transfer adapters (Wave C backlog sign-off)
+- **archive/analysis/DNS_FILE_TRANSFER_ADAPTER_PLAN.md** - Blueprint + history for Cloudflare/Route53 DNS and FTP/SFTP/SCP/HTTP/HTTPS file transfer adapters (Wave C backlog sign-off)
 - **EMBEDDING_ADAPTERS.md** - Embedding adapter implementations (OpenAI, SentenceTransformers, ONNX)
 - **VECTOR_ADAPTERS.md** - Vector DB adapters (Pinecone, Qdrant)
 
 ### `/archive/` - Historical Records
 
 - **archive/README.md** - Index of completion reports and plans slated for long-term storage.
+
+**Archive policy:** Move completed or superseded plans/reports into `docs/archive/`, add a brief archive notice at the top of the file, and update this index so new contributors stay focused on current guidance.
 
 ### `/deployment/` - Production Operations
 
@@ -216,7 +224,6 @@ ______________________________________________________________________
 
 **Code Quality:**
 
-- ✅ **Zero TODOs/FIXMEs** in production code
 - ✅ **Modern Python** (3.14+, async-first)
 - ✅ **Type-safe** (Pydantic throughout)
 - ✅ **Observable** (structlog, OpenTelemetry)

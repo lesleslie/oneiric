@@ -15,7 +15,14 @@ class FakeWorkflowBridge:
     """Fake bridge recording execute calls."""
 
     def __init__(self) -> None:
-        self.calls: list[tuple[str, dict[str, Any] | None, dict[str, Any] | None]] = []
+        self.calls: list[
+            tuple[
+                str,
+                dict[str, Any] | None,
+                dict[str, Any] | None,
+                str | None,
+            ]
+        ] = []
 
     async def execute_dag(
         self,
@@ -23,12 +30,16 @@ class FakeWorkflowBridge:
         *,
         context: dict[str, Any] | None,
         checkpoint: dict[str, Any] | None,
+        run_id: str | None = None,
     ) -> dict[str, Any]:
-        self.calls.append((workflow_key, context, checkpoint))
+        self.calls.append((workflow_key, context, checkpoint, run_id))
         return {
-            "workflow": workflow_key,
-            "context": context or {},
-            "checkpoint": checkpoint or {},
+            "run_id": run_id or "generated-run-id",
+            "results": {
+                "workflow": workflow_key,
+                "context": context or {},
+                "checkpoint": checkpoint or {},
+            },
         }
 
 
@@ -57,7 +68,7 @@ async def test_workflow_task_processor_executes_workflow():
     assert result["workflow"] == "demo"
     assert result["run_id"] == "abc123"
     assert bridge.calls == [
-        ("demo", {"tenant": "demo"}, {"step": "extract"}),
+        ("demo", {"tenant": "demo"}, {"step": "extract"}, "abc123"),
     ]
 
 
@@ -80,7 +91,7 @@ async def test_scheduler_http_server_handles_request(unused_tcp_port: int):
             assert resp.status == 200
             payload = await resp.json()
             assert payload["status"] == "completed"
-            assert payload["result"]["workflow"] == "demo"
+            assert payload["result"]["results"]["workflow"] == "demo"
     finally:
         await server.stop()
 

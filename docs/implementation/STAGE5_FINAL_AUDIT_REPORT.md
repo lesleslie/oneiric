@@ -1,7 +1,8 @@
 # Stage 5: Final Audit Report
 
 **Audit Date:** 2025-11-26
-**Project Version:** 0.1.0
+**Project Version:** 0.2.0
+**Current Version:** 0.2.3 (see `CHANGELOG.md`)
 **Auditor:** Claude Code (Critical Audit Specialist)
 **Audit Type:** Final production readiness assessment for Stage 5 completion
 
@@ -345,7 +346,7 @@ ______________________________________________________________________
 
 **Comparison & Audit:**
 
-- ✓ `ACB_COMPARISON.md` / `ONEIRIC_VS_ACB.md` - comparisons with ACB framework
+- ✓ `archive/ACB_COMPARISON.md` / `ONEIRIC_VS_ACB.md` - comparisons with ACB framework
 - ✓ `REBUILD_VS_REFACTOR.md` - design decision rationale
 - ✓ `QUALITY_AUDITS.md` - summary of architecture/code/test audits
 

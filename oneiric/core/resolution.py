@@ -170,7 +170,13 @@ class CandidateRegistry:
             self._recompute(stored.domain, stored.key)
 
     def resolve(
-        self, domain: str, key: str, provider: str | None = None
+        self,
+        domain: str,
+        key: str,
+        provider: str | None = None,
+        capabilities: Iterable[str] | None = None,
+        *,
+        require_all: bool = True,
     ) -> Candidate | None:
         """Resolve a candidate (thread-safe).
 
@@ -186,14 +192,25 @@ class CandidateRegistry:
             Read operation protected by lock for consistency.
         """
         with self._lock:
-            active = self._active.get((domain, key))
             if provider:
                 candidates = self._candidates.get((domain, key), [])
                 for cand in candidates:
-                    if cand.provider == provider:
-                        return cand
+                    if cand.provider != provider:
+                        continue
+                    if capabilities and not _candidate_supports_capabilities(
+                        cand, capabilities, require_all=require_all
+                    ):
+                        continue
+                    return cand
                 return None
-            return active
+
+            explanation = self._score_candidates(
+                domain,
+                key,
+                capabilities=capabilities,
+                require_all=require_all,
+            )
+            return explanation.winner
 
     def list_active(self, domain: str) -> list[Candidate]:
         """List all active candidates for a domain (thread-safe).
@@ -233,7 +250,14 @@ class CandidateRegistry:
                     shadowed.extend(cands)
             return shadowed
 
-    def explain(self, domain: str, key: str) -> ResolutionExplanation:
+    def explain(
+        self,
+        domain: str,
+        key: str,
+        *,
+        capabilities: Iterable[str] | None = None,
+        require_all: bool = True,
+    ) -> ResolutionExplanation:
         """Explain resolution decision (thread-safe).
 
         Args:
@@ -247,7 +271,12 @@ class CandidateRegistry:
             Acquires lock to ensure consistent scoring.
         """
         with self._lock:
-            return self._score_candidates(domain, key)
+            return self._score_candidates(
+                domain,
+                key,
+                capabilities=capabilities,
+                require_all=require_all,
+            )
 
     # Internal helpers -----------------------------------------------------------
 
@@ -269,12 +298,24 @@ class CandidateRegistry:
         with traced_decision(event):
             pass
 
-    def _score_candidates(self, domain: str, key: str) -> ResolutionExplanation:
+    def _score_candidates(
+        self,
+        domain: str,
+        key: str,
+        *,
+        capabilities: Iterable[str] | None = None,
+        require_all: bool = True,
+    ) -> ResolutionExplanation:
         candidates = self._candidates.get((domain, key), [])
         override_provider = self.settings.selection_for(domain, key)
+        required = _normalize_capabilities(capabilities)
         ranked: list[CandidateRank] = []
         for cand in candidates:
             reasons: list[str] = []
+            if required and not _candidate_supports_capabilities(
+                cand, required, require_all=require_all
+            ):
+                continue
             override_score = int(
                 bool(override_provider and cand.provider == override_provider)
             )
@@ -283,13 +324,20 @@ class CandidateRegistry:
                     reasons.append(f"matched selection override {override_provider}")
                 else:
                     reasons.append(f"selection override prefers {override_provider}")
-            priority = cand.priority or self.settings.default_priority
+            priority = (
+                cand.priority
+                if cand.priority is not None
+                else self.settings.default_priority
+            )
             reasons.append(f"priority={priority}")
+            capability_score = _capability_match_score(cand, required)
+            if required:
+                reasons.append(f"capability_match={capability_score}/{len(required)}")
             stack = cand.stack_level or 0
             reasons.append(f"stack_level={stack}")
             sequence = cand.registry_sequence or 0
             reasons.append(f"registration_order={sequence}")
-            score = (override_score, priority, stack, sequence)
+            score = (override_score, capability_score, priority, stack, sequence)
             ranked.append(CandidateRank(candidate=cand, score=score, reasons=reasons))
 
         ranked.sort(key=lambda entry: entry.score, reverse=True)
@@ -369,9 +417,21 @@ class Resolver:
         register_pkg(self.registry, package_name, path, candidates, priority=priority)
 
     def resolve(
-        self, domain: str, key: str, provider: str | None = None
+        self,
+        domain: str,
+        key: str,
+        provider: str | None = None,
+        capabilities: Iterable[str] | None = None,
+        *,
+        require_all: bool = True,
     ) -> Candidate | None:
-        return self.registry.resolve(domain, key, provider=provider)
+        return self.registry.resolve(
+            domain,
+            key,
+            provider=provider,
+            capabilities=capabilities,
+            require_all=require_all,
+        )
 
     def list_active(self, domain: str) -> list[Candidate]:
         return self.registry.list_active(domain)
@@ -379,5 +439,62 @@ class Resolver:
     def list_shadowed(self, domain: str) -> list[Candidate]:
         return self.registry.list_shadowed(domain)
 
-    def explain(self, domain: str, key: str) -> ResolutionExplanation:
-        return self.registry.explain(domain, key)
+    def explain(
+        self,
+        domain: str,
+        key: str,
+        *,
+        capabilities: Iterable[str] | None = None,
+        require_all: bool = True,
+    ) -> ResolutionExplanation:
+        return self.registry.explain(
+            domain, key, capabilities=capabilities, require_all=require_all
+        )
+
+
+def _normalize_capabilities(
+    capabilities: Iterable[str] | None,
+) -> list[str]:
+    if not capabilities:
+        return []
+    return [str(cap).strip() for cap in capabilities if str(cap).strip()]
+
+
+def _candidate_supports_capabilities(
+    candidate: Candidate,
+    capabilities: Iterable[str] | None,
+    *,
+    require_all: bool,
+) -> bool:
+    required = _normalize_capabilities(capabilities)
+    if not required:
+        return True
+    available = _candidate_capabilities(candidate)
+    if require_all:
+        return all(cap in available for cap in required)
+    return any(cap in available for cap in required)
+
+
+def _candidate_capabilities(candidate: Candidate) -> set[str]:
+    metadata = candidate.metadata or {}
+    capabilities = metadata.get("capabilities") or []
+    descriptors = metadata.get("capability_descriptors") or []
+    result: set[str] = set()
+    if isinstance(capabilities, str):
+        result.add(capabilities)
+    elif isinstance(capabilities, Iterable):
+        for item in capabilities:
+            if isinstance(item, str):
+                result.add(item)
+    if isinstance(descriptors, Iterable):
+        for item in descriptors:
+            if isinstance(item, dict) and item.get("name"):
+                result.add(str(item["name"]))
+    return result
+
+
+def _capability_match_score(candidate: Candidate, required: Iterable[str]) -> int:
+    if not required:
+        return 0
+    available = _candidate_capabilities(candidate)
+    return sum(1 for cap in required if cap in available)

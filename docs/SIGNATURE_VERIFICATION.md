@@ -133,6 +133,41 @@ openssl pkey -in private_key.pem -pubout -out public_key.pem
 
 ## Manifest Signing Workflow
 
+### CLI Helpers
+
+Use the built-in CLI to export and sign manifests without writing a script:
+
+```bash
+uv run python -m oneiric.cli manifest export --version 1.0.0 --output build/manifest.yaml
+uv run python -m oneiric.cli manifest sign --input build/manifest.yaml --private-key secrets/private_key.pem
+```
+
+### Multi-Signature + Expiry
+
+Manifests can carry multiple signatures and time bounds:
+
+```yaml
+signed_at: "2025-01-01T00:00:00Z"
+expires_at: "2025-02-01T00:00:00Z"
+signatures:
+  - signature: "base64..."
+    algorithm: ed25519
+    key_id: "primary"
+  - signature: "base64..."
+    algorithm: ed25519
+    key_id: "secondary"
+```
+
+Enforce policy in settings:
+
+```toml
+[remote]
+signature_required = true
+signature_threshold = 2
+signature_max_age_seconds = 86400
+signature_require_expiry = true
+```
+
 ### Manual Signing
 
 ```python
@@ -313,7 +348,7 @@ is_valid, error = verify_manifest_signature(
 
 ### Backward Compatibility
 
-**Current Behavior (v0.1.0):**
+**Current Behavior (v0.2.x):**
 
 - Unsigned manifests: **Accepted** with warning
 - Signed + valid: Accepted

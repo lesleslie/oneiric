@@ -698,9 +698,10 @@ class TestCrossDomainIntegration:
 
         workflow_bridge.refresh_dags()
 
-        results = await workflow_bridge.execute_dag(
+        run_result = await workflow_bridge.execute_dag(
             "demo-workflow", context={"tenant": "default"}
         )
+        results = run_result["results"]
 
         assert recorder == [
             "extract:{'tenant': 'default'}",
@@ -762,7 +763,8 @@ class TestCrossDomainIntegration:
 
         workflow_bridge.refresh_dags()
 
-        results = await workflow_bridge.execute_dag("retry-workflow")
+        run_result = await workflow_bridge.execute_dag("retry-workflow")
+        results = run_result["results"]
 
         assert results["flaky"] == "FLAKY"
         assert results["flaky__attempts"] == 2
@@ -846,7 +848,8 @@ class TestCrossDomainIntegration:
         # Allow failing runner to succeed and rerun
         flaky_runner.should_fail = False
         recorder.clear()
-        results = await workflow_bridge.execute_dag("checkpoint-workflow")
+        run_result = await workflow_bridge.execute_dag("checkpoint-workflow")
+        results = run_result["results"]
 
         assert results["fail"] == "FAIL"
         # Stable task should not rerun

@@ -67,7 +67,7 @@
 - Completed: closed all five P0 issues from `CRITICAL_AUDIT_REPORT.md` (factory allowlist, cache path traversal, HTTP timeouts, manifest signature verification with ED25519, strict input validation) plus added lifecycle factory guards + resolver thread safety (`RLock`).
 - Next: monitor for regressions (signature verification remains opt-out capable); promote documentation that explains key rotation flows and security-focused test plans.
 
-## Observability & Resiliency TODOs
+## Observability & Resiliency Follow-Ups
 
 - Completed: expanded `oneiric/core/logging.py` with configurable sinks (stdout/stderr/file/http), OpenTelemetry trace binders, and context helpers wired through `OneiricSettings.logging` + CLI/main entrypoints.
 - Completed: introduced `oneiric.core.resiliency` (circuit breaker + retry/backoff) and threaded it through the remote loader, remote refresh loop, and new `[remote]` config knobs.

@@ -1,20 +1,20 @@
 # Oneiric: Uncompleted Tasks & Future Enhancements
 
-**Last Updated:** 2025-12-02
-**Project Version:** 0.2.0 (Production Ready: 95/100)
+**Last Updated:** 2025-12-19
+**Project Version:** 0.2.3 (Audit: 95/100 at v0.2.0)
 **Status:** Production-ready with planned enhancements
 
 ______________________________________________________________________
 
 ## Executive Summary
 
-**Current State:** Oneiric is **production-ready** (95/100 audit score) with comprehensive functionality. All core features are implemented and tested (526 tests, 83% coverage).
+**Current State:** Oneiric is **production-ready** (95/100 audit score). Core features are implemented; use the Stage 5 audit for baseline metrics and `coverage.json` for the latest coverage snapshot.
 
 **Uncompleted Items:** The items below are **future enhancements**, not blockers. The project is ready for controlled production deployment.
 
 ______________________________________________________________________
 
-## 1. Future Enhancements (From ACB_COMPARISON.md)
+## 1. Future Enhancements (From archive/ACB_COMPARISON.md)
 
 ### Priority: LOW (Nice-to-Have Features)
 
@@ -25,9 +25,10 @@ These were listed in docs as "Pending (Phases 4-7)" but are **not required** for
 | **Plugin protocol & entry points** | ✅ **COMPLETE** | HIGH | Implemented in v0.2.0 |
 | **Signature verification** | ✅ **COMPLETE** | HIGH | ED25519 implemented |
 | **Advanced observability & resiliency** | ✅ **COMPLETE** | HIGH | Remote loader now uses httpx + tenacity/aiobreaker; watchers moved to watchfiles with serverless fallbacks; domain activity persistence runs on sqlite (Track G). |
-| **Structured concurrency helpers** | ⏳ **FUTURE** | LOW | TaskGroup exists, nursery patterns deferred |
-| **Durable execution hooks** | ⏳ **FUTURE** | LOW | For long-running workflows (use Temporal instead) |
-| **Capability negotiation** | ⏳ **FUTURE** | LOW | Select by features + priority (current priority is sufficient) |
+| **Structured concurrency helpers** | ✅ **COMPLETE** | LOW | `anyio_nursery` + TaskGroup helpers added in core/runtime |
+| **Durable execution hooks** | ✅ **COMPLETE** | LOW | Durable execution store + hooks added alongside checkpoints |
+| **Capability negotiation** | ✅ **COMPLETE** | LOW | Resolver supports required/optional capabilities |
+| **Entry-point discovery** | ✅ **COMPLETE** | LOW | Entry-point plugin scan now registers automatically |
 
 **Impact:** None - these are "nice to have" features that don't block production use.
 
@@ -43,12 +44,12 @@ Current signature verification is **production-ready**. These are advanced secur
 
 | Feature | Status | Priority | Use Case |
 |---------|--------|----------|----------|
-| **Timestamp-based replay attack prevention** | ⏳ **FUTURE** | LOW | Prevent manifest replay attacks |
-| **Multi-signature support (threshold signatures)** | ⏳ **FUTURE** | LOW | Require N of M signatures |
+| **Timestamp-based replay attack prevention** | ✅ **COMPLETE** | LOW | Signed-at + max-age + expiry checks |
+| **Multi-signature support (threshold signatures)** | ✅ **COMPLETE** | LOW | Require N of M signatures |
 | **Manifest versioning with signature requirements** | ⏳ **FUTURE** | LOW | Enforce signature updates |
-| **Hardware security module (HSM) integration** | ⏳ **FUTURE** | LOW | Enterprise key storage |
-| **Key revocation lists (CRLs)** | ⏳ **FUTURE** | LOW | Blacklist compromised keys |
-| **Signature transparency logging** | ⏳ **FUTURE** | LOW | Audit trail for all signatures |
+| **Hardware security module (HSM) integration** | ⏳ **FUTURE** | LOW | Deferred (future feature list) |
+| **Key revocation lists (CRLs)** | ⏳ **FUTURE** | LOW | Deferred (future feature list) |
+| **Signature transparency logging** | ⏳ **FUTURE** | LOW | Deferred (future feature list) |
 
 **Impact:** None - current ED25519 signature verification is sufficient for production use.
 
@@ -56,29 +57,20 @@ Current signature verification is **production-ready**. These are advanced secur
 
 ______________________________________________________________________
 
-## 3. Minor Test Failures (From docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md)
+## 3. Test Status (From docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md)
 
 ### Priority: MEDIUM (Non-Blocking Issues)
 
-**Overall Test Status:** 526 passing tests (96.3% pass rate), 18 failing (3.3% failure rate)
+**Overall Test Status:** Latest local run (2025-12-19) completed **705 passing tests**, **5 skipped**, **0 failures**. Coverage is **76%**; see `coverage.json` or re-run `uv run pytest` for the latest counts. The Stage 5 audit recorded 18 non-blocking failures that are no longer present in current runs.
 
-**Known Issues:**
+**Known Issues:** No active test failures observed in the latest run; validate in CI for environment-specific adapters.
 
-| Test Area | Failing Tests | Status | Impact |
-|-----------|--------------|--------|---------|
-| **HTTP adapters** | 3 failures | ⚠️ Environment-specific | Non-blocking, likely local setup |
-| **Event actions** | 1 failure | ⚠️ Minor edge case | Non-blocking, webhook dispatch works |
-| **Remote watchers** | 11 failures | ⚠️ Integration test flakiness | Non-blocking, core functionality works |
-
-**Total Failing:** 15 tests (out of 544 total)
-
-**Impact:** Low - all core functionality verified working via manual testing and 96.3% test pass rate.
+**Impact:** Low - all core functionality verified working via full test pass.
 
 **Recommendation:**
 
-1. ✅ **Production deployment:** Proceed (test failures are non-blocking)
-1. ⏳ **Fix test flakiness:** Address in v0.2.1 patch release
-1. ⏳ **CI hardening:** Improve test isolation
+1. ✅ **Production deployment:** Proceed (tests clean)
+1. ⏳ **CI hardening:** Optional; keep test runtime stable as suites grow
 
 ______________________________________________________________________
 
@@ -93,7 +85,6 @@ These are **operational documentation** tasks, not code features:
 | **Production deployment guide** | ✅ **COMPLETE** | HIGH | Kubernetes, Docker, systemd docs exist |
 | **Monitoring/alerting setup** | ✅ **COMPLETE** | HIGH | Prometheus, Grafana, Loki complete |
 | **Runbook documentation** | ✅ **COMPLETE** | HIGH | Incident response, maintenance, troubleshooting complete |
-| **ACB deprecation notices** | ⏳ **DEFERRED** | LOW | Wait for Oneiric 1.0 adoption |
 | **Final audit and sign-off** | ✅ **COMPLETE** | HIGH | 95/100 audit score achieved |
 
 **Impact:** None - all critical operational docs are complete.
@@ -110,8 +101,9 @@ Current remote manifest system is **fully functional**. These are convenience fe
 
 | Feature | Status | Priority | Notes |
 |---------|--------|----------|-------|
-| **Manifest export command** | ⏳ **FUTURE** | LOW | Generate manifest from builtin metadata |
-| **Manifest signing CLI** | ⏳ **FUTURE** | LOW | Sign manifests with ED25519 keys |
+| **Manifest pack command** | ✅ **COMPLETE** | HIGH | `oneiric.cli manifest pack` produces canonical JSON |
+| **Manifest export from registry** | ✅ **COMPLETE** | LOW | `oneiric.cli manifest export` generates manifests from builtin metadata |
+| **Manifest signing CLI** | ✅ **COMPLETE** | LOW | `oneiric.cli manifest sign` signs manifests with ED25519 keys |
 | **Manifest validation CLI** | ✅ **COMPLETE** | HIGH | Remote loader validates all manifests (will switch to httpx + tenacity) |
 | **Migration guide v1 → v2** | ⏳ **FUTURE** | LOW | Only needed if manifest schema changes |
 
@@ -120,7 +112,7 @@ Current remote manifest system is **fully functional**. These are convenience fe
 **Recommendation:**
 
 - ✅ **Ship as-is:** Current functionality is sufficient
-- ⏳ **Add tooling:** Only if users request manifest generation/signing utilities
+- ✅ **Add tooling:** Manifest export/signing helpers now available.
 
 ______________________________________________________________________
 
@@ -133,8 +125,8 @@ Current audit score: **95/100** (Excellent). These are refinements:
 | Task | Status | Priority | Notes |
 |------|--------|----------|-------|
 | **80% test coverage** | ⚠️ **PARTIAL** | MEDIUM | Current: 83% (exceeds 60% target) |
-| **Load testing (1000+ concurrent swaps)** | ⏳ **FUTURE** | LOW | Current tests cover concurrency |
-| **Secrets rotation mechanism** | ⏳ **FUTURE** | MEDIUM | Manual restart required (documented) |
+| **Load testing (1000+ concurrent swaps)** | ✅ **COMPLETE** | LOW | CLI `load-test` + `docs/LOAD_TESTING.md` |
+| **Secrets rotation mechanism** | ✅ **COMPLETE** | MEDIUM | Hot-reload loop + cache invalidation available. |
 | **Security audit passed** | ✅ **COMPLETE** | HIGH | All P0 vulnerabilities resolved |
 
 **Impact:** Low - quality is already excellent (95/100).
@@ -143,7 +135,7 @@ Current audit score: **95/100** (Excellent). These are refinements:
 
 - ✅ **Ship as-is:** 83% coverage exceeds target
 - ⏳ **Load testing:** Add in v0.3.0 if performance issues reported
-- ⏳ **Secrets rotation:** Add in v0.3.0 if hot-reload becomes critical
+- ✅ **Secrets rotation:** Hot-reload implemented.
 
 ______________________________________________________________________
 
@@ -178,64 +170,52 @@ ______________________________________________________________________
 
 ✅ All high-priority features are complete.
 
-### Medium Priority (Nice to Have): **3 ITEMS**
+### Medium Priority (Nice to Have): **0 ITEMS**
 
-1. ⏳ **Fix 18 failing tests** (96.3% → 100% pass rate)
+### Low Priority (Future Enhancements): **0 ITEMS**
 
-   - **Timeline:** v0.2.1 patch release (1-2 weeks)
-   - **Impact:** Low (core functionality verified working)
-
-1. ⏳ **Secrets rotation mechanism** (hot-reload without restart)
-
-   - **Timeline:** v0.3.0 feature release (Q1 2025)
-   - **Impact:** Low (manual restart documented)
-
-1. ⏳ **Load testing** (1000+ concurrent swaps)
-
-   - **Timeline:** v0.3.0 feature release (Q1 2025)
-   - **Impact:** Low (concurrency tested, no perf issues reported)
-
-### Low Priority (Future Enhancements): **10+ ITEMS**
-
-All "nice to have" features that don't block production use:
-
-- Structured concurrency helpers (nursery patterns)
-- Durable execution hooks (use Temporal instead)
-- Capability negotiation (current priority is sufficient)
-- Advanced signature features (HSM, CRLs, transparency logs)
-- Manifest export/signing CLI tools
-- ACB deprecation notices (wait for adoption)
+All "nice to have" features that don't block production use: none.
 
 ______________________________________________________________________
 
+## Remaining Backlog (Post-Audit Short List)
+
+None (all current items complete).
+
+## Future Feature List (Deferred)
+
+- Advanced signature custody (HSM, CRLs, transparency logs)
+- Gemini LLM adapter (SDK/compatibility blocker)
+- Optional Wave C adapters (feature flags)
+
 ## Recommendations
 
-### For v0.2.0 Production Deployment: ✅ **PROCEED**
+### For v0.2.x Production Deployment: ✅ **PROCEED** (v0.2.0 shipped)
 
 **Status:** Production-ready (95/100 audit score)
 
 **Strengths:**
 
-- ✅ 526 passing tests (96.3% pass rate)
-- ✅ 83% coverage (138% of 60% target)
+- ✅ 705 passing tests (5 skipped)
+- ✅ 76% coverage (latest run)
 - ✅ All P0 security vulnerabilities resolved
 - ✅ Comprehensive operational documentation
 - ✅ All core features implemented and tested
 
 **Known Issues:**
 
-- ⚠️ 18 failing tests (3.3% failure rate) - non-blocking
-- ⚠️ Secrets rotation requires restart - documented
+- ✅ No active test failures observed in the latest run
+- ✅ Secrets hot-reload available via cache invalidation/rotation
 
 **Recommendation:** Deploy to production with monitoring. No blockers.
 
-### For v0.2.1 Patch Release (1-2 weeks): ⏳ **TEST HARDENING**
+### For v0.2.x Patch Release: ⏳ **TEST HARDENING**
 
 **Goals:**
 
-1. Fix 18 failing tests → 100% pass rate
+1. Maintain 100% pass rate
 1. Improve CI test isolation
-1. Add integration test stability
+1. Clean up pytest collection warnings
 
 **Priority:** Medium (quality improvement, not functionality)
 
@@ -243,10 +223,7 @@ ______________________________________________________________________
 
 **Goals:**
 
-1. Secrets hot-reload mechanism
-1. Load testing suite (1000+ concurrent swaps)
-1. Manifest export/signing CLI tools
-1. Structured concurrency helpers (if requested)
+1. Load testing + durability follow-ups based on production feedback
 
 **Priority:** Low (nice to have, not critical)
 
@@ -259,7 +236,7 @@ ______________________________________________________________________
 1. Performance optimization based on usage patterns
 1. Advanced features based on user requests
 
-**Priority:** Evaluate based on v0.2.0/v0.3.0 adoption
+**Priority:** Evaluate based on v0.2.x/v0.3.0 adoption
 
 ______________________________________________________________________
 
@@ -277,7 +254,7 @@ ______________________________________________________________________
 
 **Next Steps:**
 
-1. ✅ **Ship v0.2.0** to production (controlled deployment)
+1. ✅ **Ship v0.2.x** to production (v0.2.0 shipped; continue with patch releases)
 1. ⏳ **Monitor usage** and gather feedback
-1. ⏳ **Address test failures** in v0.2.1 (non-blocking)
+1. ⏳ **Address test failures** in v0.2.x (non-blocking)
 1. ⏳ **Plan v0.3.0** based on real-world needs

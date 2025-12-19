@@ -13,7 +13,7 @@ ______________________________________________________________________
 1. **Restore adapter availability** – ensure every newly added adapter (DuckDB, vector, embedding, LLM) can be resolved and exercised through `AdapterBridge`.
 1. **Fix regressions** – revert the HTTP adapter to an async client and repair broken remote watcher tests.
 1. **Unblock dependencies/tests** – declare required extras (pinecone-client, qdrant-client, duckdb, openai, sentence-transformers, onnxruntime, transformers, anthropic, numpy) and add smoke coverage.
-1. **Align roadmap** – update docs to distinguish completed adapters vs remaining ACB backlog (pgvector, MongoDB, DynamoDB, Firestore, Gemini, DNS, FTP, messaging).
+1. **Align roadmap** – update docs to distinguish shipped adapters vs remaining ACB backlog (Gemini LLM + optional Wave C feature flags).
 
 ______________________________________________________________________
 
@@ -35,16 +35,18 @@ ______________________________________________________________________
 | **Remote Watcher Tests** | - Restore correct `RemoteSourceConfig` usage when calling `sync_remote_manifest`.<br>- Add fixture helpers for file-based manifests.<br>- Ensure tests use the watcher entrypoints (async loop). | Runtime Team | File: `tests/integration/test_remote_watchers.py`. |
 | **Base Module Strategy** | - Retire legacy `_base.py` modules in favor of `common.py` helpers per adapter category.<br>- Guard heavy imports (`numpy`) behind optional extras and add tests covering shared helpers. | Platform Core + AI Team | Files: `oneiric/adapters/embedding/common.py`, `vector/common.py`, `llm/common.py`, `nosql/common.py`. |
 | **Resiliency & Runtime** | - Replace remote artifact fetching with `httpx.AsyncClient` streaming.<br>- Swap retries/circuit breakers to `tenacity` + `aiobreaker` wrappers.<br>- Rebuild selection watchers on filesystem events (`watchfiles`) with serverless-friendly fallbacks.<br>- Move domain activity persistence to a sqlite-backed store. | Platform Core + Runtime Team | Files: `oneiric/remote/loader.py`, `oneiric/core/resiliency.py`, `oneiric/runtime/watchers.py`, `oneiric/runtime/activity.py`. |
-| **Roadmap Update** | - Amend `docs/analysis/ADAPTER_STRATEGY.md` & `docs/implementation/ADAPTER_PORT_SUMMARY.md` to reflect shipped adapters and outstanding backlog.<br>- Add section enumerating missing ACB adapters (pgvector, MongoDB, DynamoDB, Firestore, Gemini, DNS, FTP, messaging) with target releases.<br>- Reference `docs/implementation/MESSAGING_AND_SCHEDULER_ADAPTER_PLAN.md` for Wave 2 delivery. | Docs Team | Provide matrix mapping ACB → Oneiric status. |
+| **Roadmap Update** | - Amend `docs/analysis/ADAPTER_STRATEGY.md` & `docs/implementation/ADAPTER_PORT_SUMMARY.md` to reflect shipped adapters and outstanding backlog.<br>- Add section enumerating remaining ACB adapters (Gemini LLM + optional Wave C feature flags) with target releases.<br>- Reference `docs/archive/implementation/MESSAGING_AND_SCHEDULER_ADAPTER_PLAN.md` for completed Wave 2 delivery evidence. | Docs Team | Provide matrix mapping ACB → Oneiric status. |
 
 ### 2.1 Gap Snapshot (Dec 2025)
 
 The current backlog extracted from `docs/analysis/ADAPTER_GAP_AUDIT.md` focuses on two tracks that must be resolved before the single-swoop cut-over:
 
 1. **Graph/Feature stores** – ✅ Completed (Neo4j + ArangoDB + DuckDB PGQ shipped Dec 2025). Keep Neptune as optional follow-up if requirements land.
-1. **DNS/File transfer** (Cloudflare/Route53 + FTP/SFTP) – Security/Infra backlog for Wave C unless FastBlocks/Crackerjack request earlier delivery.
+1. **DNS/File transfer** (Cloudflare/Route53 + FTP/SFTP/SCP/HTTP) – ✅ completed; keep docs/tests in sync.
+1. **Gemini LLM adapter** – blocked on SDK/runtime compatibility (Wave C).
+1. **Optional Wave C** – evaluate feature flag adapters based on downstream demand.
 
-Keep this section synchronized with the audit table to avoid duplicating stale TODOs across plans.
+Keep this section synchronized with the audit table to avoid duplicating stale tasks across plans.
 
 ______________________________________________________________________
 
@@ -70,7 +72,7 @@ ______________________________________________________________________
 
 1. Do we further split the new `common.py` helper modules into lighter mixins before more adapters land?
 1. Should AI/LLM adapters ship as optional extras (e.g., `pip install oneiric[ai]`)? Need packaging strategy.
-1. Confirm whether future pgvector adapter should live under `database/` or `vector/` per roadmap.
+1. Confirm Gemini adapter packaging strategy (extra group + settings location) once SDK compatibility lands.
 
 ______________________________________________________________________
 

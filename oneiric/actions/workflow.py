@@ -10,6 +10,7 @@ from uuid import uuid4
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from oneiric.actions.metadata import ActionMetadata
+from oneiric.actions.payloads import normalize_payload
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
@@ -60,7 +61,7 @@ class WorkflowAuditAction:
         self._logger = get_logger("action.workflow_audit")
 
     async def execute(self, payload: dict | None = None) -> dict:
-        payload = payload or {}
+        payload = normalize_payload(payload)
         event = payload.get("event") or self._settings.default_event
         if not isinstance(event, str) or not event:
             raise LifecycleError("workflow-audit-event-required")
@@ -163,7 +164,7 @@ class WorkflowNotifyAction:
         self._logger = get_logger("action.workflow_notify")
 
     async def execute(self, payload: dict | None = None) -> dict:
-        payload = payload or {}
+        payload = normalize_payload(payload)
         message = payload.get("message")
         if message is not None and not isinstance(message, str):
             raise LifecycleError("workflow-notify-message-invalid")
@@ -269,6 +270,10 @@ class WorkflowDefinitionSpec(BaseModel):
         description="Opaque context forwarded with the plan",
     )
     tags: list[str] = Field(default_factory=list, description="Workflow level tags")
+    target_steps: list[str] | None = Field(
+        default=None,
+        description="Optional subset of steps to compile (dependencies included).",
+    )
 
 
 class WorkflowOrchestratorSettings(BaseModel):
@@ -319,9 +324,13 @@ class WorkflowOrchestratorAction:
         self._logger = get_logger("action.workflow_orchestrate")
 
     async def execute(self, payload: dict | None = None) -> dict:
-        payload = payload or {}
+        payload = normalize_payload(payload)
         definition = self._load_definition(payload)
         normalized_steps = self._normalize_steps(definition.steps)
+        if definition.target_steps:
+            normalized_steps = self._select_steps(
+                normalized_steps, definition.target_steps
+            )
         schedule = self._build_schedule(
             {step_id: data["depends_on"] for step_id, data in normalized_steps.items()}
         )
@@ -336,6 +345,7 @@ class WorkflowOrchestratorAction:
                 "action": data["spec"].action,
                 "depends_on": data["depends_on"],
                 "retry_attempts": data["retry_attempts"],
+                "retry_policy": {"attempts": data["retry_attempts"]},
                 "timeout_seconds": data["timeout_seconds"],
                 "metadata": data["spec"].metadata,
                 "tags": data["spec"].tags,
@@ -411,6 +421,28 @@ class WorkflowOrchestratorAction:
             normalized[step.step_id] = self._build_normalized_step(step)
         self._validate_dependencies(normalized)
         return normalized
+
+    def _select_steps(
+        self, normalized: dict[str, dict[str, Any]], targets: list[str]
+    ) -> dict[str, dict[str, Any]]:
+        missing = [step for step in targets if step not in normalized]
+        if missing:
+            raise LifecycleError("workflow-orchestrate-target-missing")
+        keep: set[str] = set()
+
+        def _visit(step_id: str) -> None:
+            if step_id in keep:
+                return
+            keep.add(step_id)
+            for dep in normalized[step_id]["depends_on"]:
+                _visit(dep)
+
+        for step_id in targets:
+            _visit(step_id)
+
+        return {
+            step_id: data for step_id, data in normalized.items() if step_id in keep
+        }
 
     def _validate_step(
         self, step: WorkflowStepSpec, existing: dict[str, dict[str, Any]]
@@ -528,7 +560,7 @@ class WorkflowRetryAction:
         self._logger = get_logger("action.workflow_retry")
 
     async def execute(self, payload: dict | None = None) -> dict:
-        payload = payload or {}
+        payload = normalize_payload(payload)
         attempt = payload.get("attempt", 0)
         if not isinstance(attempt, int) or attempt < 0:
             raise LifecycleError("workflow-retry-attempt-invalid")

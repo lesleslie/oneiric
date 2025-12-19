@@ -486,6 +486,50 @@ class TestLifecycleHotSwap:
         assert instance is old_instance
 
     @pytest.mark.asyncio
+    async def test_swap_failure_cleans_new_instance(self):
+        """Failed swaps clean up the newly created instance."""
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+
+        old_instance = MockComponent("redis", should_fail_health=False)
+        new_instance = MockComponent("memcached", should_fail_health=True)
+
+        async def old_health():
+            return await old_instance.health_check()
+
+        async def new_health():
+            return await new_instance.health_check()
+
+        resolver.register(
+            Candidate(
+                domain="adapter",
+                key="cache",
+                provider="redis",
+                factory=lambda: old_instance,
+                health=old_health,
+                source=CandidateSource.MANUAL,
+            )
+        )
+        resolver.register(
+            Candidate(
+                domain="adapter",
+                key="cache",
+                provider="memcached",
+                factory=lambda: new_instance,
+                health=new_health,
+                source=CandidateSource.MANUAL,
+            )
+        )
+
+        await lifecycle.activate("adapter", "cache", provider="redis")
+
+        with pytest.raises(LifecycleError, match="Health check failed"):
+            await lifecycle.swap("adapter", "cache", provider="memcached")
+
+        assert new_instance.cleaned_up
+        assert lifecycle.get_instance("adapter", "cache") is old_instance
+
+    @pytest.mark.asyncio
     async def test_swap_with_force_skips_health_check(self):
         """Force swap skips health check even if it would fail."""
         resolver = Resolver()

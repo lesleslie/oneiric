@@ -33,8 +33,12 @@ class RemoteDemoTask:
 class RemoteDemoEventHandler:
     name: str = "remote-event"
 
-    def handle(self, payload: dict) -> dict:
-        return {"name": self.name, "payload": payload}
+    async def handle(self, envelope) -> dict:
+        return {
+            "name": self.name,
+            "topic": getattr(envelope, "topic", "unknown"),
+            "payload": getattr(envelope, "payload", {}),
+        }
 
 
 @dataclass

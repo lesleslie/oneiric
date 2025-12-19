@@ -18,16 +18,26 @@ Use this folder to stage legacy completion reports, phased implementation summar
 | ✅ Archived | `docs/archive/implementation/RUNTIME_TESTS_COMPLETION.md` | Runtime completion report. |
 | ✅ Archived | `docs/archive/implementation/SIGNATURE_VERIFICATION_COMPLETION.md` | Security runbook snapshot. |
 | ✅ Archived | `docs/archive/implementation/THREAD_SAFETY_COMPLETION.md` | Concurrency completion log. |
+| ✅ Archived | `docs/archive/ACB_COMPARISON.md` | Historical Oneiric vs ACB comparison (superseded by `docs/ONEIRIC_VS_ACB.md`). |
+| ✅ Archived | `docs/archive/BUILD_PROMPTS.md` | Legacy execution checklist for early build phases. |
+| ✅ Archived | `docs/archive/DOCUMENTATION_AUDIT_SUMMARY.md` | Documentation audit summary (v0.2.0-era). |
+| ✅ Archived | `docs/archive/analysis/DNS_FILE_TRANSFER_ADAPTER_PLAN.md` | Wave C adapter plan (DNS + file transfer) now complete. |
+| ✅ Archived | `docs/archive/implementation/LOGGING_OBSERVABILITY_PLAN.md` | Superseded observability plan (replaced by `docs/OBSERVABILITY_GUIDE.md`). |
+| ✅ Archived | `docs/archive/implementation/NOSQL_ADAPTER_SPRINT.md` | NoSQL adapter sprint plan (shipped). |
+| ✅ Archived | `docs/archive/implementation/GRAPH_ADAPTER_PLAN.md` | Graph adapter delivery plan (shipped). |
+| ✅ Archived | `docs/archive/implementation/MESSAGING_AND_SCHEDULER_ADAPTER_PLAN.md` | Messaging + scheduler adapter plan (shipped). |
+| ✅ Archived | `docs/archive/implementation/PLUGIN_ENTRYPOINT_PLAN.md` | Superseded plugin entry-point plan (implemented; see `docs/ONEIRIC_VS_ACB.md`). |
+| ✅ Archived | `docs/archive/implementation/RESOLUTION_LAYER_PLAN.md` | Superseded resolution plan (see `docs/RESOLUTION_LAYER_SPEC.md`). |
 
 ## Historical Plans
 
-The following plans have been deleted as they were superseded by the streamlined execution plan:
+The following plans were superseded by the streamlined execution plan:
 
-- ~~`docs/implementation/ADAPTER_MIGRATION_PLAN.md`~~ - Deleted (superseded by ADAPTER_REMEDIATION_PLAN.md)
-- ~~`docs/implementation/ADAPTER_DISCOVERY_AND_HOT_SWAP_PLAN.md`~~ - Deleted (functionality now in core resolution layer)
-- ~~`docs/implementation/LOGGING_OBSERVABILITY_PLAN.md`~~ - Deleted (superseded by OBSERVABILITY_GUIDE.md)
-- ~~`docs/implementation/RESOLUTION_LAYER_PLAN.md`~~ - Deleted (superseded by RESOLUTION_LAYER_SPEC.md)
-- ~~`docs/implementation/PLUGIN_ENTRYPOINT_PLAN.md`~~ - Deleted (functionality deferred to future enhancement)
+- `docs/archive/implementation/LOGGING_OBSERVABILITY_PLAN.md` - Superseded by `docs/OBSERVABILITY_GUIDE.md`
+- `docs/archive/implementation/RESOLUTION_LAYER_PLAN.md` - Superseded by `docs/RESOLUTION_LAYER_SPEC.md`
+- `docs/archive/implementation/PLUGIN_ENTRYPOINT_PLAN.md` - Superseded by `docs/ONEIRIC_VS_ACB.md`
+- `docs/implementation/ADAPTER_MIGRATION_PLAN.md` - Removed; superseded by `docs/implementation/ADAPTER_REMEDIATION_PLAN.md`
+- `docs/implementation/ADAPTER_DISCOVERY_AND_HOT_SWAP_PLAN.md` - Removed; superseded by core resolution layer docs
 
 Historical content available in git history if needed.
 

@@ -61,7 +61,11 @@ class TestArtifactManager:
     async def test_fetch_local_file_with_sha256(self, tmp_path):
         """ArtifactManager fetches local file and verifies digest."""
         cache_dir = tmp_path / "cache"
-        manager = ArtifactManager(str(cache_dir))
+        manager = ArtifactManager(
+            str(cache_dir),
+            allow_file_uris=True,
+            allowed_file_uri_roots=[str(tmp_path)],
+        )
 
         # Create source file
         source_file = tmp_path / "source.txt"
@@ -84,7 +88,11 @@ class TestArtifactManager:
     async def test_fetch_local_file_digest_mismatch(self, tmp_path):
         """ArtifactManager raises on digest mismatch."""
         cache_dir = tmp_path / "cache"
-        manager = ArtifactManager(str(cache_dir))
+        manager = ArtifactManager(
+            str(cache_dir),
+            allow_file_uris=True,
+            allowed_file_uri_roots=[str(tmp_path)],
+        )
 
         source_file = tmp_path / "source.txt"
         source_file.write_text("test content")
@@ -150,6 +158,42 @@ class TestArtifactManager:
         with pytest.raises(ValueError, match="(Unsupported URI scheme|Path traversal)"):
             await manager.fetch(
                 uri="ftp://example.com/file.txt",
+                sha256=None,
+                headers={},
+            )
+
+    @pytest.mark.asyncio
+    async def test_fetch_file_uri_disallowed_by_default(self, tmp_path):
+        """ArtifactManager blocks file URIs unless explicitly enabled."""
+        cache_dir = tmp_path / "cache"
+        manager = ArtifactManager(str(cache_dir))
+        source_file = tmp_path / "source.txt"
+        source_file.write_text("test content")
+
+        with pytest.raises(ValueError, match="file URI access disabled"):
+            await manager.fetch(
+                uri=f"file://{source_file}",
+                sha256=None,
+                headers={},
+            )
+
+    @pytest.mark.asyncio
+    async def test_fetch_file_uri_enforces_root_allowlist(self, tmp_path):
+        """ArtifactManager enforces local file allowlist roots."""
+        cache_dir = tmp_path / "cache"
+        allowed_root = tmp_path / "allowed"
+        allowed_root.mkdir()
+        manager = ArtifactManager(
+            str(cache_dir),
+            allow_file_uris=True,
+            allowed_file_uri_roots=[str(allowed_root)],
+        )
+        source_file = tmp_path / "outside.txt"
+        source_file.write_text("test content")
+
+        with pytest.raises(ValueError, match="Local path access denied"):
+            await manager.fetch(
+                uri=f"file://{source_file}",
                 sha256=None,
                 headers={},
             )
@@ -265,11 +309,71 @@ class TestManifestParsing:
 
         # Mock signature verification to succeed
         with patch(
-            "oneiric.remote.loader.verify_manifest_signature", return_value=(True, None)
+            "oneiric.remote.loader.verify_manifest_signatures",
+            return_value=(True, None, 1),
         ):
             manifest = _parse_manifest(json.dumps(manifest_dict), verify_signature=True)
 
         assert manifest.signature == "base64-signature"
+
+    def test_parse_manifest_requires_signature(self):
+        """Signature requirement rejects unsigned manifests."""
+        manifest_dict = {"source": "unsigned", "entries": []}
+        policy = RemoteSourceConfig(signature_required=True)
+
+        with pytest.raises(ValueError, match="signature required"):
+            _parse_manifest(
+                json.dumps(manifest_dict),
+                verify_signature=True,
+                signature_policy=policy,
+            )
+
+    def test_parse_manifest_expired_signature(self):
+        """Expired signatures are rejected."""
+        manifest_dict = {
+            "source": "expired",
+            "entries": [],
+            "signature": "base64-signature",
+            "signature_algorithm": "ed25519",
+            "signed_at": "2000-01-01T00:00:00+00:00",
+            "expires_at": "2000-01-02T00:00:00+00:00",
+        }
+        policy = RemoteSourceConfig(signature_required=True)
+
+        with patch(
+            "oneiric.remote.loader.verify_manifest_signatures",
+            return_value=(True, None, 1),
+        ):
+            with pytest.raises(ValueError, match="expired"):
+                _parse_manifest(
+                    json.dumps(manifest_dict),
+                    verify_signature=True,
+                    signature_policy=policy,
+                )
+
+    def test_parse_manifest_max_age_enforced(self):
+        """Max age policy rejects stale signatures."""
+        manifest_dict = {
+            "source": "stale",
+            "entries": [],
+            "signature": "base64-signature",
+            "signature_algorithm": "ed25519",
+            "signed_at": "2000-01-01T00:00:00+00:00",
+        }
+        policy = RemoteSourceConfig(
+            signature_required=True, signature_max_age_seconds=1
+        )
+
+        with patch(
+            "oneiric.remote.loader.verify_manifest_signatures",
+            return_value=(True, None, 1),
+        ):
+            with pytest.raises(ValueError, match="maximum age"):
+                _parse_manifest(
+                    json.dumps(manifest_dict),
+                    verify_signature=True,
+                    signature_policy=policy,
+                )
 
 
 # Entry Validation Tests
@@ -530,6 +634,8 @@ class TestRemoteSync:
             enabled=True,
             manifest_url=str(manifest_file),
             cache_dir=str(cache_dir),
+            allow_file_uris=True,
+            allowed_file_uri_roots=[str(tmp_path)],
         )
 
         result = await sync_remote_manifest(resolver, config)
@@ -575,6 +681,8 @@ class TestRemoteSync:
             enabled=True,
             manifest_url=str(manifest_file),
             cache_dir=str(tmp_path / "cache"),
+            allow_file_uris=True,
+            allowed_file_uri_roots=[str(tmp_path)],
         )
 
         result = await sync_remote_manifest(resolver, config)
@@ -613,6 +721,8 @@ class TestRemoteSync:
             enabled=True,
             manifest_url=str(manifest_file),
             cache_dir=str(cache_dir),
+            allow_file_uris=True,
+            allowed_file_uri_roots=[str(tmp_path)],
         )
 
         result = await sync_remote_manifest(resolver, config)
@@ -624,6 +734,35 @@ class TestRemoteSync:
         cached_artifact = cache_dir / sha256
         assert cached_artifact.exists()
         assert cached_artifact.read_text() == "class RedisCache: pass"
+
+    @pytest.mark.asyncio
+    async def test_sync_local_manifest_requires_allow_file_uris(self, tmp_path):
+        """Sync rejects local manifest paths unless explicitly allowed."""
+        resolver = Resolver()
+        manifest_file = tmp_path / "manifest.yaml"
+        manifest_data = {
+            "source": "local",
+            "entries": [
+                {
+                    "domain": "adapter",
+                    "key": "cache",
+                    "provider": "redis",
+                    "factory": "oneiric.adapters.bridge:AdapterBridge",
+                }
+            ],
+        }
+        manifest_file.write_text(yaml.dump(manifest_data))
+
+        config = RemoteSourceConfig(
+            enabled=True,
+            manifest_url=str(manifest_file),
+            cache_dir=str(tmp_path / "cache"),
+            max_retries=1,
+            retry_base_delay=0.0,
+        )
+
+        with pytest.raises(ValueError, match="local manifest paths disabled"):
+            await sync_remote_manifest(resolver, config)
 
     @pytest.mark.asyncio
     async def test_sync_telemetry_recorded(self, tmp_path):
@@ -649,6 +788,8 @@ class TestRemoteSync:
             enabled=True,
             manifest_url=str(manifest_file),
             cache_dir=str(cache_dir),
+            allow_file_uris=True,
+            allowed_file_uri_roots=[str(tmp_path)],
         )
 
         await sync_remote_manifest(resolver, config)

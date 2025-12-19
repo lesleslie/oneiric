@@ -2,7 +2,7 @@
 
 **Version:** 1.0.0
 **Last Updated:** 2025-11-26
-**Target:** Oneiric v0.1.0+ on Linux with systemd
+**Target:** Oneiric v0.2.0+ on Linux with systemd
 
 ______________________________________________________________________
 

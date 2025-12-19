@@ -67,7 +67,7 @@ ______________________________________________________________________
 
 | Topic | Primary Doc | Supporting Docs |
 |-------|-------------|-----------------|
-| Strategy vs ACB | `docs/ONEIRIC_VS_ACB.md` | `docs/ACB_COMPARISON.md` (historical) |
+| Strategy vs ACB | `docs/ONEIRIC_VS_ACB.md` | `docs/archive/ACB_COMPARISON.md` (historical) |
 | Adapter remediation | `docs/implementation/ADAPTER_REMEDIATION_PLAN.md` | `docs/implementation/ADAPTER_REMEDIATION_EXECUTION.md` |
 | Deployment | `README.md` (Operations) | `Procfile`, `docs/deployment/` (Cloud Run/systemd) |
 | Roadmaps | `docs/implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md`, this file | `docs/archive/implementation/UNIFIED_IMPLEMENTATION_PLAN.md` (historical), `docs/archive/implementation/BUILD_PROGRESS.md` |
@@ -98,5 +98,5 @@ ______________________________________________________________________
 | `_base.py` helpers retired in favor of `common.py` modules | Reduce heavy imports + align with lazy extras | `docs/implementation/ADAPTER_REMEDIATION_EXECUTION.md` §4 |
 | Remote loader uses `httpx` + `tenacity/aiobreaker`; watchers default off in serverless profile | Track G modernization eliminates bespoke infra and optimizes cold starts | `oneiric/remote/loader.py`, `docs/implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md` |
 | Cloud Run/buildpack path is canonical | Docker/K8s docs removed; only Cloud Run/systemd remain | `docs/deployment/CLOUD_RUN_BUILD.md`, `docs/deployment/SYSTEMD_DEPLOYMENT.md` |
-| Slack/Teams/webhook adapters deliver ChatOps parity | Enables Oneiric-based orchestrations to emit notifications without ACB | `docs/implementation/MESSAGING_AND_SCHEDULER_ADAPTER_PLAN.md`, `docs/examples/LOCAL_CLI_DEMO.md` |
-| Messaging + scheduler adapters promoted to built-ins | Ensures serverless profile ships with Mailgun, Twilio, Cloud Tasks, Pub/Sub ready for orchestration parity | `docs/implementation/MESSAGING_AND_SCHEDULER_ADAPTER_PLAN.md`, `docs/examples/LOCAL_CLI_DEMO.md` |
+| Slack/Teams/webhook adapters deliver ChatOps parity | Enables Oneiric-based orchestrations to emit notifications without ACB | `docs/archive/implementation/MESSAGING_AND_SCHEDULER_ADAPTER_PLAN.md`, `docs/examples/LOCAL_CLI_DEMO.md` |
+| Messaging + scheduler adapters promoted to built-ins | Ensures serverless profile ships with Mailgun, Twilio, Cloud Tasks, Pub/Sub ready for orchestration parity | `docs/archive/implementation/MESSAGING_AND_SCHEDULER_ADAPTER_PLAN.md`, `docs/examples/LOCAL_CLI_DEMO.md` |

@@ -501,7 +501,7 @@ ______________________________________________________________________
 - **Pinecone Docs:** https://docs.pinecone.io/
 - **Qdrant Docs:** https://qdrant.tech/documentation/
 - **ADAPTER_STRATEGY.md** - Overall adapter porting roadmap
-- **ACB Comparison:** `docs/ACB_COMPARISON.md`
+- **ACB Comparison:** `docs/ONEIRIC_VS_ACB.md`
 
 ______________________________________________________________________
 

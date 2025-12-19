@@ -9,17 +9,19 @@ from collections.abc import Mapping
 from urllib.parse import urlencode
 
 import httpx
-from pydantic import AnyHttpUrl, BaseModel, Field, SecretStr
+from pydantic import AnyHttpUrl, Field, SecretStr
 
+from oneiric.adapters.httpx_base import HTTPXClientMixin
 from oneiric.adapters.metadata import AdapterMetadata
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
+from oneiric.core.settings_mixins import TimeoutSettings
 
 from .common import MessagingSendResult, OutboundSMSMessage
 
 
-class TwilioSettings(BaseModel):
+class TwilioSettings(TimeoutSettings):
     """Configuration for Twilio REST API interactions."""
 
     account_sid: str
@@ -30,7 +32,6 @@ class TwilioSettings(BaseModel):
     )
     base_url: AnyHttpUrl = Field(default="https://api.twilio.com")
     api_version: str = Field(default="2010-04-01")
-    timeout: float = Field(default=10.0, ge=0.5)
     messaging_service_sid: str | None = Field(
         default=None,
         description="Optional Messaging Service SID to use instead of a From number.",
@@ -42,7 +43,7 @@ class TwilioSettings(BaseModel):
     )
 
 
-class TwilioAdapter:
+class TwilioAdapter(HTTPXClientMixin):
     """Adapter that sends SMS messages through the Twilio REST API."""
 
     metadata = AdapterMetadata(
@@ -64,9 +65,8 @@ class TwilioAdapter:
         *,
         client: httpx.AsyncClient | None = None,
     ) -> None:
+        super().__init__(client=client)
         self._settings = settings
-        self._client = client
-        self._owns_client = client is None
         self._logger = get_logger("adapter.messaging.twilio").bind(
             domain="adapter",
             key="messaging",
@@ -74,29 +74,28 @@ class TwilioAdapter:
         )
 
     async def init(self) -> None:
+        auth = httpx.BasicAuth(
+            self._settings.account_sid,
+            self._settings.auth_token.get_secret_value(),
+        )
         if self._client is None:
-            auth = httpx.BasicAuth(
-                self._settings.account_sid,
-                self._settings.auth_token.get_secret_value(),
+            self._init_client(
+                lambda: httpx.AsyncClient(
+                    base_url=str(self._settings.base_url),
+                    timeout=self._settings.timeout,
+                    auth=auth,
+                )
             )
-            self._client = httpx.AsyncClient(
-                base_url=str(self._settings.base_url),
-                timeout=self._settings.timeout,
-                auth=auth,
-            )
-            self._owns_client = True
         self._logger.info("twilio-adapter-init")
 
     async def cleanup(self) -> None:
-        if self._client and self._owns_client:
-            await self._client.aclose()
-        self._client = None
+        await self._cleanup_client()
         self._logger.info("twilio-adapter-cleanup")
 
     async def health(self) -> bool:
         if self._settings.dry_run:
             return True
-        client = self._ensure_client()
+        client = self._ensure_client("twilio-client-not-initialized")
         try:
             response = await client.get(
                 f"/{self._settings.api_version}/Accounts/{self._settings.account_sid}.json"
@@ -115,7 +114,7 @@ class TwilioAdapter:
                 response_headers={},
             )
 
-        client = self._ensure_client()
+        client = self._ensure_client("twilio-client-not-initialized")
         payload = self._build_payload(message)
         encoded = urlencode(payload)
         path = f"/{self._settings.api_version}/Accounts/{self._settings.account_sid}/Messages.json"
@@ -169,11 +168,6 @@ class TwilioAdapter:
                 continue
             payload.append((key, value))
         return payload
-
-    def _ensure_client(self) -> httpx.AsyncClient:
-        if not self._client:
-            raise LifecycleError("twilio-client-not-initialized")
-        return self._client
 
 
 class TwilioSignatureValidator:

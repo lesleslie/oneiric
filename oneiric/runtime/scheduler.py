@@ -36,23 +36,27 @@ class WorkflowTaskProcessor:
             workflow=workflow_key,
             run_id=payload.get("run_id"),
         )
-        results = await self._workflow_bridge.execute_dag(
+        run_result = await self._workflow_bridge.execute_dag(
             workflow_key,
             context=context,
             checkpoint=checkpoint,
+            run_id=payload.get("run_id")
+            if isinstance(payload.get("run_id"), str)
+            else None,
         )
+        resolved_run_id = run_result["run_id"]
         response = {
             "workflow": workflow_key,
-            "run_id": payload.get("run_id"),
+            "run_id": resolved_run_id,
             "workflow_provider": payload.get("workflow_provider"),
             "metadata": metadata or {},
-            "results": results,
+            "results": run_result["results"],
             "processed_at": datetime.now(UTC).isoformat(),
         }
         self._logger.info(
             "workflow-task-complete",
             workflow=workflow_key,
-            run_id=response["run_id"],
+            run_id=resolved_run_id,
         )
         return response
 

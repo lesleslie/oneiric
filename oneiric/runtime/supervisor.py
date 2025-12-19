@@ -11,7 +11,8 @@ from dataclasses import dataclass
 
 from oneiric.core.logging import get_logger
 
-from .activity import DomainActivity, DomainActivityStore
+from .activity import DomainActivity
+from .protocols import ActivityStoreProtocol
 
 logger = get_logger("runtime.supervisor")
 
@@ -30,7 +31,7 @@ class ServiceSupervisor:
 
     def __init__(
         self,
-        activity_store: DomainActivityStore,
+        activity_store: ActivityStoreProtocol,
         *,
         poll_interval: float = 2.0,
     ) -> None:

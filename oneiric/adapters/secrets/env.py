@@ -53,7 +53,9 @@ class EnvSecretAdapter:
 
     async def health(self) -> bool:
         missing = [
-            key for key in self._settings.required_keys if self.get_secret(key) is None
+            key
+            for key in self._settings.required_keys
+            if await self.get_secret(key) is None
         ]
         if missing:
             self._logger.warning("secrets-missing-required", missing=missing)
@@ -63,7 +65,7 @@ class EnvSecretAdapter:
     async def cleanup(self) -> None:
         self._logger.info("adapter-cleanup-complete", adapter="env-secrets")
 
-    def get_secret(self, secret_id: str) -> str | None:
+    async def get_secret(self, secret_id: str) -> str | None:
         key = self._compose_env_key(secret_id)
         return os.getenv(key)
 

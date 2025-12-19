@@ -34,6 +34,7 @@ class OTLPObservabilitySettings(BaseModel):
     )
     service_name: str = Field(default="oneiric")
     environment: str = Field(default="development")
+    release: str | None = None
     export_interval_seconds: float = Field(default=10.0, gt=0)
     export_timeout_seconds: float = Field(default=5.0, gt=0)
     enable_traces: bool = True
@@ -83,12 +84,13 @@ class OTLPObservabilityAdapter:
 
     async def init(self) -> None:
         components = self._import_components()
-        resource = components.Resource(
-            attributes={
-                "service.name": self._settings.service_name,
-                "deployment.environment": self._settings.environment,
-            }
-        )
+        resource_attrs: dict[str, Any] = {
+            "service.name": self._settings.service_name,
+            "deployment.environment": self._settings.environment,
+        }
+        if self._settings.release:
+            resource_attrs["service.version"] = self._settings.release
+        resource = components.Resource(attributes=resource_attrs)
         if self._settings.enable_traces:
             exporter = self._create_span_exporter(components)
             tracer_provider = components.TracerProvider(resource=resource)

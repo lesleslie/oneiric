@@ -13,11 +13,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from opentelemetry.trace import Span
-
 from .logging import get_logger
 from .metrics import record_swap_duration
-from .observability import get_tracer
+from .observability import observed_span
 from .resolution import Candidate, Resolver
 from .security import load_factory_allowlist, validate_factory_string
 
@@ -228,75 +226,112 @@ class LifecycleManager:
         return candidate
 
     async def _apply_candidate(self, candidate: Candidate, *, force: bool) -> Any:
-        span = self._start_span(candidate)
-        started_at = time.perf_counter()
-        success = False
-        instance_key = (candidate.domain, candidate.key)
-        previous = self._instances.get(instance_key)
-        self._update_status(
-            candidate,
-            state="activating",
-            pending_provider=candidate.provider,
-            last_error=None,
-        )
-        try:
-            instance = await self._instantiate_candidate(candidate)
-            await self._run_health(candidate, instance, force=force)
-            await self._run_hooks(self.hooks.pre_swap, candidate, instance, previous)
-            self._instances[instance_key] = instance
-            now = _now()
+        log_context = {
+            "domain": candidate.domain,
+            "key": candidate.key,
+            "provider": candidate.provider,
+        }
+        span_attrs = {
+            "oneiric.domain": candidate.domain,
+            "oneiric.key": candidate.key,
+            "oneiric.provider": candidate.provider or "unknown",
+        }
+        with observed_span(
+            "lifecycle.swap",
+            component=f"lifecycle.{candidate.domain}",
+            attributes=span_attrs,
+            log_context=log_context,
+        ) as span:
+            started_at = time.perf_counter()
+            success = False
+            instance_key = (candidate.domain, candidate.key)
+            previous = self._instances.get(instance_key)
+            instance: Any | None = None
             self._update_status(
                 candidate,
-                state="ready",
-                current_provider=candidate.provider,
-                pending_provider=None,
+                state="activating",
+                pending_provider=candidate.provider,
                 last_error=None,
-                last_activated_at=now,
             )
-            await self._cleanup_instance(previous)
-            await self._run_hooks(self.hooks.post_swap, candidate, instance, previous)
-            self._logger.info(
-                "swap-complete",
-                domain=candidate.domain,
-                key=candidate.key,
-                provider=candidate.provider,
-            )
-            success = True
-            return instance
-        except Exception as exc:
-            error_message = str(exc)
-            self._logger.error(
-                "swap-failed",
-                domain=candidate.domain,
-                key=candidate.key,
-                provider=candidate.provider,
-                exc_info=exc,
-            )
-            self._update_status(
-                candidate,
-                state="failed",
-                pending_provider=None,
-                last_error=error_message,
-            )
-            await self._rollback(candidate, previous, force=force)
-            if force:
-                return previous
-            if isinstance(exc, LifecycleError):
-                raise
-            raise LifecycleError(
-                f"Swap failed for {candidate.domain}:{candidate.key} ({candidate.provider})"
-            ) from exc
-        finally:
-            duration_ms = (time.perf_counter() - started_at) * 1000
-            self._record_swap_metrics(candidate, duration_ms, success)
-            record_swap_duration(
-                candidate.domain,
-                candidate.key,
-                candidate.provider,
-                duration_ms,
-                success=success,
-            )
-            span.end()
+            try:
+                instance = await self._instantiate_candidate(candidate)
+                await self._run_health(candidate, instance, force=force)
+                await self._run_hooks(
+                    self.hooks.pre_swap, candidate, instance, previous
+                )
+                self._instances[instance_key] = instance
+                now = _now()
+                self._update_status(
+                    candidate,
+                    state="ready",
+                    current_provider=candidate.provider,
+                    pending_provider=None,
+                    last_error=None,
+                    last_activated_at=now,
+                )
+                await self._cleanup_instance(previous)
+                await self._run_hooks(
+                    self.hooks.post_swap, candidate, instance, previous
+                )
+                self._logger.info(
+                    "swap-complete",
+                    domain=candidate.domain,
+                    key=candidate.key,
+                    provider=candidate.provider,
+                )
+                success = True
+                return instance
+            except Exception as exc:
+                error_message = str(exc)
+                span.record_exception(exc)
+                self._logger.error(
+                    "swap-failed",
+                    domain=candidate.domain,
+                    key=candidate.key,
+                    provider=candidate.provider,
+                    exc_info=exc,
+                )
+                if instance is not None and instance is not previous:
+                    try:
+                        await self._cleanup_instance(instance)
+                    except Exception as cleanup_exc:  # pragma: no cover - defensive log
+                        self._logger.warning(
+                            "swap-cleanup-failed",
+                            domain=candidate.domain,
+                            key=candidate.key,
+                            provider=candidate.provider,
+                            error=str(cleanup_exc),
+                        )
+                self._update_status(
+                    candidate,
+                    state="failed",
+                    pending_provider=None,
+                    last_error=error_message,
+                )
+                await self._rollback(candidate, previous, force=force)
+                if force:
+                    return previous
+                if isinstance(exc, LifecycleError):
+                    raise
+                raise LifecycleError(
+                    f"Swap failed for {candidate.domain}:{candidate.key} ({candidate.provider})"
+                ) from exc
+            finally:
+                duration_ms = (time.perf_counter() - started_at) * 1000
+                span.set_attributes(
+                    {
+                        "oneiric.lifecycle.success": success,
+                        "oneiric.lifecycle.duration_ms": duration_ms,
+                    }
+                )
+                self._record_swap_metrics(candidate, duration_ms, success)
+                record_swap_duration(
+                    candidate.domain,
+                    candidate.key,
+                    candidate.provider,
+                    duration_ms,
+                    success=success,
+                )
 
     async def _instantiate_candidate(self, candidate: Candidate) -> Any:
         factory = resolve_factory(candidate.factory)
@@ -389,16 +424,6 @@ class LifecycleManager:
                 candidate,
                 pending_provider=None,
             )
-
-    def _start_span(self, candidate: Candidate) -> Span:
-        return (tracer := get_tracer(f"lifecycle.{candidate.domain}")).start_span(
-            "lifecycle.swap",
-            attributes={
-                "domain": candidate.domain,
-                "key": candidate.key,
-                "provider": candidate.provider or "unknown",
-            },
-        )
 
     def _update_status(
         self,

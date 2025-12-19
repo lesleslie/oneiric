@@ -5,24 +5,25 @@ from __future__ import annotations
 from typing import Any
 
 import httpx
-from pydantic import AnyHttpUrl, BaseModel, EmailStr, Field, SecretStr
+from pydantic import AnyHttpUrl, EmailStr, Field, SecretStr
 
+from oneiric.adapters.httpx_base import HTTPXClientMixin
 from oneiric.adapters.metadata import AdapterMetadata
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
+from oneiric.core.settings_mixins import TimeoutSettings
 
 from .common import EmailRecipient, MessagingSendResult, OutboundEmailMessage
 
 
-class SendGridSettings(BaseModel):
+class SendGridSettings(TimeoutSettings):
     """Configuration for the SendGrid adapter."""
 
     api_key: SecretStr
     from_email: EmailStr
     from_name: str | None = None
     base_url: AnyHttpUrl = Field(default="https://api.sendgrid.com/v3")
-    timeout: float = Field(default=10.0, ge=0.5)
     sandbox_mode: bool = Field(
         default=False,
         description="Enable SendGrid sandbox mode (no-op sends) by default.",
@@ -41,7 +42,7 @@ class SendGridSettings(BaseModel):
     )
 
 
-class SendGridAdapter:
+class SendGridAdapter(HTTPXClientMixin):
     """SendGrid-backed messaging adapter using the REST API."""
 
     metadata = AdapterMetadata(
@@ -63,9 +64,8 @@ class SendGridAdapter:
         *,
         client: httpx.AsyncClient | None = None,
     ) -> None:
+        super().__init__(client=client)
         self._settings = settings
-        self._client = client
-        self._owns_client = client is None
         self._logger = get_logger("adapter.messaging.sendgrid").bind(
             domain="adapter",
             key="messaging",
@@ -80,25 +80,24 @@ class SendGridAdapter:
         headers.update(self._settings.default_headers)
 
         if self._client is None:
-            self._client = httpx.AsyncClient(
-                base_url=str(self._settings.base_url),
-                timeout=self._settings.timeout,
-                headers=headers,
+            self._init_client(
+                lambda: httpx.AsyncClient(
+                    base_url=str(self._settings.base_url),
+                    timeout=self._settings.timeout,
+                    headers=headers,
+                )
             )
-            self._owns_client = True
         else:
             self._client.headers.update(headers)
 
         self._logger.info("sendgrid-adapter-init", sandbox=self._settings.sandbox_mode)
 
     async def cleanup(self) -> None:
-        if self._client and self._owns_client:
-            await self._client.aclose()
-        self._client = None
+        await self._cleanup_client()
         self._logger.info("sendgrid-adapter-cleanup")
 
     async def health(self) -> bool:
-        client = self._ensure_client()
+        client = self._ensure_client("sendgrid-client-not-initialized")
         try:
             response = await client.get("/scopes")
             return response.status_code < 500
@@ -107,7 +106,7 @@ class SendGridAdapter:
             return False
 
     async def send_email(self, message: OutboundEmailMessage) -> MessagingSendResult:
-        client = self._ensure_client()
+        client = self._ensure_client("sendgrid-client-not-initialized")
         payload = self._build_payload(message)
 
         try:
@@ -206,8 +205,3 @@ class SendGridAdapter:
         if recipient.name:
             entry["name"] = recipient.name
         return entry
-
-    def _ensure_client(self) -> httpx.AsyncClient:
-        if not self._client:
-            raise LifecycleError("sendgrid-client-not-initialized")
-        return self._client

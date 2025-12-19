@@ -18,6 +18,15 @@ class DummySecretsProvider:
         return f"value-{secret_id}-{len(self.calls)}"
 
 
+class DummyCachingProvider(DummySecretsProvider):
+    def __init__(self) -> None:
+        super().__init__()
+        self.invalidated = False
+
+    async def invalidate_cache(self) -> None:
+        self.invalidated = True
+
+
 class DummyLifecycle:
     def __init__(self, provider) -> None:
         self.provider = provider
@@ -131,3 +140,21 @@ async def test_secrets_prefetch_handles_missing_provider() -> None:
     ready = await hook.prefetch()
     assert ready is False
     assert hook.prefetched is False
+
+
+@pytest.mark.asyncio
+async def test_secrets_rotate_invalidates_provider_cache() -> None:
+    provider = DummyCachingProvider()
+    lifecycle = DummyLifecycle(provider)
+    hook = SecretsHook(
+        lifecycle,
+        SecretsConfig(
+            domain="adapter", key="secrets", provider="env", cache_ttl_seconds=1.0
+        ),
+    )
+
+    await hook.get("token")
+    removed = await hook.rotate(keys=["token"])
+
+    assert removed == 1
+    assert provider.invalidated is True

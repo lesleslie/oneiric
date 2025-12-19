@@ -40,7 +40,7 @@ def _supervisor_settings(cache_dir: Path) -> OneiricSettings:
         ),
         runtime_supervisor=RuntimeSupervisorConfig(
             enabled=True,
-            poll_interval=0.01,
+            poll_interval=0.1,
         ),
     )
 

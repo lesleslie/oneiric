@@ -10,6 +10,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 from oneiric.actions.metadata import ActionMetadata
+from oneiric.actions.payloads import normalize_payload
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
@@ -66,7 +67,7 @@ class DebugConsoleAction:
         self._logger = get_logger("action.debug.console")
 
     async def execute(self, payload: dict | None = None) -> dict:
-        payload = payload or {}
+        payload = normalize_payload(payload)
         message = payload.get("message", "")
         if not isinstance(message, str):
             raise LifecycleError("debug-console-message-invalid")

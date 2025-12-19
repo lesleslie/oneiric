@@ -12,6 +12,7 @@ import httpx
 import jwt
 from pydantic import BaseModel, Field
 
+from oneiric.adapters.httpx_base import HTTPXClientMixin
 from oneiric.adapters.metadata import AdapterMetadata
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
@@ -32,7 +33,7 @@ class Auth0IdentitySettings(BaseModel):
     cache_ttl_seconds: int = Field(default=300, ge=30)
 
 
-class Auth0IdentityAdapter:
+class Auth0IdentityAdapter(HTTPXClientMixin):
     """Validates Auth0-issued JWTs using cached JWKS data."""
 
     metadata = AdapterMetadata(
@@ -54,9 +55,8 @@ class Auth0IdentityAdapter:
         *,
         http_client: httpx.AsyncClient | None = None,
     ) -> None:
+        super().__init__(client=http_client)
         self._settings = settings
-        self._http_client = http_client
-        self._owns_client = http_client is None
         self._jwks: dict[str, Any] | None = None
         self._jwks_loaded_at: float | None = None
         self._jwks_lock = asyncio.Lock()
@@ -67,8 +67,10 @@ class Auth0IdentityAdapter:
         )
 
     async def init(self) -> None:
-        if not self._http_client and self._owns_client:
-            self._http_client = httpx.AsyncClient(timeout=self._settings.http_timeout)
+        if self._client is None:
+            self._init_client(
+                lambda: httpx.AsyncClient(timeout=self._settings.http_timeout)
+            )
         self._logger.info("adapter-init", adapter="auth0-identity")
 
     async def health(self) -> bool:
@@ -80,9 +82,7 @@ class Auth0IdentityAdapter:
             return False
 
     async def cleanup(self) -> None:
-        if self._http_client and self._owns_client:
-            await self._http_client.aclose()
-        self._http_client = None
+        await self._cleanup_client()
         self._jwks = None
         self._logger.info("adapter-cleanup-complete", adapter="auth0-identity")
 
@@ -115,7 +115,7 @@ class Auth0IdentityAdapter:
                     should_refresh = False
             if not should_refresh and self._jwks:
                 return self._jwks
-            client = self._ensure_client()
+            client = self._ensure_client("auth0-http-client-not-initialized")
             url = (
                 self._settings.jwks_url
                 or f"https://{self._settings.domain}/.well-known/jwks.json"
@@ -134,8 +134,3 @@ class Auth0IdentityAdapter:
             if entry.get("kid") == kid:
                 return entry
         return None
-
-    def _ensure_client(self) -> httpx.AsyncClient:
-        if not self._http_client:
-            raise LifecycleError("auth0-http-client-not-initialized")
-        return self._http_client

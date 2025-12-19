@@ -16,6 +16,7 @@ from oneiric.remote.security import (
     load_trusted_public_keys,
     sign_manifest_for_publishing,
     verify_manifest_signature,
+    verify_manifest_signatures,
 )
 
 
@@ -135,6 +136,32 @@ class TestSignatureVerification:
         assert is_valid
         assert error is None
 
+    def test_threshold_signature_verification(self):
+        """Threshold verification succeeds when enough signatures validate."""
+        private_key1 = Ed25519PrivateKey.generate()
+        private_key2 = Ed25519PrivateKey.generate()
+        public_key1 = private_key1.public_key()
+        public_key2 = private_key2.public_key()
+
+        manifest = {"source": "test", "entries": []}
+        canonical = get_canonical_manifest_for_signing(manifest)
+        sig1 = base64.b64encode(private_key1.sign(canonical.encode("utf-8"))).decode(
+            "ascii"
+        )
+        sig2 = base64.b64encode(private_key2.sign(canonical.encode("utf-8"))).decode(
+            "ascii"
+        )
+
+        is_valid, error, valid_count = verify_manifest_signatures(
+            canonical,
+            [sig1, sig2],
+            threshold=2,
+            trusted_keys=[public_key1, public_key2],
+        )
+        assert is_valid
+        assert error is None
+        assert valid_count == 2
+
     def test_no_trusted_keys_fails(self):
         """Verification fails when no trusted keys configured."""
         manifest = {"source": "test", "entries": []}
@@ -182,6 +209,7 @@ class TestCanonicalManifestForm:
             "entries": [],
             "signature": "should-be-removed",
             "signature_algorithm": "ed25519",
+            "signatures": [{"signature": "remove-me", "algorithm": "ed25519"}],
         }
 
         canonical = get_canonical_manifest_for_signing(manifest)
@@ -189,6 +217,7 @@ class TestCanonicalManifestForm:
 
         assert "signature" not in parsed
         assert "signature_algorithm" not in parsed
+        assert "signatures" not in parsed
         assert "source" in parsed
         assert "entries" in parsed
 

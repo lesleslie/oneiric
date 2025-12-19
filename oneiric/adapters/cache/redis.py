@@ -26,6 +26,7 @@ if TYPE_CHECKING:  # pragma: no cover
     pass
 
 from oneiric.adapters.metadata import AdapterMetadata
+from oneiric.core.client_mixins import EnsureClientMixin
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
@@ -90,7 +91,7 @@ class RedisCacheSettings(BaseModel):
     )
 
 
-class RedisCacheAdapter:
+class RedisCacheAdapter(EnsureClientMixin):
     """Redis cache adapter implementing the lifecycle contract."""
 
     metadata = AdapterMetadata(
@@ -194,12 +195,12 @@ class RedisCacheAdapter:
             await result
 
     async def get(self, key: str) -> Any:
-        client = self._ensure_client()
+        client = self._ensure_client("redis-client-not-initialized")
         namespaced = self._namespaced_key(key)
         return await client.get(namespaced)
 
     async def set(self, key: str, value: Any, *, ttl: float | None = None) -> None:
-        client = self._ensure_client()
+        client = self._ensure_client("redis-client-not-initialized")
         namespaced = self._namespaced_key(key)
         kwargs: dict[str, Any] = {}
         if ttl is not None:
@@ -210,20 +211,15 @@ class RedisCacheAdapter:
         await client.set(namespaced, value, **kwargs)
 
     async def delete(self, key: str) -> None:
-        client = self._ensure_client()
+        client = self._ensure_client("redis-client-not-initialized")
         await client.delete(self._namespaced_key(key))
 
     async def clear(self) -> None:
-        client = self._ensure_client()
+        client = self._ensure_client("redis-client-not-initialized")
         await client.flushdb()
 
     def _namespaced_key(self, key: str) -> str:
         return f"{self._settings.key_prefix}{key}" if self._settings.key_prefix else key
-
-    def _ensure_client(self) -> Redis:
-        if not self._client:
-            raise LifecycleError("redis-client-not-initialized")
-        return self._client
 
     def _create_client(self) -> Redis:
         kwargs: dict[str, Any] = {

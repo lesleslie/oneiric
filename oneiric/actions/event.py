@@ -15,6 +15,7 @@ import httpx
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, ValidationError
 
 from oneiric.actions.metadata import ActionMetadata
+from oneiric.actions.payloads import normalize_payload
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
@@ -112,7 +113,7 @@ class EventDispatchAction:
         self._logger = get_logger("action.event.dispatch")
 
     async def execute(self, payload: dict | None = None) -> dict:
-        payload = payload or {}
+        payload = normalize_payload(payload)
         topic = (payload.get("topic") or self._settings.default_topic).strip()
         if not topic:
             raise LifecycleError("event-dispatch-topic-required")

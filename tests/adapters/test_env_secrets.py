@@ -15,7 +15,7 @@ async def test_env_secret_adapter_reads_values(monkeypatch) -> None:
     monkeypatch.setenv("ONEIRIC_SECRET_API_KEY", "secret-123")
     adapter = EnvSecretAdapter(EnvSecretSettings())
     await adapter.init()
-    assert adapter.get_secret("api_key") == "secret-123"
+    assert await adapter.get_secret("api_key") == "secret-123"
     await adapter.cleanup()
 
 
@@ -43,4 +43,4 @@ async def test_env_secret_adapter_via_bridge(monkeypatch) -> None:
     )
     handle = await bridge.use("secrets")
     assert handle.provider == "env"
-    assert handle.instance.get_secret("api_token") == "super-secret"
+    assert await handle.instance.get_secret("api_token") == "super-secret"

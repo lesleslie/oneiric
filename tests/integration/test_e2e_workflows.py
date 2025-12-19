@@ -20,6 +20,8 @@ from oneiric.runtime.orchestrator import RuntimeOrchestrator
 class TestAdapter:
     """Test adapter implementation."""
 
+    __test__ = False
+
     def __init__(self, name: str = "test"):
         self.name = name
         self.calls = []
@@ -31,6 +33,8 @@ class TestAdapter:
 
 class TestService:
     """Test service implementation."""
+
+    __test__ = False
 
     def __init__(self, service_id: str = "test"):
         self.service_id = service_id
@@ -49,6 +53,8 @@ class TestService:
 class TestTask:
     """Test task implementation."""
 
+    __test__ = False
+
     def __init__(self, task_type: str = "test"):
         self.task_type = task_type
 
@@ -59,6 +65,8 @@ class TestTask:
 class TestWorkflow:
     """Test workflow implementation."""
 
+    __test__ = False
+
     def __init__(self, workflow_id: str = "test"):
         self.workflow_id = workflow_id
 
@@ -68,6 +76,8 @@ class TestWorkflow:
 
 class TestEventHandler:
     """Test event handler implementation."""
+
+    __test__ = False
 
     def __init__(self, event_type: str = "test"):
         self.event_type = event_type
@@ -366,6 +376,7 @@ class TestRemoteManifestE2E:
             config_dir=str(tmp_path / "settings"),
             cache_dir=str(tmp_path / "cache"),
         )
+        settings.remote.allow_file_uris = True
         resolver = Resolver()
         lifecycle = LifecycleManager(resolver)
 
@@ -416,6 +427,7 @@ entries:
             config_dir=str(tmp_path / "settings"),
             cache_dir=str(tmp_path / "cache"),
         )
+        settings.remote.allow_file_uris = True
         resolver = Resolver()
         lifecycle = LifecycleManager(resolver)
         queue_records: list[dict] = []

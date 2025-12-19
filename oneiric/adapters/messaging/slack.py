@@ -3,17 +3,19 @@
 from __future__ import annotations
 
 import httpx
-from pydantic import AnyHttpUrl, BaseModel, Field, SecretStr
+from pydantic import AnyHttpUrl, Field, SecretStr
 
+from oneiric.adapters.httpx_base import HTTPXClientMixin
 from oneiric.adapters.metadata import AdapterMetadata
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
+from oneiric.core.settings_mixins import TimeoutSettings
 
 from .common import MessagingSendResult, NotificationMessage
 
 
-class SlackSettings(BaseModel):
+class SlackSettings(TimeoutSettings):
     """Configuration for Slack chat.postMessage calls."""
 
     token: SecretStr
@@ -22,12 +24,11 @@ class SlackSettings(BaseModel):
         description="Channel fallback when NotificationMessage.target is unset.",
     )
     base_url: AnyHttpUrl = Field(default="https://slack.com/api")
-    timeout: float = Field(default=10.0, ge=0.5)
     default_username: str | None = None
     default_icon_emoji: str | None = None
 
 
-class SlackAdapter:
+class SlackAdapter(HTTPXClientMixin):
     """Slack adapter that posts messages via chat.postMessage."""
 
     metadata = AdapterMetadata(
@@ -49,9 +50,8 @@ class SlackAdapter:
         *,
         client: httpx.AsyncClient | None = None,
     ) -> None:
+        super().__init__(client=client)
         self._settings = settings
-        self._client = client
-        self._owns_client = client is None
         self._logger = get_logger("adapter.messaging.slack").bind(
             domain="adapter",
             key="messaging",
@@ -64,12 +64,13 @@ class SlackAdapter:
                 "Authorization": f"Bearer {self._settings.token.get_secret_value()}",
                 "Content-Type": "application/json; charset=utf-8",
             }
-            self._client = httpx.AsyncClient(
-                base_url=str(self._settings.base_url),
-                timeout=self._settings.timeout,
-                headers=headers,
+            self._init_client(
+                lambda: httpx.AsyncClient(
+                    base_url=str(self._settings.base_url),
+                    timeout=self._settings.timeout,
+                    headers=headers,
+                )
             )
-            self._owns_client = True
         else:
             self._client.headers.update(
                 {
@@ -79,13 +80,11 @@ class SlackAdapter:
         self._logger.info("slack-adapter-init")
 
     async def cleanup(self) -> None:
-        if self._client and self._owns_client:
-            await self._client.aclose()
-        self._client = None
+        await self._cleanup_client()
         self._logger.info("slack-adapter-cleanup")
 
     async def health(self) -> bool:
-        client = self._ensure_client()
+        client = self._ensure_client("slack-client-not-initialized")
         try:
             response = await client.post("/auth.test")
             return response.status_code < 500
@@ -96,7 +95,7 @@ class SlackAdapter:
     async def send_notification(
         self, message: NotificationMessage
     ) -> MessagingSendResult:
-        client = self._ensure_client()
+        client = self._ensure_client("slack-client-not-initialized")
         channel = message.target or self._settings.default_channel
         if not channel:
             raise LifecycleError("slack-channel-missing")
@@ -170,8 +169,3 @@ class SlackAdapter:
             error_msg = payload_json.get("error", "unknown-error")
             self._logger.error("slack-send-error", error=error_msg)
             raise LifecycleError(f"slack-send-error: {error_msg}")
-
-    def _ensure_client(self) -> httpx.AsyncClient:
-        if not self._client:
-            raise LifecycleError("slack-client-not-initialized")
-        return self._client

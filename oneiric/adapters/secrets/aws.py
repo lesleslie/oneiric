@@ -123,6 +123,11 @@ class AWSSecretManagerAdapter:
         self._cache.clear()
         self._logger.info("adapter-cleanup-complete", adapter="aws-secret-manager")
 
+    async def invalidate_cache(self) -> None:
+        async with self._cache_lock:
+            self._cache.clear()
+        self._logger.info("secrets-cache-invalidated", adapter="aws-secret-manager")
+
     async def get_secret(
         self,
         name: str,

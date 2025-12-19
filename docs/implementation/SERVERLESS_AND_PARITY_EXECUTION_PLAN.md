@@ -97,7 +97,7 @@ ______________________________________________________________________
    - Provide `duckdb` parity tests referencing new `activity.sqlite`.
 1. **Messaging**
    - ✅ SendGrid/Mailgun/Twilio plus Slack/Teams/webhook adapters shipped with unit tests, CLI demos, and sample manifests. Workflow notify → ChatOps bridging is documented in `docs/examples/LOCAL_CLI_DEMO.md` and referenced in the orchestration parity plan.
-   - Next: evaluate `webpush`/mobile push adapters + SecretsHook ergonomics for Teams Graph once requirements land.
+   - ✅ Webpush + mobile push adapters shipped; focus shifts to feature flag adapters and Teams Graph ergonomics as requirements land.
 1. **Scheduler/queue**
    - ✅ Cloud Tasks + Pub/Sub adapters landed (unit tests + docs). Ensure Redis/NATS integration tests cover parity fixtures under `tests/adapters/`.
 1. **Security**

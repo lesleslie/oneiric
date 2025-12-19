@@ -13,7 +13,7 @@ from .database import (
     PostgresDatabaseAdapter,
     SQLiteDatabaseAdapter,
 )
-from .dns import CloudflareDNSAdapter
+from .dns import CloudflareDNSAdapter, GCDNSAdapter
 from .dns.route53 import Route53DNSAdapter
 from .embedding import (
     ONNXEmbeddingAdapter,
@@ -32,12 +32,15 @@ from .http import AioHTTPAdapter, HTTPClientAdapter
 from .identity import Auth0IdentityAdapter
 from .llm import AnthropicLLM, OpenAILLMAdapter
 from .messaging import (
+    APNSPushAdapter,
+    FCMPushAdapter,
     MailgunAdapter,
     SendGridAdapter,
     SlackAdapter,
     TeamsAdapter,
     TwilioAdapter,
     WebhookAdapter,
+    WebPushAdapter,
 )
 from .metadata import AdapterMetadata, register_adapter_metadata
 from .monitoring import (
@@ -112,6 +115,9 @@ def builtin_adapter_metadata() -> list[AdapterMetadata]:
         SlackAdapter.metadata,
         TeamsAdapter.metadata,
         WebhookAdapter.metadata,
+        WebPushAdapter.metadata,
+        APNSPushAdapter.metadata,
+        FCMPushAdapter.metadata,
         MongoDBAdapter.metadata,
         DynamoDBAdapter.metadata,
         FirestoreAdapter.metadata,
@@ -119,6 +125,7 @@ def builtin_adapter_metadata() -> list[AdapterMetadata]:
         ArangoDBGraphAdapter.metadata,
         DuckDBPGQAdapter.metadata,
         CloudflareDNSAdapter.metadata,
+        GCDNSAdapter.metadata,
         Route53DNSAdapter.metadata,
         FTPFileTransferAdapter.metadata,
         SFTPFileTransferAdapter.metadata,

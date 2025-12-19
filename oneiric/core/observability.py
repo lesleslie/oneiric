@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator, Mapping
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 from typing import Any
 
@@ -11,7 +11,7 @@ from opentelemetry import trace
 from opentelemetry.trace import Span, Tracer
 from pydantic import BaseModel, Field
 
-from .logging import get_logger
+from .logging import get_logger, scoped_log_context
 
 
 class ObservabilityConfig(BaseModel):
@@ -35,6 +35,15 @@ def get_tracer(component: str | None = None) -> Tracer:
     return trace.get_tracer(scope)
 
 
+def inject_trace_context(headers: dict[str, str]) -> dict[str, str]:
+    try:  # pragma: no cover - depends on opentelemetry SDK extras
+        from opentelemetry.propagate import inject
+    except Exception:
+        return headers
+    inject(headers)
+    return headers
+
+
 @dataclass
 class DecisionEvent:
     domain: str
@@ -56,9 +65,18 @@ class DecisionEvent:
 
 @contextmanager
 def traced_decision(event: DecisionEvent) -> Iterator[Span]:
-    tracer = get_tracer(f"resolver.{event.domain}")
-    with tracer.start_as_current_span("resolver.decision") as span:
-        span.set_attributes(event.as_attributes())
+    log_context = {
+        "domain": event.domain,
+        "key": event.key,
+        "provider": event.provider,
+        "decision": event.decision,
+    }
+    with observed_span(
+        "resolver.decision",
+        component=f"resolver.{event.domain}",
+        attributes=event.as_attributes(),
+        log_context=log_context,
+    ) as span:
         _logger.debug(
             "resolver-decision",
             domain=event.domain,
@@ -68,3 +86,20 @@ def traced_decision(event: DecisionEvent) -> Iterator[Span]:
             details=event.details,
         )
         yield span
+
+
+@contextmanager
+def observed_span(
+    name: str,
+    *,
+    component: str | None = None,
+    attributes: Mapping[str, Any] | None = None,
+    log_context: Mapping[str, Any] | None = None,
+) -> Iterator[Span]:
+    tracer = get_tracer(component)
+    context_scope = scoped_log_context(**log_context) if log_context else nullcontext()
+    with context_scope:
+        with tracer.start_as_current_span(name) as span:
+            if attributes:
+                span.set_attributes(dict(attributes))
+            yield span

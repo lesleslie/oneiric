@@ -5,8 +5,8 @@ This specification defines a shared discovery/registration/resolver layer for al
 ## Scope
 
 - Domains: adapters (by category), services (by service_id), tasks (by task_type), events (by event_name/type), workflows (by workflow_id, optional version).
-- Sources: local packages (via register_pkg), remote manifests (HTTP/S3/GCS/OCI), optional entry points in future.
-- Features: precedence resolution, activation/hot swap, observability, remote fetch with integrity checks.
+- Sources: local packages (via register_pkg), remote manifests (HTTP/S3/GCS/OCI), entry points (oneiric.\* plugin groups).
+- Features: precedence resolution, optional capability negotiation, activation/hot swap, observability, remote fetch with integrity checks.
 
 ## Terminology
 
@@ -43,12 +43,12 @@ Applied in order for each domain/key (highest wins):
 - Discovery inputs:
   - `discover_from_pkg(name, path, priority)` -> list[Candidate]
   - `discover_from_manifest(manifest_descriptor)` -> list[Candidate]
-  - (Future) `discover_from_entry_points(group)` -> list[Candidate]
+  - `discover_from_entry_points(group)` -> list[Candidate]
 - Registration:
   - `register_candidate(candidate: Candidate) -> None`
   - Side effect: update per-domain registry and recompute active/shadowed.
 - Resolution:
-  - `resolve(domain, key) -> Candidate | None` (applies precedence rules)
+  - `resolve(domain, key, capabilities=None, require_all=True) -> Candidate | None` (applies precedence rules + optional capability filtering)
   - `list_active(domain) -> list[Candidate]`
   - `list_shadowed(domain) -> list[Candidate]`
 - Activation/Hot swap:

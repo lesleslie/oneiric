@@ -5,7 +5,7 @@
 - `oneiric/` holds the Python package: adapters (`adapters/`), lifecycle + config logic (`core/`), CLI entrypoints (`cli.py`), remote sync clients (`remote/`), runtime/orchestration helpers (`runtime/`), and domain abstractions (`domains/`).
 - `main.py` is the minimal runner that wires the default settings for demos; `docs/` stores manifests and reference material; `tests/` mirrors the package layout with unit and async integration suites; coverage artifacts land in `htmlcov/` and `coverage.xml`.
 - Keep new assets (sample manifests, telemetry captures) inside `docs/` and gate experimental playground code behind `oneiric/demo.py` so production modules stay lean.
-- Stage 3 action migration work now lives alongside adapters: use `oneiric/actions/` for metadata/bridge helpers and track features in `docs/STAGE3_ACTION_MIGRATION.md` so the action waves stay in sync with adapters. Builtin kits currently include `compression.encode`, `workflow.audit`, `workflow.notify`, `workflow.retry`, the Wave B helpers `http.fetch`, `security.signature`, `data.transform`, and the first Wave C console kit `debug.console`.
+- Stage 3 action migration work now lives alongside adapters: use `oneiric/actions/` for metadata/bridge helpers and track features in `docs/analysis/ACB_ADAPTER_ACTION_IMPLEMENTATION.md` so the action waves stay in sync with adapters. Builtin kits currently include `compression.encode`, `compression.hash`, `workflow.audit`, `workflow.orchestrate`, `workflow.notify`, `workflow.retry`, `http.fetch`, `security.signature`, `security.secure`, `serialization.encode`, `data.transform`, `data.sanitize`, `validation.schema`, `task.schedule`, `event.dispatch`, `automation.trigger`, and `debug.console`.
 
 ## Build, Test, and Development Commands
 

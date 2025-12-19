@@ -2,25 +2,36 @@
 
 from __future__ import annotations
 
-import inspect
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 from uuid import uuid4
 
 from oneiric.core.config import LayerSettings
 from oneiric.core.lifecycle import LifecycleError, LifecycleManager
 from oneiric.core.resolution import Candidate, Resolver
 from oneiric.runtime.activity import DomainActivityStore
-from oneiric.runtime.checkpoints import WorkflowCheckpointStore
-from oneiric.runtime.dag import DAGTask, build_graph, execute_dag
+from oneiric.runtime.dag import (
+    DAGExecutionHooks,
+    DAGRunResult,
+    DAGTask,
+    build_graph,
+    execute_dag,
+)
+from oneiric.runtime.durable import build_durable_execution_hooks
+from oneiric.runtime.protocols import (
+    WorkflowCheckpointStoreProtocol,
+    WorkflowExecutionStoreProtocol,
+)
 from oneiric.runtime.supervisor import ServiceSupervisor
 from oneiric.runtime.telemetry import RuntimeTelemetryRecorder
 
 from .base import DomainBridge
+from .protocols import TaskHandlerProtocol
 from .tasks import TaskBridge
 
 if TYPE_CHECKING:  # pragma: no cover - hints only
     from oneiric.adapters.bridge import AdapterBridge
+    from oneiric.adapters.queue.protocols import QueueAdapterProtocol
 
 
 class WorkflowBridge(DomainBridge):
@@ -33,7 +44,8 @@ class WorkflowBridge(DomainBridge):
         settings: LayerSettings,
         activity_store: DomainActivityStore | None = None,
         task_bridge: TaskBridge | None = None,
-        checkpoint_store: WorkflowCheckpointStore | None = None,
+        checkpoint_store: WorkflowCheckpointStoreProtocol | None = None,
+        execution_store: WorkflowExecutionStoreProtocol | None = None,
         queue_bridge: AdapterBridge | None = None,
         queue_category: str | None = "queue",
         supervisor: ServiceSupervisor | None = None,
@@ -50,6 +62,11 @@ class WorkflowBridge(DomainBridge):
         self._task_bridge = task_bridge
         self._dag_specs: dict[str, dict[str, Any]] = {}
         self._checkpoint_store = checkpoint_store
+        self._execution_hooks: DAGExecutionHooks | None = (
+            build_durable_execution_hooks(execution_store)
+            if execution_store is not None
+            else None
+        )
         self._queue_bridge = queue_bridge
         self._queue_category_override = queue_category
         self._queue_category = (
@@ -84,7 +101,8 @@ class WorkflowBridge(DomainBridge):
         *,
         context: dict[str, Any] | None = None,
         checkpoint: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
+        run_id: str | None = None,
+    ) -> DAGRunResult:
         """Execute the DAG associated with the workflow key."""
         # Validate workflow and dependencies
         dag_spec = self._get_dag_spec(workflow_key)
@@ -100,12 +118,14 @@ class WorkflowBridge(DomainBridge):
         checkpoint_data = self._load_checkpoint_data(workflow_key, checkpoint)
 
         # Execute DAG with checkpoint handling
-        results = await self._execute_with_checkpoint(
-            graph, workflow_key, checkpoint_data
+        run_result = await self._execute_with_checkpoint(
+            graph, workflow_key, checkpoint_data, run_id
         )
         if self._telemetry:
-            self._telemetry.record_workflow_execution(workflow_key, dag_spec, results)
-        return results
+            self._telemetry.record_workflow_execution(
+                workflow_key, dag_spec, run_result["results"]
+            )
+        return run_result
 
     async def enqueue_workflow(
         self,
@@ -130,7 +150,8 @@ class WorkflowBridge(DomainBridge):
         )
 
         handle = await self._queue_bridge.use(category, provider=target_provider)
-        enqueue = getattr(handle.instance, "enqueue", None)
+        queue = cast("QueueAdapterProtocol", handle.instance)
+        enqueue = getattr(queue, "enqueue", None)
         if not callable(enqueue):
             raise LifecycleError("workflow-queue-adapter-missing-enqueue")
 
@@ -197,12 +218,20 @@ class WorkflowBridge(DomainBridge):
         return {}
 
     async def _execute_with_checkpoint(
-        self, graph: Any, workflow_key: str, checkpoint_data: dict[str, Any]
-    ) -> dict[str, Any]:
+        self,
+        graph: Any,
+        workflow_key: str,
+        checkpoint_data: dict[str, Any],
+        run_id: str | None,
+    ) -> DAGRunResult:
         """Execute DAG with checkpoint save/clear handling."""
         try:
-            results = await execute_dag(
-                graph, checkpoint=checkpoint_data, workflow_key=workflow_key
+            run_result = await execute_dag(
+                graph,
+                checkpoint=checkpoint_data,
+                workflow_key=workflow_key,
+                run_id=run_id,
+                hooks=self._execution_hooks,
             )
         except Exception:
             if self._checkpoint_store:
@@ -211,7 +240,7 @@ class WorkflowBridge(DomainBridge):
         else:
             if self._checkpoint_store:
                 self._checkpoint_store.clear(workflow_key)
-            return results
+            return run_result
 
     def _runner_for_task(
         self,
@@ -222,14 +251,12 @@ class WorkflowBridge(DomainBridge):
         async def _run():
             assert self._task_bridge is not None  # Type guard
             handle = await self._task_bridge.use(task_key)  # type: ignore[arg-type]
-            runner = getattr(handle.instance, "run", None)
+            instance = cast(TaskHandlerProtocol, handle.instance)
+            runner = getattr(instance, "run", None)
             if not callable(runner):
                 raise LifecycleError(f"workflow-dag-task-missing-run ({task_key})")
             payload = node_payload if node_payload is not None else context
-            result = runner(payload) if payload is not None else runner()
-            if inspect.isawaitable(result):
-                result = await result
-            return result
+            return await runner(payload) if payload is not None else await runner()
 
         return _run
 

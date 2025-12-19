@@ -15,6 +15,7 @@ from oneiric.core.logging import (
     clear_log_context,
     configure_logging,
     get_logger,
+    scoped_log_context,
 )
 
 
@@ -60,3 +61,15 @@ def test_http_sink_requires_endpoint() -> None:
     config = LoggingConfig(sinks=[LoggingSinkConfig(target="http")])
     with pytest.raises(ValueError):
         configure_logging(config)
+
+
+def test_scoped_log_context_restores_previous() -> None:
+    bind_log_context(domain="adapter")
+    with scoped_log_context(domain="workflow", key="demo"):
+        context = get_contextvars()
+        assert context["domain"] == "workflow"
+        assert context["key"] == "demo"
+    context = get_contextvars()
+    assert context["domain"] == "adapter"
+    assert "key" not in context
+    clear_log_context("domain")

@@ -1,8 +1,8 @@
 # Adapter Porting Summary - December 2025
 
-**Date:** 2025-12-09
+**Date:** 2025-12-18
 **Status:** Phase 1 Complete
-**Total Adapters Ported:** 5 categories, 6 adapters
+**Total Adapters Ported:** 10+ categories (see sections)
 
 ______________________________________________________________________
 
@@ -101,7 +101,7 @@ ______________________________________________________________________
 - Unit tests with fake Motor clients to keep CI lightweight
 - **Capabilities:** documents, aggregation, filtering
 
-**Documentation:** Tracked in `docs/analysis/ADAPTER_GAP_AUDIT.md` + `docs/implementation/NOSQL_ADAPTER_SPRINT.md` (NoSQL guide referenced in `docs/analysis/NOSQL_ADAPTERS.md`).
+**Documentation:** Tracked in `docs/analysis/ADAPTER_GAP_AUDIT.md` + `docs/archive/implementation/NOSQL_ADAPTER_SPRINT.md` (NoSQL guide referenced in `docs/analysis/NOSQL_ADAPTERS.md`).
 
 #### DynamoDB (`nosql/dynamodb.py`)
 
@@ -371,35 +371,28 @@ Following `docs/ADAPTER_STRATEGY.md`:
 
 ### ✅ Completed (High Priority)
 
-1. **Vector Databases** - Pinecone, Qdrant
-1. **Embedding Adapters** - OpenAI
+1. **Vector Databases** - Pinecone, Qdrant, pgvector
+1. **Embedding Adapters** - OpenAI, Sentence Transformers, ONNX
+1. **AI/LLM Adapters** - OpenAI, Anthropic
+1. **NoSQL Databases** - MongoDB, DynamoDB, Firestore
+1. **Messaging** - Kafka, RabbitMQ
+1. **DNS + File Transfer** - Cloudflare/Route53/GCDNS, FTP/SFTP/SCP/HTTP(S)
+1. **Push Notifications** - Webpush, APNS, FCM
 1. **DuckDB** - Analytical SQL database
 
-### 📝 Next Priority (Per Strategy Document)
-
-1. **Embedding Adapters**
-
-   - Sentence Transformers (open-source)
-   - ONNX (optimized on-device)
-   - HuggingFace (variety of models)
+### 📝 Next Priority (Post-Audit)
 
 1. **AI/LLM Adapters**
 
-   - OpenAI (GPT-4)
-   - Anthropic (Claude)
-   - Google Gemini
+   - Google Gemini (blocked on SDK/runtime compatibility)
 
-1. **NoSQL Databases**
+1. **Messaging**
 
-   - MongoDB (document store)
-   - DynamoDB (AWS)
-   - Firestore (GCP)
+   - Pulsar (evaluate demand before porting)
 
-1. **Graph Databases**
+1. **Wave C Optional**
 
-   - ✅ Neo4j (async driver adapter with node/relationship helpers + docs)
-   - ✅ ArangoDB (python-arango adapter with vertex/edge helpers + docs)
-   - ✅ DuckDB PGQ (DuckDB-backed PGQ adapter with ingest/traversal helpers + docs)
+   - Feature flag adapters
 
 ______________________________________________________________________
 
@@ -500,7 +493,8 @@ ______________________________________________________________________
 1. Register AI/vector adapters via `builtin_adapter_metadata` and ship dependency extras (`pyproject.toml`).
 1. Add smoke/unit tests for DuckDB, vector adapters, and embedding stack (including `common.py` helpers).
 1. Fix HTTP adapter regression (restore `httpx.AsyncClient`) and repair remote watcher integration tests.
-1. Execute Q1 2026 NoSQL sprint per `docs/implementation/NOSQL_ADAPTER_SPRINT.md` (DynamoDB → Firestore now that MongoDB is live).
+1. Refresh adapter gap audit in `docs/analysis/ADAPTER_GAP_AUDIT.md` and track Gemini/Pulsar/Wave C owners.
+1. Update dependency guidance once Gemini SDK supports Python 3.14 + httpx 1.x.
 
 ### Completed Ports (November–December 2025)
 
@@ -514,13 +508,12 @@ ______________________________________________________________________
 | Category | Adapter(s) | Owner | Target |
 |----------|------------|-------|--------|
 | Messaging/stream | `pulsar` | Runtime Team (Eli) | Evaluate demand post-kafka/rabbitmq rollout |
-| DNS providers | `cloudflare`, `route53`, `gcdns` | Infra Team (Mara) | Mar 2026 |
-| File Transfer | `ftp`, `sftp` | Platform Core (Jules) | Mar 2026 |
+| Wave C optional | `feature-flags` | Platform Core | Capture requirements first |
 | LLM | `gemini` | AI Team (blocked on SDK) | Pending SDK (track monthly) |
 
 ### Long-term (Future)
 
-1. Deliver remaining DNS/File Transfer/Pulsar adapters.
+1. Deliver remaining Pulsar adapter if demand emerges.
 1. Add universal query interface (v0.4.0).
 1. Evaluate structured concurrency helpers for adapter orchestration.
 
@@ -529,7 +522,7 @@ ______________________________________________________________________
 ## References
 
 - **ADAPTER_STRATEGY.md** - Master adapter porting roadmap
-- **ACB_COMPARISON.md** - Comparison with mature ACB framework
+- **ONEIRIC_VS_ACB.md** - Comparison with mature ACB framework
 - **STAGE5_FINAL_AUDIT_REPORT.md** - Production readiness audit
 
 ______________________________________________________________________

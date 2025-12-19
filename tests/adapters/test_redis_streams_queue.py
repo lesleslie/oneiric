@@ -5,7 +5,9 @@ from collections import defaultdict
 from typing import Any
 
 import pytest
-from coredis.exceptions import ResponseError
+
+coredis = pytest.importorskip("coredis")
+ResponseError = coredis.exceptions.ResponseError
 
 from oneiric.adapters.queue.redis_streams import (
     RedisStreamsQueueAdapter,

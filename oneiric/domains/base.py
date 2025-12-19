@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -13,7 +13,8 @@ from oneiric.core.lifecycle import LifecycleError, LifecycleManager
 from oneiric.core.logging import get_logger
 from oneiric.core.metrics import record_drain_state, record_pause_state
 from oneiric.core.resolution import Candidate, Resolver
-from oneiric.runtime.activity import DomainActivity, DomainActivityStore
+from oneiric.runtime.activity import DomainActivity
+from oneiric.runtime.protocols import ActivityStoreProtocol
 from oneiric.runtime.supervisor import ServiceSupervisor
 
 
@@ -36,7 +37,7 @@ class DomainBridge:
         resolver: Resolver,
         lifecycle: LifecycleManager,
         settings: LayerSettings,
-        activity_store: DomainActivityStore | None = None,
+        activity_store: ActivityStoreProtocol | None = None,
         supervisor: ServiceSupervisor | None = None,
     ) -> None:
         self.domain = domain
@@ -79,15 +80,21 @@ class DomainBridge:
         key: str,
         *,
         provider: str | None = None,
+        capabilities: Sequence[str] | None = None,
+        require_all: bool = True,
         force_reload: bool = False,
     ) -> DomainHandle:
         configured_provider = provider or self.settings.selections.get(key)
         self._ensure_activity_allowed(key)
         candidate = self.resolver.resolve(
-            self.domain, key, provider=configured_provider
+            self.domain,
+            key,
+            provider=configured_provider,
+            capabilities=capabilities,
+            require_all=require_all,
         )
         if not candidate:
-            raise LifecycleError(f"No candidate found for {self.domain}:{key}")
+            raise self._missing_candidate_error(key)
         target_provider = candidate.provider or configured_provider
         if not target_provider:
             raise LifecycleError(f"Candidate missing provider for {self.domain}:{key}")
@@ -103,21 +110,13 @@ class DomainBridge:
                     self.domain, key, provider=target_provider
                 )
 
-        handle = DomainHandle(
-            domain=self.domain,
+        handle = self._build_handle(
             key=key,
             provider=target_provider,
             instance=instance,
-            metadata=candidate.metadata,
-            settings=self.get_settings(target_provider),
+            candidate=candidate,
         )
-        self._logger.info(
-            "domain-ready",
-            domain=self.domain,
-            key=key,
-            provider=handle.provider,
-            metadata=handle.metadata,
-        )
+        self._after_handle(handle, candidate)
         return handle
 
     def active_candidates(self) -> list[Candidate]:
@@ -126,8 +125,19 @@ class DomainBridge:
     def shadowed_candidates(self) -> list[Candidate]:
         return self.resolver.list_shadowed(self.domain)
 
-    def explain(self, key: str) -> dict[str, Any]:
-        return self.resolver.explain(self.domain, key).as_dict()
+    def explain(
+        self,
+        key: str,
+        *,
+        capabilities: Sequence[str] | None = None,
+        require_all: bool = True,
+    ) -> dict[str, Any]:
+        return self.resolver.explain(
+            self.domain,
+            key,
+            capabilities=capabilities,
+            require_all=require_all,
+        ).as_dict()
 
     def should_accept_work(self, key: str) -> bool:
         """Return True when the domain/key is not paused or draining."""
@@ -208,6 +218,30 @@ class DomainBridge:
             reason=reason,
         )
         raise LifecycleError(f"{self.domain}:{key} is {reason}")
+
+    def _build_handle(
+        self, *, key: str, provider: str, instance: Any, candidate: Candidate
+    ) -> DomainHandle:
+        return DomainHandle(
+            domain=self.domain,
+            key=key,
+            provider=provider,
+            instance=instance,
+            metadata=candidate.metadata,
+            settings=self.get_settings(provider),
+        )
+
+    def _after_handle(self, handle: DomainHandle, candidate: Candidate) -> None:
+        self._logger.info(
+            "domain-ready",
+            domain=self.domain,
+            key=handle.key,
+            provider=handle.provider,
+            metadata=handle.metadata,
+        )
+
+    def _missing_candidate_error(self, key: str) -> LifecycleError:
+        return LifecycleError(f"No candidate found for {self.domain}:{key}")
 
     def _handle_supervisor_update(
         self, domain: str, key: str, state: DomainActivity

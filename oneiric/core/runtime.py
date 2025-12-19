@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import AsyncIterator, Awaitable, Callable, Coroutine
+import math
+from collections.abc import AsyncIterator, Awaitable, Callable, Coroutine, Sequence
 from contextlib import asynccontextmanager
 from typing import Any
+
+import anyio
 
 from .logging import get_logger
 
@@ -90,6 +93,95 @@ class RuntimeTaskGroup:
             for task in self._tasks
             if task.done() and not task.cancelled()
         ]
+
+
+class AnyioTaskGroup:
+    """AnyIO TaskGroup wrapper that adds logging + optional concurrency limits."""
+
+    def __init__(
+        self,
+        name: str,
+        task_group: anyio.abc.TaskGroup,
+        cancel_scope: anyio.CancelScope,
+        limiter: anyio.CapacityLimiter | None = None,
+    ) -> None:
+        self.name = name
+        self._task_group = task_group
+        self._cancel_scope = cancel_scope
+        self._limiter = limiter
+        self._logger = get_logger(name)
+
+    def start_soon(
+        self,
+        func: Callable[..., Awaitable[Any]],
+        *args: Any,
+        task_name: str | None = None,
+    ) -> None:
+        async def _runner() -> None:
+            label = task_name or func.__name__
+            self._logger.debug("taskgroup-task-start", name=self.name, task=label)
+            try:
+                if self._limiter is None:
+                    await func(*args)
+                else:
+                    async with self._limiter:
+                        await func(*args)
+            finally:
+                self._logger.debug("taskgroup-task-end", name=self.name, task=label)
+
+        self._task_group.start_soon(_runner)
+
+    def cancel(self) -> None:
+        self._cancel_scope.cancel()
+
+
+@asynccontextmanager
+async def anyio_nursery(
+    name: str = "oneiric.nursery",
+    *,
+    limit: int | None = None,
+    timeout: float | None = None,
+    shield: bool = False,
+) -> AsyncIterator[AnyioTaskGroup]:
+    logger = get_logger(name)
+    limiter = anyio.CapacityLimiter(limit) if limit else None
+    deadline = math.inf
+    if timeout is not None:
+        deadline = anyio.current_time() + timeout
+    cancel_scope = anyio.CancelScope(deadline=deadline, shield=shield)
+    with cancel_scope:
+        async with anyio.create_task_group() as task_group:
+            logger.debug("taskgroup-enter", name=name)
+            try:
+                yield AnyioTaskGroup(name, task_group, cancel_scope, limiter)
+            finally:
+                logger.debug(
+                    "taskgroup-exit",
+                    name=name,
+                    cancelled=cancel_scope.cancel_called,
+                )
+
+
+async def run_with_anyio_taskgroup(
+    tasks: Sequence[CoroutineFactory],
+    *,
+    name: str = "oneiric.nursery",
+    limit: int | None = None,
+    timeout: float | None = None,
+    shield: bool = False,
+) -> list[Any]:
+    results: list[Any] = [None] * len(tasks)
+
+    async def _runner(index: int, factory: CoroutineFactory) -> None:
+        results[index] = await factory()
+
+    async with anyio_nursery(
+        name=name, limit=limit, timeout=timeout, shield=shield
+    ) as tg:
+        for idx, factory in enumerate(tasks):
+            tg.start_soon(_runner, idx, factory, task_name=f"{name}.{idx}")
+
+    return results
 
 
 @asynccontextmanager

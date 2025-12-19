@@ -538,7 +538,7 @@ ______________________________________________________________________
 - **DuckDB Docs:** https://duckdb.org/docs/
 - **Extensions:** https://duckdb.org/docs/extensions/overview
 - **ADAPTER_STRATEGY.md** - Adapter porting roadmap
-- **ACB Comparison:** `docs/ACB_COMPARISON.md`
+- **ACB Comparison:** `docs/ONEIRIC_VS_ACB.md`
 
 ______________________________________________________________________
 

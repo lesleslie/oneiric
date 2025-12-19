@@ -11,7 +11,7 @@ import anyio
 import msgspec
 
 from oneiric.core.logging import get_logger
-from oneiric.core.observability import get_tracer
+from oneiric.core.observability import observed_span
 from oneiric.core.resiliency import run_with_retry
 from oneiric.runtime.metrics import record_event_handler_metrics
 
@@ -147,7 +147,6 @@ class EventDispatcher:
             list(handlers or []), key=lambda handler: handler.priority, reverse=True
         )
         self._logger = get_logger("runtime.event_dispatcher")
-        self._tracer = get_tracer("runtime.events")
 
     def register(self, handler: EventHandler) -> None:
         self._handlers.append(handler)
@@ -205,14 +204,23 @@ class EventDispatcher:
             attempts += 1
             return await handler.callback(envelope)
 
-        with self._tracer.start_as_current_span("event.handler") as span:
-            span.set_attributes(
-                {
-                    "oneiric.event.topic": envelope.topic,
-                    "oneiric.event.handler": handler.name,
-                    "oneiric.event.max_attempts": max_attempts,
-                }
-            )
+        log_context = {
+            "domain": "event",
+            "key": handler.name,
+            "event_topic": envelope.topic,
+            "event_handler": handler.name,
+        }
+        span_attrs = {
+            "oneiric.event.topic": envelope.topic,
+            "oneiric.event.handler": handler.name,
+            "oneiric.event.max_attempts": max_attempts,
+        }
+        with observed_span(
+            "event.handler",
+            component="runtime.events",
+            attributes=span_attrs,
+            log_context=log_context,
+        ) as span:
             try:
                 if max_attempts > 1:
                     value = await run_with_retry(
@@ -221,6 +229,13 @@ class EventDispatcher:
                         base_delay=base_delay,
                         max_delay=max_delay,
                         jitter=jitter,
+                        adaptive_key=f"event:{handler.name}",
+                        attributes={
+                            "domain": "event",
+                            "operation": "handler",
+                            "handler": handler.name,
+                            "topic": envelope.topic,
+                        },
                     )
                 else:
                     value = await _execute()

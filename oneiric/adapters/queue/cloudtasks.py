@@ -10,6 +10,7 @@ from typing import Any
 from pydantic import AnyHttpUrl, BaseModel, Field
 
 from oneiric.adapters.metadata import AdapterMetadata
+from oneiric.core.client_mixins import EnsureClientMixin
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
@@ -36,7 +37,7 @@ class CloudTasksQueueSettings(BaseModel):
     )
 
 
-class CloudTasksQueueAdapter:
+class CloudTasksQueueAdapter(EnsureClientMixin):
     """Adapter that enqueues HTTP tasks against Cloud Tasks queues."""
 
     metadata = AdapterMetadata(
@@ -92,7 +93,7 @@ class CloudTasksQueueAdapter:
         self._logger.info("cloudtasks-adapter-cleanup")
 
     async def health(self) -> bool:
-        client = self._ensure_client()
+        client = self._ensure_client("cloudtasks-client-not-initialized")
         try:
             queue_path = self._ensure_queue_path()
             await client.get_queue(name=queue_path)
@@ -102,7 +103,7 @@ class CloudTasksQueueAdapter:
             return False
 
     async def enqueue(self, data: Mapping[str, Any]) -> str:
-        client = self._ensure_client()
+        client = self._ensure_client("cloudtasks-client-not-initialized")
         queue_path = self._ensure_queue_path()
         payload = self._build_task_payload(data)
         response = await client.create_task(parent=queue_path, task=payload)
@@ -155,11 +156,6 @@ class CloudTasksQueueAdapter:
             }
 
         return task
-
-    def _ensure_client(self) -> Any:
-        if not self._client:
-            raise LifecycleError("cloudtasks-client-not-initialized")
-        return self._client
 
     def _ensure_queue_path(self) -> str:
         if not self._queue_path:

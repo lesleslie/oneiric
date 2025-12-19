@@ -25,6 +25,12 @@ ______________________________________________________________________
 source: string                    # Manifest source identifier (required)
 signature: string                 # Base64-encoded ED25519 signature (optional)
 signature_algorithm: "ed25519"    # Signature algorithm (default: ed25519)
+signatures:                       # Optional multi-signature list
+  - signature: string
+    algorithm: "ed25519"
+    key_id: string                # Optional signer identifier
+signed_at: "2025-01-01T00:00:00Z" # Optional signing timestamp (ISO-8601)
+expires_at: "2025-02-01T00:00:00Z"# Optional expiry timestamp (ISO-8601)
 entries: [RemoteManifestEntry]    # List of component entries (required)
 ```
 
@@ -47,6 +53,35 @@ ______________________________________________________________________
 |-------|------|-------------|---------|
 | `uri` | `str` | HTTP(S) URL or file path to artifact | `"https://cdn.example.com/redis-cache-v1.0.0.whl"` |
 | `sha256` | `str` | Expected SHA256 digest (hex string) | `"abc123def456..."` (64 chars) |
+
+### Local Manifests + file:// URIs
+
+Local manifest paths and `file://` artifact URIs are disabled by default. Enable them explicitly and scope access to trusted roots:
+
+```toml
+[remote]
+manifest_url = "file:///workspace/build/serverless_manifest.json"
+allow_file_uris = true
+allowed_file_uri_roots = ["/workspace/build"]
+```
+
+Manifest snippet using a local artifact:
+
+```yaml
+entries:
+  - domain: adapter
+    key: cache
+    provider: redis
+    factory: oneiric.adapters.cache.redis:RedisCacheAdapter
+    uri: file:///workspace/build/adapters/redis_cache.whl
+    sha256: "<sha256>"
+```
+
+Log excerpt when local paths are blocked:
+
+```text
+remote-refresh-error url="file:///workspace/build/serverless_manifest.json" error="local manifest paths disabled for remote manifests"
+```
 
 ### Resolution Fields (Optional)
 
@@ -194,8 +229,12 @@ ______________________________________________________________________
 
 ```yaml
 source: oneiric-production-v2
-signature: "base64-encoded-ed25519-signature"
-signature_algorithm: ed25519
+signed_at: "2025-01-01T00:00:00Z"
+expires_at: "2025-02-01T00:00:00Z"
+signatures:
+  - signature: "base64-encoded-ed25519-signature"
+    algorithm: ed25519
+    key_id: "primary"
 
 entries:
   # Full adapter example with capability descriptors + v2 fields

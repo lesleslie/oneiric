@@ -9,6 +9,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from oneiric.adapters.metadata import AdapterMetadata
+from oneiric.adapters.storage.utils import is_not_found_error
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
@@ -108,7 +109,7 @@ class GCSStorageAdapter:
         try:
             return await asyncio.to_thread(blob.download_as_bytes)
         except Exception as exc:
-            if self._is_not_found(exc):
+            if is_not_found_error(exc, codes={404}, messages=("404", "Not Found")):
                 return None
             raise
 
@@ -116,7 +117,7 @@ class GCSStorageAdapter:
         try:
             await asyncio.to_thread(self._ensure_bucket().blob(key).delete)
         except Exception as exc:
-            if not self._is_not_found(exc):
+            if not is_not_found_error(exc, codes={404}, messages=("404", "Not Found")):
                 raise
 
     async def list(self, prefix: str = "") -> list[str]:
@@ -133,12 +134,3 @@ class GCSStorageAdapter:
         blobs: Any = bucket.list_blobs(prefix=prefix)
         result: list[str] = [blob.name for blob in blobs]
         return result
-
-    def _is_not_found(self, exc: Exception) -> bool:
-        code = getattr(exc, "code", None)
-        if isinstance(code, int) and code == 404:
-            return True
-        message = getattr(exc, "args", [None])[0]
-        if isinstance(message, str):
-            return "404" in message or "Not Found" in message
-        return False

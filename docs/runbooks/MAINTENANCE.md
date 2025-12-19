@@ -141,12 +141,19 @@ Upgrade Oneiric to a new version while maintaining service availability and data
 
 ### Procedure
 
+```bash
+# Set version variables for this run
+CURRENT_VERSION="0.2.3"
+TARGET_VERSION="0.2.4"
+PREVIOUS_VERSION="0.2.2"
+```
+
 #### Step 1: Pre-Upgrade Validation (10 min)
 
 ```bash
 # 1.1: Check current version
 uv run python -m oneiric.cli --version
-# Record: Current version = v0.1.0
+# Record: Current version = v${CURRENT_VERSION}
 
 # 1.2: Check system health
 uv run python -m oneiric.cli health --probe
@@ -169,14 +176,14 @@ curl 'http://prometheus:9090/api/v1/query?query=oneiric:resolution_success_rate_
 ```bash
 # 2.1: Deploy to staging
 # Docker:
-docker pull oneiric:v0.2.0-staging
+docker pull oneiric:${TARGET_VERSION}-staging
 docker stop oneiric-staging
 docker run -d --name oneiric-staging \
   -v $(pwd)/settings:/app/settings \
-  oneiric:v0.2.0-staging
+  oneiric:${TARGET_VERSION}-staging
 
 # Kubernetes:
-kubectl set image deployment/oneiric oneiric=oneiric:v0.2.0 -n staging
+kubectl set image deployment/oneiric oneiric=oneiric:${TARGET_VERSION} -n staging
 kubectl rollout status deployment/oneiric -n staging
 
 # 2.2: Smoke test staging
@@ -199,7 +206,7 @@ pytest tests/integration/
 ```bash
 # 3.1: Update image
 kubectl set image deployment/oneiric \
-  oneiric=oneiric:v0.2.0 \
+  oneiric=oneiric:${TARGET_VERSION} \
   -n oneiric
 
 # 3.2: Watch rollout
@@ -208,7 +215,7 @@ kubectl rollout status deployment/oneiric -n oneiric
 
 # 3.3: Verify pods running new version
 kubectl get pods -n oneiric -o jsonpath='{.items[*].spec.containers[*].image}'
-# Expected: oneiric:v0.2.0
+# Expected: oneiric:${TARGET_VERSION}
 
 # 3.4: Check pod health
 kubectl get pods -n oneiric
@@ -219,14 +226,14 @@ kubectl get pods -n oneiric
 
 ```bash
 # 3.1: Pull new image
-docker pull oneiric:v0.2.0
+docker pull oneiric:${TARGET_VERSION}
 
 # 3.2: Stop old container
 docker-compose stop oneiric
 # Downtime starts here (~5-10 seconds)
 
 # 3.3: Update docker-compose.yml
-sed -i 's/oneiric:v0.1.0/oneiric:v0.2.0/g' docker-compose.yml
+sed -i "s/oneiric:${CURRENT_VERSION}/oneiric:${TARGET_VERSION}/g" docker-compose.yml
 
 # 3.4: Start new container
 docker-compose up -d oneiric
@@ -245,7 +252,7 @@ sudo vim /etc/systemd/system/oneiric.service
 # Update ExecStart path if changed
 
 # 3.2: Install new version
-uv pip install oneiric==0.2.0
+uv pip install oneiric==${TARGET_VERSION}
 
 # 3.3: Reload systemd
 sudo systemctl daemon-reload
@@ -264,7 +271,7 @@ sudo systemctl status oneiric
 ```bash
 # 4.1: Verify version updated
 uv run python -m oneiric.cli --version
-# Expected: v0.2.0
+# Expected: v${TARGET_VERSION}
 
 # 4.2: Health check
 uv run python -m oneiric.cli health --probe
@@ -329,7 +336,7 @@ curl -X DELETE http://alertmanager:9093/api/v2/silence/<silence-id>
 docker-compose stop oneiric
 
 # 2. Revert docker-compose.yml
-sed -i 's/oneiric:v0.2.0/oneiric:v0.1.0/g' docker-compose.yml
+sed -i "s/oneiric:${TARGET_VERSION}/oneiric:${PREVIOUS_VERSION}/g" docker-compose.yml
 
 # 3. Start old version
 docker-compose up -d oneiric
@@ -355,7 +362,7 @@ kubectl get pods -n oneiric
 
 ```bash
 # 1. Reinstall old version
-uv pip install oneiric==0.1.0
+uv pip install oneiric==${PREVIOUS_VERSION}
 
 # 2. Restart service
 sudo systemctl restart oneiric
@@ -378,7 +385,7 @@ uv run python -m oneiric.cli --version
 
 ```bash
 # 1. Update documentation
-echo "v0.2.0 deployed to production on $(date)" >> CHANGELOG.md
+echo "v${TARGET_VERSION} deployed to production on $(date)" >> CHANGELOG.md
 
 # 2. Remove backup after 7 days (if stable)
 # (Schedule cleanup)
@@ -387,7 +394,7 @@ echo "v0.2.0 deployed to production on $(date)" >> CHANGELOG.md
 # (Update deployment tracker/spreadsheet)
 
 # 4. Announce completion
-# Slack: "Oneiric upgraded to v0.2.0 successfully"
+# Slack: "Oneiric upgraded to v${TARGET_VERSION} successfully"
 ```
 
 ______________________________________________________________________

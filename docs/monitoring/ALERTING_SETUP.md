@@ -395,7 +395,7 @@ ______________________________________________________________________
 
 ```yaml
 slack_configs:
-  - api_url: 'https://hooks.slack.com/services/T00/B00/XXX'
+  - api_url: 'https://hooks.slack.com/services/T00/B00/REPLACE_ME'
     channel: '#alerts'
     username: 'AlertManager'
     icon_emoji: ':fire:'

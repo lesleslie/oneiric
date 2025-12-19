@@ -162,11 +162,54 @@ def get_canonical_manifest_for_signing(manifest_dict: dict) -> str:
     unsigned = {
         k: v
         for k, v in manifest_dict.items()
-        if k not in ("signature", "signature_algorithm")
+        if k not in ("signature", "signature_algorithm", "signatures")
     }
 
     # Canonical JSON: sorted keys, compact (no whitespace)
     return json.dumps(unsigned, sort_keys=True, separators=(",", ":"))
+
+
+def verify_manifest_signatures(
+    manifest_data: str,
+    signatures: list[str],
+    *,
+    threshold: int = 1,
+    trusted_keys: list[Ed25519PublicKey] | None = None,
+) -> tuple[bool, str | None, int]:
+    """Verify multiple signatures and enforce a threshold."""
+
+    if threshold < 1:
+        return False, "Signature threshold must be >= 1", 0
+
+    if trusted_keys is None:
+        trusted_keys = load_trusted_public_keys()
+
+    if not trusted_keys:
+        return (
+            False,
+            "No trusted public keys configured (ONEIRIC_TRUSTED_PUBLIC_KEYS not set)",
+            0,
+        )
+
+    valid_count = 0
+    errors: list[str] = []
+    for idx, signature in enumerate(signatures):
+        is_valid, error = verify_manifest_signature(
+            manifest_data, signature, trusted_keys=trusted_keys
+        )
+        if is_valid:
+            valid_count += 1
+        else:
+            errors.append(f"sig_{idx}: {error}")
+        if valid_count >= threshold:
+            return True, None, valid_count
+
+    error_msg = (
+        "Signature threshold not met: "
+        f"{valid_count} valid of {len(signatures)} provided; "
+        f"required {threshold}. Errors: {'; '.join(errors)}"
+    )
+    return False, error_msg, valid_count
 
 
 def sanitize_filename(filename: str) -> str:

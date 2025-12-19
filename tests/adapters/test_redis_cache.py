@@ -4,7 +4,9 @@ import asyncio
 from typing import Any
 
 import pytest
-from coredis.cache import TrackingCache
+
+coredis = pytest.importorskip("coredis")
+TrackingCache = coredis.cache.TrackingCache
 from fakeredis.aioredis import FakeRedis
 
 from oneiric.adapters.bootstrap import register_builtin_adapters

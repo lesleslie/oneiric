@@ -3,26 +3,27 @@
 from __future__ import annotations
 
 import httpx
-from pydantic import AnyHttpUrl, BaseModel, Field
+from pydantic import AnyHttpUrl, Field
 
+from oneiric.adapters.httpx_base import HTTPXClientMixin
 from oneiric.adapters.metadata import AdapterMetadata
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
+from oneiric.core.settings_mixins import TimeoutSettings
 
 from .common import MessagingSendResult, NotificationMessage
 
 
-class WebhookSettings(BaseModel):
+class WebhookSettings(TimeoutSettings):
     """Settings for the generic webhook adapter."""
 
     url: AnyHttpUrl
     method: str = Field(default="POST")
     headers: dict[str, str] = Field(default_factory=dict)
-    timeout: float = Field(default=10.0, ge=0.5)
 
 
-class WebhookAdapter:
+class WebhookAdapter(HTTPXClientMixin):
     """Adapter that dispatches arbitrary JSON payloads to a configurable webhook."""
 
     metadata = AdapterMetadata(
@@ -44,9 +45,8 @@ class WebhookAdapter:
         *,
         client: httpx.AsyncClient | None = None,
     ) -> None:
+        super().__init__(client=client)
         self._settings = settings
-        self._client = client
-        self._owns_client = client is None
         self._logger = get_logger("adapter.messaging.webhook").bind(
             domain="adapter",
             key="messaging",
@@ -54,19 +54,15 @@ class WebhookAdapter:
         )
 
     async def init(self) -> None:
-        if self._client is None:
-            self._client = httpx.AsyncClient(timeout=self._settings.timeout)
-            self._owns_client = True
+        self._init_client(lambda: httpx.AsyncClient(timeout=self._settings.timeout))
         self._logger.info("webhook-adapter-init")
 
     async def cleanup(self) -> None:
-        if self._client and self._owns_client:
-            await self._client.aclose()
-        self._client = None
+        await self._cleanup_client()
         self._logger.info("webhook-adapter-cleanup")
 
     async def health(self) -> bool:
-        client = self._ensure_client()
+        client = self._ensure_client("webhook-client-not-initialized")
         try:
             response = await client.head(str(self._settings.url))
             return response.status_code < 500
@@ -77,7 +73,7 @@ class WebhookAdapter:
     async def send_notification(
         self, message: NotificationMessage
     ) -> MessagingSendResult:
-        client = self._ensure_client()
+        client = self._ensure_client("webhook-client-not-initialized")
         url = message.target or str(self._settings.url)
         method = (message.extra_payload.get("method") or self._settings.method).upper()
         headers = self._settings.headers.copy()
@@ -113,8 +109,3 @@ class WebhookAdapter:
             status_code=response.status_code,
             response_headers=response.headers.copy(),
         )
-
-    def _ensure_client(self) -> httpx.AsyncClient:
-        if not self._client:
-            raise LifecycleError("webhook-client-not-initialized")
-        return self._client

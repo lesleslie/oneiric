@@ -34,7 +34,7 @@ ______________________________________________________________________
 | **Phase 1: Core Resolution** | Complete | ✅ Complete | 100% | None |
 | **Phase 2: Adapter Modularization** | Complete | ✅ Complete | 95% | Minor: adapter-specific health checks |
 | **Phase 3: Cross-Domain Alignment** | Complete | ✅ Complete | 100% | None |
-| **Phase 4: Plugins & Remote** | Partial | ⚠️ Partial | 92% | Entry-point loader scaffolded; TODO: sample plugins + remote provider discovery backlog |
+| **Phase 4: Plugins & Remote** | Partial | ⚠️ Partial | 92% | Entry-point loader scaffolded; backlog: sample plugins + remote provider discovery |
 | **Phase 5: Observability** | Partial | ⚠️ Partial | 70% | Structured sink config, circuit breaker + retry/backoff helpers |
 | **Phase 6: Lifecycle & Safety** | Partial | ⚠️ Near Complete | 85% | Cancel-safe utilities and graceful shutdown polish |
 | **Phase 7: Tooling & UX** | Partial | ⚠️ Near Complete | 95% | Documentation polish + production readiness checklists |
@@ -218,7 +218,7 @@ tests/
 - [x] Add pytest, pytest-asyncio, pytest-cov to dependencies
 - [x] Create `tests/conftest.py` with shared fixtures (temp dirs, resolver/lifecycle fakes, manifest builders, signature keypairs)
 - [x] Configure pytest.ini (`pyproject.toml`) with async markers + coverage settings
-- [x] Set up CI-ready command (`uv run pytest`) tracked in docs (GitHub Actions wiring TODO for launch)
+- [x] Set up CI-ready command (`uv run pytest`) tracked in docs (GitHub Actions wiring pending for launch)
 
 **Day 3-5: Core Resolution Tests (~25 tests)**
 

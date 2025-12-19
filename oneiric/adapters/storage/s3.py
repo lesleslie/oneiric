@@ -8,6 +8,8 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from oneiric.adapters.metadata import AdapterMetadata
+from oneiric.adapters.storage.utils import is_not_found_error
+from oneiric.core.client_mixins import EnsureClientMixin
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
@@ -33,7 +35,7 @@ class S3StorageSettings(BaseModel):
     )
 
 
-class S3StorageAdapter:
+class S3StorageAdapter(EnsureClientMixin):
     """Async S3 adapter powered by aioboto3 clients."""
 
     metadata = AdapterMetadata(
@@ -100,7 +102,7 @@ class S3StorageAdapter:
         self._logger.info("adapter-init", adapter="s3-storage")
 
     async def health(self) -> bool:
-        client = self._ensure_client()
+        client = self._ensure_client("s3-client-not-initialized")
         try:
             await client.head_bucket(Bucket=self._settings.bucket)
             if self._settings.healthcheck_key:
@@ -122,17 +124,21 @@ class S3StorageAdapter:
     async def upload(
         self, key: str, data: bytes, *, content_type: str | None = None
     ) -> None:
-        client = self._ensure_client()
+        client = self._ensure_client("s3-client-not-initialized")
         await client.put_object(
             Bucket=self._settings.bucket, Key=key, Body=data, ContentType=content_type
         )
 
     async def download(self, key: str) -> bytes | None:
-        client = self._ensure_client()
+        client = self._ensure_client("s3-client-not-initialized")
         try:
             response = await client.get_object(Bucket=self._settings.bucket, Key=key)
         except Exception as exc:
-            if self._is_not_found(exc):
+            if is_not_found_error(
+                exc,
+                codes={"NoSuchKey", "404"},
+                messages=("NoSuchKey", "404"),
+            ):
                 return None
             raise
         body = response["Body"]
@@ -141,11 +147,11 @@ class S3StorageAdapter:
         return data
 
     async def delete(self, key: str) -> None:
-        client = self._ensure_client()
+        client = self._ensure_client("s3-client-not-initialized")
         await client.delete_object(Bucket=self._settings.bucket, Key=key)
 
     async def list(self, prefix: str = "") -> list[str]:
-        client = self._ensure_client()
+        client = self._ensure_client("s3-client-not-initialized")
         continuation: str | None = None
         items: list[str] = []
         while True:
@@ -166,21 +172,3 @@ class S3StorageAdapter:
             if not continuation:
                 break
         return items
-
-    def _ensure_client(self) -> Any:
-        if not self._client:
-            raise LifecycleError("s3-client-not-initialized")
-        return self._client
-
-    def _is_not_found(self, exc: Exception) -> bool:
-        response = getattr(exc, "response", None)
-        if isinstance(response, dict):
-            error = response.get("Error")
-            if isinstance(error, dict):
-                code = error.get("Code")
-                if isinstance(code, str):
-                    return code in {"NoSuchKey", "404"}
-        message = getattr(exc, "args", [None])[0]
-        if isinstance(message, str):
-            return "NoSuchKey" in message or "404" in message
-        return False

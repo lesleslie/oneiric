@@ -145,8 +145,19 @@ class RemoteManifestEntry(BaseModel):
         return payloads
 
 
+class ManifestSignature(BaseModel):
+    """Signature entry for multi-signature manifests."""
+
+    signature: str
+    algorithm: str = "ed25519"
+    key_id: str | None = None
+
+
 class RemoteManifest(BaseModel):
     source: str = "remote"
     entries: list[RemoteManifestEntry] = Field(default_factory=list)
     signature: str | None = None  # Base64-encoded signature
     signature_algorithm: str = "ed25519"  # Only ed25519 supported initially
+    signatures: list[ManifestSignature] = Field(default_factory=list)
+    signed_at: str | None = None
+    expires_at: str | None = None

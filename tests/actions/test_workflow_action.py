@@ -247,3 +247,32 @@ async def test_workflow_orchestrator_cycle_detection() -> None:
                 ],
             }
         )
+
+
+@pytest.mark.asyncio
+async def test_workflow_orchestrator_prunes_targets() -> None:
+    action = WorkflowOrchestratorAction()
+    plan = await action.execute(
+        {
+            "workflow_id": "targeted",
+            "target_steps": ["notify"],
+            "steps": [
+                {"step_id": "hydrate", "name": "Hydrate", "action": "http.fetch"},
+                {
+                    "step_id": "notify",
+                    "name": "Notify",
+                    "action": "workflow.notify",
+                    "depends_on": ["hydrate"],
+                },
+                {
+                    "step_id": "audit",
+                    "name": "Audit",
+                    "action": "workflow.audit",
+                    "depends_on": ["hydrate"],
+                },
+            ],
+        }
+    )
+
+    assert plan["ordered_steps"] == ["hydrate", "notify"]
+    assert plan["graph"]["terminal_steps"] == ["notify"]

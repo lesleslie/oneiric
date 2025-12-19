@@ -69,7 +69,11 @@ class FileSecretAdapter:
     async def cleanup(self) -> None:
         self._logger.info("adapter-cleanup-complete", adapter="file-secrets")
 
-    def get_secret(self, secret_id: str) -> str | None:
+    async def invalidate_cache(self) -> None:
+        self._cache = None
+        self._logger.info("secrets-cache-invalidated", adapter="file-secrets")
+
+    async def get_secret(self, secret_id: str) -> str | None:
         if self._settings.reload_on_access or self._cache is None:
             self._load(force=True)
         assert self._cache is not None

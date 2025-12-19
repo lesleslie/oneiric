@@ -8,6 +8,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 from oneiric.actions.metadata import ActionMetadata
+from oneiric.actions.payloads import normalize_payload
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
@@ -58,7 +59,7 @@ class DataTransformAction:
         self._logger = get_logger("action.data.transform")
 
     async def execute(self, payload: dict | None = None) -> dict:
-        payload = payload or {}
+        payload = normalize_payload(payload)
         record = payload.get("data") or payload.get("record")
         if not isinstance(record, Mapping):
             raise LifecycleError("data-transform-record-required")
@@ -191,7 +192,7 @@ class DataSanitizeAction:
         self._logger = get_logger("action.data.sanitize")
 
     async def execute(self, payload: dict | None = None) -> dict:
-        payload = payload or {}
+        payload = normalize_payload(payload)
         record = self._extract_record(payload)
         params = self._extract_sanitize_params(payload)
 
@@ -373,7 +374,7 @@ class ValidationSchemaAction:
         self._logger = get_logger("action.validation.schema")
 
     async def execute(self, payload: dict | None = None) -> dict:
-        payload = payload or {}
+        payload = normalize_payload(payload)
         record = payload.get("data") or payload.get("record")
         if not isinstance(record, Mapping):
             raise LifecycleError("validation-schema-record-required")

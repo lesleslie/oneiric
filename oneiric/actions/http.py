@@ -7,21 +7,21 @@ from typing import Any, Literal
 from urllib.parse import urljoin
 
 import httpx
-from pydantic import AnyHttpUrl, BaseModel, Field
+from pydantic import Field
 
 from oneiric.actions.metadata import ActionMetadata
+from oneiric.actions.payloads import normalize_payload
+from oneiric.core.http_helpers import observed_http_request
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
+from oneiric.core.observability import inject_trace_context
 from oneiric.core.resolution import CandidateSource
+from oneiric.core.settings_mixins import BaseURLSettings
 
 
-class HttpActionSettings(BaseModel):
+class HttpActionSettings(BaseURLSettings):
     """Settings for the HTTP fetch action."""
 
-    base_url: AnyHttpUrl | None = Field(
-        default=None,
-        description="Optional base URL joined with payload paths.",
-    )
     default_method: Literal[
         "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"
     ] = Field(
@@ -91,7 +91,7 @@ class HttpFetchAction:
         self._logger = get_logger("action.http.fetch")
 
     async def execute(self, payload: dict | None = None) -> dict:
-        payload = payload or {}
+        payload = normalize_payload(payload)
         method = (
             payload.get("method") or self._settings.default_method or "GET"
         ).upper()
@@ -110,17 +110,27 @@ class HttpFetchAction:
         raise_for_status = bool(
             payload.get("raise_for_status", self._settings.raise_for_status)
         )
-        response = await self._send_request(
-            method=method,
+        response = await observed_http_request(
+            domain="action",
+            key="http.fetch",
+            adapter="http",
+            provider="builtin-http-fetch",
+            operation=method,
             url=url,
-            params=params,
-            headers=headers,
-            timeout=timeout,
-            verify=verify,
-            follow_redirects=follow_redirects,
-            json=payload.get("json"),
-            data=payload.get("data"),
-            content=payload.get("content"),
+            component="action.http",
+            span_name="action.http.request",
+            send=lambda: self._send_request(
+                method=method,
+                url=url,
+                params=params,
+                headers=headers,
+                timeout=timeout,
+                verify=verify,
+                follow_redirects=follow_redirects,
+                json=payload.get("json"),
+                data=payload.get("data"),
+                content=payload.get("content"),
+            ),
         )
         if raise_for_status and not response.is_success:
             raise LifecycleError(f"http-action-status-{response.status_code}")
@@ -193,9 +203,11 @@ class HttpFetchAction:
         data: Any,
         content: Any,
     ) -> httpx.Response:
+        request_headers = dict(headers)
+        inject_trace_context(request_headers)
         request_kwargs = {
             "params": params,
-            "headers": headers,
+            "headers": request_headers,
             "json": json,
             "data": data,
             "content": content,

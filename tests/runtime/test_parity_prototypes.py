@@ -83,7 +83,8 @@ async def test_execute_dag_runs_generations_in_order():
     levels = plan_levels(graph)
     assert levels == [["extract"], ["transform"], ["load"]]
 
-    results = await execute_dag(graph)
+    run_result = await execute_dag(graph)
+    results = run_result["results"]
     assert executed == ["extract", "transform", "load"]
     assert results["extract"] == "EXTRACT"
     assert "extract__duration" in results
@@ -194,7 +195,8 @@ async def test_execute_dag_uses_checkpoint():
         "extract__attempts": 1,
     }
 
-    results = await execute_dag(graph, checkpoint=checkpoint)
+    run_result = await execute_dag(graph, checkpoint=checkpoint)
+    results = run_result["results"]
 
     assert results["extract"] == "cached"
     assert results["extract__attempts"] == 1
@@ -223,7 +225,8 @@ async def test_execute_dag_retries_and_records_attempts():
         )
     ]
     graph = build_graph(tasks)
-    results = await execute_dag(graph)
+    run_result = await execute_dag(graph)
+    results = run_result["results"]
 
     assert results["extract"] == "ok"
     assert results["extract__attempts"] == 2

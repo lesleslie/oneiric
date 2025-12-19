@@ -56,7 +56,7 @@ ______________________________________________________________________
 1. ✅ Update `docs/analysis/ADAPTER_STRATEGY.md` and `docs/implementation/ADAPTER_PORT_SUMMARY.md` with shipped adapters.
 1. ✅ Capture remediation backlog + owners in `docs/implementation/ADAPTER_REMEDIATION_PLAN.md`.
 1. ✅ Publish CLI transcripts / manifest snippets demonstrating the fixed adapters + watchers (`docs/examples/LOCAL_CLI_DEMO.md`, sample manifests for SendGrid/Mailgun/Twilio/Slack/Teams/Webhook + Cloud Tasks/Pub/Sub).
-1. 🚧 Document NoSQL sprint execution plan in `docs/implementation/NOSQL_ADAPTER_SPRINT.md` and keep status synced as tasks close.
+1. ✅ Document NoSQL sprint execution plan (archived in `docs/archive/implementation/NOSQL_ADAPTER_SPRINT.md`) and keep status synced as tasks close.
 
 ### Track G – Resiliency & Runtime Modernization
 
@@ -77,7 +77,8 @@ ______________________________________________________________________
 | NoSQL | `mongodb` (✅), `dynamodb` (✅), `firestore` (✅) | Complete | Data Platform (Nadia) | All NoSQL adapters shipped Dec 2025 with extras, manifests, CLI/docs coverage. |
 | Graph | `neo4j` (✅), `arangodb` (✅), `duckdb_pgq` (✅), `neptune` | Complete / optional follow-up | Platform Core (Ravi) | All planned graph adapters shipped Dec 2025; revisit Neptune only if stakeholders request it. |
 | Messaging | `kafka`, `rabbitmq` | Not started | Runtime Team (Eli) | Align with Stage 3 action migrations; target Feb 2026 after NoSQL. |
-| DNS | `cloudflare`, `route53`, `gcdns` | Not started | Infra Team (Mara) | Requires separate secrets handling; targeted for Mar 2026. |
+| Messaging push | `apns`, `fcm`, `webpush` | ✅ Complete | Messaging | Push adapters shipped with optional SDK extras. |
+| DNS | `cloudflare`, `route53`, `gcdns` | ✅ Complete | Infra Team (Mara) | DNS adapters shipped with record CRUD helpers and lifecycle hooks. |
 | File Transfer | `ftp`, `sftp` | Not started | Platform Core (Jules) | Gate behind optional extra; ensure security guidance; Mar 2026. |
 | AI | `gemini` | Blocked | AI Team | Waiting on official Python SDK for 3.14/httpx1; review monthly. |
 
@@ -129,6 +130,6 @@ ______________________________________________________________________
 1. Stand up the serverless/Cloud Run profile: add Procfile, document buildpack-first deployments, and capture any runtime toggles needed for stateless invocations.
 1. Socialize the new orchestration parity roadmap (events, task DAGs, service supervisors) so we can execute a single Oneiric cut-over without maintaining a hybrid deployment.
 1. **Upcoming priority:** with NoSQL + streaming queues delivered, focus shifts to graph adapters and the remaining DNS/FileTransfer backlog. Keep `docs/analysis/ADAPTER_GAP_AUDIT.md` synced as those land.
-1. Kick off NoSQL sprint per `docs/implementation/NOSQL_ADAPTER_SPRINT.md`: land extras + metadata (Week 1), then MongoDB → DynamoDB → Firestore adapters with tests/docs checkpoints.
+1. NoSQL sprint completed; reference `docs/archive/implementation/NOSQL_ADAPTER_SPRINT.md` for the original plan and evidence.
 
 Track completion in this document and mirror updates back to `ADAPTER_REMEDIATION_PLAN.md` so both strategy and execution views remain aligned. Track G closed on 2025-12-06 with the upgrades + tests noted above.

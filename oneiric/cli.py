@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import importlib
 import inspect
 import json
@@ -10,6 +11,7 @@ import math
 import os
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -18,7 +20,10 @@ import yaml
 
 from oneiric import plugins
 from oneiric.actions import ActionBridge, register_builtin_actions
+from oneiric.actions.bootstrap import builtin_action_metadata
+from oneiric.actions.metadata import ActionMetadata
 from oneiric.adapters import AdapterBridge
+from oneiric.adapters.bootstrap import builtin_adapter_metadata
 from oneiric.adapters.metadata import AdapterMetadata, register_adapter_metadata
 from oneiric.core.config import (
     OneiricSettings,
@@ -42,11 +47,17 @@ from oneiric.core.logging import configure_logging, get_logger
 from oneiric.core.resolution import Candidate, Resolver
 from oneiric.domains import EventBridge, ServiceBridge, TaskBridge, WorkflowBridge
 from oneiric.remote import load_remote_telemetry, remote_sync_loop, sync_remote_manifest
-from oneiric.remote.models import RemoteManifest
+from oneiric.remote.models import (
+    CapabilityDescriptor,
+    RemoteManifest,
+    RemoteManifestEntry,
+)
+from oneiric.remote.security import get_canonical_manifest_for_signing
 from oneiric.runtime.activity import DomainActivityStore
 from oneiric.runtime.checkpoints import WorkflowCheckpointStore
 from oneiric.runtime.events import HandlerResult
 from oneiric.runtime.health import load_runtime_health
+from oneiric.runtime.load_testing import LoadTestProfile, LoadTestResult, run_load_test
 from oneiric.runtime.notifications import NotificationRoute, NotificationRouter
 from oneiric.runtime.orchestrator import RuntimeOrchestrator
 from oneiric.runtime.scheduler import SchedulerHTTPServer, WorkflowTaskProcessor
@@ -317,6 +328,76 @@ def _load_manifest_from_path(path: Path) -> RemoteManifest:
         return RemoteManifest.model_validate(loaded)
 
 
+def _manifest_entry_from_adapter(
+    adapter: AdapterMetadata, version: str
+) -> RemoteManifestEntry:
+    if isinstance(adapter.factory, str):
+        factory_str = adapter.factory
+    elif callable(adapter.factory):
+        factory_str = f"{adapter.factory.__module__}:{adapter.factory.__qualname__}"
+    else:
+        raise ValueError(f"Unsupported factory type: {type(adapter.factory)}")
+
+    settings_model_str: str | None = None
+    if adapter.settings_model:
+        if isinstance(adapter.settings_model, str):
+            settings_model_str = adapter.settings_model
+        else:
+            settings_model_str = (
+                f"{adapter.settings_model.__module__}:{adapter.settings_model.__name__}"
+            )
+
+    capability_descriptors = [
+        CapabilityDescriptor(name=name, description=None)
+        for name in adapter.capabilities
+    ]
+
+    return RemoteManifestEntry(
+        domain="adapter",
+        key=adapter.category,
+        provider=adapter.provider,
+        factory=factory_str,
+        stack_level=adapter.stack_level or 0,
+        priority=adapter.priority,
+        version=adapter.version or version,
+        capabilities=capability_descriptors,
+        owner=adapter.owner,
+        requires_secrets=adapter.requires_secrets,
+        settings_model=settings_model_str,
+        metadata={
+            "description": adapter.description or "",
+            "source": str(adapter.source),
+        },
+    )
+
+
+def _manifest_entry_from_action(
+    action: ActionMetadata, version: str
+) -> RemoteManifestEntry:
+    if isinstance(action.factory, str):
+        factory_str = action.factory
+    elif callable(action.factory):
+        factory_str = f"{action.factory.__module__}:{action.factory.__qualname__}"
+    else:
+        raise ValueError(f"Unsupported factory type: {type(action.factory)}")
+
+    return RemoteManifestEntry(
+        domain="action",
+        key=action.action_type,
+        provider=action.provider,
+        factory=factory_str,
+        stack_level=action.stack_level or 0,
+        priority=action.priority,
+        version=action.version or version,
+        side_effect_free=action.extras.get("side_effect_free", False),
+        timeout_seconds=action.extras.get("timeout_seconds"),
+        metadata={
+            "description": action.description or "",
+            "source": str(action.source),
+        },
+    )
+
+
 async def _invoke_action(handle, payload: dict[str, Any]) -> Any:
     executor = getattr(handle.instance, "execute", None)
     if not callable(executor):
@@ -418,7 +499,7 @@ class DemoCLIWorkflow:
 class DemoCLIEventHandler:
     name: str = "cli-event"
 
-    def handle(self, envelope) -> dict:
+    async def handle(self, envelope) -> dict:
         return {
             "name": self.name,
             "topic": getattr(envelope, "topic", "unknown"),
@@ -1426,6 +1507,16 @@ def _print_activity_entry(entry: dict[str, Any]) -> None:
     print(f"  - {entry['key']}: {status}{note_part}")
 
 
+def _print_load_test_result(result: LoadTestResult) -> None:
+    print("Load test results")
+    print(
+        f"tasks={result.total_tasks} concurrency={result.concurrency} duration={result.duration_seconds:.2f}s throughput={result.throughput_per_second:.2f}/s"
+    )
+    print(
+        f"latency_ms avg={result.avg_latency_ms:.2f} p50={result.p50_latency_ms:.2f} p95={result.p95_latency_ms:.2f} p99={result.p99_latency_ms:.2f} errors={result.errors}"
+    )
+
+
 def _format_entry_status(entry: dict[str, Any]) -> str:
     """Format status string from entry flags."""
     status_bits = []
@@ -1605,6 +1696,7 @@ def _secrets_metadata(config, hook: SecretsHook) -> dict[str, Any]:
     return {
         "provider": provider,
         "cache_ttl_seconds": config.cache_ttl_seconds,
+        "refresh_interval": config.refresh_interval,
         "inline_entries": len(config.inline),
         "prefetched": getattr(hook, "prefetched", False),
     }
@@ -1617,10 +1709,13 @@ def _print_secrets_summary(metadata: dict[str, Any]) -> None:
     inline = metadata.get("inline_entries", 0)
     ttl = metadata.get("cache_ttl_seconds")
     ttl_text = f"{ttl:.0f}s" if ttl is not None else "n/a"
+    refresh = metadata.get("refresh_interval")
+    refresh_text = f"{refresh:.0f}s" if refresh else "off"
     print(
-        "Secrets: provider={provider} cache_ttl={ttl} inline_entries={inline} status={status}".format(
+        "Secrets: provider={provider} cache_ttl={ttl} refresh={refresh} inline_entries={inline} status={status}".format(
             provider=metadata.get("provider", "inline"),
             ttl=ttl_text,
+            refresh=refresh_text,
             inline=inline,
             status=prefetched,
         )
@@ -2007,16 +2102,31 @@ def workflow_run_command(
     if not bridge:
         raise typer.BadParameter("Workflow domain is not initialized")
     context = _parse_payload(context_payload) if context_payload is not None else None
-    results = asyncio.run(_workflow_run_runner(bridge, key, context=context))
+    run_result = asyncio.run(_workflow_run_runner(bridge, key, context=context))
     if json_output:
         typer.echo(
-            json.dumps({"workflow": key, "results": results}, indent=2, default=str)
+            json.dumps(
+                {
+                    "workflow": key,
+                    "run_id": run_result["run_id"],
+                    "results": run_result["results"],
+                },
+                indent=2,
+                default=str,
+            )
         )
         return
+    results = run_result["results"]
     if not results:
         typer.echo(f"Workflow {key} did not return any DAG results.")
         return
-    typer.echo(f"Workflow {key} completed with {len(results)} node result(s):")
+    typer.echo(
+        "Workflow {workflow} completed (run_id={run_id}) with {count} node result(s):".format(
+            workflow=key,
+            run_id=run_result["run_id"],
+            count=len(results),
+        )
+    )
     for node_key, value in results.items():
         typer.echo(f"- {node_key}: {value}")
 
@@ -2248,6 +2358,45 @@ def activity_command(
     _print_activity_report(report)
 
 
+@app.command("load-test")
+def load_test_command(
+    total_tasks: int = typer.Option(
+        1000, "--total", "-t", help="Total tasks to execute."
+    ),
+    concurrency: int = typer.Option(
+        50, "--concurrency", "-c", help="Maximum concurrent tasks."
+    ),
+    warmup_tasks: int = typer.Option(
+        0, "--warmup", help="Warmup tasks to run before measuring."
+    ),
+    sleep_ms: float = typer.Option(
+        0.0, "--sleep-ms", help="Sleep duration per task (ms)."
+    ),
+    payload_bytes: int = typer.Option(
+        0, "--payload-bytes", help="Payload bytes hashed per task."
+    ),
+    timeout_seconds: float | None = typer.Option(
+        None, "--timeout", help="Cancel the run after this many seconds."
+    ),
+    json_output: bool = typer.Option(
+        False, "--json", help="Emit load test result as JSON."
+    ),
+) -> None:
+    profile = LoadTestProfile(
+        total_tasks=total_tasks,
+        concurrency=concurrency,
+        warmup_tasks=warmup_tasks,
+        sleep_ms=sleep_ms,
+        payload_bytes=payload_bytes,
+        timeout_seconds=timeout_seconds,
+    )
+    result = asyncio.run(run_load_test(profile))
+    if json_output:
+        print(result.model_dump_json(indent=2))
+        return
+    _print_load_test_result(result)
+
+
 @app.command()
 def health(
     ctx: typer.Context,
@@ -2346,6 +2495,198 @@ def manifest_pack(
     typer.echo(f"Packed manifest {input_path} -> {output_path}")
 
 
+@manifest_app.command("export")
+def manifest_export(
+    output_path: Path = typer.Option(
+        Path("build/manifest.yaml"),
+        "--output",
+        "-o",
+        file_okay=True,
+        dir_okay=False,
+        writable=True,
+        help="Destination manifest file (use '-' for stdout).",
+    ),
+    version: str = typer.Option(
+        ..., "--version", help="Default version for entries (semantic versioning)."
+    ),
+    source: str = typer.Option(
+        "oneiric-production", "--source", help="Manifest source identifier."
+    ),
+    format: str = typer.Option(
+        "yaml", "--format", help="Output format (yaml or json)."
+    ),
+    no_adapters: bool = typer.Option(
+        False, "--no-adapters", help="Exclude adapter entries."
+    ),
+    no_actions: bool = typer.Option(
+        False, "--no-actions", help="Exclude action entries."
+    ),
+    pretty: bool = typer.Option(
+        True, "--pretty/--compact", help="Pretty-print the output."
+    ),
+    stdout: bool = typer.Option(
+        False, "--stdout", help="Write output to stdout regardless of output path."
+    ),
+) -> None:
+    """Export builtin registry metadata as a remote manifest."""
+    normalized_format = format.lower()
+    if normalized_format not in {"yaml", "json"}:
+        raise typer.BadParameter("Format must be 'yaml' or 'json'.")
+
+    entries: list[RemoteManifestEntry] = []
+    if not no_adapters:
+        for adapter_meta in builtin_adapter_metadata():
+            entries.append(_manifest_entry_from_adapter(adapter_meta, version))
+    if not no_actions:
+        for action_meta in builtin_action_metadata():
+            entries.append(_manifest_entry_from_action(action_meta, version))
+
+    manifest = RemoteManifest(source=source, entries=entries)
+    payload = manifest.model_dump(exclude_none=True)
+
+    if normalized_format == "json":
+        rendered = json.dumps(payload, indent=2 if pretty else None)
+    else:
+        rendered = yaml.safe_dump(
+            payload,
+            sort_keys=False,
+            default_flow_style=False,
+            allow_unicode=False,
+        )
+
+    if stdout or str(output_path) == "-":
+        typer.echo(rendered)
+        return
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(rendered)
+    typer.echo(f"Exported manifest -> {output_path}")
+
+
+@manifest_app.command("sign")
+def manifest_sign(
+    input_path: Path = typer.Option(
+        ...,
+        "--input",
+        "-i",
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+        help="Path to manifest YAML/JSON file.",
+    ),
+    private_key: Path = typer.Option(
+        ...,
+        "--private-key",
+        "-k",
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+        help="Path to ED25519 private key (PEM or raw bytes).",
+    ),
+    output_path: Path | None = typer.Option(
+        None,
+        "--output",
+        "-o",
+        file_okay=True,
+        dir_okay=False,
+        writable=True,
+        help="Destination for signed manifest (defaults to in-place).",
+    ),
+    stdout: bool = typer.Option(
+        False, "--stdout", help="Write signed manifest to stdout."
+    ),
+    key_id: str | None = typer.Option(
+        None, "--key-id", help="Optional key identifier stored with signatures."
+    ),
+    issued_at: str | None = typer.Option(
+        None,
+        "--issued-at",
+        help="Override signed_at timestamp (ISO-8601).",
+    ),
+    expires_at: str | None = typer.Option(
+        None,
+        "--expires-at",
+        help="Set expires_at timestamp (ISO-8601).",
+    ),
+    expires_in: int | None = typer.Option(
+        None,
+        "--expires-in",
+        help="Set expires_at to now + seconds.",
+    ),
+    append: bool = typer.Option(
+        False,
+        "--append",
+        help="Append signature to signatures list instead of overwriting.",
+    ),
+) -> None:
+    """Sign a manifest with an ED25519 private key."""
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    manifest = _load_manifest_from_path(input_path)
+    manifest_dict = manifest.model_dump(exclude_none=True)
+    canonical = get_canonical_manifest_for_signing(manifest_dict)
+
+    key_bytes = private_key.read_bytes()
+    if len(key_bytes) == 32:
+        signing_key = Ed25519PrivateKey.from_private_bytes(key_bytes)
+    else:
+        signing_key = serialization.load_pem_private_key(key_bytes, password=None)
+        if not isinstance(signing_key, Ed25519PrivateKey):
+            raise typer.BadParameter("Private key must be ED25519.")
+
+    signature = base64.b64encode(signing_key.sign(canonical.encode("utf-8"))).decode(
+        "ascii"
+    )
+    signature_entry = {"signature": signature, "algorithm": "ed25519"}
+    if key_id:
+        signature_entry["key_id"] = key_id
+
+    if issued_at:
+        manifest_dict["signed_at"] = issued_at
+    elif not manifest_dict.get("signed_at"):
+        manifest_dict["signed_at"] = datetime.now(UTC).isoformat()
+
+    if expires_in is not None:
+        manifest_dict["expires_at"] = (
+            datetime.now(UTC) + timedelta(seconds=expires_in)
+        ).isoformat()
+    elif expires_at:
+        manifest_dict["expires_at"] = expires_at
+
+    use_signatures = append or bool(manifest_dict.get("signatures"))
+    if use_signatures:
+        signatures = list(manifest_dict.get("signatures") or [])
+        signatures.append(signature_entry)
+        manifest_dict["signatures"] = signatures
+        manifest_dict.pop("signature", None)
+        manifest_dict.pop("signature_algorithm", None)
+    else:
+        manifest_dict["signature"] = signature
+        manifest_dict["signature_algorithm"] = "ed25519"
+
+    target = output_path or input_path
+    if target.suffix.lower() == ".json":
+        rendered = json.dumps(manifest_dict, indent=2)
+    else:
+        rendered = yaml.safe_dump(
+            manifest_dict,
+            sort_keys=False,
+            default_flow_style=False,
+            allow_unicode=False,
+        )
+
+    if stdout:
+        typer.echo(rendered)
+        return
+
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(rendered)
+    typer.echo(f"Signed manifest -> {target}")
+
+
 @secrets_app.command("rotate")
 def secrets_rotate_command(
     ctx: typer.Context,
@@ -2363,13 +2704,22 @@ def secrets_rotate_command(
     all_keys: bool = typer.Option(
         False, "--all", help="Invalidate the entire cache for the configured provider."
     ),
+    provider_cache: bool = typer.Option(
+        True,
+        "--provider-cache/--no-provider-cache",
+        help="Also invalidate the provider adapter cache when available.",
+    ),
 ) -> None:
     state = _state(ctx)
     parsed_keys = _parse_csv(keys)
     if not all_keys and not parsed_keys:
         raise typer.BadParameter("Specify --keys or --all when rotating secrets.")
-    removed = state.secrets.invalidate(
-        keys=None if all_keys else parsed_keys, provider=provider
+    removed = asyncio.run(
+        state.secrets.rotate(
+            keys=None if all_keys else parsed_keys,
+            provider=provider,
+            include_provider_cache=provider_cache,
+        )
     )
     typer.echo(f"Invalidated {removed} cached secret value(s).")
 

@@ -8,11 +8,16 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 from oneiric.core.logging import get_logger
+from oneiric.core.metadata import (
+    build_metadata,
+    register_metadata,
+    settings_model_path,
+)
 from oneiric.core.resolution import Candidate, CandidateSource, Resolver
 
-FactoryType = Callable[..., Any] | str
-
 logger = get_logger("action.metadata")
+
+FactoryType = Callable[..., Any] | str
 
 
 class ActionMetadata(BaseModel):
@@ -38,27 +43,18 @@ class ActionMetadata(BaseModel):
     extras: dict[str, Any] = Field(default_factory=dict)
 
     def to_candidate(self) -> Candidate:
-        settings_model_path: str | None
-        if isinstance(self.settings_model, str):
-            settings_model_path = self.settings_model
-        elif self.settings_model:
-            settings_model_path = (
-                f"{self.settings_model.__module__}.{self.settings_model.__name__}"
-            )
-        else:
-            settings_model_path = None
-        metadata = {
-            "description": self.description,
-            "domains": self.domains,
-            "capabilities": self.capabilities,
-            "owner": self.owner,
-            "requires_secrets": self.requires_secrets,
-            "side_effect_free": self.side_effect_free,
-            "settings_model": settings_model_path,
-        } | self.extras
-        metadata = {
-            key: value for key, value in metadata.items() if value not in (None, [], {})
-        }
+        metadata = build_metadata(
+            {
+                "description": self.description,
+                "domains": self.domains,
+                "capabilities": self.capabilities,
+                "owner": self.owner,
+                "requires_secrets": self.requires_secrets,
+                "side_effect_free": self.side_effect_free,
+                "settings_model": settings_model_path(self.settings_model),
+            },
+            self.extras,
+        )
         return Candidate(
             domain="action",
             key=self.key,
@@ -80,12 +76,12 @@ def register_action_metadata(
 ) -> None:
     """Register metadata-defined action kits with the resolver."""
 
-    candidates = [metadata.to_candidate() for metadata in actions]
-    resolver.register_from_pkg(
-        package_name, package_path, candidates, priority=priority
-    )
-    logger.info(
-        "action-metadata-registered",
-        package=package_name,
-        count=len(candidates),
+    register_metadata(
+        resolver,
+        package_name,
+        package_path,
+        actions,
+        priority=priority,
+        logger=logger,
+        log_key="action-metadata-registered",
     )

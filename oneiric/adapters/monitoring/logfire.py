@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import os
 
 from pydantic import BaseModel, Field, SecretStr
@@ -25,6 +26,18 @@ class LogfireMonitoringSettings(BaseModel):
     service_name: str = Field(
         default="oneiric",
         description="Service name reported to Logfire.",
+    )
+    environment: str | None = Field(
+        default=None,
+        description="Optional deployment environment tag.",
+    )
+    release: str | None = Field(
+        default=None,
+        description="Optional release identifier.",
+    )
+    tags: dict[str, str] = Field(
+        default_factory=dict,
+        description="Additional tags forwarded to Logfire when supported.",
     )
     enable_system_metrics: bool = True
     instrument_httpx: bool = True
@@ -59,7 +72,8 @@ class LogfireMonitoringAdapter:
             raise LifecycleError("logfire-not-installed")
         token = self._resolve_token()
         try:
-            logfire.configure(token=token, service_name=self._settings.service_name)
+            kwargs = self._build_config_kwargs(token)
+            logfire.configure(**kwargs)
             self._maybe_call(
                 "instrument_system_metrics", self._settings.enable_system_metrics
             )
@@ -98,3 +112,24 @@ class LogfireMonitoringAdapter:
         func = getattr(logfire, name, None)
         if callable(func):
             func()
+
+    def _build_config_kwargs(self, token: str) -> dict[str, object]:
+        base_tags = dict(self._settings.tags or {})
+        if self._settings.environment:
+            base_tags.setdefault("deployment.environment", self._settings.environment)
+        if self._settings.release:
+            base_tags.setdefault("service.version", self._settings.release)
+        kwargs: dict[str, object] = {
+            "token": token,
+            "service_name": self._settings.service_name,
+        }
+        if base_tags:
+            kwargs["tags"] = base_tags
+        configure = getattr(logfire, "configure", None)
+        if not callable(configure):
+            return kwargs
+        try:
+            params = inspect.signature(configure).parameters
+        except (TypeError, ValueError):
+            return kwargs
+        return {key: value for key, value in kwargs.items() if key in params}

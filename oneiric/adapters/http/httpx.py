@@ -7,19 +7,18 @@ import inspect
 from typing import Any
 
 import httpx
-from pydantic import AnyHttpUrl, BaseModel, Field
+from pydantic import Field
 
 from oneiric.adapters.metadata import AdapterMetadata
+from oneiric.core.http_helpers import observed_http_request
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
+from oneiric.core.observability import inject_trace_context
 from oneiric.core.resolution import CandidateSource
+from oneiric.core.settings_mixins import BaseURLSettings
 
 
-class HTTPClientSettings(BaseModel):
-    base_url: AnyHttpUrl | None = Field(
-        default=None,
-        description="Optional base URL used for relative requests and health checks.",
-    )
+class HTTPClientSettings(BaseURLSettings):
     timeout: float = Field(
         default=10.0,
         ge=0.1,
@@ -159,17 +158,62 @@ class HTTPClientAdapter:
 
     async def request(self, method: str, url: str, **kwargs: Any) -> httpx.Response:
         client = self._ensure_client()
-        return await client.request(method, url, **kwargs)
+        caller = getattr(client, "request", None)
+        return await self._request(method, url, caller=caller, **kwargs)
 
     async def get(self, url: str, **kwargs: Any) -> httpx.Response:
         client = self._ensure_client()
-        return await client.get(url, **kwargs)
+        get_fn = getattr(client, "get", None)
+        caller = (
+            (lambda _method, target, **opts: get_fn(target, **opts))
+            if callable(get_fn)
+            else None
+        )
+        return await self._request("GET", url, caller=caller, **kwargs)
 
     async def post(self, url: str, **kwargs: Any) -> httpx.Response:
         client = self._ensure_client()
-        return await client.post(url, **kwargs)
+        post_fn = getattr(client, "post", None)
+        caller = (
+            (lambda _method, target, **opts: post_fn(target, **opts))
+            if callable(post_fn)
+            else None
+        )
+        return await self._request("POST", url, caller=caller, **kwargs)
 
     def _ensure_client(self) -> Any:
         if not self._client:
             raise LifecycleError("httpx-client-not-initialized")
         return self._client
+
+    async def _request(
+        self,
+        method: str,
+        url: str,
+        *,
+        caller: Any | None,
+        **kwargs: Any,
+    ) -> httpx.Response:
+        client = self._ensure_client()
+        headers = dict(kwargs.pop("headers", {}) or {})
+        inject_trace_context(headers)
+        if headers:
+            kwargs["headers"] = headers
+        operation = method.upper()
+
+        async def send() -> httpx.Response:
+            if callable(caller):
+                return await caller(method, url, **kwargs)
+            return await client.request(method, url, **kwargs)
+
+        return await observed_http_request(
+            domain="adapter",
+            key="http",
+            adapter="http",
+            provider="httpx",
+            operation=operation,
+            url=str(url),
+            component="adapter.http",
+            span_name="adapter.http.request",
+            send=send,
+        )

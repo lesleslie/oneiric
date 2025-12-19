@@ -5,6 +5,8 @@ from __future__ import annotations
 import logging
 import logging.handlers
 import sys
+from collections.abc import Callable
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import urlparse
@@ -15,6 +17,7 @@ from pydantic import BaseModel, Field
 from structlog.contextvars import (
     bind_contextvars,
     clear_contextvars,
+    get_contextvars,
     unbind_contextvars,
 )
 from structlog.stdlib import BoundLogger
@@ -59,6 +62,14 @@ class LoggingConfig(BaseModel):
         default="oneiric",
         description="Value for the service metadata field.",
     )
+    environment: str | None = Field(
+        default=None,
+        description="Optional deployment environment tag.",
+    )
+    release: str | None = Field(
+        default=None,
+        description="Optional service release/version identifier.",
+    )
     timestamper_format: str = Field(
         default="iso",
         description="structlog timestamper format hint.",
@@ -95,6 +106,44 @@ def _load_extra_processors(names: list[str]) -> list[Any]:
         module = __import__(module_name, fromlist=[attr])
         extras.append(getattr(module, attr))
     return extras
+
+
+def _add_service_metadata(
+    cfg: LoggingConfig,
+) -> Callable[[Any, str, dict[str, Any]], dict[str, Any]]:
+    def _processor(
+        logger: Any, method_name: str, event_dict: dict[str, Any]
+    ) -> dict[str, Any]:
+        event_dict.setdefault("service.name", cfg.service_name)
+        if cfg.environment:
+            event_dict.setdefault("deployment.environment", cfg.environment)
+        if cfg.release:
+            event_dict.setdefault("service.version", cfg.release)
+        return event_dict
+
+    return _processor
+
+
+def _normalize_oneiric_tags(
+    logger: Any, method_name: str, event_dict: dict[str, Any]
+) -> dict[str, Any]:
+    tag_map = {
+        "domain": "oneiric.domain",
+        "key": "oneiric.key",
+        "provider": "oneiric.provider",
+        "workflow": "oneiric.workflow",
+        "run_id": "oneiric.run_id",
+        "node": "oneiric.node",
+        "event_topic": "oneiric.event.topic",
+        "event_handler": "oneiric.event.handler",
+        "operation": "oneiric.operation",
+        "adapter": "oneiric.adapter",
+        "category": "oneiric.category",
+    }
+    for source, target in tag_map.items():
+        if source in event_dict and target not in event_dict:
+            event_dict[target] = event_dict[source]
+    return event_dict
 
 
 def _build_handlers(cfg: LoggingConfig) -> list[logging.Handler]:
@@ -170,6 +219,8 @@ def configure_logging(config: LoggingConfig | None = None) -> None:
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
         timestamper,
+        _add_service_metadata(cfg),
+        _normalize_oneiric_tags,
         structlog.stdlib.PositionalArgumentsFormatter(),
         structlog.processors.StackInfoRenderer(),
         structlog.processors.format_exc_info,
@@ -217,6 +268,22 @@ def clear_log_context(*keys: str) -> None:
         unbind_contextvars(*keys)
     else:
         clear_contextvars()
+
+
+@contextmanager
+def scoped_log_context(**values: Any) -> Any:
+    """Bind structured context for a scope and restore prior values."""
+
+    previous = get_contextvars()
+    bind_log_context(**values)
+    try:
+        yield
+    finally:
+        keys = tuple(values.keys())
+        clear_log_context(*keys)
+        restore = {key: previous[key] for key in keys if key in previous}
+        if restore:
+            bind_contextvars(**restore)
 
 
 def get_logger(name: str | None = None, **initial_values: Any) -> BoundLogger:

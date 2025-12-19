@@ -13,6 +13,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 from oneiric.actions.metadata import ActionMetadata
+from oneiric.actions.payloads import normalize_payload
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
@@ -73,7 +74,7 @@ class SecuritySignatureAction:
         self._logger = get_logger("action.security.signature")
 
     async def execute(self, payload: dict | None = None) -> dict:
-        payload = payload or {}
+        payload = normalize_payload(payload)
         secret = payload.get("secret") or self._settings.secret
         if not secret:
             raise LifecycleError("security-signature-secret-required")
@@ -168,7 +169,7 @@ class SecuritySecureAction:
         self._logger = get_logger("action.security.secure")
 
     async def execute(self, payload: dict | None = None) -> dict:
-        payload = payload or {}
+        payload = normalize_payload(payload)
         mode = (payload.get("mode") or "token").lower()
         if mode == "token":
             length = int(payload.get("length") or self._settings.token_length)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -45,7 +46,10 @@ async def test_publish_and_subscribe(monkeypatch: pytest.MonkeyPatch) -> None:
     async def _connect(**kwargs: Any) -> DummyNATS:
         return dummy
 
-    monkeypatch.setattr("oneiric.adapters.queue.nats.nats.connect", _connect)
+    monkeypatch.setattr(
+        "oneiric.adapters.queue.nats._load_nats",
+        lambda: SimpleNamespace(connect=_connect),
+    )
 
     adapter = NATSQueueAdapter(NATSQueueSettings())
     await adapter.init()

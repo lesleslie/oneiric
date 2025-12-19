@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any
 from urllib.parse import urljoin
 
@@ -16,8 +17,10 @@ except ImportError:  # pragma: no cover - optional dependency
     _AIOHTTP_AVAILABLE = False
 
 from oneiric.adapters.metadata import AdapterMetadata
+from oneiric.adapters.metrics import record_adapter_request_metrics
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
+from oneiric.core.observability import inject_trace_context, observed_span
 from oneiric.core.resolution import CandidateSource
 
 from .httpx import HTTPClientSettings
@@ -98,7 +101,58 @@ class AioHTTPAdapter:
             kwargs["timeout"] = aiohttp.ClientTimeout(total=self._settings.timeout)
         if "ssl" not in kwargs:
             kwargs["ssl"] = self._settings.verify
-        return await session.request(method, target, **kwargs)
+        headers = dict(kwargs.pop("headers", {}) or {})
+        inject_trace_context(headers)
+        kwargs["headers"] = headers
+        span_attrs = {
+            "oneiric.domain": "adapter",
+            "oneiric.key": "http",
+            "oneiric.provider": "aiohttp",
+            "oneiric.operation": method.upper(),
+            "http.method": method.upper(),
+            "http.url": str(target),
+        }
+        start = time.perf_counter()
+        timeout_hit = False
+        success = False
+        with observed_span(
+            "adapter.http.request",
+            component="adapter.http",
+            attributes=span_attrs,
+            log_context={
+                "domain": "adapter",
+                "key": "http",
+                "provider": "aiohttp",
+                "operation": method.upper(),
+            },
+        ) as span:
+            try:
+                response = await session.request(method, target, **kwargs)
+                success = response.status < 400
+                span.set_attributes(
+                    {"http.status_code": response.status, "oneiric.success": success}
+                )
+                return response
+            except TimeoutError as exc:
+                timeout_hit = True
+                span.record_exception(exc)
+                span.set_attributes({"http.timeout": True, "oneiric.success": False})
+                raise
+            except Exception as exc:
+                span.record_exception(exc)
+                span.set_attributes({"oneiric.success": False})
+                raise
+            finally:
+                duration_ms = (time.perf_counter() - start) * 1000.0
+                record_adapter_request_metrics(
+                    domain="adapter",
+                    adapter="http",
+                    provider="aiohttp",
+                    operation=method.upper(),
+                    duration_ms=duration_ms,
+                    success=success,
+                    timeout=timeout_hit,
+                )
 
     async def get(self, url: str, **kwargs: Any) -> ClientResponse:
         return await self.request("GET", url, **kwargs)

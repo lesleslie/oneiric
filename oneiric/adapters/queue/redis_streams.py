@@ -5,13 +5,19 @@ from __future__ import annotations
 import asyncio
 import inspect
 from collections.abc import Iterable, Mapping, Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from coredis import Redis
-from coredis.exceptions import RedisError, ResponseError
+if TYPE_CHECKING:  # pragma: no cover - optional dependency typing
+    from coredis import Redis
+    from coredis.exceptions import RedisError, ResponseError
+else:  # pragma: no cover - runtime guard
+    Redis = None
+    RedisError = Exception
+    ResponseError = Exception
 from pydantic import BaseModel, Field
 
 from oneiric.adapters.metadata import AdapterMetadata
+from oneiric.core.client_mixins import EnsureClientMixin
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
@@ -51,7 +57,7 @@ class RedisStreamsQueueSettings(BaseModel):
     )
 
 
-class RedisStreamsQueueAdapter:
+class RedisStreamsQueueAdapter(EnsureClientMixin):
     """Queue adapter backed by Redis Streams consumer groups."""
 
     metadata = AdapterMetadata(
@@ -86,6 +92,11 @@ class RedisStreamsQueueAdapter:
 
     async def init(self) -> None:
         if not self._client:
+            if Redis is None:  # pragma: no cover - optional dependency
+                raise LifecycleError(
+                    "coredis-not-installed: install optional extra 'oneiric[cache]' "
+                    "to use RedisStreamsQueueAdapter"
+                )
             self._client = Redis.from_url(self._settings.url)
         if self._settings.auto_create_group:
             try:
@@ -137,7 +148,7 @@ class RedisStreamsQueueAdapter:
                     await maybe
 
     async def enqueue(self, data: Mapping[str, Any]) -> str:
-        client = self._ensure_client()
+        client = self._ensure_client("redis-streams-client-not-initialized")
         kwargs: dict[str, Any] = {}
         if self._settings.maxlen is not None:
             kwargs["maxlen"] = self._settings.maxlen
@@ -151,7 +162,7 @@ class RedisStreamsQueueAdapter:
     async def read(
         self, *, count: int | None = None, block_ms: int | None = None
     ) -> list[dict[str, Any]]:
-        client = self._ensure_client()
+        client = self._ensure_client("redis-streams-client-not-initialized")
         block = block_ms if block_ms is not None else self._settings.block_ms
         entries = await client.xreadgroup(
             self._settings.group,
@@ -163,7 +174,7 @@ class RedisStreamsQueueAdapter:
         return self._format_entries(entries)
 
     async def ack(self, message_ids: Sequence[str]) -> int:
-        client = self._ensure_client()
+        client = self._ensure_client("redis-streams-client-not-initialized")
         if not message_ids:
             return 0
         acked = await client.xack(
@@ -173,7 +184,7 @@ class RedisStreamsQueueAdapter:
         return acked
 
     async def pending(self, *, count: int = 10) -> list[dict[str, Any]]:
-        client = self._ensure_client()
+        client = self._ensure_client("redis-streams-client-not-initialized")
         response = await client.xpending_range(
             self._settings.stream,
             self._settings.group,
@@ -191,13 +202,8 @@ class RedisStreamsQueueAdapter:
             for entry in response
         ]
 
-    def _ensure_client(self) -> Redis:
-        if not self._client:
-            raise LifecycleError("redis-streams-client-not-initialized")
-        return self._client
-
     async def _ensure_ping(self) -> None:
-        client = self._ensure_client()
+        client = self._ensure_client("redis-streams-client-not-initialized")
         await asyncio.wait_for(
             client.ping(), timeout=self._settings.healthcheck_timeout
         )

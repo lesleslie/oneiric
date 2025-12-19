@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import inspect
-from typing import Any
+from typing import Any, cast
 
 from oneiric.core.config import LayerSettings
 from oneiric.core.lifecycle import LifecycleError, LifecycleManager
@@ -21,6 +20,7 @@ from oneiric.runtime.supervisor import ServiceSupervisor
 from oneiric.runtime.telemetry import RuntimeTelemetryRecorder
 
 from .base import DomainBridge
+from .protocols import EventHandlerProtocol
 
 
 class EventBridge(DomainBridge):
@@ -120,15 +120,13 @@ class EventBridge(DomainBridge):
 
         async def _callback(envelope: EventEnvelope) -> Any:
             handle = await self.use(candidate.key, provider=candidate.provider)
-            handler = getattr(handle.instance, "handle", None)
+            instance = cast(EventHandlerProtocol, handle.instance)
+            handler = getattr(instance, "handle", None)
             if not callable(handler):
                 raise LifecycleError(
                     f"event-handler-missing-handle-method ({candidate.key})"
                 )
-            result = handler(envelope)
-            if inspect.isawaitable(result):
-                result = await result
-            return result
+            return await handler(envelope)
 
         retry_policy = candidate.metadata.get("retry_policy")
 

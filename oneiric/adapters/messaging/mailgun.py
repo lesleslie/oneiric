@@ -6,17 +6,19 @@ from collections.abc import Iterable
 from urllib.parse import urlencode
 
 import httpx
-from pydantic import AnyHttpUrl, BaseModel, EmailStr, Field, SecretStr
+from pydantic import AnyHttpUrl, EmailStr, Field, SecretStr
 
+from oneiric.adapters.httpx_base import HTTPXClientMixin
 from oneiric.adapters.metadata import AdapterMetadata
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
+from oneiric.core.settings_mixins import TimeoutSettings
 
 from .common import EmailRecipient, MessagingSendResult, OutboundEmailMessage
 
 
-class MailgunSettings(BaseModel):
+class MailgunSettings(TimeoutSettings):
     """Configuration for the Mailgun adapter."""
 
     api_key: SecretStr
@@ -32,7 +34,6 @@ class MailgunSettings(BaseModel):
         default=None,
         description="Override the inferred Mailgun API endpoint.",
     )
-    timeout: float = Field(default=10.0, ge=0.5)
     test_mode: bool = Field(
         default=False,
         description="Enable Mailgun o:testmode flag globally (overridden per message via sandbox_override).",
@@ -47,7 +48,7 @@ class MailgunSettings(BaseModel):
     default_headers: dict[str, str] = Field(default_factory=dict)
 
 
-class MailgunAdapter:
+class MailgunAdapter(HTTPXClientMixin):
     """Mailgun-backed email adapter using the REST API."""
 
     metadata = AdapterMetadata(
@@ -69,9 +70,8 @@ class MailgunAdapter:
         *,
         client: httpx.AsyncClient | None = None,
     ) -> None:
+        super().__init__(client=client)
         self._settings = settings
-        self._client = client
-        self._owns_client = client is None
         self._logger = get_logger("adapter.messaging.mailgun").bind(
             domain="adapter",
             key="messaging",
@@ -80,28 +80,27 @@ class MailgunAdapter:
         )
 
     async def init(self) -> None:
+        base_url = str(self._settings.base_url or self._default_base_url())
+        auth = httpx.BasicAuth("api", self._settings.api_key.get_secret_value())
         if self._client is None:
-            base_url = str(self._settings.base_url or self._default_base_url())
-            auth = httpx.BasicAuth("api", self._settings.api_key.get_secret_value())
-            self._client = httpx.AsyncClient(
-                base_url=base_url,
-                timeout=self._settings.timeout,
-                auth=auth,
-                headers=self._settings.default_headers,
+            self._init_client(
+                lambda: httpx.AsyncClient(
+                    base_url=base_url,
+                    timeout=self._settings.timeout,
+                    auth=auth,
+                    headers=self._settings.default_headers,
+                )
             )
-            self._owns_client = True
         else:
             self._client.headers.update(self._settings.default_headers)
         self._logger.info("mailgun-adapter-init", domain=self._settings.domain)
 
     async def cleanup(self) -> None:
-        if self._client and self._owns_client:
-            await self._client.aclose()
-        self._client = None
+        await self._cleanup_client()
         self._logger.info("mailgun-adapter-cleanup")
 
     async def health(self) -> bool:
-        client = self._ensure_client()
+        client = self._ensure_client("mailgun-client-not-initialized")
         try:
             response = await client.get(f"/v3/domains/{self._settings.domain}")
             return response.status_code < 500
@@ -110,7 +109,7 @@ class MailgunAdapter:
             return False
 
     async def send_email(self, message: OutboundEmailMessage) -> MessagingSendResult:
-        client = self._ensure_client()
+        client = self._ensure_client("mailgun-client-not-initialized")
         payload = self._build_payload(message)
         encoded = urlencode(payload)
         try:
@@ -248,8 +247,3 @@ class MailgunAdapter:
         if self._settings.region == "eu":
             return "https://api.eu.mailgun.net"
         return "https://api.mailgun.net"
-
-    def _ensure_client(self) -> httpx.AsyncClient:
-        if not self._client:
-            raise LifecycleError("mailgun-client-not-initialized")
-        return self._client

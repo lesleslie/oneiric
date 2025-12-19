@@ -110,11 +110,20 @@ def discover_metadata(group: str) -> Iterable[object]:
 
 
 def register_entrypoint_plugins(
-    resolver: Resolver, config: PluginsConfig
+    resolver: Resolver,
+    config: PluginsConfig,
+    *,
+    skip_if_loaded: bool = True,
 ) -> PluginRegistrationReport:
     """Load entry-point plugins and register returned candidates."""
 
     if not config:
+        return PluginRegistrationReport.empty()
+
+    if skip_if_loaded and getattr(resolver, "_oneiric_plugins_loaded", False):
+        cached = getattr(resolver, "_oneiric_plugin_report", None)
+        if isinstance(cached, PluginRegistrationReport):
+            return cached
         return PluginRegistrationReport.empty()
 
     groups = _build_plugin_groups(config)
@@ -122,6 +131,8 @@ def register_entrypoint_plugins(
         return PluginRegistrationReport.empty()
 
     report = _process_plugin_groups(resolver, groups)
+    resolver._oneiric_plugins_loaded = True  # type: ignore[attr-defined]
+    resolver._oneiric_plugin_report = report  # type: ignore[attr-defined]
 
     if report.registered:
         logger.info(

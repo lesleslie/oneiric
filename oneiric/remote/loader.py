@@ -7,9 +7,12 @@ import hashlib
 import json
 import tempfile
 import time
+from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 import httpx
 import yaml
@@ -26,7 +29,10 @@ from .metrics import (
     record_remote_success_metric,
 )
 from .models import RemoteManifest, RemoteManifestEntry
-from .security import get_canonical_manifest_for_signing, verify_manifest_signature
+from .security import (
+    get_canonical_manifest_for_signing,
+    verify_manifest_signatures,
+)
 from .telemetry import record_remote_failure, record_remote_success
 
 logger = get_logger("remote")
@@ -51,6 +57,8 @@ def _breaker_for(config: RemoteSourceConfig, url: str) -> CircuitBreaker:
             name=f"remote:{url}",
             failure_threshold=config.circuit_breaker_threshold,
             recovery_time=config.circuit_breaker_reset,
+            max_recovery_time=max(config.circuit_breaker_reset * 5, 0.1),
+            adaptive_key=f"remote:{_remote_host(url)}",
         )
         _REMOTE_BREAKERS[key] = breaker
     return breaker
@@ -65,11 +73,23 @@ class RemoteSyncResult:
     skipped: int
 
 
-def _local_path_from_url(url: str) -> Path | None:
+def _local_path_from_url(
+    url: str,
+    *,
+    allow_file_uris: bool,
+    allowed_file_uri_roots: Sequence[str],
+) -> Path | None:
     if url.startswith("file://"):
-        return Path(url[7:])
+        if not allow_file_uris:
+            raise ValueError("file URI access disabled for remote manifests")
+        path = Path(url[7:])
+        _assert_allowed_path(path, allowed_file_uri_roots)
+        return path
     path = Path(url)
     if path.exists():
+        if not allow_file_uris:
+            raise ValueError("local manifest paths disabled for remote manifests")
+        _assert_allowed_path(path, allowed_file_uri_roots)
         return path
     return None
 
@@ -80,11 +100,16 @@ class ArtifactManager:
         cache_dir: str,
         verify_tls: bool = True,
         timeout: float = DEFAULT_HTTP_TIMEOUT,
+        *,
+        allow_file_uris: bool = False,
+        allowed_file_uri_roots: Sequence[str] | None = None,
     ) -> None:
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.verify_tls = verify_tls
         self.timeout = timeout
+        self.allow_file_uris = allow_file_uris
+        self.allowed_file_uri_roots = list(allowed_file_uri_roots or [])
 
     async def fetch(
         self, uri: str, sha256: str | None, headers: dict[str, str]
@@ -125,6 +150,8 @@ class ArtifactManager:
         """Validate URI for security issues."""
         if not uri:
             raise ValueError("URI cannot be empty")
+        if uri.startswith("file://") and not self.allow_file_uris:
+            raise ValueError("file URI access disabled for artifacts")
 
         # Block path traversal attempts
         if ".." in uri and not uri.startswith(("http://", "https://", "file://")):
@@ -172,8 +199,11 @@ class ArtifactManager:
         # Only handle file:// URIs (absolute paths are blocked in validation)
         if not uri.startswith("file://"):
             return None
+        if not self.allow_file_uris:
+            raise ValueError("file URI access disabled for artifacts")
 
         local_path = Path(uri[7:])
+        _assert_allowed_path(local_path, self.allowed_file_uri_roots)
 
         # Copy local file to cache
         if local_path.exists():
@@ -349,14 +379,27 @@ async def _run_sync(
 ) -> RemoteSyncResult | None:
     headers = await _auth_headers(config, secrets)
     manifest_data = await run_with_retry(
-        lambda: _fetch_text(url, headers, verify_tls=config.verify_tls),
+        lambda: _fetch_text(
+            url,
+            headers,
+            verify_tls=config.verify_tls,
+            allow_file_uris=config.allow_file_uris,
+            allowed_file_uri_roots=config.allowed_file_uri_roots,
+        ),
         attempts=retry_attempts,
         base_delay=retry_base_delay,
         max_delay=retry_max_delay,
         jitter=retry_jitter,
+        adaptive_key=f"remote:manifest:{_remote_host(url)}",
+        attributes=_retry_attributes(url, "manifest.fetch"),
     )
-    manifest = _parse_manifest(manifest_data)
-    artifact_manager = ArtifactManager(config.cache_dir, verify_tls=config.verify_tls)
+    manifest = _parse_manifest(manifest_data, signature_policy=config)
+    artifact_manager = ArtifactManager(
+        config.cache_dir,
+        verify_tls=config.verify_tls,
+        allow_file_uris=config.allow_file_uris,
+        allowed_file_uri_roots=config.allowed_file_uri_roots,
+    )
 
     registered = 0
     digest_checks = 0
@@ -383,6 +426,8 @@ async def _run_sync(
                 base_delay=retry_base_delay,
                 max_delay=retry_max_delay,
                 jitter=retry_jitter,
+                adaptive_key=f"remote:artifact:{_remote_host(entry.uri)}",
+                attributes=_retry_attributes(entry.uri, "artifact.fetch"),
             )
         if entry.sha256:
             digest_checks += 1
@@ -434,8 +479,19 @@ async def _auth_headers(
     return {config.auth.header_name: token}
 
 
-async def _fetch_text(url: str, headers: dict[str, str], *, verify_tls: bool) -> str:
-    local_path = _local_path_from_url(url)
+async def _fetch_text(
+    url: str,
+    headers: dict[str, str],
+    *,
+    verify_tls: bool,
+    allow_file_uris: bool,
+    allowed_file_uri_roots: Sequence[str],
+) -> str:
+    local_path = _local_path_from_url(
+        url,
+        allow_file_uris=allow_file_uris,
+        allowed_file_uri_roots=allowed_file_uri_roots,
+    )
     if local_path:
         return local_path.read_text()
     if not url.startswith(("http://", "https://")):
@@ -450,7 +506,22 @@ async def _fetch_text(url: str, headers: dict[str, str], *, verify_tls: bool) ->
         return response.text
 
 
-def _parse_manifest(text: str, *, verify_signature: bool = True) -> RemoteManifest:
+def _remote_host(url: str) -> str:
+    parsed = urlparse(url)
+    return parsed.netloc or parsed.path.split("/")[0]
+
+
+def _retry_attributes(url: str, operation: str) -> dict[str, str]:
+    host = _remote_host(url) or "unknown"
+    return {"domain": "remote", "operation": operation, "host": host}
+
+
+def _parse_manifest(
+    text: str,
+    *,
+    verify_signature: bool = True,
+    signature_policy: RemoteSourceConfig | None = None,
+) -> RemoteManifest:
     """Parse and optionally verify remote manifest.
 
     Args:
@@ -470,32 +541,97 @@ def _parse_manifest(text: str, *, verify_signature: bool = True) -> RemoteManife
     if not isinstance(data, dict):
         raise ValueError("Remote manifest must be a mapping at the top level.")
 
-    # Verify signature if present and verification enabled
-    if verify_signature and data.get("signature"):
-        signature = data.get("signature")
-        algorithm = data.get("signature_algorithm", "ed25519")
+    policy = signature_policy or RemoteSourceConfig()
 
-        if algorithm != "ed25519":
-            raise ValueError(f"Unsupported signature algorithm: {algorithm}")
-
-        # Get canonical form for verification
-        canonical = get_canonical_manifest_for_signing(data)
-
-        # Verify signature
-        is_valid, error = verify_manifest_signature(canonical, signature)
-        if not is_valid:
-            raise ValueError(f"Signature verification failed: {error}")
-
-        logger.info("manifest-signature-verified", algorithm=algorithm)
-
-    elif verify_signature and not data.get("signature"):
-        # No signature present - log warning but allow (for backward compatibility)
-        logger.warning(
-            "manifest-unsigned",
-            recommendation="Enable signature verification for production use",
-        )
+    if verify_signature:
+        signatures, algorithms = _extract_signatures(data)
+        if signatures:
+            if any(algo != "ed25519" for algo in algorithms):
+                raise ValueError("Unsupported signature algorithm in manifest.")
+            canonical = get_canonical_manifest_for_signing(data)
+            is_valid, error, valid_count = verify_manifest_signatures(
+                canonical, signatures, threshold=policy.signature_threshold
+            )
+            if not is_valid:
+                raise ValueError(f"Signature verification failed: {error}")
+            _validate_signature_timing(data, policy)
+            logger.info(
+                "manifest-signature-verified",
+                algorithm="ed25519",
+                valid_signatures=valid_count,
+                required=policy.signature_threshold,
+            )
+        elif policy.signature_required:
+            raise ValueError("Manifest signature required but not provided.")
+        else:
+            logger.warning(
+                "manifest-unsigned",
+                recommendation="Enable signature verification for production use",
+            )
 
     return RemoteManifest(**data)
+
+
+def _extract_signatures(data: dict[str, Any]) -> tuple[list[str], list[str]]:
+    signatures: list[str] = []
+    algorithms: list[str] = []
+
+    if isinstance(data.get("signatures"), list):
+        for entry in data["signatures"]:
+            if isinstance(entry, str):
+                signatures.append(entry)
+                algorithms.append("ed25519")
+                continue
+            if not isinstance(entry, dict):
+                continue
+            signature = entry.get("signature")
+            if not signature:
+                continue
+            signatures.append(str(signature))
+            algorithms.append(str(entry.get("algorithm", "ed25519")))
+
+    if data.get("signature"):
+        signatures.append(str(data["signature"]))
+        algorithms.append(str(data.get("signature_algorithm", "ed25519")))
+
+    return signatures, algorithms
+
+
+def _validate_signature_timing(
+    data: dict[str, Any], policy: RemoteSourceConfig
+) -> None:
+    signed_at = _parse_timestamp(data.get("signed_at"))
+    expires_at = _parse_timestamp(data.get("expires_at"))
+    now = datetime.now(UTC)
+
+    if policy.signature_require_expiry and not expires_at:
+        raise ValueError("Manifest missing expires_at while expiry is required.")
+
+    if expires_at and now > expires_at:
+        raise ValueError("Manifest signature has expired.")
+
+    if policy.signature_max_age_seconds is not None:
+        if not signed_at:
+            raise ValueError("Manifest missing signed_at for age enforcement.")
+        age_seconds = (now - signed_at).total_seconds()
+        if age_seconds > policy.signature_max_age_seconds:
+            raise ValueError("Manifest signature exceeds maximum age.")
+
+
+def _parse_timestamp(value: Any) -> datetime | None:
+    if not value:
+        return None
+    if isinstance(value, datetime):
+        return value.astimezone(UTC)
+    if isinstance(value, str):
+        try:
+            parsed = datetime.fromisoformat(value)
+        except ValueError:
+            raise ValueError("Invalid ISO timestamp for signature metadata.")
+        if parsed.tzinfo is None:
+            return parsed.replace(tzinfo=UTC)
+        return parsed.astimezone(UTC)
+    raise ValueError("Invalid timestamp value for signature metadata.")
 
 
 def _candidate_from_entry(
@@ -632,6 +768,17 @@ def _assert_digest(path: Path, expected: str) -> None:
         raise ValueError(
             f"Digest mismatch for {path}: expected {expected}, got {digest}"
         )
+
+
+def _assert_allowed_path(path: Path, allowed_roots: Sequence[str]) -> None:
+    if not allowed_roots:
+        return
+    resolved = path.expanduser().resolve()
+    for root in allowed_roots:
+        root_path = Path(root).expanduser().resolve()
+        if resolved.is_relative_to(root_path):
+            return
+    raise ValueError(f"Local path access denied: {path}")
 
 
 def _validate_entry(entry: RemoteManifestEntry) -> str | None:

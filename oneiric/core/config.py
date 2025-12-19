@@ -8,7 +8,7 @@ import os
 import tomllib
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from pydantic import BaseModel, Field
 
@@ -16,6 +16,7 @@ from oneiric.runtime.health import default_runtime_health_path
 
 from .lifecycle import LifecycleError, LifecycleManager
 from .logging import LoggingConfig, get_logger
+from .protocols import SecretsCacheProtocol, SecretsProviderProtocol
 from .resolution import ResolverSettings
 from .secrets_cache import SecretValueCache
 
@@ -52,6 +53,11 @@ class SecretsConfig(BaseModel):
         ge=0.0,
         description="Number of seconds to cache resolved secrets (0 disables cache).",
     )
+    refresh_interval: float | None = Field(
+        default=None,
+        ge=1.0,
+        description="Seconds between secrets cache invalidations (None disables).",
+    )
 
 
 class RemoteAuthConfig(BaseModel):
@@ -66,6 +72,24 @@ class RemoteSourceConfig(BaseModel):
     cache_dir: str = ".oneiric_cache"
     verify_tls: bool = True
     auth: RemoteAuthConfig = Field(default_factory=RemoteAuthConfig)
+    signature_required: bool = Field(
+        default=False,
+        description="Reject unsigned manifests when True.",
+    )
+    signature_threshold: int = Field(
+        default=1,
+        ge=1,
+        description="Number of valid signatures required to accept a manifest.",
+    )
+    signature_max_age_seconds: float | None = Field(
+        default=None,
+        ge=0.0,
+        description="Optional maximum age (seconds) for signed manifests.",
+    )
+    signature_require_expiry: bool = Field(
+        default=False,
+        description="Require expires_at on signed manifests when True.",
+    )
     refresh_interval: float | None = Field(
         default=300.0,
         description="Optional interval (seconds) to re-sync remote manifests; disabled when null.",
@@ -89,6 +113,14 @@ class RemoteSourceConfig(BaseModel):
     circuit_breaker_reset: float = Field(
         default=60.0,
         description="Seconds before allowing attempts after circuit breaker opens.",
+    )
+    allow_file_uris: bool = Field(
+        default=False,
+        description="Allow file:// URIs and local manifest paths when True.",
+    )
+    allowed_file_uri_roots: list[str] = Field(
+        default_factory=list,
+        description="Optional allowlist of roots for file:// URIs and local paths.",
     )
     latency_budget_ms: float = Field(
         default=5000.0,
@@ -159,17 +191,6 @@ class RuntimeSupervisorConfig(BaseModel):
     )
 
 
-class RuntimeSupervisorConfig(BaseModel):
-    """Supervisor loop feature flag + tuning knobs."""
-
-    enabled: bool = True
-    poll_interval: float = Field(
-        default=2.0,
-        ge=0.1,
-        description="Seconds between supervisor poll iterations.",
-    )
-
-
 class OneiricSettings(BaseModel):
     app: AppConfig = Field(default_factory=AppConfig)
     adapters: LayerSettings = Field(default_factory=LayerSettings)
@@ -185,9 +206,6 @@ class OneiricSettings(BaseModel):
     plugins: PluginsConfig = Field(default_factory=PluginsConfig)
     profile: RuntimeProfileConfig = Field(default_factory=RuntimeProfileConfig)
     runtime_paths: RuntimePathsConfig = Field(default_factory=RuntimePathsConfig)
-    runtime_supervisor: RuntimeSupervisorConfig = Field(
-        default_factory=RuntimeSupervisorConfig
-    )
     runtime_supervisor: RuntimeSupervisorConfig = Field(
         default_factory=RuntimeSupervisorConfig
     )
@@ -345,13 +363,26 @@ class SecretsHook:
             )
         return ready
 
+    async def rotate(
+        self,
+        keys: Sequence[str] | None = None,
+        *,
+        provider: str | None = None,
+        include_provider_cache: bool = True,
+    ) -> int:
+        """Invalidate cached secrets and optionally refresh provider caches."""
+        removed = self.invalidate(keys=keys, provider=provider)
+        if include_provider_cache:
+            await self._invalidate_provider_cache()
+        return removed
+
     @property
     def prefetched(self) -> bool:
         """Return True when the secrets provider has been activated."""
 
         return self._prefetched
 
-    async def _ensure_provider(self) -> Any | None:
+    async def _ensure_provider(self) -> SecretsProviderProtocol | None:
         instance = self.lifecycle.get_instance(self.config.domain, self.config.key)
         if instance:
             self._prefetched = True
@@ -384,6 +415,21 @@ class SecretsHook:
             keys="*" if keys is None else list(keys),
         )
         return removed
+
+    async def _invalidate_provider_cache(self) -> None:
+        provider = await self._ensure_provider()
+        if provider is None:
+            return
+        cache_provider = cast(SecretsCacheProtocol, provider)
+        for method_name in ("invalidate_cache", "clear_cache", "refresh"):
+            handler = getattr(cache_provider, method_name, None)
+            if callable(handler):
+                await _maybe_await(handler())
+                self._logger.info(
+                    "secrets-provider-cache-invalidated",
+                    method=method_name,
+                )
+                return
 
     def _cache_key(self, override: str | None = None) -> str:
         return (override or self._default_cache_key or "default").lower()

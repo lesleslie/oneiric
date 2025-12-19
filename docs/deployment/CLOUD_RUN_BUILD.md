@@ -168,7 +168,14 @@ uv run python -m oneiric.cli manifest pack \
   --output build/serverless_manifest.json
 ```
 
-3. Point `[remote] manifest_url = "file:///workspace/build/serverless_manifest.json"` in `config/serverless.toml`, or copy the JSON alongside your artifact and reference the relative path.
+3. Point `[remote] manifest_url = "file:///workspace/build/serverless_manifest.json"` in `config/serverless.toml`, and allow the local path explicitly:
+
+```toml
+[remote]
+manifest_url = "file:///workspace/build/serverless_manifest.json"
+allow_file_uris = true
+allowed_file_uri_roots = ["/workspace/build"]
+```
 
 Because remote sync is disabled in the serverless profile, the orchestrator sticks to the packaged manifest until you redeploy.
 

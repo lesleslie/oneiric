@@ -47,7 +47,7 @@ Purpose: migrate all ACB adapters and action utilities into Oneiric’s unified 
 | adapter | feature flags | `launchdarkly`, `memory` | Edge | vendor SDKs | YES (sdk key) | Wave C | Evaluate if actions domain better fit; keep on hold. |
 | adapter | ai/llm | `anthropic`, `openai`, `ollama` | AI/ML | vendor SDKs, `httpx` | YES (api tokens) | Wave C | Need capability tags (`chat`, `embedding`, `rerank`) before resolver tie-in. |
 | adapter | email/smtp | `mailgun`, `sendgrid`, `console` | Messaging | vendor SDKs | YES (api keys) | Wave B | Align with secrets hook + backoff/resend policy. |
-| adapter | notification/push | `apns`, `fcm`, `webpush` | Messaging | `aioapns`, `pywebpush`, `firebase_admin` | YES | Wave C | Dependent on queue adapter availability; keep behind feature flag. |
+| adapter | notification/push | `apns`, `fcm`, `webpush` | Messaging | `aioapns`, `pywebpush`, `firebase_admin` | YES | ✅ Shipped | Push adapters now land with optional SDK extras and stubbed tests; device-token integration coverage still pending. |
 
 #### Action Inventory (initial slice)
 
@@ -65,7 +65,7 @@ Purpose: migrate all ACB adapters and action utilities into Oneiric’s unified 
 - **Queue adapters**: require parity test fixtures (redis-streams + nats). Owners: Messaging team. Action: port existing async integration tests to `tests/adapters/test_queue.py`.
 - **Storage providers**: S3/GCS/Azure rely on vendor SDK versions pinned in ACB; need compatibility matrix for Python 3.14 + uv. Owners: Data Platform.
 - **AI adapters**: vendor SDK licensing and rate limiting may complicate automated tests; track using mocked endpoints first.
-- **Notification adapters**: APNS/FCM need device tokens to exercise health checks; plan to stub/contract-test before integration tests.
+- **Notification adapters**: APNS/FCM health checks rely on device tokens; unit tests use stubs while integration coverage remains optional.
 
 ### Stage 1 – Framework Alignment (Status: ☑)
 

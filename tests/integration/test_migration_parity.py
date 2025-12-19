@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+import yaml
 
 from oneiric.core.config import (
     OneiricSettings,
@@ -63,6 +64,8 @@ async def test_fastblocks_manifest_registers_expected_domains(
     cache_dir = tmp_path / "cache"
     cache_dir.mkdir()
     settings = _parity_settings(cache_dir)
+    settings.remote.allow_file_uris = True
+    settings.remote.allowed_file_uri_roots = [str(fastblocks_manifest_path.parent)]
     resolver = Resolver()
     lifecycle = LifecycleManager(
         resolver, status_snapshot_path=str(tmp_path / "lifecycle_status.json")
@@ -74,13 +77,18 @@ async def test_fastblocks_manifest_registers_expected_domains(
     result = await orchestrator.sync_remote(manifest_url=manifest_url)
 
     assert result is not None
-    assert result.registered == 8
-    assert result.per_domain["adapter"] == 2
-    assert result.per_domain["service"] == 1
-    assert result.per_domain["task"] == 2
-    assert result.per_domain["event"] == 1
-    assert result.per_domain["workflow"] == 1
-    assert result.per_domain["action"] == 1
+    manifest_payload = yaml.safe_load(fastblocks_manifest_path.read_text())
+    manifest_entries = manifest_payload.get("entries", [])
+    expected_counts: dict[str, int] = {}
+    for entry in manifest_entries:
+        domain = entry.get("domain")
+        if not domain:
+            continue
+        expected_counts[domain] = expected_counts.get(domain, 0) + 1
+
+    assert result.registered == len(manifest_entries)
+    for domain, count in expected_counts.items():
+        assert result.per_domain[domain] == count
 
     workflow_specs = orchestrator.workflow_bridge.dag_specs()
     assert "fastblocks.workflows.fulfillment" in workflow_specs

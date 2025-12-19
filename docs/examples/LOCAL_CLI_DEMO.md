@@ -629,7 +629,7 @@ pip install 'oneiric[embedding]'          # Alias for the hosted embedding stack
 pip install 'oneiric[ai]'                 # Embedding + LLM extras
 ```
 
-> **Local adapters:** Sentence Transformers + ONNX wheels are not yet published for Python 3.14 on macOS x86_64, so their extras stay disabled. Follow `ONNX_GUIDE.md` (uses `uvx --python 3.13 --with onnxruntime ...`) if you need those adapters in a side environment until upstream wheels land.
+> **Local adapters:** Sentence Transformers + ONNX wheels are not yet published for Python 3.14 on macOS x86_64, so their extras stay disabled. Follow `docs/ai/ONNX_GUIDE.md` (uses `uvx --python 3.13 --with onnxruntime ...`) if you need those adapters in a side environment until upstream wheels land.
 
 Populate the relevant provider settings in `demo_settings.toml` (OpenAI shares the `[adapters.provider_settings.openai]` block with the LLM adapter; Sentence Transformers/ONNX have settings blocks ready for future support), then select a provider:
 

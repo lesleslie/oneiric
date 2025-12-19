@@ -351,22 +351,22 @@ async with db.transaction():
 
 ______________________________________________________________________
 
-## Next Adapters to Port (Priority Order)
+## Adapter Porting Status (Priority Order)
 
 ### High Priority (Next 3-6 months)
 
 **1. Vector Databases** (Critical for AI workloads)
 
-- `vector/pinecone.py` - Most popular, SaaS
-- `vector/qdrant.py` - Open source, self-hosted
-- `vector/pgvector.py` - Postgres extension (asyncpg + pgvector extension)
+- `vector/pinecone.py` - ✅ Shipped Dec 2025 (most popular, SaaS)
+- `vector/qdrant.py` - ✅ Shipped Dec 2025 (open source, self-hosted)
+- `vector/pgvector.py` - ✅ Shipped Dec 2025 (Postgres extension)
 - **Rationale:** AI/LLM workloads are Oneiric's sweet spot
 
 **2. Embedding Adapters** (Complements vector DBs)
 
-- `embedding/openai.py` - Most common
-- `embedding/sentence_transformers.py` - Open source
-- `embedding/onnx.py` - On-device, low latency
+- `embedding/openai.py` - ✅ Shipped Dec 2025 (most common)
+- `embedding/sentence_transformers.py` - ✅ Shipped Dec 2025 (open source)
+- `embedding/onnx.py` - ✅ Shipped Dec 2025 (on-device, low latency)
 - **Rationale:** Embeddings feed vector databases
 
 **3. NoSQL Databases** (High demand)
@@ -383,9 +383,9 @@ ______________________________________________________________________
 
 **5. AI/LLM Adapters** (Strategic)
 
-- `ai/openai.py` - GPT-4, embeddings
-- `ai/anthropic.py` - Claude
-- `ai/gemini.py` - Google
+- `ai/openai.py` - ✅ Shipped Dec 2025 (GPT-4, embeddings)
+- `ai/anthropic.py` - ✅ Shipped Dec 2025 (Claude)
+- `ai/gemini.py` - ❌ Pending (blocked on SDK/runtime compatibility)
 - **Rationale:** First-class LLM support aligns with AI Agent Compatibility doc
 
 ### Medium Priority (6-12 months)
@@ -394,12 +394,14 @@ ______________________________________________________________________
 
 - `messaging/kafka.py` - ✅ Shipped Dec 2025 (aiokafka streaming adapter)
 - `messaging/rabbitmq.py` - ✅ Shipped Dec 2025 (aio-pika queue adapter)
-- `messaging/pulsar.py` - Pending (evaluate demand before porting)
+- `messaging/pulsar.py` - ❌ Pending (evaluate demand before porting)
 - **Rationale:** Complements existing queue adapters
 
 **7. DNS** (DevOps use cases)
 
-- Port ACB's `dns/cloudflare.py`, `dns/route53.py`, `dns/gcdns.py`
+- `dns/cloudflare.py` - ✅ Shipped Dec 2025
+- `dns/route53.py` - ✅ Shipped Dec 2025
+- `dns/gcdns.py` - ✅ Shipped Dec 2025
 - **Rationale:** Infrastructure automation
 
 **8. File transfer adapters (FTP/SFTP/SCP/HTTPS)** – ✅ Complete
@@ -443,7 +445,8 @@ ______________________________________________________________________
 | `graph/arangodb.py` | ✅ Complete | Data Platform | Multi-model adapter with vertex/edge helpers + docs/tests (Dec 2025). |
 | `graph/duckdb_pgq.py` | ✅ Complete | Data Platform | DuckDB PGQ adapter with ingest/query helpers + docs/tests (Dec 2025). |
 | `llm/gemini.py` | ❌ Pending | AI Platform | Completes Wave C LLM kits |
-| `dns/cloudflare.py`, `dns/route53.py`, `dns/gcdns.py` | ❌ Pending | Infra Team | Needed for DevOps parity |
+| `dns/cloudflare.py`, `dns/route53.py` | ✅ Complete | Infra Team | DevOps parity shipped (Dec 2025). |
+| `dns/gcdns.py` | ✅ Complete | Infra Team | Google Cloud DNS adapter shipped (Dec 2025). |
 | `ftpd/ftp.py`, `ftpd/sftp.py`, `ftpd/scp.py`, `ftpd/https_upload.py` | ✅ Complete | Infra Team | FTP/SFTP/SCP/HTTPS transports landed with resolver metadata, manifests, docs, and tests (Dec 2025). |
 | `messaging/kafka.py`, `messaging/rabbitmq.py` | ✅ Complete | Runtime Team | aiokafka + aio-pika adapters with publish/consume helpers (Dec 2025). |
 | `messaging/pulsar.py` | ❌ Pending | Runtime Team | Optional follow-up if demand emerges. |

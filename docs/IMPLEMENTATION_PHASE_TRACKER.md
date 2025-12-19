@@ -1,6 +1,6 @@
 # Oneiric Delivery Phase Tracker
 
-**Last Updated:** 2025-12-09
+**Last Updated:** 2025-12-18
 **Source Docs:** `docs/README.md`, `docs/STRATEGIC_ROADMAP.md`, `docs/implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md`, `docs/implementation/ORCHESTRATION_PARITY_PLAN.md`, `docs/UNCOMPLETED_TASKS.md`
 
 This tracker distills the outstanding roadmap work into numbered phases so we can quickly see what remains, who owns it, and how close we are to the cut-over.
@@ -20,7 +20,7 @@ ______________________________________________________________________
 
 1. Confirm owners for each open row and note blockers in stand-up doc.
 1. Schedule Cloud Run transcript capture session; assign reviewer for doc updates.
-1. Create README/deployment doc TODO comments referencing this tracker so changes do not get lost.
+1. Create README/deployment doc notes referencing this tracker so changes do not get lost.
 
 **Exit Criteria:** Serverless deployers can follow README + Cloud Run guide without referencing historical Docker/K8s docs; proofs (CLI snippets/screenshots) live in docs/examples/runbooks.
 
@@ -50,14 +50,16 @@ ______________________________________________________________________
 | Task | Priority | Status | Notes |
 |------|----------|--------|-------|
 | PgVector adapter + duckdb parity tests | High | ✅ Complete | `oneiric.adapters.vector.pgvector`, `tests/adapters/test_pgvector_adapter.py`, `docs/examples/FASTBLOCKS_PARITY_FIXTURE.yaml` |
-| Remaining network/file-transfer adapters (DNS, FileTransfer) | Medium | ✅ Complete | Cloudflare + Route53 DNS and FTP/SFTP/SCP/HTTP download/HTTPS upload file transfer adapters all ship in-tree (see `docs/analysis/DNS_FILE_TRANSFER_ADAPTER_PLAN.md`). Wave C items now focus on optional transports (webpush, feature flags). |
-| Evaluate Wave C adapters (webpush, feature flags) | Low | 💤 Backlog | Capture requirements from downstream repos before prioritizing. |
+| Remaining network/file-transfer adapters (DNS, FileTransfer) | Medium | ✅ Complete | Cloudflare + Route53 + GCDNS DNS and FTP/SFTP/SCP/HTTP download/HTTPS upload file transfer adapters all ship in-tree (see `docs/archive/analysis/DNS_FILE_TRANSFER_ADAPTER_PLAN.md`). Wave C items now focus on feature flags. |
+| Gemini LLM adapter | Medium | 💤 Backlog | Blocked on SDK compatibility (Python 3.14 + httpx 1.x) |
+| Pulsar adapter | Low | 💤 Backlog | Evaluate demand post-kafka/rabbitmq rollout |
+| Evaluate Wave C adapters (feature flags) | Low | 💤 Backlog | Capture requirements from downstream repos before prioritizing. |
 | Weekly diff vs `docs/analysis/ACB_ADAPTER_ACTION_IMPLEMENTATION.md` | Medium | ⏳ Ongoing | Keep remediation docs updated after each adapter landing. |
 
 **Kickoff Checklist**
 
 1. Re-run adapter gap audit and paste deltas into `ADAPTER_REMEDIATION_EXECUTION.md`.
-1. Assign engineering owners for pgvector/duckdb tasks with ETA.
+1. Assign engineering owners for Gemini/Pulsar/Wave C tasks with ETA.
 1. Decide whether Wave C evaluation requires product input; if so schedule review.
 
 **Exit Criteria:** Adapter gap audit shows parity with ACB for required domains; Wave C backlog scoped with owners.
@@ -88,17 +90,17 @@ ______________________________________________________________________
 | Task | Priority | Status | Notes |
 |------|----------|--------|-------|
 | Resolve 15 flaky tests (HTTP adapters, events, remote watchers) | Medium | ⏳ Planned | `docs/UNCOMPLETED_TASKS.md §3` |
-| Implement secrets rotation without orchestrator restart | Medium | ⏳ Planned | Target v0.3.0 |
+| Implement secrets rotation without orchestrator restart | Medium | ✅ Complete | Hot-reload loop + cache invalidation implemented. |
 | Load testing at 1000+ concurrent swaps | Low | ⏳ Planned | Target v0.3.0 |
 | ACB deprecation notices + comms pack | Low | ⏳ Deferred | Wait until repos run solely on Oneiric |
 
 **Kickoff Checklist**
 
 1. File test-flake issues referencing failing suites; attach current CI logs.
-1. Draft design note for secrets rotation + load test approach (owner + target release).
+1. Draft design note for load test approach (owner + target release).
 1. Engage comms team to prepare outline for ACB deprecation notices once parity dates firm up.
 
-**Exit Criteria:** Patch release closes flakiness, v0.3.0 delivers rotation + load tests, comms ready for final cut-over.
+**Exit Criteria:** Patch release closes flakiness, v0.3.0 delivers load tests, comms ready for final cut-over.
 
 ______________________________________________________________________
 

@@ -13,6 +13,7 @@ import yaml
 from pydantic import BaseModel, Field
 
 from oneiric.actions.metadata import ActionMetadata
+from oneiric.actions.payloads import normalize_payload
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
@@ -72,7 +73,7 @@ class SerializationAction:
         self._logger = get_logger("action.serialization")
 
     async def execute(self, payload: dict | None = None) -> dict:
-        payload = payload or {}
+        payload = normalize_payload(payload)
         mode = (payload.get("mode") or "encode").lower()
         fmt = (payload.get("format") or self._settings.default_format).lower()
         if fmt not in {"json", "yaml", "pickle"}:

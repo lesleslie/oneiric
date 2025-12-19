@@ -3,18 +3,32 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import nats
-from nats.aio.msg import Msg
+if TYPE_CHECKING:  # pragma: no cover - optional dependency typing
+    from nats.aio.msg import Msg
+else:  # pragma: no cover - runtime guard
+    Msg = Any
 from pydantic import BaseModel, Field
 
 from oneiric.adapters.metadata import AdapterMetadata
+from oneiric.core.client_mixins import EnsureClientMixin
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
 
 MessageHandler = Callable[[Msg], Awaitable[None]]
+
+
+def _load_nats() -> Any:
+    try:
+        import nats as nats_lib
+    except ModuleNotFoundError as exc:  # pragma: no cover - optional dependency
+        raise LifecycleError(
+            "nats-not-installed: install optional extra 'oneiric[queue-nats]' to use "
+            "NATSQueueAdapter"
+        ) from exc
+    return nats_lib
 
 
 class NATSQueueSettings(BaseModel):
@@ -45,7 +59,7 @@ class NATSQueueSettings(BaseModel):
     )
 
 
-class NATSQueueAdapter:
+class NATSQueueAdapter(EnsureClientMixin):
     metadata = AdapterMetadata(
         category="queue",
         provider="nats",
@@ -76,7 +90,8 @@ class NATSQueueAdapter:
 
     async def init(self) -> None:
         if not self._client:
-            self._client = await nats.connect(
+            nats_lib = _load_nats()
+            self._client = await nats_lib.connect(
                 servers=self._settings.servers,
                 name=self._settings.name,
                 connect_timeout=self._settings.connect_timeout,
@@ -105,7 +120,7 @@ class NATSQueueAdapter:
     async def publish(
         self, subject: str, payload: bytes, *, headers: dict[str, str] | None = None
     ) -> None:
-        client = self._ensure_client()
+        client = self._ensure_client("nats-client-not-initialized")
         await client.publish(subject, payload, headers=headers)
         self._logger.debug("queue-publish", subject=subject, size=len(payload))
 
@@ -118,7 +133,7 @@ class NATSQueueAdapter:
     ) -> Any:
         if not cb:
             raise LifecycleError("nats-subscription-callback-required")
-        client = self._ensure_client()
+        client = self._ensure_client("nats-client-not-initialized")
         queue_name = queue or self._settings.queue
         sub = await client.subscribe(subject, queue=queue_name, cb=cb)
         self._logger.debug("queue-subscribe", subject=subject, queue=queue_name)
@@ -127,13 +142,8 @@ class NATSQueueAdapter:
     async def request(
         self, subject: str, payload: bytes, *, timeout: float | None = None
     ) -> Msg:
-        client = self._ensure_client()
+        client = self._ensure_client("nats-client-not-initialized")
         response = await client.request(
             subject, payload, timeout=timeout or self._settings.connect_timeout
         )
         return response
-
-    def _ensure_client(self) -> nats.NATS:
-        if not self._client:
-            raise LifecycleError("nats-client-not-initialized")
-        return self._client

@@ -47,6 +47,8 @@ class TestRemoteManifestHotReload:
         config = RemoteSourceConfig(
             manifest_url="test-url",  # Placeholder URL
             cache_dir=str(tmp_path),
+            allow_file_uris=True,
+            allowed_file_uri_roots=[str(tmp_path)],
             enabled=True,
             refresh_interval=30.0,
             max_retries=3,
@@ -67,6 +69,8 @@ class TestRemoteManifestHotReload:
         config = RemoteSourceConfig(
             manifest_url=f"file://{manifest_file}",
             cache_dir=str(tmp_path),
+            allow_file_uris=True,
+            allowed_file_uri_roots=[str(tmp_path)],
             enabled=True,
             refresh_interval=30.0,
             max_retries=3,
@@ -110,6 +114,8 @@ class TestRemoteManifestHotReload:
         config_v2 = RemoteSourceConfig(
             manifest_url=f"file://{manifest_file_v2}",
             cache_dir=str(tmp_path),
+            allow_file_uris=True,
+            allowed_file_uri_roots=[str(tmp_path)],
             enabled=True,
             refresh_interval=30.0,
             max_retries=3,
@@ -167,6 +173,8 @@ class TestRemoteManifestHotReload:
         config = RemoteSourceConfig(
             manifest_url=f"file://{manifest_actions}",
             cache_dir=str(tmp_path),
+            allow_file_uris=True,
+            allowed_file_uri_roots=[str(tmp_path)],
             enabled=True,
             refresh_interval=30.0,
             max_retries=3,
@@ -253,6 +261,8 @@ class TestRemoteManifestHotReload:
         config = RemoteSourceConfig(
             manifest_url=f"file://{manifest_path}",
             cache_dir=str(tmp_path),
+            allow_file_uris=True,
+            allowed_file_uri_roots=[str(tmp_path)],
             enabled=True,
             refresh_interval=30.0,
             max_retries=3,
@@ -325,6 +335,8 @@ class TestRemoteManifestHotReload:
         config = RemoteSourceConfig(
             manifest_url=f"file://{manifest_path}",
             cache_dir=str(tmp_path),
+            allow_file_uris=True,
+            allowed_file_uri_roots=[str(tmp_path)],
             enabled=True,
             refresh_interval=30.0,
             max_retries=3,
@@ -426,6 +438,8 @@ class TestSignatureVerificationFailures:
         config = RemoteSourceConfig(
             manifest_url=f"file://{manifest_file}",
             cache_dir=str(tmp_path),
+            allow_file_uris=True,
+            allowed_file_uri_roots=[str(tmp_path)],
             enabled=True,
             refresh_interval=30.0,
             max_retries=3,
@@ -512,6 +526,8 @@ class TestConcurrentRemoteSync:
         config1 = RemoteSourceConfig(
             manifest_url=f"file://{manifest_file1}",
             cache_dir=str(tmp_path),
+            allow_file_uris=True,
+            allowed_file_uri_roots=[str(tmp_path)],
             enabled=True,
             refresh_interval=30.0,
             max_retries=3,
@@ -525,6 +541,8 @@ class TestConcurrentRemoteSync:
         config2 = RemoteSourceConfig(
             manifest_url=f"file://{manifest_file2}",
             cache_dir=str(tmp_path),
+            allow_file_uris=True,
+            allowed_file_uri_roots=[str(tmp_path)],
             enabled=True,
             refresh_interval=30.0,
             max_retries=3,
@@ -579,6 +597,8 @@ class TestConcurrentRemoteSync:
             config = RemoteSourceConfig(
                 manifest_url=f"file://{manifest_file}",
                 cache_dir=str(tmp_path),
+                allow_file_uris=True,
+                allowed_file_uri_roots=[str(tmp_path)],
                 enabled=True,
                 refresh_interval=30.0,
                 max_retries=3,
@@ -633,6 +653,8 @@ class TestManifestValidation:
         config = RemoteSourceConfig(
             manifest_url=f"file://{manifest_file}",
             cache_dir=str(tmp_path),
+            allow_file_uris=True,
+            allowed_file_uri_roots=[str(tmp_path)],
             enabled=True,
             refresh_interval=30.0,
             max_retries=3,
@@ -665,6 +687,8 @@ class TestManifestValidation:
         config = RemoteSourceConfig(
             manifest_url=f"file://{manifest_file}",
             cache_dir=str(tmp_path),
+            allow_file_uris=True,
+            allowed_file_uri_roots=[str(tmp_path)],
             enabled=True,
             refresh_interval=30.0,
             max_retries=3,
@@ -712,6 +736,8 @@ class TestManifestValidation:
         config = RemoteSourceConfig(
             manifest_url=f"file://{manifest_file}",
             cache_dir=str(tmp_path),
+            allow_file_uris=True,
+            allowed_file_uri_roots=[str(tmp_path)],
             enabled=True,
             refresh_interval=30.0,
             max_retries=3,

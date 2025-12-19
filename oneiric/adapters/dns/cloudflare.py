@@ -5,15 +5,17 @@ from __future__ import annotations
 from typing import Any, Literal
 
 import httpx
-from pydantic import AnyHttpUrl, BaseModel, Field, SecretStr
+from pydantic import AnyHttpUrl, Field, SecretStr
 
+from oneiric.adapters.httpx_base import HTTPXClientMixin
 from oneiric.adapters.metadata import AdapterMetadata
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
+from oneiric.core.settings_mixins import TimeoutSettings
 
 
-class CloudflareDNSSettings(BaseModel):
+class CloudflareDNSSettings(TimeoutSettings):
     """Configuration for Cloudflare DNS."""
 
     zone_id: str = Field(description="Cloudflare zone identifier")
@@ -22,10 +24,9 @@ class CloudflareDNSSettings(BaseModel):
         default="https://api.cloudflare.com/client/v4",
         description="Cloudflare API base URL",
     )
-    timeout: float = Field(default=10.0, ge=0.5)
 
 
-class CloudflareDNSAdapter:
+class CloudflareDNSAdapter(HTTPXClientMixin):
     """Manage DNS records via the Cloudflare API."""
 
     metadata = AdapterMetadata(
@@ -47,9 +48,8 @@ class CloudflareDNSAdapter:
         *,
         client: httpx.AsyncClient | None = None,
     ) -> None:
+        super().__init__(client=client)
         self._settings = settings
-        self._client = client
-        self._owns_client = client is None
         self._logger = get_logger("adapter.dns.cloudflare").bind(
             domain="adapter",
             key="dns",
@@ -63,12 +63,13 @@ class CloudflareDNSAdapter:
                 "Authorization": f"Bearer {self._settings.api_token.get_secret_value()}",
                 "Content-Type": "application/json",
             }
-            self._client = httpx.AsyncClient(
-                base_url=str(self._settings.base_url),
-                timeout=self._settings.timeout,
-                headers=headers,
+            self._init_client(
+                lambda: httpx.AsyncClient(
+                    base_url=str(self._settings.base_url),
+                    timeout=self._settings.timeout,
+                    headers=headers,
+                )
             )
-            self._owns_client = True
         else:
             self._client.headers.update(
                 {
@@ -79,14 +80,12 @@ class CloudflareDNSAdapter:
 
     async def cleanup(self) -> None:
         """Dispose HTTP client."""
-        if self._client and self._owns_client:
-            await self._client.aclose()
-        self._client = None
+        await self._cleanup_client()
         self._logger.info("cloudflare-dns-cleanup")
 
     async def health(self) -> bool:
         """Lightweight zone read."""
-        client = self._ensure_client()
+        client = self._ensure_client("cloudflare-dns-client-not-initialized")
         try:
             response = await client.get(f"/zones/{self._settings.zone_id}")
             data = response.json()
@@ -184,7 +183,7 @@ class CloudflareDNSAdapter:
         params: dict[str, Any] | None = None,
         json: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        client = self._ensure_client()
+        client = self._ensure_client("cloudflare-dns-client-not-initialized")
         try:
             response = await client.request(
                 method,
@@ -213,8 +212,3 @@ class CloudflareDNSAdapter:
             )
             raise LifecycleError(f"cloudflare-dns-request-failed: {message or 'error'}")
         return data
-
-    def _ensure_client(self) -> httpx.AsyncClient:
-        if self._client is None:
-            raise LifecycleError("cloudflare-dns-client-not-initialized")
-        return self._client

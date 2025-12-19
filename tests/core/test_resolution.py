@@ -151,6 +151,37 @@ class TestCandidateRegistry:
         memcached = registry.resolve("adapter", "cache", provider="memcached")
         assert memcached.provider == "memcached"
 
+    def test_resolve_by_provider_checks_all_candidates(self):
+        """Resolve by provider checks every candidate for capability match."""
+        registry = CandidateRegistry()
+        registry.register_candidate(
+            Candidate(
+                domain="adapter",
+                key="cache",
+                provider="redis",
+                factory=lambda: None,
+                metadata={"capabilities": ["basic"]},
+                source=CandidateSource.MANUAL,
+            )
+        )
+        registry.register_candidate(
+            Candidate(
+                domain="adapter",
+                key="cache",
+                provider="redis",
+                factory=lambda: None,
+                metadata={"capabilities": ["advanced"]},
+                source=CandidateSource.MANUAL,
+            )
+        )
+
+        resolved = registry.resolve(
+            "adapter", "cache", provider="redis", capabilities=["advanced"]
+        )
+
+        assert resolved is not None
+        assert resolved.metadata["capabilities"] == ["advanced"]
+
     def test_list_active_returns_only_active_candidates(self):
         """list_active returns only active candidates for domain."""
         registry = CandidateRegistry()
@@ -299,6 +330,35 @@ class TestResolutionPrecedence:
         # High priority should win
         resolved = registry.resolve("adapter", "cache")
         assert resolved.provider == "second"
+
+    def test_priority_zero_is_not_overridden(self):
+        """Explicit zero priority is preserved."""
+        settings = ResolverSettings(default_priority=5)
+        registry = CandidateRegistry(settings)
+        registry.register_candidate(
+            Candidate(
+                domain="adapter",
+                key="cache",
+                provider="zero",
+                factory=lambda: None,
+                priority=0,
+                source=CandidateSource.MANUAL,
+            )
+        )
+        registry.register_candidate(
+            Candidate(
+                domain="adapter",
+                key="cache",
+                provider="one",
+                factory=lambda: None,
+                priority=1,
+                source=CandidateSource.MANUAL,
+            )
+        )
+
+        resolved = registry.resolve("adapter", "cache")
+
+        assert resolved.provider == "one"
 
     def test_tier3_stack_level_beats_registration_order(self):
         """Tier 3: Stack level beats registration order when priority is equal."""
@@ -716,6 +776,73 @@ class TestResolverFacade:
         resolved = resolver.resolve("adapter", "cache")
         assert resolved is not None
         assert resolved.provider == "redis"
+
+    def test_capability_negotiation_requires_match(self):
+        """Resolve respects required capabilities when provided."""
+        registry = CandidateRegistry()
+
+        registry.register_candidate(
+            Candidate(
+                domain="adapter",
+                key="cache",
+                provider="fast",
+                factory=lambda: None,
+                priority=100,
+                metadata={"capabilities": ["read"]},
+                source=CandidateSource.MANUAL,
+            )
+        )
+        registry.register_candidate(
+            Candidate(
+                domain="adapter",
+                key="cache",
+                provider="full",
+                factory=lambda: None,
+                priority=1,
+                metadata={"capabilities": ["read", "write"]},
+                source=CandidateSource.MANUAL,
+            )
+        )
+
+        resolved = registry.resolve("adapter", "cache", capabilities=["write"])
+        assert resolved is not None
+        assert resolved.provider == "full"
+
+    def test_capability_negotiation_prefers_best_match(self):
+        """Resolve prefers candidates with more capability matches."""
+        registry = CandidateRegistry()
+
+        registry.register_candidate(
+            Candidate(
+                domain="adapter",
+                key="cache",
+                provider="priority-first",
+                factory=lambda: None,
+                priority=100,
+                metadata={"capabilities": ["read"]},
+                source=CandidateSource.MANUAL,
+            )
+        )
+        registry.register_candidate(
+            Candidate(
+                domain="adapter",
+                key="cache",
+                provider="capability-first",
+                factory=lambda: None,
+                priority=1,
+                metadata={"capabilities": ["read", "write"]},
+                source=CandidateSource.MANUAL,
+            )
+        )
+
+        resolved = registry.resolve(
+            "adapter",
+            "cache",
+            capabilities=["write"],
+            require_all=False,
+        )
+        assert resolved is not None
+        assert resolved.provider == "capability-first"
 
     def test_resolver_list_active(self):
         """Resolver list_active delegates to registry."""

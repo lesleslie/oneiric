@@ -3,25 +3,26 @@
 from __future__ import annotations
 
 import httpx
-from pydantic import AnyHttpUrl, BaseModel, Field
+from pydantic import AnyHttpUrl, Field
 
+from oneiric.adapters.httpx_base import HTTPXClientMixin
 from oneiric.adapters.metadata import AdapterMetadata
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
+from oneiric.core.settings_mixins import TimeoutSettings
 
 from .common import MessagingSendResult, NotificationMessage
 
 
-class TeamsSettings(BaseModel):
+class TeamsSettings(TimeoutSettings):
     """Configuration for Teams incoming webhook notifications."""
 
     webhook_url: AnyHttpUrl
-    timeout: float = Field(default=10.0, ge=0.5)
     default_theme_color: str = Field(default="0078D4")
 
 
-class TeamsAdapter:
+class TeamsAdapter(HTTPXClientMixin):
     """Adapter that posts adaptive cards to Microsoft Teams webhooks."""
 
     metadata = AdapterMetadata(
@@ -43,9 +44,8 @@ class TeamsAdapter:
         *,
         client: httpx.AsyncClient | None = None,
     ) -> None:
+        super().__init__(client=client)
         self._settings = settings
-        self._client = client
-        self._owns_client = client is None
         self._logger = get_logger("adapter.messaging.teams").bind(
             domain="adapter",
             key="messaging",
@@ -53,20 +53,16 @@ class TeamsAdapter:
         )
 
     async def init(self) -> None:
-        if self._client is None:
-            self._client = httpx.AsyncClient(timeout=self._settings.timeout)
-            self._owns_client = True
+        self._init_client(lambda: httpx.AsyncClient(timeout=self._settings.timeout))
         self._logger.info("teams-adapter-init")
 
     async def cleanup(self) -> None:
-        if self._client and self._owns_client:
-            await self._client.aclose()
-        self._client = None
+        await self._cleanup_client()
         self._logger.info("teams-adapter-cleanup")
 
     async def health(self) -> bool:
         # Teams webhooks do not expose a lightweight health endpoint; perform a HEAD to the webhook URL.
-        client = self._ensure_client()
+        client = self._ensure_client("teams-client-not-initialized")
         try:
             response = await client.head(str(self._settings.webhook_url))
             return response.status_code < 500
@@ -77,7 +73,7 @@ class TeamsAdapter:
     async def send_notification(
         self, message: NotificationMessage
     ) -> MessagingSendResult:
-        client = self._ensure_client()
+        client = self._ensure_client("teams-client-not-initialized")
         webhook_url = message.target or str(self._settings.webhook_url)
         payload = self._build_payload(message)
 
@@ -122,8 +118,3 @@ class TeamsAdapter:
         if message.extra_payload:
             card.update(message.extra_payload)
         return card
-
-    def _ensure_client(self) -> httpx.AsyncClient:
-        if not self._client:
-            raise LifecycleError("teams-client-not-initialized")
-        return self._client

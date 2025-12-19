@@ -88,6 +88,11 @@ class InfisicalSecretAdapter:
         self._cache.clear()
         self._logger.info("adapter-cleanup-complete", adapter="infisical-secrets")
 
+    async def invalidate_cache(self) -> None:
+        async with self._cache_lock:
+            self._cache.clear()
+        self._logger.info("secrets-cache-invalidated", adapter="infisical-secrets")
+
     async def get_secret(self, key: str, *, allow_missing: bool = False) -> str | None:
         cached = await self._get_cached(key)
         if cached is not None:
