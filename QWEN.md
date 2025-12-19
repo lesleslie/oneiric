@@ -5,6 +5,7 @@
 Oneiric is a universal resolution layer for pluggable Python components with hot-swapping and remote manifest delivery capabilities. It provides explainable component resolution, lifecycle management, and remote delivery for Python 3.14+ runtimes. The project extracts the resolver/lifecycle core from ACB and turns it into a stand-alone platform.
 
 ### Key Features
+
 - **Deterministic resolver**: Explicit selections with stack order, priorities, and registration order
 - **Lifecycle orchestration**: Activation, health, bind, and cleanup with rollback capabilities
 - **Config watchers & supervisor**: Auto-swap components using watchfiles/polling
@@ -14,6 +15,7 @@ Oneiric is a universal resolution layer for pluggable Python components with hot
 - **Plugin/secrets tooling**: Entry-point discovery and secure secret caching
 
 ### Architecture Domains
+
 - **Adapters**: Activity-aware swaps with built-in examples for Redis, Memcached, databases, etc.
 - **Services**: Lifecycle-managed business services
 - **Tasks**: Async runners with queue metadata and retry controls
@@ -24,10 +26,12 @@ Oneiric is a universal resolution layer for pluggable Python components with hot
 ## Building and Running
 
 ### Prerequisites
+
 - Python 3.13+ (as specified in `.python-version`)
 - `uv` package manager (recommended)
 
 ### Development Setup
+
 ```bash
 # Install dependencies
 uv sync
@@ -46,7 +50,9 @@ uv run pytest --cov=oneiric --cov-report=term
 ```
 
 ### Using the CLI
+
 Oneiric provides a comprehensive command-line interface:
+
 ```bash
 # Domain introspection
 uv run python -m oneiric.cli list --domain adapter
@@ -67,7 +73,9 @@ uv run python -m oneiric.cli remote-sync --manifest docs/sample_remote_manifest.
 ```
 
 ### Docker Deployment
+
 The project includes a multi-stage Dockerfile and docker-compose configuration:
+
 ```bash
 # Build and run with Docker
 docker-compose up --build
@@ -80,6 +88,7 @@ docker run -d --name oneiric-container oneiric
 ## Development Conventions
 
 ### Code Structure
+
 - **Core components** are organized in the `oneiric/` package
 - **Configuration**: `pyproject.toml` manages dependencies and build settings
 - **Logging**: Uses `structlog` with structured JSON output
@@ -87,17 +96,20 @@ docker run -d --name oneiric-container oneiric
 - **Linting**: Uses `ruff` with auto-fix capabilities
 
 ### Testing
+
 - Unit and integration tests located in the `tests/` directory
 - Code coverage requirements enforced via `pytest-cov`
 - Quality gates maintained with `crackerjack` tool
 
 ### Environment Variables
+
 - `ONEIRIC_PROFILE`: Sets runtime profile (e.g., "serverless")
 - `ONEIRIC_CONFIG`: Points to configuration directory
 - `LOG_LEVEL`: Controls logging verbosity
 - `OTEL_SERVICE_NAME`: Service name for OpenTelemetry
 
 ### Documentation
+
 - Extensive documentation in the `docs/` directory
 - Reference specs: architecture, telemetry, deployment guides
 - Implementation plans and audit reports
@@ -106,6 +118,7 @@ docker run -d --name oneiric-container oneiric
 ## Project Configuration
 
 ### Main Configuration Files
+
 - `pyproject.toml`: Project metadata, dependencies, and tool configurations
 - `Dockerfile`: Multi-stage Docker build for production deployment
 - `docker-compose.yml`: Full-stack deployment with monitoring stack
@@ -114,12 +127,15 @@ docker run -d --name oneiric-container oneiric
 - `.envrc`: Direnv configuration using `layout uv`
 
 ### Dependency Management
+
 The project uses `uv` for fast Python packaging and dependency management:
+
 - Dependencies defined in `pyproject.toml`
 - Lock file at `uv.lock`
 - Multiple optional dependency groups for different integrations (databases, storage, messaging, etc.)
 
 ### Monitoring and Observability
+
 - **Logging**: Structured logging with `structlog`
 - **Metrics**: Prometheus integration with port 9090
 - **Tracing**: OpenTelemetry support
@@ -130,12 +146,14 @@ The project uses `uv` for fast Python packaging and dependency management:
 ## Special Considerations
 
 ### Security Features
+
 - ED25519 signatures for remote manifest verification
 - SHA256 digest validation
 - Secure secret handling with caching
 - Component isolation through lifecycle management
 
 ### Cloud-Native Features
+
 - Serverless profile for Cloud Run deployment
 - Remote manifest synchronization
 - Configurable refresh intervals for remote updates
@@ -143,12 +161,14 @@ The project uses `uv` for fast Python packaging and dependency management:
 - Health probes for container orchestration
 
 ### Performance Optimization
+
 - Bytecode compilation with `UV_COMPILE_BYTECODE=1`
 - Asynchronous design throughout the codebase
 - Efficient component resolution algorithms
 - Caching mechanisms for secrets and component metadata
 
 ## File Structure
+
 ```
 oneiric/
 ├── adapters/           # Component adapters for various services

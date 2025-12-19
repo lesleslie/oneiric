@@ -3,6 +3,7 @@
 ### Scope
 
 Introduce Protocols for the following areas where duck-typing or `Any` is used:
+
 - Secrets provider contract (used by `SecretsHook`).
 - Activity store abstraction (used by `ServiceSupervisor` and bridges).
 - Workflow checkpoint + execution persistence stores.
@@ -89,6 +90,7 @@ class QueueAdapterProtocol(Protocol):
 ```
 
 Notes:
+
 - Keep optional lifecycle methods (init/health/cleanup) in existing ABCs for now.
 - Secrets cache invalidation uses a separate `SecretsCacheProtocol` so providers
   can opt in without affecting the base secrets contract.
@@ -99,37 +101,44 @@ Notes:
 ### Integration Points (How Protocols Slot In)
 
 1. Secrets hook
+
    - File: `oneiric/core/config.py`
    - Replace `Any` provider usage with `SecretsProviderProtocol`.
    - `SecretsCacheProtocol` is only used for optional cache hooks.
    - Keep existing runtime `getattr` checks; the Protocol is for typing.
 
-2. Activity store
+1. Activity store
+
    - Files: `oneiric/runtime/activity.py`, `oneiric/runtime/supervisor.py`,
      `oneiric/adapters/bridge.py`, `oneiric/domains/base.py`
    - Annotate `activity_store` parameters with `ActivityStoreProtocol`.
    - `DomainActivityStore` already matches the protocol.
 
-3. Workflow persistence stores
+1. Workflow persistence stores
+
    - Files: `oneiric/runtime/checkpoints.py`, `oneiric/runtime/durable.py`,
      `oneiric/domains/workflows.py`, `oneiric/runtime/orchestrator.py`
    - Accept `WorkflowCheckpointStoreProtocol` and
      `WorkflowExecutionStoreProtocol` where used.
    - Existing SQLite implementations remain unchanged.
 
-4. Task handler contract
+1. Task handler contract
+
    - File: `oneiric/domains/workflows.py`
    - Type the `handle.instance` for task handlers as `TaskHandlerProtocol`.
 
-5. Event handler contract
+1. Event handler contract
+
    - Files: `oneiric/domains/events.py`, `oneiric/runtime/events.py`
    - Type handler instances to `EventHandlerProtocol` in `_build_handler`.
 
-6. Queue adapter surface
+1. Queue adapter surface
+
    - File: `oneiric/domains/workflows.py`
    - Type `handle.instance` as `QueueAdapterProtocol` when invoking `enqueue`.
 
-7. Bridge handles
+1. Bridge handles
+
    - Files: `oneiric/adapters/bridge.py`, `oneiric/domains/base.py`
    - Option A: Keep `instance: Any` and add generic type parameters so
      bridge usage can be typed at call sites.
@@ -140,8 +149,8 @@ Notes:
 
 1. Add new protocol modules in the relevant domain packages (runtime/domains/
    adapters). Only place shared protocols in `oneiric/core/`.
-2. Define the minimal Protocols listed above, with comments on intent.
-3. Update typing annotations in:
+1. Define the minimal Protocols listed above, with comments on intent.
+1. Update typing annotations in:
    - `oneiric/core/config.py`
    - `oneiric/runtime/supervisor.py`
    - `oneiric/adapters/bridge.py`
@@ -150,8 +159,8 @@ Notes:
    - `oneiric/domains/workflows.py`
    - `oneiric/runtime/checkpoints.py`
    - `oneiric/runtime/durable.py`
-4. Optionally add Protocol-specific type aliases for domain handles or `AdapterHandle`.
-5. Run type checks locally (zuban; pyright is legacy) and fix drift.
+1. Optionally add Protocol-specific type aliases for domain handles or `AdapterHandle`.
+1. Run type checks locally (zuban; pyright is legacy) and fix drift.
 
 ### Testing + Validation
 

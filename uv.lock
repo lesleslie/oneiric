@@ -11,7 +11,7 @@ prerelease-mode = "allow"
 
 [[package]]
 name = "acb"
-version = "0.31.20"
+version = "0.31.22"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aioconsole" },
@@ -44,9 +44,9 @@ dependencies = [
     { name = "uuid-utils" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6d/81/673b6098013917c2f7480525fb88c2035cd4adcfff7450ca6d3265539a7c/acb-0.31.20.tar.gz", hash = "sha256:f127d7a9b3c8a3135ad0c7d205b4c909b081e388aebcdaa095a08b60a4b9f302", size = 1457589, upload-time = "2025-12-12T13:36:01.17Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/35/58/cac0f7c7ec2aa8da7f4ffc2eec5ff2a255564eb10f90679065865fe2837e/acb-0.31.22.tar.gz", hash = "sha256:ac683ce6f99bc16714fd3526ac87555d809f035c4e17744bae22cb6913ff6ba1", size = 1458132, upload-time = "2025-12-19T21:23:59.002Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c8/18/c45748fa668d2c9f365c3a11a6f2b5f6abc615291aa2e4e36a1dcadc8110/acb-0.31.20-py3-none-any.whl", hash = "sha256:67228e4fedb104f95f4cdccc0b056d170080e0fab7824fb3b918ee70f4e32d6e", size = 820896, upload-time = "2025-12-12T13:36:03.46Z" },
+    { url = "https://files.pythonhosted.org/packages/46/d9/58d5a0f469f9cb9fb70c180a48c651657f733b54108d8fb748a61c5fdf55/acb-0.31.22-py3-none-any.whl", hash = "sha256:f3e92eb04281a4e98aa0896a70e0d6104f3301afbcf0d45b18fac29e09987813", size = 820903, upload-time = "2025-12-19T21:23:55.951Z" },
 ]
 
 [[package]]
@@ -987,7 +987,7 @@ wheels = [
 
 [[package]]
 name = "crackerjack"
-version = "0.46.1"
+version = "0.46.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "acb" },
@@ -1050,9 +1050,9 @@ dependencies = [
     { name = "websockets" },
     { name = "zuban" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ed/1c/4d4ce9f2aef2f89ce90322d4e05549a7f50056029b4c4ed3fb0ff12027a0/crackerjack-0.46.1.tar.gz", hash = "sha256:0f45125c97e3378c265f2aeb8200fb0c24811f86c4e7ac95c518da7a366b5572", size = 2082050, upload-time = "2025-12-19T17:55:25.976Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d7/db/8a788ebf89d31b65b8b0ca3cc045ba5147a1ed0c47c30967c889be3c71b4/crackerjack-0.46.2.tar.gz", hash = "sha256:a9dc2b43a1b92358f662c1dd5f8b5fe2715ea8cd465bc7d2c4fe441e4f77a42b", size = 2082014, upload-time = "2025-12-19T21:40:59.585Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/54/88/03864ba91e96d945c4aabaa88c05bedb07d130e1e44df1f63fd5bc4f1775/crackerjack-0.46.1-py3-none-any.whl", hash = "sha256:2e6585ae84df709b20100fc992d0a552e3190db963e4673b4059933a172b7661", size = 1341627, upload-time = "2025-12-19T17:55:21.208Z" },
+    { url = "https://files.pythonhosted.org/packages/7d/40/9806c789edfbb5b1d69ca133e744512f58b7818360b7be55e1c94bae6712/crackerjack-0.46.2-py3-none-any.whl", hash = "sha256:c7ea86e906b7303b9e1324a78c079911ca71365e4cba42603ca68f67f6b7dc0a", size = 1341627, upload-time = "2025-12-19T21:40:53.527Z" },
 ]
 
 [[package]]
@@ -3154,7 +3154,7 @@ wheels = [
 
 [[package]]
 name = "oneiric"
-version = "0.2.3"
+version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "aiobreaker" },
@@ -4187,7 +4187,7 @@ wheels = [
 
 [[package]]
 name = "pydocket"
-version = "0.16.0"
+version = "0.16.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cloudpickle" },
@@ -4203,9 +4203,9 @@ dependencies = [
     { name = "typer" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f2/d3/ff57fb8ba8180c621b17270a272ee8821a64962887c42962c5a342ab82a9/pydocket-0.16.0.tar.gz", hash = "sha256:675e829a7ea6e978fdbbe0ace342f24c8ec7cf8ed5980694215418e59ff86005", size = 286316, upload-time = "2025-12-18T15:14:53.139Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2b/ff/87e931e4abc7efb1e8c16adaa55327452931e8c5f460f2ba089447673226/pydocket-0.16.1.tar.gz", hash = "sha256:8663cb6dc801d8b8d703541fb665f4099c84f4d10d8f3fd441e208b080aa4826", size = 289028, upload-time = "2025-12-19T19:43:48.773Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4e/74/dcf56132e03a24e2591c5f2391902c871e5f1248e0fc175b9f1792e4afaf/pydocket-0.16.0-py3-none-any.whl", hash = "sha256:3d7d0a805bcb68a3a03d96d3c6ba8e607584ed14b0fe3879333a8fff652dda92", size = 61064, upload-time = "2025-12-18T15:14:51.506Z" },
+    { url = "https://files.pythonhosted.org/packages/ad/ab/0da7d0397112546309709f464bdf65de4e1697e3caba07556751fc4d8bcd/pydocket-0.16.1-py3-none-any.whl", hash = "sha256:bc6ccf7e91164761def854b4014101abf23c3cc2fb7d0fa2c4e07ea3bf6a1826", size = 63208, upload-time = "2025-12-19T19:43:47.309Z" },
 ]
 
 [[package]]
@@ -5130,7 +5130,7 @@ wheels = [
 
 [[package]]
 name = "session-buddy"
-version = "0.10.1"
+version = "0.10.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "acb" },
@@ -5157,9 +5157,9 @@ dependencies = [
     { name = "transformers" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/53/a7/503c7913173871edaeae7a601620acdbd0752c1f1c0f4e3fa492b0a1b3a9/session_buddy-0.10.1.tar.gz", hash = "sha256:cde54668ed94f0adc05fe120663718ffae076f394bdf8395af2bc57eecf77f17", size = 1436252, upload-time = "2025-12-11T20:26:21.071Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/80/5c/2ec1cd54e758e581b0330ccf898a2c886d040446ac82c1a03105fff4096e/session_buddy-0.10.3.tar.gz", hash = "sha256:d5d94c83a321ed50ccb01d146bde439c3ac0e6c6c8ab827eb45db8acc358acc9", size = 1447825, upload-time = "2025-12-19T21:29:37.753Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ea/e4/bdf201e341a264c2535af6a0369bea2a9086fbae50bcc1f267e2a0c59428/session_buddy-0.10.1-py3-none-any.whl", hash = "sha256:1ddf49e340617672f67338923389b292f0d97b1c8498b449bdb5ed72b05cc1a6", size = 403506, upload-time = "2025-12-11T20:26:23.009Z" },
+    { url = "https://files.pythonhosted.org/packages/1e/87/a13b08e713d7d1b5d81d46501669fcbb78c12ff479078719ecec146e7944/session_buddy-0.10.3-py3-none-any.whl", hash = "sha256:96eb4a2f32f0bda886885c6ca91d1e00001e0b17e2ea457e04c315e1210576d1", size = 403777, upload-time = "2025-12-19T21:29:34.675Z" },
 ]
 
 [[package]]
