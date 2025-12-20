@@ -26,3 +26,4 @@ coverage.xml
 coverage.json
 htmlcov/
 .pytest_cache/
+/.mcp_test_results.md

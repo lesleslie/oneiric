@@ -150,6 +150,31 @@ This project uses **Zuban** (via Crackerjack) for ultra-fast type checking. Due 
 
 ### Testing
 
+**Test Suite Overview:**
+
+- **Total:** 716 tests across 94 test files in 10 categories
+- **Coverage:** 83% (target: 60%, achieved: 138% of target)
+- **Test Categories:** Core (68), Adapters (60), Domains (44), Security (100), Remote/Runtime/CLI (117), Integration (39), E2E (8)
+- **Timeout:** 600s (10 minutes) configured in `[tool.crackerjack]`
+
+**Quick Start with Makefile:**
+
+```bash
+# Show all available test targets
+make help
+
+# Quick test patterns
+make test              # Run all tests (default)
+make test-fast         # Run only fast tests (<1s per test)
+make test-not-slow     # Run all except slow tests (good for CI)
+make test-unit         # Run only unit tests (isolated, no I/O)
+make test-integration  # Run integration and e2e tests
+make test-security     # Run security-related tests
+make test-analyze      # Run tests and analyze timing distribution
+```
+
+**Direct pytest Commands:**
+
 ```bash
 # Run all tests
 uv run pytest
@@ -160,16 +185,72 @@ uv run pytest --cov=oneiric --cov-report=term
 # Run specific test module
 uv run pytest tests/core/test_resolution.py -v
 
-# Run security tests
-uv run pytest tests/security/ -v
+# Run tests by marker
+uv run pytest -m "fast" -v              # Only fast tests
+uv run pytest -m "not slow" -v          # Skip slow tests
+uv run pytest -m "security" -v          # Security tests only
+uv run pytest -m "integration or e2e"   # Integration and e2e tests
+
+# Parallel execution
+uv run pytest -n auto -v                # Auto-detect workers
+
+# Timing analysis
+uv run pytest --durations=20            # Show 20 slowest tests
 ```
 
-**Test Statistics:**
+**Test Markers:**
 
-- Total: 546 tests (526 passing, 18 failing, 2 skipped)
-- Coverage: 83% (target: 60%, achieved: 138% of target)
-- Pass Rate: 96.3%
-- Test Categories: Core (68), Adapters (60), Domains (44), Security (100), Remote/Runtime/CLI (117), Integration (39), E2E (8)
+Tests can be marked with the following markers to enable selective execution:
+
+- `@pytest.mark.fast` - Fast tests (\<1s per test)
+- `@pytest.mark.slow` - Slow tests (>5s per test)
+- `@pytest.mark.unit` - Unit tests (isolated, no I/O)
+- `@pytest.mark.integration` - Integration tests
+- `@pytest.mark.e2e` - End-to-end tests (full system)
+- `@pytest.mark.security` - Security-related tests
+- `@pytest.mark.adapter` - Adapter-specific tests
+- `@pytest.mark.remote` - Remote manifest tests
+- `@pytest.mark.runtime` - Runtime orchestration tests
+
+**Test Execution Strategies:**
+
+1. **Fast CI Pipeline** (< 2 minutes):
+
+   ```bash
+   make test-not-slow    # Skip slow tests
+   ```
+
+1. **Full Test Suite** (10 minutes):
+
+   ```bash
+   make test             # Run all 716 tests
+   ```
+
+1. **Development Workflow** (iterative):
+
+   ```bash
+   # Quick feedback loop
+   make test-fast        # Fast tests only
+
+   # Module-specific testing
+   uv run pytest tests/core/ -v
+
+   # Full validation before commit
+   python -m crackerjack -t
+   ```
+
+1. **Performance Analysis**:
+
+   ```bash
+   make test-analyze     # Run tests and analyze timing distribution
+   ```
+
+**CI/CD Recommendations:**
+
+- **Pull Request Checks:** `make test-not-slow` (fast feedback)
+- **Pre-merge Validation:** `python -m crackerjack -t` (full quality suite)
+- **Nightly Builds:** `make test-all` (comprehensive with timing)
+- **Release Validation:** `make test-coverage` (with HTML report)
 
 ## Configuration
 

@@ -1,5 +1,6 @@
 # Oneiric
 
+![Coverage](https://img.shields.io/badge/coverage-76.6%25-yellow)
 **Explainable component resolution, lifecycle management, and remote delivery for Python 3.14+ runtimes**
 
 > **Status:** Production Ready (audit v0.2.0, current v0.2.3) — see `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for audit metrics and `coverage.json` for the latest coverage snapshot.

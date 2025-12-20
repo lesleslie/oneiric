@@ -39,6 +39,10 @@
       "command": "npx",
       "type": "stdio"
     },
+    "mailgun": {
+      "type": "http",
+      "url": "http://localhost:3039/mcp"
+    },
     "memory": {
       "args": [
         "-y",
@@ -50,6 +54,18 @@
     "mermaid": {
       "type": "http",
       "url": "http://localhost:3033/mcp"
+    },
+    "peekaboo": {
+      "args": [
+        "-y",
+        "@steipete/peekaboo-mcp@2.0.3"
+      ],
+      "command": "npx",
+      "type": "stdio"
+    },
+    "raindropio": {
+      "type": "http",
+      "url": "http://localhost:3034/mcp"
     },
     "sentry": {
       "type": "http",

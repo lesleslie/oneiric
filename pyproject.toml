@@ -230,7 +230,13 @@ addopts = [
 markers = [
     "security: Security-related tests",
     "integration: Integration tests",
-    "slow: Slow-running tests",
+    "slow: Slow-running tests (>5s per test)",
+    "fast: Fast-running tests (<1s per test)",
+    "unit: Unit tests (isolated, no I/O)",
+    "e2e: End-to-end tests (full system)",
+    "adapter: Adapter-specific tests",
+    "remote: Remote manifest tests",
+    "runtime: Runtime orchestration tests",
 ]
 
 [tool.coverage.run]
@@ -293,6 +299,9 @@ comprehensive_hooks = [
     "shellcheck",
     "gitleaks",
 ]
+
+# Test execution configuration
+test_timeout = 600  # 10 minutes for 716 tests (increased from 300s default)
 
 # pip-audit configuration to ignore specific vulnerabilities
 [tool.pip-audit]
