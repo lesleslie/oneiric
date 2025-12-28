@@ -270,10 +270,8 @@ def sign_manifest_for_publishing(manifest_dict: dict, private_key_b64: str) -> s
 
     # Decode private key
     # Sign the canonical JSON
-    return base64.b64encode(
-        (
-            private_key := Ed25519PrivateKey.from_private_bytes(
-                base64.b64decode(private_key_b64)
-            )
-        ).sign(canonical.encode("utf-8"))
-    ).decode("ascii")
+    private_key = Ed25519PrivateKey.from_private_bytes(
+        base64.b64decode(private_key_b64)
+    )
+    signature = private_key.sign(canonical.encode("utf-8"))
+    return base64.b64encode(signature).decode("ascii")

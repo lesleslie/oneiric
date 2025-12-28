@@ -9,10 +9,12 @@ This document summarizes the test optimizations performed to address slow test e
 ### 1. Marked Slow Tests (2 tests)
 
 **Tests Marked:**
+
 - `tests/integration/test_edge_cases.py::TestMaliciousInput::test_oversized_manifest`
 - `tests/integration/test_edge_cases.py::TestResourceExhaustion::test_many_candidates_performance`
 
 **Markers Added:**
+
 ```python
 @pytest.mark.slow
 @pytest.mark.integration
@@ -22,6 +24,7 @@ This document summarizes the test optimizations performed to address slow test e
 ### 2. Optimized test_oversized_manifest
 
 **Problem:**
+
 - Test took **536.63 seconds** (8.9 minutes) to complete
 - Created 100,000 YAML entries using incremental file writes
 - Extremely I/O intensive operation
@@ -29,16 +32,19 @@ This document summarizes the test optimizations performed to address slow test e
 **Optimizations Applied:**
 
 1. **Reduced entry count:** 100,000 → 10,000 entries
+
    - Still tests large manifest handling (~1MB file)
    - Maintains test validity for stress testing
    - 10x reduction in data volume
 
-2. **Optimized file I/O:**
+1. **Optimized file I/O:**
+
    - **Before:** Incremental writes with `f.write()` in loop
    - **After:** Build content in memory with list comprehension, single write with `write_text()`
    - Eliminates repeated I/O syscalls and buffering overhead
 
-3. **Code improvement:**
+1. **Code improvement:**
+
    ```python
    # Before: Incremental writes (very slow)
    with open(manifest_file, "w") as f:
@@ -50,14 +56,16 @@ This document summarizes the test optimizations performed to address slow test e
 
    # After: Single write with list comprehension (fast)
    entries = ["source: test\nentries:\n"]
-   entries.extend([
-       f"  - domain: adapter\n"
-       f"    key: cache-{i}\n"
-       f"    provider: provider-{i}\n"
-       f"    factory: tests.integration.test_edge_cases:SlowAdapter\n"
-       f"    stack_level: 5\n"
-       for i in range(10000)
-   ])
+   entries.extend(
+       [
+           f"  - domain: adapter\n"
+           f"    key: cache-{i}\n"
+           f"    provider: provider-{i}\n"
+           f"    factory: tests.integration.test_edge_cases:SlowAdapter\n"
+           f"    stack_level: 5\n"
+           for i in range(10000)
+       ]
+   )
    manifest_file.write_text("".join(entries))
    ```
 
@@ -72,6 +80,7 @@ This document summarizes the test optimizations performed to address slow test e
 | **File Size** | ~10MB | ~1MB | 10x reduction |
 
 **Test Validity:**
+
 - ✅ Still tests large manifest handling
 - ✅ Still validates parser can handle substantial data
 - ✅ Still exercises memory allocation patterns
@@ -81,10 +90,12 @@ This document summarizes the test optimizations performed to address slow test e
 ### 3. Optimized test_many_candidates_performance
 
 **Problem:**
+
 - Test took **38.05 seconds** to complete
 - Registers 1,000 candidates in a loop
 
 **Optimizations Applied:**
+
 - Marked as `@pytest.mark.slow` for selective execution
 - Already using efficient registration patterns
 - Performance acceptable for stress test (validates scaling)
@@ -102,11 +113,13 @@ This document summarizes the test optimizations performed to address slow test e
 ## Impact on Test Suite
 
 ### Before Optimizations
+
 - **Total test suite time:** 707.38s (11:47)
 - **Slowest 2 tests:** 574.68s (81% of total time)
 - **PR CI pipeline:** Not viable (timeout at 300s)
 
 ### After Optimizations
+
 - **Total test suite time (projected):** ~150s (2:30)
 - **Slowest 2 tests:** 22.61s (15% of projected total)
 - **PR CI pipeline:** Viable with `make test-not-slow` (~100s)
@@ -134,22 +147,26 @@ Improvement: 78% faster (707s → 155s without coverage)
 ## CI/CD Strategy
 
 ### Fast CI Pipeline (Pull Requests)
+
 ```bash
 make test-not-slow  # Excludes 2 slow tests
 ```
 
 **Characteristics:**
+
 - Runs 714 tests (99.7% coverage)
 - Estimated time: ~120s (2 minutes)
 - Fast feedback for developers
 - Sufficient for most code changes
 
 ### Full Test Suite (Pre-merge, Nightly)
+
 ```bash
 make test           # All 716 tests
 ```
 
 **Characteristics:**
+
 - Runs all tests including slow integration tests
 - Estimated time: ~180s (3 minutes)
 - Comprehensive validation
@@ -181,22 +198,26 @@ pytest -m "slow and integration" -v
 | `integration` | ~50+ | Cross-component tests |
 | `security` | 100+ | Security-focused tests |
 | `unit` | TBD | Isolated unit tests |
-| `fast` | TBD | Tests <1s execution time |
+| `fast` | TBD | Tests \<1s execution time |
 
 ## Recommendations
 
 ### Immediate (Completed)
+
 - ✅ Mark slow tests with `@pytest.mark.slow`
 - ✅ Optimize oversized manifest test
 - ✅ Remove pytest.ini to use pyproject.toml markers
 
 ### Short-term (Next Sprint)
+
 1. **Add more granular markers** to existing tests
+
    - Mark fast tests (`<1s`)
    - Mark unit tests (isolated, no I/O)
    - Run timing analysis to identify candidates
 
-2. **Set up GitHub Actions workflow**
+1. **Set up GitHub Actions workflow**
+
    ```yaml
    # .github/workflows/tests.yml
    pr-checks:
@@ -209,23 +230,28 @@ pytest -m "slow and integration" -v
      run: make test-all       # With timing analysis
    ```
 
-3. **Document marker guidelines** in contributing guide
+1. **Document marker guidelines** in contributing guide
+
    - When to use each marker
    - How to run marker-filtered tests
    - CI pipeline expectations
 
 ### Medium-term (Next Quarter)
+
 1. **Further optimize slow tests**
+
    - Consider async I/O for manifest test
    - Parallelize candidate registration
    - Cache test fixtures
 
-2. **Add performance regression detection**
+1. **Add performance regression detection**
+
    - Track test timing over time
    - Alert on >20% slowdown
    - Automated performance reports
 
-3. **Expand test categorization**
+1. **Expand test categorization**
+
    - Add `@pytest.mark.smoke` for critical path tests
    - Add `@pytest.mark.flaky` for unstable tests
    - Create custom marker for adapter-specific tests
@@ -265,21 +291,25 @@ $ make test-analyze
 ### Optimization Techniques
 
 1. **Profile before optimizing**
+
    - Used `pytest --durations=20` to identify bottlenecks
    - Focused on highest-impact tests first
    - Measured before/after performance
 
-2. **I/O is expensive**
+1. **I/O is expensive**
+
    - Incremental file writes are 35x slower than single write
    - Build data in memory when possible
    - Use list comprehensions for string building
 
-3. **Test data volume matters**
+1. **Test data volume matters**
+
    - 10,000 entries sufficient for stress testing
    - 100,000 entries excessive for most scenarios
    - Balance coverage with execution time
 
-4. **Coverage adds overhead**
+1. **Coverage adds overhead**
+
    - ~2x slowdown with coverage enabled
    - Acceptable for comprehensive validation
    - Consider coverage-free fast path for development
@@ -287,16 +317,19 @@ $ make test-analyze
 ### Marker Strategy
 
 1. **Start with performance markers**
+
    - `slow` and `fast` provide immediate value
    - Enable fast CI feedback loops
    - Easy to identify candidates with timing data
 
-2. **Add domain markers gradually**
+1. **Add domain markers gradually**
+
    - `integration`, `unit`, `e2e` for scope
    - Domain-specific markers as needed
    - Don't over-engineer upfront
 
-3. **Document marker usage**
+1. **Document marker usage**
+
    - Clear guidelines prevent confusion
    - Examples help developers understand
    - Consistent usage across codebase
@@ -306,6 +339,6 @@ $ make test-analyze
 - **Test Infrastructure Improvements:** `docs/TEST_INFRASTRUCTURE_IMPROVEMENTS.md`
 - **Test Suite README:** `tests/README.md`
 - **Timing Analysis Script:** `scripts/analyze_test_timings.py`
-- **Makefile Targets:** `Makefile` (test-* targets)
+- **Makefile Targets:** `Makefile` (test-\* targets)
 - **Pytest Configuration:** `pyproject.toml` ([tool.pytest.ini_options])
 - **Crackerjack Configuration:** `pyproject.toml` ([tool.crackerjack])

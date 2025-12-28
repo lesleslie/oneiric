@@ -116,7 +116,7 @@ uv run python -m oneiric.cli --install-completion
 
 ### Quality Control with Crackerjack
 
-**Important:** This project uses [Crackerjack](../crackerjack) for quality control, following the same patterns as the ACB project.
+**Important:** This project uses [Crackerjack](./.crackerjack) for quality control, following the same patterns as the ACB project.
 
 ```bash
 # Run full quality suite (formatting, linting, type checking, security)

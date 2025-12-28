@@ -47,7 +47,6 @@ class RuntimeTaskGroup:
             "taskgroup-exit", name=self.name, exc=str(exc) if exc else None
         )
         self._group = None
-        self._tasks.clear()
 
         return result
 

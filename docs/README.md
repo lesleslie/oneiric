@@ -10,6 +10,7 @@ ______________________________________________________________________
 ### 🚀 Start Here
 
 - [ONEIRIC_VS_ACB.md](ONEIRIC_VS_ACB.md) – Cut-over mandate + comparison vs ACB
+- [oneiric/README.md](../oneiric/README.md) – Package map + extension points
 - [STRATEGIC_ROADMAP.md](STRATEGIC_ROADMAP.md) – Vision, execution tracks, and milestones (kept in sync with the tracker below)
 - [implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md](implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md) – Serverless + parity workstreams and next actions
 - [implementation/ORCHESTRATION_PARITY_PLAN.md](implementation/ORCHESTRATION_PARITY_PLAN.md) – Events, DAGs, and supervisor roadmap
@@ -286,6 +287,7 @@ ______________________________________________________________________
 
 1. This README.md (Quick Navigation, Key Documents sections)
 1. /Users/les/Projects/oneiric/README.md (main project README)
+1. /Users/les/Projects/oneiric/oneiric/README.md (package map and extension points)
 1. /Users/les/Projects/oneiric/CLAUDE.md (project instructions)
 
 ______________________________________________________________________

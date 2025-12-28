@@ -91,9 +91,7 @@ class LoggingConfig(BaseModel):
 def _otel_context_processor(
     logger: Any, method_name: str, event_dict: dict[str, Any]
 ) -> dict[str, Any]:
-    if (
-        context := (span := trace.get_current_span()).get_span_context()
-    ) and context.is_valid:
+    if (context := trace.get_current_span().get_span_context()) and context.is_valid:
         event_dict.setdefault("trace_id", f"{context.trace_id:032x}")
         event_dict.setdefault("span_id", f"{context.span_id:016x}")
     return event_dict

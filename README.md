@@ -1,9 +1,9 @@
 # Oneiric
 
-![Coverage](https://img.shields.io/badge/coverage-76.6%25-yellow)
+![Coverage](https://img.shields.io/badge/coverage-79.4%25-yellow)
 **Explainable component resolution, lifecycle management, and remote delivery for Python 3.14+ runtimes**
 
-> **Status:** Production Ready (audit v0.2.0, current v0.2.3) — see `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for audit metrics and `coverage.json` for the latest coverage snapshot.
+> **Status:** Production Ready (audit v0.2.0, current v0.3.2) — see `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for audit metrics and `coverage.json` for the latest coverage snapshot.
 
 Oneiric extracts the resolver/lifecycle core from ACB and turns it into a stand-alone platform. Register adapters/services/tasks/events/workflows/actions, explain every decision, hot‑swap providers, stream telemetry, replay workflow notifications, and hydrate new capabilities from signed remote manifests.
 
@@ -36,7 +36,7 @@ ______________________________________________________________________
 
 | Domain | Bridge Features | Built-in Examples |
 |--------|-----------------|-------------------|
-| **Adapters** | Activity-aware swaps, pause/drain enforcement, health snapshots | Redis/Memcached caches, Cloud Tasks/Pub/Sub queues, httpx/aiohttp clients, S3/GCS/Azure/local storage, Slack/Teams/Webhook messaging, Auth0/Cloudflare identity, Cloudflare/Route53 DNS, FTP/SFTP/SCP/HTTPS file transfer (download + upload), Infisical/GCP/AWS secrets, Postgres/MySQL/SQLite/DuckDB DBs, MongoDB/Firestore NoSQL, Neo4j/DuckDB PGQ graph, Pinecone/Qdrant vector, OpenAI/SentenceTransformers/ONNX embeddings, Logfire/Sentry/OTLP monitoring |
+| **Adapters** | Activity-aware swaps, pause/drain enforcement, health snapshots | Redis caches, Cloud Tasks/Pub/Sub/Kafka/RabbitMQ/NATS/Redis Streams queues, httpx/aiohttp clients, S3/GCS/Azure/local storage, Slack/Teams/Webhook/Twilio/SendGrid/Mailgun/APNS/FCM/Webpush messaging, Auth0 identity, Cloudflare/Route53/GCP DNS, FTP/SFTP/SCP/HTTPS file transfer (download + upload), Infisical/GCP/AWS secrets, Postgres/MySQL/SQLite/DuckDB DBs, MongoDB/Firestore/DynamoDB NoSQL, Neo4j/DuckDB PGQ/ArangoDB graph, Pinecone/Qdrant/pgvector vector, OpenAI/SentenceTransformers/ONNX/Anthropic embeddings + LLM, Logfire/Sentry/OTLP monitoring |
 | **Services** | Lifecycle-managed business services with supervisor hooks | Example payment/notification services (`docs/examples/LOCAL_CLI_DEMO.md`) |
 | **Tasks** | Async runners + queue metadata and retry controls | `task.schedule`, Cloud Tasks schedulers, Pub/Sub dispatch |
 | **Events** | Dispatcher with filters, fan-out policies, retry, and observability metrics | `event.dispatch`, webhook fan-out, queue listeners |
@@ -56,7 +56,7 @@ ______________________________________________________________________
 - **Scheduler HTTP server:** Optional aiohttp server (`SchedulerHTTPServer`) processes Cloud Tasks callbacks via `WorkflowTaskProcessor`. CLI `--http-port/--no-http` toggles this path for serverless deployments.
 - **Telemetry + health:** `RuntimeTelemetryRecorder` tracks event dispatch + workflow execution stats; `RuntimeHealthSnapshot` writes orchestrator PID, watcher/remote state, per-domain registration counts, and activity/lifecycle snapshots to `.oneiric_cache/runtime_health.json`.
 - **Notification router:** `NotificationRouter` converts `workflow.notify` payloads into `NotificationMessage` objects and sends them through messaging adapters. CLI `action-invoke workflow.notify --workflow … --send-notification` uses the same route metadata as runtime workflows.
-- **Remote status:** `oneiric.cli remote-status` loads cached remote telemetry (`remote_status.json`) with manifest URL, digest, sync timestamps, and latency budget comparisons.
+- **Remote status:** `oneiric.cli remote-status` loads cached remote telemetry (`remote_status.json`) with sync timestamps, per-domain counts, and latency budget comparisons (the manifest URL comes from settings, not the cache file).
 
 ______________________________________________________________________
 
@@ -165,7 +165,7 @@ ______________________________________________________________________
 - **Structured logging:** `oneiric.core.logging` wraps structlog with domain/key/provider context, JSON output, timestamper, optional sinks (stdout, stderr, file, HTTP), and tracer injection. See `docs/OBSERVABILITY_GUIDE.md`.
 - **Runtime telemetry:** `.oneiric_cache/runtime_telemetry.json` stores the last event dispatch + workflow execution (matched handlers, attempts, failures, per-node durations, retry counts). CLI inspectors update the same file so you can attach it to parity PRs.
 - **Health snapshots:** `.oneiric_cache/runtime_health.json` includes watcher state, orchestrator PID, remote metrics, and pause/drain snapshots for `oneiric.cli health`.
-- **Remote telemetry:** `.oneiric_cache/remote_status.json` mirrors manifest metadata (URL, digest, duration, success/failure counters) and powers `remote-status`.
+- **Remote telemetry:** `.oneiric_cache/remote_status.json` stores sync telemetry (duration, per-domain registrations, success/failure counters) and powers `remote-status`.
 - **Notification evidence:** `NotificationRoute` metadata can be derived from workflow definitions or CLI overrides; CLI transcripts should accompany telemetry + DAG/event payloads as documented in `docs/examples/CRACKERJACK_OBSERVABILITY.md`, `FASTBLOCKS_OBSERVABILITY.md`, and `SESSION_MGMT_MCP_OBSERVABILITY.md`.
 - **Parity/cut-over artifacts:** `docs/implementation/CUTOVER_VALIDATION_CHECKLIST.md` enumerates manifest snapshots, DAG/event JSON, telemetry archives, and ChatOps transcripts required before flipping Crackerjack/Fastblocks/Session-Mgmt to Oneiric.
 
@@ -213,7 +213,7 @@ uv run pytest tests/runtime -vv
 python -m crackerjack -a patch
 ```
 
-- Stage 5 audit confirms 526 tests, 83 % coverage, and no P0/P1 issues.
+- Stage 5 audit (v0.2.0) reported 526 tests, 83 % coverage, and no P0/P1 issues; see `coverage.json` for the current coverage snapshot.
 - Runtime telemetry + notification router + supervisor paths are covered by `tests/runtime/test_telemetry.py`, `test_notifications.py`, `test_supervisor.py`, and CLI/integration suites.
 - `python -m crackerjack` mirrors the multi-repo gate used in Crackerjack/ACB/FastBlocks.
 

@@ -39,15 +39,18 @@ tests/
 Tests can be annotated with markers to enable selective execution:
 
 ### Performance Markers
-- `@pytest.mark.fast` - Fast tests (<1s per test)
+
+- `@pytest.mark.fast` - Fast tests (\<1s per test)
 - `@pytest.mark.slow` - Slow tests (>5s per test)
 
 ### Scope Markers
+
 - `@pytest.mark.unit` - Unit tests (isolated, no I/O)
 - `@pytest.mark.integration` - Integration tests
 - `@pytest.mark.e2e` - End-to-end tests (full system)
 
 ### Domain Markers
+
 - `@pytest.mark.adapter` - Adapter-specific tests
 - `@pytest.mark.remote` - Remote manifest tests
 - `@pytest.mark.runtime` - Runtime orchestration tests
@@ -78,27 +81,30 @@ pytest -m "not e2e" -v
 
 ### Distribution by Category
 
-| Category      | Files | Description                              |
+| Category | Files | Description |
 |--------------|-------|------------------------------------------|
-| adapters     | 45    | Adapter domain and specific adapter tests |
-| actions      | 11    | Action domain tests                      |
-| runtime      | 11    | Runtime orchestration tests              |
-| core         | 9     | Core resolution & lifecycle tests        |
-| security     | 5     | Security hardening tests (100 tests)     |
-| integration  | 5     | Cross-component integration tests        |
-| remote       | 4     | Remote manifest loading tests            |
-| domains      | 2     | Generic domain bridge tests              |
-| cli          | 1     | CLI command tests                        |
+| adapters | 45 | Adapter domain and specific adapter tests |
+| actions | 11 | Action domain tests |
+| runtime | 11 | Runtime orchestration tests |
+| core | 9 | Core resolution & lifecycle tests |
+| security | 5 | Security hardening tests (100 tests) |
+| integration | 5 | Cross-component integration tests |
+| remote | 4 | Remote manifest loading tests |
+| domains | 2 | Generic domain bridge tests |
+| cli | 1 | CLI command tests |
 
 ## Test Execution Strategies
 
 ### 1. Fast CI Pipeline (< 2 minutes)
+
 ```bash
 make test-not-slow
 ```
+
 Skip slow tests for quick feedback in pull requests.
 
 ### 2. Development Workflow
+
 ```bash
 # Quick iteration
 make test-fast
@@ -111,14 +117,17 @@ python -m crackerjack -t
 ```
 
 ### 3. Full Test Suite (10 minutes)
+
 ```bash
 make test
 ```
 
 ### 4. Performance Analysis
+
 ```bash
 make test-analyze
 ```
+
 Runs tests with timing analysis and generates recommendations for marking slow tests.
 
 ## Writing Tests
@@ -128,6 +137,7 @@ Runs tests with timing analysis and generates recommendations for marking slow t
 ```python
 import pytest
 from oneiric.core.resolution import Resolver
+
 
 @pytest.mark.fast  # Mark fast tests
 @pytest.mark.unit  # Mark unit tests
@@ -139,7 +149,7 @@ async def test_resolver_basic():
 
 ### When to Use Markers
 
-- **fast**: Use for tests that complete in <1s
+- **fast**: Use for tests that complete in \<1s
 - **slow**: Use for tests that take >5s (integration, I/O-heavy)
 - **unit**: Use for isolated tests with no external dependencies
 - **integration**: Use for tests that exercise multiple components
@@ -152,6 +162,7 @@ Use `pytest-asyncio` for async tests:
 
 ```python
 import pytest
+
 
 @pytest.mark.asyncio
 async def test_async_operation():
@@ -173,6 +184,7 @@ python scripts/analyze_test_timings.py test_output.txt
 ```
 
 The script will:
+
 - Show total test count and distribution
 - List the 20 slowest tests
 - Break down timing by module
@@ -182,21 +194,25 @@ The script will:
 ## CI/CD Integration
 
 ### Pull Request Checks
+
 ```bash
 make test-not-slow  # Fast feedback (~2 minutes)
 ```
 
 ### Pre-merge Validation
+
 ```bash
 python -m crackerjack -t  # Full quality suite (~10 minutes)
 ```
 
 ### Nightly Builds
+
 ```bash
 make test-all  # Comprehensive with timing analysis
 ```
 
 ### Release Validation
+
 ```bash
 make test-coverage  # With HTML coverage report
 ```
@@ -206,9 +222,10 @@ make test-coverage  # With HTML coverage report
 ### Tests Timing Out
 
 If tests are timing out:
+
 1. Check `[tool.crackerjack]` in `pyproject.toml` - current timeout is 600s
-2. Run `make test-analyze` to identify slow tests
-3. Consider parallelizing with `pytest -n auto`
+1. Run `make test-analyze` to identify slow tests
+1. Consider parallelizing with `pytest -n auto`
 
 ### Marker Warnings
 
@@ -239,6 +256,6 @@ open htmlcov/index.html
 
 - **Test Configuration:** `pyproject.toml` (pytest section)
 - **Crackerjack Config:** `pyproject.toml` ([tool.crackerjack])
-- **Makefile Targets:** `Makefile` (test-* targets)
+- **Makefile Targets:** `Makefile` (test-\* targets)
 - **Analysis Script:** `scripts/analyze_test_timings.py`
 - **Documentation:** `CLAUDE.md` (Testing section)

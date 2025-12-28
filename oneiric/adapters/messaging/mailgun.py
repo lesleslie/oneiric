@@ -131,7 +131,7 @@ class MailgunAdapter(HTTPXClientMixin):
             raise LifecycleError("mailgun-http-error") from exc
 
         return MessagingSendResult(
-            message_id=(message_id := response.json().get("id", "mailgun-message")),
+            message_id=response.json().get("id", "mailgun-message"),
             status_code=response.status_code,
             response_headers=dict(response.headers),
         )

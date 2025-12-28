@@ -1114,7 +1114,7 @@ def _print_workflow_inspector(data: dict[str, Any]) -> None:
         print("Missing workflow keys: " + ", ".join(sorted(missing)))
 
 
-def _print_event_inspector(data: dict[str, Any]) -> None:
+def _print_event_inspector(data: dict[str, Any]) -> None:  # noqa: C901
     handlers = data.get("handlers") or []
     if not handlers:
         print("No event handlers registered.")
@@ -2032,7 +2032,7 @@ def pause_command(
     domain = _normalize_domain(domain)
     typer.echo(
         f"{'Resumed' if resume else 'Paused'} {domain}:{key} "
-        f"(note={(activity := state.bridges[domain].set_paused(key, paused=not resume, note=note)).note or 'none'})"
+        f"(note={state.bridges[domain].set_paused(key, paused=not resume, note=note).note or 'none'})"
     )
 
 
@@ -2052,7 +2052,7 @@ def drain_command(
     domain = _normalize_domain(domain)
     typer.echo(
         f"{'Cleared' if clear else 'Marked'} draining for {domain}:{key} "
-        f"(note={(activity := state.bridges[domain].set_draining(key, draining=not clear, note=note)).note or 'none'})"
+        f"(note={state.bridges[domain].set_draining(key, draining=not clear, note=note).note or 'none'})"
     )
 
 
@@ -2485,13 +2485,11 @@ def manifest_pack(
     """Package a manifest file into canonical JSON for serverless builds."""
     manifest = _load_manifest_from_path(input_path)
     if stdout or str(output_path) == "-":
-        typer.echo(payload := manifest.model_dump_json(indent=2 if pretty else None))
+        typer.echo(manifest.model_dump_json(indent=2 if pretty else None))
         return
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(
-        payload := manifest.model_dump_json(indent=2 if pretty else None)
-    )
+    output_path.write_text(manifest.model_dump_json(indent=2 if pretty else None))
     typer.echo(f"Packed manifest {input_path} -> {output_path}")
 
 
@@ -2564,7 +2562,7 @@ def manifest_export(
 
 
 @manifest_app.command("sign")
-def manifest_sign(
+def manifest_sign(  # noqa: C901
     input_path: Path = typer.Option(
         ...,
         "--input",

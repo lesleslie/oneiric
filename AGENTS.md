@@ -31,7 +31,7 @@
 
 ## Quality Control & Best Practices
 
-- Use Crackerjack for repo-wide quality gates before merging; run `python -m crackerjack -a patch` (or the staged `-x -t -p patch -c` flow) so linting, tests, formatting, and version bumps mirror the workflows in `../crackerjack`, `../acb`, and `../fastblocks`.
+- Use Crackerjack for repo-wide quality gates before merging; run `python -m crackerjack -a patch` (or the staged `-x -t -p patch -c` flow) so linting, tests, formatting, and version bumps mirror the workflows in the related projects: `crackerjack`, `acb`, and `fastblocks`.
 - Apply the ACB + Crackerjack best practices (type rigor, structured logging screenshots, CLI proof output) but tailor examples/configs to Oneiric’s resolver + lifecycle stack.
 - Document behavioral changes the same way the sibling repos do: include CLI transcripts or log excerpts plus manifest snippets whenever behavior or configuration changes.
 
