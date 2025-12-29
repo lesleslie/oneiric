@@ -1,6 +1,6 @@
 [project]
 name = "oneiric"
-version = "0.3.3"
+version = "0.3.4"
 description = "Universal resolution layer for pluggable components with hot-swapping and remote manifest delivery"
 readme = "README.md"
 requires-python = ">=3.13"
