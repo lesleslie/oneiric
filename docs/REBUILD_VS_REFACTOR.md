@@ -1,4 +1,4 @@
-# Rebuild vs. Refactor (Python 3.14 Baseline)
+# Rebuild vs. Refactor (Python 3.13 Baseline)
 
 Context: We can drop backward compatibility. We want a modern async architecture with
 hierarchical resolution, hot swap, plugins, and remote-delivered components while
@@ -6,7 +6,7 @@ keeping existing adapter functionality and actions utilities.
 
 ## Python Version
 
-- Target Python 3.14 if the toolchain and dependencies are available in CI/dev. If
+- Target Python 3.13 now; plan the migration to Python 3.14 once the toolchain and dependencies are available in CI/dev. If
   any critical deps lag, fall back to 3.13 and bump when they’re ready. Keep code
   3.13-clean so the switch is trivial.
 

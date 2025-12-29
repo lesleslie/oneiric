@@ -111,14 +111,19 @@ class DebugConsoleAction:
         message = record.get("message", "")
         timestamp = record.get("timestamp")
         details = record.get("details") or {}
+        scrub_fields = set(self._settings.scrub_fields)
+        
+        # Scrub sensitive data from details before echoing to console
+        scrubbed_details = self._scrub(details, scrub_fields)
+        
         parts = []
         if timestamp:
             parts.append(timestamp)
         if prefix:
             parts.append(prefix)
         parts.append(message)
-        if details:
-            parts.append(str(details))
+        if scrubbed_details:
+            parts.append(str(scrubbed_details))
         sys.stdout.write(" ".join(part for part in parts if part) + "\n")
 
     def _merge_scrub_fields(self, payload_value: Any) -> set[str]:

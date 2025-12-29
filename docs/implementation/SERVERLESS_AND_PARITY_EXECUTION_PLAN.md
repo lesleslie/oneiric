@@ -9,7 +9,6 @@ ______________________________________________________________________
 ## 1. Decisions & Guardrails (Recap)
 
 1. **ACB sunset:** Oneiric will replace ACB end-to-end across Crackerjack, FastBlocks, and session-mgmt-mcp. No hybrid “mix adapters/actions” mode will ship because no production workloads force backwards compatibility.
-1. **Serverless-first:** Google Cloud Run (and other buildpack-based runtimes) are the primary deployment targets. The Docker/Kubernetes docs were removed; Procfile/buildpack is the only supported deployment path alongside systemd for local agents.
 1. **Lean adapters/actions:** `_base.py` scaffolding is retired; shared helpers live in `common.py` modules with lazy imports. New adapters/actions must follow that pattern and expose optional extras for heavyweight dependencies.
 1. **Secrets precedence:** Secret Manager adapters (GCP/AWS) and other providers take precedence over plain env vars in serverless profiles; env adapters remain as fallbacks for local dev/testing.
 1. **Observability posture:** Structlog JSON stays on `stdout`; `stderr` is reserved for crashes. Rich/loguru pretty output is allowed only for dev runs. Remote loader remains on `httpx` + `tenacity/aiobreaker`; adapters may wrap other HTTP libs when needed.
@@ -119,7 +118,6 @@ ______________________________________________________________________
 1. ✅ **Archive historical completion reports** – `docs/implementation/BUILD_PROGRESS.md`, `UNIFIED_IMPLEMENTATION_PLAN.md`, and every `WEEK*`/`*_COMPLETION` file now live under `docs/archive/implementation/` with an updated index.
 1. **Refresh `docs/README.md`** to link to `STRATEGIC_ROADMAP.md`, this plan, and `ORCHESTRATION_PARITY_PLAN.md`.
 1. **Update sample manifests** with serverless toggles + Procfile references.
-1. **Remove redundant Docker/K8s docs** or mark them as “legacy”; highlight Cloud Run/buildpack flow instead. ✅ Done – only Cloud Run + systemd guides remain under `docs/deployment/`.
 1. **Add decision log** in `docs/STRATEGIC_ROADMAP.md §6` summarizing the bullets from §1 here so newcomers understand the December decisions.
 
 ______________________________________________________________________

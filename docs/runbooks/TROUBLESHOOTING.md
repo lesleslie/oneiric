@@ -111,7 +111,6 @@ uv run python -m oneiric.cli explain status --domain adapter
 uv run python -m oneiric.cli plugins
 # If plugins missing, reinstall:
 uv pip install -e /path/to/plugin
-docker restart oneiric
 ```
 
 **B. All candidates shadowed**
@@ -119,7 +118,6 @@ docker restart oneiric
 ```bash
 # Adjust stack order
 export ONEIRIC_STACK_ORDER="myapp:20,oneiric:10"
-docker restart oneiric
 
 # Or add explicit selection
 vim settings/adapters.yml
@@ -184,7 +182,6 @@ vim settings/app.yml
 
 ```bash
 # Check system resources
-docker stats oneiric
 # If CPU/memory high, scale up
 ```
 
@@ -264,7 +261,6 @@ vim settings/adapters.yml
 
 # Install missing dependencies
 uv pip install <package>
-docker restart oneiric
 ```
 
 **C. Timeout errors**
@@ -276,7 +272,6 @@ vim settings/app.yml
 #   activation_timeout: 60
 #   health_timeout: 30
 
-docker restart oneiric
 ```
 
 ______________________________________________________________________
@@ -303,7 +298,6 @@ uv run python -m oneiric.cli status --domain adapter --key cache
 ```bash
 # Force cleanup (caution: may lose in-progress work)
 # Restart Oneiric
-docker restart oneiric
 
 # Check for stuck async tasks
 # (Requires code-level debugging)
@@ -381,7 +375,6 @@ nslookup manifests.example.com
 # Ensure HTTPS egress allowed
 
 # Test from container
-docker exec -it oneiric curl -v https://manifests.example.com/oneiric/manifest.yaml
 ```
 
 **B. Signature verification failures**
@@ -406,7 +399,6 @@ vim settings/app.yml
 
 # Wait for reset (60s default)
 # Or restart to reset immediately
-docker restart oneiric
 
 # Adjust settings if too sensitive
 vim settings/app.yml
@@ -494,8 +486,6 @@ ______________________________________________________________________
 
 ```bash
 # Check CPU usage
-docker stats oneiric
-kubectl top pod -l app=oneiric -n oneiric
 
 # Profile application
 # Install py-spy
@@ -532,11 +522,8 @@ rate(oneiric_resolution_total[5m])
 **C. Insufficient resources**
 
 ```bash
-# Scale horizontally (Kubernetes)
-kubectl scale deployment oneiric --replicas=3 -n oneiric
 
 # Or increase CPU limit
-kubectl patch deployment oneiric -p '{"spec":{"template":{"spec":{"containers":[{"name":"oneiric","resources":{"limits":{"cpu":"2000m"}}}]}}}}'
 ```
 
 ______________________________________________________________________
@@ -549,7 +536,6 @@ ______________________________________________________________________
 
 ```bash
 # Check memory usage
-docker stats oneiric
 
 # Check active instances
 oneiric:system_active_instances_total:5m
@@ -574,7 +560,6 @@ memray run -m oneiric.cli orchestrate
 
 # If legitimate high usage:
 # Increase memory limit
-docker update --memory 4g oneiric
 ```
 
 ______________________________________________________________________
@@ -656,7 +641,6 @@ yamllint settings/adapters.yml
 vim settings/adapters.yml
 
 # Restart if watchers disabled
-docker restart oneiric
 ```
 
 **B. Config watcher disabled**
@@ -671,7 +655,6 @@ vim settings/app.yml
 #   enabled: true
 #   poll_interval: 5
 
-docker restart oneiric
 ```
 
 **C. Wrong config path**
@@ -683,7 +666,6 @@ echo $ONEIRIC_CONFIG
 
 # If wrong, set correctly
 export ONEIRIC_CONFIG=/app/settings
-docker restart oneiric
 ```
 
 ______________________________________________________________________
@@ -696,10 +678,7 @@ ______________________________________________________________________
 
 ```bash
 # Check secrets configured
-# Kubernetes:
-kubectl get secrets -n oneiric
 
-# Docker:
 cat .env | grep -v '^#'
 
 # Check logs
@@ -710,18 +689,11 @@ cat .env | grep -v '^#'
 
 ```bash
 # Verify secret exists
-# Kubernetes:
-kubectl get secret oneiric-secrets -n oneiric -o yaml
 
-# Docker:
 ls -la .env
 
 # Verify secret mounted correctly
-# Kubernetes:
-kubectl exec -it deployment/oneiric -n oneiric -- env | grep SECRET
 
-# Docker:
-docker exec -it oneiric env | grep SECRET
 
 # If missing, recreate secret
 # (See MAINTENANCE.md - Secret Rotation)
@@ -840,7 +812,6 @@ kill %1
 memray run --live -m oneiric.cli orchestrate
 
 # Network profiling
-docker run --net container:oneiric nicolaka/netshoot tcpdump -i any -w capture.pcap
 ```
 
 ______________________________________________________________________

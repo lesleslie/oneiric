@@ -441,8 +441,18 @@ async def _workflow_run_runner(
     bridge: WorkflowBridge,
     key: str,
     context: dict[str, Any] | None,
+    *,
+    checkpoint: dict[str, Any] | None,
+    use_checkpoint_store: bool,
+    resume_from_checkpoint: bool,
 ):
-    return await bridge.execute_dag(key, context=context)
+    return await bridge.execute_dag(
+        key,
+        context=context,
+        checkpoint=checkpoint,
+        use_checkpoint_store=use_checkpoint_store,
+        resume_from_checkpoint=resume_from_checkpoint,
+    )
 
 
 async def _workflow_enqueue_runner(
@@ -1042,6 +1052,10 @@ def _build_workflow_summary(
                 "task": entry.get("task"),
                 "depends_on": depends_list,
             }
+            if "payload" in entry:
+                node_entry["payload"] = entry.get("payload")
+            if "checkpoint" in entry:
+                node_entry["checkpoint"] = entry.get("checkpoint")
             retry_policy = entry.get("retry_policy")
             if retry_policy:
                 node_entry["retry_policy"] = retry_policy
@@ -1080,6 +1094,82 @@ def _emit_inspector_payload(payload: dict[str, Any], json_output: bool) -> None:
         print("")
     if events is not None:
         _print_event_inspector(events)
+
+
+def _workflow_plan_payload(
+    resolver: Resolver,
+    bridge: WorkflowBridge,
+    filters: Sequence[str],
+) -> dict[str, Any]:
+    specs = bridge.dag_specs()
+    targets = _workflow_target_keys(filters, specs.keys())
+    plans: dict[str, Any] = {}
+    missing: list[str] = []
+    default_queue = getattr(bridge, "_queue_category", None)
+    for key in targets:
+        dag_spec = specs.get(key)
+        if not dag_spec:
+            missing.append(key)
+            continue
+        plan = _build_workflow_summary(key, dag_spec, None, default_queue)
+        candidate = resolver.resolve("workflow", key)
+        if candidate:
+            scheduler_cfg = candidate.metadata.get("scheduler")
+            scheduler: dict[str, Any] = (
+                dict(scheduler_cfg)
+                if isinstance(scheduler_cfg, Mapping)
+                else {}
+            )
+            queue_category = plan.get("queue_category")
+            if queue_category and "queue_category" not in scheduler:
+                scheduler["queue_category"] = queue_category
+            if scheduler:
+                plan["scheduler"] = scheduler
+            notifications = candidate.metadata.get("notifications")
+            if isinstance(notifications, Mapping):
+                plan["notifications"] = dict(notifications)
+        plans[key] = plan
+    if not plans and not missing:
+        for key, dag_spec in specs.items():
+            plans[key] = _build_workflow_summary(key, dag_spec, None, default_queue)
+    return {"workflows": plans, "missing": missing}
+
+
+def _print_workflow_plan(data: dict[str, Any]) -> None:
+    workflows = data.get("workflows") or {}
+    if not workflows:
+        print("No workflow plans available.")
+    else:
+        print("Workflow plans:")
+        for workflow_key in sorted(workflows):
+            record = workflows[workflow_key]
+            queue = record.get("queue_category") or "queue"
+            print(
+                f"- {workflow_key}: nodes={record.get('node_count', 0)} edges={record.get('edge_count', 0)} queue={queue}"
+            )
+            scheduler = record.get("scheduler")
+            if scheduler:
+                print(f"    scheduler={scheduler}")
+            notifications = record.get("notifications")
+            if notifications:
+                print(f"    notifications={notifications}")
+            for node in record.get("nodes", []):
+                depends = node.get("depends_on") or []
+                depends_text = ", ".join(depends) if depends else "root"
+                retry_policy = node.get("retry_policy")
+                retry_text = f" retry={retry_policy}" if retry_policy else ""
+                payload = node.get("payload")
+                payload_text = f" payload={payload}" if payload is not None else ""
+                checkpoint = node.get("checkpoint")
+                checkpoint_text = (
+                    f" checkpoint={checkpoint}" if checkpoint is not None else ""
+                )
+                print(
+                    f"    · {node.get('id')}: task={node.get('task')} depends_on={depends_text}{retry_text}{payload_text}{checkpoint_text}"
+                )
+    missing = data.get("missing") or []
+    if missing:
+        print("Missing workflow keys: " + ", ".join(sorted(missing)))
 
 
 def _print_workflow_inspector(data: dict[str, Any]) -> None:
@@ -1810,10 +1900,19 @@ def cli_root(
     demo: bool = typer.Option(
         False, "--demo", help="Register built-in demo providers."
     ),
+    suppress_events: bool = typer.Option(
+        False, "--suppress-events", help="Suppress Oneiric event logs from console output."
+    ),
 ) -> None:
     if ctx.invoked_subcommand is None:
         typer.echo(ctx.get_help())
         raise typer.Exit()
+    
+    # Configure early logging before initializing state
+    if suppress_events:
+        from oneiric.core.logging import configure_early_logging
+        configure_early_logging(suppress_events=True)
+    
     ctx.obj = _initialize_state(config, imports or [], demo, profile)
 
 
@@ -1974,9 +2073,17 @@ def event_emit_command(
         status = "ok" if result.success else "error"
         suffix = f" attempts={result.attempts}"
         if result.success and result.value is not None:
-            suffix += f" value={result.value}"
+            # Scrub sensitive data from values before displaying
+            value_str = str(result.value)
+            if any(sensitive in value_str.lower() for sensitive in ["secret", "token", "password", "key"]):
+                value_str = "***"
+            suffix += f" value={value_str}"
         elif not result.success and result.error:
-            suffix += f" error={result.error}"
+            # Scrub sensitive data from errors before displaying
+            error_str = str(result.error)
+            if any(sensitive in error_str.lower() for sensitive in ["secret", "token", "password", "key"]):
+                error_str = "***"
+            suffix += f" error={error_str}"
         typer.echo(
             f"- {result.handler}: {status} duration={result.duration * 1000:.1f}ms{suffix}"
         )
@@ -2095,6 +2202,21 @@ def workflow_run_command(
         "--context",
         help="JSON context passed to DAG nodes (optional).",
     ),
+    checkpoint_payload: str | None = typer.Option(
+        None,
+        "--checkpoint",
+        help="JSON checkpoint payload override (optional).",
+    ),
+    workflow_checkpoints: bool = typer.Option(
+        True,
+        "--workflow-checkpoints/--no-workflow-checkpoints",
+        help="Enable workflow checkpoint store (defaults to runtime_paths settings).",
+    ),
+    resume_checkpoint: bool = typer.Option(
+        True,
+        "--resume-checkpoint/--no-resume-checkpoint",
+        help="Resume from stored checkpoint data when available.",
+    ),
     json_output: bool = typer.Option(False, "--json", help="Emit DAG results as JSON."),
 ) -> None:
     state = _state(ctx)
@@ -2102,7 +2224,23 @@ def workflow_run_command(
     if not bridge:
         raise typer.BadParameter("Workflow domain is not initialized")
     context = _parse_payload(context_payload) if context_payload is not None else None
-    run_result = asyncio.run(_workflow_run_runner(bridge, key, context=context))
+    if resume_checkpoint and not workflow_checkpoints:
+        raise typer.BadParameter(
+            "--resume-checkpoint requires --workflow-checkpoints"
+        )
+    checkpoint = (
+        _parse_payload(checkpoint_payload) if checkpoint_payload is not None else None
+    )
+    run_result = asyncio.run(
+        _workflow_run_runner(
+            bridge,
+            key,
+            context=context,
+            checkpoint=checkpoint,
+            use_checkpoint_store=workflow_checkpoints,
+            resume_from_checkpoint=resume_checkpoint,
+        )
+    )
     if json_output:
         typer.echo(
             json.dumps(
@@ -2187,6 +2325,34 @@ def workflow_enqueue_command(
             **result
         )
     )
+
+
+@workflow_app.command("plan")
+def workflow_plan_command(
+    ctx: typer.Context,
+    workflow_filter: list[str] | None = typer.Option(
+        None,
+        "--workflow",
+        metavar="KEY",
+        help="Filter plan output to specific workflow key(s).",
+    ),
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        help="Emit plan payload as JSON.",
+    ),
+) -> None:
+    state = _state(ctx)
+    bridge = state.bridges.get("workflow")
+    if not bridge:
+        raise typer.BadParameter("Workflow domain is not initialized")
+    payload = _workflow_plan_payload(
+        state.resolver, bridge, tuple(workflow_filter or ())
+    )
+    if json_output:
+        typer.echo(json.dumps(payload, indent=2))
+        return
+    _print_workflow_plan(payload)
 
 
 @app.command()

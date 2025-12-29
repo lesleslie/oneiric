@@ -23,7 +23,7 @@
 | DNS | `route53` | Record management | ✅ **Shipped** in `oneiric.adapters.dns.route53` (Dec 2025) | Platform Core | aioboto3-backed adapter with change set helpers and lifecycle coverage. |
 | DNS | `gcdns` | Record management | ✅ **Shipped** in `oneiric.adapters.dns.gcdns` (Dec 2025) | Infra | Google Cloud DNS adapter with record CRUD and lifecycle hooks. |
 | File transfer | `ftp`, `sftp`, `scp`, `http`, `https-upload` | Artifact sync | ✅ **Shipped** in `oneiric.adapters.file_transfer.{ftp,sftp,scp,http_artifact,http_upload}` (Dec 2025) | Infra | FTP (aioftp), SFTP/SCP (asyncssh), HTTP artifact downloads, and HTTPS upload adapters now ship with manifests/tests + CLI docs. |
-| LLM | `gemini` | GenAI | ❌ **Pending** | AI Platform | Blocked on SDK + Python 3.14/httpx 1.x compatibility. |
+| LLM | `gemini` | GenAI | ❌ **Pending** | AI Platform | Blocked on SDK + Python 3.14 upgrade/httpx 1.x compatibility. |
 | Messaging | `apns`, `fcm`, `webpush` | Push notifications | ✅ **Shipped** in `oneiric.adapters.messaging.{apns,fcm,webpush}` (Dec 2025) | Messaging | Mobile + web push adapters with optional SDK extras. |
 | Feature flags | `launchdarkly` | Flag evaluation | ❌ **Pending** | Platform Core | Wave C optional; require demand signal. |
 | Email fallback | `console` | Dev/test email | ⚠️ Legacy (ACB) | Docs Team | Decide whether to keep (useful for demos) or replace with structured logging recipe. |

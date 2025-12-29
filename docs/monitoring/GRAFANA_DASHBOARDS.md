@@ -39,19 +39,7 @@ ______________________________________________________________________
 
 ## Quick Start
 
-### Import Dashboards (Docker Compose)
-
-```bash
-# Grafana already configured in docker-compose.yml
-docker-compose up -d grafana
-
-# Access Grafana
-open http://localhost:3000
-# Default credentials: admin/admin (change on first login)
-
-# Dashboards auto-provisioned from:
-# - deployment/monitoring/grafana/dashboards/*.json
-```
+Use a managed Grafana instance (or your existing dashboards stack) and load the JSON dashboards from `deployment/monitoring/grafana/dashboards/`. Docker/Kubernetes walkthroughs have been removed.
 
 ### Import Dashboards (Manual)
 
@@ -63,21 +51,8 @@ open http://localhost:3000
    - Set folder (e.g., "Oneiric")
 1. **Import**
 
-### Kubernetes Deployment
 
-```yaml
-# ConfigMap with dashboards
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: oneiric-dashboards
-  namespace: monitoring
-  labels:
-    grafana_dashboard: "1"
-data:
-  oneiric-overview.json: |-
-    {{ .Files.Get "dashboards/oneiric-overview.json" | nindent 4 }}
-```
+Apply the dashboard JSON using your platform’s preferred provisioning flow (ConfigMaps, Terraform, or managed Grafana provisioning).
 
 ______________________________________________________________________
 
@@ -480,9 +455,7 @@ ______________________________________________________________________
 
 ## Installation
 
-### Option 1: Auto-Provisioning (Docker Compose)
 
-Already configured in `docker-compose.yml`:
 
 ```yaml
 services:
@@ -523,18 +496,11 @@ resource "grafana_dashboard" "oneiric_overview" {
 resource "grafana_folder" "oneiric" {
   title = "Oneiric"
 }
-```
-
-### Option 4: Kubernetes ConfigMap
-
-```bash
 # Create ConfigMap from dashboard files
-kubectl create configmap oneiric-dashboards \
   --from-file=deployment/monitoring/grafana/dashboards/ \
   -n monitoring
 
 # Label for Grafana sidecar discovery
-kubectl label configmap oneiric-dashboards \
   grafana_dashboard=1 -n monitoring
 ```
 
@@ -677,11 +643,8 @@ ______________________________________________________________________
 
 ```bash
 # Install missing plugins
-docker exec -it grafana grafana-cli plugins install grafana-piechart-panel
-docker exec -it grafana grafana-cli plugins install grafana-polystat-panel
 
 # Restart Grafana
-docker restart grafana
 ```
 
 ### No Data in Panels
@@ -730,7 +693,6 @@ docker restart grafana
 1. **Increase Prometheus resources:**
 
    ```yaml
-   # docker-compose.yml
    services:
      prometheus:
        deploy:

@@ -1,9 +1,9 @@
 # Oneiric
 
 ![Coverage](https://img.shields.io/badge/coverage-79.4%25-yellow)
-**Explainable component resolution, lifecycle management, and remote delivery for Python 3.14+ runtimes**
+**Explainable component resolution, lifecycle management, and remote delivery for Python 3.13+ runtimes**
 
-> **Status:** Production Ready (audit v0.2.0, current v0.3.2) — see `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for audit metrics and `coverage.json` for the latest coverage snapshot.
+> **Status:** Production Ready (audit v0.2.0, current v0.3.3) — see `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for audit metrics and `coverage.json` for the latest coverage snapshot.
 
 Oneiric extracts the resolver/lifecycle core from ACB and turns it into a stand-alone platform. Register adapters/services/tasks/events/workflows/actions, explain every decision, hot‑swap providers, stream telemetry, replay workflow notifications, and hydrate new capabilities from signed remote manifests.
 
@@ -52,7 +52,7 @@ ______________________________________________________________________
 - **Watchers:** `Adapter|Service|Task|Event|WorkflowConfigWatcher` reload selections via watchfiles or polling (serverless mode falls back to polling). Swaps respect activity state (paused/draining).
 - **Remote sync:** `RuntimeOrchestrator.sync_remote()` verifies signatures, registers every domain, refreshes dispatchers/DAGs, and records per-domain counts/durations.
 - **Supervisor & activity store:** `DomainActivityStore` persists pause/drain notes in SQLite; the supervisor polls it, exposes listener hooks, and ensures paused/draining components stop accepting work.
-- **Workflow checkpoints:** `WorkflowCheckpointStore` stores DAG progress per workflow so orchestrations can resume after restarts; CLI exposes `--workflow-checkpoints`/`--no-workflow-checkpoints`.
+- **Workflow checkpoints:** `WorkflowCheckpointStore` stores DAG progress per workflow so orchestrations can resume after restarts; `orchestrate` and `workflow run` expose `--workflow-checkpoints`/`--no-workflow-checkpoints`.
 - **Scheduler HTTP server:** Optional aiohttp server (`SchedulerHTTPServer`) processes Cloud Tasks callbacks via `WorkflowTaskProcessor`. CLI `--http-port/--no-http` toggles this path for serverless deployments.
 - **Telemetry + health:** `RuntimeTelemetryRecorder` tracks event dispatch + workflow execution stats; `RuntimeHealthSnapshot` writes orchestrator PID, watcher/remote state, per-domain registration counts, and activity/lifecycle snapshots to `.oneiric_cache/runtime_health.json`.
 - **Notification router:** `NotificationRouter` converts `workflow.notify` payloads into `NotificationMessage` objects and sends them through messaging adapters. CLI `action-invoke workflow.notify --workflow … --send-notification` uses the same route metadata as runtime workflows.
@@ -77,6 +77,11 @@ uv run python -m oneiric.cli --demo explain status --domain service --key status
 uv run python -m oneiric.cli orchestrate --print-dag --workflow fastblocks.workflows.fulfillment --inspect-json
 uv run python -m oneiric.cli orchestrate --events --inspect-json
 
+# Inspect workflow DAG plan (topology + metadata)
+uv run python -m oneiric.cli workflow plan \
+  --workflow fastblocks.workflows.fulfillment \
+  --json
+
 # Remote sync (file or HTTPS manifest)
 uv run python -m oneiric.cli remote-sync --manifest docs/sample_remote_manifest.yaml --watch --refresh-interval 120
 
@@ -90,6 +95,13 @@ uv run python -m oneiric.cli event emit \
 uv run python -m oneiric.cli workflow run \
   --workflow fastblocks.workflows.fulfillment \
   --context '{"order_id":"demo-123"}' \
+  --json
+
+# Use stored checkpoints (or disable them) for workflow runs
+uv run python -m oneiric.cli workflow run \
+  --workflow fastblocks.workflows.fulfillment \
+  --workflow-checkpoints \
+  --resume-checkpoint \
   --json
 
 # Inspect DAG plan/topology without executing
@@ -153,7 +165,7 @@ ______________________________________________________________________
 
 - **Domain introspection:** `oneiric.cli list`, `status`, `explain`, `swap`, and `--shadowed` target adapters/services/tasks/events/workflows/actions with structured JSON output.
 - **Runtime controls:** `pause`, `drain`, `activity`, `health --probe`, `supervisor-info`, and `status` manage/inspect pause-drain states, lifecycle metrics, and supervisor toggles; `activity` surfaces SQLite-backed counts for dashboards.
-- **Workflows & events:** `workflow run`, `workflow enqueue`, `event emit` interact with DAGs, queue adapters, and event dispatcher metadata; CLI accepts JSON context/metadata payloads for parity tests.
+- **Workflows & events:** `workflow plan`, `workflow run`, `workflow enqueue`, `event emit` interact with DAGs, queue adapters, and event dispatcher metadata; CLI accepts JSON context/metadata payloads for parity tests.
 - **Remote + manifests:** `remote-sync`, `remote-status`, `manifest pack` (YAML→JSON packaging), and `manifest` inspectors keep manifests + cached telemetry aligned. `docs/examples/FASTBLOCKS_PARITY_FIXTURE.yaml` plus `tests/integration/test_migration_parity.py` enforce parity.
 - **Observability:** `orchestrate --print-dag/--events --inspect-json`, `status --json`, `health --json`, `activity --json`, `action-invoke workflow.notify --send-notification`, and `remote-status --json` produce the artifacts referenced in `docs/examples/*_OBSERVABILITY.md`.
 - **Secrets & plugins:** `secrets rotate --keys k1,k2` invalidates cache entries, `secrets rotate --all` clears the provider cache, and `plugins` lists entry-point groups + candidate counts/errors for diagnostics.

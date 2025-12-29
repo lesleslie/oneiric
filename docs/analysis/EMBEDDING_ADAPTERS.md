@@ -2,7 +2,7 @@
 
 **Status:** Production Ready
 **Date:** 2025-11-27
-**Adapters:** OpenAI (hosted), Sentence Transformers / ONNX (local, manual install while Python 3.14 wheels are pending)
+**Adapters:** OpenAI (hosted), Sentence Transformers / ONNX (local, manual install while Python 3.14 upgrade wheels are pending)
 
 ______________________________________________________________________
 
@@ -20,14 +20,14 @@ pip install 'oneiric[embedding]'          # Alias for the hosted embedding stack
 pip install 'oneiric[ai]'                 # Embedding + LLM extras together
 ```
 
-> **Local adapters:** Sentence Transformers + ONNX Runtime do not publish macOS x86_64 wheels for Python 3.14 yet. Until upstream catches up, run them via `uvx --python 3.13 --with onnxruntime ...` as documented in `docs/ai/ONNX_GUIDE.md`, or keep a side virtualenv on Python 3.13 and install `sentence-transformers` manually.
+> **Local adapters:** Sentence Transformers + ONNX Runtime do not publish macOS x86_64 wheels for the Python 3.14 upgrade yet. Until upstream catches up, run them via `uvx --python 3.13 --with onnxruntime ...` as documented in `docs/ai/ONNX_GUIDE.md`, or keep a side virtualenv on Python 3.13 and install `sentence-transformers` manually.
 
 Use the smaller extras during local smoke tests (e.g., `embedding-openai`) and reserve the meta extras (`embedding`, `ai`) for CI or build images where the broader AI surface is required.
 
 **Implemented Adapters:**
 
 - ✅ **OpenAI** - High-quality embeddings via OpenAI API (text-embedding-3-small, text-embedding-3-large, ada-002)
-- ⚠️ **Sentence Transformers** - Open-source, on-device embeddings (models ready, but Python 3.14 wheels pending upstream)
+- ⚠️ **Sentence Transformers** - Open-source, on-device embeddings (models ready, but Python 3.14 upgrade wheels pending upstream)
 - ⚠️ **ONNX Runtime** - Optimized on-device embeddings (requires manual install per `docs/ai/ONNX_GUIDE.md`)
 
 **Planned Adapters (per ADAPTER_STRATEGY.md):**
@@ -97,9 +97,6 @@ ______________________________________________________________________
 ```yaml
 # settings/adapters.yml
 embedding: openai
-```
-
-```python
 from oneiric.adapters.embedding import OpenAIEmbeddingSettings
 
 settings = OpenAIEmbeddingSettings(

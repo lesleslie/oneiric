@@ -242,7 +242,6 @@ python -c "import pkg_resources; print(list(pkg_resources.iter_entry_points('one
 uv pip install -e /path/to/plugin
 
 # Restart Oneiric
-docker restart oneiric
 # OR
 systemctl restart oneiric
 ```
@@ -268,7 +267,6 @@ vim settings/adapters.yml
 
 # Step 4: Reload config (watchers pick up changes automatically)
 # Or restart if watchers disabled:
-docker restart oneiric
 ```
 
 **If stack_level issue:**
@@ -276,7 +274,6 @@ docker restart oneiric
 ```bash
 # Option 1: Adjust ONEIRIC_STACK_ORDER env var
 export ONEIRIC_STACK_ORDER="myapp:20,oneiric:10,default:0"
-docker restart oneiric
 
 # Option 2: Edit metadata to increase stack_level
 # (requires code change in adapter registration)
@@ -324,7 +321,6 @@ vim settings/adapters.yml
 python -c "import yaml; yaml.safe_load(open('settings/adapters.yml'))"
 
 # Step 5: Reload config
-docker restart oneiric
 ```
 
 ### Verification
@@ -473,7 +469,6 @@ uv run python -m oneiric.cli swap --domain adapter --key cache --provider redis
 uv pip install redis aioredis
 
 # Restart Oneiric
-docker restart oneiric
 ```
 
 #### Scenario B: Factory Import Errors
@@ -496,7 +491,6 @@ python -c "from myapp.adapters.cache import RedisCache; print(RedisCache)"
 vim myapp/adapters/__init__.py
 
 # Step 5: Restart and retry
-docker restart oneiric
 uv run python -m oneiric.cli swap --domain adapter --key cache --provider redis
 ```
 
@@ -522,7 +516,6 @@ vim settings/app.yml
 #   cleanup_timeout: 30
 
 # Step 4: Restart with new config
-docker restart oneiric
 
 # Step 5: Retry swap
 uv run python -m oneiric.cli swap --domain adapter --key cache --provider redis
@@ -684,12 +677,10 @@ host manifests.example.com
 # Verify egress rules allow HTTPS to manifest host
 
 # Step 4: Test from Oneiric container
-docker exec -it oneiric curl -v https://manifests.example.com/oneiric/manifest.yaml
 
 # Step 5: If network OK, check circuit breaker
 # Wait for circuit breaker reset (default 60s)
 # Or restart to reset immediately
-docker restart oneiric
 ```
 
 **If behind corporate proxy:**
@@ -701,7 +692,6 @@ export HTTPS_PROXY=http://proxy.example.com:8080
 export NO_PROXY=localhost,127.0.0.1
 
 # Restart Oneiric with proxy vars
-docker restart oneiric
 ```
 
 #### Scenario B: Signature Verification Failed
@@ -774,7 +764,6 @@ sha256sum <artifact_file>
 
 # Step 2: Wait for reset timeout (default 60s)
 # Or restart to reset immediately
-docker restart oneiric
 
 # Step 3: Fix underlying issue first
 # (network, signature, etc.)
@@ -866,7 +855,6 @@ curl https://manifests.example.com/oneiric/manifest.yaml | grep sha256
 ```bash
 # If suspected attack:
 # 1. Stop Oneiric immediately
-docker stop oneiric
 systemctl stop oneiric
 
 # 2. Preserve evidence
@@ -934,7 +922,6 @@ dmesg | grep -i error
 
 ```bash
 # Step 1: STOP ALL ONEIRIC INSTANCES
-docker stop $(docker ps -q --filter "name=oneiric")
 
 # Step 2: Preserve evidence
 tar czf /tmp/oneiric-cache-$(date +%Y%m%d-%H%M%S).tar.gz .oneiric_cache/
@@ -954,7 +941,6 @@ rm -rf .oneiric_cache/
 uv run python -m oneiric.cli remote-sync --manifest <trusted_url>
 
 # Step 6: Restart with clean cache
-docker start oneiric
 ```
 
 #### Scenario C: Manifest Tampering
@@ -1032,7 +1018,6 @@ ______________________________________________________________________
 ### Symptoms
 
 - Alert firing: "200+ active instances, risk of memory exhaustion"
-- OOMKilled pods in Kubernetes
 - High memory usage
 - Application slowdown or crashes
 
@@ -1073,10 +1058,7 @@ oneiric:system_memory_usage_estimate_bytes:5m / (1024^3)
 
 ```bash
 # Container memory usage
-docker stats oneiric
 
-# Kubernetes pod memory
-kubectl top pod -l app=oneiric -n oneiric
 
 # System memory (bare metal)
 free -h
@@ -1109,7 +1091,6 @@ sum(oneiric_lifecycle_swap_total) - sum(oneiric_lifecycle_cleanup_total)
 
 # Step 2: If cleanup not called, code bug
 # Emergency: Restart to force cleanup
-docker restart oneiric
 
 # Step 3: Monitor instance count after restart
 oneiric:system_active_instances_total:5m
@@ -1143,8 +1124,6 @@ open http://localhost:8000
 # Ensure __del__() or cleanup() releases resources
 
 # Step 6: Deploy fix
-docker build -t oneiric:fixed .
-docker stop oneiric && docker run -d --name oneiric oneiric:fixed
 ```
 
 #### Scenario C: Too Many Domains/Keys
@@ -1156,11 +1135,7 @@ docker stop oneiric && docker run -d --name oneiric oneiric:fixed
 # Formula: instances * 50MB + 500MB overhead
 # 200 instances = 200 * 50 + 500 = 10.5GB
 
-# Step 2: Increase memory limit (Docker)
-docker update --memory 12g oneiric
 
-# Step 3: Increase memory limit (Kubernetes)
-kubectl patch deployment oneiric -p '{"spec":{"template":{"spec":{"containers":[{"name":"oneiric","resources":{"limits":{"memory":"12Gi"}}}]}}}}'
 
 # Step 4: Increase memory limit (systemd)
 sudo systemctl edit oneiric
@@ -1171,7 +1146,6 @@ sudo systemctl daemon-reload
 sudo systemctl restart oneiric
 
 # Step 5: Monitor memory usage
-watch -n 5 'docker stats oneiric'
 ```
 
 #### Scenario D: Rapid Swapping Loop
@@ -1207,15 +1181,10 @@ curl 'http://prometheus:9090/api/v1/query?query=oneiric:system_active_instances_
 # Expected: < 100 (reasonable)
 
 # Step 2: Check memory usage dropped
-docker stats oneiric | head -2
 
 # Step 3: Verify no OOMKills
-# Docker:
-docker inspect oneiric | jq '.[0].State.OOMKilled'
 # Expected: false
 
-# Kubernetes:
-kubectl get events -n oneiric | grep OOMKilled
 # Expected: no recent events
 
 # Step 4: Monitor for 30 minutes

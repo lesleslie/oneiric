@@ -1,17 +1,16 @@
-# ONNXRuntime Usage Guide for Python 3.14
+# ONNXRuntime Usage Guide for Python 3.13 (3.14 Planned)
 
-This project uses Python 3.14, but ONNXRuntime does not yet have compatible wheels for this Python version.
-This guide explains how to work with ONNXRuntime when needed.
+Oneiric currently targets Python 3.13. When testing Python 3.14 (planned), ONNXRuntime wheels may lag behind new releases. This guide explains how to work with ONNXRuntime when needed.
 
 ## The Issue
 
-- Python 3.14 is very new and ONNXRuntime wheels have not been compiled for this version yet
-- When crackerjack (or other dependencies) try to use ONNXRuntime, import errors may occur
-- This is a temporary issue that will resolve when ONNXRuntime releases Python 3.14-compatible wheels
+- Python 3.14 upgrades can outpace ONNXRuntime wheel availability.
+- When dependencies try to import ONNXRuntime under Python 3.14, import errors may occur.
+- This is expected to resolve once ONNXRuntime publishes Python 3.14-compatible wheels.
 
 ## Solution: Using uvx
 
-Use `uvx` to run ONNXRuntime-dependent code with Python 3.13 while keeping your main project on Python 3.14:
+Use `uvx` to run ONNXRuntime-dependent code with Python 3.13 if you are testing Python 3.14:
 
 ```bash
 # Run Python scripts that use ONNXRuntime
@@ -34,19 +33,9 @@ If you need to convert ONNX models, create a script that uses uvx:
 uvx --python 3.13 --with onnxruntime,pyyaml,numpy python convert_model.py "$@"
 ```
 
-## Alternative: Development Docker Container
 
-For more complex ONNXRuntime workflows, consider using a development container with Python 3.13:
-
-```dockerfile
-FROM python:3.13-slim
-
-RUN pip install onnxruntime numpy pandas
-
-# Your ONNXRuntime workflow commands here
-```
+For more complex ONNXRuntime workflows, keep a dedicated Python 3.13 virtualenv that includes `onnxruntime`, `numpy`, and `pandas`.
 
 ## When This Will Be Resolved
 
 This workaround will no longer be necessary when ONNXRuntime releases wheels compatible with Python 3.14.
-Monitor the ONNXRuntime PyPI page for updates: https://pypi.org/project/onnxruntime/

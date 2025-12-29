@@ -37,21 +37,7 @@ ______________________________________________________________________
 
 ## Quick Start
 
-### Docker Compose (Already Configured)
-
-```bash
-# Start AlertManager
-docker-compose up -d alertmanager
-
-# Access UI
-open http://localhost:9093
-
-# Check alert status
-curl http://localhost:9093/api/v2/status
-
-# View active alerts
-curl http://localhost:9093/api/v2/alerts | jq
-```
+Use a managed Alertmanager (or your existing alerting stack) and apply the configuration from `deployment/monitoring/alertmanager/`. Docker/Kubernetes walkthroughs have been removed.
 
 ### Test Alert Routing
 
@@ -77,35 +63,9 @@ ______________________________________________________________________
 
 ## Installation
 
-### Option 1: Docker Compose (Automatic)
+Provision Alertmanager using your platform defaults and mount `deployment/monitoring/alertmanager/alertmanager.yml` plus any notification templates.
 
-Already configured in `docker-compose.yml`:
-
-```yaml
-services:
-  alertmanager:
-    image: prom/alertmanager:v0.26.0
-    ports:
-      - "9093:9093"
-    volumes:
-      - ./deployment/monitoring/alertmanager:/etc/alertmanager
-      - alertmanager-data:/alertmanager
-    command:
-      - '--config.file=/etc/alertmanager/alertmanager.yml'
-      - '--storage.path=/alertmanager'
-```
-
-### Option 2: Kubernetes (Helm)
-
-```bash
-# Part of kube-prometheus-stack
-helm install prometheus prometheus-community/kube-prometheus-stack \
-  -n monitoring \
-  --set alertmanager.enabled=true \
-  --set alertmanager.config.global.slack_api_url=<webhook-url>
-```
-
-### Option 3: Binary Installation
+### Binary Installation
 
 ```bash
 # Download AlertManager
@@ -608,7 +568,6 @@ ______________________________________________________________________
 curl http://localhost:9093/api/v2/alerts | jq
 
 # Check AlertManager logs
-docker logs alertmanager
 
 # Test notification channel
 curl -X POST http://localhost:9093/api/v2/alerts \

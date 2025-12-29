@@ -102,6 +102,8 @@ class WorkflowBridge(DomainBridge):
         context: dict[str, Any] | None = None,
         checkpoint: dict[str, Any] | None = None,
         run_id: str | None = None,
+        use_checkpoint_store: bool = True,
+        resume_from_checkpoint: bool = True,
     ) -> DAGRunResult:
         """Execute the DAG associated with the workflow key."""
         # Validate workflow and dependencies
@@ -115,11 +117,20 @@ class WorkflowBridge(DomainBridge):
         graph = build_graph(task_defs)
 
         # Load or create checkpoint data
-        checkpoint_data = self._load_checkpoint_data(workflow_key, checkpoint)
+        checkpoint_data = self._load_checkpoint_data(
+            workflow_key,
+            checkpoint,
+            use_checkpoint_store=use_checkpoint_store,
+            resume_from_checkpoint=resume_from_checkpoint,
+        )
 
         # Execute DAG with checkpoint handling
         run_result = await self._execute_with_checkpoint(
-            graph, workflow_key, checkpoint_data, run_id
+            graph,
+            workflow_key,
+            checkpoint_data,
+            run_id,
+            use_checkpoint_store=use_checkpoint_store,
         )
         if self._telemetry:
             self._telemetry.record_workflow_execution(
@@ -208,12 +219,19 @@ class WorkflowBridge(DomainBridge):
         return task_defs
 
     def _load_checkpoint_data(
-        self, workflow_key: str, checkpoint: dict[str, Any] | None
+        self,
+        workflow_key: str,
+        checkpoint: dict[str, Any] | None,
+        *,
+        use_checkpoint_store: bool,
+        resume_from_checkpoint: bool,
     ) -> dict[str, Any]:
         """Load checkpoint data from provided checkpoint or store."""
         if checkpoint is not None:
             return dict(checkpoint)
-        elif self._checkpoint_store:
+        if not use_checkpoint_store:
+            return {}
+        if self._checkpoint_store and resume_from_checkpoint:
             return self._checkpoint_store.load(workflow_key)
         return {}
 
@@ -223,6 +241,8 @@ class WorkflowBridge(DomainBridge):
         workflow_key: str,
         checkpoint_data: dict[str, Any],
         run_id: str | None,
+        *,
+        use_checkpoint_store: bool,
     ) -> DAGRunResult:
         """Execute DAG with checkpoint save/clear handling."""
         try:
@@ -234,11 +254,11 @@ class WorkflowBridge(DomainBridge):
                 hooks=self._execution_hooks,
             )
         except Exception:
-            if self._checkpoint_store:
+            if self._checkpoint_store and use_checkpoint_store:
                 self._checkpoint_store.save(workflow_key, checkpoint_data)
             raise
         else:
-            if self._checkpoint_store:
+            if self._checkpoint_store and use_checkpoint_store:
                 self._checkpoint_store.clear(workflow_key)
             return run_result
 

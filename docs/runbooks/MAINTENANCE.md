@@ -103,8 +103,6 @@ curl http://alertmanager:9093/api/v2/silences | jq
 
 ```bash
 # Verify access to production
-kubectl get pods -n oneiric  # Kubernetes
-docker ps | grep oneiric      # Docker
 systemctl status oneiric      # Systemd
 
 # Verify rollback artifacts available
@@ -143,7 +141,7 @@ Upgrade Oneiric to a new version while maintaining service availability and data
 
 ```bash
 # Set version variables for this run
-CURRENT_VERSION="0.2.3"
+CURRENT_VERSION="0.3.3"
 TARGET_VERSION="0.2.4"
 PREVIOUS_VERSION="0.2.2"
 ```
@@ -175,16 +173,9 @@ curl 'http://prometheus:9090/api/v1/query?query=oneiric:resolution_success_rate_
 
 ```bash
 # 2.1: Deploy to staging
-# Docker:
-docker pull oneiric:${TARGET_VERSION}-staging
-docker stop oneiric-staging
-docker run -d --name oneiric-staging \
   -v $(pwd)/settings:/app/settings \
   oneiric:${TARGET_VERSION}-staging
 
-# Kubernetes:
-kubectl set image deployment/oneiric oneiric=oneiric:${TARGET_VERSION} -n staging
-kubectl rollout status deployment/oneiric -n staging
 
 # 2.2: Smoke test staging
 uv run python -m oneiric.cli health --probe --environment staging
@@ -201,48 +192,7 @@ pytest tests/integration/
 
 #### Step 3: Production Deployment (Actual Upgrade)
 
-**Option A: Rolling Update (Kubernetes - Zero Downtime)**
-
-```bash
-# 3.1: Update image
-kubectl set image deployment/oneiric \
-  oneiric=oneiric:${TARGET_VERSION} \
-  -n oneiric
-
-# 3.2: Watch rollout
-kubectl rollout status deployment/oneiric -n oneiric
-# Expected: "deployment "oneiric" successfully rolled out"
-
-# 3.3: Verify pods running new version
-kubectl get pods -n oneiric -o jsonpath='{.items[*].spec.containers[*].image}'
-# Expected: oneiric:${TARGET_VERSION}
-
-# 3.4: Check pod health
-kubectl get pods -n oneiric
-# Expected: All pods Running with READY 1/1
-```
-
-**Option B: Docker Compose Update (Brief Downtime)**
-
-```bash
-# 3.1: Pull new image
-docker pull oneiric:${TARGET_VERSION}
-
-# 3.2: Stop old container
-docker-compose stop oneiric
-# Downtime starts here (~5-10 seconds)
-
-# 3.3: Update docker-compose.yml
-sed -i "s/oneiric:${CURRENT_VERSION}/oneiric:${TARGET_VERSION}/g" docker-compose.yml
-
-# 3.4: Start new container
-docker-compose up -d oneiric
-# Downtime ends here
-
-# 3.5: Verify container running
-docker ps | grep oneiric
-# Expected: Container running with new image
-```
+Use the Cloud Run build/deploy flow in `docs/deployment/CLOUD_RUN_BUILD.md` for serverless upgrades. For local agents, follow the systemd path below.
 
 **Option C: Systemd Service Update (Brief Downtime)**
 
@@ -317,8 +267,6 @@ open http://alertmanager:9093
 # Watch for: Errors, warnings, unusual patterns
 
 # 5.4: Check resource usage
-docker stats oneiric  # Docker
-kubectl top pod -l app=oneiric -n oneiric  # Kubernetes
 # Verify: CPU/memory within normal range
 
 # 5.5: If stable after 30 min, remove silence
@@ -329,33 +277,20 @@ curl -X DELETE http://alertmanager:9093/api/v2/silence/<silence-id>
 
 **If upgrade causes issues, rollback immediately:**
 
-**Docker:**
 
 ```bash
 # 1. Stop new version
-docker-compose stop oneiric
 
-# 2. Revert docker-compose.yml
-sed -i "s/oneiric:${TARGET_VERSION}/oneiric:${PREVIOUS_VERSION}/g" docker-compose.yml
 
 # 3. Start old version
-docker-compose up -d oneiric
 
 # 4. Verify health
 uv run python -m oneiric.cli health --probe
-```
-
-**Kubernetes:**
-
-```bash
 # 1. Rollback deployment
-kubectl rollout undo deployment/oneiric -n oneiric
 
 # 2. Verify rollback
-kubectl rollout status deployment/oneiric -n oneiric
 
 # 3. Check pods
-kubectl get pods -n oneiric
 ```
 
 **Systemd:**
@@ -455,7 +390,6 @@ df -h /  # Total disk usage
 touch .oneiric_cache/.pause_sync
 
 # Option C: Stop orchestrator (if running standalone)
-docker stop oneiric-orchestrator
 ```
 
 #### Step 3: Identify Cleanup Candidates (5 min)
@@ -512,7 +446,6 @@ find .oneiric_cache/ -type d -empty -delete
 rm -f .oneiric_cache/.pause_sync
 
 # Option C: Restart orchestrator
-docker start oneiric-orchestrator
 
 # 5.2: Force immediate sync to re-download if needed
 uv run python -m oneiric.cli remote-sync --manifest https://manifests.example.com/oneiric/manifest.yaml
@@ -596,7 +529,6 @@ Rotate secrets (database passwords, API keys, signing keys) to maintain security
 ### Prerequisites
 
 - ✅ New secrets generated and validated
-- ✅ Secret management system updated (Vault, K8s Secrets, etc.)
 - ✅ Rollback plan documented
 - ✅ Maintenance window scheduled
 - ✅ Security team notified
@@ -622,8 +554,6 @@ NEW_PRIVATE_KEY=$(cat /tmp/oneiric-signing-key-new)
 # Ensure compatible with providers
 
 # 1.3: Store in secret management system
-# Kubernetes:
-kubectl create secret generic oneiric-secrets-new \
   --from-literal=db-password="$NEW_DB_PASSWORD" \
   --from-literal=api-key="$NEW_API_KEY" \
   --from-literal=signing-public-key="$NEW_PUBLIC_KEY" \
@@ -634,7 +564,6 @@ vault kv put secret/oneiric/secrets-new \
   db-password="$NEW_DB_PASSWORD" \
   api-key="$NEW_API_KEY"
 
-# Docker (environment file):
 cat > .env.new <<EOF
 DB_PASSWORD=$NEW_DB_PASSWORD
 API_KEY=$NEW_API_KEY
@@ -642,7 +571,6 @@ SIGNING_PUBLIC_KEY=$NEW_PUBLIC_KEY
 EOF
 
 # 1.4: Backup old secrets
-kubectl get secret oneiric-secrets -n oneiric -o yaml > oneiric-secrets-backup-$(date +%Y%m%d).yaml
 ```
 
 #### Step 2: Update External Systems (10 min)
@@ -672,11 +600,9 @@ psql -h db-host -U oneiric_user -d oneiric_db -c "SELECT 1;"
 
 #### Step 3: Update Oneiric Configuration (15 min)
 
-**Docker:**
 
 ```bash
 # 3.1: Stop Oneiric
-docker-compose stop oneiric
 # Downtime starts
 
 # 3.2: Update environment file
@@ -684,30 +610,19 @@ mv .env .env.old
 mv .env.new .env
 
 # 3.3: Start with new secrets
-docker-compose up -d oneiric
 # Downtime ends
 
 # 3.4: Verify startup
-docker logs oneiric
 # Check for: "Successfully connected to database"
-```
-
-**Kubernetes:**
-
-```bash
 # 3.1: Update secret reference in deployment
-kubectl patch deployment oneiric \
   -p '{"spec":{"template":{"spec":{"containers":[{"name":"oneiric","envFrom":[{"secretRef":{"name":"oneiric-secrets-new"}}]}]}}}}' \
   -n oneiric
 
 # 3.2: Trigger rolling update
-kubectl rollout restart deployment/oneiric -n oneiric
 
 # 3.3: Watch rollout
-kubectl rollout status deployment/oneiric -n oneiric
 
 # 3.4: Verify pods healthy
-kubectl get pods -n oneiric
 # Expected: All Running, READY 1/1
 ```
 
@@ -762,9 +677,7 @@ curl 'http://prometheus:9090/api/v1/query?query=oneiric:resolution_success_rate_
 # Wait 7 days to ensure rollback not needed
 
 # 5.1: Delete old secrets from secret store
-kubectl delete secret oneiric-secrets -n oneiric
 # Rename new secrets to standard name
-kubectl patch secret oneiric-secrets-new -n oneiric --type merge -p '{"metadata":{"name":"oneiric-secrets"}}'
 
 # 5.2: Rotate old signing keys out
 # Remove from registry
@@ -783,21 +696,15 @@ echo "$(date): Rotated secrets successfully" >> /var/log/oneiric/secret-rotation
 
 ```bash
 # 1. Stop Oneiric
-docker-compose stop oneiric  # Docker
-kubectl rollout undo deployment/oneiric -n oneiric  # Kubernetes
 sudo systemctl stop oneiric  # Systemd
 
 # 2. Restore old secrets
-mv .env.old .env  # Docker
-kubectl apply -f oneiric-secrets-backup-<date>.yaml  # Kubernetes
 sudo cp /etc/oneiric/.env.old /etc/oneiric/.env  # Systemd
 
 # 3. Restore old database password (if changed)
 psql -h db-host -U admin -c "ALTER USER oneiric_user WITH PASSWORD '$OLD_DB_PASSWORD';"
 
 # 4. Restart with old secrets
-docker-compose up -d oneiric  # Docker
-kubectl rollout restart deployment/oneiric -n oneiric  # Kubernetes
 sudo systemctl start oneiric  # Systemd
 
 # 5. Verify health

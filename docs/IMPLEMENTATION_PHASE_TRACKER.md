@@ -22,7 +22,6 @@ ______________________________________________________________________
 1. Schedule Cloud Run transcript capture session; assign reviewer for doc updates.
 1. Create README/deployment doc notes referencing this tracker so changes do not get lost.
 
-**Exit Criteria:** Serverless deployers can follow README + Cloud Run guide without referencing historical Docker/K8s docs; proofs (CLI snippets/screenshots) live in docs/examples/runbooks.
 
 ______________________________________________________________________
 
@@ -51,7 +50,7 @@ ______________________________________________________________________
 |------|----------|--------|-------|
 | PgVector adapter + duckdb parity tests | High | ✅ Complete | `oneiric.adapters.vector.pgvector`, `tests/adapters/test_pgvector_adapter.py`, `docs/examples/FASTBLOCKS_PARITY_FIXTURE.yaml` |
 | Remaining network/file-transfer adapters (DNS, FileTransfer) | Medium | ✅ Complete | Cloudflare + Route53 + GCDNS DNS and FTP/SFTP/SCP/HTTP download/HTTPS upload file transfer adapters all ship in-tree (see `docs/archive/analysis/DNS_FILE_TRANSFER_ADAPTER_PLAN.md`). Wave C items now focus on feature flags. |
-| Gemini LLM adapter | Medium | 💤 Backlog | Blocked on SDK compatibility (Python 3.14 + httpx 1.x) |
+| Gemini LLM adapter | Medium | 💤 Backlog | Blocked on SDK compatibility for Python 3.14 upgrade + httpx 1.x |
 | Pulsar adapter | Low | 💤 Backlog | Evaluate demand post-kafka/rabbitmq rollout |
 | Evaluate Wave C adapters (feature flags) | Low | 💤 Backlog | Capture requirements from downstream repos before prioritizing. |
 | Weekly diff vs `docs/analysis/ACB_ADAPTER_ACTION_IMPLEMENTATION.md` | Medium | ⏳ Ongoing | Keep remediation docs updated after each adapter landing. |

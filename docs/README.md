@@ -1,6 +1,6 @@
 # Oneiric Documentation
 
-**Version:** 0.2.3 (Audit: 95/100 at v0.2.0)
+**Version:** 0.3.3 (Audit: 95/100 at v0.2.0)
 **Last Updated:** 2025-12-19
 
 ______________________________________________________________________
@@ -225,7 +225,7 @@ ______________________________________________________________________
 
 **Code Quality:**
 
-- ✅ **Modern Python** (3.14+, async-first)
+- ✅ **Modern Python** (3.13+, 3.14 planned)
 - ✅ **Type-safe** (Pydantic throughout)
 - ✅ **Observable** (structlog, OpenTelemetry)
 

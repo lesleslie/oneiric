@@ -1,7 +1,7 @@
 # Oneiric: Uncompleted Tasks & Future Enhancements
 
 **Last Updated:** 2025-12-19
-**Project Version:** 0.2.3 (Audit: 95/100 at v0.2.0)
+**Project Version:** 0.3.3 (Audit: 95/100 at v0.2.0)
 **Status:** Production-ready with planned enhancements
 
 ______________________________________________________________________
@@ -61,7 +61,7 @@ ______________________________________________________________________
 
 ### Priority: MEDIUM (Non-Blocking Issues)
 
-**Overall Test Status:** Latest local run (2025-12-19) completed **705 passing tests**, **5 skipped**, **0 failures**. Coverage is **76%**; see `coverage.json` or re-run `uv run pytest` for the latest counts. The Stage 5 audit recorded 18 non-blocking failures that are no longer present in current runs.
+**Overall Test Status:** Latest local run (2025-12-19) completed **705 passing tests**, **5 skipped**, **0 failures**. Coverage is **79.4%**; see `coverage.json` or re-run `uv run pytest` for the latest counts. The Stage 5 audit recorded 18 non-blocking failures that are no longer present in current runs.
 
 **Known Issues:** No active test failures observed in the latest run; validate in CI for environment-specific adapters.
 
@@ -82,7 +82,7 @@ These are **operational documentation** tasks, not code features:
 
 | Task | Status | Priority | Notes |
 |------|--------|----------|-------|
-| **Production deployment guide** | ✅ **COMPLETE** | HIGH | Kubernetes, Docker, systemd docs exist |
+| **Production deployment guide** | ✅ **COMPLETE** | HIGH | Cloud Run and systemd docs exist |
 | **Monitoring/alerting setup** | ✅ **COMPLETE** | HIGH | Prometheus, Grafana, Loki complete |
 | **Runbook documentation** | ✅ **COMPLETE** | HIGH | Incident response, maintenance, troubleshooting complete |
 | **Final audit and sign-off** | ✅ **COMPLETE** | HIGH | 95/100 audit score achieved |
@@ -124,7 +124,7 @@ Current audit score: **95/100** (Excellent). These are refinements:
 
 | Task | Status | Priority | Notes |
 |------|--------|----------|-------|
-| **80% test coverage** | ⚠️ **PARTIAL** | MEDIUM | Current: 83% (exceeds 60% target) |
+| **80% test coverage** | ⚠️ **PARTIAL** | MEDIUM | Current: 79.4% (exceeds 60% target) |
 | **Load testing (1000+ concurrent swaps)** | ✅ **COMPLETE** | LOW | CLI `load-test` + `docs/LOAD_TESTING.md` |
 | **Secrets rotation mechanism** | ✅ **COMPLETE** | MEDIUM | Hot-reload loop + cache invalidation available. |
 | **Security audit passed** | ✅ **COMPLETE** | HIGH | All P0 vulnerabilities resolved |
@@ -133,7 +133,7 @@ Current audit score: **95/100** (Excellent). These are refinements:
 
 **Recommendation:**
 
-- ✅ **Ship as-is:** 83% coverage exceeds target
+- ✅ **Ship as-is:** 79.4% coverage exceeds target
 - ⏳ **Load testing:** Add in v0.3.0 if performance issues reported
 - ✅ **Secrets rotation:** Hot-reload implemented.
 

@@ -306,4 +306,5 @@ class EventDispatcher:
                     topic=envelope.topic,
                     attempts=attempts,
                     duration_ms=duration * 1000.0,
+                    # Note: Avoid logging envelope.payload directly to prevent sensitive data exposure
                 )

@@ -40,7 +40,7 @@ ______________________________________________________________________
 ### System Requirements
 
 - Linux distribution with systemd (Ubuntu 20.04+, Debian 11+, RHEL 8+, etc.)
-- Python 3.14+ installed
+- Python 3.13+ installed (3.14 planned)
 - UV package manager installed
 - Non-root user for running the service
 

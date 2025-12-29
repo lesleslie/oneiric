@@ -48,9 +48,6 @@ ______________________________________________________________________
 ```yaml
 # settings/adapters.yml
 database: duckdb
-```
-
-```python
 from oneiric.adapters.database import DuckDBDatabaseSettings
 
 # In-memory database (fastest)

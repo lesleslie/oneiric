@@ -9,7 +9,7 @@ ______________________________________________________________________
 ## 1. Vision & Principles
 
 1. **Single-platform future** – Oneiric will fully replace ACB (adapters + services + tasks + events). No hybrid deployment path will be supported because no production workloads depend on ACB.
-1. **Serverless-first** – Optimize for Google Cloud Run / buildpack deployments with fast cold starts, Procfile-based launches, and optional Docker images for legacy demos only.
+1. **Serverless-first** – Optimize for Google Cloud Run / buildpack deployments with fast cold starts and Procfile-based launches; systemd remains the only local agent path.
 1. **Explainable infrastructure** – Preserve Oneiric’s strengths (resolver precedence, “why” tooling, remote manifests) while extending them to orchestration domains.
 1. **Lean bundles** – Heavy SDKs live in extras; adapters lazy-load their dependencies; per-function bundles keep serverless artifacts slim.
 1. **Secrets precedence** – Secret Manager adapters (GCP/AWS/etc.) are preferred over raw env vars in serverless profiles to keep deployments stateless and safe.
@@ -19,7 +19,6 @@ ______________________________________________________________________
 ## Recent Decisions (December 2025)
 
 1. **Track G follow-up:** Runtime modernization (httpx loader, tenacity/aiobreaker, watchfiles, sqlite activity store) is complete. Follow-on work is captured in `docs/implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md`.
-1. **Serverless baseline:** Cloud Run + buildpacks with Procfile launches are the default deployment story. Legacy Docker/K8s docs have been removed; use Cloud Run or systemd guidance only.
 1. **Secrets + config:** Serverless profile prefers Secret Manager adapters → env adapters as fallback; inline manifests are packaged inside the build artifact.
 1. **Adapter hygiene:** `_base.py` helpers are retired; `common.py` modules own shared logic with lazy imports. Guard optional dependencies via extras.
 1. **ACB sunset:** Oneiric replaces ACB in a single cut-over. No re-integration into ACB or hybrid MCP server strategy is planned; Crackerjack/FastBlocks expose MCP layers if desired.
@@ -97,6 +96,5 @@ ______________________________________________________________________
 | Secret Manager adapters take precedence over env vars | Keeps serverless deployments stateless + compliant | `oneiric.core.config`, serverless profile blueprint |
 | `_base.py` helpers retired in favor of `common.py` modules | Reduce heavy imports + align with lazy extras | `docs/implementation/ADAPTER_REMEDIATION_EXECUTION.md` §4 |
 | Remote loader uses `httpx` + `tenacity/aiobreaker`; watchers default off in serverless profile | Track G modernization eliminates bespoke infra and optimizes cold starts | `oneiric/remote/loader.py`, `docs/implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md` |
-| Cloud Run/buildpack path is canonical | Docker/K8s docs removed; only Cloud Run/systemd remain | `docs/deployment/CLOUD_RUN_BUILD.md`, `docs/deployment/SYSTEMD_DEPLOYMENT.md` |
 | Slack/Teams/webhook adapters deliver ChatOps parity | Enables Oneiric-based orchestrations to emit notifications without ACB | `docs/archive/implementation/MESSAGING_AND_SCHEDULER_ADAPTER_PLAN.md`, `docs/examples/LOCAL_CLI_DEMO.md` |
 | Messaging + scheduler adapters promoted to built-ins | Ensures serverless profile ships with Mailgun, Twilio, Cloud Tasks, Pub/Sub ready for orchestration parity | `docs/archive/implementation/MESSAGING_AND_SCHEDULER_ADAPTER_PLAN.md`, `docs/examples/LOCAL_CLI_DEMO.md` |

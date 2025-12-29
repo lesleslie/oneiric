@@ -92,9 +92,6 @@ ______________________________________________________________________
 ```yaml
 # settings/adapters.yml
 vector: pinecone
-```
-
-```python
 from oneiric.adapters.vector import PineconeSettings
 
 settings = PineconeSettings(
@@ -176,9 +173,6 @@ ______________________________________________________________________
 ```yaml
 # settings/adapters.yml
 vector: qdrant
-```
-
-```python
 from oneiric.adapters.vector import QdrantSettings
 
 settings = QdrantSettings(
@@ -546,9 +540,6 @@ ______________________________________________________________________
 ```yaml
 # settings/adapters.yml
 vector: pgvector
-```
-
-```python
 from oneiric.adapters.vector.pgvector import PgvectorSettings
 
 settings = PgvectorSettings(

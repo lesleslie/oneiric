@@ -494,7 +494,7 @@ ______________________________________________________________________
 1. Add smoke/unit tests for DuckDB, vector adapters, and embedding stack (including `common.py` helpers).
 1. Fix HTTP adapter regression (restore `httpx.AsyncClient`) and repair remote watcher integration tests.
 1. Refresh adapter gap audit in `docs/analysis/ADAPTER_GAP_AUDIT.md` and track Gemini/Pulsar/Wave C owners.
-1. Update dependency guidance once Gemini SDK supports Python 3.14 + httpx 1.x.
+1. Update dependency guidance once Gemini SDK supports the Python 3.14 upgrade + httpx 1.x.
 
 ### Completed Ports (November–December 2025)
 

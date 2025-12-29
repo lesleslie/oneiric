@@ -5,6 +5,7 @@ build/
 dist/
 wheels/
 *.egg-info
+.DS_Store
 
 # Virtual environments
 .venv
@@ -27,3 +28,4 @@ coverage.json
 htmlcov/
 .pytest_cache/
 /.mcp_test_results.md
+/.jbeval/

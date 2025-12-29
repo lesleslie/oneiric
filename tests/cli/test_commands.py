@@ -922,6 +922,67 @@ class TestEventWorkflowCommands:
         assert payload["workflow"] == "demo-workflow"
         assert isinstance(payload["results"], dict)
 
+    def test_workflow_run_checkpoints(self, runner):
+        """workflow run accepts checkpoint flags."""
+        result = runner.invoke(
+            app,
+            [
+                "--demo",
+                "workflow",
+                "run",
+                "demo-workflow",
+                "--workflow-checkpoints",
+                "--resume-checkpoint",
+                "--json",
+            ],
+        )
+
+        assert result.exit_code == 0
+        lines = [line for line in result.stdout.splitlines() if line.strip()]
+        start_idx = next(i for i, line in enumerate(lines) if line.strip() == "{")
+        payload_text = "\n".join(lines[start_idx:])
+        payload = json.loads(payload_text)
+        assert payload["workflow"] == "demo-workflow"
+
+    def test_workflow_run_resume_requires_checkpoints(self, runner):
+        """workflow run rejects resume when checkpoints disabled."""
+        result = runner.invoke(
+            app,
+            [
+                "--demo",
+                "workflow",
+                "run",
+                "demo-workflow",
+                "--no-workflow-checkpoints",
+                "--resume-checkpoint",
+            ],
+        )
+
+        assert result.exit_code != 0
+        output = result.stdout + (result.stderr or "")
+        assert "--resume-checkpoint requires --workflow-checkpoints" in output
+
+    def test_workflow_plan_json(self, runner):
+        """workflow plan returns DAG metadata as JSON."""
+        result = runner.invoke(
+            app,
+            [
+                "--demo",
+                "workflow",
+                "plan",
+                "--workflow",
+                "demo-workflow",
+                "--json",
+            ],
+        )
+
+        assert result.exit_code == 0
+        lines = [line for line in result.stdout.splitlines() if line.strip()]
+        start_idx = next(i for i, line in enumerate(lines) if line.strip() == "{")
+        payload_text = "\n".join(lines[start_idx:])
+        payload = json.loads(payload_text)
+        assert "demo-workflow" in payload.get("workflows", {})
+
     def test_workflow_enqueue_demo(self, runner):
         """workflow enqueue uses demo queue adapter."""
         result = runner.invoke(

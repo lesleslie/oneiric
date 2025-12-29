@@ -14,7 +14,7 @@ ______________________________________________________________________
 1. **Parity prototypes landed** – `oneiric.runtime.events.EventDispatcher` and `oneiric.runtime.dag` implement the reference event fan-out and DAG execution loops with accompanying tests (`tests/runtime/test_parity_prototypes.py`). These spikes validate the anyio + msgspec + networkx approach ahead of production integration.
 1. **Dispatcher/DAG wired into runtime + CLI** – `EventBridge` and `WorkflowBridge` now rebuild handler sets/DAG specs after every manifest or watcher refresh, the orchestrator triggers those refreshes, and the CLI exposes `event emit` + `workflow run` commands (with JSON output) so manifests can exercise fan-out/DAGs without bespoke scripts. Docs (`README.md`, `docs/examples/LOCAL_CLI_DEMO.md`) and tests (`tests/cli/test_commands.py::TestEventWorkflowCommands`) cover the new flows.
    - README `Quick Start` now includes `event emit` and `workflow run` commands so parity rehearsals can reuse a common set of snippets alongside the serverless quickstart.
-   - CLI also exposes `workflow plan` (documented in README + Fastblocks observability guide) so contributors can inspect DAG topology/metadata without executing nodes; attach its JSON output to parity issues before running workflows.
+   - Use `orchestrate --print-dag --inspect-json` or `workflow plan --json` to capture DAG topology/metadata without executing nodes; attach the JSON output to parity issues before running workflows.
 1. **Handler resiliency + telemetry** – Event handlers can define `retry_policy` metadata (attempts/base/max delay/jitter). The dispatcher runs them through `run_with_retry`, logs structured `event-handler-*` telemetry, and surfaces attempt counts in CLI JSON so manifest operators can see when retries kick in (`tests/runtime/test_parity_prototypes.py` cover success/failure paths). Telemetry also ships via OTLP/Logfire spans (`get_tracer("runtime.events")`).
 1. **DAG retries + checkpoints** – Workflow DAG nodes now accept the same `retry_policy` metadata as actions/events plus an optional checkpoint mapping so partially-complete runs can resume without re-running succeeded nodes. `oneiric.runtime.dag.execute_dag` persists per-node durations/attempts and raises `DAGExecutionError` when retries exhaust; `WorkflowBridge.execute_dag` exposes the checkpoint hook. Docs + sample manifests include retry examples; tests cover success, resume, and failure exhaust paths.
 
@@ -27,7 +27,6 @@ ______________________________________________________________________
 1. **Event routing parity** – dynamic subscription, filtering, and fan-out match ACB's event bus semantics while honoring Oneiric's resolver priorities.
 1. **Task DAG orchestration** – DAG definitions, dependency management, retries, and checkpointing meet or exceed ACB's task runner so workflows can be ported without hybrid stacks.
 1. **Service supervision** – lifecycle hooks, draining/pausing, and hot-reload policies keep long-lived adapters/services stable on Cloud Run + Crackerjack environments.
-1. **Serverless-first ergonomics** – cold start budgets, buildpack-based deployments, manifest packaging, and Procfile launches require no Docker-specific logic.
 1. **Single cut-over** – Oneiric assumes all orchestration responsibilities; ACB orchestration code is retired once these milestones land (no hybrid deployments).
 1. **Migration clarity** – docs, manifests, and CLI tooling let sibling repos cut over once parity tasks are complete.
 
@@ -137,7 +136,7 @@ ______________________________________________________________________
 | Milestone | Target | Deliverables |
 |-----------|--------|--------------|
 | **M1 – Event routing beta** | Jan 2026 | Updated `oneiric.domains.events`, manifest schema, CLI inspect command, unit tests. |
-| **M2 – DAG runtime alpha** | Feb 2026 | `networkx`-backed DAG engine, sqlite checkpoint store, CLI `orchestrate --plan` output, integration tests. |
+| **M2 – DAG runtime alpha** | Feb 2026 | `networkx`-backed DAG engine, sqlite checkpoint store, CLI `workflow plan` + `orchestrate --print-dag --inspect-json` output, integration tests. |
 | **M3 – Service supervisor GA** | Mar 2026 | Orchestrator refactor, serverless profile docs, health/watchers telemetry, Procfile examples. |
 | **M4 – Repo cut-over rehearsals** | Apr 2026 | Fastblocks + Crackerjack runbooks updated, parity test suites running in CI, MCP references swapped to Oneiric. |
 

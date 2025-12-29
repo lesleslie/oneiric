@@ -63,7 +63,7 @@ Purpose: migrate all ACB adapters and action utilities into Oneiric’s unified 
 #### Known Blockers / Risks (initial)
 
 - **Queue adapters**: require parity test fixtures (redis-streams + nats). Owners: Messaging team. Action: port existing async integration tests to `tests/adapters/test_queue.py`.
-- **Storage providers**: S3/GCS/Azure rely on vendor SDK versions pinned in ACB; need compatibility matrix for Python 3.14 + uv. Owners: Data Platform.
+- **Storage providers**: S3/GCS/Azure rely on vendor SDK versions pinned in ACB; need compatibility matrix for the Python 3.14 upgrade + uv. Owners: Data Platform.
 - **AI adapters**: vendor SDK licensing and rate limiting may complicate automated tests; track using mocked endpoints first.
 - **Notification adapters**: APNS/FCM health checks rely on device tokens; unit tests use stubs while integration coverage remains optional.
 

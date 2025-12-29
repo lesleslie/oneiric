@@ -157,7 +157,7 @@ retry_policy:
 
 | Field | Type | Description | Example | Use Case |
 |-------|------|-------------|---------|----------|
-| `python_version` | `str` | Python version constraint (PEP 440) | `">=3.14"` | Python version check |
+| `python_version` | `str` | Python version constraint (PEP 440) | `">=3.13"` | Python version check |
 | `os_platform` | `list[str]` | Supported OS platforms | `["linux", "darwin", "windows"]` | Platform filtering |
 
 **Supported OS Platforms:** `linux`, `darwin` (macOS), `windows`, `freebsd`, `openbsd`
@@ -209,18 +209,6 @@ dag:
     category: queue.scheduler
     provider: cloudtasks
 
-event_metadata:
-  - topic: fastblocks.order.created
-    handler: fastblocks.events.order-handler
-    event_filters:
-      - path: payload.region
-        any_of: ["us", "ca"]
-    event_priority: 50
-    event_fanout_policy: exclusive
-    retry_policy:
-      attempts: 3
-      base_delay: 0.5
-      jitter: 0.2
 ```
 
 ______________________________________________________________________
@@ -277,7 +265,7 @@ entries:
       - "coredis>=4.0.0"
 
     # Platform constraints (v2)
-    python_version: ">=3.14"
+    python_version: ">=3.13"
     os_platform: ["linux", "darwin"]
 
     # Documentation (v2)
@@ -313,7 +301,7 @@ entries:
       - "httpx>=0.27.0"
 
     # Platform constraints (v2)
-    python_version: ">=3.14"
+    python_version: ">=3.13"
 
     # Documentation (v2)
     license: "MIT"
@@ -410,7 +398,7 @@ from oneiric.remote.loader import sync_remote_manifest
     "requires": ["redis>=5.0.0"],
     "conflicts_with": [],
     # Platform
-    "python_version": ">=3.14",
+    "python_version": ">=3.13",
     "os_platform": ["linux", "darwin"],
     # Documentation
     "license": "MIT",
@@ -488,7 +476,7 @@ ______________________________________________________________________
 # Add Python and package requirements
 requires:
   - "redis>=5.0.0"
-python_version: ">=3.14"
+python_version: ">=3.13"
 ```
 
 **Phase 3:** Add action metadata
@@ -539,7 +527,7 @@ ______________________________________________________________________
 
 ### Platform Constraints
 
-1. **python_version should use >=:** `">=3.14"` not `"==3.14"`
+1. **python_version should use >=:** `">=3.13"` not `"==3.14"`
 1. **os_platform should list tested platforms:** Not theoretical support
 1. **Avoid over-constraining:** Only add constraints when necessary
 

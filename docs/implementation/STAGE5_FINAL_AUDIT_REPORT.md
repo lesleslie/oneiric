@@ -2,7 +2,7 @@
 
 **Audit Date:** 2025-11-26
 **Project Version:** 0.2.0
-**Current Version:** 0.2.3 (see `CHANGELOG.md`)
+**Current Version:** 0.3.3 (see `CHANGELOG.md`)
 **Auditor:** Claude Code (Critical Audit Specialist)
 **Audit Type:** Final production readiness assessment for Stage 5 completion
 
@@ -458,7 +458,6 @@ ______________________________________________________________________
 - ✓ Structured JSON logging (structlog)
 - ✓ 40+ production-ready LogQL queries
 - ✓ 30-day retention policy
-- ✓ Docker + systemd journal scraping
 
 **AlertManager (Alerting):**
 

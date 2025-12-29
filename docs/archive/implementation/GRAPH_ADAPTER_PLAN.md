@@ -62,7 +62,6 @@ ______________________________________________________________________
 | ArangoDB driver compatibility with Python 3.14 | Pin to latest `python-arango` release; add compatibility note if wheels lag behind. |
 | DuckDB PGQ extension availability | Document manual `INSTALL pgq; LOAD pgq;` steps; optionally embed SQL bootstrap in adapter `init()`. |
 | Optional extras explosion | Keep new extras scoped per adapter (`graph-arangodb`, `graph-duckdb-pgq`) and add a meta extra later if needed. |
-| CI flakiness for external services | Use fakes for ArangoDB unit tests; rely on docker-compose jobs for future integration tests. |
 
 ______________________________________________________________________
 

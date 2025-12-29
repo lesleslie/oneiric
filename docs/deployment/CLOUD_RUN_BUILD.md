@@ -24,7 +24,6 @@ ______________________________________________________________________
 ## 2. Prerequisites
 
 1. **Google Cloud CLI** with `gcloud components install beta` (for `gcloud run`).
-1. **Docker** installed locally (required by buildpacks).
 1. **pack CLI** (`brew install buildpacks/tap/pack` on macOS).
 1. Service account or user with `Cloud Run Admin`, `Artifact Registry Writer`, `Secret Manager Secret Accessor` roles.
 1. Optional: `uv` installed locally for parity with CI commands.

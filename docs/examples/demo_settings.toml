@@ -156,7 +156,6 @@ cloud = "aws"
 region = "us-east-1"
 
 [adapters.provider_settings.qdrant]
-# Use the official docker image (`docker run -p 6333:6333 qdrant/qdrant`) or a managed cluster.
 url = "http://localhost:6333"
 api_key = ""
 default_collection = "oneiric-demo"

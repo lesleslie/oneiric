@@ -25,6 +25,9 @@ from structlog.stdlib import BoundLogger
 DEFAULT_LOGGER_NAME = "oneiric"
 DEFAULT_FILE_SIZE = 5 * 1024 * 1024
 
+# Global flag for event suppression
+_SUPPRESS_EVENTS = False
+
 
 class LoggingSinkConfig(BaseModel):
     """Declarative sink configuration for stdlib logging handlers."""
@@ -205,6 +208,14 @@ def _create_http_handler(sink: LoggingSinkConfig) -> logging.Handler:
     )
 
 
+def _filter_event_logs(logger, method_name, event_dict):
+    """Filter event logs based on global suppression flag."""
+    global _SUPPRESS_EVENTS
+    if _SUPPRESS_EVENTS and event_dict.get("event"):
+        return {}  # Suppress event logs
+    return event_dict
+
+
 def configure_logging(config: LoggingConfig | None = None) -> None:
     """Configure structlog and the stdlib logging bridge."""
 
@@ -223,6 +234,10 @@ def configure_logging(config: LoggingConfig | None = None) -> None:
         structlog.processors.StackInfoRenderer(),
         structlog.processors.format_exc_info,
     ]
+
+    # Add event filter if suppression is enabled
+    if _SUPPRESS_EVENTS:
+        processor_chain.insert(0, _filter_event_logs)
 
     if cfg.include_trace_context:
         processor_chain.append(_otel_context_processor)
@@ -282,6 +297,21 @@ def scoped_log_context(**values: Any) -> Any:
         restore = {key: previous[key] for key in keys if key in previous}
         if restore:
             bind_contextvars(**restore)
+
+
+def configure_early_logging(suppress_events: bool = False) -> None:
+    """
+    Configure Oneiric logging early to control event output.
+    
+    This should be called as early as possible in the initialization process
+    to ensure it takes effect before any logging occurs.
+    
+    Args:
+        suppress_events: If True, suppress event logs to console
+    """
+    # Store the suppress_events flag in a global variable that can be accessed later
+    global _SUPPRESS_EVENTS
+    _SUPPRESS_EVENTS = suppress_events
 
 
 def get_logger(name: str | None = None, **initial_values: Any) -> BoundLogger:

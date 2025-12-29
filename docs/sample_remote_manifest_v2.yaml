@@ -38,7 +38,7 @@ entries:
       - "coredis>=4.0.0"
 
     # Platform constraints
-    python_version: ">=3.14"
+    python_version: ">=3.13"
     os_platform: ["linux", "darwin"]
 
     # Documentation
@@ -74,7 +74,7 @@ entries:
     requires:
       - "asyncpg>=0.29.0"
 
-    python_version: ">=3.14"
+    python_version: ">=3.13"
     os_platform: ["linux", "darwin", "windows"]
 
     license: "MIT"
@@ -102,7 +102,7 @@ entries:
       - "aioboto3>=12.0.0"
       - "boto3>=1.34.0"
 
-    python_version: ">=3.14"
+    python_version: ">=3.13"
 
     license: "MIT"
     documentation_url: "https://docs.oneiric.dev/adapters/storage/s3"
@@ -128,7 +128,7 @@ entries:
       - "httpx>=0.27.0"
       - "python-jose[cryptography]>=3.3.0"
 
-    python_version: ">=3.14"
+    python_version: ">=3.13"
 
     license: "MIT"
     documentation_url: "https://docs.oneiric.dev/adapters/identity/auth0"
@@ -494,7 +494,7 @@ entries:
     requires:
       - "sentry-sdk>=2.0.0"
 
-    python_version: ">=3.14"
+    python_version: ">=3.13"
 
     license: "MIT"
     documentation_url: "https://docs.oneiric.dev/adapters/monitoring/sentry"
@@ -529,7 +529,7 @@ entries:
     requires:
       - "httpx>=0.27.0"
 
-    python_version: ">=3.14"
+    python_version: ">=3.13"
 
     license: "MIT"
     documentation_url: "https://docs.oneiric.dev/actions/http/fetch"
@@ -549,7 +549,7 @@ entries:
     side_effect_free: true  # Pure audit logging (no side effects)
     timeout_seconds: 5.0
 
-    python_version: ">=3.14"
+    python_version: ">=3.13"
 
     license: "MIT"
     documentation_url: "https://docs.oneiric.dev/actions/workflow/audit"
@@ -571,7 +571,7 @@ entries:
     requires:
       - "cryptography>=42.0.0"
 
-    python_version: ">=3.14"
+    python_version: ">=3.13"
 
     license: "MIT"
     documentation_url: "https://docs.oneiric.dev/actions/security/signature"
@@ -594,7 +594,7 @@ entries:
     requires:
       - "msgspec>=0.18.0"
 
-    python_version: ">=3.14"
+    python_version: ">=3.13"
 
     license: "MIT"
     documentation_url: "https://docs.oneiric.dev/actions/data/transform"
@@ -619,7 +619,7 @@ entries:
       max_delay: 300.0
       jitter: 0.1
 
-    python_version: ">=3.14"
+    python_version: ">=3.13"
 
     license: "MIT"
     documentation_url: "https://docs.oneiric.dev/actions/task/schedule"
@@ -646,7 +646,7 @@ entries:
     requires:
       - "stripe>=9.0.0"
 
-    python_version: ">=3.14"
+    python_version: ">=3.13"
 
     license: "Proprietary"
     documentation_url: "https://internal.example.com/services/payment"

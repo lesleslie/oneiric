@@ -19,7 +19,6 @@ ______________________________________________________________________
 
 ## 1.1 Direction Updates (Dec 2025)
 
-- **Target runtime:** Google Cloud Run / serverless-first. Optimize builds for Cloud Run buildpacks, ship a Procfile, and keep Docker optional.
 - **Platform goal:** Oneiric will ultimately replace ACB end-to-end (adapters + services/tasks/events). There will be no hybrid deployment in production; plan for a single cut-over when parity lands.
 - **Deployment posture:** Hot-swapping/config watchers remain valuable for long-lived Crackerjack-like services; serverless profiles should default to stateless resolver loads and lazy imports to keep cold starts low.
 
@@ -79,4 +78,4 @@ ______________________________________________________________________
 **Next Review:** sync with stakeholders after completing Track 1 (registration + deps + HTTP fix) to confirm scope remains correct.
 **Sign-off:** merge fixes + updated docs + test evidence into main branch before next Crackerjack run.
 
-> **Compatibility note:** Some upstream SDKs (Anthropic, onnxruntime) currently ship wheels that conflict with Python 3.14 or `httpx>=1.0`. Document manual installation guidance instead of pinning them into `pyproject.toml` until upstream support lands.
+> **Compatibility note:** Some upstream SDKs (Anthropic, onnxruntime) currently ship wheels that conflict with the Python 3.14 upgrade or `httpx>=1.0`. Document manual installation guidance instead of pinning them into `pyproject.toml` until upstream support lands.

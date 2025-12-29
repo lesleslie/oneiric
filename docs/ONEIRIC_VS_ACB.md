@@ -1,7 +1,7 @@
 # Oneiric vs ACB: Comprehensive Comparison & Strategy
 
 **Last Updated:** 2025-12-19
-**Oneiric Version:** 0.2.3 (Audit: 95/100 at v0.2.0)
+**Oneiric Version:** 0.3.3 (Audit: 95/100 at v0.2.0)
 **ACB Version:** 0.31.10 (Production: 92/100)
 
 ______________________________________________________________________
@@ -16,7 +16,7 @@ ______________________________________________________________________
 
 | Aspect | Oneiric | ACB | Winner |
 |--------|---------|-----|--------|
-| **Maturity** | 0.2.3 (95/100 audit) | 0.31.10 (92/100) | Oneiric (quality) |
+| **Maturity** | 0.3.3 (95/100 audit at v0.2.0) | 0.31.10 (92/100) | Oneiric (quality) |
 | **Production Ready** | ✅ Yes (controlled deployment) | ✅ Yes (battle-tested) | Both |
 | **Test Coverage** | 526 tests, 83% | 2,206 tests, extensive | ACB (quantity) |
 | **Adapter System** | 30+ modern implementations | 60+ implementations | Oneiric (quality) |
@@ -32,10 +32,10 @@ ______________________________________________________________________
 | Metric | Oneiric | ACB |
 |--------|---------|-----|
 | **Lines of Code** | ~17,000 (production) | ~50-70,000 (production) |
-| **Python Version** | 3.14+ (async-first) | 3.13+ |
+| **Python Version** | 3.13+ (3.14 planned) | 3.13+ |
 | **Dependencies** | 6 core (minimal) | 50+ core + 400+ optional |
 | **Test Files** | 526 tests (96.3% pass rate) | 2,206 tests (comprehensive) |
-| **Version** | 0.2.3 | 0.31.10 (31 releases) |
+| **Version** | 0.3.3 | 0.31.10 (31 releases) |
 | **Audit Score** | 95/100 | 92/100 |
 
 ______________________________________________________________________
@@ -105,7 +105,7 @@ await lifecycle.swap("adapter", "cache", provider="memcached")
 - ✅ Metadata for explainability
 - ✅ Structured logging (structlog)
 - ✅ OpenTelemetry integration
-- ✅ Async-first (Python 3.14)
+- ✅ Async-first (Python 3.13, 3.14 planned)
 
 **Example: PostgreSQL Adapter (135 lines vs ACB's ~180 lines)**
 
@@ -289,7 +289,7 @@ payment_service = await resolver.resolve("service", "payment")
 
 **Oneiric:**
 
-- ⚠️ v0.2.3 (recent release; audit in v0.2.0)
+- ⚠️ v0.3.3 (recent release; audit in v0.2.0)
 - ⚠️ Zero public production usage
 - ⚠️ 526 tests (comprehensive but new)
 - ⚠️ No community validation yet
@@ -534,7 +534,6 @@ ______________________________________________________________________
 
 **Runtime Target:** Cloud Run / serverless-first
 
-- Optimize builds for Cloud Run + buildpacks (no Docker by default, ship Procfile)
 - Keep Oneiric lean for cold starts; treat hot-swapping/watchers as optional
 - Document per-function adapter bundles for FastBlocks-style deployments
 

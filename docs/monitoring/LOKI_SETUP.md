@@ -45,21 +45,7 @@ ______________________________________________________________________
 
 ## Quick Start
 
-### Docker Compose (Recommended)
-
-Already configured in `docker-compose.yml`:
-
-```bash
-# Start full stack
-docker-compose up -d
-
-# Access Grafana Explore
-open http://localhost:3000/explore
-# Select "Loki" datasource
-
-# View recent logs
-{app="oneiric"} | json
-```
+Use a managed Loki + Promtail deployment (or your existing logging stack) and apply the config snippets under `deployment/monitoring/`. Docker/Kubernetes walkthroughs have been removed; rely on your platform's provisioning flow.
 
 ### Verify Logs Flowing
 
@@ -79,44 +65,9 @@ ______________________________________________________________________
 
 ## Installation
 
-### Option 1: Docker Compose (Automatic)
+Provision Loki and Promtail using your platform defaults and mount `deployment/monitoring/loki/loki-config.yml` plus `deployment/monitoring/loki/promtail-config.yml` as needed.
 
-Loki + Promtail already configured:
-
-```yaml
-services:
-  loki:
-    image: grafana/loki:2.9.0
-    ports:
-      - "3100:3100"
-    volumes:
-      - ./deployment/monitoring/loki:/etc/loki
-      - loki-data:/loki
-    command: -config.file=/etc/loki/loki-config.yml
-
-  promtail:
-    image: grafana/promtail:2.9.0
-    volumes:
-      - ./deployment/monitoring/loki:/etc/promtail
-      - /var/log:/var/log:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-    command: -config.file=/etc/promtail/promtail-config.yml
-    depends_on:
-      - loki
-```
-
-### Option 2: Kubernetes (Helm)
-
-```bash
-# Install Loki stack
-helm repo add grafana https://grafana.github.io/helm-charts
-helm install loki grafana/loki-stack -n monitoring \
-  --set promtail.enabled=true \
-  --set loki.persistence.enabled=true \
-  --set loki.persistence.size=50Gi
-```
-
-### Option 3: Binary Installation
+### Binary Installation
 
 ```bash
 # Download Loki
@@ -277,20 +228,15 @@ positions:
 
 # Scrape configurations
 scrape_configs:
-  # Oneiric Docker container logs
   - job_name: oneiric
-    docker_sd_configs:
-      - host: unix:///var/run/docker.sock
         refresh_interval: 30s
 
     relabel_configs:
       # Only scrape Oneiric container
-      - source_labels: ['__meta_docker_container_name']
         regex: '/(oneiric|oneiric-.*)'
         action: keep
 
       # Add container name label
-      - source_labels: ['__meta_docker_container_name']
         regex: '/(.*)'
         target_label: 'container'
 
@@ -540,7 +486,6 @@ ______________________________________________________________________
 
 ### Add Loki Datasource
 
-**Already configured in docker-compose.yml:**
 
 ```yaml
 # Automatically provisioned
@@ -629,27 +574,21 @@ curl http://localhost:3100/ready
 curl http://localhost:9080/targets
 
 # View Promtail logs
-docker logs promtail
 ```
 
 **Solutions:**
 
 1. **Promtail not scraping:**
 
-   - Verify Docker socket mounted: `/var/run/docker.sock`
    - Check container label filters in `promtail-config.yml`
-   - Restart Promtail: `docker restart promtail`
 
 1. **Loki not receiving:**
 
-   - Check network connectivity: `docker network inspect`
    - Verify Loki URL in Promtail config
-   - Check Loki logs: `docker logs loki`
 
 1. **Oneiric not logging:**
 
    - Verify Oneiric is running
-   - Check log output: `docker logs oneiric`
    - Ensure structlog configured correctly
 
 ______________________________________________________________________

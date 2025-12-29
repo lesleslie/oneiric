@@ -23,6 +23,8 @@ uv run python -m oneiric.cli \
 - Add `--inspect-json` to capture a machine-readable payload for the docs repo.
 - The output includes entry nodes, queue metadata, and retry policy – mirror this in the parity issue.
 
+Use the `--print-dag --inspect-json` output to capture topology/metadata without executing nodes, and attach that JSON to parity issues.
+
 ```bash
 # Inspect the DAG plan without executing it (topology + metadata)
 uv run python -m oneiric.cli workflow plan \
@@ -32,13 +34,6 @@ uv run python -m oneiric.cli workflow plan \
 ```
 
 Attach the `workflow plan` JSON alongside the `--print-dag` output so reviewers see the same topology the executor will run (nodes, dependencies, queue hints, retry policies).
-
-Key fields to call out in the plan output:
-
-- `nodes` – ordered list with `depends_on`, `retry_policy`, `checkpoint` hints, and per-node payload overrides.
-- `scheduler` – queue category/provider fallback used when manifests do not specify a provider.
-- `notifications` – adapter/channel hints inherited from workflow metadata.
-- `capabilities` – references to the manifest entries used by each node (adapter/task keys, versions).
 
 ## 2. Inspect Event Handlers
 
@@ -70,6 +65,7 @@ uv run python -m oneiric.cli workflow run \
   --workflow fastblocks.workflows.fulfillment \
   --context '{"order_id":"demo-123"}' \
   --workflow-checkpoints \
+  --resume-checkpoint \
   --json
 
 # Enqueue the workflow via the configured queue adapter (Cloud Tasks)
@@ -87,7 +83,7 @@ Artifacts to capture:
 - `runtime_telemetry.json` after the run to show DAG node telemetry.
 - Optional: Cloud Tasks delivery logs hitting `/tasks/workflow` when using the enqueue command.
 
-If a node fails, rerun `workflow run --resume-checkpoint` (or re-run with `--workflow-checkpoints` so the executor resumes from the stored checkpoint) and attach both transcripts to the parity issue.
+If a node fails, rerun `workflow run --resume-checkpoint` (or re-run with `--workflow-checkpoints`) and attach both transcripts to the parity issue.
 
 ## 5. ChatOps Output
 

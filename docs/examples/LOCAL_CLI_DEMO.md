@@ -20,7 +20,21 @@ uv run python -m oneiric.cli orchestrate --refresh-interval 60 --demo
 
 This command boots the runtime orchestrator, registers demo providers, and refreshes the bundled manifest every minute. Watch the log output for `remote-sync-complete` and `remote-refresh-circuit-open` events to verify retry/circuit-breaker behavior.
 
-## 3. Inspect runtime health and activity
+## 3. Event Log Suppression (New Feature)
+
+The CLI now supports event log suppression to reduce console noise. Use the `--suppress-events` flag to filter out Oneiric event logs:
+
+```bash
+# Normal mode - shows all event logs
+uv run python -m oneiric.cli --demo list --domain adapter
+
+# Suppress mode - filters out event logs
+uv run python -m oneiric.cli --demo --suppress-events list --domain adapter
+```
+
+This is particularly useful when integrating with tools like Crackerjack where event logs may be redundant or cause console clutter.
+
+## 4. Inspect runtime health and activity
 
 In a second shell, run the CLI against the same config to view health snapshots and activity state:
 
@@ -41,9 +55,6 @@ Example transcript (captured after running the short orchestrator bootstrap help
 ```bash
 ONEIRIC_CONFIG=docs/examples/demo_settings.toml \
 uv run python -m oneiric.cli --demo activity --json
-```
-
-```json
 {
   "domains": {
     "adapter": {
@@ -55,14 +66,8 @@ uv run python -m oneiric.cli --demo activity --json
   },
   "totals": {"paused": 0, "draining": 0, "note_only": 1}
 }
-```
-
-```bash
 ONEIRIC_CONFIG=docs/examples/demo_settings.toml \
 uv run python -m oneiric.cli --demo health --probe --json
-```
-
-```json
 {
   "runtime": {
     "watchers_running": false,
@@ -197,7 +202,6 @@ Switch `dry_run` off when deploying to Cloud Run and provide the production `acc
 
 ## 7. MongoDB NoSQL adapter (local dev)
 
-Install the optional extra (`pip install 'oneiric[nosql-mongo]'`) and run a local MongoDB instance (Docker: `docker run -p 27017:27017 mongo:7`). The demo settings now select the Mongo adapter (`nosql = "mongodb"`) and point at `mongodb://localhost:27017`.
 
 ```bash
 ONEIRIC_CONFIG=~/.oneiric.toml uv run python - <<'PY'
@@ -252,14 +256,13 @@ The sample settings already include a LocalStack-friendly block under `[adapters
 
 ## 8. Neo4j graph adapter (knowledge graph workflows)
 
-Install the optional extra and start a local Neo4j container:
+Install the optional extra and start a local Neo4j instance:
 
 ```bash
 pip install 'oneiric[graph-neo4j]'
-docker run --rm -p 7687:7687 -e NEO4J_AUTH=neo4j/test neo4j:5
 ```
 
-`docs/examples/demo_settings.toml` now selects the Neo4j adapter (`graph = "neo4j"`) and includes a provider block matching the container credentials. The bridge helper mirrors the usage documented in `docs/analysis/GRAPH_ADAPTERS.md`:
+`docs/examples/demo_settings.toml` now selects the Neo4j adapter (`graph = "neo4j"`) and includes a provider block matching the local credentials. The bridge helper mirrors the usage documented in `docs/analysis/GRAPH_ADAPTERS.md`:
 
 ```bash
 ONEIRIC_CONFIG=~/.oneiric.toml uv run python - <<'PY'
@@ -425,7 +428,6 @@ Point `base_url` at your artifact endpoint (or presigned domain) and the adapter
 
 ## 10. Streaming queues (Kafka + RabbitMQ)
 
-Install the `queue-streaming` extra (`pip install 'oneiric[queue-streaming]'`) and run local brokers (e.g., Redpanda/Confluent for Kafka, the official RabbitMQ Docker image for AMQP). Select the provider via the settings:
 
 ```toml
 [adapters.selections]
@@ -617,7 +619,6 @@ asyncio.run(main())
 PY
 ```
 
-The Pinecone adapter auto-creates the index if needed; the Qdrant adapter assumes a local docker container (`docker run -p 6333:6333 qdrant/qdrant`) or a managed endpoint reachable from your machine.
 
 ## 15. Embedding adapters (OpenAI + local notes)
 
@@ -629,7 +630,7 @@ pip install 'oneiric[embedding]'          # Alias for the hosted embedding stack
 pip install 'oneiric[ai]'                 # Embedding + LLM extras
 ```
 
-> **Local adapters:** Sentence Transformers + ONNX wheels are not yet published for Python 3.14 on macOS x86_64, so their extras stay disabled. Follow `docs/ai/ONNX_GUIDE.md` (uses `uvx --python 3.13 --with onnxruntime ...`) if you need those adapters in a side environment until upstream wheels land.
+> **Local adapters:** Sentence Transformers + ONNX wheels are not yet published for Python 3.14 (planned) on macOS x86_64, so their extras stay disabled during upgrade testing. Follow `docs/ai/ONNX_GUIDE.md` (uses `uvx --python 3.13 --with onnxruntime ...`) if you need those adapters in a side environment until upstream wheels land.
 
 Populate the relevant provider settings in `demo_settings.toml` (OpenAI shares the `[adapters.provider_settings.openai]` block with the LLM adapter; Sentence Transformers/ONNX have settings blocks ready for future support), then select a provider:
 

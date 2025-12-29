@@ -1,4 +1,4 @@
-# New Architecture Specification (Oneiric, Python 3.14 Baseline)
+# New Architecture Specification (Oneiric, Python 3.13 Baseline)
 
 Goal: build Oneiric with unified resolution, lifecycle, observability, and plugin
 support, reusing existing ACB adapters and actions where useful. Domains (adapters,

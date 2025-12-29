@@ -27,7 +27,6 @@ This guide configures Prometheus to monitor Oneiric's resolution layer, lifecycl
 - **Scrape Configuration:** Oneiric metrics endpoint (`:8000/metrics`)
 - **Recording Rules:** Pre-aggregated metrics for dashboards
 - **Alert Rules:** Critical and warning alerts for operational issues
-- **Service Discovery:** Kubernetes/Docker/systemd integration
 
 ### Key Metrics Categories
 
@@ -43,29 +42,7 @@ ______________________________________________________________________
 
 ## Quick Start
 
-### Docker Compose
-
-```bash
-# Start Oneiric + Prometheus + Grafana
-cd /path/to/oneiric
-docker-compose up -d
-
-# Verify Prometheus is scraping Oneiric
-curl http://localhost:9090/api/v1/targets
-
-# View metrics
-curl http://localhost:8000/metrics
-```
-
-### Kubernetes
-
-```bash
-# Deploy ServiceMonitor (Prometheus Operator)
-kubectl apply -f k8s/prometheus-servicemonitor.yaml
-
-# Verify scraping
-kubectl get servicemonitor oneiric -n oneiric
-```
+Use a managed Prometheus deployment (or your existing metrics stack) and load the configuration from `deployment/monitoring/prometheus/`. Docker/Kubernetes walkthroughs have been removed.
 
 ### Standalone
 
@@ -78,38 +55,9 @@ ______________________________________________________________________
 
 ## Installation
 
-### Option 1: Docker Compose (Recommended)
+Provision Prometheus using your platform defaults and mount `deployment/monitoring/prometheus/prometheus.yml` plus the alert/recording rules directories as appropriate.
 
-Already configured in `docker-compose.yml`:
-
-```yaml
-services:
-  prometheus:
-    image: prom/prometheus:v2.48.0
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./deployment/monitoring/prometheus:/etc/prometheus
-      - prometheus-data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-```
-
-### Option 2: Kubernetes (Prometheus Operator)
-
-```bash
-# Install Prometheus Operator
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm install prometheus prometheus-community/kube-prometheus-stack -n monitoring
-
-# Deploy Oneiric ServiceMonitor
-kubectl apply -f k8s/prometheus-servicemonitor.yaml
-```
-
-### Option 3: Binary Installation
+### Binary Installation
 
 ```bash
 # Download Prometheus
@@ -173,47 +121,11 @@ scrape_configs:
   - job_name: 'node'
     static_configs:
       - targets: ['node-exporter:9100']
-```
-
-### Kubernetes ServiceMonitor
-
-**File:** `k8s/prometheus-servicemonitor.yaml`
-
-```yaml
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: oneiric
-  namespace: oneiric
-  labels:
-    app: oneiric
-    release: prometheus
-spec:
-  selector:
-    matchLabels:
-      app: oneiric
-  endpoints:
-    - port: http
-      path: /metrics
-      interval: 10s
-      scrapeTimeout: 5s
-```
-
-### Docker Service Discovery
-
-For Docker Swarm or dynamic containers:
-
-```yaml
 scrape_configs:
-  - job_name: 'oneiric-docker'
-    docker_sd_configs:
-      - host: unix:///var/run/docker.sock
         refresh_interval: 30s
     relabel_configs:
-      - source_labels: [__meta_docker_container_name]
         regex: '/(.*)'
         target_label: container
-      - source_labels: [__meta_docker_container_label_com_docker_compose_service]
         target_label: service
 ```
 
@@ -783,7 +695,6 @@ curl http://localhost:8000/metrics
 curl http://localhost:9090/api/v1/targets
 
 # Check Prometheus logs
-docker logs prometheus
 # OR
 journalctl -u prometheus -f
 ```
@@ -792,15 +703,12 @@ journalctl -u prometheus -f
 
 1. **Oneiric not exposing metrics:**
 
-   - Check Oneiric is running: `docker ps` or `systemctl status oneiric`
    - Verify port 8000 is accessible
    - Check firewall rules
 
 1. **Prometheus not scraping:**
 
    - Verify `prometheus.yml` configuration
-   - Check network connectivity: `docker network inspect`
-   - Restart Prometheus: `docker-compose restart prometheus`
 
 1. **Wrong service name/port:**
 

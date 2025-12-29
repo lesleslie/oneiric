@@ -27,8 +27,6 @@ pip install 'oneiric[graph-duckdb-pgq]'
 
 Each adapter guards its import and raises a descriptive `LifecycleError` when the driver is missing.
 
-> **Local Neo4j:** the official `neo4j` image exposes Bolt on `7687`. Start it with `docker run --rm -p 7687:7687 -e NEO4J_AUTH=neo4j/test neo4j:5`.
-> **Local ArangoDB:** `docker run --rm -p 8529:8529 -e ARANGO_ROOT_PASSWORD=test arangodb:3.11`.
 > **Local DuckDB PGQ:** DuckDB runs in-process; create a writable directory and the adapter will bootstrap the PGQ extension automatically.
 
 ______________________________________________________________________
