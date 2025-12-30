@@ -208,18 +208,35 @@ def _create_http_handler(sink: LoggingSinkConfig) -> logging.Handler:
     )
 
 
+# Global variable to store the event suppression state
+_SUPPRESS_EVENTS = False
+
+
 def _filter_event_logs(logger, method_name, event_dict):
     """Filter event logs based on global suppression flag."""
     global _SUPPRESS_EVENTS
-    if _SUPPRESS_EVENTS and event_dict.get("event"):
-        return {}  # Suppress event logs
+    # Only suppress logs that have an 'event' field (like 'swap-complete', 'domain-ready')
+    if _SUPPRESS_EVENTS and "event" in event_dict:
+        # Return empty dict to suppress the event log
+        return {}
     return event_dict
 
 
-def configure_logging(config: LoggingConfig | None = None) -> None:
+def configure_logging(config: LoggingConfig | None = None, suppress_events: bool | None = None) -> None:
     """Configure structlog and the stdlib logging bridge."""
 
     cfg = config or LoggingConfig()
+
+    # Determine if events should be suppressed based on explicit parameter,
+    # global flag, or debug setting from config
+    global _SUPPRESS_EVENTS
+    # Default to not suppressing events unless explicitly specified
+    should_suppress_events = False
+    if suppress_events is not None:
+        should_suppress_events = suppress_events
+
+    # Update the global suppression flag for the filter function
+    _SUPPRESS_EVENTS = should_suppress_events
 
     timestamper = structlog.processors.TimeStamper(fmt=cfg.timestamper_format)
     processor_chain: list[Any] = [
@@ -236,7 +253,7 @@ def configure_logging(config: LoggingConfig | None = None) -> None:
     ]
 
     # Add event filter if suppression is enabled
-    if _SUPPRESS_EVENTS:
+    if should_suppress_events:
         processor_chain.insert(0, _filter_event_logs)
 
     if cfg.include_trace_context:

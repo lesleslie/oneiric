@@ -37,7 +37,9 @@ class DemoAdapter:
 async def _async_main() -> None:
     settings = load_settings()
     settings = apply_profile_with_fallback(settings, os.getenv("ONEIRIC_PROFILE"))
-    configure_logging(settings.logging)
+    # Suppress events unless debug mode is enabled
+    suppress_events = not settings.app.debug
+    configure_logging(settings.logging, suppress_events=suppress_events)
     resolver = Resolver(settings=resolver_settings_from_config(settings))
     register_builtin_adapters(resolver)
     plugins.register_entrypoint_plugins(resolver, settings.plugins)

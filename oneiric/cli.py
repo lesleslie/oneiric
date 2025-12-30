@@ -543,7 +543,9 @@ def _initialize_state(
     settings = load_settings(config_path)
     env_profile = os.getenv("ONEIRIC_PROFILE")
     settings = apply_profile_with_fallback(settings, profile or env_profile)
-    configure_logging(settings.logging)
+    # Suppress events unless debug mode is enabled
+    suppress_events = not settings.app.debug
+    configure_logging(settings.logging, suppress_events=suppress_events)
     resolver = Resolver(settings=resolver_settings_from_config(settings))
     _import_modules(imports)
     plugin_report = plugins.register_entrypoint_plugins(resolver, settings.plugins)
@@ -1900,6 +1902,9 @@ def cli_root(
     demo: bool = typer.Option(
         False, "--demo", help="Register built-in demo providers."
     ),
+    debug: bool = typer.Option(
+        False, "--debug", help="Enable debug mode which shows detailed event logs."
+    ),
     suppress_events: bool = typer.Option(
         False, "--suppress-events", help="Suppress Oneiric event logs from console output."
     ),
@@ -1912,7 +1917,14 @@ def cli_root(
     if suppress_events:
         from oneiric.core.logging import configure_early_logging
         configure_early_logging(suppress_events=True)
-    
+
+    # Set debug flag in environment to be picked up by configuration
+    if debug:
+        os.environ["ONEIRIC_APP__DEBUG"] = "true"
+    else:
+        # Remove the environment variable if it was set previously
+        os.environ.pop("ONEIRIC_APP__DEBUG", None)
+
     ctx.obj = _initialize_state(config, imports or [], demo, profile)
 
 
