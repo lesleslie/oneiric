@@ -91,7 +91,7 @@ class RemoteManifestEntry(BaseModel):
 
     @field_validator("capabilities", mode="before")
     @classmethod
-    def _normalize_capabilities(
+    def _normalize_capabilities(  # noqa: C901
         cls, value: Iterable[CapabilityDescriptor | str | dict[str, Any]] | None
     ) -> list[CapabilityDescriptor]:
         """Allow legacy string lists + dict shorthand for capabilities."""
@@ -119,7 +119,7 @@ class RemoteManifestEntry(BaseModel):
     def capability_names(self) -> list[str]:
         return [cap.name for cap in self.capabilities]
 
-    def capability_payloads(self) -> list[dict[str, Any]]:
+    def capability_payloads(self) -> list[dict[str, Any]]:  # noqa: C901
         """Structured capability descriptors (suitable for metadata export)."""
 
         payloads: list[dict[str, Any]] = []

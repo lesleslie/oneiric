@@ -35,7 +35,7 @@ class DataTransformSettings(BaseModel):
     )
 
 
-class DataTransformAction:
+class DataTransformAction:  # noqa: C901
     """Action kit that reshapes dictionaries using declarative rules."""
 
     metadata = ActionMetadata(

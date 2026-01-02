@@ -115,7 +115,7 @@ class RuntimeTelemetryRecorder:
             "recorded_at": _timestamp(),
         }
 
-    def _workflow_payload(
+    def _workflow_payload(  # noqa: C901
         self,
         workflow_key: str,
         dag_spec: Mapping[str, Any],

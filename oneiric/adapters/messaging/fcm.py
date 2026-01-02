@@ -113,10 +113,10 @@ class FCMPushAdapter:
             ) from exc
         self._firebase_admin = firebase_admin
         app_name = self._settings.app_name
-        try:
+        from contextlib import suppress
+
+        with suppress(ValueError):
             return firebase_admin.get_app(app_name)
-        except ValueError:
-            pass
         if self._settings.credentials_file:
             cred = credentials.Certificate(str(self._settings.credentials_file))
         else:

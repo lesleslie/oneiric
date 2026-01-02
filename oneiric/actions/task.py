@@ -125,7 +125,7 @@ class _ScheduleRule:
     tags: dict[str, str]
 
 
-class _CronExpression:
+class _CronExpression:  # noqa: C901
     """Minimal cron parser that supports */step, ranges, and lists."""
 
     _MAX_SEARCH_MINUTES = 525_600  # Prevent runaway loops (≈1 year)

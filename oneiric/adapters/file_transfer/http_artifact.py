@@ -61,8 +61,8 @@ class HTTPArtifactAdapter:
                 timeout=self._settings.timeout,
                 verify=self._settings.verify_tls,
                 base_url=str(self._settings.base_url)
-                if self._settings.base_url
-                else None,
+                if self._settings.base_url is not None
+                else httpx.URL(""),
             )
             self._owns_client = True
         self._logger.info("http-artifact-init")
@@ -104,9 +104,10 @@ class HTTPArtifactAdapter:
     async def download_to_file(
         self, path_or_url: str, destination: Any, *, sha256: str | None = None
     ) -> None:
+        from pathlib import Path
+
         data = await self.download(path_or_url, sha256=sha256)
-        with open(destination, "wb") as handle:
-            handle.write(data)
+        Path(destination).write_bytes(data)
 
     def _ensure_client(self) -> httpx.AsyncClient:
         if not self._client:

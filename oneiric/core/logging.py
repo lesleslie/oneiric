@@ -113,7 +113,7 @@ def _add_service_metadata(
     cfg: LoggingConfig,
 ) -> Callable[[Any, str, dict[str, Any]], dict[str, Any]]:
     def _processor(
-        logger: Any, method_name: str, event_dict: dict[str, Any]
+        _logger: Any, _method_name: str, event_dict: dict[str, Any]
     ) -> dict[str, Any]:
         event_dict.setdefault("service.name", cfg.service_name)
         if cfg.environment:
@@ -222,7 +222,9 @@ def _filter_event_logs(logger, method_name, event_dict):
     return event_dict
 
 
-def configure_logging(config: LoggingConfig | None = None, suppress_events: bool | None = None) -> None:
+def configure_logging(
+    config: LoggingConfig | None = None, suppress_events: bool | None = None
+) -> None:
     """Configure structlog and the stdlib logging bridge."""
 
     cfg = config or LoggingConfig()
@@ -319,10 +321,10 @@ def scoped_log_context(**values: Any) -> Any:
 def configure_early_logging(suppress_events: bool = False) -> None:
     """
     Configure Oneiric logging early to control event output.
-    
+
     This should be called as early as possible in the initialization process
     to ensure it takes effect before any logging occurs.
-    
+
     Args:
         suppress_events: If True, suppress event logs to console
     """

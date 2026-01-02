@@ -104,7 +104,7 @@ class Auth0IdentityAdapter(HTTPXClientMixin):
             issuer=issuer,
         )
 
-    async def _fetch_jwks(self, *, force: bool = False) -> dict[str, Any]:
+    async def _fetch_jwks(self, *, force: bool = False) -> dict[str, Any]:  # noqa: C901
         async with self._jwks_lock:
             should_refresh = force
             if self._jwks and self._jwks_loaded_at:

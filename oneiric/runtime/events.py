@@ -73,7 +73,7 @@ class EventFilter:
         return True
 
 
-def parse_event_filters(
+def parse_event_filters(  # noqa: C901
     entries: Iterable[Mapping[str, Any]] | None,
 ) -> tuple[EventFilter, ...]:
     """Convert raw metadata entries into EventFilter structs."""
@@ -178,7 +178,7 @@ class EventDispatcher:
 
         return results
 
-    async def _run_handler(
+    async def _run_handler(  # noqa: C901
         self,
         handler: EventHandler,
         envelope: EventEnvelope,

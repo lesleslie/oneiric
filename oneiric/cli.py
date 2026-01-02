@@ -60,6 +60,7 @@ from oneiric.runtime.health import load_runtime_health
 from oneiric.runtime.load_testing import LoadTestProfile, LoadTestResult, run_load_test
 from oneiric.runtime.notifications import NotificationRoute, NotificationRouter
 from oneiric.runtime.orchestrator import RuntimeOrchestrator
+from oneiric.runtime.process_manager import ProcessManager
 from oneiric.runtime.scheduler import SchedulerHTTPServer, WorkflowTaskProcessor
 from oneiric.runtime.telemetry import load_runtime_telemetry
 
@@ -181,7 +182,27 @@ def _default_notification_adapter_key(settings: OneiricSettings) -> str | None:
     return None
 
 
-def _derive_notification_route(
+def _extract_notification_metadata(candidate: Candidate) -> dict[str, Any] | None:
+    """Extract notification metadata from workflow candidate."""
+    metadata = candidate.metadata.get("notifications")
+    if not isinstance(metadata, Mapping):
+        return None
+
+    return {
+        "adapter_provider": metadata.get("adapter_provider"),
+        "adapter": metadata.get("adapter") or metadata.get("adapter_key"),
+        "provider": metadata.get("provider"),
+        "channel": metadata.get("channel"),
+        "target": metadata.get("target"),
+        "include_context": bool(metadata.get("include_context", True)),
+        "title_template": metadata.get("title_template") or metadata.get("title"),
+        "extra_payload": metadata.get("extra_payload")
+        if isinstance(metadata.get("extra_payload"), dict)
+        else None,
+    }
+
+
+def _derive_notification_route(  # noqa: C901
     state: CLIState,
     *,
     workflow_key: str | None,
@@ -209,21 +230,17 @@ def _derive_notification_route(
             raise typer.BadParameter(
                 f"Workflow '{workflow_key}' is not registered; cannot derive notification metadata."
             )
-        metadata = candidate.metadata.get("notifications")
-        if isinstance(metadata, Mapping):
-            adapter_key = adapter_key or metadata.get("adapter_provider")
+        metadata = _extract_notification_metadata(candidate)
+        if metadata:
             adapter_key = (
-                adapter_key or metadata.get("adapter") or metadata.get("adapter_key")
+                adapter_key or metadata["adapter_provider"] or metadata["adapter"]
             )
-            adapter_provider = metadata.get("provider")
-            channel = metadata.get("channel")
-            target_hint = metadata.get("target")
-            include_context = bool(metadata.get("include_context", True))
-            title_template = metadata.get("title_template") or metadata.get("title")
-            raw_payload = metadata.get("extra_payload")
-            extra_payload = raw_payload if isinstance(raw_payload, dict) else None
-        else:
-            channel = None
+            adapter_provider = metadata["provider"]
+            channel = metadata["channel"]
+            target_hint = metadata["target"]
+            include_context = metadata["include_context"]
+            title_template = metadata["title_template"]
+            extra_payload = metadata["extra_payload"]
 
     target = notify_target or target_hint or channel
     if adapter_key is None and not force_send:
@@ -806,7 +823,7 @@ async def _handle_remote_sync(
             )
 
 
-async def _handle_orchestrate(
+async def _handle_orchestrate(  # noqa: C901
     settings: OneiricSettings,
     resolver: Resolver,
     lifecycle: LifecycleManager,
@@ -971,7 +988,7 @@ def _build_remote_metrics(telemetry) -> str:
     return " ".join(metric_parts)
 
 
-def _workflow_inspector_summary(
+def _workflow_inspector_summary(  # noqa: C901
     bridge: WorkflowBridge,
     filters: Sequence[str],
     last_run: dict[str, Any] | None,
@@ -1003,7 +1020,7 @@ def _workflow_inspector_summary(
     return {"summary": summary, "missing": missing}
 
 
-def _workflow_target_keys(
+def _workflow_target_keys(  # noqa: C901
     filters: Sequence[str], available: Iterable[str]
 ) -> list[str]:
     include_all = not filters
@@ -1025,7 +1042,39 @@ def _workflow_target_keys(
     return targets
 
 
-def _build_workflow_summary(
+def _parse_dependency_list(depends: Any) -> list[str]:
+    """Parse dependency specification into a normalized list."""
+    if isinstance(depends, Sequence) and not isinstance(depends, (str, bytes)):
+        return list(depends)
+    elif depends:
+        return [depends]
+    return []
+
+
+def _build_workflow_node(entry: Mapping[str, Any]) -> dict[str, Any] | None:
+    """Build a workflow node entry from raw spec, or None if invalid."""
+    node_id = entry.get("id") or entry.get("key")
+    if not node_id:
+        return None
+
+    depends_list = _parse_dependency_list(entry.get("depends_on") or [])
+
+    node_entry: dict[str, Any] = {
+        "id": str(node_id),
+        "task": entry.get("task"),
+        "depends_on": depends_list,
+    }
+
+    # Add optional fields if present
+    for opt_field in ("payload", "checkpoint", "retry_policy"):
+        value = entry.get(opt_field)
+        if value:
+            node_entry[opt_field] = value
+
+    return node_entry
+
+
+def _build_workflow_summary(  # noqa: C901
     workflow_key: str,
     dag_spec: dict[str, Any],
     last_run: dict[str, Any] | None,
@@ -1034,34 +1083,16 @@ def _build_workflow_summary(
     nodes_raw = dag_spec.get("nodes") or dag_spec.get("tasks") or []
     nodes: list[dict[str, Any]] = []
     edges = 0
+
     if isinstance(nodes_raw, Sequence):
         for entry in nodes_raw:
             if not isinstance(entry, Mapping):
                 continue
-            node_id = entry.get("id") or entry.get("key")
-            if not node_id:
-                continue
-            depends = entry.get("depends_on") or []
-            if isinstance(depends, Sequence) and not isinstance(depends, (str, bytes)):
-                depends_list = list(depends)
-            elif depends:
-                depends_list = [depends]
-            else:
-                depends_list = []
-            edges += len(depends_list)
-            node_entry: dict[str, Any] = {
-                "id": str(node_id),
-                "task": entry.get("task"),
-                "depends_on": depends_list,
-            }
-            if "payload" in entry:
-                node_entry["payload"] = entry.get("payload")
-            if "checkpoint" in entry:
-                node_entry["checkpoint"] = entry.get("checkpoint")
-            retry_policy = entry.get("retry_policy")
-            if retry_policy:
-                node_entry["retry_policy"] = retry_policy
-            nodes.append(node_entry)
+            node_entry = _build_workflow_node(entry)
+            if node_entry:
+                nodes.append(node_entry)
+                edges += len(node_entry["depends_on"])
+
     entry_nodes = [node["id"] for node in nodes if not node["depends_on"]]
     summary: dict[str, Any] = {
         "node_count": len(nodes),
@@ -1098,16 +1129,38 @@ def _emit_inspector_payload(payload: dict[str, Any], json_output: bool) -> None:
         _print_event_inspector(events)
 
 
-def _workflow_plan_payload(
+def _enrich_workflow_plan(plan: dict[str, Any], candidate: Candidate | None) -> None:
+    """Enrich workflow plan with scheduler and notifications metadata."""
+    if not candidate:
+        return
+
+    scheduler_cfg = candidate.metadata.get("scheduler")
+    scheduler: dict[str, Any] = (
+        dict(scheduler_cfg) if isinstance(scheduler_cfg, Mapping) else {}
+    )
+    queue_category = plan.get("queue_category")
+    if queue_category and "queue_category" not in scheduler:
+        scheduler["queue_category"] = queue_category
+    if scheduler:
+        plan["scheduler"] = scheduler
+
+    notifications = candidate.metadata.get("notifications")
+    if isinstance(notifications, Mapping):
+        plan["notifications"] = dict(notifications)
+
+
+def _build_workflow_plans(
     resolver: Resolver,
     bridge: WorkflowBridge,
     filters: Sequence[str],
-) -> dict[str, Any]:
+) -> tuple[dict[str, Any], list[str]]:
+    """Build workflow plans for filtered or all workflows."""
     specs = bridge.dag_specs()
     targets = _workflow_target_keys(filters, specs.keys())
     plans: dict[str, Any] = {}
     missing: list[str] = []
     default_queue = getattr(bridge, "_queue_category", None)
+
     for key in targets:
         dag_spec = specs.get(key)
         if not dag_spec:
@@ -1115,138 +1168,199 @@ def _workflow_plan_payload(
             continue
         plan = _build_workflow_summary(key, dag_spec, None, default_queue)
         candidate = resolver.resolve("workflow", key)
-        if candidate:
-            scheduler_cfg = candidate.metadata.get("scheduler")
-            scheduler: dict[str, Any] = (
-                dict(scheduler_cfg)
-                if isinstance(scheduler_cfg, Mapping)
-                else {}
-            )
-            queue_category = plan.get("queue_category")
-            if queue_category and "queue_category" not in scheduler:
-                scheduler["queue_category"] = queue_category
-            if scheduler:
-                plan["scheduler"] = scheduler
-            notifications = candidate.metadata.get("notifications")
-            if isinstance(notifications, Mapping):
-                plan["notifications"] = dict(notifications)
+        _enrich_workflow_plan(plan, candidate)
         plans[key] = plan
+
     if not plans and not missing:
         for key, dag_spec in specs.items():
             plans[key] = _build_workflow_summary(key, dag_spec, None, default_queue)
+
+    return plans, missing
+
+
+def _workflow_plan_payload(
+    resolver: Resolver,
+    bridge: WorkflowBridge,
+    filters: Sequence[str],
+) -> dict[str, Any]:
+    """Generate workflow plan payload."""
+    plans, missing = _build_workflow_plans(resolver, bridge, filters)
     return {"workflows": plans, "missing": missing}
 
 
+def _format_workflow_node(node: dict[str, Any]) -> str:
+    """Format a single workflow node entry."""
+    depends = node.get("depends_on") or []
+    depends_text = ", ".join(depends) if depends else "root"
+    retry_policy = node.get("retry_policy")
+    retry_text = f" retry={retry_policy}" if retry_policy else ""
+    payload = node.get("payload")
+    payload_text = f" payload={payload}" if payload is not None else ""
+    checkpoint = node.get("checkpoint")
+    checkpoint_text = f" checkpoint={checkpoint}" if checkpoint is not None else ""
+    return f"    · {node.get('id')}: task={node.get('task')} depends_on={depends_text}{retry_text}{payload_text}{checkpoint_text}"
+
+
+def _print_workflow_metadata(record: dict[str, Any]) -> None:
+    """Print workflow scheduler and notifications metadata."""
+    scheduler = record.get("scheduler")
+    if scheduler:
+        print(f"    scheduler={scheduler}")
+    notifications = record.get("notifications")
+    if notifications:
+        print(f"    notifications={notifications}")
+
+
+def _print_workflow_nodes(nodes: list[dict[str, Any]]) -> None:
+    """Print all workflow nodes."""
+    for node in nodes:
+        print(_format_workflow_node(node))
+
+
+def _print_single_workflow_plan(workflow_key: str, record: dict[str, Any]) -> None:
+    """Print a single workflow plan entry."""
+    queue = record.get("queue_category") or "queue"
+    print(
+        f"- {workflow_key}: nodes={record.get('node_count', 0)} edges={record.get('edge_count', 0)} queue={queue}"
+    )
+    _print_workflow_metadata(record)
+    _print_workflow_nodes(record.get("nodes", []))
+
+
 def _print_workflow_plan(data: dict[str, Any]) -> None:
+    """Print workflow plan summary."""
     workflows = data.get("workflows") or {}
     if not workflows:
         print("No workflow plans available.")
-    else:
-        print("Workflow plans:")
-        for workflow_key in sorted(workflows):
-            record = workflows[workflow_key]
-            queue = record.get("queue_category") or "queue"
-            print(
-                f"- {workflow_key}: nodes={record.get('node_count', 0)} edges={record.get('edge_count', 0)} queue={queue}"
-            )
-            scheduler = record.get("scheduler")
-            if scheduler:
-                print(f"    scheduler={scheduler}")
-            notifications = record.get("notifications")
-            if notifications:
-                print(f"    notifications={notifications}")
-            for node in record.get("nodes", []):
-                depends = node.get("depends_on") or []
-                depends_text = ", ".join(depends) if depends else "root"
-                retry_policy = node.get("retry_policy")
-                retry_text = f" retry={retry_policy}" if retry_policy else ""
-                payload = node.get("payload")
-                payload_text = f" payload={payload}" if payload is not None else ""
-                checkpoint = node.get("checkpoint")
-                checkpoint_text = (
-                    f" checkpoint={checkpoint}" if checkpoint is not None else ""
-                )
-                print(
-                    f"    · {node.get('id')}: task={node.get('task')} depends_on={depends_text}{retry_text}{payload_text}{checkpoint_text}"
-                )
+        return
+
+    print("Workflow plans:")
+    for workflow_key in sorted(workflows):
+        _print_single_workflow_plan(workflow_key, workflows[workflow_key])
+
     missing = data.get("missing") or []
     if missing:
         print("Missing workflow keys: " + ", ".join(sorted(missing)))
+
+
+def _print_workflow_last_run(last_run: dict[str, Any]) -> None:
+    """Print workflow last run information."""
+    if not last_run:
+        return
+    duration = float(last_run.get("total_duration_ms", 0.0))
+    recorded = last_run.get("recorded_at", "n/a")
+    print(f"    last_run: duration={duration:.1f}ms recorded_at={recorded}")
+
+
+def _print_workflow_inspector_node(node: dict[str, Any]) -> None:
+    """Print a single workflow inspector node."""
+    depends = node.get("depends_on") or []
+    depends_text = ", ".join(depends) if depends else "root"
+    retry_policy = node.get("retry_policy")
+    retry_text = f" retry={retry_policy}" if retry_policy else ""
+    print(
+        f"    · {node.get('id')}: task={node.get('task')} depends_on={depends_text}{retry_text}"
+    )
+
+
+def _print_single_workflow_inspector(workflow_key: str, record: dict[str, Any]) -> None:
+    """Print a single workflow inspector entry."""
+    queue = record.get("queue_category") or "queue"
+    entry_nodes = record.get("entry_nodes") or []
+    entry_text = ", ".join(entry_nodes) if entry_nodes else "n/a"
+    print(
+        f"- {workflow_key}: nodes={record.get('node_count', 0)} edges={record.get('edge_count', 0)} queue={queue} entry={entry_text}"
+    )
+    for node in record.get("nodes", []):
+        _print_workflow_inspector_node(node)
+    _print_workflow_last_run(record.get("last_run") or {})
 
 
 def _print_workflow_inspector(data: dict[str, Any]) -> None:
+    """Print workflow inspector summary."""
     summary = data.get("summary") or {}
     if not summary:
         print("No workflow DAGs registered.")
-    else:
-        print("Workflow DAGs:")
-        for workflow_key in sorted(summary):
-            record = summary[workflow_key]
-            queue = record.get("queue_category") or "queue"
-            entry_nodes = record.get("entry_nodes") or []
-            entry_text = ", ".join(entry_nodes) if entry_nodes else "n/a"
-            print(
-                f"- {workflow_key}: nodes={record.get('node_count', 0)} edges={record.get('edge_count', 0)} queue={queue} entry={entry_text}"
-            )
-            for node in record.get("nodes", []):
-                depends = node.get("depends_on") or []
-                depends_text = ", ".join(depends) if depends else "root"
-                retry_policy = node.get("retry_policy")
-                retry_text = f" retry={retry_policy}" if retry_policy else ""
-                print(
-                    f"    · {node.get('id')}: task={node.get('task')} depends_on={depends_text}{retry_text}"
-                )
-            last_run = record.get("last_run")
-            if last_run:
-                duration = float(last_run.get("total_duration_ms", 0.0))
-                recorded = last_run.get("recorded_at", "n/a")
-                print(f"    last_run: duration={duration:.1f}ms recorded_at={recorded}")
+        return
+
+    print("Workflow DAGs:")
+    for workflow_key in sorted(summary):
+        _print_single_workflow_inspector(workflow_key, summary[workflow_key])
+
     missing = data.get("missing") or []
     if missing:
         print("Missing workflow keys: " + ", ".join(sorted(missing)))
 
 
-def _print_event_inspector(data: dict[str, Any]) -> None:  # noqa: C901
-    handlers = data.get("handlers") or []
+def _format_filter_clause(clause: dict[str, Any]) -> str:
+    """Format a single filter clause into a string."""
+    parts = [clause.get("path")]
+    if clause.get("equals") is not None:
+        parts.append(f"== {clause['equals']}")
+    if clause.get("any_of"):
+        parts.append(f"in {clause['any_of']}")
+    exists = clause.get("exists")
+    if exists is True:
+        parts.append("exists")
+    elif exists is False:
+        parts.append("missing")
+    return " ".join(part for part in parts if part)
+
+
+def _print_handler_filters(filters: list[dict[str, Any]]) -> None:
+    """Print event handler filters."""
+    if not filters:
+        return
+    print("    filters:")
+    for clause in filters:
+        print("      - " + _format_filter_clause(clause))
+
+
+def _print_single_handler(handler: dict[str, Any]) -> None:
+    """Print a single event handler's details."""
+    topics = handler.get("topics") or ["*"]
+    topics_text = ", ".join(topics)
+    print(
+        f"- {handler.get('name')}: topics={topics_text} priority={handler.get('priority', 0)} max_concurrency={handler.get('max_concurrency', 1)} fanout={handler.get('fanout_policy', 'broadcast')}"
+    )
+    retry_policy = handler.get("retry_policy")
+    if retry_policy:
+        print(f"    retry_policy={retry_policy}")
+    filters = handler.get("filters") or []
+    _print_handler_filters(filters)
+
+
+def _print_event_handlers(handlers: list[dict[str, Any]]) -> None:
+    """Print all event handlers."""
     if not handlers:
         print("No event handlers registered.")
-    else:
-        print("Event handlers:")
-        for handler in handlers:
-            topics = handler.get("topics") or ["*"]
-            topics_text = ", ".join(topics)
-            print(
-                f"- {handler.get('name')}: topics={topics_text} priority={handler.get('priority', 0)} max_concurrency={handler.get('max_concurrency', 1)} fanout={handler.get('fanout_policy', 'broadcast')}"
-            )
-            retry_policy = handler.get("retry_policy")
-            if retry_policy:
-                print(f"    retry_policy={retry_policy}")
-            filters = handler.get("filters") or []
-            if filters:
-                print("    filters:")
-                for clause in filters:
-                    parts = [clause.get("path")]
-                    if clause.get("equals") is not None:
-                        parts.append(f"== {clause['equals']}")
-                    if clause.get("any_of"):
-                        parts.append(f"in {clause['any_of']}")
-                    exists = clause.get("exists")
-                    if exists is True:
-                        parts.append("exists")
-                    elif exists is False:
-                        parts.append("missing")
-                    print("      - " + " ".join(part for part in parts if part))
-    last_event = data.get("last_event") or {}
-    if last_event:
-        print(
-            "Last event: topic={topic} matched={matched} failures={failures} duration={duration:.1f}ms recorded_at={recorded}".format(
-                topic=last_event.get("topic", "unknown"),
-                matched=last_event.get("matched_handlers", 0),
-                failures=last_event.get("failures", 0),
-                duration=float(last_event.get("total_duration_ms", 0.0)),
-                recorded=last_event.get("recorded_at", "n/a"),
-            )
+        return
+    print("Event handlers:")
+    for handler in handlers:
+        _print_single_handler(handler)
+
+
+def _print_last_event(last_event: dict[str, Any]) -> None:
+    """Print the last event summary."""
+    if not last_event:
+        return
+    print(
+        "Last event: topic={topic} matched={matched} failures={failures} duration={duration:.1f}ms recorded_at={recorded}".format(
+            topic=last_event.get("topic", "unknown"),
+            matched=last_event.get("matched_handlers", 0),
+            failures=last_event.get("failures", 0),
+            duration=float(last_event.get("total_duration_ms", 0.0)),
+            recorded=last_event.get("recorded_at", "n/a"),
         )
+    )
+
+
+def _print_event_inspector(data: dict[str, Any]) -> None:
+    """Print event inspector summary."""
+    handlers = data.get("handlers") or []
+    _print_event_handlers(handlers)
+    last_event = data.get("last_event") or {}
+    _print_last_event(last_event)
 
 
 def _handle_status(
@@ -1449,7 +1563,7 @@ def _build_status_record(
     return record
 
 
-def _print_status_record(record: dict[str, Any]) -> None:
+def _print_status_record(record: dict[str, Any]) -> None:  # noqa: C901
     key = record["key"]
     state = record["state"]
     configured = record.get("configured_provider")
@@ -1726,7 +1840,7 @@ def _print_activity_snapshot(snapshot: dict[str, Any]) -> None:
     _print_domain_activity_details(activity)
 
 
-def _print_lifecycle_snapshot(snapshot: dict[str, Any]) -> None:
+def _print_lifecycle_snapshot(snapshot: dict[str, Any]) -> None:  # noqa: C901
     """Print lifecycle status summary/details."""
     lifecycle_state = snapshot.get("lifecycle_state") or {}
     if not lifecycle_state:
@@ -1906,16 +2020,19 @@ def cli_root(
         False, "--debug", help="Enable debug mode which shows detailed event logs."
     ),
     suppress_events: bool = typer.Option(
-        False, "--suppress-events", help="Suppress Oneiric event logs from console output."
+        False,
+        "--suppress-events",
+        help="Suppress Oneiric event logs from console output.",
     ),
 ) -> None:
     if ctx.invoked_subcommand is None:
         typer.echo(ctx.get_help())
         raise typer.Exit()
-    
+
     # Configure early logging before initializing state
     if suppress_events:
         from oneiric.core.logging import configure_early_logging
+
         configure_early_logging(suppress_events=True)
 
     # Set debug flag in environment to be picked up by configuration
@@ -2039,8 +2156,33 @@ def action_invoke(
         typer.echo(result)
 
 
+def _scrub_sensitive_data(value: str) -> str:
+    """Scrub sensitive data from strings before display."""
+    sensitive_keywords = ["secret", "token", "password", "key"]
+    if any(sensitive in value.lower() for sensitive in sensitive_keywords):
+        return "***"
+    return value
+
+
+def _format_event_result(result: HandlerResult) -> str:
+    """Format a single event handler result."""
+    status = "ok" if result.success else "error"
+    suffix = f" attempts={result.attempts}"
+
+    if result.success and result.value is not None:
+        value_str = _scrub_sensitive_data(str(result.value))
+        suffix += f" value={value_str}"
+    elif not result.success and result.error:
+        error_str = _scrub_sensitive_data(str(result.error))
+        suffix += f" error={error_str}"
+
+    return (
+        f"- {result.handler}: {status} duration={result.duration * 1000:.1f}ms{suffix}"
+    )
+
+
 @event_app.command("emit")
-def event_emit_command(
+def event_emit_command(  # noqa: C901
     ctx: typer.Context,
     topic: str = typer.Argument(..., help="Topic/subject to emit."),
     payload: str | None = typer.Option(
@@ -2059,11 +2201,13 @@ def event_emit_command(
     bridge = state.bridges.get("event")
     if not bridge:
         raise typer.BadParameter("Event domain is not initialized")
+
     payload_map = _parse_payload(payload)
     headers_map = _parse_payload(headers)
     results = asyncio.run(
         _event_emit_runner(bridge, topic, payload_map, headers=headers_map)
     )
+
     if json_output:
         typer.echo(
             json.dumps(
@@ -2077,28 +2221,14 @@ def event_emit_command(
             )
         )
         return
+
     if not results:
         typer.echo(f"No event handlers matched topic '{topic}'.")
         return
+
     typer.echo(f"Dispatched to {len(results)} handler(s) for topic '{topic}'.")
     for result in results:
-        status = "ok" if result.success else "error"
-        suffix = f" attempts={result.attempts}"
-        if result.success and result.value is not None:
-            # Scrub sensitive data from values before displaying
-            value_str = str(result.value)
-            if any(sensitive in value_str.lower() for sensitive in ["secret", "token", "password", "key"]):
-                value_str = "***"
-            suffix += f" value={value_str}"
-        elif not result.success and result.error:
-            # Scrub sensitive data from errors before displaying
-            error_str = str(result.error)
-            if any(sensitive in error_str.lower() for sensitive in ["secret", "token", "password", "key"]):
-                error_str = "***"
-            suffix += f" error={error_str}"
-        typer.echo(
-            f"- {result.handler}: {status} duration={result.duration * 1000:.1f}ms{suffix}"
-        )
+        typer.echo(_format_event_result(result))
 
 
 @app.command()
@@ -2237,9 +2367,7 @@ def workflow_run_command(
         raise typer.BadParameter("Workflow domain is not initialized")
     context = _parse_payload(context_payload) if context_payload is not None else None
     if resume_checkpoint and not workflow_checkpoints:
-        raise typer.BadParameter(
-            "--resume-checkpoint requires --workflow-checkpoints"
-        )
+        raise typer.BadParameter("--resume-checkpoint requires --workflow-checkpoints")
     checkpoint = (
         _parse_payload(checkpoint_payload) if checkpoint_payload is not None else None
     )
@@ -2672,7 +2800,7 @@ def manifest_pack(
 
 
 @manifest_app.command("export")
-def manifest_export(
+def manifest_export(  # noqa: C901
     output_path: Path = typer.Option(
         Path("build/manifest.yaml"),
         "--output",
@@ -2739,6 +2867,83 @@ def manifest_export(
     typer.echo(f"Exported manifest -> {output_path}")
 
 
+def _load_signing_key(private_key: Path) -> Ed25519PrivateKey:
+    """Load ED25519 private key from file."""
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    key_bytes = private_key.read_bytes()
+    if len(key_bytes) == 32:
+        return Ed25519PrivateKey.from_private_bytes(key_bytes)
+
+    signing_key = serialization.load_pem_private_key(key_bytes, password=None)
+    if not isinstance(signing_key, Ed25519PrivateKey):
+        raise typer.BadParameter("Private key must be ED25519.")
+    return signing_key
+
+
+def _create_signature_entry(
+    signing_key: Ed25519PrivateKey, canonical: str, key_id: str | None
+) -> dict[str, Any]:
+    """Create signature entry from signing key."""
+
+    signature = base64.b64encode(signing_key.sign(canonical.encode("utf-8"))).decode(
+        "ascii"
+    )
+    entry = {"signature": signature, "algorithm": "ed25519"}
+    if key_id:
+        entry["key_id"] = key_id
+    return entry
+
+
+def _set_timestamps(
+    manifest_dict: dict[str, Any],
+    issued_at: str | None,
+    expires_at: str | None,
+    expires_in: int | None,
+) -> None:
+    """Set signed_at and expires_at timestamps on manifest."""
+    if issued_at:
+        manifest_dict["signed_at"] = issued_at
+    elif not manifest_dict.get("signed_at"):
+        manifest_dict["signed_at"] = datetime.now(UTC).isoformat()
+
+    if expires_in is not None:
+        manifest_dict["expires_at"] = (
+            datetime.now(UTC) + timedelta(seconds=expires_in)
+        ).isoformat()
+    elif expires_at:
+        manifest_dict["expires_at"] = expires_at
+
+
+def _apply_signature_to_manifest(
+    manifest_dict: dict[str, Any], signature_entry: dict[str, Any], append: bool
+) -> None:
+    """Apply signature entry to manifest dict."""
+    use_signatures = append or bool(manifest_dict.get("signatures"))
+    if use_signatures:
+        signatures = list(manifest_dict.get("signatures") or [])
+        signatures.append(signature_entry)
+        manifest_dict["signatures"] = signatures
+        manifest_dict.pop("signature", None)
+        manifest_dict.pop("signature_algorithm", None)
+    else:
+        manifest_dict["signature"] = signature_entry["signature"]
+        manifest_dict["signature_algorithm"] = "ed25519"
+
+
+def _render_manifest(manifest_dict: dict[str, Any], target: Path) -> str:
+    """Render manifest dict to JSON or YAML string."""
+    if target.suffix.lower() == ".json":
+        return json.dumps(manifest_dict, indent=2)
+    return yaml.safe_dump(
+        manifest_dict,
+        sort_keys=False,
+        default_flow_style=False,
+        allow_unicode=False,
+    )
+
+
 @manifest_app.command("sign")
 def manifest_sign(  # noqa: C901
     input_path: Path = typer.Option(
@@ -2798,61 +3003,18 @@ def manifest_sign(  # noqa: C901
     ),
 ) -> None:
     """Sign a manifest with an ED25519 private key."""
-    from cryptography.hazmat.primitives import serialization
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-
     manifest = _load_manifest_from_path(input_path)
     manifest_dict = manifest.model_dump(exclude_none=True)
     canonical = get_canonical_manifest_for_signing(manifest_dict)
 
-    key_bytes = private_key.read_bytes()
-    if len(key_bytes) == 32:
-        signing_key = Ed25519PrivateKey.from_private_bytes(key_bytes)
-    else:
-        signing_key = serialization.load_pem_private_key(key_bytes, password=None)
-        if not isinstance(signing_key, Ed25519PrivateKey):
-            raise typer.BadParameter("Private key must be ED25519.")
+    signing_key = _load_signing_key(private_key)
+    signature_entry = _create_signature_entry(signing_key, canonical, key_id)
 
-    signature = base64.b64encode(signing_key.sign(canonical.encode("utf-8"))).decode(
-        "ascii"
-    )
-    signature_entry = {"signature": signature, "algorithm": "ed25519"}
-    if key_id:
-        signature_entry["key_id"] = key_id
-
-    if issued_at:
-        manifest_dict["signed_at"] = issued_at
-    elif not manifest_dict.get("signed_at"):
-        manifest_dict["signed_at"] = datetime.now(UTC).isoformat()
-
-    if expires_in is not None:
-        manifest_dict["expires_at"] = (
-            datetime.now(UTC) + timedelta(seconds=expires_in)
-        ).isoformat()
-    elif expires_at:
-        manifest_dict["expires_at"] = expires_at
-
-    use_signatures = append or bool(manifest_dict.get("signatures"))
-    if use_signatures:
-        signatures = list(manifest_dict.get("signatures") or [])
-        signatures.append(signature_entry)
-        manifest_dict["signatures"] = signatures
-        manifest_dict.pop("signature", None)
-        manifest_dict.pop("signature_algorithm", None)
-    else:
-        manifest_dict["signature"] = signature
-        manifest_dict["signature_algorithm"] = "ed25519"
+    _set_timestamps(manifest_dict, issued_at, expires_at, expires_in)
+    _apply_signature_to_manifest(manifest_dict, signature_entry, append)
 
     target = output_path or input_path
-    if target.suffix.lower() == ".json":
-        rendered = json.dumps(manifest_dict, indent=2)
-    else:
-        rendered = yaml.safe_dump(
-            manifest_dict,
-            sort_keys=False,
-            default_flow_style=False,
-            allow_unicode=False,
-        )
+    rendered = _render_manifest(manifest_dict, target)
 
     if stdout:
         typer.echo(rendered)
@@ -2898,6 +3060,169 @@ def secrets_rotate_command(
         )
     )
     typer.echo(f"Invalidated {removed} cached secret value(s).")
+
+
+@app.command("start")
+def start_command(
+    ctx: typer.Context,
+    config: str | None = typer.Option(
+        None,
+        "--config",
+        help="Path to settings file.",
+        metavar="PATH",
+    ),
+    profile: str | None = typer.Option(
+        None,
+        "--profile",
+        metavar="NAME",
+        help="Runtime profile to apply (default, serverless).",
+        show_default=False,
+        case_sensitive=False,
+    ),
+    manifest: str | None = typer.Option(
+        None, "--manifest", help="Override manifest URL/path.", metavar="URI"
+    ),
+    refresh_interval: float | None = typer.Option(
+        None,
+        "--refresh-interval",
+        help="Override remote refresh interval (seconds) for the orchestrator.",
+        metavar="SECONDS",
+    ),
+    no_remote: bool = typer.Option(
+        False, "--no-remote", help="Disable remote sync/refresh."
+    ),
+    workflow_checkpoints: Path | None = typer.Option(
+        None,
+        "--workflow-checkpoints",
+        metavar="PATH",
+        help="Path to workflow checkpoint SQLite store (defaults to cache dir).",
+    ),
+    no_workflow_checkpoints: bool = typer.Option(
+        False,
+        "--no-workflow-checkpoints",
+        help="Disable workflow DAG checkpoint persistence.",
+    ),
+    http_port: int | None = typer.Option(
+        None,
+        "--http-port",
+        metavar="PORT",
+        help="Run the builtin scheduler HTTP server on this port (defaults to $PORT or 8080 when enabled).",
+    ),
+    http_host: str = typer.Option(
+        "0.0.0.0",
+        "--http-host",
+        help="Interface for the scheduler HTTP server.",
+    ),
+    no_http: bool = typer.Option(
+        False,
+        "--no-http",
+        help="Disable the builtin scheduler HTTP server (Cloud Tasks callbacks).",
+    ),
+    pid_file: str | None = typer.Option(
+        None,
+        "--pid-file",
+        help="Path to PID file for the background process.",
+    ),
+) -> None:
+    """Start the Oneiric orchestrator as a background process."""
+    state = _state(ctx)
+
+    # Use the provided PID file or default to settings cache directory
+    if pid_file is None:
+        pid_file = str(
+            Path(state.settings.runtime_paths.cache_dir) / "orchestrator.pid"
+        )
+
+    process_manager = ProcessManager(pid_file=pid_file)
+
+    if process_manager.is_running():
+        print(f"Orchestrator is already running (PID: {process_manager.pid})")
+        raise typer.Exit(code=1)
+
+    # Start the orchestrator process in the background
+    success = process_manager.start_process(
+        config_path=config,
+        profile=profile,
+        manifest=manifest,
+        refresh_interval=refresh_interval,
+        no_remote=no_remote,
+        workflow_checkpoints=str(workflow_checkpoints)
+        if workflow_checkpoints
+        else None,
+        no_workflow_checkpoints=no_workflow_checkpoints,
+        http_port=http_port,
+        http_host=http_host,
+        no_http=no_http,
+    )
+
+    if not success:
+        print("Failed to start orchestrator")
+        raise typer.Exit(code=1)
+
+
+@app.command("stop")
+def stop_command(
+    ctx: typer.Context,
+    pid_file: str | None = typer.Option(
+        None,
+        "--pid-file",
+        help="Path to PID file for the background process.",
+    ),
+) -> None:
+    """Stop the running Oneiric orchestrator process."""
+    state = _state(ctx)
+
+    # Use the provided PID file or default to settings cache directory
+    if pid_file is None:
+        pid_file = str(
+            Path(state.settings.runtime_paths.cache_dir) / "orchestrator.pid"
+        )
+
+    process_manager = ProcessManager(pid_file=pid_file)
+
+    if not process_manager.is_running():
+        print("Orchestrator is not running")
+        raise typer.Exit(code=1)
+
+    success = process_manager.stop_process()
+    if not success:
+        print("Failed to stop orchestrator")
+        raise typer.Exit(code=1)
+
+
+@app.command("process-status")
+def process_status_command(
+    ctx: typer.Context,
+    pid_file: str | None = typer.Option(
+        None,
+        "--pid-file",
+        help="Path to PID file for the background process.",
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Emit status as JSON."),
+) -> None:
+    """Check the status of the Oneiric orchestrator process."""
+    state = _state(ctx)
+
+    # Use the provided PID file or default to settings cache directory
+    if pid_file is None:
+        pid_file = str(
+            Path(state.settings.runtime_paths.cache_dir) / "orchestrator.pid"
+        )
+
+    process_manager = ProcessManager(pid_file=pid_file)
+    status = process_manager.get_status()
+
+    if json_output:
+        print(json.dumps(status, indent=2))
+        return
+
+    if status["running"]:
+        print(f"Orchestrator is running (PID: {status['pid']})")
+        print(f"PID file: {status['pid_file']}")
+    else:
+        print("Orchestrator is not running")
+        if status["pid_file_exists"]:
+            print(f"Stale PID file found: {status['pid_file']}")
 
 
 def main() -> None:

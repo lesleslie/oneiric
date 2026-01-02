@@ -169,7 +169,7 @@ class CandidateRegistry:
             )
             self._recompute(stored.domain, stored.key)
 
-    def resolve(
+    def resolve(  # noqa: C901
         self,
         domain: str,
         key: str,
@@ -298,7 +298,7 @@ class CandidateRegistry:
         with traced_decision(event):
             pass
 
-    def _score_candidates(
+    def _score_candidates(  # noqa: C901
         self,
         domain: str,
         key: str,
@@ -310,41 +310,58 @@ class CandidateRegistry:
         override_provider = self.settings.selection_for(domain, key)
         required = _normalize_capabilities(capabilities)
         ranked: list[CandidateRank] = []
+
         for cand in candidates:
-            reasons: list[str] = []
             if required and not _candidate_supports_capabilities(
                 cand, required, require_all=require_all
             ):
                 continue
-            override_score = int(
-                bool(override_provider and cand.provider == override_provider)
-            )
-            if override_provider:
-                if override_score:
-                    reasons.append(f"matched selection override {override_provider}")
-                else:
-                    reasons.append(f"selection override prefers {override_provider}")
-            priority = (
-                cand.priority
-                if cand.priority is not None
-                else self.settings.default_priority
-            )
-            reasons.append(f"priority={priority}")
-            capability_score = _capability_match_score(cand, required)
-            if required:
-                reasons.append(f"capability_match={capability_score}/{len(required)}")
-            stack = cand.stack_level or 0
-            reasons.append(f"stack_level={stack}")
-            sequence = cand.registry_sequence or 0
-            reasons.append(f"registration_order={sequence}")
-            score = (override_score, capability_score, priority, stack, sequence)
-            ranked.append(CandidateRank(candidate=cand, score=score, reasons=reasons))
+
+            rank = self._rank_candidate(cand, override_provider, required)
+            ranked.append(rank)
 
         ranked.sort(key=lambda entry: entry.score, reverse=True)
         if ranked:
             ranked[0].selected = True
 
         return ResolutionExplanation(domain=domain, key=key, ordered=ranked)
+
+    def _rank_candidate(
+        self,
+        cand: Candidate,
+        override_provider: str | None,
+        required: list[str],
+    ) -> CandidateRank:
+        """Rank a single candidate and return CandidateRank."""
+        reasons: list[str] = []
+        override_score = int(
+            bool(override_provider and cand.provider == override_provider)
+        )
+        if override_provider:
+            if override_score:
+                reasons.append(f"matched selection override {override_provider}")
+            else:
+                reasons.append(f"selection override prefers {override_provider}")
+
+        priority = (
+            cand.priority
+            if cand.priority is not None
+            else self.settings.default_priority
+        )
+        reasons.append(f"priority={priority}")
+
+        capability_score = _capability_match_score(cand, required)
+        if required:
+            reasons.append(f"capability_match={capability_score}/{len(required)}")
+
+        stack = cand.stack_level or 0
+        reasons.append(f"stack_level={stack}")
+
+        sequence = cand.registry_sequence or 0
+        reasons.append(f"registration_order={sequence}")
+
+        score = (override_score, capability_score, priority, stack, sequence)
+        return CandidateRank(candidate=cand, score=score, reasons=reasons)
 
 
 def _env_priority_map() -> dict[str, int]:
@@ -416,7 +433,7 @@ class Resolver:
     ) -> None:
         register_pkg(self.registry, package_name, path, candidates, priority=priority)
 
-    def resolve(
+    def resolve(  # noqa: C901
         self,
         domain: str,
         key: str,
@@ -475,10 +492,8 @@ def _candidate_supports_capabilities(
     return any(cap in available for cap in required)
 
 
-def _candidate_capabilities(candidate: Candidate) -> set[str]:
-    metadata = candidate.metadata or {}
-    capabilities = metadata.get("capabilities") or []
-    descriptors = metadata.get("capability_descriptors") or []
+def _extract_capabilities_from_list(capabilities: Any) -> set[str]:
+    """Extract capability names from a list of capabilities."""
     result: set[str] = set()
     if isinstance(capabilities, str):
         result.add(capabilities)
@@ -486,10 +501,27 @@ def _candidate_capabilities(candidate: Candidate) -> set[str]:
         for item in capabilities:
             if isinstance(item, str):
                 result.add(item)
+    return result
+
+
+def _extract_capabilities_from_descriptors(descriptors: Any) -> set[str]:
+    """Extract capability names from capability descriptors."""
+    result: set[str] = set()
     if isinstance(descriptors, Iterable):
         for item in descriptors:
             if isinstance(item, dict) and item.get("name"):
                 result.add(str(item["name"]))
+    return result
+
+
+def _candidate_capabilities(candidate: Candidate) -> set[str]:
+    """Extract all capability names from a candidate."""
+    metadata = candidate.metadata or {}
+    capabilities = metadata.get("capabilities") or []
+    descriptors = metadata.get("capability_descriptors") or []
+
+    result = _extract_capabilities_from_list(capabilities)
+    result.update(_extract_capabilities_from_descriptors(descriptors))
     return result
 
 

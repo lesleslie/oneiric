@@ -73,7 +73,7 @@ class LogfireMonitoringAdapter:
         token = self._resolve_token()
         try:
             kwargs = self._build_config_kwargs(token)
-            logfire.configure(**kwargs)
+            logfire.configure(**kwargs)  # type: ignore[arg-type]
             self._maybe_call(
                 "instrument_system_metrics", self._settings.enable_system_metrics
             )
@@ -114,7 +114,7 @@ class LogfireMonitoringAdapter:
             func()
 
     def _build_config_kwargs(self, token: str) -> dict[str, object]:
-        base_tags = dict(self._settings.tags or {})
+        base_tags = self._settings.tags.copy()
         if self._settings.environment:
             base_tags.setdefault("deployment.environment", self._settings.environment)
         if self._settings.release:

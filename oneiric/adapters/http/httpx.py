@@ -195,7 +195,7 @@ class HTTPClientAdapter:
         **kwargs: Any,
     ) -> httpx.Response:
         client = self._ensure_client()
-        headers = dict(kwargs.pop("headers", {}) or {})
+        headers: dict[str, str] = dict(kwargs.pop("headers", {}) or {})
         inject_trace_context(headers)
         if headers:
             kwargs["headers"] = headers
@@ -212,7 +212,7 @@ class HTTPClientAdapter:
             adapter="http",
             provider="httpx",
             operation=operation,
-            url=str(url),
+            url=url,
             component="adapter.http",
             span_name="adapter.http.request",
             send=send,

@@ -30,6 +30,19 @@ ______________________________________________________________________
 
 Use this table (and the links above) as the navigation loop: roadmap → plan → tracker → back to this index.
 
+### 🔄 MCP Server Migration
+
+- **[migration/MIGRATION_TRACKING_DASHBOARD.md](migration/MIGRATION_TRACKING_DASHBOARD.md)** – Live migration status dashboard (78 tasks, Gantt chart)
+- **[migration/COMPATIBILITY_CONTRACT.md](migration/COMPATIBILITY_CONTRACT.md)** – Comprehensive compatibility contract for all migrations
+- **[migration/OPERATIONAL_MODEL_DOCUMENTATION.md](migration/OPERATIONAL_MODEL_DOCUMENTATION.md)** – Crackerjack + Session-Buddy operational contracts
+- **[migration/CLI_COMMAND_MAPPING_GUIDE.md](migration/CLI_COMMAND_MAPPING_GUIDE.md)** – Standardized CLI command reference
+- **[migration/ROLLBACK_PROCEDURES_TEMPLATE.md](migration/ROLLBACK_PROCEDURES_TEMPLATE.md)** – Rollback procedures template
+- **[migration/MIGRATION_CHECKLIST_TEMPLATE.md](migration/MIGRATION_CHECKLIST_TEMPLATE.md)** – Migration checklist template
+- **[migration/TEST_COVERAGE_BASELINES.md](migration/TEST_COVERAGE_BASELINES.md)** – Test coverage baselines for all 5 projects
+- **[migration/ACB_REMOVAL_INVENTORY.md](migration/ACB_REMOVAL_INVENTORY.md)** – ACB usage inventory across all projects
+- **[migration/MCP_SERVER_MIGRATION_PLAN.md](migration/MCP_SERVER_MIGRATION_PLAN.md)** – Overall migration plan
+- **[migration/audits/MIGRATION_BASELINE_AUDIT_mailgun-mcp.md](migration/audits/MIGRATION_BASELINE_AUDIT_mailgun-mcp.md)** – Example baseline audit
+
 ### 🧱 Architecture References
 
 - **[NEW_ARCH_SPEC.md](NEW_ARCH_SPEC.md)** – Core architecture
@@ -70,6 +83,24 @@ ______________________________________________________________________
 - **OBSERVABILITY_GUIDE.md** – Logging, metrics, tracing
 - **REBUILD_VS_REFACTOR.md** – Design decision rationale
 - **archive/ACB_COMPARISON.md** – Original comparison (superseded by ONEIRIC_VS_ACB.md; kept for history)
+
+### `/migration/` - MCP Server Migration
+
+**Active Migration Project:**
+
+- **MIGRATION_TRACKING_DASHBOARD.md** - Live project tracking (78 tasks, Gantt chart timeline)
+- **COMPATIBILITY_CONTRACT.md** - Comprehensive compatibility contract for all migrations
+- **OPERATIONAL_MODEL_DOCUMENTATION.md** - Crackerjack + Session-Buddy operational contracts
+- **CLI_COMMAND_MAPPING_GUIDE.md** - Standardized CLI command reference
+- **ROLLBACK_PROCEDURES_TEMPLATE.md** - Rollback procedures template
+- **MIGRATION_CHECKLIST_TEMPLATE.md** - Migration checklist template
+- **TEST_COVERAGE_BASELINES.md** - Test coverage baselines for all 5 projects
+- **ACB_REMOVAL_INVENTORY.md** - ACB usage inventory across all projects
+- **MCP_SERVER_MIGRATION_PLAN.md** - Overall migration plan
+
+**Baseline Audits:**
+
+- **audits/MIGRATION_BASELINE_AUDIT_mailgun-mcp.md** - Example baseline audit (other projects to follow)
 
 ### `/implementation/` - Plans & Execution
 
@@ -187,6 +218,16 @@ ______________________________________________________________________
 1. **`docs/examples/*_OBSERVABILITY.md`** - Repo-specific DAG/event/telemetry/ChatOps capture instructions
 1. **[UNCOMPLETED_TASKS.md](UNCOMPLETED_TASKS.md)** - Remaining parity items (spoiler: nothing critical)
 
+### For MCP Server Migrations
+
+1. **[migration/MIGRATION_TRACKING_DASHBOARD.md](migration/MIGRATION_TRACKING_DASHBOARD.md)** - Live migration status and timeline
+1. **[migration/COMPATIBILITY_CONTRACT.md](migration/COMPATIBILITY_CONTRACT.md)** - Compatibility contract and requirements
+1. **[migration/OPERATIONAL_MODEL_DOCUMENTATION.md](migration/OPERATIONAL_MODEL_DOCUMENTATION.md)** - Crackerjack + Session-Buddy contracts
+1. **[migration/CLI_COMMAND_MAPPING_GUIDE.md](migration/CLI_COMMAND_MAPPING_GUIDE.md)** - Standardized CLI commands
+1. **[migration/TEST_COVERAGE_BASELINES.md](migration/TEST_COVERAGE_BASELINES.md)** - Pre-migration test coverage baselines
+1. **[migration/ROLLBACK_PROCEDURES_TEMPLATE.md](migration/ROLLBACK_PROCEDURES_TEMPLATE.md)** - Rollback procedures
+1. **[migration/ACB_REMOVAL_INVENTORY.md](migration/ACB_REMOVAL_INVENTORY.md)** - ACB dependency inventory
+
 ### For Project Planning
 
 1. **[implementation/STAGE5_FINAL_AUDIT_REPORT.md](implementation/STAGE5_FINAL_AUDIT_REPORT.md)** - Production readiness (95/100)
@@ -274,6 +315,7 @@ ______________________________________________________________________
 **Categorize by purpose:**
 
 - `/` - Core architecture and essential reference
+- `/migration/` - MCP server migration documentation and tracking
 - `/implementation/` - Build progress, plans, completion reports
 - `/analysis/` - Audits, quality assessments, technical analysis
 - `/deployment/` - Deployment guides and operations

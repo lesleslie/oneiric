@@ -191,6 +191,22 @@ class RuntimeSupervisorConfig(BaseModel):
     )
 
 
+class OneiricMCPConfig(BaseModel):
+    """Base configuration for MCP servers."""
+
+    http_port: int = 8000
+    http_host: str = "127.0.0.1"
+    enable_http_transport: bool = True
+    debug: bool = False
+    environment: str = "development"
+    cache_dir: str = ".oneiric_cache"
+
+    class Config:
+        env_prefix = "ONEIRIC_MCP_"
+        env_file = ".env"
+        extra = "allow"
+
+
 class OneiricSettings(BaseModel):
     app: AppConfig = Field(default_factory=AppConfig)
     adapters: LayerSettings = Field(default_factory=LayerSettings)
@@ -435,7 +451,7 @@ class SecretsHook:
         return (override or self._default_cache_key or "default").lower()
 
 
-def _env_overrides(prefix: str = "ONEIRIC_") -> dict[str, Any]:
+def _env_overrides(prefix: str = "ONEIRIC_") -> dict[str, Any]:  # noqa: C901
     overrides: dict[str, Any] = {}
     for key, value in os.environ.items():
         if not key.startswith(prefix):

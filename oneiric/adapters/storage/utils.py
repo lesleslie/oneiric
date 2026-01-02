@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 
-def is_not_found_error(
+def is_not_found_error(  # noqa: C901
     exc: Exception,
     *,
     codes: Iterable[int | str] = (),

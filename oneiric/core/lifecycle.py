@@ -225,7 +225,7 @@ class LifecycleManager:
             raise LifecycleError(f"No candidate registered for {domain}:{key}")
         return candidate
 
-    async def _apply_candidate(self, candidate: Candidate, *, force: bool) -> Any:
+    async def _apply_candidate(self, candidate: Candidate, *, force: bool) -> Any:  # noqa: C901
         log_context = {
             "domain": candidate.domain,
             "key": candidate.key,

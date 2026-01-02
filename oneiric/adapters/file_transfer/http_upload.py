@@ -75,7 +75,11 @@ class HTTPSUploadAdapter:
 
     async def init(self) -> None:
         if self._client is None:
-            base_url = str(self._settings.base_url) if self._settings.base_url else None
+            base_url = (
+                str(self._settings.base_url)
+                if self._settings.base_url is not None
+                else httpx.URL("")
+            )
             self._client = httpx.AsyncClient(
                 timeout=self._settings.timeout,
                 verify=self._settings.verify_tls,
@@ -108,10 +112,10 @@ class HTTPSUploadAdapter:
         extra_headers: Mapping[str, str] | None = None,
     ) -> str:
         client = self._ensure_client()
-        headers = dict(self._settings.default_headers)
+        headers = self._settings.default_headers.copy()
         if self._settings.auth_token:
             token = self._settings.auth_token.get_secret_value()
-            scheme = (self._settings.auth_scheme or "").strip()
+            scheme = self._settings.auth_scheme
             prefix = f"{scheme} " if scheme else ""
             headers.setdefault(self._settings.auth_header, f"{prefix}{token}")
         if content_type:

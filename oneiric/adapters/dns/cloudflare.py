@@ -21,7 +21,7 @@ class CloudflareDNSSettings(TimeoutSettings):
     zone_id: str = Field(description="Cloudflare zone identifier")
     api_token: SecretStr = Field(description="Cloudflare API token with DNS edit scope")
     base_url: AnyHttpUrl = Field(
-        default="https://api.cloudflare.com/client/v4",
+        default=AnyHttpUrl("https://api.cloudflare.com/client/v4"),
         description="Cloudflare API base URL",
     )
 
@@ -201,7 +201,10 @@ class CloudflareDNSAdapter(HTTPXClientMixin):
             raise LifecycleError("cloudflare-dns-request-error") from exc
         data = response.json()
         if not data.get("success", False):
-            errors = data.get("errors") or []
+            errors_val: Any = data.get("errors") or []
+            errors: list[dict[str, Any]] = (
+                errors_val if isinstance(errors_val, list) else []
+            )
             message = "; ".join(err.get("message", "unknown-error") for err in errors)
             self._logger.error(
                 "cloudflare-dns-request-failed",

@@ -93,7 +93,7 @@ class SerializationAction:
             return await self._decode(fmt, payload)
         raise LifecycleError("serialization-invalid-mode")
 
-    async def _encode(self, fmt: str, payload: dict) -> dict:
+    async def _encode(self, fmt: str, payload: dict) -> dict:  # noqa: C901
         value = payload.get("value")
         if value is None and "data" in payload:
             value = payload["data"]

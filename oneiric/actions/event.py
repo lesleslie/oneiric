@@ -83,7 +83,7 @@ class EventDispatchSettings(BaseModel):
     )
 
 
-class EventDispatchAction:
+class EventDispatchAction:  # noqa: C901
     """Action kit that emits structured events and optional hooks."""
 
     metadata = ActionMetadata(

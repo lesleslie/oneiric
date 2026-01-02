@@ -202,7 +202,6 @@ Switch `dry_run` off when deploying to Cloud Run and provide the production `acc
 
 ## 7. MongoDB NoSQL adapter (local dev)
 
-
 ```bash
 ONEIRIC_CONFIG=~/.oneiric.toml uv run python - <<'PY'
 import asyncio
@@ -428,7 +427,6 @@ Point `base_url` at your artifact endpoint (or presigned domain) and the adapter
 
 ## 10. Streaming queues (Kafka + RabbitMQ)
 
-
 ```toml
 [adapters.selections]
 queue = "kafka"      # or "rabbitmq"
@@ -618,7 +616,6 @@ async def main() -> None:
 asyncio.run(main())
 PY
 ```
-
 
 ## 15. Embedding adapters (OpenAI + local notes)
 

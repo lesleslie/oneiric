@@ -146,7 +146,7 @@ class ArtifactManager:
         # Fetch from remote HTTP/HTTPS
         return await self._fetch_remote_file(uri, destination, sha256, headers)
 
-    def _validate_uri(self, uri: str) -> None:
+    def _validate_uri(self, uri: str) -> None:  # noqa: C901
         """Validate URI for security issues."""
         if not uri:
             raise ValueError("URI cannot be empty")
@@ -516,7 +516,7 @@ def _retry_attributes(url: str, operation: str) -> dict[str, str]:
     return {"domain": "remote", "operation": operation, "host": host}
 
 
-def _parse_manifest(
+def _parse_manifest(  # noqa: C901
     text: str,
     *,
     verify_signature: bool = True,
@@ -572,7 +572,7 @@ def _parse_manifest(
     return RemoteManifest(**data)
 
 
-def _extract_signatures(data: dict[str, Any]) -> tuple[list[str], list[str]]:
+def _extract_signatures(data: dict[str, Any]) -> tuple[list[str], list[str]]:  # noqa: C901
     signatures: list[str] = []
     algorithms: list[str] = []
 

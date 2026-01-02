@@ -92,10 +92,10 @@ class FTPFileTransferAdapter:
     async def cleanup(self) -> None:
         """Close connection."""
         if self._client and self._owns_client:
-            try:
+            from contextlib import suppress
+
+            with suppress(Exception):  # pragma: no cover - network cleanup path
                 await self._client.quit()
-            except Exception:  # pragma: no cover - network cleanup path
-                pass
         self._client = None
         self._logger.info("ftp-adapter-cleanup")
 

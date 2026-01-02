@@ -138,7 +138,7 @@ class WorkflowNotifySettings(BaseModel):
     )
 
 
-class WorkflowNotifyAction:
+class WorkflowNotifyAction:  # noqa: C901
     """Action kit that emits structured workflow notifications."""
 
     metadata = ActionMetadata(

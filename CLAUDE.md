@@ -116,24 +116,41 @@ uv run python -m oneiric.cli --install-completion
 
 ### Quality Control with Crackerjack
 
-**Important:** This project uses [Crackerjack](./.crackerjack) for quality control, following the same patterns as the ACB project.
+**Philosophy:** This project uses [Crackerjack](./.crackerjack) as the single source of truth for all quality control. Crackerjack orchestrates formatters, linters, type checkers, security analysis, and complexity checking through a unified interface. **Use crackerjack directly** - no custom CI scripts or separate quality pipelines needed.
 
 ```bash
-# Run full quality suite (formatting, linting, type checking, security)
-python -m crackerjack
+# Quality checks only (fast feedback: ~8 minutes)
+python -m crackerjack run
 
-# Run with tests
-python -m crackerjack -t
+# Quality checks + test suite (full validation: ~16 minutes)
+python -m crackerjack run -t
 
-# Run with specific checks
-python -m crackerjack -x  # Format and lint only
-python -m crackerjack -c  # Just clean/format
+# Quick format and lint (fastest)
+python -m crackerjack run -x
 
-# Full automation (format, lint, test, bump version, commit)
-python -m crackerjack -a patch   # Bump patch version
-python -m crackerjack -a minor   # Bump minor version
-python -m crackerjack -a major   # Bump major version
+# Full automation with version bump and commit
+python -m crackerjack run -a patch   # Bump patch version
+python -m crackerjack run -a minor   # Bump minor version
+python -m crackerjack run -a major   # Bump major version
 ```
+
+**What Crackerjack Runs:**
+
+**Fast Hooks (15):**
+
+- Formatters: ruff-format, mdformat, trailing-whitespace, end-of-file-fixer, format-json
+- Linters: ruff-check, check-toml, check-yaml, check-json, check-ast
+- Validation: validate-regex-patterns, uv-lock, check-added-large-files, check-local-links, codespell
+
+**Comprehensive Hooks (11):**
+
+- Type checking: zuban (mypy wrapper, configured in `mypy.ini`)
+- Security: gitleaks, semgrep, pip-audit, pyscn
+- Complexity: complexipy (max complexity: 15)
+- Dead code: skylos (excludes `adapters/` directory - focuses on core framework logic)
+- Modernization: refurb
+- Dependencies: creosote (excludes optional adapter dependencies)
+- Validation: check-jsonschema, linkcheckmd
 
 **Type Checking Configuration:**
 

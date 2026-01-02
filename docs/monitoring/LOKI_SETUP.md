@@ -486,7 +486,6 @@ ______________________________________________________________________
 
 ### Add Loki Datasource
 
-
 ```yaml
 # Automatically provisioned
 datasources:

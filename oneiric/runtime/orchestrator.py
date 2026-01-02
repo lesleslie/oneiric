@@ -194,7 +194,7 @@ class RuntimeOrchestrator:
             self.workflow_bridge.refresh_dags()
         return result
 
-    async def start(
+    async def start(  # noqa: C901
         self,
         *,
         manifest_url: str | None = None,

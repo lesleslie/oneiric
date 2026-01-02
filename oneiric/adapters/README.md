@@ -14,7 +14,7 @@ can be swapped at runtime.
 ## Adding a new adapter
 
 1. Add a module under the appropriate subpackage.
-2. Expose metadata (capabilities, provider id, settings model).
-3. Register via `oneiric/adapters/bootstrap.py` or entry points.
+1. Expose metadata (capabilities, provider id, settings model).
+1. Register via `oneiric/adapters/bootstrap.py` or entry points.
 
 Docs: `docs/README.md`, `docs/examples/LOCAL_CLI_DEMO.md`.

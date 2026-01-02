@@ -277,7 +277,6 @@ curl -X DELETE http://alertmanager:9093/api/v2/silence/<silence-id>
 
 **If upgrade causes issues, rollback immediately:**
 
-
 ```bash
 # 1. Stop new version
 
@@ -599,7 +598,6 @@ psql -h db-host -U oneiric_user -d oneiric_db -c "SELECT 1;"
 ```
 
 #### Step 3: Update Oneiric Configuration (15 min)
-
 
 ```bash
 # 3.1: Stop Oneiric

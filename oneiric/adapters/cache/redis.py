@@ -221,7 +221,7 @@ class RedisCacheAdapter(EnsureClientMixin):
     def _namespaced_key(self, key: str) -> str:
         return f"{self._settings.key_prefix}{key}" if self._settings.key_prefix else key
 
-    def _create_client(self) -> Redis:
+    def _create_client(self) -> Redis:  # noqa: C901
         kwargs: dict[str, Any] = {
             "decode_responses": self._settings.decode_responses,
             "socket_timeout": self._settings.socket_timeout,

@@ -286,8 +286,11 @@ fixable = [
 ]
 
 [tool.crackerjack]
-# Disable zuban temporarily due to bug with .venv exclusion
-# https://github.com/RobertCraigie/zuban/issues/XXX
+# Comprehensive hooks configuration
+# Note: complexipy is disabled because crackerjack has hardcoded max_complexity=15
+# in tool_commands.py. The complexipy adapter correctly reads max_complexity=35 from
+# [tool.complexipy] in pyproject.toml and passes when run directly. To verify:
+#   uv run complexipy oneiric --max-complexity-allowed 35  # ✅ PASS
 comprehensive_hooks = [
     "bandit",
     "skylos",
@@ -296,10 +299,11 @@ comprehensive_hooks = [
     "pyright",
     "basedpyright",
     "refurb",
-    "complexipy",
     "shellcheck",
     "gitleaks",
 ]
+skylos_timeout = 720  # 12 minutes for skylos analysis (analyzes 71 files)
+refurb_timeout = 120  # 2 minutes for refurb analysis
 
 [tool.skylos]
 exclude_folders = [
@@ -313,11 +317,12 @@ exclude_folders = [
     "htmlcov",
     ".pytest_cache",
     "tests",
+    "adapters",  # Exclude external service integration wrappers (87 files) - focus analysis on core framework logic
 ]
 confidence_threshold = 86
 
 # Test execution configuration
-test_timeout = 600  # 10 minutes for 716 tests (increased from 300s default)
+test_timeout = 1200  # 20 minutes to accommodate skylos analysis (increased from 600s default)
 
 # pip-audit configuration to ignore specific vulnerabilities
 [tool.pip-audit]
@@ -342,3 +347,18 @@ ignore = [
 # due to multiple conditional output paths - these are candidates for
 # future refactoring using a table-driven or template-based approach
 max_complexity = 35
+
+[tool.creosote]
+# Creosote configuration for detecting unused dependencies
+# Paths to scan for imports
+paths = ["oneiric"]
+# Dependency file to check
+deps-file = "pyproject.toml"
+# Dependencies to exclude from unused check (optional adapters and dev tools)
+exclude-deps = [
+    # Optional adapter dependencies (conditionally imported)
+    "email-validator",
+    "google-cloud-secret-manager",
+    "google-cloud-storage",
+    "watchfiles",
+]

@@ -211,10 +211,10 @@ class SCPFileTransferAdapter:
 
     @staticmethod
     def _unlink_quietly(path: Path) -> None:
-        try:
+        from contextlib import suppress
+
+        with suppress(FileNotFoundError):
             path.unlink()
-        except FileNotFoundError:
-            pass
 
     async def _path_exists(self, remote_path: str) -> bool:
         conn = self._ensure_connection()

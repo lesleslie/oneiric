@@ -29,3 +29,6 @@ htmlcov/
 .pytest_cache/
 /.mcp_test_results.md
 /.jbeval/
+
+# Logs
+logs/

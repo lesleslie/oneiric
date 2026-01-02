@@ -150,7 +150,7 @@ class S3StorageAdapter(EnsureClientMixin):
         client = self._ensure_client("s3-client-not-initialized")
         await client.delete_object(Bucket=self._settings.bucket, Key=key)
 
-    async def list(self, prefix: str = "") -> list[str]:
+    async def list(self, prefix: str = "") -> list[str]:  # noqa: C901
         client = self._ensure_client("s3-client-not-initialized")
         continuation: str | None = None
         items: list[str] = []

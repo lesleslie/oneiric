@@ -31,7 +31,6 @@ from .tasks import TaskBridge
 
 if TYPE_CHECKING:  # pragma: no cover - hints only
     from oneiric.adapters.bridge import AdapterBridge
-    from oneiric.adapters.queue.protocols import QueueAdapterProtocol
 
 
 class WorkflowBridge(DomainBridge):

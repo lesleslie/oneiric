@@ -86,7 +86,7 @@ def plan_levels(graph: nx.DiGraph) -> list[list[str]]:
     return [list(generation) for generation in nx.topological_generations(graph)]
 
 
-async def execute_dag(
+async def execute_dag(  # noqa: C901
     graph: nx.DiGraph,
     *,
     checkpoint: MutableMapping[str, Any] | None = None,

@@ -33,7 +33,6 @@ If you need to convert ONNX models, create a script that uses uvx:
 uvx --python 3.13 --with onnxruntime,pyyaml,numpy python convert_model.py "$@"
 ```
 
-
 For more complex ONNXRuntime workflows, keep a dedicated Python 3.13 virtualenv that includes `onnxruntime`, `numpy`, and `pandas`.
 
 ## When This Will Be Resolved

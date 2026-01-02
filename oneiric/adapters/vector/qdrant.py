@@ -89,7 +89,7 @@ class QdrantAdapter(VectorBase):
             provider="qdrant",
         )
 
-    async def _create_client(self) -> Any:
+    async def _create_client(self) -> Any:  # noqa: C901
         """Create Qdrant client."""
         try:
             from qdrant_client import AsyncQdrantClient
@@ -356,7 +356,7 @@ class QdrantAdapter(VectorBase):
         """Insert documents with vectors into Qdrant."""
         return await self.upsert(collection, documents, **kwargs)
 
-    async def upsert(
+    async def upsert(  # noqa: C901
         self,
         collection: str,
         documents: list[VectorDocument],

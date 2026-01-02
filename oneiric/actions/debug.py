@@ -112,10 +112,10 @@ class DebugConsoleAction:
         timestamp = record.get("timestamp")
         details = record.get("details") or {}
         scrub_fields = set(self._settings.scrub_fields)
-        
+
         # Scrub sensitive data from details before echoing to console
         scrubbed_details = self._scrub(details, scrub_fields)
-        
+
         parts = []
         if timestamp:
             parts.append(timestamp)

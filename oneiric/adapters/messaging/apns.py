@@ -203,38 +203,86 @@ class APNSPushAdapter:
                     await result
                 return
 
-    async def _dispatch(
+    async def _try_send_notification(
+        self,
+        client: Any,
+        token: str,
+        payload: dict[str, Any],
+        send_kwargs: dict[str, Any],
+    ) -> Any | None:
+        """Try to send via send_notification method."""
+        if not hasattr(client, "send_notification"):
+            return None
+        try:
+            result = client.send_notification(token, payload, **send_kwargs)
+            if inspect.isawaitable(result):
+                return await result
+            return result
+        except TypeError:
+            return None
+
+    async def _try_send(
+        self,
+        client: Any,
+        token: str,
+        payload: dict[str, Any],
+        send_kwargs: dict[str, Any],
+    ) -> Any | None:
+        """Try to send via send method."""
+        if not hasattr(client, "send"):
+            return None
+        try:
+            result = client.send(token, payload, **send_kwargs)
+            if inspect.isawaitable(result):
+                return await result
+            return result
+        except TypeError:
+            return None
+
+    async def _try_notification_request(
+        self,
+        client: Any,
+        token: str,
+        payload: dict[str, Any],
+        send_kwargs: dict[str, Any],
+    ) -> Any | None:
+        """Try to send via NotificationRequest object."""
+        request_cls = getattr(self._aioapns, "NotificationRequest", None)
+        if request_cls is None:
+            return None
+        request = request_cls(device_token=token, message=payload, **send_kwargs)
+        send_notification = getattr(client, "send_notification", None)
+        if not callable(send_notification):
+            return None
+        result = send_notification(request)
+        if inspect.isawaitable(result):
+            return await result
+        return result
+
+    async def _dispatch(  # noqa: C901
         self,
         client: Any,
         token: str,
         payload: dict[str, Any],
         send_kwargs: dict[str, Any],
     ) -> Any:
-        if hasattr(client, "send_notification"):
-            try:
-                result = client.send_notification(token, payload, **send_kwargs)
-                if inspect.isawaitable(result):
-                    return await result
-                return result
-            except TypeError:
-                pass
-        if hasattr(client, "send"):
-            try:
-                result = client.send(token, payload, **send_kwargs)
-                if inspect.isawaitable(result):
-                    return await result
-                return result
-            except TypeError:
-                pass
-        request_cls = getattr(self._aioapns, "NotificationRequest", None)
-        if request_cls is not None:
-            request = request_cls(device_token=token, message=payload, **send_kwargs)
-            send_notification = getattr(client, "send_notification", None)
-            if callable(send_notification):
-                result = send_notification(request)
-                if inspect.isawaitable(result):
-                    return await result
-                return result
+        # Try send_notification method
+        result = await self._try_send_notification(client, token, payload, send_kwargs)
+        if result is not None:
+            return result
+
+        # Try send method
+        result = await self._try_send(client, token, payload, send_kwargs)
+        if result is not None:
+            return result
+
+        # Try NotificationRequest object
+        result = await self._try_notification_request(
+            client, token, payload, send_kwargs
+        )
+        if result is not None:
+            return result
+
         raise LifecycleError("apns-send-not-supported")
 
     def _build_payload(self, message: NotificationMessage) -> dict[str, Any]:

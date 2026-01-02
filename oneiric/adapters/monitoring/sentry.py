@@ -169,7 +169,8 @@ class SentryMonitoringAdapter:
     def _apply_fingerprint(self, event: dict[str, Any]) -> None:
         if event.get("fingerprint"):
             return
-        tags = event.get("tags") or {}
+        tags_val: Any = event.get("tags") or {}
+        tags: dict[str, Any] = tags_val if isinstance(tags_val, dict) else {}
         domain = tags.get("oneiric.domain")
         key = tags.get("oneiric.key")
         provider = tags.get("oneiric.provider")

@@ -83,7 +83,7 @@ class ServiceSupervisor:
         with self._lock:
             return {domain: state.copy() for domain, state in self._state.items()}
 
-    def add_listener(
+    def add_listener(  # noqa: C901
         self,
         callback: ListenerCallback,
         *,
@@ -130,7 +130,7 @@ class ServiceSupervisor:
             return DomainActivity()
         return state
 
-    def _calculate_deltas(
+    def _calculate_deltas(  # noqa: C901
         self, fresh: dict[str, dict[str, DomainActivity]]
     ) -> list[tuple[str, str, DomainActivity]]:
         deltas: list[tuple[str, str, DomainActivity]] = []

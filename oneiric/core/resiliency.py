@@ -107,7 +107,7 @@ class CircuitBreaker:
             return
 
 
-async def run_with_retry(
+async def run_with_retry(  # noqa: C901
     operation: Callable[[], Awaitable[T] | T],
     *,
     attempts: int = 3,

@@ -101,7 +101,7 @@ class AioHTTPAdapter:
             kwargs["timeout"] = aiohttp.ClientTimeout(total=self._settings.timeout)
         if "ssl" not in kwargs:
             kwargs["ssl"] = self._settings.verify
-        headers = dict(kwargs.pop("headers", {}) or {})
+        headers: dict[str, str] = dict(kwargs.pop("headers", {}) or {})
         inject_trace_context(headers)
         kwargs["headers"] = headers
         span_attrs = {
@@ -110,7 +110,7 @@ class AioHTTPAdapter:
             "oneiric.provider": "aiohttp",
             "oneiric.operation": method.upper(),
             "http.method": method.upper(),
-            "http.url": str(target),
+            "http.url": target,
         }
         start = time.perf_counter()
         timeout_hit = False

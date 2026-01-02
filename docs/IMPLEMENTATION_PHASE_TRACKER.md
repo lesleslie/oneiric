@@ -22,7 +22,6 @@ ______________________________________________________________________
 1. Schedule Cloud Run transcript capture session; assign reviewer for doc updates.
 1. Create README/deployment doc notes referencing this tracker so changes do not get lost.
 
-
 ______________________________________________________________________
 
 ## Phase 2 – Orchestration Parity

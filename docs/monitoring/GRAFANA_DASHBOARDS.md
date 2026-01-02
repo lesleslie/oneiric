@@ -51,7 +51,6 @@ Use a managed Grafana instance (or your existing dashboards stack) and load the 
    - Set folder (e.g., "Oneiric")
 1. **Import**
 
-
 Apply the dashboard JSON using your platform’s preferred provisioning flow (ConfigMaps, Terraform, or managed Grafana provisioning).
 
 ______________________________________________________________________
@@ -454,8 +453,6 @@ ______________________________________________________________________
 ______________________________________________________________________
 
 ## Installation
-
-
 
 ```yaml
 services:
