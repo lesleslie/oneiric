@@ -15,10 +15,10 @@ def run_crackerjack_without_skylos():
     if not pyproject_path.exists():
         print("pyproject.toml not found", file=sys.stderr)
         return 1
-    
+
     with open(pyproject_path) as f:
         original_content = f.read()
-    
+
     try:
         # Create a modified version without skylos in comprehensive_hooks
         # Find the comprehensive_hooks section and remove "skylos" from it
@@ -29,20 +29,20 @@ def run_crackerjack_without_skylos():
 
         # Remove any double commas that might result from removing skylos
         modified_content = re.sub(r',\s*,', ',', modified_content)
-        
+
         # Write the modified content temporarily
         with open(pyproject_path, 'w') as f:
             f.write(modified_content)
-        
+
         print("Running crackerjack without skylos...")
         result = subprocess.run([sys.executable, "-m", "crackerjack", "run", "--comp"])
-        
+
         if result.returncode != 0:
             print("❌ Crackerjack (without skylos) failed")
             return result.returncode
         else:
             print("✅ Crackerjack (without skylos) completed successfully")
-            
+
         # Now run skylos separately using the batching script
         print("Running skylos using batching approach...")
         batching_script = Path("scripts/run_skylos_batched.py")
@@ -56,10 +56,10 @@ def run_crackerjack_without_skylos():
         else:
             print("❌ skylos batching script not found")
             return 1
-            
+
         print("\n✅ All quality checks completed successfully!")
         return 0
-        
+
     finally:
         # Restore the original content
         with open(pyproject_path, 'w') as f:

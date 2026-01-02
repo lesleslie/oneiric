@@ -27,12 +27,12 @@ from crackerjack.cli import main
 sys.argv = ["crackerjack", "run", "--comp"]
 main()
 '''
-    
+
     # Write the script to a temporary file
     temp_script_path = Path("temp_crackerjack_runner.py")
     with open(temp_script_path, "w") as f:
         f.write(script_content)
-    
+
     try:
         # Run the temporary script with a long timeout
         result = subprocess.run([sys.executable, str(temp_script_path)], timeout=1200)

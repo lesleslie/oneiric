@@ -1,15 +1,16 @@
 # MCP Server Migration Checklist Template
 
-**Project Name:** [PROJECT_NAME]  
-**Migration Lead:** [YOUR_NAME]  
-**Target Completion:** [TARGET_DATE]  
+**Project Name:** [PROJECT_NAME]
+**Migration Lead:** [YOUR_NAME]
+**Target Completion:** [TARGET_DATE]
 **Status:** ⏳ Not Started | 🟡 In Progress | ✅ Completed | ❌ Blocked
 
----
+______________________________________________________________________
 
 ## 📋 Migration Overview
 
 ### Project Details
+
 - **Repository:** [REPO_PATH]
 - **Current Version:** [CURRENT_VERSION]
 - **Target Version:** [TARGET_VERSION]
@@ -18,12 +19,13 @@
 - **Complexity:** [Low/Medium/High]
 
 ### Key Contacts
-- **Technical Lead:** [NAME]  
-- **QA Lead:** [NAME]  
-- **Documentation:** [NAME]  
+
+- **Technical Lead:** [NAME]
+- **QA Lead:** [NAME]
+- **Documentation:** [NAME]
 - **Support:** [NAME]
 
----
+______________________________________________________________________
 
 ## 🎯 Migration Phases
 
@@ -41,17 +43,19 @@
 - [ ] ✅ Define compatibility contract (CLI, cache paths, health schema)
 
 **Deliverables:**
+
 - [ ] Baseline audit document
 - [ ] CLI command mapping guide
 - [ ] ACB removal inventory
 - [ ] Test coverage baseline report
 
 **Success Criteria:**
+
 - [ ] All foundation tasks completed
 - [ ] Rollback procedures defined
 - [ ] Operational model documented
 
----
+______________________________________________________________________
 
 ### Phase 2: Oneiric Integration Layer 🟡
 
@@ -67,35 +71,40 @@
 - [ ] Implement runtime cache management
 
 **Deliverables:**
+
 - [ ] Oneiric CLI factory implementation
 - [ ] Configuration migration
 - [ ] Lifecycle management integration
 - [ ] Health check implementation
 
 **Success Criteria:**
+
 - [ ] Integration layer tested
 - [ ] Oneiric patterns functional
 - [ ] ACB dependencies removed
 
----
+______________________________________________________________________
 
 ### Phase 3: Migration Implementation 🔄
 
 **Objective:** Migrate to Oneiric runtime management
 
 #### 3.1 Framework Migration
+
 - [ ] Replace FastMCP with OneiricMCPServer
 - [ ] Integrate Oneiric CLI factory
 - [ ] Update server initialization
 - [ ] Migrate tool registration
 
 #### 3.2 Configuration Migration
+
 - [ ] Create OneiricMCPConfig subclass
 - [ ] Migrate environment variables
 - [ ] Update configuration loading
 - [ ] Add validation
 
 #### 3.3 CLI Migration
+
 - [ ] Implement `start` command
 - [ ] Implement `stop` command
 - [ ] Implement `restart` command
@@ -104,12 +113,14 @@
 - [ ] Implement `health --probe` command
 
 #### 3.4 Observability Migration
+
 - [ ] Add runtime health snapshots
 - [ ] Implement telemetry
 - [ ] Add health check endpoints
 - [ ] Remove custom dashboards
 
 #### 3.5 ACB Removal
+
 - [ ] Remove ACB imports
 - [ ] Remove ACB dependency injection
 - [ ] Remove ACB adapters
@@ -117,6 +128,7 @@
 - [ ] Remove ACB from dependencies
 
 **Deliverables:**
+
 - [ ] Migrated server implementation
 - [ ] Oneiric CLI integration
 - [ ] Configuration migration
@@ -124,18 +136,20 @@
 - [ ] ACB removal complete
 
 **Success Criteria:**
+
 - [ ] All Oneiric patterns implemented
 - [ ] CLI commands functional
 - [ ] Configuration working
 - [ ] Zero ACB dependencies
 
----
+______________________________________________________________________
 
 ### Phase 4: Testing & Validation 🧪
 
 **Objective:** Ensure migration quality and compatibility
 
 #### 4.1 Test Coverage
+
 - [ ] Maintain ≥[BASELINE]% test coverage
 - [ ] Add Oneiric-specific tests
 - [ ] Update existing tests for Oneiric patterns
@@ -143,6 +157,7 @@
 - [ ] Add health check tests
 
 #### 4.2 Integration Testing
+
 - [ ] Test CLI commands
 - [ ] Test runtime snapshots
 - [ ] Test health schema compliance
@@ -150,42 +165,48 @@
 - [ ] Test lifecycle management
 
 #### 4.3 Performance Testing
+
 - [ ] Measure startup time (≤120% of baseline)
 - [ ] Measure memory usage (≤110% of baseline)
 - [ ] Measure response time (≤105% of baseline)
 - [ ] Test under load
 
 #### 4.4 Security Testing
+
 - [ ] Security audit
 - [ ] Dependency vulnerability scan
 - [ ] Configuration security review
 - [ ] API key handling verification
 
 **Deliverables:**
+
 - [ ] Test coverage report
 - [ ] Integration test results
 - [ ] Performance benchmark report
 - [ ] Security audit report
 
 **Success Criteria:**
+
 - [ ] All tests passing
 - [ ] Coverage ≥ baseline
 - [ ] Performance metrics acceptable
 - [ ] Security audit passed
 
----
+______________________________________________________________________
 
 ### Phase 5: Rollout & Monitoring 🚀
 
 **Objective:** Production deployment and monitoring
 
 #### 5.1 Rollout Preparation
+
 - [ ] Create rollout plan
 - [ ] Implement feature flags (if needed)
 - [ ] Set up monitoring and alerting
 - [ ] Create rollback procedures
 
 #### 5.2 Documentation
+
 - [ ] Create user migration guide
 - [ ] Update README with Oneiric instructions
 - [ ] Update CLI command reference
@@ -193,12 +214,14 @@
 - [ ] Create troubleshooting guide
 
 #### 5.3 User Communication
+
 - [ ] Create announcement materials
 - [ ] Set up support channels
 - [ ] Plan migration workshops
 - [ ] Create FAQ documentation
 
 **Deliverables:**
+
 - [ ] Rollout plan document
 - [ ] User migration guide
 - [ ] Updated documentation
@@ -206,16 +229,18 @@
 - [ ] Support documentation
 
 **Success Criteria:**
+
 - [ ] Rollout plan approved
 - [ ] Documentation complete
 - [ ] Monitoring operational
 - [ ] Support channels ready
 
----
+______________________________________________________________________
 
 ## 📊 Migration Progress Tracker
 
 ### Overall Progress
+
 - **Total Tasks:** [TOTAL_TASKS]
 - **Completed:** [COMPLETED]/[TOTAL_TASKS] ([PERCENT]%)
 - **In Progress:** [IN_PROGRESS]
@@ -223,6 +248,7 @@
 - **Blocked:** [BLOCKED]
 
 ### Phase Progress
+
 - **Phase 1 (Foundation):** [X]/[Y] ([Z]%)
 - **Phase 2 (Integration):** [X]/[Y] ([Z]%)
 - **Phase 3 (Migration):** [X]/[Y] ([Z]%)
@@ -230,6 +256,7 @@
 - **Phase 5 (Rollout):** [X]/[Y] ([Z]%)
 
 ### Critical Path Items
+
 - [ ] ✅ Baseline audit completed
 - [ ] ⏳ Oneiric CLI factory integration
 - [ ] ⏳ ACB removal completed
@@ -237,7 +264,7 @@
 - [ ] ⏳ Test coverage maintained
 - [ ] ⏳ User migration guide created
 
----
+______________________________________________________________________
 
 ## 🔧 Technical Details
 
@@ -255,6 +282,7 @@
 ### Configuration Migration
 
 **Before (Current):**
+
 ```python
 # Environment variables
 os.environ.get("API_KEY")
@@ -265,6 +293,7 @@ class Config:
 ```
 
 **After (Oneiric):**
+
 ```python
 from oneiric.core.config import OneiricMCPConfig
 from pydantic import Field
@@ -289,6 +318,7 @@ class ProjectConfig(OneiricMCPConfig):
 ### Health Schema Compliance
 
 **Required Schema:**
+
 ```python
 from mcp_common.health import HealthStatus, ComponentHealth, HealthCheckResponse
 
@@ -307,27 +337,30 @@ HealthCheckResponse(
 )
 ```
 
----
+______________________________________________________________________
 
 ## 🚨 Risk Assessment
 
 ### High Risk Areas
+
 - **ACB Removal:** Complex dependency changes
 - **CLI Migration:** User-facing command changes
 - **Configuration:** Environment variable changes
 - **Performance:** Potential regressions
 
 ### Mitigation Strategies
+
 - **Feature Flags:** Gradual rollout
 - **Rollback Procedures:** Tested rollback paths
 - **Test Coverage:** Maintain baseline
 - **Performance Testing:** Benchmark before/after
 
----
+______________________________________________________________________
 
 ## ✅ Success Criteria
 
 ### Technical Success
+
 - [ ] All ACB dependencies removed
 - [ ] Oneiric CLI factory implemented
 - [ ] Standardized lifecycle management
@@ -338,13 +371,14 @@ HealthCheckResponse(
 - [ ] Security audit passed
 
 ### User Success
+
 - [ ] Clear migration guide provided
 - [ ] CLI command mapping documented
 - [ ] Configuration migration examples
 - [ ] Rollback procedures tested
 - [ ] Support channels established
 
----
+______________________________________________________________________
 
 ## 📅 Timeline
 
@@ -356,23 +390,26 @@ HealthCheckResponse(
 | Phase 4 | 1 week | [START] | [END] |
 | Phase 5 | 1 week | [START] | [END] |
 
----
+______________________________________________________________________
 
 ## 📝 Notes & Issues
 
 ### Open Issues
+
 - [ ] [Issue description] - [Owner] - [Status]
 - [ ] [Issue description] - [Owner] - [Status]
 
 ### Decisions Made
+
 - [ ] [Decision] - [Date] - [Rationale]
 - [ ] [Decision] - [Date] - [Rationale]
 
 ### Lessons Learned
+
 - [ ] [Lesson] - [Impact] - [Action]
 - [ ] [Lesson] - [Impact] - [Action]
 
----
+______________________________________________________________________
 
 ## 🔗 References
 
@@ -381,8 +418,8 @@ HealthCheckResponse(
 - **Crackerjack Contract:** `crackerjack/docs/reference/BREAKING_CHANGES.md`
 - **Session-Buddy Health:** `session-buddy/docs/reference/API_REFERENCE.md`
 
----
+______________________________________________________________________
 
-**Checklist Created:** [DATE]  
-**Last Updated:** [DATE]  
+**Checklist Created:** [DATE]
+**Last Updated:** [DATE]
 **Status:** ⏳ Not Started | 🟡 In Progress | ✅ Completed | ❌ Blocked

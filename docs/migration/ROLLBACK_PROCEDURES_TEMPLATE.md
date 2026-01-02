@@ -1,11 +1,11 @@
 # MCP Server Migration Rollback Procedures Template
 
-**Status:** ✅ COMPLETED  
-**Created:** 2025-12-30  
-**Last Updated:** 2025-12-30  
+**Status:** ✅ COMPLETED
+**Created:** 2025-12-30
+**Last Updated:** 2025-12-30
 **Purpose:** Provide standardized rollback procedures for all MCP server migrations
 
----
+______________________________________________________________________
 
 ## 🎯 Executive Summary
 
@@ -14,29 +14,30 @@ This document provides comprehensive rollback procedures for all MCP server migr
 ### Rollback Principles
 
 1. **Safety First:** Rollback procedures must be tested and reliable
-2. **Quick Recovery:** Rollback should be fast and minimize downtime
-3. **Data Preservation:** No data loss during rollback
-4. **Clear Documentation:** Step-by-step instructions for each project
-5. **Tested Procedures:** All rollback procedures must be tested before migration
+1. **Quick Recovery:** Rollback should be fast and minimize downtime
+1. **Data Preservation:** No data loss during rollback
+1. **Clear Documentation:** Step-by-step instructions for each project
+1. **Tested Procedures:** All rollback procedures must be tested before migration
 
----
+______________________________________________________________________
 
 ## 📋 Standard Rollback Template
 
 ### [PROJECT_NAME] Rollback Procedures
 
-**Project:** [PROJECT_NAME]  
-**Language:** [Python/Node.js]  
-**Framework:** [FastMCP/Custom]  
-**Pre-Migration Tag:** `v1.0.0-pre-migration`  
-**Rollback Time:** < 5 minutes  
-**Data Loss:** None  
+**Project:** [PROJECT_NAME]
+**Language:** [Python/Node.js]
+**Framework:** [FastMCP/Custom]
+**Pre-Migration Tag:** `v1.0.0-pre-migration`
+**Rollback Time:** < 5 minutes
+**Data Loss:** None
 
 #### 🔴 Emergency Rollback (Fast)
 
 **Use Case:** Critical issues during migration requiring immediate rollback
 
 **Steps:**
+
 ```bash
 # 1. Stop current server (if running)
 project-mcp stop || pkill -f "project-mcp"
@@ -67,6 +68,7 @@ curl http://localhost:3039/health || echo "Server verification failed"
 ```
 
 **Verification:**
+
 - ✅ Server starts without errors
 - ✅ API endpoints respond correctly
 - ✅ No ACB-related errors
@@ -77,6 +79,7 @@ curl http://localhost:3039/health || echo "Server verification failed"
 **Use Case:** Planned rollback with data preservation
 
 **Steps:**
+
 ```bash
 # 1. Notify users of planned rollback
 #    (Send notifications, update status pages)
@@ -120,6 +123,7 @@ curl http://localhost:3039/status
 ```
 
 **Verification Checklist:**
+
 - [ ] ✅ Server starts without errors
 - [ ] ✅ All API endpoints functional
 - [ ] ✅ Database connections working
@@ -133,35 +137,39 @@ curl http://localhost:3039/status
 **Use Case:** Rollback specific components while keeping others
 
 **Options:**
+
 1. **Configuration Rollback:**
+
    ```bash
    git checkout v1.0.0-pre-migration -- config/
    ```
 
-2. **Dependency Rollback:**
+1. **Dependency Rollback:**
+
    ```bash
    git checkout v1.0.0-pre-migration -- pyproject.toml package.json
    pip install -e .  # Reinstall with old dependencies
    ```
 
-3. **Feature Rollback:**
+1. **Feature Rollback:**
+
    ```bash
    git checkout v1.0.0-pre-migration -- src/feature/
    ```
 
 **Note:** Partial rollbacks require careful testing and may not be fully supported.
 
----
+______________________________________________________________________
 
 ## 🗂️ Project-Specific Rollback Procedures
 
 ### 1. mailgun-mcp Rollback Procedures
 
-**Project:** mailgun-mcp  
-**Language:** Python  
-**Framework:** FastMCP  
-**Pre-Migration Tag:** `v1.0.0-pre-migration`  
-**Complexity:** Low  
+**Project:** mailgun-mcp
+**Language:** Python
+**Framework:** FastMCP
+**Pre-Migration Tag:** `v1.0.0-pre-migration`
+**Complexity:** Low
 
 #### Emergency Rollback
 
@@ -233,8 +241,8 @@ async def test():
     # Test domains
 domains = await get_domains.run({'limit': 10})
     print('✅ Domains API works' if 'error' not in domains else '❌ Domains API failed')
-    
-    # Test events  
+
+    # Test events
     events = await get_events.run({'domain_name': 'test.com', 'limit': 10})
     print('✅ Events API works' if 'error' not in events else '❌ Events API failed')
 asyncio.run(test())
@@ -264,15 +272,15 @@ except ImportError:
 - [ ] ✅ Rate limiting works
 - [ ] ✅ Error handling works
 
----
+______________________________________________________________________
 
 ### 2. unifi-mcp Rollback Procedures
 
-**Project:** unifi-mcp  
-**Language:** Python  
-**Framework:** FastMCP  
-**Pre-Migration Tag:** `v1.0.0-pre-migration`  
-**Complexity:** Low  
+**Project:** unifi-mcp
+**Language:** Python
+**Framework:** FastMCP
+**Pre-Migration Tag:** `v1.0.0-pre-migration`
+**Complexity:** Low
 
 #### Emergency Rollback
 
@@ -338,7 +346,7 @@ async def test():
     # Test clients
     clients = await get_clients.run({'site': 'default'})
     print('✅ Clients API works' if 'error' not in clients else '❌ Clients API failed')
-    
+
     # Test devices
     devices = await get_devices.run({'site': 'default'})
     print('✅ Devices API works' if 'error' not in devices else '❌ Devices API failed')
@@ -357,15 +365,15 @@ asyncio.run(test())
 - [ ] ✅ Error handling works
 - [ ] ✅ Authentication works
 
----
+______________________________________________________________________
 
 ### 3. opera-cloud-mcp Rollback Procedures
 
-**Project:** opera-cloud-mcp  
-**Language:** Python  
-**Framework:** FastMCP  
-**Pre-Migration Tag:** `v1.0.0-pre-migration`  
-**Complexity:** Medium (SQLModel integration)  
+**Project:** opera-cloud-mcp
+**Language:** Python
+**Framework:** FastMCP
+**Pre-Migration Tag:** `v1.0.0-pre-migration`
+**Complexity:** Medium (SQLModel integration)
 
 #### Emergency Rollback
 
@@ -435,7 +443,7 @@ async def test():
     # Test guests
     guests = await get_guests.run({'limit': 10})
     print('✅ Guests API works' if 'error' not in guests else '❌ Guests API failed')
-    
+
     # Test rooms
     rooms = await get_rooms.run({'limit': 10})
     print('✅ Rooms API works' if 'error' not in rooms else '❌ Rooms API failed')
@@ -466,15 +474,15 @@ with SessionLocal() as session:
 - [ ] ✅ Error handling works
 - [ ] ✅ Performance acceptable
 
----
+______________________________________________________________________
 
 ### 4. raindropio-mcp Rollback Procedures
 
-**Project:** raindropio-mcp  
-**Language:** Python  
-**Framework:** FastMCP  
-**Pre-Migration Tag:** `v1.0.0-pre-migration`  
-**Complexity:** Low  
+**Project:** raindropio-mcp
+**Language:** Python
+**Framework:** FastMCP
+**Pre-Migration Tag:** `v1.0.0-pre-migration`
+**Complexity:** Low
 
 #### Emergency Rollback
 
@@ -540,7 +548,7 @@ async def test():
     # Test bookmarks
     bookmarks = await get_bookmarks.run({'collection': '$all'})
     print('✅ Bookmarks API works' if 'error' not in bookmarks else '❌ Bookmarks API failed')
-    
+
     # Test tags
     tags = await get_tags.run({})
     print('✅ Tags API works' if 'error' not in tags else '❌ Tags API failed')
@@ -559,15 +567,15 @@ asyncio.run(test())
 - [ ] ✅ Error handling works
 - [ ] ✅ Rate limiting works
 
----
+______________________________________________________________________
 
 ### 5. excalidraw-mcp Rollback Procedures
 
-**Project:** excalidraw-mcp  
-**Language:** Node.js/TypeScript  
-**Framework:** Custom Express + WebSocket  
-**Pre-Migration Tag:** `v1.0.0-pre-migration`  
-**Complexity:** High (WebSocket, frontend integration)  
+**Project:** excalidraw-mcp
+**Language:** Node.js/TypeScript
+**Framework:** Custom Express + WebSocket
+**Pre-Migration Tag:** `v1.0.0-pre-migration`
+**Complexity:** High (WebSocket, frontend integration)
 
 #### Emergency Rollback (Node.js)
 
@@ -720,33 +728,38 @@ node tests/realtime_test.js
 - [ ] ✅ Error handling works
 - [ ] ✅ Performance acceptable
 
----
+______________________________________________________________________
 
 ## 🛡️ General Rollback Guidelines
 
 ### Rollback Best Practices
 
 1. **Test Rollback Procedures:**
+
    - Test rollback before migration
    - Verify rollback works in staging
    - Document any issues
 
-2. **Communicate Clearly:**
+1. **Communicate Clearly:**
+
    - Notify users before rollback
    - Provide estimated downtime
    - Update status pages
 
-3. **Monitor During Rollback:**
+1. **Monitor During Rollback:**
+
    - Watch server logs
    - Monitor performance
    - Verify functionality
 
-4. **Document Issues:**
+1. **Document Issues:**
+
    - Record any rollback problems
    - Document solutions
    - Update procedures
 
-5. **Post-Rollback Verification:**
+1. **Post-Rollback Verification:**
+
    - Run comprehensive tests
    - Monitor for issues
    - Verify all functionality
@@ -765,6 +778,7 @@ node tests/realtime_test.js
 ### Rollback Tools
 
 **Recommended Tools:**
+
 - `git` - Version control for code rollback
 - `tar` - Backup and restore files
 - `pkill` - Kill processes by name
@@ -773,7 +787,7 @@ node tests/realtime_test.js
 - `journalctl` - View system logs
 - `docker` - Container rollback (if used)
 
----
+______________________________________________________________________
 
 ## 🧪 Rollback Testing Procedures
 
@@ -828,73 +842,74 @@ import pytest
 
 def test_rollback_procedure():
     """Test the rollback procedure"""
-    
+
     # Setup
     test_dir = "test_rollback_temp"
     os.makedirs(test_dir, exist_ok=True)
     os.chdir(test_dir)
-    
+
     try:
         # Clone repository
         subprocess.run(["git", "clone", "[REPO_URL]", "."], check=True)
-        
+
         # Checkout pre-migration
         subprocess.run(["git", "checkout", "v1.0.0-pre-migration"], check=True)
-        
+
         # Install dependencies
         subprocess.run(["pip", "install", "-e", "."], check=True)
-        
+
         # Start server (background)
         server_process = subprocess.Popen(["python", "-m", "project"])
-        
+
         # Verify server starts
         import time
         time.sleep(5)  # Wait for server to start
-        
+
         # Test health endpoint
-        result = subprocess.run(["curl", "http://localhost:3039/health"], 
+        result = subprocess.run(["curl", "http://localhost:3039/health"],
                               capture_output=True, text=True)
         assert result.returncode == 0
         assert "healthy" in result.stdout.lower()
-        
+
         # Stop server
         server_process.terminate()
         server_process.wait()
-        
+
         # Simulate migration (checkout main)
         subprocess.run(["git", "checkout", "main"], check=True)
-        
+
         # Perform rollback
         subprocess.run(["git", "checkout", "v1.0.0-pre-migration"], check=True)
         subprocess.run(["pip", "install", "-e", "."], check=True)
-        
+
         # Start server again
         server_process = subprocess.Popen(["python", "-m", "project"])
         time.sleep(5)
-        
+
         # Verify rollback success
-        result = subprocess.run(["curl", "http://localhost:3039/health"], 
+        result = subprocess.run(["curl", "http://localhost:3039/health"],
                               capture_output=True, text=True)
         assert result.returncode == 0
         assert "healthy" in result.stdout.lower()
-        
+
         # Cleanup
         server_process.terminate()
         server_process.wait()
-        
+
     finally:
         # Cleanup
         os.chdir("..")
         shutil.rmtree(test_dir, ignore_errors=True)
 ```
 
----
+______________________________________________________________________
 
 ## ✅ Success Criteria
 
 ### Rollback Success Metrics
 
 **Mandatory Requirements:**
+
 - [ ] ✅ Rollback completes in < 5 minutes
 - [ ] ✅ No data loss during rollback
 - [ ] ✅ All functionality restored
@@ -906,6 +921,7 @@ def test_rollback_procedure():
 ### Rollback Quality Metrics
 
 **Quality Requirements:**
+
 - [ ] ✅ Rollback procedures documented
 - [ ] ✅ Rollback procedures tested
 - [ ] ✅ Rollback time measured
@@ -913,7 +929,7 @@ def test_rollback_procedure():
 - [ ] ✅ Clear communication provided
 - [ ] ✅ Post-rollback monitoring in place
 
----
+______________________________________________________________________
 
 ## 📅 Timeline & Resources
 
@@ -929,16 +945,18 @@ def test_rollback_procedure():
 ### Resource Allocation
 
 **Weekly Breakdown:**
+
 - Week 1: 5h (Procedure creation)
 - Week 2: 10h (Procedure testing)
 - Week 3: 5h (User communication)
 - Ongoing: 2h/week (Readiness maintenance)
 
----
+______________________________________________________________________
 
 ## 📝 References
 
 ### Rollback Tools
+
 - **Git:** Version control rollback
 - **Docker:** Container rollback
 - **Kubernetes:** Deployment rollback
@@ -946,29 +964,33 @@ def test_rollback_procedure():
 - **Terraform:** Infrastructure rollback
 
 ### Migration References
+
 - **Migration Plan:** `MCP_SERVER_MIGRATION_PLAN.md`
 - **Tracking Dashboard:** `MIGRATION_TRACKING_DASHBOARD.md`
 - **CLI Guide:** `CLI_COMMAND_MAPPING_GUIDE.md`
 - **Test Baselines:** `TEST_COVERAGE_BASELINES.md`
 
----
+______________________________________________________________________
 
 ## 🎯 Next Steps
 
 ### Immediate Actions
 
 1. **Complete Rollback Procedures:**
+
    - [ ] ✅ Create rollback procedures template (this document)
    - [ ] ⏳ Add project-specific procedures for all projects
    - [ ] ⏳ Test rollback procedures for each project
    - [ ] ⏳ Document rollback testing results
 
-2. **Integrate with Migration Plan:**
+1. **Integrate with Migration Plan:**
+
    - [ ] ⏳ Add rollback procedures to migration plan
    - [ ] ⏳ Update tracking dashboard with rollback status
    - [ ] ⏳ Add rollback testing to CI/CD pipelines
 
-3. **User Communication:**
+1. **User Communication:**
+
    - [ ] ⏳ Create user rollback guides
    - [ ] ⏳ Add rollback information to migration guides
    - [ ] ⏳ Prepare rollback communication templates
@@ -976,24 +998,27 @@ def test_rollback_procedure():
 ### Long-Term Actions
 
 1. **Maintain Rollback Readiness:**
+
    - [ ] ⏳ Regularly test rollback procedures
    - [ ] ⏳ Update procedures as needed
    - [ ] ⏳ Monitor rollback readiness
 
-2. **Improve Rollback Capabilities:**
+1. **Improve Rollback Capabilities:**
+
    - [ ] ⏳ Add automated rollback tools
    - [ ] ⏳ Improve rollback speed
    - [ ] ⏳ Reduce user impact
 
-3. **Documentation:**
+1. **Documentation:**
+
    - [ ] ⏳ Keep rollback procedures updated
    - [ ] ⏳ Add rollback examples
    - [ ] ⏳ Improve rollback guides
 
----
+______________________________________________________________________
 
-**Document Status:** ✅ COMPLETED  
-**Last Updated:** 2025-12-30  
-**Next Review:** 2026-01-01  
-**Owner:** [Your Name]  
+**Document Status:** ✅ COMPLETED
+**Last Updated:** 2025-12-30
+**Next Review:** 2026-01-01
+**Owner:** [Your Name]
 **Review Frequency:** Weekly during migration

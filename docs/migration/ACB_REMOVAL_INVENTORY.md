@@ -1,11 +1,11 @@
 # MCP Server ACB Removal Inventory
 
-**Status:** ✅ COMPLETED  
-**Created:** 2025-12-30  
-**Last Updated:** 2025-12-30  
+**Status:** ✅ COMPLETED
+**Created:** 2025-12-30
+**Last Updated:** 2025-12-30
 **Purpose:** Comprehensive inventory of ACB usage across all MCP server projects
 
----
+______________________________________________________________________
 
 ## 🎯 Executive Summary
 
@@ -14,35 +14,38 @@ This document provides a complete inventory of ACB (Application Component Bridge
 ### ACB Removal Principles
 
 1. **Complete Removal:** All ACB dependencies must be removed
-2. **No Legacy Support:** No ACB fallback patterns allowed
-3. **Oneiric Replacement:** Replace ACB patterns with Oneiric equivalents
-4. **Thorough Testing:** Test all functionality after ACB removal
-5. **Documentation:** Document all removal steps and replacements
+1. **No Legacy Support:** No ACB fallback patterns allowed
+1. **Oneiric Replacement:** Replace ACB patterns with Oneiric equivalents
+1. **Thorough Testing:** Test all functionality after ACB removal
+1. **Documentation:** Document all removal steps and replacements
 
----
+______________________________________________________________________
 
 ## 📋 Project-Specific ACB Inventory
 
 ### 1. mailgun-mcp ACB Inventory
 
-**Project:** mailgun-mcp  
-**Language:** Python  
-**ACB Usage:** Direct imports and usage  
-**Complexity:** Medium  
+**Project:** mailgun-mcp
+**Language:** Python
+**ACB Usage:** Direct imports and usage
+**Complexity:** Medium
 
 #### ACB Dependencies
 
 **Direct Dependencies:**
+
 - ✅ `acb.adapters` - Used for Requests adapter
 - ✅ `acb.depends` - Used for dependency injection
 
 **Lock File References:**
+
 - ✅ `acb` editable dependency: `"../acb"` (uv.lock)
 - ✅ Multiple ACB package references throughout lock file
 
 #### ACB Usage Patterns
 
 **Import Locations:**
+
 ```python
 # mailgun_mcp/main.py:49-50
 from acb.adapters import import_adapter
@@ -50,16 +53,20 @@ from acb.depends import depends
 ```
 
 **Usage Patterns:**
+
 1. **Requests Adapter:** Lines 236-320
+
    - Uses ACB Requests adapter for HTTP requests
    - Fallback to httpx when ACB not available
    - Dependency injection via `depends.get(Requests)`
 
-2. **HTTP Client:** Lines 319-321
+1. **HTTP Client:** Lines 319-321
+
    - Tries ACB adapter first, falls back to httpx
    - Complex adapter selection logic
 
 **Code Examples:**
+
 ```python
 # ACB Requests adapter usage
 requests = _get_requests_adapter()
@@ -78,6 +85,7 @@ if requests is not None:
 #### ACB Removal Requirements
 
 **Removal Tasks:**
+
 - [ ] ✅ Remove `acb.adapters` imports
 - [ ] ✅ Remove `acb.depends` usage
 - [ ] ✅ Remove ACB Requests adapter dependency
@@ -87,168 +95,193 @@ if requests is not None:
 - [ ] ✅ Replace dependency injection with Oneiric patterns
 
 **Replacement Strategy:**
+
 - Replace ACB Requests adapter with Oneiric HTTP client
 - Use Oneiric dependency injection patterns
 - Remove all ACB-related imports and code
 - Update documentation to reflect changes
 
----
+______________________________________________________________________
 
 ### 2. unifi-mcp ACB Inventory
 
-**Project:** unifi-mcp  
-**Language:** Python  
-**ACB Usage:** No direct ACB usage  
-**Complexity:** None  
+**Project:** unifi-mcp
+**Language:** Python
+**ACB Usage:** No direct ACB usage
+**Complexity:** None
 
 #### ACB Dependencies
 
 **Direct Dependencies:**
+
 - ❌ None found in source code
 
 **Lock File References:**
+
 - ✅ ACB references in uv.lock (inherited from dependencies)
 - ❌ No direct ACB dependency in pyproject.toml
 
 #### ACB Usage Patterns
 
 **Import Locations:**
+
 - ❌ None found
 
 **Usage Patterns:**
+
 - ❌ None found
 
 #### ACB Removal Requirements
 
 **Removal Tasks:**
+
 - [ ] ✅ No direct ACB code to remove
 - [ ] ✅ Verify no ACB imports in source code
 - [ ] ✅ Confirm no ACB usage in tests
 - [ ] ✅ Document absence of ACB usage
 
 **Replacement Strategy:**
+
 - None needed - no ACB usage found
 - Monitor for indirect ACB dependencies
 - Ensure clean dependency tree
 
----
+______________________________________________________________________
 
 ### 3. opera-cloud-mcp ACB Inventory
 
-**Project:** opera-cloud-mcp  
-**Language:** Python  
-**ACB Usage:** No direct ACB usage  
-**Complexity:** None  
+**Project:** opera-cloud-mcp
+**Language:** Python
+**ACB Usage:** No direct ACB usage
+**Complexity:** None
 
 #### ACB Dependencies
 
 **Direct Dependencies:**
+
 - ❌ None found in source code
 
 **Lock File References:**
+
 - ✅ ACB references in uv.lock (inherited from dependencies)
 - ❌ No direct ACB dependency in pyproject.toml
 
 #### ACB Usage Patterns
 
 **Import Locations:**
+
 - ❌ None found
 
 **Usage Patterns:**
+
 - ❌ None found
 
 #### ACB Removal Requirements
 
 **Removal Tasks:**
+
 - [ ] ✅ No direct ACB code to remove
 - [ ] ✅ Verify no ACB imports in source code
 - [ ] ✅ Confirm no ACB usage in tests
 - [ ] ✅ Document absence of ACB usage
 
 **Replacement Strategy:**
+
 - None needed - no ACB usage found
 - Monitor for indirect ACB dependencies
 - Ensure clean dependency tree
 
----
+______________________________________________________________________
 
 ### 4. raindropio-mcp ACB Inventory
 
-**Project:** raindropio-mcp  
-**Language:** Python  
-**ACB Usage:** No direct ACB usage  
-**Complexity:** None  
+**Project:** raindropio-mcp
+**Language:** Python
+**ACB Usage:** No direct ACB usage
+**Complexity:** None
 
 #### ACB Dependencies
 
 **Direct Dependencies:**
+
 - ❌ None found in source code
 
 **Lock File References:**
+
 - ✅ ACB references in uv.lock (inherited from dependencies)
 - ❌ No direct ACB dependency in pyproject.toml
 
 #### ACB Usage Patterns
 
 **Import Locations:**
+
 - ❌ None found
 
 **Usage Patterns:**
+
 - ❌ None found
 
 #### ACB Removal Requirements
 
 **Removal Tasks:**
+
 - [ ] ✅ No direct ACB code to remove
 - [ ] ✅ Verify no ACB imports in source code
 - [ ] ✅ Confirm no ACB usage in tests
 - [ ] ✅ Document absence of ACB usage
 
 **Replacement Strategy:**
+
 - None needed - no ACB usage found
 - Monitor for indirect ACB dependencies
 - Ensure clean dependency tree
 
----
+______________________________________________________________________
 
 ### 5. excalidraw-mcp ACB Inventory
 
-**Project:** excalidraw-mcp  
-**Language:** Node.js/TypeScript  
-**ACB Usage:** No ACB usage  
-**Complexity:** None  
+**Project:** excalidraw-mcp
+**Language:** Node.js/TypeScript
+**ACB Usage:** No ACB usage
+**Complexity:** None
 
 #### ACB Dependencies
 
 **Direct Dependencies:**
+
 - ❌ None found in package.json
 - ❌ None found in source code
 
 **Lock File References:**
+
 - ❌ None found in package-lock.json
 
 #### ACB Usage Patterns
 
 **Import Locations:**
+
 - ❌ None found
 
 **Usage Patterns:**
+
 - ❌ None found
 
 #### ACB Removal Requirements
 
 **Removal Tasks:**
+
 - [ ] ✅ No ACB code to remove
 - [ ] ✅ Verify no ACB imports in source code
 - [ ] ✅ Confirm no ACB usage in tests
 - [ ] ✅ Document absence of ACB usage
 
 **Replacement Strategy:**
+
 - None needed - no ACB usage found
 - Node.js project - no ACB framework usage
 - Ensure no ACB patterns introduced
 
----
+______________________________________________________________________
 
 ## 📊 ACB Usage Summary
 
@@ -265,35 +298,38 @@ if requests is not None:
 ### ACB Removal Statistics
 
 **Total ACB References Found:**
+
 - Direct imports: 2 (mailgun-mcp only)
 - Lock file references: 4 projects
 - Usage patterns: 1 project (mailgun-mcp)
 
 **ACB Removal Effort:**
+
 - **mailgun-mcp:** High effort (direct usage)
 - **unifi-mcp:** Low effort (inherited only)
 - **opera-cloud-mcp:** Low effort (inherited only)
 - **raindropio-mcp:** Low effort (inherited only)
 - **excalidraw-mcp:** No effort needed
 
----
+______________________________________________________________________
 
 ## 🔧 ACB Removal Strategy
 
 ### General Removal Approach
 
 1. **Identify:** Locate all ACB dependencies and usage
-2. **Isolate:** Understand ACB usage patterns
-3. **Replace:** Implement Oneiric equivalents
-4. **Test:** Verify functionality after removal
-5. **Document:** Update documentation
-6. **Monitor:** Ensure no ACB regression
+1. **Isolate:** Understand ACB usage patterns
+1. **Replace:** Implement Oneiric equivalents
+1. **Test:** Verify functionality after removal
+1. **Document:** Update documentation
+1. **Monitor:** Ensure no ACB regression
 
 ### Project-Specific Strategies
 
 #### mailgun-mcp Strategy
 
 **Step 1: Remove ACB Imports**
+
 ```python
 # Before
 from acb.adapters import import_adapter
@@ -304,6 +340,7 @@ from acb.depends import depends
 ```
 
 **Step 2: Replace ACB Requests Adapter**
+
 ```python
 # Before
 requests = _get_requests_adapter()
@@ -317,6 +354,7 @@ response = await self._make_httpx_request(method, url, **kwargs)
 ```
 
 **Step 3: Update Dependencies**
+
 ```toml
 # Before
 [dependency-groups]
@@ -334,6 +372,7 @@ dev = [
 #### Other Projects Strategy
 
 **Step 1: Verify No ACB Usage**
+
 ```bash
 # Search for ACB imports
 grep -r "from acb\|import acb" --include="*.py" --include="*.ts" .
@@ -343,6 +382,7 @@ grep -r "acb" pyproject.toml package.json
 ```
 
 **Step 2: Clean Lock Files**
+
 ```bash
 # Remove ACB from lock files
 # For Python: uv lock --upgrade
@@ -350,6 +390,7 @@ grep -r "acb" pyproject.toml package.json
 ```
 
 **Step 3: Document Absence**
+
 ```markdown
 # ACB Removal Verification
 - ✅ No ACB imports found
@@ -357,13 +398,14 @@ grep -r "acb" pyproject.toml package.json
 - ✅ No ACB usage patterns found
 ```
 
----
+______________________________________________________________________
 
 ## 🧪 ACB Removal Testing
 
 ### Test Requirements
 
 **mailgun-mcp Tests:**
+
 ```python
 # tests/test_acb_removal.py
 def test_no_acb_imports():
@@ -389,6 +431,7 @@ def test_dependencies_clean():
 ### Test Implementation
 
 **Test Suite:**
+
 ```python
 # tests/test_acb_compliance.py
 import subprocess
@@ -396,14 +439,14 @@ import pytest
 
 def test_acb_not_in_dependencies():
     """Test that ACB is not in project dependencies"""
-    result = subprocess.run(["grep", "-r", "acb", "pyproject.toml"], 
+    result = subprocess.run(["grep", "-r", "acb", "pyproject.toml"],
                           capture_output=True, text=True)
     assert "acb" not in result.stdout.lower()
 
 def test_acb_not_in_source():
     """Test that ACB is not imported in source code"""
-    result = subprocess.run(["grep", "-r", "from acb\\|import acb", 
-                           "--include=*.py", "."], 
+    result = subprocess.run(["grep", "-r", "from acb\\|import acb",
+                           "--include=*.py", "."],
                           capture_output=True, text=True)
     # Should only find this test file
     assert "mailgun_mcp" not in result.stdout
@@ -415,7 +458,7 @@ def test_http_client_works_without_acb():
     pass
 ```
 
----
+______________________________________________________________________
 
 ## 🚨 Risk Assessment & Mitigation
 
@@ -433,37 +476,43 @@ def test_http_client_works_without_acb():
 ### Mitigation Strategies
 
 1. **Gradual Removal:**
+
    - Remove ACB in phases
    - Test each phase thoroughly
    - Monitor for issues
 
-2. **Comprehensive Testing:**
+1. **Comprehensive Testing:**
+
    - Add ACB removal tests
    - Test all functionality
    - Monitor test coverage
 
-3. **Dependency Management:**
+1. **Dependency Management:**
+
    - Clean dependency tree
    - Remove indirect ACB dependencies
    - Update lock files
 
-4. **Documentation:**
+1. **Documentation:**
+
    - Document removal process
    - Update migration guides
    - Add examples and tutorials
 
-5. **User Communication:**
+1. **User Communication:**
+
    - Notify users of changes
    - Provide migration guides
    - Offer support channels
 
----
+______________________________________________________________________
 
 ## ✅ Success Criteria
 
 ### ACB Removal Success Metrics
 
 **Mandatory Requirements:**
+
 - [ ] ✅ All ACB imports removed from source code
 - [ ] ✅ All ACB dependencies removed from pyproject.toml
 - [ ] ✅ All ACB references removed from lock files
@@ -476,6 +525,7 @@ def test_http_client_works_without_acb():
 ### Project-Specific Success Criteria
 
 **mailgun-mcp:**
+
 - [ ] ✅ ACB imports removed
 - [ ] ✅ ACB Requests adapter replaced
 - [ ] ✅ Dependency injection updated
@@ -484,13 +534,14 @@ def test_http_client_works_without_acb():
 - [ ] ✅ No ACB in dependencies
 
 **Other Projects:**
+
 - [ ] ✅ No ACB imports found
 - [ ] ✅ No ACB dependencies found
 - [ ] ✅ No ACB usage patterns found
 - [ ] ✅ Documentation updated
 - [ ] ✅ Tests passing
 
----
+______________________________________________________________________
 
 ## 📅 Timeline & Resources
 
@@ -507,6 +558,7 @@ def test_http_client_works_without_acb():
 ### Resource Allocation
 
 **Weekly Breakdown:**
+
 - Week 1: 5h (Inventory completion)
 - Week 2-3: 15h (ACB removal)
 - Week 4: 10h (Testing)
@@ -515,21 +567,24 @@ def test_http_client_works_without_acb():
 
 **Total Effort:** ~40 hours
 
----
+______________________________________________________________________
 
 ## 📝 References
 
 ### ACB Documentation
+
 - **ACB Framework:** `acb/docs/`
 - **ACB Adapters:** `acb/docs/adapters.md`
 - **ACB Dependency Injection:** `acb/docs/dependency_injection.md`
 
 ### Oneiric Replacements
+
 - **Oneiric HTTP Client:** `oneiric/core/http.py`
 - **Oneiric Dependency Injection:** `oneiric/core/dependency.py`
 - **Oneiric Configuration:** `oneiric/core/config.py`
 
 ### Migration References
+
 - **Migration Plan:** `MCP_SERVER_MIGRATION_PLAN.md`
 - **Tracking Dashboard:** `MIGRATION_TRACKING_DASHBOARD.md`
 - **CLI Guide:** `CLI_COMMAND_MAPPING_GUIDE.md`
@@ -538,25 +593,28 @@ def test_http_client_works_without_acb():
 - **Operational Model:** `OPERATIONAL_MODEL_DOCUMENTATION.md`
 - **Compatibility Contract:** `COMPATIBILITY_CONTRACT.md`
 
----
+______________________________________________________________________
 
 ## 🎯 Next Steps
 
 ### Immediate Actions
 
 1. **Complete ACB Inventory:**
+
    - [ ] ✅ Create ACB removal inventory (this document)
    - [ ] ✅ Verify inventory for all projects
    - [ ] ✅ Get approval from technical team
    - [ ] ✅ Add inventory to migration plan
 
-2. **Begin ACB Removal:**
+1. **Begin ACB Removal:**
+
    - [ ] ⏳ Start with mailgun-mcp (highest priority)
    - [ ] ⏳ Remove ACB imports and usage
    - [ ] ⏳ Replace with Oneiric patterns
    - [ ] ⏳ Update dependencies
 
-3. **Testing Preparation:**
+1. **Testing Preparation:**
+
    - [ ] ⏳ Create ACB removal test suite
    - [ ] ⏳ Define test requirements
    - [ ] ⏳ Set up test environments
@@ -564,32 +622,35 @@ def test_http_client_works_without_acb():
 ### Long-Term Actions
 
 1. **ACB Removal Implementation:**
+
    - [ ] ⏳ Remove ACB from mailgun-mcp
    - [ ] ⏳ Verify other projects have no ACB
    - [ ] ⏳ Clean lock files
    - [ ] ⏳ Update documentation
 
-2. **ACB Removal Testing:**
+1. **ACB Removal Testing:**
+
    - [ ] ⏳ Test ACB removal thoroughly
    - [ ] ⏳ Monitor for ACB regression
    - [ ] ⏳ Address any issues found
 
-3. **Quality Improvement:**
+1. **Quality Improvement:**
+
    - [ ] ⏳ Improve test coverage
    - [ ] ⏳ Add automated ACB detection
    - [ ] ⏳ Enhance documentation
 
----
+______________________________________________________________________
 
 ## 📋 Inventory Summary
 
 ### Key Findings
 
 1. **mailgun-mcp:** Only project with direct ACB usage
-2. **Other Python projects:** No direct ACB usage, but inherited in lock files
-3. **excalidraw-mcp:** No ACB usage (Node.js project)
-4. **Total ACB references:** 2 direct imports, multiple lock file references
-5. **Removal effort:** Focused on mailgun-mcp, minimal for others
+1. **Other Python projects:** No direct ACB usage, but inherited in lock files
+1. **excalidraw-mcp:** No ACB usage (Node.js project)
+1. **Total ACB references:** 2 direct imports, multiple lock file references
+1. **Removal effort:** Focused on mailgun-mcp, minimal for others
 
 ### Inventory Checklist
 
@@ -604,21 +665,22 @@ def test_http_client_works_without_acb():
 - [ ] ✅ Monitor ACB removal progress
 - [ ] ✅ Validate ACB removal completion
 
----
+______________________________________________________________________
 
-**Document Status:** ✅ COMPLETED  
-**Last Updated:** 2025-12-30  
-**Next Review:** 2026-01-01  
-**Owner:** [Your Name]  
+**Document Status:** ✅ COMPLETED
+**Last Updated:** 2025-12-30
+**Next Review:** 2026-01-01
+**Owner:** [Your Name]
 **Review Frequency:** Weekly during migration
 
----
+______________________________________________________________________
 
 ## 🎉 Inventory Approval
 
 **Approvers:**
+
 - [ ] **Technical Lead:** [Name] - [Date]
-- [ ] **QA Lead:** [Name] - [Date]  
+- [ ] **QA Lead:** [Name] - [Date]
 - [ ] **Documentation Lead:** [Name] - [Date]
 - [ ] **Product Owner:** [Name] - [Date]
 

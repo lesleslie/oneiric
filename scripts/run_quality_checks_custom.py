@@ -13,22 +13,22 @@ from pathlib import Path
 def run_quality_checks():
     """Run quality checks, handling skylos separately to avoid timeouts."""
     print("Running comprehensive quality checks...")
-    
+
     # First, run all crackerjack checks except skylos
     # We'll do this by running crackerjack with a modified configuration
     # that excludes skylos, then run skylos separately
-    
+
     print("Running crackerjack checks (excluding skylos)...")
-    
+
     # Temporarily modify the comprehensive hooks to exclude skylos
     # by running individual tools
     tools_to_run = [
-        "zuban", "pyscn", "gitleaks", "semgrep", "pip-audit", 
+        "zuban", "pyscn", "gitleaks", "semgrep", "pip-audit",
         "refurb", "creosote", "complexipy", "check-jsonschema", "linkcheckmd"
     ]
-    
+
     all_passed = True
-    
+
     for tool in tools_to_run:
         print(f"Running {tool}...")
         result = subprocess.run([sys.executable, "-m", "crackerjack", "run", tool])
@@ -37,7 +37,7 @@ def run_quality_checks():
             all_passed = False
         else:
             print(f"✅ {tool} passed")
-    
+
     # Now run skylos using the batching script which handles timeouts better
     print("Running skylos using batching approach...")
     batching_script = Path("scripts/run_skylos_batched.py")
@@ -51,7 +51,7 @@ def run_quality_checks():
     else:
         print("❌ skylos batching script not found")
         all_passed = False
-    
+
     if all_passed:
         print("\n✅ All quality checks passed!")
         return 0

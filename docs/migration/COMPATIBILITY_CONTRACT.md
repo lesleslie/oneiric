@@ -1,11 +1,11 @@
 # MCP Server Compatibility Contract
 
-**Status:** ✅ COMPLETED  
-**Created:** 2025-12-30  
-**Last Updated:** 2025-12-30  
+**Status:** ✅ COMPLETED
+**Created:** 2025-12-30
+**Last Updated:** 2025-12-30
 **Purpose:** Define the compatibility contract for all MCP server migrations to Oneiric
 
----
+______________________________________________________________________
 
 ## 🎯 Executive Summary
 
@@ -14,22 +14,23 @@ This document establishes the comprehensive compatibility contract that all MCP 
 ### Compatibility Principles
 
 1. **Standardization:** All MCP servers must implement identical patterns
-2. **Crackerjack Compliance:** Follow Crackerjack's Oneiric migration requirements
-3. **Session-Buddy Compliance:** Use Session-Buddy's health schema primitives
-4. **No Legacy Support:** Remove all legacy CLI flags and ACB patterns
-5. **Forward Compatibility:** Design for future Oneiric evolution
+1. **Crackerjack Compliance:** Follow Crackerjack's Oneiric migration requirements
+1. **Session-Buddy Compliance:** Use Session-Buddy's health schema primitives
+1. **No Legacy Support:** Remove all legacy CLI flags and ACB patterns
+1. **Forward Compatibility:** Design for future Oneiric evolution
 
----
+______________________________________________________________________
 
 ## 📋 Comprehensive Compatibility Contract
 
 ### 1. CLI Command Contract
 
 **Mandatory Commands:**
+
 ```bash
 # Standard lifecycle commands (Crackerjack requirement)
 project-mcp start              # Start the MCP server
-project-mcp stop               # Stop the running server  
+project-mcp stop               # Stop the running server
 project-mcp restart            # Restart the server
 project-mcp status             # Show server status
 project-mcp health             # Health check endpoint (cached)
@@ -37,6 +38,7 @@ project-mcp health --probe     # Live health probe
 ```
 
 **Command Requirements:**
+
 - ✅ **Subcommand Syntax:** Use `start`, `stop`, etc. (not `--start`, `--stop`)
 - ✅ **No Legacy Flags:** Remove all legacy flag-based commands
 - ✅ **Instance Isolation:** Support `--instance-id <id>` for multi-instance
@@ -45,6 +47,7 @@ project-mcp health --probe     # Live health probe
 - ✅ **Oneiric CLI Factory:** Use `MCPServerCLIFactory` for all CLI operations
 
 **Implementation Pattern:**
+
 ```python
 # project/__main__.py
 from oneiric.core.cli import MCPServerCLIFactory
@@ -65,11 +68,12 @@ def main():
     cli_factory.run()
 ```
 
----
+______________________________________________________________________
 
 ### 2. Runtime Cache Contract
 
 **Cache Structure (Crackerjack requirement):**
+
 ```
 .oneiric_cache/
 ├── server.pid                  # PID file (current instance)
@@ -82,6 +86,7 @@ def main():
 ```
 
 **Cache File Requirements:**
+
 - ✅ **PID File:** `server.pid` containing process ID
 - ✅ **Health Snapshot:** `runtime_health.json` with mcp-common health schema
 - ✅ **Telemetry:** `runtime_telemetry.json` with performance metrics
@@ -89,6 +94,7 @@ def main():
 - ✅ **Runtime Snapshot Manager:** Use `RuntimeSnapshotManager` for cache operations
 
 **Cache Implementation:**
+
 ```python
 # project/runtime.py
 from oneiric.core.runtime import RuntimeSnapshotManager
@@ -97,31 +103,33 @@ class ProjectRuntimeSnapshotManager(RuntimeSnapshotManager):
     def __init__(self, instance_id: Optional[str] = None):
         super().__init__(instance_id=instance_id)
         self.cache_dir = self._get_cache_dir()
-    
+
     async def initialize(self):
         """Initialize runtime snapshots"""
         os.makedirs(self.cache_dir, exist_ok=True)
         # Write initial health and telemetry snapshots
-    
+
     async def update_health_snapshot(self, health_response):
         """Update health snapshot"""
         # Write health_response to runtime_health.json
-    
+
     async def update_telemetry(self, metrics):
         """Update telemetry data"""
         # Update runtime_telemetry.json with metrics
 ```
 
----
+______________________________________________________________________
 
 ### 3. Health Schema Contract (Session-Buddy)
 
 **Health Schema Primitives:**
+
 ```python
 from mcp_common.health import HealthStatus, ComponentHealth, HealthCheckResponse
 ```
 
 **Health Status Enum:**
+
 ```python
 class HealthStatus(str, Enum):
     HEALTHY = "HEALTHY"      # All systems operational
@@ -130,6 +138,7 @@ class HealthStatus(str, Enum):
 ```
 
 **Component Health Schema:**
+
 ```python
 class ComponentHealth(BaseModel):
     name: str                          # Component identifier
@@ -140,6 +149,7 @@ class ComponentHealth(BaseModel):
 ```
 
 **Health Check Response Schema:**
+
 ```python
 class HealthCheckResponse(BaseModel):
     status: HealthStatus               # Overall status (worst component)
@@ -148,12 +158,13 @@ class HealthCheckResponse(BaseModel):
 ```
 
 **Health Implementation:**
+
 ```python
 # project/server.py
 async def health_check(self) -> HealthCheckResponse:
     """Implement Session-Buddy health schema"""
     components = []
-    
+
     # Check database
     db_status = self._check_database()
     components.append(ComponentHealth(
@@ -161,7 +172,7 @@ async def health_check(self) -> HealthCheckResponse:
         status=db_status,
         message="Database connection " + ("established" if db_status == HealthStatus.HEALTHY else "failed")
     ))
-    
+
     # Check API client
     api_status = self._check_api_client()
     components.append(ComponentHealth(
@@ -169,14 +180,14 @@ async def health_check(self) -> HealthCheckResponse:
         status=api_status,
         message="API client " + ("operational" if api_status == HealthStatus.HEALTHY else "degraded")
     ))
-    
+
     # Calculate overall status
     overall_status = HealthStatus.HEALTHY
     if any(c.status == HealthStatus.UNHEALTHY for c in components):
         overall_status = HealthStatus.UNHEALTHY
     elif any(c.status == HealthStatus.DEGRADED for c in components):
         overall_status = HealthStatus.DEGRADED
-    
+
     return HealthCheckResponse(
         status=overall_status,
         components=components,
@@ -184,11 +195,12 @@ async def health_check(self) -> HealthCheckResponse:
     )
 ```
 
----
+______________________________________________________________________
 
 ### 4. Configuration Contract
 
 **Configuration Pattern:**
+
 ```python
 # project/config.py
 from oneiric.core.config import OneiricMCPConfig
@@ -199,24 +211,25 @@ class ProjectConfig(OneiricMCPConfig):
     http_port: int = Field(default=3039, env="PROJECT_HTTP_PORT")
     http_host: str = Field(default="127.0.0.1", env="PROJECT_HTTP_HOST")
     enable_telemetry: bool = Field(default=True, env="PROJECT_ENABLE_TELEMETRY")
-    
+
     # Project-specific fields
     api_key: str = Field(..., env="PROJECT_API_KEY")
     database_url: str = Field(..., env="PROJECT_DATABASE_URL")
-    
+
     # Validation
     @validator("http_port")
     def validate_port(cls, v):
         if not (1024 <= v <= 65535):
             raise ValueError("Port must be between 1024 and 65535")
         return v
-    
+
     class Config:
         env_prefix = "PROJECT_"
         env_file = ".env.project"
 ```
 
 **Configuration Requirements:**
+
 - ✅ **OneiricMCPConfig:** Extend `OneiricMCPConfig` base class
 - ✅ **Pydantic Fields:** Use `Field` for all configuration fields
 - ✅ **Environment Variables:** Support environment variable configuration
@@ -224,11 +237,12 @@ class ProjectConfig(OneiricMCPConfig):
 - ✅ **Type Safety:** Use proper type hints
 - ✅ **Documentation:** Document all configuration options
 
----
+______________________________________________________________________
 
 ### 5. Server Lifecycle Contract
 
 **Lifecycle Methods:**
+
 ```python
 # project/server.py
 from oneiric.core.server import OneiricMCPServer
@@ -237,23 +251,24 @@ class ProjectMCPServer(OneiricMCPServer):
     def __init__(self, config: ProjectConfig, instance_id: Optional[str] = None):
         super().__init__(config, instance_id=instance_id)
         self.snapshot_manager = RuntimeSnapshotManager(instance_id)
-    
+
     async def on_startup(self):
         await super().on_startup()
         await self.snapshot_manager.initialize()
         # Project-specific startup logic
-    
+
     async def on_shutdown(self):
         # Project-specific cleanup
         await self.snapshot_manager.cleanup()
         await super().on_shutdown()
-    
+
     async def health_check(self) -> HealthCheckResponse:
         # Implement Session-Buddy health schema
         pass
 ```
 
 **Lifecycle Requirements:**
+
 - ✅ **Initialization:** Properly initialize all components
 - ✅ **Startup:** Initialize runtime snapshots, establish connections
 - ✅ **Shutdown:** Clean up resources, close connections gracefully
@@ -261,11 +276,12 @@ class ProjectMCPServer(OneiricMCPServer):
 - ✅ **Error Handling:** Handle errors gracefully with proper logging
 - ✅ **Resource Management:** Manage resources efficiently
 
----
+______________________________________________________________________
 
 ### 6. Observability Contract
 
 **Observability Requirements:**
+
 - ✅ **Health Endpoints:** Implement `/health` endpoint
 - ✅ **Metrics Collection:** Collect performance metrics
 - ✅ **Logging:** Comprehensive logging with appropriate levels
@@ -274,6 +290,7 @@ class ProjectMCPServer(OneiricMCPServer):
 - ✅ **Alerting:** Proper alerting for critical issues
 
 **Observability Implementation:**
+
 ```python
 # project/observability.py
 from oneiric.core.observability import ObservabilityMixin
@@ -284,7 +301,7 @@ class ProjectObservability(ObservabilityMixin):
     def __init__(self):
         super().__init__()
         self.logger = logging.getLogger(__name__)
-        
+
     def log_health_check(self, health_status: HealthStatus):
         """Log health check results"""
         if health_status == HealthStatus.HEALTHY:
@@ -293,7 +310,7 @@ class ProjectObservability(ObservabilityMixin):
             self.logger.warning("Health check: DEGRADED")
         else:
             self.logger.error("Health check: UNHEALTHY")
-    
+
     def log_metric(self, metric_name: str, value: float, tags: Optional[dict] = None):
         """Log performance metrics"""
         metric = {
@@ -303,7 +320,7 @@ class ProjectObservability(ObservabilityMixin):
             "tags": tags or {}
         }
         self.logger.info("Metric", extra={"metric": metric})
-    
+
     def log_error(self, error: Exception, context: Optional[dict] = None):
         """Log errors with context"""
         error_data = {
@@ -315,11 +332,12 @@ class ProjectObservability(ObservabilityMixin):
         self.logger.error("Error occurred", extra={"error": error_data})
 ```
 
----
+______________________________________________________________________
 
 ### 7. Testing Contract
 
 **Testing Requirements:**
+
 - ✅ **Unit Tests:** Comprehensive unit test coverage
 - ✅ **Integration Tests:** Cross-component integration tests
 - ✅ **CLI Tests:** Test all CLI commands
@@ -330,6 +348,7 @@ class ProjectObservability(ObservabilityMixin):
 - ✅ **Security Tests:** Security vulnerability testing
 
 **Testing Implementation:**
+
 ```python
 # tests/test_cli.py
 import subprocess
@@ -356,21 +375,22 @@ def test_health_schema_compliance():
     from project.server import ProjectMCPServer
     from project.config import ProjectConfig
     from mcp_common.health import HealthCheckResponse
-    
+
     config = ProjectConfig()
     server = ProjectMCPServer(config)
     health_response = server.health_check()
-    
+
     assert isinstance(health_response, HealthCheckResponse)
     assert health_response.status in ["HEALTHY", "DEGRADED", "UNHEALTHY"]
     assert len(health_response.components) > 0
 ```
 
----
+______________________________________________________________________
 
 ### 8. Documentation Contract
 
 **Documentation Requirements:**
+
 - ✅ **README:** Comprehensive project documentation
 - ✅ **CLI Reference:** CLI command reference
 - ✅ **Configuration Guide:** Configuration documentation
@@ -380,6 +400,7 @@ def test_health_schema_compliance():
 - ✅ **Troubleshooting Guide:** Common issues and solutions
 
 **Documentation Structure:**
+
 ```
 docs/
 ├── README.md                    # Project overview
@@ -395,7 +416,7 @@ docs/
     └── api_examples.md
 ```
 
----
+______________________________________________________________________
 
 ## 📊 Compliance Checklist
 
@@ -437,39 +458,45 @@ docs/
 | Consistent logging | ✅ | Structured logging |
 | Consistent observability | ✅ | Health, metrics, logging |
 
----
+______________________________________________________________________
 
 ## 🧪 Compliance Testing
 
 ### Compliance Test Suite
 
 **Test Categories:**
+
 1. **CLI Compliance Tests:**
+
    - Subcommand syntax validation
    - Legacy flag rejection
    - Instance isolation testing
    - Exit code verification
 
-2. **Cache Compliance Tests:**
+1. **Cache Compliance Tests:**
+
    - Cache structure validation
    - PID file testing
    - Health snapshot testing
    - Telemetry testing
    - Multi-instance cache testing
 
-3. **Health Schema Tests:**
+1. **Health Schema Tests:**
+
    - Schema validation
    - Status calculation testing
    - Timestamp format testing
    - Component health testing
 
-4. **Configuration Tests:**
+1. **Configuration Tests:**
+
    - Configuration loading
    - Environment variable testing
    - Validation testing
    - Type safety testing
 
-5. **Lifecycle Tests:**
+1. **Lifecycle Tests:**
+
    - Startup sequence testing
    - Shutdown sequence testing
    - Health check testing
@@ -490,11 +517,11 @@ def test_crackerjack_cli_compliance():
     # Test subcommand syntax
     result = subprocess.run(["project-mcp", "start"], capture_output=True)
     assert result.returncode == 0
-    
+
     # Test legacy flags rejected
     result = subprocess.run(["project-mcp", "--start"], capture_output=True)
     assert result.returncode != 0
-    
+
     # Test instance isolation
     result = subprocess.run(["project-mcp", "start", "--instance-id", "test"], capture_output=True)
     assert result.returncode == 0
@@ -504,17 +531,17 @@ def test_session_buddy_health_compliance():
     """Test Session-Buddy health compliance"""
     from project.server import ProjectMCPServer
     from project.config import ProjectConfig
-    
+
     config = ProjectConfig()
     server = ProjectMCPServer(config)
     health_response = server.health_check()
-    
+
     # Validate schema
     assert isinstance(health_response, HealthCheckResponse)
     assert isinstance(health_response.status, HealthStatus)
     assert all(isinstance(c, ComponentHealth) for c in health_response.components)
     assert "Z" in health_response.timestamp or "+" in health_response.timestamp
-    
+
     # Validate status calculation
     if any(c.status == HealthStatus.UNHEALTHY for c in health_response.components):
         assert health_response.status == HealthStatus.UNHEALTHY
@@ -527,24 +554,24 @@ def test_runtime_cache_compliance():
     """Test runtime cache compliance"""
     # Start server
     subprocess.run(["project-mcp", "start"], capture_output=True)
-    
+
     # Verify cache structure
     assert os.path.exists(".oneiric_cache/server.pid")
     assert os.path.exists(".oneiric_cache/runtime_health.json")
     assert os.path.exists(".oneiric_cache/runtime_telemetry.json")
-    
+
     # Verify health snapshot content
     with open(".oneiric_cache/runtime_health.json") as f:
         health = json.load(f)
         assert "status" in health
         assert "components" in health
         assert "timestamp" in health
-    
+
     # Cleanup
     subprocess.run(["project-mcp", "stop"], capture_output=True)
 ```
 
----
+______________________________________________________________________
 
 ## 🚨 Risk Assessment & Mitigation
 
@@ -564,43 +591,49 @@ def test_runtime_cache_compliance():
 ### Mitigation Strategies
 
 1. **Use Oneiric Patterns:**
+
    - Always use `MCPServerCLIFactory` for CLI
    - Use `RuntimeSnapshotManager` for cache management
    - Use `OneiricMCPConfig` for configuration
    - Use mcp-common health primitives
 
-2. **Comprehensive Testing:**
+1. **Comprehensive Testing:**
+
    - Test all compliance requirements
    - Implement automated compliance testing
    - Add compliance tests to CI/CD pipelines
    - Regular compliance audits
 
-3. **Validation:**
+1. **Validation:**
+
    - Validate health responses
    - Validate cache structure
    - Validate status calculations
    - Validate configuration
    - Validate CLI behavior
 
-4. **Documentation:**
+1. **Documentation:**
+
    - Document all compliance requirements
    - Provide implementation examples
    - Create testing guides
    - Maintain up-to-date documentation
 
-5. **Automation:**
+1. **Automation:**
+
    - Automate compliance testing
    - Add compliance checks to CI/CD
    - Implement compliance monitoring
    - Automate documentation generation
 
----
+______________________________________________________________________
 
 ## ✅ Success Criteria
 
 ### Compliance Success Metrics
 
 **Mandatory Requirements:**
+
 - [ ] ✅ All projects pass Crackerjack compliance tests
 - [ ] ✅ All projects pass Session-Buddy compliance tests
 - [ ] ✅ All projects implement standard CLI commands
@@ -613,6 +646,7 @@ def test_runtime_cache_compliance():
 ### Operational Success Metrics
 
 **Operational Requirements:**
+
 - [ ] ✅ Consistent behavior across all MCP servers
 - [ ] ✅ Reliable health reporting
 - [ ] ✅ Effective error handling
@@ -625,6 +659,7 @@ def test_runtime_cache_compliance():
 ### Quality Success Metrics
 
 **Quality Requirements:**
+
 - [ ] ✅ Comprehensive test coverage
 - [ ] ✅ Automated compliance testing
 - [ ] ✅ Comprehensive documentation
@@ -634,7 +669,7 @@ def test_runtime_cache_compliance():
 - [ ] ✅ Security best practices
 - [ ] ✅ Code quality standards
 
----
+______________________________________________________________________
 
 ## 📅 Timeline & Resources
 
@@ -651,6 +686,7 @@ def test_runtime_cache_compliance():
 ### Resource Allocation
 
 **Weekly Breakdown:**
+
 - Week 1: 5h (Contract definition)
 - Week 2-4: 20h (Implementation)
 - Week 5-6: 15h (Testing)
@@ -659,11 +695,12 @@ def test_runtime_cache_compliance():
 
 **Total Effort:** ~50 hours
 
----
+______________________________________________________________________
 
 ## 📝 References
 
 ### Primary Sources
+
 - **Crackerjack Migration Guide:** `crackerjack/docs/MIGRATION_GUIDE_0.47.0.md`
 - **Crackerjack Breaking Changes:** `crackerjack/docs/reference/BREAKING_CHANGES.md`
 - **Crackerjack Oneiric Plan:** `crackerjack/docs/archive/implementation-plans/ONEIRIC_MIGRATION_EXECUTION_PLAN.md`
@@ -671,6 +708,7 @@ def test_runtime_cache_compliance():
 - **MCP-Common Health:** `mcp-common/health.py`
 
 ### Implementation References
+
 - **Oneiric CLI Factory:** `oneiric/core/cli.py`
 - **Oneiric Server:** `oneiric/core/server.py`
 - **Oneiric Runtime:** `oneiric/core/runtime.py`
@@ -679,6 +717,7 @@ def test_runtime_cache_compliance():
 - **Oneiric Observability:** `oneiric/core/observability.py`
 
 ### Migration References
+
 - **Migration Plan:** `MCP_SERVER_MIGRATION_PLAN.md`
 - **Tracking Dashboard:** `MIGRATION_TRACKING_DASHBOARD.md`
 - **CLI Guide:** `CLI_COMMAND_MAPPING_GUIDE.md`
@@ -687,29 +726,33 @@ def test_runtime_cache_compliance():
 - **Operational Model:** `OPERATIONAL_MODEL_DOCUMENTATION.md`
 
 ### Compliance References
+
 - **Crackerjack Compliance:** `crackerjack/docs/reference/COMPLIANCE.md`
 - **Session-Buddy Compliance:** `session-buddy/docs/reference/COMPLIANCE.md`
 - **MCP-Common Compliance:** `mcp-common/docs/COMPLIANCE.md`
 
----
+______________________________________________________________________
 
 ## 🎯 Next Steps
 
 ### Immediate Actions
 
 1. **Finalize Compatibility Contract:**
+
    - [ ] ✅ Create compatibility contract document (this document)
    - [ ] ⏳ Review contract with team
    - [ ] ⏳ Get approval from stakeholders
    - [ ] ⏳ Add contract to migration plan
 
-2. **Implementation Preparation:**
+1. **Implementation Preparation:**
+
    - [ ] ⏳ Create implementation templates
    - [ ] ⏳ Define compliance requirements per project
    - [ ] ⏳ Set up compliance testing environments
    - [ ] ⏳ Add compliance tests to CI/CD pipelines
 
-3. **Documentation:**
+1. **Documentation:**
+
    - [ ] ⏳ Create compliance testing guide
    - [ ] ⏳ Add compliance examples to documentation
    - [ ] ⏳ Update migration guides with compliance requirements
@@ -718,38 +761,41 @@ def test_runtime_cache_compliance():
 ### Long-Term Actions
 
 1. **Compliance Implementation:**
+
    - [ ] ⏳ Implement contract for mailgun-mcp
    - [ ] ⏳ Implement contract for unifi-mcp
    - [ ] ⏳ Implement contract for opera-cloud-mcp
    - [ ] ⏳ Implement contract for raindropio-mcp
    - [ ] ⏳ Implement contract for excalidraw-mcp
 
-2. **Compliance Testing:**
+1. **Compliance Testing:**
+
    - [ ] ⏳ Add compliance tests to all projects
    - [ ] ⏳ Implement automated compliance checking
    - [ ] ⏳ Add compliance monitoring to CI/CD
    - [ ] ⏳ Regular compliance audits
 
-3. **Quality Improvement:**
+1. **Quality Improvement:**
+
    - [ ] ⏳ Improve compliance testing
    - [ ] ⏳ Add automated compliance checks
    - [ ] ⏳ Enhance compliance documentation
    - [ ] ⏳ Optimize compliance implementation
 
----
+______________________________________________________________________
 
 ## 📋 Contract Summary
 
 ### Key Requirements
 
 1. **CLI Commands:** Standardized CLI with subcommand syntax
-2. **Runtime Cache:** Consistent cache structure and management
-3. **Health Schema:** Session-Buddy health schema compliance
-4. **Configuration:** Oneiric configuration patterns
-5. **Lifecycle:** Standardized server lifecycle management
-6. **Observability:** Comprehensive monitoring and logging
-7. **Testing:** Comprehensive compliance testing
-8. **Documentation:** Complete and accurate documentation
+1. **Runtime Cache:** Consistent cache structure and management
+1. **Health Schema:** Session-Buddy health schema compliance
+1. **Configuration:** Oneiric configuration patterns
+1. **Lifecycle:** Standardized server lifecycle management
+1. **Observability:** Comprehensive monitoring and logging
+1. **Testing:** Comprehensive compliance testing
+1. **Documentation:** Complete and accurate documentation
 
 ### Compliance Checklist
 
@@ -764,21 +810,22 @@ def test_runtime_cache_compliance():
 - [ ] ✅ Add compliance testing to CI/CD
 - [ ] ✅ Monitor compliance during migration
 
----
+______________________________________________________________________
 
-**Document Status:** ✅ COMPLETED  
-**Last Updated:** 2025-12-30  
-**Next Review:** 2026-01-01  
-**Owner:** [Your Name]  
+**Document Status:** ✅ COMPLETED
+**Last Updated:** 2025-12-30
+**Next Review:** 2026-01-01
+**Owner:** [Your Name]
 **Review Frequency:** Weekly during migration
 
----
+______________________________________________________________________
 
 ## 🎉 Contract Approval
 
 **Approvers:**
+
 - [ ] **Technical Lead:** [Name] - [Date]
-- [ ] **QA Lead:** [Name] - [Date]  
+- [ ] **QA Lead:** [Name] - [Date]
 - [ ] **Documentation Lead:** [Name] - [Date]
 - [ ] **Product Owner:** [Name] - [Date]
 

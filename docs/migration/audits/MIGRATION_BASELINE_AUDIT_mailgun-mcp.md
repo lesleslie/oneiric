@@ -1,9 +1,9 @@
 # mailgun-mcp Migration Baseline Audit
 
-**Project:** mailgun-mcp  
-**Date:** 2025-12-30  
-**Version:** 0.1.3  
-**Status:** Pre-migration baseline  
+**Project:** mailgun-mcp
+**Date:** 2025-12-30
+**Version:** 0.1.3
+**Status:** Pre-migration baseline
 
 ## Executive Summary
 
@@ -31,11 +31,13 @@ mailgun-mcp/
 ### Current Dependencies
 
 **Production Dependencies:**
+
 - `fastmcp` - FastMCP framework (to be replaced with Oneiric)
 - `mcp-common` - Common MCP utilities
 - `acb` - ACB framework (to be removed)
 
 **Development Dependencies:**
+
 - `crackerjack>=0.39.1`
 - `excalidraw-mcp>=0.34.0`
 - `session-buddy>=0.4.0`
@@ -43,11 +45,13 @@ mailgun-mcp/
 ### Current CLI Patterns
 
 **Current Entry Point:**
+
 - No direct CLI entry point found
 - Currently runs as: `python -m mailgun_mcp` (but no __main__.py)
 - Uses FastMCP's built-in server startup
 
 **Current Commands:**
+
 - No explicit CLI commands defined
 - Server starts via FastMCP's `mcp.http_app`
 - Configuration via environment variables
@@ -55,28 +59,34 @@ mailgun-mcp/
 ### ACB Usage Inventory
 
 **ACB Dependencies Found:**
+
 1. **Imports:**
+
    - `from acb.adapters import import_adapter` (line 49)
    - `from acb.depends import depends` (line 50)
 
-2. **Usage Patterns:**
+1. **Usage Patterns:**
+
    - ACB Requests adapter for HTTP requests (lines 236-320)
    - Dependency injection via `depends.get(Requests)` (line 240)
    - Fallback to httpx when ACB not available
 
-3. **Lock File References:**
+1. **Lock File References:**
+
    - `acb` editable dependency: `"../acb"` (uv.lock lines 12, 2535)
    - Multiple ACB package references throughout lock file
 
 ### Test Coverage Baseline
 
-**Current Coverage:** 46%  
+**Current Coverage:** 46%
 **Test Files:**
+
 - `tests/test_main.py` - 645 lines of comprehensive tests
 - Tests cover all major Mailgun API endpoints
 - Mock-based testing for HTTP requests
 
 **Test Categories:**
+
 - ✅ Email sending (send_message)
 - ✅ Domain management (get_domains, create_domain, etc.)
 - ✅ Event tracking (get_events, get_stats)
@@ -88,6 +98,7 @@ mailgun-mcp/
 ### Configuration Patterns
 
 **Current Configuration:**
+
 - Environment variables: `MAILGUN_API_KEY`, `MAILGUN_DOMAIN`
 - FastMCP configuration in `pyproject.toml`:
   ```toml
@@ -100,12 +111,14 @@ mailgun-mcp/
 ### Runtime Behavior
 
 **Current Startup:**
+
 1. Validates Mailgun API key at startup
-2. Initializes FastMCP server with 31 tools
-3. Sets up rate limiting middleware
-4. Uses ACB Requests adapter for HTTP (with httpx fallback)
+1. Initializes FastMCP server with 31 tools
+1. Sets up rate limiting middleware
+1. Uses ACB Requests adapter for HTTP (with httpx fallback)
 
 **Current Health/Status:**
+
 - No explicit health endpoints
 - No runtime snapshots
 - No PID file management
@@ -116,8 +129,9 @@ mailgun-mcp/
 ### CLI Migration Requirements
 
 **New Oneiric CLI Commands Needed:**
+
 - `mailgun-mcp start` - Start the MCP server
-- `mailgun-mcp stop` - Stop the running server  
+- `mailgun-mcp stop` - Stop the running server
 - `mailgun-mcp restart` - Restart the server
 - `mailgun-mcp status` - Show server status
 - `mailgun-mcp health` - Health check endpoint
@@ -126,6 +140,7 @@ mailgun-mcp/
 ### Configuration Migration Requirements
 
 **New Configuration Pattern:**
+
 ```python
 from oneiric.core.config import OneiricMCPConfig
 from pydantic import Field
@@ -144,16 +159,18 @@ class MailgunConfig(OneiricMCPConfig):
 ### ACB Removal Requirements
 
 **ACB Components to Remove:**
+
 1. ✅ Remove `acb.adapters` imports
-2. ✅ Remove `acb.depends` usage
-3. ✅ Remove ACB Requests adapter dependency
-4. ✅ Remove ACB from pyproject.toml/dev dependencies
-5. ✅ Remove ACB from uv.lock
-6. ✅ Update HTTP client to use Oneiric patterns
+1. ✅ Remove `acb.depends` usage
+1. ✅ Remove ACB Requests adapter dependency
+1. ✅ Remove ACB from pyproject.toml/dev dependencies
+1. ✅ Remove ACB from uv.lock
+1. ✅ Update HTTP client to use Oneiric patterns
 
 ### Runtime Cache Requirements
 
 **New Runtime Cache Files:**
+
 - `.oneiric_cache/server.pid` - PID file
 - `.oneiric_cache/runtime_health.json` - Health snapshot
 - `.oneiric_cache/runtime_telemetry.json` - Telemetry data
@@ -161,6 +178,7 @@ class MailgunConfig(OneiricMCPConfig):
 ### Health Schema Requirements
 
 **New Health Schema (mcp-common.health):**
+
 ```python
 from mcp_common.health import HealthStatus, ComponentHealth, HealthCheckResponse
 
@@ -187,6 +205,7 @@ class MailgunHealthCheck:
 ## Migration Checklist
 
 ### Phase 1: Foundation (Completed ✅)
+
 - [x] Create baseline audit document
 - [x] Create pre-migration rollback tag (`v1.0.0-pre-migration`)
 - [x] Document current CLI patterns
@@ -194,6 +213,7 @@ class MailgunHealthCheck:
 - [x] Complete ACB removal inventory
 
 ### Phase 2: Integration Layer
+
 - [ ] Develop Oneiric CLI factory integration
 - [ ] Create MailgunConfig class
 - [ ] Implement lifecycle hooks (start, stop, health)
@@ -201,6 +221,7 @@ class MailgunHealthCheck:
 - [ ] Update HTTP client to Oneiric patterns
 
 ### Phase 3: Migration Implementation
+
 - [ ] Replace FastMCP with OneiricMCPServer
 - [ ] Integrate Oneiric CLI factory
 - [ ] Remove all ACB dependencies
@@ -209,6 +230,7 @@ class MailgunHealthCheck:
 - [ ] Update configuration patterns
 
 ### Phase 4: Testing & Validation
+
 - [ ] Maintain ≥46% test coverage
 - [ ] Add Oneiric-specific tests
 - [ ] Validate CLI commands
@@ -216,6 +238,7 @@ class MailgunHealthCheck:
 - [ ] Verify health schema compliance
 
 ### Phase 5: Rollout
+
 - [ ] Create user migration guide
 - [ ] Update documentation
 - [ ] Test rollback procedures
@@ -224,6 +247,7 @@ class MailgunHealthCheck:
 ## Rollback Procedures
 
 ### Rollback to Pre-Migration State
+
 ```bash
 # 1. Checkout pre-migration tag
 git checkout v1.0.0-pre-migration
@@ -241,6 +265,7 @@ pytest tests/test_main.py -v
 ## Success Criteria
 
 ### Technical Success Metrics
+
 - ✅ All ACB dependencies removed
 - ✅ Oneiric CLI factory implemented
 - ✅ Standardized lifecycle management
@@ -249,6 +274,7 @@ pytest tests/test_main.py -v
 - ✅ Test coverage ≥46% maintained
 
 ### User Success Metrics
+
 - ✅ Clear migration guide provided
 - ✅ CLI command mapping documented
 - ✅ Configuration migration examples
@@ -257,10 +283,10 @@ pytest tests/test_main.py -v
 ## Next Steps
 
 1. **Immediate:** Begin Phase 2 - Integration Layer
-2. **Priority:** Develop Oneiric CLI factory for mailgun-mcp
-3. **Focus:** Remove ACB dependencies and replace with Oneiric patterns
-4. **Testing:** Ensure all existing functionality preserved
-5. **Documentation:** Create user migration guide
+1. **Priority:** Develop Oneiric CLI factory for mailgun-mcp
+1. **Focus:** Remove ACB dependencies and replace with Oneiric patterns
+1. **Testing:** Ensure all existing functionality preserved
+1. **Documentation:** Create user migration guide
 
 ## References
 
@@ -269,8 +295,8 @@ pytest tests/test_main.py -v
 - **Health Schema:** `mcp_common.health`
 - **Migration Plan:** `MCP_SERVER_MIGRATION_PLAN.md`
 
----
+______________________________________________________________________
 
-**Audit Completed:** 2025-12-30  
-**Audit Status:** BASELINE ESTABLISHED  
+**Audit Completed:** 2025-12-30
+**Audit Status:** BASELINE ESTABLISHED
 **Next Review:** Phase 2 Integration Layer
