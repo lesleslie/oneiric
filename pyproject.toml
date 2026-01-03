@@ -289,7 +289,7 @@ fixable = [
 # QA adapter timeouts (in seconds)
 # Note: Hook lists are not configurable via pyproject.toml - hooks are defined in crackerjack
 # These timeouts apply to both direct adapter execution AND hook execution
-skylos_timeout = 900  # 15 minutes for skylos analysis (analyzes 71 files)
+skylos_timeout = 600  # 10 minutes for skylos analysis (analyzes 71 files)
 refurb_timeout = 120  # 2 minutes for refurb analysis
 
 [tool.skylos]
