@@ -10,7 +10,7 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any, cast
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from oneiric.runtime.health import default_runtime_health_path
 
@@ -201,10 +201,11 @@ class OneiricMCPConfig(BaseModel):
     environment: str = "development"
     cache_dir: str = ".oneiric_cache"
 
-    class Config:
-        env_prefix = "ONEIRIC_MCP_"
-        env_file = ".env"
-        extra = "allow"
+    model_config = ConfigDict(
+        env_prefix="ONEIRIC_MCP_",
+        env_file=".env",
+        extra="allow",
+    )
 
 
 class OneiricSettings(BaseModel):
