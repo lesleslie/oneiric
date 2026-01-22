@@ -9,6 +9,54 @@ ______________________________________________________________________
 
 ## 1. Overview
 
+```mermaid
+graph TB
+    subgraph "Development"
+        Code["Oneiric Source Code"]
+        Procfile["Procfile<br/>(web process)"]
+        Config["config/serverless.toml"]
+    end
+
+    subgraph "Build Pipeline"
+        Pack["pack CLI<br/>or gcloud run deploy"]
+        Buildpack["Python Buildpack<br/>+ dependencies"]
+        Image["Container Image<br/>(Artifact Registry)"]
+    end
+
+    subgraph "Deployment"
+        CloudRun["Google Cloud Run<br/>(0 → N scale)"]
+        Supervisor["Runtime Orchestrator<br/>+ Supervisor Loop"]
+        SecretMgr["Secret Manager<br/>(secrets adapter)"]
+    end
+
+    subgraph "Configuration Layers"
+        Inline["Inline Manifests<br/>(baked into image)"]
+        Secrets["Secret Manager<br/>(runtime secrets)"]
+        Env["Env Vars<br/>(local dev fallback)"]
+    end
+
+    Code --> Pack
+    Procfile --> Pack
+    Config --> Pack
+
+    Pack --> Buildpack
+    Buildpack --> Image
+    Image --> CloudRun
+
+    CloudRun --> Supervisor
+    Supervisor -->|"reads"| Inline
+    Supervisor -->|"fetches"| Secrets
+    Inline -->|"fallback"| Env
+
+    Secrets --> SecretMgr
+
+    style CloudRun fill:#e1f5ff
+    style Secrets fill:#fff4e1
+    style Supervisor fill:#f0e1ff
+```
+
+**Deployment Architecture:**
+
 | Item | Decision |
 |------|----------|
 | Runtime | Google Cloud Run (container revisions, 0 → N scale) |
@@ -106,6 +154,38 @@ Tips:
 ______________________________________________________________________
 
 ## 6. Secrets & Configuration
+
+```mermaid
+graph TD
+    subgraph "Configuration Precedence"
+        SecretMgr["Secret Manager<br/>(Highest Priority)"]
+        EnvVars["Environment Variables<br/>(Medium Priority)"]
+        Manifest["Inline Manifests<br/>(Low Priority)"]
+        Config["Effective Configuration"]
+    end
+
+    subgraph "Health Verification"
+        HealthCmd["health --probe --json"]
+        SupervCmd["supervisor-info --json"]
+        Release["Release Notes"]
+    end
+
+    SecretMgr -->|"overrides"| Config
+    EnvVars -->|"overrides"| Config
+    Manifest -->|"fallback"| Config
+
+    Config --> HealthCmd
+    Config --> SupervCmd
+    HealthCmd --> Release
+    SupervCmd --> Release
+
+    style SecretMgr fill:#e1f5ff
+    style EnvVars fill:#fff4e1
+    style Manifest fill:#f0e1ff
+    style Release fill:#ccffcc
+```
+
+**Configuration Strategy:**
 
 1. **Secret Manager adapter** – configure `settings.secrets.provider = "gcp.secret_manager"` and grant the Cloud Run service account `roles/secretmanager.secretAccessor`.
 1. **Inline manifests** – package critical manifest entries into your TOML (or embed as JSON inside the repo); the serverless profile assumes no remote polling unless you opt in.

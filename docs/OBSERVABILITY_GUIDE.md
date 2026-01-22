@@ -3,6 +3,43 @@
 This guide explains how to configure Oneiric's structured logging, context helpers,
 the resiliency controls for remote manifest fetches, and the runtime telemetry + ChatOps notification helpers introduced in 0.2.0.
 
+```mermaid
+graph TB
+    subgraph "Logging Pipeline"
+        Logs["Application Logs"]
+        Struct["structlog Processors"]
+        Sinks["Logging Sinks"]
+
+        Logs --> Struct
+        Struct --> Sinks
+
+        Sinks --> Stdout["stdout<br/>JSON"]
+        Sinks --> Stderr["stderr<br/>Crashes"]
+        Sinks --> File["File<br/>Rotating"]
+        Sinks --> HTTP["HTTP Endpoint<br/>Optional"]
+
+        style Logs fill:#e1f5ff
+        style Struct fill:#fff4e1
+        style Sinks fill:#e1ffe1
+    end
+
+    subgraph "Telemetry"
+        RT["Runtime Telemetry<br/>.oneiric_cache/runtime_telemetry.json"]
+        Inspector["CLI Inspectors<br/>orchestrate --print-dag --events"]
+        Router["Notification Router<br/>workflow.notify"]
+
+        RT --> Inspector
+        Router -->|"Slack/Teams/Webhook"| Chatops["ChatOps Adapters"]
+
+        style RT fill:#f0e1ff
+        style Inspector fill:#ffe1f0
+        style Chatops fill:#ccffcc
+    end
+
+    Logging["Structured Logging"] --> Struct
+    Remote["Remote Resiliency"] -->|"httpx + tenacity/aiobreaker"| Struct
+```
+
 ## Structured Logging Setup
 
 - `OneiricSettings.logging` now exposes `LoggingConfig`, which accepts multiple

@@ -16,7 +16,7 @@ def run_skylos_on_directory(directory, exclude_folders):
         cmd.extend(["--exclude-folder", folder])
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=180)  # Increased from 60 to 180 seconds
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
         if result.returncode != 0:
             print(f"Error running skylos on {directory}: {result.stderr}")
             return False
@@ -43,7 +43,6 @@ def main():
         "htmlcov",
         ".pytest_cache",
         "tests",
-        "adapters",
     ]
 
     # Directories to analyze

@@ -28,6 +28,36 @@ This guide configures Prometheus to monitor Oneiric's resolution layer, lifecycl
 - **Recording Rules:** Pre-aggregated metrics for dashboards
 - **Alert Rules:** Critical and warning alerts for operational issues
 
+```mermaid
+graph LR
+    subgraph "Oneiric Application"
+        App["Oneiric Runtime"]
+        Metrics["Metrics Endpoint<br/>:8000/metrics"]
+    end
+
+    subgraph "Prometheus Stack"
+        Prom["Prometheus Server"]
+        Rules["Recording Rules"]
+        Alerts["Alert Rules"]
+        AM["AlertManager"]
+    end
+
+    subgraph "Visualization"
+        Grafana["Grafana Dashboards"]
+    end
+
+    App -->|"Scrape every 10s"| Metrics
+    Metrics --> Prom
+    Prom --> Rules
+    Prom --> Alerts
+    Alerts -->|"Fire Alerts"| AM
+    Prom -->|"Query Data"| Grafana
+
+    style App fill:#e1f5ff
+    style Prom fill:#ffe1e1
+    style Grafana fill:#e1ffe1
+```
+
 ### Key Metrics Categories
 
 | Category | Metrics | Purpose |

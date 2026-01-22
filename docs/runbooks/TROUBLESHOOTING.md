@@ -40,6 +40,39 @@ ______________________________________________________________________
 
 ### Standard Approach (DEDUCE)
 
+```mermaid
+graph TD
+    Start["Issue Detected"]
+    Define["D: Define Problem<br/>What is symptom?<br/>When did it start?"]
+    Examine["E: Examine System<br/>Check logs, metrics, config"]
+    Determine["D: Determine Root Cause<br/>Why is this happening?"]
+    Understand["U: Understand Fix<br/>What needs to change?"]
+    Correct["C: Correct Issue<br/>Apply the fix"]
+    Evaluate["E: Evaluate Solution<br/>Verify problem resolved"]
+    Done{"Resolved?"}
+    Escalate["Escalate to on-call<br/>or create incident ticket"]
+
+    Start --> Define
+    Define --> Examine
+    Examine --> Determine
+    Determine --> Understand
+    Understand --> Correct
+    Correct --> Evaluate
+    Evaluate --> Done
+    Done -->|"Yes"| Complete["✓ Issue Resolved"]
+    Done -->|"No"| Understand
+
+    style Define fill:#e1f5ff
+    style Examine fill:#fff4e1
+    style Determine fill:#f0e1ff
+    style Understand fill:#ffe1f0
+    style Correct fill:#e1ffe1
+    style Evaluate fill:#ccffcc
+    style Escalate fill:#ffcccc
+```
+
+**DEDUCE Steps:**
+
 1. **D**efine the problem - What is the symptom? When did it start?
 1. **E**xamine the system - Check logs, metrics, configuration
 1. **D**etermine root cause - Why is this happening?
@@ -63,6 +96,47 @@ ______________________________________________________________________
 ______________________________________________________________________
 
 ## Quick Reference
+
+```mermaid
+graph TD
+    Issue["Issue Symptom"]
+    Symptom1{"Component not<br/>resolving?"}
+    Symptom2{"Swaps failing<br/>frequently?"}
+    Symptom3{"Remote sync<br/>timeouts?"}
+    Symptom4{"High P99<br/>latency?"}
+    Symptom5{"Config not<br/>applying?"}
+    Symptom6{"Logs/metrics<br/>missing?"}
+
+    Cause1["No candidates registered<br/>Check: list, plugins"]
+    Cause2["Health check failures<br/>Check: health, logs"]
+    Cause3["Network/firewall<br/>Check: connectivity, timeouts"]
+    Cause4["Resource contention<br/>Check: metrics, resources"]
+    Cause5["YAML syntax errors<br/>Check: config validation"]
+    Cause6["Scraping issues<br/>Check: Promtail, Prometheus"]
+
+    Issue --> Symptom1
+    Issue --> Symptom2
+    Issue --> Symptom3
+    Issue --> Symptom4
+    Issue --> Symptom5
+    Issue --> Symptom6
+
+    Symptom1 -->|"Yes"| Cause1
+    Symptom2 -->|"Yes"| Cause2
+    Symptom3 -->|"Yes"| Cause3
+    Symptom4 -->|"Yes"| Cause4
+    Symptom5 -->|"Yes"| Cause5
+    Symptom6 -->|"Yes"| Cause6
+
+    style Cause1 fill:#ffcccc
+    style Cause2 fill:#ffcccc
+    style Cause3 fill:#fff4e1
+    style Cause4 fill:#fff4e1
+    style Cause5 fill:#ccffcc
+    style Cause6 fill:#ccffcc
+```
+
+**Quick Decision Tree:**
 
 | Symptom | Likely Cause | Section | Severity |
 |---------|--------------|---------|----------|

@@ -43,6 +43,35 @@ ______________________________________________________________________
 
 ## 3. Execution Tracks
 
+```mermaid
+gantt
+    title Oneiric Execution Tracks
+    dateFormat YYYY-MM-DD
+    section Adapter Remediation
+    Messaging bundle         :done, a1, 2024-10-01, 60d
+    Cloud Tasks/PubSub        :done, a2, 2024-12-01, 45d
+    NoSQL adapters            :active, a3, 2024-12-15, 30d
+    Graph + DNS/FileTransfer   :crit, a4, 2025-01-01, 60d
+
+    section Serverless Profile
+    Procfile + buildpack docs  :done, b1, 2024-11-01, 30d
+    CLI profile env var         :done, b2, 2024-11-15, 15d
+    Cloud Run screenshots      :active, b3, 2025-01-01, 30d
+    Caching patterns           :b4, 2025-02-01, 30d
+
+    section Platform Parity
+    Event routing              :c1, 2025-02-01, 60d
+    Task DAGs                  :c2, 2025-03-01, 60d
+    Service supervisors        :c3, 2025-04-01, 45d
+
+    section Remote Delivery
+    Inline manifest packaging  :done, d1, 2024-11-01, 30d
+    CLI support                :active, d2, 2025-01-01, 30d
+    Serverless optimization    :d3, 2025-02-01, 45d
+```
+
+**Track Overview:**
+
 | Track | Goal | Key Tasks | Status |
 |-------|------|-----------|--------|
 | **Adapter Remediation** | Complete registration, dependency hygiene, metadata coverage, tests | `ADAPTER_REMEDIATION_PLAN.md`, `ADAPTER_REMEDIATION_EXECUTION.md` | In progress (Messaging bundle, Cloud Tasks/PubSub, NoSQL, and streaming queues shipped; graph + DNS/FileTransfer next) |
@@ -54,6 +83,25 @@ ______________________________________________________________________
 ______________________________________________________________________
 
 ## 4. Milestones
+
+```mermaid
+graph LR
+    M0["M0: Baseline<br/>✅ Complete<br/>Adapter remediation started"]
+    M1["M1: Serverless-ready<br/>Target: Q1 2026<br/>Procfile + buildpack docs"]
+    M2["M2: Platform parity<br/>Target: Q2 2026<br/>Events + DAGs + supervisors"]
+    M3["M3: Cut-over<br/>Target: TBD<br/>ACB archived"]
+
+    M0 -->|"70% complete"| M1
+    M1 -->|"20% complete"| M2
+    M2 -->|"Not started"| M3
+
+    style M0 fill:#ccffcc
+    style M1 fill:#fff4e1
+    style M2 fill:#ffe1f0
+    style M3 fill:#f0f0f0
+```
+
+**Milestone Details:**
 
 1. **M0 – Baseline (Complete):** Adapter remediation underway, HTTP regression fixed, remote tests restored.
 1. **M1 – Serverless-ready runtime (Target Q1 2026):** Procfile + buildpack docs, resolver/serverless profile, lazy import guards.

@@ -57,6 +57,40 @@ ______________________________________________________________________
 
 **Timing:** Complete 24 hours before maintenance
 
+```mermaid
+graph LR
+    subgraph "Pre-Maintenance Phase (24h before)"
+        Comm["1. Communication<br/>72h advance notice"]
+        Prep["2. Preparation<br/>Backups + staging test"]
+        Mon["3. Monitoring<br/>Silence expected alerts"]
+        Access["4. Access<br/>Verify prod access"]
+    end
+
+    subgraph "Maintenance Phase"
+        Execute["Execute maintenance<br/>Follow runbook"]
+        Monitor["Monitor progress<br/>Check metrics/logs"]
+    end
+
+    subgraph "Post-Maintenance Phase"
+        Verify["Verify success<br/>Health checks"]
+        Cleanup["Cleanup<br/>Remove silences"]
+        Document["Document<br/>Update runbooks"]
+    end
+
+    Comm --> Prep --> Mon --> Access
+    Access --> Execute
+    Execute --> Monitor
+    Monitor --> Verify
+    Verify --> Cleanup --> Document
+
+    style Comm fill:#e1f5ff
+    style Prep fill:#fff4e1
+    style Mon fill:#f0e1ff
+    style Access fill:#ffe1f0
+    style Execute fill:#ccffcc
+    style Verify fill:#e1ffe1
+```
+
 ### 1. Communication
 
 ```markdown
@@ -796,24 +830,58 @@ ______________________________________________________________________
 
 ### General Rollback Decision Tree
 
+```mermaid
+graph TD
+    Issue["Issue Detected During/After Maintenance"]
+    Assess{"Assess Severity"}
+    P0["P0: Critical<br/>Service down, data loss risk"]
+    P1["P1: High<br/>Degraded service<br/>< 99% success rate"]
+    P2["P2: Medium<br/>Warnings<br/>< 100% success rate"]
+    P3["P3: Low<br/>Cosmetic<br/>No user impact"]
+
+    RollbackNow["ROLLBACK IMMEDIATELY<br/>No approval needed<br/>Notify after"]
+    FixAttempt1["Attempt fix<br/>15 minutes"]
+    Check1{"Resolved?"}
+    Rollback1["ROLLBACK"]
+    FixAttempt2["Attempt fix<br/>30 minutes"]
+    Check2{"Resolved?"}
+    Decision["ROLLBACK or<br/>forward-fix"]
+    ForwardFix["Forward-fix<br/>during business hours"]
+
+    Issue --> Assess
+    Assess -->|"Critical"| P0
+    Assess -->|"High"| P1
+    Assess -->|"Medium"| P2
+    Assess -->|"Low"| P3
+
+    P0 --> RollbackNow
+    P1 --> FixAttempt1
+    P2 --> FixAttempt2
+    P3 --> ForwardFix
+
+    FixAttempt1 --> Check1
+    Check1 -->|"Yes"| Success["✓ Resolved"]
+    Check1 -->|"No"| Rollback1
+
+    FixAttempt2 --> Check2
+    Check2 -->|"Yes"| Success
+    Check2 -->|"No"| Decision --> ForwardFix
+
+    style RollbackNow fill:#ffcccc
+    style Rollback1 fill:#ffcccc
+    style Success fill:#ccffcc
+    style ForwardFix fill:#fff4e1
+
+    note1["Emergency rollback:<br/>Restore from backup<br/>or redeploy previous version"]
+    note2["Document rollback<br/>in post-mortem"]
 ```
-Issue detected during/after maintenance
-  │
-  ├─ P0 Critical (service down, data loss risk)
-  │  └─> ROLLBACK IMMEDIATELY
-  │      (No approval needed, notify after)
-  │
-  ├─ P1 High (degraded service, < 99% success rate)
-  │  └─> Attempt fix for 15 minutes
-  │      └─> If not resolved: ROLLBACK
-  │
-  ├─ P2 Medium (warnings, < 100% success rate)
-  │  └─> Attempt fix for 30 minutes
-  │      └─> If not resolved: ROLLBACK or forward-fix
-  │
-  └─ P3 Low (cosmetic, no user impact)
-     └─> Forward-fix during business hours
-```
+
+**Rollback Decision Logic:**
+
+- **P0 Critical** (service down, data loss risk) → ROLLBACK IMMEDIATELY (no approval needed, notify after)
+- **P1 High** (degraded service, < 99% success rate) → Attempt fix for 15 minutes, then ROLLBACK if not resolved
+- **P2 Medium** (warnings, < 100% success rate) → Attempt fix for 30 minutes, then ROLLBACK or forward-fix
+- **P3 Low** (cosmetic, no user impact) → Forward-fix during business hours
 
 ### Rollback Contacts
 

@@ -69,6 +69,48 @@ ______________________________________________________________________
 
 ## Documentation Structure
 
+```mermaid
+graph TB
+    subgraph "Documentation Root"
+        Essential["Essential Documents<br/>(architecture, comparison)"]
+        Roadmap["Strategic Roadmap<br/>(priorities, execution tracks)"]
+        Reference["Reference Guides<br/>(manifests, security)"]
+    end
+
+    subgraph "Core Directories"
+        Migration["migration/<br/>MCP server migration"]
+        Implementation["implementation/<br/>plans & execution"]
+        Analysis["analysis/<br/>audits & technical review"]
+        Deployment["deployment/<br/>operations guides"]
+        Monitoring["monitoring/<br/>observability stack"]
+        Runbooks["runbooks/<br/>operational procedures"]
+        Examples["examples/<br/>tutorials & samples"]
+        Archive["archive/<br/>historical records"]
+    end
+
+    Essential --> Migration
+    Essential --> Implementation
+    Essential --> Deployment
+    Essential --> Monitoring
+
+    Roadmap --> Implementation
+    Roadmap --> Analysis
+
+    Reference --> Implementation
+    Reference --> Analysis
+
+    Migration --> Examples
+    Implementation --> Examples
+    Deployment --> Runbooks
+    Monitoring --> Runbooks
+
+    Implementation --> Archive
+
+    style Essential fill:#e1f5ff
+    style Roadmap fill:#fff4e1
+    style Reference fill:#f0e1ff
+```
+
 ### `/` (Root) - Essential Documents
 
 **Quick Reference:**
@@ -187,7 +229,58 @@ ______________________________________________________________________
 
 ## Key Documents by Use Case
 
-### For New Users
+```mermaid
+graph TD
+    subgraph "New User Journey"
+        NU1["1. ONEIRIC_VS_ACB.md<br/>Understand relationship"]
+        NU2["2. NEW_ARCH_SPEC.md<br/>Learn architecture"]
+        NU3["3. LOCAL_CLI_DEMO.md<br/>Try CLI commands"]
+        NU4["4. OBSERVABILITY_GUIDE.md<br/>Set up logging"]
+    end
+
+    subgraph "Operator Journey"
+        OP1["1. deployment/<br/>Choose deployment method"]
+        OP2["2. monitoring/<br/>Set up observability"]
+        OP3["3. runbooks/<br/>Learn procedures"]
+        OP4["4. INCIDENT_RESPONSE.md<br/>Practice incident response"]
+    end
+
+    subgraph "Developer Journey"
+        DEV1["1. RESOLUTION_LAYER_SPEC.md<br/>Resolution internals"]
+        DEV2["2. REMOTE_MANIFEST_SCHEMA.md<br/>Manifest format"]
+        DEV3["3. SIGNATURE_VERIFICATION.md<br/>Security system"]
+        DEV4["4. implementation/<br/>Active plans"]
+        DEV5["5. analysis/<br/>Quality audits"]
+    end
+
+    subgraph "Migration Journey"
+        MIG1["1. ONEIRIC_VS_ACB.md<br/>Migration guide"]
+        MIG2["2. ACB_ADAPTER_ACTION_IMPLEMENTATION.md<br/>Porting details"]
+        MIG3["3. CUTOVER_VALIDATION_CHECKLIST.md<br/>Required artifacts"]
+        MIG4["4. migration/<br/>Tracking dashboard"]
+    end
+
+    subgraph "Planning Journey"
+        PLAN1["1. STAGE5_FINAL_AUDIT_REPORT.md<br/>Production readiness"]
+        PLAN2["2. STRATEGIC_ROADMAP.md<br/>Current priorities"]
+        PLAN3["3. SERVERLESS_AND_PARITY_EXECUTION_PLAN.md<br/>Execution plan"]
+        PLAN4["4. UNCOMPLETED_TASKS.md<br/>Future enhancements"]
+    end
+
+    NU1 --> NU2 --> NU3 --> NU4
+    OP1 --> OP2 --> OP3 --> OP4
+    DEV1 --> DEV2 --> DEV3 --> DEV4 --> DEV5
+    MIG1 --> MIG2 --> MIG3 --> MIG4
+    PLAN1 --> PLAN2 --> PLAN3 --> PLAN4
+
+    style NU1 fill:#e1f5ff
+    style OP1 fill:#fff4e1
+    style DEV1 fill:#f0e1ff
+    style MIG1 fill:#ffe1f0
+    style PLAN1 fill:#e1ffe1
+```
+
+**### For New Users**
 
 1. **[ONEIRIC_VS_ACB.md](ONEIRIC_VS_ACB.md)** - Understand Oneiric vs ACB relationship
 1. **[NEW_ARCH_SPEC.md](NEW_ARCH_SPEC.md)** - Learn core architecture

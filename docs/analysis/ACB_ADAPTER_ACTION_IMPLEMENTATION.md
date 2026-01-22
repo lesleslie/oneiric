@@ -1,6 +1,48 @@
 # ACB Adapter & Action Migration Implementation Plan
 
-Purpose: migrate all ACB adapters and action utilities into Oneiric’s unified resolver/lifecycle stack without maintaining any legacy compatibility layers.
+Purpose: migrate all ACB adapters and action utilities into Oneiric's unified resolver/lifecycle stack without maintaining any legacy compatibility layers.
+
+```mermaid
+graph LR
+    subgraph "ACB Legacy"
+        ACBAdapters["ACB Adapters<br/>(Legacy)"]
+        ACBActions["ACB Actions<br/>(Legacy)"]
+    end
+
+    subgraph "Migration Pipeline"
+        S0["S0: Inventory<br/>✅ Complete"]
+        S1["S1: Framework<br/>✅ Complete"]
+        S2["S2: Adapters<br/>🔄 In Progress"]
+        S3["S3: Actions<br/>✅ Complete"]
+        S4["S4: Remote<br/>✅ Complete"]
+        S5["S5: Hardening<br/>☐ Pending"]
+    end
+
+    subgraph "Oneiric Target"
+        OneiricAdapters["Oneiric Adapters<br/>Resolver + Lifecycle"]
+        OneiricActions["Oneiric Actions<br/>Domain Bridges"]
+    end
+
+    ACBAdapters -->|"Wave A/B/C"| S0
+    ACBActions -->|"Wave A/B/C"| S0
+    S0 --> S1
+    S1 --> S2
+    S1 --> S3
+    S2 --> S4
+    S3 --> S4
+    S4 --> S5
+    S5 --> OneiricAdapters
+    S5 --> OneiricActions
+
+    style S0 fill:#ccffcc
+    style S1 fill:#ccffcc
+    style S2 fill:#fff4e1
+    style S3 fill:#ccffcc
+    style S4 fill:#ccffcc
+    style S5 fill:#f0f0f0
+    style OneiricAdapters fill:#e1f5ff
+    style OneiricActions fill:#e1ffe1
+```
 
 ## Ground Rules
 

@@ -24,6 +24,30 @@ ______________________________________________________________________
 
 This guide provides production-ready Grafana dashboards for monitoring Oneiric's resolution layer, lifecycle operations, remote sync, and system health.
 
+```mermaid
+graph TB
+    subgraph "Dashboard Hierarchy"
+        Overview["Overview Dashboard<br/>Executive Summary"]
+        DeepDive["Deep Dive Dashboards"]
+        Perf["Performance Dashboard"]
+
+        Overview -->|"Drill down"| DeepDive
+        Overview --> Perf
+
+        DeepDive --> Res["Resolution<br/>Component Discovery"]
+        DeepDive --> Life["Lifecycle<br/>Hot-Swap Operations"]
+        DeepDive --> Remote["Remote Sync<br/>Manifest Loading"]
+        DeepDive --> Activity["Activity State<br/>Pause/Drain"]
+
+        Perf -->|"SLI/SLO Tracking"| SLO["Performance Analysis<br/>Latency & Throughput"]
+    end
+
+    style Overview fill:#e1f5ff
+    style Perf fill:#fff4e1
+    style DeepDive fill:#e1ffe1
+    style SLO fill:#f0e1ff
+```
+
 ### Dashboard Suite
 
 | Dashboard | Purpose | Metrics | Alerts |

@@ -33,6 +33,51 @@ Running Oneiric as a systemd service provides:
 - **Logging Integration:** Centralized logging via journald
 - **Health Monitoring:** Watchdog support for hanging processes
 
+```mermaid
+graph TB
+    subgraph "Linux System"
+        Boot["Boot"]
+        Systemd["systemd"]
+    end
+
+    subgraph "Oneiric Service"
+        Service["oneiric.service"]
+        PreExec["ExecStartPre<br/>health --probe"]
+        Exec["ExecStart<br/>uv run python -m oneiric.cli"]
+        PostExec["ExecStopPost<br/>cleanup"]
+    end
+
+    subgraph "Service Features"
+        Restart["Restart Policy<br/>on-failure"]
+        Limits["Resource Limits<br/>cgroups v2"]
+        Security["Security Hardening<br/>NoNewPrivileges"]
+        Logging["journald Logging<br/>StandardOutput=journal"]
+    end
+
+    subgraph "Monitoring"
+        Journald["journald"]
+        Prometheus["Prometheus<br/>:9090/metrics"]
+    end
+
+    Boot --> Systemd
+    Systemd --> Service
+    Service --> PreExec
+    PreExec -->|"Health check passed"| Exec
+    Exec -->|"Running"| Restart
+    Exec -->|"Crashes"| Restart
+    Restart --> Limits
+    Restart --> Security
+    Exec --> Logging
+    Logging --> Journald
+    Exec -->|"Metrics exposed"| Prometheus
+
+    style Boot fill:#e1f5ff
+    style Service fill:#fff4e1
+    style Exec fill:#ccffcc
+    style Security fill:#ffe1e1
+    style Prometheus fill:#e1ffe1
+```
+
 ______________________________________________________________________
 
 ## Prerequisites

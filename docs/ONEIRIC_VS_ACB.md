@@ -14,6 +14,39 @@ ______________________________________________________________________
 
 ### Quick Comparison
 
+```mermaid
+graph TB
+    subgraph "Feature Comparison"
+        Maturity["Maturity<br/>Oneiric: 95/100 vs ACB: 92/100"]
+        Production["Production Ready<br/>Both ✅"]
+        Tests["Test Coverage<br/>Oneiric: 526 vs ACB: 2,206"]
+        Adapters["Adapter System<br/>Oneiric: 30+ vs ACB: 60+"]
+        Resolution["Resolution<br/>Oneiric: 4-tier vs ACB: 2-tier"]
+        HotSwap["Hot-Swapping<br/>Oneiric: Built-in vs ACB: Manual"]
+        TypeSafety["Type Safety<br/>Oneiric: Manual vs ACB: IDE"]
+        Platform["Platform Features<br/>Oneiric: Infra vs ACB: Full"]
+    end
+
+    WinnerOneiric["Winner: Oneiric"]
+    WinnerACB["Winner: ACB"]
+    WinnerBoth["Winner: Both"]
+
+    Maturity --> WinnerOneiric
+    Production --> WinnerBoth
+    Tests --> WinnerACB
+    Adapters --> WinnerOneiric
+    Resolution --> WinnerOneiric
+    HotSwap --> WinnerOneiric
+    TypeSafety --> WinnerACB
+    Platform --> WinnerACB
+
+    style WinnerOneiric fill:#e1f5ff
+    style WinnerACB fill:#ffe1f0
+    style WinnerBoth fill:#ccffcc
+```
+
+**Detailed Comparison:**
+
 | Aspect | Oneiric | ACB | Winner |
 |--------|---------|-----|--------|
 | **Maturity** | 0.3.3 (95/100 audit at v0.2.0) | 0.31.10 (92/100) | Oneiric (quality) |
@@ -365,6 +398,59 @@ ______________________________________________________________________
 
 ### Hybrid Architecture
 
+```mermaid
+graph TB
+    subgraph "Application Layer"
+        App["Your Application"]
+    end
+
+    subgraph "Services Layer (ACB)"
+        DI["ACB Bevy DI<br/>(Type-Safe, Fast)"]
+        Service1["PaymentService"]
+        Service2["UserService"]
+        Service3["OrderService"]
+    end
+
+    subgraph "Adapters Layer (Oneiric)"
+        Resolver["Resolver<br/>(4-tier precedence)"]
+        Lifecycle["LifecycleManager<br/>(Hot-swap)"]
+        Cache["Cache Adapters<br/>(Redis, Memcached)"]
+        Storage["Storage Adapters<br/>(S3, GCS)"]
+        DB["Database Adapters<br/>(PostgreSQL, MySQL)"]
+        Secrets["Secrets Adapters<br/>(AWS, GCP)"]
+    end
+
+    subgraph "Events Layer (ACB - Optional)"
+        Events["ACB Event System<br/>(Pub/Sub + Redis/RabbitMQ)"]
+    end
+
+    App -->|"Type-safe DI"| DI
+    DI --> Service1
+    DI --> Service2
+    DI --> Service3
+
+    Service1 -->|"use() explainable"| Resolver
+    Service2 -->|"use() explainable"| Resolver
+    Service3 -->|"use() explainable"| Resolver
+
+    Resolver <--> Lifecycle
+    Lifecycle --> Cache
+    Lifecycle --> Storage
+    Lifecycle --> DB
+    Lifecycle --> Secrets
+
+    Service1 -->|"publish"| Events
+    Service2 -->|"publish"| Events
+    Service3 -->|"subscribe"| Events
+
+    style Resolver fill:#e1f5ff
+    style Lifecycle fill:#fff4e1
+    style DI fill:#f0e1ff
+    style Events fill:#ffe1f0
+```
+
+**Best of Both Worlds:**
+
 ```python
 # Services: Keep ACB DI (type-safe, fast)
 from acb import depends
@@ -400,7 +486,31 @@ ______________________________________________________________________
 
 ## Migration Strategy
 
-### Phase 1: Adapters Only (Low Risk)
+```mermaid
+graph LR
+    Start["Current State<br/>(ACB Only)"]
+    Phase1["Phase 1: Adapters<br/>2-3 weeks, Low Risk"]
+    Decision1{"Value<br/>Achieved?"}
+    Phase2["Phase 2: Services<br/>(Optional)<br/>4-6 weeks, Higher Risk"]
+    Decision2{"Need Multi-tenant<br/>or Hot-swap?"}
+    Stop["Stop - Keep ACB<br/>Services DI"]
+    Complete["Hybrid State<br/>Best of Both"]
+
+    Start --> Phase1
+    Phase1 --> Decision1
+    Decision1 -->|"Yes"| Decision2
+    Decision1 -->|"No"| Complete
+    Decision2 -->|"No"| Stop
+    Decision2 -->|"Yes"| Phase2
+    Phase2 --> Complete
+
+    style Phase1 fill:#ccffcc
+    style Phase2 fill:#fff4e1
+    style Stop fill:#ffcccc
+    style Complete fill:#e1f5ff
+```
+
+### Phase 1: Adapters Only (Low Risk) ⭐ **RECOMMENDED STARTING POINT**
 
 **Timeline:** 2-3 weeks
 **Effort:** Low
@@ -426,7 +536,7 @@ ______________________________________________________________________
 - ACB's event system (if using)
 - Proven stability
 
-### Phase 2: Services (Optional, Higher Risk)
+### Phase 2: Services (Optional, Higher Risk) ⚠️ **EVALUATE CAREFULLY**
 
 **Timeline:** 4-6 weeks
 **Effort:** High
@@ -440,7 +550,7 @@ ______________________________________________________________________
 
 **Otherwise:** Keep ACB's service DI
 
-### Phase 3: Full Migration (Not Recommended)
+### Phase 3: Full Migration (Not Recommended) ❌ **DON'T DO THIS**
 
 **Don't migrate:**
 
@@ -480,6 +590,39 @@ ______________________________________________________________________
 
 ## When to Use What
 
+```mermaid
+flowchart TD
+    Start["Choosing Between Oneiric and ACB"]
+    Q1{"Need<br/>Explainability?"}
+    Q2{"Need<br/>Hot-swapping?"}
+    Q3{"Building<br/>Multi-tenant?"}
+    Q4{"Need Type Safety<br/>IDE Support?"}
+    Q5{"Building Standard<br/>Web App?"}
+    Q6{"Need Remote<br/>Manifests?"}
+
+    Oneiric["Use Oneiric"]
+    ACB["Use ACB"]
+    Hybrid["Use Hybrid<br/>Oneiric Adapters + ACB DI"]
+
+    Start --> Q1
+    Q1 -->|"Yes"| Q2
+    Q1 -->|"No"| Q4
+    Q2 -->|"Yes"| Q3
+    Q2 -->|"No"| Q4
+    Q3 -->|"Yes"| Oneiric
+    Q3 -->|"No"| Q6
+    Q6 -->|"Yes"| Oneiric
+    Q6 -->|"No"| Q4
+    Q4 -->|"Yes"| Q5
+    Q4 -->|"No"| Oneiric
+    Q5 -->|"Yes"| Hybrid
+    Q5 -->|"No"| ACB
+
+    style Oneiric fill:#e1f5ff
+    style ACB fill:#ffe1f0
+    style Hybrid fill:#ccffcc
+```
+
 ### Use Oneiric If:
 
 1. ✅ You need **explainability** (debug component selection in production)
@@ -495,6 +638,12 @@ ______________________________________________________________________
 1. ✅ You need **proven stability** (v0.31.10, battle-tested)
 1. ✅ You value **simple DI** (`@depends.inject`)
 1. ✅ You're building **standard web apps** (SplashStand, FastBlocks)
+
+### Use Hybrid If (Best of Both):
+
+1. ✅ You want Oneiric adapters (explainability, hot-swap)
+1. ✅ You want ACB services (type safety, proven stability)
+1. ✅ You're migrating incrementally (low risk)
 1. ✅ Component selection is **static** (cache=redis, db=postgresql)
 1. ✅ You need **full platform** (events, tasks, workflows, services)
 

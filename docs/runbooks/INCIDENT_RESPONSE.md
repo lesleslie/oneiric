@@ -47,6 +47,29 @@ ______________________________________________________________________
 
 ## Incident Severity Levels
 
+```mermaid
+graph TD
+    Alert["Incident Detected"]
+    Classify{"Classify Severity"}
+    P0["P0 - Critical<br/>< 5min response<br/>Page immediately"]
+    P1["P1 - High<br/>< 15min response<br/>Slack + email"]
+    P2["P2 - Medium<br/>< 1hr response<br/>Slack warning"]
+    P3["P3 - Low<br/>< 4hr response<br/>Slack info"]
+
+    Alert --> Classify
+    Classify -->|"SLA Impact<br/>System Down"| P0
+    Classify -->|"Degraded Service"| P1
+    Classify -->|"Limited Impact"| P2
+    Classify -->|"Monitoring Issue"| P3
+
+    style P0 fill:#ffcccc
+    style P1 fill:#ffe1cc
+    style P2 fill:#fff4cc
+    style P3 fill:#ccffcc
+```
+
+**Severity Classifications:**
+
 ### P0 - Critical (SLA Impact)
 
 - **Response Time:** < 5 minutes
@@ -78,6 +101,49 @@ ______________________________________________________________________
 ______________________________________________________________________
 
 ## General Incident Response Process
+
+```mermaid
+graph LR
+    subgraph "Phase 1: Acknowledge (< 5 min)"
+        Ack1["Acknowledge alert<br/>in PagerDuty/AlertManager"]
+        Ack2["Join incident channel<br/>Slack #incident-response"]
+        Ack3["Announce response<br/>'I'm investigating [INCIDENT]'"]
+        Ack4["Silence related alerts<br/>reduce noise"]
+    end
+
+    subgraph "Phase 2: Diagnose (< 15 min)"
+        Diag1["Check monitoring<br/>Grafana dashboards"]
+        Diag2["Review logs<br/>Loki queries"]
+        Diag3["Identify root cause<br/>Use runbook"]
+        Diag4["Update incident channel<br/>with findings"]
+    end
+
+    subgraph "Phase 3: Resolve (Variable)"
+        Res1["Follow runbook<br/>resolution steps"]
+        Res2["Document actions<br/>in incident channel"]
+        Res3["Verify fix<br/>check metrics/logs"]
+    end
+
+    subgraph "Phase 4: Post-Incident"
+        Post1["Post-incident review<br/>document learnings"]
+        Post2["Update runbooks<br/>if needed"]
+        Post3["Close incident"]
+    end
+
+    Ack1 --> Ack2 --> Ack3 --> Ack4
+    Ack4 --> Diag1
+    Diag1 --> Diag2 --> Diag3 --> Diag4
+    Diag4 --> Res1
+    Res1 --> Res2 --> Res3
+    Res3 --> Post1 --> Post2 --> Post3
+
+    style Ack1 fill:#ffcccc
+    style Diag1 fill:#fff4e1
+    style Res1 fill:#e1f5ff
+    style Post1 fill:#ccffcc
+```
+
+**Phase Details:**
 
 ### Phase 1: Acknowledge (< 5 min)
 

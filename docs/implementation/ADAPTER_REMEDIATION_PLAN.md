@@ -6,6 +6,23 @@
 **Execution Tracker:** `docs/implementation/ADAPTER_REMEDIATION_EXECUTION.md`
 **Strategy Snapshot:** `docs/STRATEGIC_ROADMAP.md`
 
+```mermaid
+gantt
+    title Adapter Remediation Timeline
+    dateFormat YYYY-MM-DD
+    section Day 0-1
+    Registration + Dependencies        :done, a1, 2025-12-01, 1d
+    HTTP Adapter Fix                    :done, a2, 2025-12-01, 1d
+    section Day 1-2
+    Remote Watcher Tests                :done, b1, 2025-12-02, 1d
+    Base Module Strategy                :done, b2, 2025-12-02, 1d
+    Smoke Coverage                      :done, b3, 2025-12-02, 1d
+    section Day 2
+    Documentation Refresh               :active, c1, 2025-12-03, 1d
+    Backlog Matrix                      :active, c2, 2025-12-03, 1d
+    Sign-off                             :crit, c3, 2025-12-03, 1d
+```
+
 ______________________________________________________________________
 
 ## 1. Objectives

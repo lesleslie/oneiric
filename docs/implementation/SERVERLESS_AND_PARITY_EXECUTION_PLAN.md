@@ -19,6 +19,40 @@ ______________________________________________________________________
 
 ## 2. Workstreams
 
+```mermaid
+graph LR
+    subgraph "Workstreams"
+        WSA["WS-A: Serverless Profile<br/>Q1 2026"]
+        WSB["WS-B: Orchestration Parity<br/>Q2 2026"]
+        WSC["WS-C: Adapter Completeness<br/>Rolling"]
+        WSD["WS-D: Documentation Hygiene<br/>Dec 2025"]
+    end
+
+    subgraph "Dependencies"
+        Serverless["Serverless Infrastructure<br/>Procfile, buildpacks, profiles"]
+        Orchestration["Orchestration Features<br/>Events, DAGs, supervisors"]
+        Adapters["Adapter Completeness<br/>Port remaining ACB adapters"]
+        Docs["Documentation Cleanup<br/>Archive, refresh, consolidate"]
+    end
+
+    WSA -->|"enables"| WSB
+    WSA -->|"requires"| WSC
+    WSB -->|"requires"| WSD
+    WSC -->|"feeds"| WSD
+
+    WSA -->|"produces"| Serverless
+    WSB -->|"produces"| Orchestration
+    WSC -->|"produces"| Adapters
+    WSD -->|"produces"| Docs
+
+    style WSA fill:#e1f5ff
+    style WSB fill:#f0e1ff
+    style WSC fill:#fff4e1
+    style WSD fill:#ffe1f0
+```
+
+**Workstream Details:**
+
 | Workstream | Goal | Key Tasks | Owner(s) | Target |
 |------------|------|-----------|----------|--------|
 | **WS-A: Serverless Profile** | Deliver a Cloud Run–ready profile with Procfile/buildpack docs, lazy imports, and manifest packaging. | ✅ CLI/main automatically honor `ONEIRIC_PROFILE`, profile toggles disable watchers/remote polling, Procfile/Cloud Run docs live in `docs/deployment/CLOUD_RUN_BUILD.md`; remaining polish is telemetry screenshots + optional manifest pack helper refinements. | Runtime + Deployment | Q1 2026 |

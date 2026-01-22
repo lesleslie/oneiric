@@ -2,6 +2,43 @@
 
 This runnable example shows how to combine the CLI, remote manifest loader, and the new logging/resiliency knobs.
 
+```mermaid
+graph TD
+    Start["1. Setup Config<br/>cp demo_settings.toml"]
+    Orchestrator["2. Start Orchestrator<br/>uv run python -m oneiric.cli orchestrate"]
+    Inspect["3. Inspect Health<br/>health --probe"]
+    Activity["4. Check Activity<br/>activity --json"]
+
+    Orchestrator -->|"Registers demo providers"| Inspect
+    Inspect --> Activity
+
+    Test4["4. SendGrid Smoke Test<br/>Bridge Test"]
+    Test5["5. Mailgun Test"]
+    Test6["6. Twilio SMS<br/>dry-run"]
+    Test7["7. MongoDB NoSQL<br/>local dev"]
+    Test8["8. Neo4j Graph<br/>knowledge graph"]
+    Test9["9. Cloud Tasks + Pub/Sub<br/>queue adapters"]
+    Test10["10. File Transfer<br/>FTP/SFTP/SCP/HTTPS"]
+
+    Activity --> Test4
+    Test4 --> Test5
+    Test5 --> Test6
+    Test6 --> Test7
+    Test7 --> Test8
+    Test8 --> Test9
+    Test9 --> Test10
+
+    style Start fill:#e1f5ff
+    style Orchestrator fill:#fff4e1
+    style Test4 fill:#ccffcc
+    style Test5 fill:#ccffcc
+    style Test6 fill:#ccffcc
+    style Test7 fill:#e1ffe1
+    style Test8 fill:#e1ffe1
+    style Test9 fill:#f0e1ff
+    style Test10 fill:#f0e1ff
+```
+
 ## 1. Copy the sample settings
 
 ```bash

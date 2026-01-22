@@ -6,6 +6,70 @@ Oneiric supports cryptographic signature verification for remote manifests using
 
 **Security Level:** CVSS 8.1 mitigation (Supply Chain Attack Prevention)
 
+```mermaid
+graph LR
+    subgraph "Publisher Side"
+        Manifest["Manifest YAML/JSON"]
+        PrivateKey["Private Key<br/>(ED25519)"]
+        Signing["sign_manifest()"]
+        Signed["Signed Manifest<br/>(signature + algorithm)"]
+    end
+
+    subgraph "Distribution"
+        CDN["CDN / S3 / GitHub"]
+    end
+
+    subgraph "Consumer Side"
+        Fetch["Fetch Manifest"]
+        PublicKeys["Trusted Public Keys<br/>(Environment Variable)"]
+        Verify["verify_signature()"]
+        Accept["✅ Accept Manifest"]
+        Reject["❌ Reject Manifest"]
+    end
+
+    Manifest --> Signing
+    PrivateKey --> Signing
+    Signing --> Signed
+    Signed --> CDN
+    CDN --> Fetch
+    Fetch --> Verify
+    PublicKeys --> Verify
+    Verify -->|"Valid"| Accept
+    Verify -->|"Invalid"| Reject
+
+    style PrivateKey fill:#ffe1e1
+    style PublicKeys fill:#e1ffe1
+    style Accept fill:#ccffcc
+    style Reject fill:#ffcccc
+```
+
+## Security Model
+
+```mermaid
+graph TD
+    Attacker["🎯 Attacker Goals"]
+    Mitigated["✅ Mitigated by ED25519"]
+    NotMitigated["⚠️ Not Mitigated<br/>(Out of Scope)"]
+
+    MITM["Man-in-the-Middle<br/>Tampering in transit"]
+    Tamper["Manifest Tampering<br/>Modifying stored manifests"]
+    Compromise["Key Compromise<br/>Stolen private key"]
+    Malicious["Malicious Valid Signature<br/>Trusted publisher signs bad manifest"]
+
+    Attacker --> MITM
+    Attacker --> Tamper
+    Attacker --> Compromise
+    Attacker --> Malicious
+
+    MITM -->|"Signature verification fails"| Mitigated
+    Tamper -->|"Digest mismatch detected"| Mitigated
+    Compromise --> NotMitigated
+    Malicious --> NotMitigated
+
+    style Mitigated fill:#ccffcc
+    style NotMitigated fill:#fff4e1
+```
+
 ## Quick Start
 
 ### 1. Manifest Publishers: Generate Keys and Sign Manifests

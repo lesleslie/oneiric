@@ -10,6 +10,16 @@ ______________________________________________________________________
 
 ## Executive Summary
 
+```mermaid
+pie
+    title Overall Quality Score: 95/100
+    "Functionality (98/100)" : 98
+    "Security (95/100)" : 95
+    "Testing (94/100)" : 94
+    "Documentation (96/100)" : 96
+    "Operational (93/100)" : 93
+```
+
 **Overall Assessment:** 95/100 (Production Ready with Minor Issues)
 
 Oneiric has successfully completed all Stage 5 hardening tasks and is now production-ready for controlled deployment. The project demonstrates:

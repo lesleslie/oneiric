@@ -1,6 +1,35 @@
 # Crackerjack Observability Checklist
 
-Oneiric ships the CLI + telemetry hooks we need to mirror ACB’s MCP dashboards. Use this playbook before every Crackerjack parity review or deployment.
+Oneiric ships the CLI + telemetry hooks we need to mirror ACB's MCP dashboards. Use this playbook before every Crackerjack parity review or deployment.
+
+```mermaid
+graph TD
+    Start["Parity Review Start"]
+    DAG["1. Capture DAGs<br/>orchestrate --print-dag"]
+    Events["2. Capture Events<br/>orchestrate --events --inspect-json"]
+    Telemetry["3. Archive Telemetry<br/>runtime_telemetry.json"]
+    ChatOps["4. Wire ChatOps<br/>workflow.notify --send-notification"]
+
+    Artifacts["Artifacts Folder<br/>docs/examples/crackerjack/"]
+    Review["Crackerjack Parity Review"]
+    Dashboard["Mirror ACB MCP Dashboard"]
+
+    Start --> DAG
+    DAG -->|"dag.json"| Artifacts
+    DAG --> Events
+    Events -->|"events.json"| Artifacts
+    Events --> Telemetry
+    Telemetry -->|"runtime_telemetry.json"| Artifacts
+    Telemetry --> ChatOps
+    ChatOps -->|"transcript + json"| Artifacts
+    Artifacts --> Review
+    Review --> Dashboard
+
+    style Start fill:#e1f5ff
+    style Artifacts fill:#fff4e1
+    style Dashboard fill:#e1ffe1
+    style Review fill:#ccffcc
+```
 
 ## 1. Capture Workflow DAGs
 

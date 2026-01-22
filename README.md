@@ -34,6 +34,61 @@ ______________________________________________________________________
 
 ## Domain Coverage & Built-ins
 
+```mermaid
+graph TB
+    subgraph "Shared Infrastructure"
+        Resolver["Resolver<br/>(4-tier precedence)"]
+        Lifecycle["LifecycleManager<br/>(swap + rollback)"]
+        Observability["Observability<br/>(structlog + OTel)"]
+        Activity["DomainActivityStore<br/>(pause/drain state)"]
+        Remote["Remote Manifests<br/>(ED25519 signed)"]
+    end
+
+    subgraph "Domain Bridges"
+        Adapter["Adapter Bridge"]
+        Service["Service Bridge"]
+        Task["Task Bridge"]
+        Event["Event Bridge"]
+        Workflow["Workflow Bridge"]
+        Action["Action Bridge"]
+    end
+
+    Resolver <-->|"resolves"| Adapter
+    Resolver <-->|"resolves"| Service
+    Resolver <-->|"resolves"| Task
+    Resolver <-->|"resolves"| Event
+    Resolver <-->|"resolves"| Workflow
+    Resolver <-->|"resolves"| Action
+
+    Lifecycle <-->|"manages"| Adapter
+    Lifecycle <-->|"manages"| Service
+    Lifecycle <-->|"manages"| Task
+    Lifecycle <-->|"manages"| Event
+    Lifecycle <-->|"manages"| Workflow
+
+    Observability -->|"instruments"| Resolver
+    Observability -->|"instruments"| Lifecycle
+    Activity -->|"enforces"| Adapter
+    Activity -->|"enforces"| Service
+    Activity -->|"enforces"| Task
+    Activity -->|"enforces"| Event
+    Activity -->|"enforces"| Workflow
+
+    Remote -->|"hydrates"| Adapter
+    Remote -->|"hydrates"| Service
+    Remote -->|"hydrates"| Task
+    Remote -->|"hydrates"| Event
+    Remote -->|"hydrates"| Workflow
+
+    style Resolver fill:#e1f5ff
+    style Lifecycle fill:#fff4e1
+    style Observability fill:#f0e1ff
+    style Activity fill:#ffe1f0
+    style Remote fill:#e1ffe1
+```
+
+**Domain Details:**
+
 | Domain | Bridge Features | Built-in Examples |
 |--------|-----------------|-------------------|
 | **Adapters** | Activity-aware swaps, pause/drain enforcement, health snapshots | Redis caches, Cloud Tasks/Pub/Sub/Kafka/RabbitMQ/NATS/Redis Streams queues, httpx/aiohttp clients, S3/GCS/Azure/local storage, Slack/Teams/Webhook/Twilio/SendGrid/Mailgun/APNS/FCM/Webpush messaging, Auth0 identity, Cloudflare/Route53/GCP DNS, FTP/SFTP/SCP/HTTPS file transfer (download + upload), Infisical/GCP/AWS secrets, Postgres/MySQL/SQLite/DuckDB DBs, MongoDB/Firestore/DynamoDB NoSQL, Neo4j/DuckDB PGQ/ArangoDB graph, Pinecone/Qdrant/pgvector vector, OpenAI/SentenceTransformers/ONNX/Anthropic embeddings + LLM, Logfire/Sentry/OTLP monitoring |

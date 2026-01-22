@@ -23,7 +23,7 @@ dependencies = [
     "networkx>=3.2.0",
 ]
 
-[dependency-groups]
+[project.optional-dependencies]
 dev = [
     "pytest>=9.0.1",
     "pytest-asyncio>=1.3.0",
@@ -35,6 +35,7 @@ dev = [
     "session-buddy>=0.10.0",
     "filelock>=3.20.1",  # Fix for CVE-2025-68146
     "zensical>=0.0.15",
+    "onnxruntime<1.24",  # Pin for macOS x86_64 compatibility (session-buddy dep)
 ]
 cache = [
     "coredis>=5.3.0",
@@ -66,7 +67,6 @@ dns = [
     "google-cloud-dns>=0.35.0",
 ]
 monitoring = [
-    "logfire>=4.15.1",
     "opentelemetry-exporter-otlp>=1.38.0",
     "opentelemetry-sdk>=1.38.0",
     "sentry-sdk>=3.0.0a7",
@@ -104,7 +104,7 @@ embedding = [
 "embedding-openai" = [
     "openai>=1.12.0",
 ]
-graph-arangodb = [
+"graph-arangodb" = [
     "python-arango>=8.0.1",
 ]
 "graph-duckdb-pgq" = [
@@ -174,7 +174,7 @@ nosql = [
     "aioftp>=0.23.3",
     "asyncssh>=2.15.0",
 ]
-"vector" = [
+vector = [
     "pinecone-client>=3.1.0",
     "qdrant-client>=1.7.3",
     "pgvector>=0.2.4",

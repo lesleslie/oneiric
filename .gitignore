@@ -32,3 +32,51 @@ htmlcov/
 
 # Logs
 logs/
+
+# Crackerjack patterns
+
+
+
+
+# Build/Distribution
+# Caches
+# Coverage
+# Crackerjack specific
+# Development
+*.egg-info
+*.egg-info/
+*.py[oc]
+*.pyc
+.DS_STORE
+.DS_Store
+.coverage
+.coverage*
+.coverage.*
+.crackerjack-*
+.mypy_cache/
+.oneiric_cache/
+.pytest_cache/
+.ruff_cache/
+.venv
+.venv/
+/.benchmarks/
+/.claude/
+/.complexipy_cache/
+/.crackerjack/
+/.jbeval/
+/.mcp_test_results.md
+/.obsidian/
+/.smart-env/
+/NOTES.md
+/build/
+/dist/
+__pycache__/
+build/
+coverage.json
+coverage.xml
+crackerjack-ai-debug-*.log
+crackerjack-debug-*.log
+dist/
+htmlcov/
+logs/
+wheels/

@@ -21,6 +21,83 @@ ______________________________________________________________________
 
 ## Manifest Structure
 
+```mermaid
+erDiagram
+    RemoteManifest ||--o{ RemoteManifestEntry : contains
+    RemoteManifestEntry ||--o{ Signature : "signed with"
+    RemoteManifestEntry }o--|| CapabilityDescriptor : "has capability"
+    RemoteManifestEntry }o--|| RetryPolicy : "uses"
+    RemoteManifestEntry }o--o{ EventFilter : "filters events"
+    RemoteManifestEntry }o--|| DAG : "defines (workflow)"
+
+    RemoteManifest {
+        string source PK
+        string signature
+        string signature_algorithm
+        datetime signed_at
+        datetime expires_at
+        signatures[] signatures
+    }
+
+    RemoteManifestEntry {
+        string domain PK
+        string key PK
+        string provider PK
+        string factory PK
+        string uri
+        string sha256
+        int stack_level
+        int priority
+        string version
+        dict metadata
+    }
+
+    Signature {
+        string signature
+        string algorithm
+        string key_id
+    }
+
+    CapabilityDescriptor {
+        string name
+        string description
+        event_types[] event_types
+        dict payload_schema
+        dict security
+    }
+
+    RetryPolicy {
+        int attempts
+        float base_delay
+        float max_delay
+        float jitter
+        int[] retriable_status_codes
+    }
+
+    EventFilter {
+        string path
+        scalar equals
+        list any_of
+        bool exists
+    }
+
+    DAG {
+        DAGNode[] nodes
+        RetryPolicy retry_policy
+        dict scheduler
+    }
+
+    DAGNode {
+        string id
+        string task
+        depends_on[] depends_on
+        dict payload
+        RetryPolicy retry_policy
+    }
+```
+
+**YAML Structure:**
+
 ```yaml
 source: string                    # Manifest source identifier (required)
 signature: string                 # Base64-encoded ED25519 signature (optional)
@@ -423,6 +500,30 @@ Remote manifests can be cryptographically signed using ED25519:
 
 ### Signing Process
 
+```mermaid
+sequenceDiagram
+    participant Publisher as Manifest Publisher
+    participant Script as sign_manifest.py
+    participant YAML as YAML Serializer
+    participant Crypto as ED25519 Signer
+    participant Manifest as Signed Manifest
+
+    Publisher->>Script: Invoke with manifest.yaml + private_key.pem
+    Script->>YAML: Generate canonical YAML representation
+    YAML-->>Script: Deterministic YAML string
+
+    Script->>Crypto: Sign with ED25519 private key
+    Crypto->>Crypto: Compute signature
+    Crypto-->>Script: Base64-encoded signature
+
+    Script->>Manifest: Add signature field to manifest
+    Manifest-->>Publisher: Signed manifest.yaml
+
+    Note over Script: Signature ensures<br/>integrity and authenticity<br/>of manifest contents
+```
+
+**Steps:**
+
 1. **Generate canonical representation** (deterministic YAML serialization)
 1. **Sign with ED25519 private key**
 1. **Encode signature as base64**
@@ -435,6 +536,42 @@ python scripts/sign_manifest.py \
 ```
 
 ### Verification Process
+
+```mermaid
+flowchart TD
+    Start["Load Manifest"]
+    Extract["Extract signature field"]
+    VerifySig{Signature<br/>present?}
+    Regenerate["Regenerate canonical YAML"]
+    VerifyED25519["Verify with ED25519 public key"]
+    IsValid{Signature<br/>valid?}
+    CheckExpiry{expires_at<br/>present?}
+    NotExpired{Current time<br/>< expires_at?}
+    Success["✓ Manifest trusted"]
+    FailSig["✗ Invalid signature"]
+    FailExpired["✗ Signature expired"]
+    FailMissing["✗ Signature missing"]
+
+    Start --> Extract
+    Extract --> VerifySig
+    VerifySig -->|"No"| FailMissing
+    VerifySig -->|"Yes"| Regenerate
+    Regenerate --> VerifyED25519
+    VerifyED25519 --> IsValid
+    IsValid -->|"No"| FailSig
+    IsValid -->|"Yes"| CheckExpiry
+    CheckExpiry -->|"No"| Success
+    CheckExpiry -->|"Yes"| NotExpired
+    NotExpired -->|"Yes"| Success
+    NotExpired -->|"No"| FailExpired
+
+    style Success fill:#ccffcc
+    style FailSig fill:#ffcccc
+    style FailExpired fill:#ffcccc
+    style FailMissing fill:#ffcccc
+```
+
+**Steps:**
 
 1. **Load manifest**
 1. **Extract signature field**
@@ -450,6 +587,29 @@ ______________________________________________________________________
 **Good News:** No migration required! All v2 fields are optional.
 
 ### Recommended Enhancement Path
+
+```mermaid
+graph LR
+    V1["v1 Manifest<br/>(Basic Fields)"]
+    Phase1["Phase 1:<br/>Adapter Metadata"]
+    Phase2["Phase 2:<br/>Dependencies"]
+    Phase3["Phase 3:<br/>Action Metadata"]
+    Phase4["Phase 4:<br/>Documentation"]
+    V2["v2 Manifest<br/>(Full Featured)"]
+
+    V1 --> Phase1
+    Phase1 --> Phase2
+    Phase2 --> Phase3
+    Phase3 --> Phase4
+    Phase4 --> V2
+
+    style V1 fill:#e1f5ff
+    style V2 fill:#ccffcc
+    style Phase1 fill:#fff4e1
+    style Phase2 fill:#f0e1ff
+    style Phase3 fill:#ffe1f0
+    style Phase4 fill:#e1ffe1
+```
 
 **Phase 1:** Add adapter metadata
 
