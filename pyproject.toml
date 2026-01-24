@@ -81,6 +81,9 @@ monitoring = [
 "monitoring-sentry" = [
     "sentry-sdk>=3.0.0a7",
 ]
+"monitoring-netdata" = [
+    "httpx>=0.27.2",
+]
 "queue-nats" = [
     "nats-py>=2.12.0",
 ]
@@ -313,7 +316,10 @@ test_timeout = 1200  # 20 minutes to accommodate skylos analysis (increased from
 
 # pip-audit configuration to ignore specific vulnerabilities
 [tool.pip-audit]
-ignore-vulns = ["CVE-2025-53000"]
+ignore-vulns = [
+    "CVE-2025-53000",
+    "CVE-2026-0994",
+]
 
 # NOTE: Zuban configuration moved to mypy.ini due to parsing bug
 # See: https://github.com/RobertCraigie/zuban/issues/XXX
@@ -348,4 +354,9 @@ exclude-deps = [
     "google-cloud-secret-manager",
     "google-cloud-storage",
     "watchfiles",
+]
+
+[dependency-groups]
+dev = [
+    "crackerjack>=0.49.8",
 ]

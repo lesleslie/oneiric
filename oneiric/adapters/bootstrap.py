@@ -70,7 +70,7 @@ from .storage import (
     LocalStorageAdapter,
     S3StorageAdapter,
 )
-from .vector import PineconeAdapter, QdrantAdapter
+from .vector import AgentDBAdapter, PineconeAdapter, QdrantAdapter
 
 
 def builtin_adapter_metadata() -> list[AdapterMetadata]:
@@ -93,6 +93,7 @@ def builtin_adapter_metadata() -> list[AdapterMetadata]:
         MySQLDatabaseAdapter.metadata,
         SQLiteDatabaseAdapter.metadata,
         DuckDBDatabaseAdapter.metadata,
+        AgentDBAdapter.metadata,
         PineconeAdapter.metadata,
         QdrantAdapter.metadata,
         OpenAIEmbeddingAdapter.metadata,

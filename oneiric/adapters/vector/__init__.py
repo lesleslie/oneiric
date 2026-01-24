@@ -1,5 +1,6 @@
 """Vector database adapters for Oneiric."""
 
+from oneiric.adapters.vector.agentdb import AgentDBAdapter, AgentDBSettings
 from oneiric.adapters.vector.common import (
     VectorBase,
     VectorBaseSettings,
@@ -17,6 +18,8 @@ __all__ = [
     "VectorCollection",
     "VectorDocument",
     "VectorSearchResult",
+    "AgentDBAdapter",
+    "AgentDBSettings",
     "PgvectorAdapter",
     "PgvectorSettings",
     "PineconeAdapter",
