@@ -97,6 +97,7 @@ graph TB
 | **Events** | Dispatcher with filters, fan-out policies, retry, and observability metrics | `event.dispatch`, webhook fan-out, queue listeners |
 | **Workflows** | DAG execution/enqueueing, queue adapter selection, checkpoints, telemetry | Demo workflows + remote DAGs from manifests (`fastblocks.workflows.fulfillment`, etc.) |
 | **Actions** | Action bridge plus kits for compression encode/hash, workflow audit/orchestrate/notify/retry, http.fetch, security signature/secure, serialization encode/decode, data transform/sanitize, validation schema, task scheduling, event dispatch, automation triggers, debug console, etc. |
+| **Shell** | IPython-based admin shell for interactive debugging | `AdminShell` base class with Rich formatters, magic commands, and helper functions |
 
 All domains share the same resolver semantics, lifecycle orchestration, logging, and activity controls.
 
