@@ -103,3 +103,30 @@ def path_traversal_key() -> str:
 def valid_key() -> str:
     """Valid component key."""
     return "my-component"
+
+
+# OTel storage test fixtures
+@pytest.fixture
+async def otel_db_session():
+    """Create async database session for testing OTel migrations.
+
+    This fixture requires a running PostgreSQL instance with pgvector extension:
+    - Database: otel_test
+    - User: postgres
+    - Password: postgres
+    - Host: localhost
+    - Port: 5432
+
+    Tests using this fixture should be marked with @pytest.mark.integration
+    """
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+    engine = create_async_engine(
+        "postgresql+asyncpg://postgres:postgres@localhost:5432/otel_test"
+    )
+    async_session = async_sessionmaker(bind=engine, expire_on_commit=False)
+
+    async with async_session() as session:
+        yield session
+
+    await engine.dispose()
