@@ -36,3 +36,16 @@ class EmbeddingService:
         attr_str = " ".join(f"{k}={v}" for k, v in sorted(attributes.items()))
 
         return f"{service} {operation} {status} in {duration_ms}ms attributes: {attr_str}"
+
+    def _generate_cache_key(self, trace: dict[str, Any]) -> int:
+        """Generate cache key from trace dict.
+
+        Uses hash of sorted items for determinism.
+
+        Args:
+            trace: Trace data dictionary
+
+        Returns:
+            Cache key (hash integer)
+        """
+        return hash(frozenset(sorted(trace.items())))

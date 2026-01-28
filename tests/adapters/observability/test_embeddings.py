@@ -49,3 +49,17 @@ def test_text_construction_empty_attributes(embedding_service):
 
     assert "test op OK in 100ms" in text
     assert "attributes:" in text
+
+
+def test_cache_key_generation(embedding_service):
+    """Test cache key is deterministic."""
+    trace1 = {"trace_id": "abc", "service": "test"}
+    trace2 = {"trace_id": "abc", "service": "test"}
+    trace3 = {"trace_id": "abc", "service": "different"}
+
+    key1 = embedding_service._generate_cache_key(trace1)
+    key2 = embedding_service._generate_cache_key(trace2)
+    key3 = embedding_service._generate_cache_key(trace3)
+
+    assert key1 == key2  # Same trace = same key
+    assert key1 != key3  # Different trace = different key
