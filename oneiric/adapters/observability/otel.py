@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import asyncio
 from abc import ABC, abstractmethod
+from collections import deque
+from datetime import datetime
 from typing import Any
 
 from structlog.stdlib import BoundLogger
 
+from oneiric.adapters.observability.models import TraceModel
 from oneiric.adapters.observability.settings import OTelStorageSettings
 from oneiric.core.lifecycle import get_logger
 
@@ -21,7 +25,7 @@ class OTelStorageAdapter(ABC):
     3. cleanup() - Close connections and flush buffers
 
     Telemetry storage:
-    - store_trace() - Store trace with embedding (async, buffered)
+    - store_trace() - Store trace with embedding (async, buffered) ✓ IMPLEMENTED
     - store_metrics() - Store metrics in time-series storage
     - store_log() - Store log with trace correlation
 
@@ -41,6 +45,9 @@ class OTelStorageAdapter(ABC):
             key="observability",
             provider="otel",
         )
+        self._write_buffer: deque[dict] = deque(maxlen=1000)
+        self._flush_task: Any = None
+        self._flush_lock = asyncio.Lock()
 
     async def init(self) -> None:
         """
@@ -75,6 +82,9 @@ class OTelStorageAdapter(ABC):
                 if not result.fetchone():
                     raise RuntimeError("Pgvector extension not installed. Run: CREATE EXTENSION vector;")
 
+            # Start background flush task
+            self._flush_task = asyncio.create_task(self._flush_buffer_periodically())
+
             self._logger.info("adapter-init", adapter="otel-storage")
 
         except Exception as exc:
@@ -104,16 +114,101 @@ class OTelStorageAdapter(ABC):
         if not self._engine:
             return
 
+        # Cancel background flush task
+        if self._flush_task:
+            self._flush_task.cancel()
+            try:
+                await self._flush_task
+            except asyncio.CancelledError:
+                pass
+
+        # Flush any remaining buffered traces
+        await self._flush_buffer()
+
         await self._engine.dispose()
         self._engine = None
         self._session_factory = None
         self._logger.info("adapter-cleanup", adapter="otel-storage")
 
-    # Abstract methods for storing telemetry (to be implemented in Task 4-6)
-    @abstractmethod
+    # Concrete method for storing traces with async buffering
     async def store_trace(self, trace: dict) -> None:
-        """Store a trace with embedding."""
-        raise NotImplementedError
+        """Store a trace with async buffering."""
+        self._write_buffer.append(trace)
+        if len(self._write_buffer) >= self._settings.batch_size:
+            await self._flush_buffer()
+
+    async def _flush_buffer_periodically(self) -> None:
+        """Background task to flush buffer every N seconds."""
+        while True:
+            try:
+                await asyncio.sleep(self._settings.batch_interval_seconds)
+                await self._flush_buffer()
+            except asyncio.CancelledError:
+                break
+            except Exception as exc:
+                self._logger.error("flush-buffer-error", error=str(exc))
+
+    async def _flush_buffer(self) -> None:
+        """Flush buffered traces to database in batch."""
+        async with self._flush_lock:
+            if not self._write_buffer:
+                return
+
+            # Get buffered traces and clear buffer
+            traces_to_store = list(self._write_buffer)
+            self._write_buffer.clear()
+
+            try:
+                # Convert dicts to TraceModel instances
+                trace_models = []
+                for trace_dict in traces_to_store:
+                    trace_model = TraceModel(
+                        id=trace_dict.get("id"),
+                        trace_id=trace_dict["trace_id"],
+                        parent_span_id=trace_dict.get("parent_span_id"),
+                        trace_state=trace_dict.get("trace_state"),
+                        name=trace_dict["name"],
+                        kind=trace_dict.get("kind"),
+                        start_time=datetime.fromisoformat(trace_dict["start_time"]) if isinstance(trace_dict["start_time"], str) else trace_dict["start_time"],
+                        end_time=datetime.fromisoformat(trace_dict["end_time"]) if trace_dict.get("end_time") and isinstance(trace_dict["end_time"], str) else trace_dict.get("end_time"),
+                        duration_ms=trace_dict.get("duration_ms"),
+                        status=trace_dict["status"],
+                        attributes=trace_dict.get("attributes", {}),
+                        embedding=trace_dict.get("embedding"),
+                        embedding_model=trace_dict.get("embedding_model"),
+                        embedding_generated_at=datetime.fromisoformat(trace_dict["embedding_generated_at"]) if trace_dict.get("embedding_generated_at") and isinstance(trace_dict["embedding_generated_at"], str) else trace_dict.get("embedding_generated_at"),
+                    )
+                    trace_models.append(trace_model)
+
+                # Batch insert
+                async with self._session_factory() as session:
+                    session.add_all(trace_models)
+                    await session.commit()
+
+                self._logger.debug("traces-stored", count=len(trace_models))
+
+            except Exception as exc:
+                self._logger.error("trace-store-failed", error=str(exc), count=len(traces_to_store))
+                # Send failed writes to DLQ
+                for trace in traces_to_store:
+                    await self._send_to_dlq(trace, str(exc))
+
+    async def _send_to_dlq(self, trace: dict, error_message: str) -> None:
+        """Insert failed trace into DLQ table."""
+        import json
+
+        try:
+            async with self._session_factory() as session:
+                await session.execute(
+                    f"""
+                    INSERT INTO otel_telemetry_dlq (telemetry_type, raw_data, error_message, created_at)
+                    VALUES ('trace', '{json.dumps(trace)}', $1, NOW())
+                    """,
+                    error_message
+                )
+                await session.commit()
+        except Exception as dlq_exc:
+            self._logger.error("dlq-insert-failed", error=str(dlq_exc))
 
     @abstractmethod
     async def store_metrics(self, metrics: list[dict]) -> None:
