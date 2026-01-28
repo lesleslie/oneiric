@@ -13,6 +13,7 @@ from structlog.stdlib import BoundLogger
 
 from oneiric.core.lifecycle import get_logger
 from oneiric.adapters.observability.models import LogModel, MetricModel, TraceModel
+from oneiric.adapters.observability.monitoring import OTelMetrics
 from oneiric.adapters.observability.types import (
     LogEntry,
     MetricPoint,
@@ -48,6 +49,7 @@ class QueryService:
         """
         self._session_factory = session_factory
         self._logger: BoundLogger = get_logger("otel.queries")
+        self._metrics = OTelMetrics()
 
     def _orm_to_result(self, orm_model: TraceModel) -> TraceResult:
         """Convert TraceModel to TraceResult.
@@ -92,6 +94,8 @@ class QueryService:
         Raises:
             InvalidEmbeddingError: If embedding dimension != 384
         """
+        start_time = time.time()
+
         # Validate embedding dimension
         if embedding.shape != (384,):
             raise InvalidEmbeddingError(
@@ -135,6 +139,10 @@ class QueryService:
                 method="find_similar_traces",
                 result_count=len(results)
             )
+
+            # Record metrics
+            duration_ms = (time.time() - start_time) * 1000
+            self._metrics.record_query("find_similar_traces", duration_ms)
 
             return results
 
