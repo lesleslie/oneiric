@@ -28,14 +28,6 @@ def concrete_adapter(otel_settings):
     class TestOTelAdapter(OTelStorageAdapter):
         """Concrete implementation for testing base class functionality."""
 
-        async def store_metrics(self, metrics_data: list[dict]) -> list[str]:
-            """Store metrics data - stub implementation."""
-            return ["test-metric-id"]
-
-        async def store_log(self, log_data: dict) -> str:
-            """Store log data - stub implementation."""
-            return "test-log-id"
-
         async def find_similar_traces(
             self, embedding: list[float], limit: int = 10
         ) -> list[dict]:
@@ -56,15 +48,11 @@ def concrete_adapter(otel_settings):
 @pytest_asyncio.fixture
 async def otel_adapter(otel_settings):
     """Create initialized OTel adapter with database schema for integration tests."""
-    # Create concrete adapter class
+    # Import the concrete adapter class (will be implemented in otel.py)
+    from oneiric.adapters.observability.models import LogModel, MetricModel
+
     class TestOTelAdapter(OTelStorageAdapter):
-        """Concrete implementation for integration testing."""
-
-        async def store_metrics(self, metrics_data: list[dict]) -> list[str]:
-            return []
-
-        async def store_log(self, log_data: dict) -> str:
-            return ""
+        """Concrete implementation using actual store_log and store_metrics methods from base class."""
 
         async def find_similar_traces(self, embedding: list[float], limit: int = 10) -> list[dict]:
             return []
@@ -181,12 +169,6 @@ async def test_store_trace_auto_flush_on_batch_size(otel_adapter):
     )
 
     class TestOTelAdapter(OTelStorageAdapter):
-        async def store_metrics(self, metrics_data: list[dict]) -> list[str]:
-            return []
-
-        async def store_log(self, log_data: dict) -> str:
-            return ""
-
         async def find_similar_traces(self, embedding: list[float], limit: int = 10) -> list[dict]:
             return []
 
@@ -260,4 +242,81 @@ async def test_store_trace_with_embedding(otel_adapter):
     assert stored_trace is not None
     assert stored_trace.embedding is not None
     assert len(stored_trace.embedding) == 384
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_store_log_concrete_implementation(otel_adapter):
+    """Test concrete store_log implementation."""
+    from datetime import datetime, UTC
+    from oneiric.adapters.observability.models import LogModel
+
+    log_data = {
+        "trace_id": "trace-log-001",
+        "span_id": "span-log-001",
+        "name": "log_entry",
+        "kind": "INTERNAL",
+        "start_time": datetime.now(UTC),
+        "end_time": datetime.now(UTC),
+        "status": "OK",
+        "service": "test",
+        "operation": "log_info",
+        "duration_ms": 0,
+        "attributes": {
+            "log.level": "INFO",
+            "log.message": "Test log message"
+        }
+    }
+
+    # Should not raise
+    await otel_adapter.store_log(log_data)
+
+    # Verify log was stored
+    from sqlalchemy import select
+    async with otel_adapter._session_factory() as session:
+        result = await session.execute(
+            select(LogModel).filter_by(trace_id="trace-log-001")
+        )
+        stored_log = result.scalar_one()
+
+    assert stored_log is not None
+    assert stored_log.level == "INFO"
+    assert stored_log.message == "Test log message"
+    assert stored_log.trace_id == "trace-log-001"
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_store_metrics_concrete_implementation(otel_adapter):
+    """Test concrete store_metrics implementation."""
+    from datetime import datetime, UTC
+    from oneiric.adapters.observability.models import MetricModel
+
+    metrics_data = [
+        {
+            "name": "test_metric",
+            "type": "counter",
+            "value": 1.0,
+            "unit": "count",
+            "labels": {"env": "test"},
+            "timestamp": datetime.now(UTC)
+        }
+    ]
+
+    # Should not raise
+    await otel_adapter.store_metrics(metrics_data)
+
+    # Verify metric was stored
+    from sqlalchemy import select
+    async with otel_adapter._session_factory() as session:
+        result = await session.execute(
+            select(MetricModel).filter_by(name="test_metric")
+        )
+        stored_metric = result.scalar_one()
+
+    assert stored_metric is not None
+    assert stored_metric.name == "test_metric"
+    assert stored_metric.type == "counter"
+    assert stored_metric.value == 1.0
+    assert stored_metric.labels == {"env": "test"}
 

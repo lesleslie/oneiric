@@ -28,8 +28,8 @@ class OTelStorageAdapter(ABC):
 
     Telemetry storage:
     - store_trace() - Store trace with embedding (async, buffered) ✓ IMPLEMENTED
-    - store_metrics() - Store metrics in time-series storage
-    - store_log() - Store log with trace correlation
+    - store_metrics() - Store metrics in time-series storage ✓ IMPLEMENTED
+    - store_log() - Store log with trace correlation ✓ IMPLEMENTED
 
     Querying:
     - find_similar_traces() - Vector similarity search
@@ -83,8 +83,9 @@ class OTelStorageAdapter(ABC):
             )
 
             # Validate Pgvector extension exists
+            from sqlalchemy import text
             async with self._session_factory() as session:
-                result = await session.execute("SELECT extname FROM pg_extension WHERE extname = 'vector';")
+                result = await session.execute(text("SELECT extname FROM pg_extension WHERE extname = 'vector';"))
                 if not result.fetchone():
                     raise RuntimeError("Pgvector extension not installed. Run: CREATE EXTENSION vector;")
 
@@ -111,8 +112,9 @@ class OTelStorageAdapter(ABC):
             return False
 
         try:
+            from sqlalchemy import text
             async with self._session_factory() as session:
-                await session.execute("SELECT 1;")
+                await session.execute(text("SELECT 1;"))
                 return True
         except Exception as exc:
             self._logger.warning("adapter-health-error", error=str(exc))
@@ -209,29 +211,87 @@ class OTelStorageAdapter(ABC):
     async def _send_to_dlq(self, trace: dict, error_message: str) -> None:
         """Insert failed trace into DLQ table."""
         import json
+        from sqlalchemy import text
 
         try:
             async with self._session_factory() as session:
                 await session.execute(
-                    f"""
+                    text("""
                     INSERT INTO otel_telemetry_dlq (telemetry_type, raw_data, error_message, created_at)
-                    VALUES ('trace', '{json.dumps(trace)}', $1, NOW())
-                    """,
-                    error_message
+                    VALUES ('trace', :raw_data, :error_message, NOW())
+                    """),
+                    {"raw_data": json.dumps(trace), "error_message": error_message}
                 )
                 await session.commit()
         except Exception as dlq_exc:
             self._logger.error("dlq-insert-failed", error=str(dlq_exc))
 
-    @abstractmethod
-    async def store_metrics(self, metrics: list[dict]) -> None:
-        """Store metrics in time-series storage."""
-        raise NotImplementedError
-
-    @abstractmethod
     async def store_log(self, log: dict) -> None:
-        """Store log with trace correlation."""
-        raise NotImplementedError
+        """Store log with trace correlation.
+
+        Concrete implementation of abstract method.
+        Converts log dict to LogModel and persists to database.
+
+        Args:
+            log: Log data dictionary with trace_id correlation
+        """
+        from oneiric.adapters.observability.models import LogModel
+
+        try:
+            log_model = LogModel(
+                id=log.get("id", f"log-{log['trace_id']}-{int(datetime.utcnow().timestamp())}"),
+                timestamp=datetime.fromisoformat(log["start_time"]) if isinstance(log["start_time"], str) else log["start_time"],
+                level=log["attributes"].get("log.level", "INFO"),
+                message=log["attributes"].get("log.message", ""),
+                trace_id=log.get("trace_id"),
+                resource_attributes={k: v for k, v in log.get("attributes", {}).items() if k not in ["log.level", "log.message"]},
+                span_attributes={}
+            )
+
+            async with self._session_factory() as session:
+                session.add(log_model)
+                await session.commit()
+
+            self._logger.debug("log-stored", log_id=log.get("trace_id"))
+
+        except Exception as exc:
+            self._logger.error("log-store-failed", error=str(exc))
+            raise
+
+    async def store_metrics(self, metrics: list[dict]) -> None:
+        """Store metrics in time-series storage.
+
+        Concrete implementation of abstract method.
+        Converts metric dicts to MetricModel and persists to database.
+
+        Args:
+            metrics: List of metric data dictionaries
+        """
+        from oneiric.adapters.observability.models import MetricModel
+
+        try:
+            metric_models = []
+            for metric in metrics:
+                metric_model = MetricModel(
+                    id=f"metric-{metric['name']}-{int(datetime.utcnow().timestamp())}",
+                    name=metric["name"],
+                    type=metric.get("type", "gauge"),
+                    value=metric["value"],
+                    unit=metric.get("unit"),
+                    labels=metric.get("labels", {}),
+                    timestamp=datetime.fromisoformat(metric["timestamp"]) if isinstance(metric["timestamp"], str) else metric["timestamp"]
+                )
+                metric_models.append(metric_model)
+
+            async with self._session_factory() as session:
+                session.add_all(metric_models)
+                await session.commit()
+
+            self._logger.debug("metrics-stored", count=len(metrics))
+
+        except Exception as exc:
+            self._logger.error("metrics-store-failed", error=str(exc))
+            raise
 
     # Abstract methods for querying (to be implemented in Phase 3)
     @abstractmethod
