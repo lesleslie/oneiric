@@ -23,10 +23,7 @@ def test_text_construction_success(embedding_service):
         "operation": "process_repository",
         "status": "ERROR",
         "duration_ms": 2500,
-        "attributes": {
-            "http.status_code": 500,
-            "error.message": "timeout"
-        }
+        "attributes": {"http.status_code": 500, "error.message": "timeout"},
     }
 
     text = embedding_service._build_text_from_trace(trace)
@@ -45,7 +42,7 @@ def test_text_construction_empty_attributes(embedding_service):
         "operation": "op",
         "status": "OK",
         "duration_ms": 100,
-        "attributes": {}
+        "attributes": {},
     }
 
     text = embedding_service._build_text_from_trace(trace)
@@ -103,7 +100,7 @@ async def test_embed_trace_with_mock_model(embedding_service):
         "operation": "test-op",
         "status": "OK",
         "duration_ms": 100,
-        "attributes": {}
+        "attributes": {},
     }
 
     # Mock the model
@@ -130,10 +127,11 @@ def test_real_model_embedding_dimension(embedding_service):
         "operation": "test",
         "status": "OK",
         "duration_ms": 100,
-        "attributes": {}
+        "attributes": {},
     }
 
     import asyncio
+
     embedding = asyncio.run(embedding_service.embed_trace(trace))
 
     assert embedding.shape == (384,)
@@ -149,7 +147,7 @@ def test_embedding_similarity(embedding_service):
         "operation": "process_repo",
         "status": "ERROR",
         "duration_ms": 1000,
-        "attributes": {"error": "timeout"}
+        "attributes": {"error": "timeout"},
     }
     trace2 = {
         "trace_id": "similar-2",
@@ -157,15 +155,17 @@ def test_embedding_similarity(embedding_service):
         "operation": "process_repo",
         "status": "ERROR",
         "duration_ms": 1200,
-        "attributes": {"error": "network error"}
+        "attributes": {"error": "network error"},
     }
 
     import asyncio
+
     emb1 = asyncio.run(embedding_service.embed_trace(trace1))
     emb2 = asyncio.run(embedding_service.embed_trace(trace2))
 
     # Cosine similarity
     from numpy.linalg import norm
+
     similarity = (emb1 @ emb2) / (norm(emb1) * norm(emb2))
 
     # Similar traces should have high cosine similarity (>0.7)
