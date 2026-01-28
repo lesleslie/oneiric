@@ -10,6 +10,7 @@ from typing import Any
 
 from structlog.stdlib import BoundLogger
 
+from oneiric.adapters.observability.embeddings import EmbeddingService
 from oneiric.adapters.observability.models import TraceModel
 from oneiric.adapters.observability.settings import OTelStorageSettings
 from oneiric.core.lifecycle import get_logger
@@ -48,6 +49,9 @@ class OTelStorageAdapter(ABC):
         self._write_buffer: deque[dict] = deque(maxlen=1000)
         self._flush_task: Any = None
         self._flush_lock = asyncio.Lock()
+        self._embedding_service = EmbeddingService(
+            model_name=settings.embedding_model
+        )
 
     async def init(self) -> None:
         """
@@ -162,6 +166,9 @@ class OTelStorageAdapter(ABC):
                 # Convert dicts to TraceModel instances
                 trace_models = []
                 for trace_dict in traces_to_store:
+                    # Generate embedding (async, cached)
+                    embedding = await self._embedding_service.embed_trace(trace_dict)
+
                     trace_model = TraceModel(
                         id=trace_dict.get("id"),
                         trace_id=trace_dict["trace_id"],
@@ -174,9 +181,9 @@ class OTelStorageAdapter(ABC):
                         duration_ms=trace_dict.get("duration_ms"),
                         status=trace_dict["status"],
                         attributes=trace_dict.get("attributes", {}),
-                        embedding=trace_dict.get("embedding"),
-                        embedding_model=trace_dict.get("embedding_model"),
-                        embedding_generated_at=datetime.fromisoformat(trace_dict["embedding_generated_at"]) if trace_dict.get("embedding_generated_at") and isinstance(trace_dict["embedding_generated_at"], str) else trace_dict.get("embedding_generated_at"),
+                        embedding=embedding.tolist() if embedding is not None else None,
+                        embedding_model="all-MiniLM-L6-v2",
+                        embedding_generated_at=datetime.utcnow(),
                     )
                     trace_models.append(trace_model)
 

@@ -219,3 +219,45 @@ async def test_store_trace_auto_flush_on_batch_size(otel_adapter):
     finally:
         await adapter.cleanup()
 
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_store_trace_with_embedding(otel_adapter):
+    """Test storing trace with generated embedding."""
+    from oneiric.adapters.observability.types import TraceData
+    from datetime import datetime
+
+    now = datetime.utcnow()
+    trace = TraceData(
+        trace_id="trace-embed-001",
+        span_id="span-001",
+        name="Test with embedding",
+        kind="INTERNAL",
+        start_time=now,
+        end_time=now,
+        duration_ms=100.0,
+        status="OK",
+        service="test",
+        operation="test_with_embedding",
+    )
+
+    # Store trace
+    await otel_adapter.store_trace(trace.model_dump())
+
+    # Force flush
+    await otel_adapter._flush_buffer()
+
+    # Verify trace was stored with embedding
+    from sqlalchemy import select
+    from oneiric.adapters.observability.models import TraceModel
+
+    async with otel_adapter._session_factory() as session:
+        result = await session.execute(
+            select(TraceModel).filter_by(trace_id="trace-embed-001")
+        )
+        stored_trace = result.scalar_one()
+
+    assert stored_trace is not None
+    assert stored_trace.embedding is not None
+    assert len(stored_trace.embedding) == 384
+
