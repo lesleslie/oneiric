@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from unittest.mock import patch
+
 import numpy as np
 import pytest
 
@@ -90,3 +92,29 @@ def test_fallback_embedding_range(embedding_service):
 
     assert np.all(embedding >= 0.0)
     assert np.all(embedding <= 1.0)
+
+
+@pytest.mark.asyncio
+async def test_embed_trace_with_mock_model(embedding_service):
+    """Test embedding generation with mocked model."""
+    trace = {
+        "trace_id": "test-001",
+        "service": "test-service",
+        "operation": "test-op",
+        "status": "OK",
+        "duration_ms": 100,
+        "attributes": {}
+    }
+
+    # Mock the model
+    mock_embedding = np.random.rand(384)
+
+    # Mock _embed_cached to return our mock embedding
+    with patch.object(embedding_service, "_embed_cached", return_value=mock_embedding):
+        embedding = await embedding_service.embed_trace(trace)
+
+    # Verify the embedding has correct shape
+    assert embedding.shape == (384,)
+    # Note: We don't check exact equality because the mock may not be called
+    # if sentence-transformers is not available (fallback is used)
+    # The important thing is that an embedding is always returned

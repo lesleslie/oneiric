@@ -3,9 +3,17 @@
 from __future__ import annotations
 
 import hashlib
+from functools import lru_cache
 from typing import Any
 
 import numpy as np
+
+try:
+    from sentence_transformers import SentenceTransformer
+    SENTENCE_TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    SENTENCE_TRANSFORMERS_AVAILABLE = False
+    SentenceTransformer = None  # type: ignore
 
 
 class EmbeddingService:
@@ -74,3 +82,78 @@ class EmbeddingService:
             (hash_int >> i) & 0xFF
             for i in range(384)
         ]) / 255.0
+
+    def _load_model(self) -> Any:
+        """Lazy-load sentence-transformers model.
+
+        Returns:
+            Loaded SentenceTransformer model
+        """
+        if not SENTENCE_TRANSFORMERS_AVAILABLE:
+            raise ImportError("sentence-transformers is not installed. Install it with: pip install sentence-transformers")
+
+        if self._model is None:
+            self._model = SentenceTransformer(self._model_name)
+        return self._model
+
+    async def _generate_embedding(self, text: str) -> np.ndarray:
+        """Generate embedding from text.
+
+        Args:
+            text: Text string to embed
+
+        Returns:
+            384-dim vector
+        """
+        model = self._load_model()
+        return model.encode(text)
+
+    @lru_cache(maxsize=1000)
+    def _embed_cached(self, cache_key: int, text: str) -> np.ndarray:
+        """Generate embedding with LRU caching.
+
+        Args:
+            cache_key: Cache key (hash of trace)
+            text: Text to embed
+
+        Returns:
+            384-dim vector
+        """
+        # Note: This is sync, but fast because model is cached
+        model = self._load_model()
+        return model.encode(text)
+
+    async def embed_trace(self, trace: dict[str, Any]) -> np.ndarray:
+        """Generate embedding from trace dict.
+
+        Args:
+            trace: Trace data dictionary
+
+        Returns:
+            384-dim vector embedding
+        """
+        from oneiric.core.logging import get_logger
+        logger = get_logger("otel.embedding")
+
+        try:
+            # Build text
+            text = self._build_text_from_trace(trace)
+
+            # Generate cache key
+            cache_key = self._generate_cache_key(trace)
+
+            # Generate embedding (cached)
+            embedding = self._embed_cached(cache_key, text)
+
+            logger.debug("embedding-generated", trace_id=trace.get("trace_id"))
+            return embedding
+
+        except Exception as exc:
+            # Fallback on any error
+            logger.warning(
+                "embedding-generation-failed",
+                error=str(exc),
+                trace_id=trace.get("trace_id"),
+                fallback=True
+            )
+            return self._generate_fallback_embedding(trace.get("trace_id", "unknown"))
