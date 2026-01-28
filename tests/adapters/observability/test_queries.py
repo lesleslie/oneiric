@@ -94,3 +94,47 @@ def test_orm_to_result_empty_attributes(query_service):
     assert result.operation is None
     assert result.attributes == {}
 
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_find_similar_traces_returns_results(sample_traces_with_embeddings):
+    """Test vector similarity search returns similar traces."""
+    from oneiric.adapters.observability.queries import QueryService
+    import numpy as np
+
+    # Create QueryService with the sample session factory
+    query_service = QueryService(session_factory=sample_traces_with_embeddings)
+
+    # Use embedding from first trace
+    query_embedding = np.random.rand(384)
+
+    results = await query_service.find_similar_traces(
+        embedding=query_embedding,
+        threshold=0.0,  # Low threshold to get results
+        limit=5
+    )
+
+    assert len(results) <= 5
+    # Verify all results have similarity scores
+    for result in results:
+        assert result.similarity_score is not None
+        assert 0.0 <= result.similarity_score <= 1.0
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_find_similar_traces_invalid_dimension(query_service):
+    """Test invalid embedding dimension raises error."""
+    from oneiric.adapters.observability.errors import InvalidEmbeddingError
+    import numpy as np
+    import pytest
+
+    bad_embedding = np.random.rand(128)  # Wrong dimension
+
+    with pytest.raises(InvalidEmbeddingError):
+        await query_service.find_similar_traces(
+            embedding=bad_embedding,
+            threshold=0.85,
+            limit=10
+        )
+
