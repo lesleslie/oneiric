@@ -118,3 +118,55 @@ async def test_embed_trace_with_mock_model(embedding_service):
     # Note: We don't check exact equality because the mock may not be called
     # if sentence-transformers is not available (fallback is used)
     # The important thing is that an embedding is always returned
+
+
+@pytest.mark.integration
+@pytest.mark.slow
+def test_real_model_embedding_dimension(embedding_service):
+    """Test real model produces 384-dim embeddings."""
+    trace = {
+        "trace_id": "test-real",
+        "service": "test",
+        "operation": "test",
+        "status": "OK",
+        "duration_ms": 100,
+        "attributes": {}
+    }
+
+    import asyncio
+    embedding = asyncio.run(embedding_service.embed_trace(trace))
+
+    assert embedding.shape == (384,)
+
+
+@pytest.mark.integration
+@pytest.mark.slow
+def test_embedding_similarity(embedding_service):
+    """Test similar traces produce similar embeddings."""
+    trace1 = {
+        "trace_id": "similar-1",
+        "service": "mahavishnu",
+        "operation": "process_repo",
+        "status": "ERROR",
+        "duration_ms": 1000,
+        "attributes": {"error": "timeout"}
+    }
+    trace2 = {
+        "trace_id": "similar-2",
+        "service": "mahavishnu",
+        "operation": "process_repo",
+        "status": "ERROR",
+        "duration_ms": 1200,
+        "attributes": {"error": "network error"}
+    }
+
+    import asyncio
+    emb1 = asyncio.run(embedding_service.embed_trace(trace1))
+    emb2 = asyncio.run(embedding_service.embed_trace(trace2))
+
+    # Cosine similarity
+    from numpy.linalg import norm
+    similarity = (emb1 @ emb2) / (norm(emb1) * norm(emb2))
+
+    # Similar traces should have high cosine similarity (>0.7)
+    assert similarity > 0.7
