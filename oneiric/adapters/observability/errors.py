@@ -34,3 +34,15 @@ class InvalidEmbeddingError(QueryError):
     """Embedding dimension mismatch."""
 
     pass
+
+
+class TraceNotFoundError(QueryError):
+    """Trace ID not found."""
+
+    pass
+
+
+class InvalidSQLError(QueryError):
+    """SQL validation failed."""
+
+    pass

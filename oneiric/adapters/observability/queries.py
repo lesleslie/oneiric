@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+from typing import Any
+
 import numpy as np
 from numpy import ndarray
 from sqlalchemy import select, text
@@ -9,9 +12,18 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from structlog.stdlib import BoundLogger
 
 from oneiric.core.lifecycle import get_logger
-from oneiric.adapters.observability.models import TraceModel
-from oneiric.adapters.observability.types import TraceResult
-from oneiric.adapters.observability.errors import InvalidEmbeddingError
+from oneiric.adapters.observability.models import LogModel, MetricModel, TraceModel
+from oneiric.adapters.observability.types import (
+    LogEntry,
+    MetricPoint,
+    TraceContext,
+    TraceResult,
+)
+from oneiric.adapters.observability.errors import (
+    InvalidEmbeddingError,
+    InvalidSQLError,
+    TraceNotFoundError,
+)
 
 
 class QueryService:
@@ -23,10 +35,9 @@ class QueryService:
     Methods:
         _orm_to_result: Convert ORM models to Pydantic result models
         find_similar_traces: Vector similarity search using Pgvector
-
-    Note:
-        This service uses async SQLAlchemy sessions for database queries.
-        Future tasks will add error pattern detection and trace context correlation.
+        get_traces_by_error: Find traces by error pattern
+        get_trace_context: Get complete trace context with correlated data
+        custom_query: Execute raw SQL query (read-only)
     """
 
     def __init__(self, session_factory: async_sessionmaker) -> None:
@@ -126,3 +137,141 @@ class QueryService:
             )
 
             return results
+
+    async def get_traces_by_error(
+        self,
+        error_pattern: str,
+        service: str | None = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        limit: int = 100
+    ) -> list[TraceResult]:
+        """Find traces matching error pattern using SQL LIKE.
+
+        Args:
+            error_pattern: SQL LIKE pattern (e.g., "%connection timeout%")
+            service: Filter by service name
+            start_time: Filter traces after this time
+            end_time: Filter traces before this time
+            limit: Maximum results to return
+
+        Returns:
+            List of TraceResult matching error pattern
+        """
+        async with self._session_factory() as session:
+            # Use text() for JSON field access in PostgreSQL
+            query = select(TraceModel).where(
+                text("attributes->>'error.message' LIKE :error_pattern")
+            )
+
+            if service:
+                query = query.where(text("attributes->>'service' = :service"))
+            if start_time:
+                query = query.where(TraceModel.start_time >= start_time)
+            if end_time:
+                query = query.where(TraceModel.start_time <= end_time)
+
+            query = query.limit(limit)
+
+            # Build parameters dict
+            params = {"error_pattern": error_pattern}
+            if service:
+                params["service"] = service
+
+            result = await session.execute(query, params)
+            orm_models = result.scalars().all()
+
+            return [self._orm_to_result(model) for model in orm_models]
+
+    async def get_trace_context(self, trace_id: str) -> TraceContext:
+        """Get complete trace context with correlated logs and metrics.
+
+        Args:
+            trace_id: Trace identifier
+
+        Returns:
+            TraceContext with trace, logs, and metrics
+
+        Raises:
+            TraceNotFoundError: If trace_id not found
+        """
+        async with self._session_factory() as session:
+            # Get trace
+            trace_query = select(TraceModel).where(TraceModel.trace_id == trace_id)
+            trace_result = await session.execute(trace_query)
+            trace_model = trace_result.scalar_one_or_none()
+
+            if not trace_model:
+                raise TraceNotFoundError(f"Trace not found: {trace_id}")
+
+            trace_pydantic = self._orm_to_result(trace_model)
+
+            # Get logs
+            logs_query = select(LogModel).where(LogModel.trace_id == trace_id)
+            logs_result = await session.execute(logs_query)
+            log_models = logs_result.scalars().all()
+
+            logs = [
+                LogEntry(
+                    id=log.id,
+                    timestamp=log.timestamp,
+                    level=log.level,
+                    message=log.message,
+                    trace_id=log.trace_id,
+                    resource_attributes=log.resource_attributes or {},
+                    span_attributes=log.span_attributes or {}
+                )
+                for log in log_models
+            ]
+
+            # Get metrics
+            metrics_query = select(MetricModel).where(
+                text("labels->>'trace_id' = :trace_id")
+            )
+            metrics_result = await session.execute(metrics_query, {"trace_id": trace_id})
+            metric_models = metrics_result.scalars().all()
+
+            metrics = [
+                MetricPoint(
+                    name=metric.name,
+                    value=metric.value,
+                    unit=metric.unit,
+                    labels=metric.labels or {},
+                    timestamp=metric.timestamp
+                )
+                for metric in metric_models
+            ]
+
+            return TraceContext(trace=trace_pydantic, logs=logs, metrics=metrics)
+
+    async def custom_query(
+        self,
+        sql: str,
+        params: dict[str, Any] | None = None
+    ) -> list[dict[str, Any]]:
+        """Execute raw SQL query (read-only).
+
+        Args:
+            sql: SQL query (must be SELECT or WITH)
+            params: Query parameters
+
+        Returns:
+            List of result rows as dictionaries
+
+        Raises:
+            InvalidSQLError: If SQL is not read-only or contains dangerous patterns
+        """
+        sql_stripped = sql.strip().upper()
+
+        if not (sql_stripped.startswith("SELECT") or sql_stripped.startswith("WITH")):
+            raise InvalidSQLError("Only SELECT and WITH queries allowed")
+
+        dangerous_patterns = ["; DROP", "; DELETE", "; INSERT", "; UPDATE", "--", "/*"]
+        for pattern in dangerous_patterns:
+            if pattern in sql.upper():
+                raise InvalidSQLError(f"Dangerous SQL pattern detected: {pattern}")
+
+        async with self._session_factory() as session:
+            result = await session.execute(sql, params or {})
+            rows = result.fetchall()
+            return [dict(row._mapping) for row in rows]

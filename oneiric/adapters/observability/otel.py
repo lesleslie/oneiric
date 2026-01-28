@@ -12,6 +12,7 @@ from structlog.stdlib import BoundLogger
 
 from oneiric.adapters.observability.embeddings import EmbeddingService
 from oneiric.adapters.observability.models import TraceModel
+from oneiric.adapters.observability.queries import QueryService
 from oneiric.adapters.observability.settings import OTelStorageSettings
 from oneiric.core.lifecycle import get_logger
 
@@ -52,6 +53,7 @@ class OTelStorageAdapter(ABC):
         self._embedding_service = EmbeddingService(
             model_name=settings.embedding_model
         )
+        self._query_service: QueryService | None = None
 
     async def init(self) -> None:
         """
@@ -88,6 +90,9 @@ class OTelStorageAdapter(ABC):
 
             # Start background flush task
             self._flush_task = asyncio.create_task(self._flush_buffer_periodically())
+
+            # Initialize QueryService
+            self._query_service = QueryService(session_factory=self._session_factory)
 
             self._logger.info("adapter-init", adapter="otel-storage")
 
@@ -132,6 +137,7 @@ class OTelStorageAdapter(ABC):
         await self._engine.dispose()
         self._engine = None
         self._session_factory = None
+        self._query_service = None
         self._logger.info("adapter-cleanup", adapter="otel-storage")
 
     # Concrete method for storing traces with async buffering
