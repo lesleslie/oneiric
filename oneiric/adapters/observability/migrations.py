@@ -244,3 +244,32 @@ async def create_ivfflat_index_if_ready(session) -> bool:
         logger.error("ivfflat-index-failed", error=str(exc))
         await session.rollback()
         raise
+
+
+async def create_query_optimization_indexes(session) -> None:
+    """Create indexes for common query patterns.
+
+    Creates composite and GIN indexes for optimized error search
+    and time-range queries.
+    """
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    try:
+        # Composite index for time-range error queries
+        await session.execute(text("""
+            CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_traces_start_time_status
+            ON otel_traces (start_time, status)
+        """))
+
+        # GIN index for JSON attribute queries (already exists in schema, skip)
+        # Note: ix_traces_attributes_gin is already created in create_otel_schema
+
+        await session.commit()
+        logger.info("query-indexes-created", indexes=["start_time_status"])
+
+    except Exception as exc:
+        logger.error("query-indexes-failed", error=str(exc))
+        await session.rollback()
+        raise
