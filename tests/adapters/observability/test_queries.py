@@ -14,7 +14,7 @@ def query_service():
 
     Note: _orm_to_result doesn't need a session, so we pass None.
     """
-    return QueryService(session_factory=None)
+    return QueryService(session_factory=None)  # type: ignore[assignment]
 
 
 def test_orm_to_trace_result_conversion(query_service):
@@ -38,3 +38,59 @@ def test_orm_to_trace_result_conversion(query_service):
     assert result.operation == "test_op"
     assert result.status == "OK"
     assert result.duration_ms == 100.0
+
+
+def test_orm_to_result_missing_service_attribute(query_service):
+    """Test conversion with missing service attribute uses 'unknown' fallback."""
+    orm_model = TraceModel(
+        id="span-002",
+        trace_id="trace-002",
+        name="Operation without service",
+        start_time=datetime.now(UTC),
+        status="OK",
+        duration_ms=50.0,
+        attributes={"operation": "some_op"}
+    )
+
+    result = query_service._orm_to_result(orm_model)
+
+    assert result.service == "unknown"
+    assert result.operation == "some_op"
+
+
+def test_orm_to_result_missing_operation_attribute(query_service):
+    """Test conversion with missing operation attribute returns None."""
+    orm_model = TraceModel(
+        id="span-003",
+        trace_id="trace-003",
+        name="Operation without operation field",
+        start_time=datetime.now(UTC),
+        status="ERROR",
+        duration_ms=200.0,
+        attributes={"service": "my-service"}
+    )
+
+    result = query_service._orm_to_result(orm_model)
+
+    assert result.service == "my-service"
+    assert result.operation is None
+
+
+def test_orm_to_result_empty_attributes(query_service):
+    """Test conversion with empty attributes dict."""
+    orm_model = TraceModel(
+        id="span-004",
+        trace_id="trace-004",
+        name="Operation with no attributes",
+        start_time=datetime.now(UTC),
+        status="OK",
+        duration_ms=75.0,
+        attributes={}
+    )
+
+    result = query_service._orm_to_result(orm_model)
+
+    assert result.service == "unknown"
+    assert result.operation is None
+    assert result.attributes == {}
+

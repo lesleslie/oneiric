@@ -2,20 +2,27 @@
 
 from __future__ import annotations
 
-from datetime import datetime, UTC
-from typing import Any
-
-from numpy import ndarray
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from structlog.stdlib import BoundLogger
 
 from oneiric.core.lifecycle import get_logger
-from oneiric.adapters.observability.models import TraceModel, LogModel, MetricModel
-from oneiric.adapters.observability.types import TraceResult, LogEntry, MetricPoint
+from oneiric.adapters.observability.models import TraceModel
+from oneiric.adapters.observability.types import TraceResult
 
 
 class QueryService:
-    """High-level query API for OTel telemetry."""
+    """High-level query API for OTel telemetry.
+
+    Provides methods for querying and converting OTel telemetry data from
+    the database into user-friendly Pydantic models.
+
+    Methods:
+        _orm_to_result: Convert ORM models to Pydantic result models
+
+    Note:
+        This service uses async SQLAlchemy sessions for database queries.
+        Future tasks will add vector similarity search and error pattern detection.
+    """
 
     def __init__(self, session_factory: async_sessionmaker) -> None:
         """Initialize with SQLAlchemy session factory.
