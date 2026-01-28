@@ -182,3 +182,65 @@ async def create_vector_index(session, num_lists: int = 100) -> None:
         )
     )
     await session.commit()
+
+
+async def create_ivfflat_index_if_ready(session) -> bool:
+    """Create IVFFlat index if sufficient traces exist.
+
+    IVFFlat indexes require 1000+ vectors to be effective.
+    This function checks trace count and creates index if threshold met.
+
+    Args:
+        session: SQLAlchemy async session
+
+    Returns:
+        True if index created, False if skipped
+    """
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    try:
+        # Check trace count
+        result = await session.execute(text("SELECT COUNT(*) FROM otel_traces"))
+        trace_count = result.scalar()
+
+        if trace_count < 1000:
+            logger.info(
+                "ivfflat-index-skipped",
+                trace_count=trace_count,
+                threshold=1000,
+                reason="Insufficient traces for IVFFlat index"
+            )
+            return False
+
+        # Check if index already exists
+        result = await session.execute(text("""
+            SELECT indexname FROM pg_indexes
+            WHERE tablename = 'otel_traces' AND indexname LIKE '%ivfflat%'
+        """))
+        if result.fetchone():
+            logger.info("ivfflat-index-exists", message="Index already exists")
+            return False
+
+        # Create IVFFlat index
+        await session.execute(text("""
+            CREATE INDEX CONCURRENTLY ix_traces_embedding_ivfflat
+            ON otel_traces
+            USING ivfflat (embedding vector_cosine_ops)
+            WITH (lists = 100)
+        """))
+        await session.commit()
+
+        logger.info(
+            "ivfflat-index-created",
+            trace_count=trace_count,
+            index_type="ivfflat",
+            lists=100
+        )
+        return True
+
+    except Exception as exc:
+        logger.error("ivfflat-index-failed", error=str(exc))
+        await session.rollback()
+        raise

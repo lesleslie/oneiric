@@ -84,10 +84,16 @@ class OTelStorageAdapter(ABC):
 
             # Validate Pgvector extension exists
             from sqlalchemy import text
+            from oneiric.adapters.observability.migrations import create_ivfflat_index_if_ready
+
             async with self._session_factory() as session:
                 result = await session.execute(text("SELECT extname FROM pg_extension WHERE extname = 'vector';"))
                 if not result.fetchone():
                     raise RuntimeError("Pgvector extension not installed. Run: CREATE EXTENSION vector;")
+
+            # Create IVFFlat index if enough traces
+            async with self._session_factory() as session:
+                await create_ivfflat_index_if_ready(session)
 
             # Start background flush task
             self._flush_task = asyncio.create_task(self._flush_buffer_periodically())
