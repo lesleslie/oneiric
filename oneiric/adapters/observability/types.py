@@ -65,9 +65,10 @@ class MetricData(BaseModel):
 
 
 class LogEntry(BaseModel):
-    """Log entry with trace correlation.
+    """Log entry from query results.
 
     Attributes:
+        id: Log entry identifier
         timestamp: Log timestamp
         level: Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
         message: Log message
@@ -76,72 +77,72 @@ class LogEntry(BaseModel):
         span_attributes: Associated span attributes (optional)
     """
 
-    timestamp: datetime = Field(..., description="Log timestamp")
-    level: str = Field(..., description="Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
-    message: str = Field(..., description="Log message")
-    trace_id: str | None = Field(None, description="Associated trace ID for correlation")
-    resource_attributes: dict[str, Any] = Field(
-        default_factory=dict,
-        description="Resource attributes (service.name, host.name, etc.)",
-    )
-    span_attributes: dict[str, Any] = Field(default_factory=dict, description="Associated span attributes")
+    id: str
+    timestamp: datetime
+    level: str
+    message: str
+    trace_id: str | None = None
+    resource_attributes: dict[str, Any] = {}
+    span_attributes: dict[str, Any] = {}
 
 
 class TraceResult(BaseModel):
-    """Result from trace similarity query.
+    """Trace data from query results.
 
     Attributes:
         trace_id: Unique trace identifier
+        span_id: Span identifier (optional)
         name: Trace/root span name
         service: Service name
-        operation: Operation name
+        operation: Operation name (optional)
         status: Trace status (OK, ERROR, UNSET)
-        duration_ms: Trace duration in milliseconds
+        duration_ms: Trace duration in milliseconds (optional)
+        start_time: Trace start timestamp
+        end_time: Trace end timestamp (optional)
         attributes: Trace attributes
-        similarity: Similarity score (0-1, higher is more similar)
+        similarity_score: Similarity score for vector search (optional)
     """
 
-    trace_id: str = Field(..., description="Unique trace identifier")
-    name: str = Field(..., description="Trace/root span name")
-    service: str = Field(..., description="Service name")
-    operation: str = Field(..., description="Operation name")
-    status: str = Field(..., description="Trace status (OK, ERROR, UNSET)")
-    duration_ms: float = Field(..., description="Trace duration in milliseconds")
-    attributes: dict[str, Any] = Field(default_factory=dict, description="Trace attributes")
-    similarity: float = Field(..., description="Similarity score (0-1, higher is more similar)")
+    trace_id: str
+    span_id: str | None = None
+    name: str
+    service: str
+    operation: str | None = None
+    status: str
+    duration_ms: float | None = None
+    start_time: datetime
+    end_time: datetime | None = None
+    attributes: dict[str, Any] = {}
+    similarity_score: float | None = None  # Only for vector search
 
 
 class MetricPoint(BaseModel):
-    """Metric data point from time-series query.
+    """Metric data point.
 
     Attributes:
         name: Metric name
-        type: Metric type (GAUGE, COUNTER, HISTOGRAM, SUMMARY)
         value: Metric value
-        unit: Metric unit (e.g., seconds, bytes, requests)
+        unit: Metric unit (optional)
         labels: Metric labels/dimensions
         timestamp: Metric timestamp
     """
 
-    name: str = Field(..., description="Metric name")
-    type: str = Field(..., description="Metric type (GAUGE, COUNTER, HISTOGRAM, SUMMARY)")
-    value: float = Field(..., description="Metric value")
-    unit: str = Field(..., description="Metric unit (e.g., seconds, bytes, requests)")
-    labels: dict[str, str] = Field(default_factory=dict, description="Metric labels/dimensions")
-    timestamp: datetime = Field(..., description="Metric timestamp")
+    name: str
+    value: float
+    unit: str | None = None
+    labels: dict[str, Any] = {}
+    timestamp: datetime
 
 
 class TraceContext(BaseModel):
-    """Complete trace with all related telemetry.
+    """Complete trace context with correlated data.
 
     Attributes:
-        trace_id: Unique trace identifier
-        spans: List of spans in the trace
+        trace: Trace result
         logs: Log entries correlated to this trace
         metrics: Metrics correlated to this trace
     """
 
-    trace_id: str = Field(..., description="Unique trace identifier")
-    spans: list[TraceData] = Field(default_factory=list, description="List of spans in the trace")
-    logs: list[LogEntry] = Field(default_factory=list, description="Log entries correlated to this trace")
-    metrics: list[MetricPoint] = Field(default_factory=list, description="Metrics correlated to this trace")
+    trace: TraceResult
+    logs: list[LogEntry] = []
+    metrics: list[MetricPoint] = []
