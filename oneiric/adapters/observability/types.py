@@ -77,13 +77,16 @@ class LogEntry(BaseModel):
         span_attributes: Associated span attributes (optional)
     """
 
-    id: str
-    timestamp: datetime
-    level: str
-    message: str
-    trace_id: str | None = None
-    resource_attributes: dict[str, Any] = {}
-    span_attributes: dict[str, Any] = {}
+    id: str = Field(..., description="Log entry identifier")
+    timestamp: datetime = Field(..., description="Log timestamp")
+    level: str = Field(..., description="Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
+    message: str = Field(..., description="Log message")
+    trace_id: str | None = Field(None, description="Associated trace ID for correlation")
+    resource_attributes: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Resource attributes (service.name, host.name, etc.)",
+    )
+    span_attributes: dict[str, Any] = Field(default_factory=dict, description="Associated span attributes")
 
 
 class TraceResult(BaseModel):
@@ -103,17 +106,17 @@ class TraceResult(BaseModel):
         similarity_score: Similarity score for vector search (optional)
     """
 
-    trace_id: str
-    span_id: str | None = None
-    name: str
-    service: str
-    operation: str | None = None
-    status: str
-    duration_ms: float | None = None
-    start_time: datetime
-    end_time: datetime | None = None
-    attributes: dict[str, Any] = {}
-    similarity_score: float | None = None  # Only for vector search
+    trace_id: str = Field(..., description="Unique trace identifier")
+    span_id: str | None = Field(None, description="Span identifier")
+    name: str = Field(..., description="Trace/root span name")
+    service: str = Field(..., description="Service name")
+    operation: str | None = Field(None, description="Operation name")
+    status: str = Field(..., description="Trace status (OK, ERROR, UNSET)")
+    duration_ms: float | None = Field(None, description="Trace duration in milliseconds")
+    start_time: datetime = Field(..., description="Trace start timestamp")
+    end_time: datetime | None = Field(None, description="Trace end timestamp")
+    attributes: dict[str, Any] = Field(default_factory=dict, description="Trace attributes")
+    similarity_score: float | None = Field(None, description="Similarity score for vector search")
 
 
 class MetricPoint(BaseModel):
@@ -127,11 +130,11 @@ class MetricPoint(BaseModel):
         timestamp: Metric timestamp
     """
 
-    name: str
-    value: float
-    unit: str | None = None
-    labels: dict[str, Any] = {}
-    timestamp: datetime
+    name: str = Field(..., description="Metric name")
+    value: float = Field(..., description="Metric value")
+    unit: str | None = Field(None, description="Metric unit (e.g., seconds, bytes, requests)")
+    labels: dict[str, Any] = Field(default_factory=dict, description="Metric labels/dimensions")
+    timestamp: datetime = Field(..., description="Metric timestamp")
 
 
 class TraceContext(BaseModel):
@@ -143,6 +146,6 @@ class TraceContext(BaseModel):
         metrics: Metrics correlated to this trace
     """
 
-    trace: TraceResult
-    logs: list[LogEntry] = []
-    metrics: list[MetricPoint] = []
+    trace: TraceResult = Field(..., description="Trace result")
+    logs: list[LogEntry] = Field(default_factory=list, description="Log entries correlated to this trace")
+    metrics: list[MetricPoint] = Field(default_factory=list, description="Metrics correlated to this trace")
