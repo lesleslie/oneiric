@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import numpy as np
 import pytest
 
 from oneiric.adapters.observability.embeddings import EmbeddingService
@@ -63,3 +64,29 @@ def test_cache_key_generation(embedding_service):
 
     assert key1 == key2  # Same trace = same key
     assert key1 != key3  # Different trace = different key
+
+
+def test_fallback_embedding_deterministic(embedding_service):
+    """Test fallback embedding is deterministic."""
+    trace_id = "trace-123"
+
+    emb1 = embedding_service._generate_fallback_embedding(trace_id)
+    emb2 = embedding_service._generate_fallback_embedding(trace_id)
+
+    assert np.array_equal(emb1, emb2)  # Same ID = same vector
+
+
+def test_fallback_embedding_dimension(embedding_service):
+    """Test fallback embedding has correct dimension."""
+    embedding = embedding_service._generate_fallback_embedding("any-id")
+
+    assert embedding.shape == (384,)
+    assert embedding.dtype == np.float64
+
+
+def test_fallback_embedding_range(embedding_service):
+    """Test fallback embedding values are in [0, 1]."""
+    embedding = embedding_service._generate_fallback_embedding("test-id")
+
+    assert np.all(embedding >= 0.0)
+    assert np.all(embedding <= 1.0)

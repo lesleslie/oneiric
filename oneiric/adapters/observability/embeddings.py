@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import hashlib
 from typing import Any
+
+import numpy as np
 
 
 class EmbeddingService:
@@ -49,3 +52,25 @@ class EmbeddingService:
             Cache key (hash integer)
         """
         return hash(frozenset(sorted(trace.items())))
+
+    def _generate_fallback_embedding(self, trace_id: str) -> np.ndarray:
+        """Generate fallback embedding from trace_id hash.
+
+        Creates deterministic 384-dim vector using SHA-256 hash.
+        Used when sentence-transformers model fails.
+
+        Args:
+            trace_id: Trace identifier
+
+        Returns:
+            384-dim vector with values in [0, 1]
+        """
+        # Hash trace_id to get deterministic bytes
+        hash_int = int(hashlib.sha256(trace_id.encode()).hexdigest(), 16)
+
+        # Convert to 384-dim vector
+        # Each byte (0-255) becomes a value in [0, 1]
+        return np.array([
+            (hash_int >> i) & 0xFF
+            for i in range(384)
+        ]) / 255.0
