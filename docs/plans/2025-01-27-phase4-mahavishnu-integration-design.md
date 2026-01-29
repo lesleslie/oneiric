@@ -4,13 +4,14 @@
 **Status:** Approved Design
 **Implementing:** Connect OTelStorageAdapter with Mahavishnu ObservabilityManager
 
----
+______________________________________________________________________
 
 ## Executive Summary
 
 Phase 4 integrates OTelStorageAdapter with Mahavishnu's ObservabilityManager to enable automatic OTel telemetry capture with intelligent PostgreSQL querying capabilities. This provides Mahavishnu with semantic trace search, error pattern matching, and distributed trace correlation.
 
 **Key Features:**
+
 - Dual export strategy (OTLP + PostgreSQL)
 - Configurable storage backend selector
 - Granular control (traces, metrics, logs)
@@ -19,25 +20,28 @@ Phase 4 integrates OTelStorageAdapter with Mahavishnu's ObservabilityManager to 
 - Non-blocking async operations
 
 **Design Decisions:**
+
 - **Storage backend:** Configurable via `otel_storage_backend` ("otlp", "postgresql", "both")
 - **Granular flags:** Separate control for traces, metrics, logs
 - **Transformation layer:** Clean separation of concerns
 - **Resilience:** Retry (3 attempts) + Circuit breaker (5 failures in 60s)
 - **Non-blocking:** All storage operations async, never block workflows
 
----
+______________________________________________________________________
 
 ## Architecture Overview
 
 ### Modified ObservabilityManager
 
 **Current State:**
+
 ```
 ObservabilityManager
     └── OTLP Exporter → Grafana / Datadog / New Relic
 ```
 
 **After Integration:**
+
 ```
 ObservabilityManager
     ├── OTLP Exporter (existing) → External platforms
@@ -94,7 +98,7 @@ ObservabilityManager
             └── Store: async store_metrics()
 ```
 
----
+______________________________________________________________________
 
 ## Configuration
 
@@ -160,6 +164,7 @@ class MahavishnuSettings(MCPServerSettings):
 ### Configuration Examples
 
 **Development (PostgreSQL only):**
+
 ```yaml
 # settings/local.yaml
 otel_storage_backend: "postgresql"
@@ -169,6 +174,7 @@ store_logs: true
 ```
 
 **Production (Dual export):**
+
 ```yaml
 # settings/mahavishnu.yaml
 otel_storage_backend: "both"
@@ -178,6 +184,7 @@ store_logs: true
 ```
 
 **Minimal (OTLP only - no change):**
+
 ```yaml
 # settings/mahavishnu.yaml
 otel_storage_backend: "otlp"  # Default behavior
@@ -192,7 +199,7 @@ export MAHAVISHNU_STORE_METRICS=false
 export MAHAVISHNU_STORE_LOGS=true
 ```
 
----
+______________________________________________________________________
 
 ## Circuit Breaker Design
 
@@ -339,7 +346,7 @@ async def store_log_with_retry(self, otel_log: dict):
     await self.otel_adapter.store_log(otel_log)
 ```
 
----
+______________________________________________________________________
 
 ## Transformation Layer
 
@@ -408,31 +415,36 @@ otel_metric = {
 }
 ```
 
----
+______________________________________________________________________
 
 ## Error Handling
 
 ### Failure Scenarios
 
 1. **PostgreSQL connection fails**
+
    - **Action:** Log error, set `self.otel_adapter = None`, continue with OTLP
    - **Log:** ERROR: "otel-storage-init-failed"
 
-2. **Storage operation fails transiently**
+1. **Storage operation fails transiently**
+
    - **Action:** Retry 3x with exponential backoff
    - **Log:** WARNING: "otel-storage-retryable"
 
-3. **Storage operation fails persistently**
+1. **Storage operation fails persistently**
+
    - **Action:** Circuit breaker records failure
    - **After 5 failures:** Circuit breaker opens
    - **Log:** ERROR: "circuit-breaker-open"
 
-4. **Circuit breaker opens**
+1. **Circuit breaker opens**
+
    - **Action:** Stop PostgreSQL storage for 60 seconds
    - **OTLP continues:** Unaffected
    - **Log:** ERROR: "otel-storage-paused"
 
-5. **Circuit breaker recovers**
+1. **Circuit breaker recovers**
+
    - **Action:** Successful request closes circuit
    - **PostgreSQL storage resumes**
    - **Log:** INFO: "circuit-breaker-closed"
@@ -449,7 +461,7 @@ class OTelStorageInitializationError(Exception):
     pass
 ```
 
----
+______________________________________________________________________
 
 ## Testing Strategy
 
@@ -458,31 +470,31 @@ class OTelStorageInitializationError(Exception):
 **File:** `tests/unit/test_circuit_breaker.py` (8 tests)
 
 1. `test_circuit_closed_passes_requests` - Normal operation
-2. `test_circuit_opens_after_threshold` - 5 failures triggers OPEN
-3. `test_circuit_half_opens_after_timeout` - Time reset
-4. `test_circuit_closes_after_half_open_success` - Recovery
-5. `test_circuit_remains_open_without_timeout` - Not enough time
-6. `test_circuit_resets_on_success` - Success resets counter
-7. `test_circuit_error_in_open_state` - Raises immediately
-8. `test_circuit_consecutive_failures` - State transitions
+1. `test_circuit_opens_after_threshold` - 5 failures triggers OPEN
+1. `test_circuit_half_opens_after_timeout` - Time reset
+1. `test_circuit_closes_after_half_open_success` - Recovery
+1. `test_circuit_remains_open_without_timeout` - Not enough time
+1. `test_circuit_resets_on_success` - Success resets counter
+1. `test_circuit_error_in_open_state` - Raises immediately
+1. `test_circuit_consecutive_failures` - State transitions
 
 **File:** `tests/unit/test_transformations.py` (4 tests)
 
 1. `test_convert_log_to_otel_success` - LogEntry → OTel format
-2. `test_convert_log_with_trace_id` - Preserves trace correlation
-3. `test_convert_metric_to_otel_success` - Metric → OTel format
-4. `test_convert_metric_attributes` - Labels → attributes mapping
+1. `test_convert_log_with_trace_id` - Preserves trace correlation
+1. `test_convert_metric_to_otel_success` - Metric → OTel format
+1. `test_convert_metric_attributes` - Labels → attributes mapping
 
 ### Integration Tests (Slow, Requires PostgreSQL + Mahavishnu)
 
 **File:** `tests/integration/test_mahavishnu_otel_integration.py` (6 tests)
 
 1. `test_observability_manager_creates_adapter` - Adapter initialized
-2. `test_store_log_persists_to_db` - Log stored correctly
-3. `test_store_log_with_trace_correlation` - trace_id preserved
-4. `test_store_metrics_persists_to_db` - Metrics stored
-5. `test_dual_export_both_backends` - OTLP + PostgreSQL both work
-6. `test_circuit_breaker_opens_on_failures` - Protection works
+1. `test_store_log_persists_to_db` - Log stored correctly
+1. `test_store_log_with_trace_correlation` - trace_id preserved
+1. `test_store_metrics_persists_to_db` - Metrics stored
+1. `test_dual_export_both_backends` - OTLP + PostgreSQL both work
+1. `test_circuit_breaker_opens_on_failures` - Protection works
 
 **Test Fixtures:**
 
@@ -506,51 +518,58 @@ async def mahavishnu_with_otel_storage():
     await obs_manager.otel_adapter.cleanup()
 ```
 
----
+______________________________________________________________________
 
 ## Implementation Plan
 
 ### Task Breakdown
 
 1. **Create circuit breaker** (1 hour)
+
    - Implement CircuitBreaker class
    - State machine: CLOSED → HALF_OPEN → OPEN
    - Tests for all state transitions
 
-2. **Create resilience utilities** (30 min)
+1. **Create resilience utilities** (30 min)
+
    - Retry decorator with exponential backoff
    - Custom exception types
    - Tests for retry logic
 
-3. **Modify MahavishnuSettings** (30 min)
+1. **Modify MahavishnuSettings** (30 min)
+
    - Add OTel storage configuration fields
    - Add circuit breaker configuration fields
    - Validation and defaults
 
-4. **Update ObservabilityManager** (1 hour)
+1. **Update ObservabilityManager** (1 hour)
+
    - Import and initialize OTelStorageAdapter
    - Add transformation methods
    - Implement concrete store_metrics(), store_log()
    - Integrate circuit breaker + retry
 
-5. **Testing** (1 hour)
+1. **Testing** (1 hour)
+
    - Unit tests for circuit breaker
    - Unit tests for transformation
    - Integration tests for Mahavishnu
    - End-to-end workflow tests
 
-6. **Documentation** (30 min)
+1. **Documentation** (30 min)
+
    - Update Mahavishnu README
    - Add configuration examples
    - Document circuit breaker behavior
 
 **Estimated Time:** 4 hours
 
----
+______________________________________________________________________
 
 ## Success Criteria
 
 ### Functional
+
 - ✅ OTelStorageAdapter integrates with ObservabilityManager
 - ✅ Dual export works (OTLP + PostgreSQL)
 - ✅ store_metrics() stores metrics in PostgreSQL
@@ -559,6 +578,7 @@ async def mahavishnu_with_otel_storage():
 - ✅ Retry with exponential backoff
 
 ### Resilience
+
 - ✅ Circuit breaker opens after 5 failures in 60s
 - ✅ Circuit breaker recovers after successful request
 - ✅ Retry attempts: 3 with exponential backoff (100ms → 1000ms)
@@ -566,6 +586,7 @@ async def mahavishnu_with_otel_storage():
 - ✅ PostgreSQL failure doesn't affect OTLP
 
 ### Quality
+
 - ✅ Type hints on all functions
 - ✅ Docstrings on all public methods
 - ✅ 100% test coverage (circuit breaker)
@@ -573,24 +594,26 @@ async def mahavishnu_with_otel_storage():
 - ✅ No suppress(Exception)
 
 ### Configuration
+
 - ✅ Backend selector: "otlp" | "postgresql" | "both"
 - ✅ Granular flags: store_traces, store_metrics, store_logs
 - ✅ Circuit breaker thresholds configurable
 - ✅ Environment variable overrides work
 
----
+______________________________________________________________________
 
 ## Next Steps
 
 After design approval:
-1. Create git worktree for Phase 4
-2. Implement circuit breaker and retry logic
-3. Modify MahavishnuSettings and ObservabilityManager
-4. Create transformation layer
-5. Integration tests
-6. Update documentation
 
----
+1. Create git worktree for Phase 4
+1. Implement circuit breaker and retry logic
+1. Modify MahavishnuSettings and ObservabilityManager
+1. Create transformation layer
+1. Integration tests
+1. Update documentation
+
+______________________________________________________________________
 
 **Status:** Ready for implementation approval
 **Estimated Time:** 4 hours

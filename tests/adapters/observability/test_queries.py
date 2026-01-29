@@ -459,4 +459,3 @@ async def test_custom_query_empty_params():
 
     assert len(results) == 1
     assert results[0]["count"] == 10
-

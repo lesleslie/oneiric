@@ -5,6 +5,7 @@
 **Goal:** Build Oneiric adapters to store OpenTelemetry telemetry directly in PostgreSQL/Pgvector, enabling SQL queries and vector similarity search on distributed traces.
 
 **Architecture:**
+
 - OTelStorageAdapter follows Oneiric lifecycle (init/health/cleanup)
 - TelemetryRepository uses SQLAlchemy models with Pgvector extensions
 - EmbeddingService generates 384-dim vectors using sentence-transformers
@@ -12,19 +13,21 @@
 - Async write buffering with circuit breaker and DLQ resilience
 
 **Tech Stack:**
+
 - PostgreSQL 14+ with Pgvector extension
 - SQLAlchemy 2.0 async ORM
 - sentence-transformers (all-MiniLM-L6-v2)
 - numpy for vector operations
 - pytest + pytest-asyncio for testing
 
----
+______________________________________________________________________
 
 ## Phase 1: Foundation (6 hours, 15 tasks)
 
 ### Task 1: Create observability directory structure
 
 **Files:**
+
 - Create: `oneiric/adapters/observability/__init__.py`
 - Create: `oneiric/adapters/observability/settings.py`
 
@@ -149,11 +152,12 @@ Add OTelStorageSettings with Pydantic validation for:
 "
 ```
 
----
+______________________________________________________________________
 
 ### Task 2: Create SQLAlchemy base and database models
 
 **Files:**
+
 - Create: `oneiric/adapters/observability/models.py`
 - Create: `tests/adapters/observability/test_models.py`
 
@@ -406,11 +410,12 @@ Tests cover model creation, querying, and trace correlation.
 "
 ```
 
----
+______________________________________________________________________
 
 ### Task 3: Create OTelStorageAdapter base class and interface
 
 **Files:**
+
 - Create: `oneiric/adapters/observability/otel.py`
 - Modify: `oneiric/adapters/observability/__init__.py`
 
@@ -707,11 +712,12 @@ Validates Pgvector extension is installed during init.
 "
 ```
 
----
+______________________________________________________________________
 
 ### Task 4: Implement database schema migrations
 
 **Files:**
+
 - Create: `oneiric/adapters/observability/migrations.py`
 - Create: `tests/adapters/observability/test_migrations.py`
 
@@ -1010,11 +1016,12 @@ Tests marked as integration (require PostgreSQL).
 "
 ```
 
----
+______________________________________________________________________
 
 ### Task 5: Add type definitions for OTel data structures
 
 **Files:**
+
 - Create: `oneiric/adapters/observability/types.py`
 - Create: `tests/adapters/observability/test_types.py`
 
@@ -1246,11 +1253,12 @@ Tests cover field validation and required fields.
 "
 ```
 
----
+______________________________________________________________________
 
 ### Task 6: Implement trace storage with buffering
 
 **Files:**
+
 - Modify: `oneiric/adapters/observability/otel.py`
 - Modify: `tests/adapters/observability/test_otel_adapter.py`
 
@@ -1480,13 +1488,13 @@ Tests cover trace storage and buffer flushing.
 "
 ```
 
----
+______________________________________________________________________
 
 ## Continue with remaining tasks...
 
 *(This continues through all 22 hours of implementation across 5 phases, with each task broken down into 2-5 minute steps as shown above.)*
 
----
+______________________________________________________________________
 
 ## Summary
 
@@ -1502,6 +1510,7 @@ This plan provides:
 ✅ **Documentation** - Docstrings on all public methods
 
 **Total breakdown:**
+
 - **Phase 1 (Foundation)**: 6 tasks above, 9 more to go
 - **Phase 2 (Embedding Service)**: 10 tasks
 - **Phase 3 (Query Service)**: 12 tasks

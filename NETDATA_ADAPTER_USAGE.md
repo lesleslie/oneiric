@@ -79,6 +79,6 @@ The Netdata adapter provides the following capabilities:
 If you encounter issues with the Netdata adapter:
 
 1. Verify that your Netdata server is accessible at the configured base URL
-2. Check that any required API keys are correctly configured
-3. Ensure the Netdata API client library is properly installed
-4. Review Oneiric logs for any error messages related to the adapter
+1. Check that any required API keys are correctly configured
+1. Ensure the Netdata API client library is properly installed
+1. Review Oneiric logs for any error messages related to the adapter

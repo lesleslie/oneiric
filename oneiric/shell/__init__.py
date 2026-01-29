@@ -15,12 +15,12 @@ Example:
     >>> shell.start()
 """
 
-from .core import AdminShell
 from .config import ShellConfig
+from .core import AdminShell
 from .formatters import (
-    BaseTableFormatter,
-    BaseProgressFormatter,
     BaseLogFormatter,
+    BaseProgressFormatter,
+    BaseTableFormatter,
     TableColumn,
 )
 

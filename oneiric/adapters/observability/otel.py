@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from abc import ABC, abstractmethod
 from collections import deque
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from structlog.stdlib import BoundLogger
@@ -50,9 +50,7 @@ class OTelStorageAdapter(ABC):
         self._write_buffer: deque[dict] = deque(maxlen=1000)
         self._flush_task: Any = None
         self._flush_lock = asyncio.Lock()
-        self._embedding_service = EmbeddingService(
-            model_name=settings.embedding_model
-        )
+        self._embedding_service = EmbeddingService(model_name=settings.embedding_model)
         self._query_service: QueryService | None = None
 
     async def init(self) -> None:
@@ -84,12 +82,19 @@ class OTelStorageAdapter(ABC):
 
             # Validate Pgvector extension exists
             from sqlalchemy import text
-            from oneiric.adapters.observability.migrations import create_ivfflat_index_if_ready
+
+            from oneiric.adapters.observability.migrations import (
+                create_ivfflat_index_if_ready,
+            )
 
             async with self._session_factory() as session:
-                result = await session.execute(text("SELECT extname FROM pg_extension WHERE extname = 'vector';"))
+                result = await session.execute(
+                    text("SELECT extname FROM pg_extension WHERE extname = 'vector';")
+                )
                 if not result.fetchone():
-                    raise RuntimeError("Pgvector extension not installed. Run: CREATE EXTENSION vector;")
+                    raise RuntimeError(
+                        "Pgvector extension not installed. Run: CREATE EXTENSION vector;"
+                    )
 
             # Create IVFFlat index if enough traces
             async with self._session_factory() as session:
@@ -119,6 +124,7 @@ class OTelStorageAdapter(ABC):
 
         try:
             from sqlalchemy import text
+
             async with self._session_factory() as session:
                 await session.execute(text("SELECT 1;"))
                 return True
@@ -190,14 +196,19 @@ class OTelStorageAdapter(ABC):
                         trace_state=trace_dict.get("trace_state"),
                         name=trace_dict["name"],
                         kind=trace_dict.get("kind"),
-                        start_time=datetime.fromisoformat(trace_dict["start_time"]) if isinstance(trace_dict["start_time"], str) else trace_dict["start_time"],
-                        end_time=datetime.fromisoformat(trace_dict["end_time"]) if trace_dict.get("end_time") and isinstance(trace_dict["end_time"], str) else trace_dict.get("end_time"),
+                        start_time=datetime.fromisoformat(trace_dict["start_time"])
+                        if isinstance(trace_dict["start_time"], str)
+                        else trace_dict["start_time"],
+                        end_time=datetime.fromisoformat(trace_dict["end_time"])
+                        if trace_dict.get("end_time")
+                        and isinstance(trace_dict["end_time"], str)
+                        else trace_dict.get("end_time"),
                         duration_ms=trace_dict.get("duration_ms"),
                         status=trace_dict["status"],
                         attributes=trace_dict.get("attributes", {}),
                         embedding=embedding.tolist() if embedding is not None else None,
                         embedding_model="all-MiniLM-L6-v2",
-                        embedding_generated_at=datetime.utcnow(),
+                        embedding_generated_at=datetime.now(tz=UTC),
                     )
                     trace_models.append(trace_model)
 
@@ -209,7 +220,9 @@ class OTelStorageAdapter(ABC):
                 self._logger.debug("traces-stored", count=len(trace_models))
 
             except Exception as exc:
-                self._logger.error("trace-store-failed", error=str(exc), count=len(traces_to_store))
+                self._logger.error(
+                    "trace-store-failed", error=str(exc), count=len(traces_to_store)
+                )
                 # Send failed writes to DLQ
                 for trace in traces_to_store:
                     await self._send_to_dlq(trace, str(exc))
@@ -217,6 +230,7 @@ class OTelStorageAdapter(ABC):
     async def _send_to_dlq(self, trace: dict, error_message: str) -> None:
         """Insert failed trace into DLQ table."""
         import json
+
         from sqlalchemy import text
 
         try:
@@ -226,7 +240,7 @@ class OTelStorageAdapter(ABC):
                     INSERT INTO otel_telemetry_dlq (telemetry_type, raw_data, error_message, created_at)
                     VALUES ('trace', :raw_data, :error_message, NOW())
                     """),
-                    {"raw_data": json.dumps(trace), "error_message": error_message}
+                    {"raw_data": json.dumps(trace), "error_message": error_message},
                 )
                 await session.commit()
         except Exception as dlq_exc:
@@ -245,13 +259,22 @@ class OTelStorageAdapter(ABC):
 
         try:
             log_model = LogModel(
-                id=log.get("id", f"log-{log['trace_id']}-{int(datetime.utcnow().timestamp())}"),
-                timestamp=datetime.fromisoformat(log["start_time"]) if isinstance(log["start_time"], str) else log["start_time"],
+                id=log.get(
+                    "id",
+                    f"log-{log['trace_id']}-{int(datetime.now(tz=UTC).timestamp())}",
+                ),
+                timestamp=datetime.fromisoformat(log["start_time"])
+                if isinstance(log["start_time"], str)
+                else log["start_time"],
                 level=log["attributes"].get("log.level", "INFO"),
                 message=log["attributes"].get("log.message", ""),
                 trace_id=log.get("trace_id"),
-                resource_attributes={k: v for k, v in log.get("attributes", {}).items() if k not in ["log.level", "log.message"]},
-                span_attributes={}
+                resource_attributes={
+                    k: v
+                    for k, v in log.get("attributes", {}).items()
+                    if k not in ("log.level", "log.message")
+                },
+                span_attributes={},
             )
 
             async with self._session_factory() as session:
@@ -279,13 +302,15 @@ class OTelStorageAdapter(ABC):
             metric_models = []
             for metric in metrics:
                 metric_model = MetricModel(
-                    id=f"metric-{metric['name']}-{int(datetime.utcnow().timestamp())}",
+                    id=f"metric-{metric['name']}-{int(datetime.now(tz=UTC).timestamp())}",
                     name=metric["name"],
                     type=metric.get("type", "gauge"),
                     value=metric["value"],
                     unit=metric.get("unit"),
                     labels=metric.get("labels", {}),
-                    timestamp=datetime.fromisoformat(metric["timestamp"]) if isinstance(metric["timestamp"], str) else metric["timestamp"]
+                    timestamp=datetime.fromisoformat(metric["timestamp"])
+                    if isinstance(metric["timestamp"], str)
+                    else metric["timestamp"],
                 )
                 metric_models.append(metric_model)
 
@@ -301,12 +326,16 @@ class OTelStorageAdapter(ABC):
 
     # Abstract methods for querying (to be implemented in Phase 3)
     @abstractmethod
-    async def find_similar_traces(self, embedding: list[float], threshold: float = 0.85) -> list[dict]:
+    async def find_similar_traces(
+        self, embedding: list[float], threshold: float = 0.85
+    ) -> list[dict]:
         """Find traces by vector similarity."""
         raise NotImplementedError
 
     @abstractmethod
-    async def get_traces_by_error(self, error_type: str, service: str | None = None) -> list[dict]:
+    async def get_traces_by_error(
+        self, error_type: str, service: str | None = None
+    ) -> list[dict]:
         """Get traces filtered by error."""
         raise NotImplementedError
 

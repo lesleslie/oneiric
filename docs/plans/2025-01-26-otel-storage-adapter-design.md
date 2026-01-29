@@ -1,21 +1,23 @@
 # Oneiric OTel Storage Adapter Design
+
 **Date**: 2025-01-26
 **Status**: Approved Design
 **Implementing**: Option B - Traces with Vector Similarity Search
 
----
+______________________________________________________________________
 
 ## Executive Summary
 
 This document describes the design for Oneiric adapters that store OpenTelemetry telemetry data directly into PostgreSQL/Pgvector, replacing external OTel collector + backends with native database storage. This enables SQL-based queries and vector similarity search on distributed traces.
 
 **Design Choices**:
+
 - Storage priority: Traces with vector similarity search
 - Embedding strategy: Metadata + span attributes (Option C)
 - Database schema: Hybrid approach (Option C)
 - Query interface: SQL + ORM (Option C)
 
----
+______________________________________________________________________
 
 ## Architecture Overview
 
@@ -44,6 +46,7 @@ User/Analytics
 ### Key Integration Points
 
 **1. With Mahavishnu** (`mahavishnu/core/observability.py`):
+
 ```python
 # Configuration option
 class MahavishnuSettings:
@@ -51,16 +54,18 @@ class MahavishnuSettings:
 ```
 
 **2. With Oneiric**:
+
 - Uses existing `PostgresDatabaseAdapter`
 - Uses existing `PgvectorAdapter`
 - Follows Oneiric lifecycle: `init()`, `health()`, `cleanup()`
 
 **3. Database Extensions Required**:
+
 - `pgvector` - Vector similarity search
 - `pg_partman` - Time-series partitioning (optional)
 - `pg_stat_statements` - Query performance (optional)
 
----
+______________________________________________________________________
 
 ## Components
 
@@ -71,6 +76,7 @@ class MahavishnuSettings:
 **Purpose**: Main Oneiric adapter following adapter pattern
 
 **Interface**:
+
 ```python
 class OTelStorageAdapter(ABC):
     """Store and query OTel telemetry data."""
@@ -113,11 +119,12 @@ class OTelStorageAdapter(ABC):
 ```
 
 **Lifecycle Methods**:
+
 - `init(settings)` - Initialize database connection, validate schema
 - `health()` - Check database connectivity, Pgvector extension
 - `cleanup()` - Close connections, flush buffers
 
----
+______________________________________________________________________
 
 ### 2. TelemetryRepository
 
@@ -128,6 +135,7 @@ class OTelStorageAdapter(ABC):
 **Models**:
 
 **TraceModel** (main table):
+
 ```python
 class TraceModel(Base):
     __tablename__ = 'otel_traces'
@@ -159,6 +167,7 @@ class TraceModel(Base):
 ```
 
 **MetricModel** (time-series):
+
 ```python
 class MetricModel(Base):
     __tablename__ = 'otel_metrics'
@@ -179,6 +188,7 @@ class MetricModel(Base):
 ```
 
 **LogModel** (correlated):
+
 ```python
 class LogModel(Base):
     __tablename__ = 'otel_logs'
@@ -199,7 +209,7 @@ class LogModel(Base):
     )
 ```
 
----
+______________________________________________________________________
 
 ### 3. EmbeddingService
 
@@ -208,6 +218,7 @@ class LogModel(Base):
 **Purpose**: Generate vector embeddings for traces
 
 **Interface**:
+
 ```python
 class EmbeddingService:
     """Generate embeddings for trace similarity search."""
@@ -220,6 +231,7 @@ class EmbeddingService:
 ```
 
 **Embedding Strategy** (Option C - Metadata + Attributes):
+
 ```
 Input:
   trace_id: "abc123"
@@ -243,16 +255,18 @@ Embedding text:
 ```
 
 **Caching**:
+
 - In-memory cache of recent embeddings (LRU, max 1000)
 - Regenerate only when trace attributes change
 - TTL: 1 hour
 
 **Error Handling**:
+
 - On embedding failure → use fallback embedding (hash of trace_id)
 - Log warnings for monitoring
 - Never fail the trace storage (embeddings are optional)
 
----
+______________________________________________________________________
 
 ### 4. QueryService
 
@@ -329,6 +343,7 @@ class QueryService:
 
 **SQL Escape Hatch**:
 For complex queries not supported by ORM:
+
 ```python
 async def custom_query(
     self,
@@ -338,7 +353,7 @@ async def custom_query(
     """Execute raw SQL with parameters (expert only)."""
 ```
 
----
+______________________________________________________________________
 
 ## Data Flow
 
@@ -356,6 +371,7 @@ async def custom_query(
 ```
 
 **Buffering**:
+
 - In-memory queue for DB writes (max 1000 records)
 - Batch inserts every 5 seconds or when queue full
 - Prevents blocking on slow DB operations
@@ -371,15 +387,17 @@ async def custom_query(
 ```
 
 **Performance**:
-- Vector search: <50ms for 1000 traces
-- Error filtering: <100ms with indexes
-- Full trace context: <200ms with joins
 
----
+- Vector search: \<50ms for 1000 traces
+- Error filtering: \<100ms with indexes
+- Full trace context: \<200ms with joins
+
+______________________________________________________________________
 
 ## Error Handling & Resilience
 
 ### Connection Failures
+
 **Strategy**: Retry with exponential backoff + circuit breaker
 
 ```python
@@ -399,12 +417,14 @@ async def store_with_retry(self, trace: TraceData) -> None:
 ### Fallback Behavior
 
 **Embedding Failures**:
+
 - Generate fallback embedding (hash of trace_id)
 - Store trace with NULL embedding
 - Log warning for monitoring
 - Trace still queryable (just not similar-searchable)
 
 **Database Unavailable**:
+
 - Buffer traces in memory queue (max 1000)
 - Warn: "Telemetry buffering, DB unavailable"
 - Persist when DB recovers
@@ -413,6 +433,7 @@ async def store_with_retry(self, trace: TraceData) -> None:
 ### Dead Letter Queue
 
 **otel_telemetry_dlq** table:
+
 ```sql
 CREATE TABLE otel_telemetry_dlq (
     id SERIAL PRIMARY KEY,
@@ -427,13 +448,14 @@ CREATE TABLE otel_telemetry_dlq (
 
 **Background job**: Retry every 5 minutes, alert if > 1000 records
 
----
+______________________________________________________________________
 
 ## Testing Strategy
 
 ### Unit Tests
 
 **`tests/unit/test_otel_adapter.py`**:
+
 - OTelStorageAdapter lifecycle methods
 - Store/retrieve trace with embedding
 - Vector similarity search accuracy
@@ -441,12 +463,14 @@ CREATE TABLE otel_telemetry_dlq (
 - Fallback embedding generation
 
 **`tests/unit/test_embeddings.py`**:
+
 - EmbeddingService functionality
 - Fallback behavior on errors
 - Batch embedding performance
 - Cache hit/miss rates
 
 **`tests/unit/test_queries.py`**:
+
 - QueryService ORM methods
 - SQL escape hatch functionality
 - Trace correlation queries
@@ -455,13 +479,15 @@ CREATE TABLE otel_telemetry_dlq (
 ### Integration Tests
 
 **`tests/integration/test_otel_storage.py`**:
+
 - End-to-end: generate trace → store → query → verify
 - Vector search with real embeddings
 - Trace ID correlation across tables
-- Performance: 10,000 traces in <60s
+- Performance: 10,000 traces in \<60s
 - Concurrent operations: 10 parallel stores + queries
 
 **`tests/integration/test_performance.py`**:
+
 - Benchmark: 1000 trace stores/queries
 - Load test: 100 concurrent connections
 - Memory profiling: embedding cache efficiency
@@ -469,6 +495,7 @@ CREATE TABLE otel_telemetry_dlq (
 ### Test Fixtures
 
 **Sample Traces**:
+
 ```python
 # Success trace
 trace_success = TraceData(
@@ -492,13 +519,14 @@ trace_failure = TraceData(
 )
 ```
 
----
+______________________________________________________________________
 
 ## Performance Considerations
 
 ### Storage Optimization
 
 **Batch Inserts**:
+
 ```python
 # Collect traces in buffer
 buffer_size = 100
@@ -514,6 +542,7 @@ ON CONFLICT (trace_id) DO UPDATE SET ...
 ```
 
 **Partitioning** (Metrics):
+
 ```sql
 -- Create partitioned table for metrics
 CREATE TABLE otel_metrics (
@@ -528,6 +557,7 @@ CREATE TABLE otel_metrics_2025_01 PARTITION OF otel_metrics
 ### Indexes
 
 **Vector Index** (Pgvector):
+
 ```sql
 CREATE INDEX ix_traces_embedding_embedding
 ON otel_traces
@@ -536,6 +566,7 @@ WITH (lists = 100);  # IVFFlat parameters
 ```
 
 **GIN Indexes** (JSONB attributes):
+
 ```sql
 CREATE INDEX ix_traces_attributes_gin
 ON otel_traces USING GIN (attributes);
@@ -544,21 +575,24 @@ ON otel_traces USING GIN (attributes);
 ### Caching Strategy
 
 **Embedding Cache**:
+
 - Size: 1000 embeddings
 - TTL: 1 hour
 - Eviction: LRU
 - Hit rate target: 80%+
 
 **Query Cache**:
+
 - Common queries cached
 - TTL: 5 minutes
 - Invalidation: on new trace storage
 
----
+______________________________________________________________________
 
 ## Implementation Phases
 
 ### Phase 1: Foundation (6 hours)
+
 - [ ] Create Oneiric observability directory structure
 - [ ] Implement OTelStorageAdapter skeleton
 - [ ] Create TelemetryRepository models
@@ -566,6 +600,7 @@ ON otel_traces USING GIN (attributes);
 - [ ] Unit tests for models
 
 ### Phase 2: Embedding Service (4 hours)
+
 - [ ] Implement EmbeddingService
 - [ ] Integrate sentence-transformers model
 - [ ] Implement caching layer
@@ -573,6 +608,7 @@ ON otel_traces USING GIN (attributes);
 - [ ] Tests for embedding service
 
 ### Phase 3: Query Service (4 hours)
+
 - [ ] Implement QueryService ORM methods
 - [ ] Add vector similarity search
 - [ ] Implement trace correlation queries
@@ -580,6 +616,7 @@ ON otel_traces USING GIN (attributes);
 - [ ] Tests for query service
 
 ### Phase 4: Integration (4 hours)
+
 - [ ] Integrate with Mahavishnu's ObservabilityManager
 - [ ] Add configuration option to MahavishnuSettings
 - [ ] Implement write buffering and batch processing
@@ -587,6 +624,7 @@ ON otel_traces USING GIN (attributes);
 - [ ] Integration tests
 
 ### Phase 5: Performance & Polish (4 hours)
+
 - [ ] Add circuit breaker and retry logic
 - [ ] Implement background embedding generation
 - [ ] Performance benchmarks
@@ -595,13 +633,14 @@ ON otel_traces USING GIN (attributes);
 
 **Total Estimate**: 22 hours
 
----
+______________________________________________________________________
 
 ## Configuration
 
 ### Mahavishnu Settings
 
 **Add to `mahavishnu/core/config.py`**:
+
 ```python
 class MahavishnuSettings(BaseSettings):
     # ... existing settings ...
@@ -626,6 +665,7 @@ class MahavishnuSettings(BaseSettings):
 ### Oneiric Settings
 
 **New file: `oneiric/adapters/observability/settings.py`**:
+
 ```python
 from pydantic import Field
 
@@ -664,7 +704,7 @@ class OTelStorageSettings(BaseSettings):
     )
 ```
 
----
+______________________________________________________________________
 
 ## Migration Path
 
@@ -673,13 +713,15 @@ class OTelStorageSettings(BaseSettings):
 **Current**: Mahavishnu pushes to OTel collector (external)
 
 **Migration Path**:
+
 1. Deploy OTel storage adapter alongside existing system
-2. Configure to **dual write** (OTLP collector + OTel storage)
-3. Validate data consistency between systems
-4. Switch to OTel storage only
-5. Decommission OTel collector (optional)
+1. Configure to **dual write** (OTLP collector + OTel storage)
+1. Validate data consistency between systems
+1. Switch to OTel storage only
+1. Decommission OTel collector (optional)
 
 **Zero Downtime**:
+
 ```python
 # Dual write mode
 async def record_trace(self, trace: TraceData):
@@ -690,11 +732,12 @@ async def record_trace(self, trace: TraceData):
     )
 ```
 
----
+______________________________________________________________________
 
 ## Success Criteria
 
 ### Functional
+
 - [x] Store traces with metadata + attributes
 - [x] Generate vector embeddings for similarity search
 - [x] Query traces by vector similarity
@@ -704,12 +747,14 @@ async def record_trace(self, trace: TraceData):
 - [x] SQL + ORM query interfaces
 
 ### Performance
-- [x] Vector search: <50ms for 1000 traces
-- [x] Trace storage: <100ms async, non-blocking
-- [x] Batch processing: 10,000 traces in <60s
+
+- [x] Vector search: \<50ms for 1000 traces
+- [x] Trace storage: \<100ms async, non-blocking
+- [x] Batch processing: 10,000 traces in \<60s
 - [x] Concurrent operations: 100 parallel connections
 
 ### Reliability
+
 - [x] Retry logic with exponential backoff
 - [x] Circuit breaker for DB failures
 - [x] Dead letter queue for failed operations
@@ -717,68 +762,78 @@ async def record_trace(self, trace: TraceData):
 - [x] Graceful degradation when DB unavailable
 
 ### Quality
+
 - [x] Type hints on all functions
 - [x] Docstrings on all public methods
 - [x] 85%+ test coverage
 - [x] No suppress(Exception) in code
 - [x] Error handling for all failure modes
 
----
+______________________________________________________________________
 
 ## Risks & Mitigations
 
 ### Risk 1: Embedding Performance
+
 **Risk**: Generating embeddings is slow (50-100ms each)
 **Mitigation**:
+
 - Background task generation
 - Cache embeddings (80%+ hit rate)
 - Only embed when trace changes
 
 ### Risk 2: Storage Growth
+
 **Risk**: Unbounded trace storage fills disk
 **Mitigation**:
+
 - Retention policy: 90 days default
 - Automatic partitioning by month
 - Background cleanup job
 
 ### Risk 3: Vector Search Accuracy
+
 **Risk**: False positives/negatives in similarity search
 **Mitigation**:
+
 - Tunable similarity threshold (0.85 default)
 - Multiple embedding models support
 - A/B test embeddings
 
 ### Risk 4: Breaking Changes
+
 **Risk**: Changes to OTel SDK break adapter
 **Mitigation**:
+
 - Version-locked adapter for OTel SDK
 - Comprehensive integration tests
 - Can fall back to OTLP push if needed
 
----
+______________________________________________________________________
 
 ## Open Questions
 
 1. **Retention Policy**: Should traces be auto-deleted after 90 days? (proposed: yes, configurable)
-2. **Embedding Model**: Should we support multiple embedding models? (proposed: start with all-MiniLM-L6-v2)
-3. **Partitioning**: Should metrics be auto-partitioned by month? (proposed: yes, using pg_partman)
-4. **Backup Strategy**: How to backup telemetry data? (proposed: pg_dump + S3 for cold storage)
+1. **Embedding Model**: Should we support multiple embedding models? (proposed: start with all-MiniLM-L6-v2)
+1. **Partitioning**: Should metrics be auto-partitioned by month? (proposed: yes, using pg_partman)
+1. **Backup Strategy**: How to backup telemetry data? (proposed: pg_dump + S3 for cold storage)
 
----
+______________________________________________________________________
 
 ## Next Steps
 
 Once design is approved:
-1. Create git worktree for isolated development
-2. Implement Phase 1 (Foundation)
-3. Implement Phase 2 (Embedding Service)
-4. Implement Phase 3 (Query Service)
-5. Implement Phase 4 (Integration)
-6. Implement Phase 5 (Performance & Polish)
-7. Create migration documentation
-8. Update Mahavishnu docs
 
----
+1. Create git worktree for isolated development
+1. Implement Phase 1 (Foundation)
+1. Implement Phase 2 (Embedding Service)
+1. Implement Phase 3 (Query Service)
+1. Implement Phase 4 (Integration)
+1. Implement Phase 5 (Performance & Polish)
+1. Create migration documentation
+1. Update Mahavishnu docs
+
+______________________________________________________________________
 
 **Status**: Ready for implementation approval
 **Estimated Time**: 22 hours total

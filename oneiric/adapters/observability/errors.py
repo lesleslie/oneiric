@@ -26,7 +26,7 @@ class QueryError(Exception):
         return {
             "error": self.__class__.__name__,
             "message": self.message,
-            "details": self.details
+            "details": self.details,
         }
 
 

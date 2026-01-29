@@ -7,16 +7,18 @@
 **Architecture:** EmbeddingService generates embeddings from trace text (service + operation + status + attributes), caches results with LRU (1000 entries), and falls back to hash-based vectors on model failure.
 
 **Tech Stack:**
+
 - sentence-transformers (all-MiniLM-L6-v2, 384 dimensions)
 - numpy (vector operations)
 - functools.lru_cache (caching)
 - hashlib (fallback generation)
 
----
+______________________________________________________________________
 
 ## Task 1: Create EmbeddingService with text construction
 
 **Files:**
+
 - Create: `oneiric/adapters/observability/embeddings.py`
 - Create: `tests/adapters/observability/test_embeddings.py`
 
@@ -144,11 +146,12 @@ Tests cover text construction with and without attributes.
 "
 ```
 
----
+______________________________________________________________________
 
 ## Task 2: Add cache key generation
 
 **Files:**
+
 - Modify: `oneiric/adapters/observability/embeddings.py`
 - Modify: `tests/adapters/observability/test_embeddings.py`
 
@@ -172,11 +175,12 @@ def test_cache_key_generation(embedding_service):
 **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/adapters/observability/test_embeddings.py::test_cache_key_generation -v`
-Expected: FAIL - _generate_cache_key doesn't exist
+Expected: FAIL - \_generate_cache_key doesn't exist
 
 **Step 3: Implement cache key generation**
 
 Add to EmbeddingService:
+
 ```python
 def _generate_cache_key(self, trace: dict[str, Any]) -> int:
     """Generate cache key from trace dict.
@@ -212,11 +216,12 @@ Tests verify determinism of cache keys.
 "
 ```
 
----
+______________________________________________________________________
 
 ## Task 3: Implement fallback embedding
 
 **Files:**
+
 - Modify: `oneiric/adapters/observability/embeddings.py`
 - Modify: `tests/adapters/observability/test_embeddings.py`
 
@@ -254,16 +259,18 @@ def test_fallback_embedding_range(embedding_service):
 **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/adapters/observability/test_embeddings.py::test_fallback_embedding_deterministic -v`
-Expected: FAIL - _generate_fallback_embedding doesn't exist
+Expected: FAIL - \_generate_fallback_embedding doesn't exist
 
 **Step 3: Implement fallback embedding**
 
 Add to imports:
+
 ```python
 import hashlib
 ```
 
 Add to EmbeddingService:
+
 ```python
 def _generate_fallback_embedding(self, trace_id: str) -> np.ndarray:
     """Generate fallback embedding from trace_id hash.
@@ -309,11 +316,12 @@ Tests verify determinism, dimension, and value range.
 "
 ```
 
----
+______________________________________________________________________
 
 ## Task 4: Add sentence-transformers integration with caching
 
 **Files:**
+
 - Modify: `oneiric/adapters/observability/embeddings.py`
 - Modify: `tests/adapters/observability/test_embeddings.py`
 
@@ -352,6 +360,7 @@ Expected: FAIL - embed_trace doesn't exist
 **Step 3: Implement embed_trace with model loading**
 
 Add imports:
+
 ```python
 from functools import lru_cache
 from sentence_transformers import SentenceTransformer
@@ -359,6 +368,7 @@ import numpy as np
 ```
 
 Add to EmbeddingService:
+
 ```python
 def _load_model(self) -> SentenceTransformer:
     """Lazy-load sentence-transformers model.
@@ -461,11 +471,12 @@ Tests cover mock model integration and error handling.
 "
 ```
 
----
+______________________________________________________________________
 
 ## Task 5: Add integration tests with real model
 
 **Files:**
+
 - Modify: `tests/adapters/observability/test_embeddings.py`
 
 **Step 1: Write integration tests**
@@ -542,11 +553,12 @@ Tests marked as integration and slow (require sentence-transformers).
 "
 ```
 
----
+______________________________________________________________________
 
 ## Task 6: Integrate EmbeddingService with OTelStorageAdapter
 
 **Files:**
+
 - Modify: `oneiric/adapters/observability/otel.py`
 - Modify: `tests/adapters/observability/test_otel_adapter.py`
 
@@ -589,11 +601,13 @@ Expected: PASS
 **Step 3: Modify OTelStorageAdapter to use EmbeddingService**
 
 Add to imports in otel.py:
+
 ```python
 from oneiric.adapters.observability.embeddings import EmbeddingService
 ```
 
 Modify __init__:
+
 ```python
 def __init__(self, settings: OTelStorageSettings) -> None:
     # ... existing code ...
@@ -602,7 +616,8 @@ def __init__(self, settings: OTelStorageSettings) -> None:
     )
 ```
 
-Modify _flush_buffer to add embedding:
+Modify \_flush_buffer to add embedding:
+
 ```python
 async def _flush_buffer(self) -> None:
     """Flush buffered traces to database in batch."""
@@ -674,7 +689,7 @@ Integration test verifies embedding generation and storage.
 "
 ```
 
----
+______________________________________________________________________
 
 ## Summary
 
@@ -690,6 +705,7 @@ This plan provides:
 ✅ **Integration tests** - Real model tests (optional)
 
 **Total breakdown:**
+
 - **Task 1:** EmbeddingService with text construction
 - **Task 2:** Cache key generation
 - **Task 3:** Fallback embedding

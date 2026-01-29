@@ -3,15 +3,17 @@
 ## Baseline Performance
 
 ### Expected Query Times (100K traces)
+
 - Vector similarity: ~50ms (with IVFFlat)
 - Error search: ~20ms
 - Trace context: ~30ms
 - Batch insert (100 traces): ~200ms
 
 ### Performance Targets
-- p50 latency: <30ms
-- p95 latency: <100ms
-- p99 latency: <500ms
+
+- p50 latency: \<30ms
+- p95 latency: \<100ms
+- p99 latency: \<500ms
 - Throughput: 1000 traces/second
 
 ## Common Performance Issues
@@ -19,10 +21,12 @@
 ### Slow Vector Similarity Search
 
 **Symptoms:**
+
 - Vector queries taking >500ms
 - High CPU usage on database
 
 **Diagnosis:**
+
 ```sql
 EXPLAIN ANALYZE
 SELECT * FROM otel_traces
@@ -31,17 +35,20 @@ LIMIT 10;
 ```
 
 **Solutions:**
+
 1. **Create IVFFlat index** (see Index Management Guide)
-2. **Increase similarity threshold** (reduce result set)
-3. **Limit search scope** (add time range filter)
+1. **Increase similarity threshold** (reduce result set)
+1. **Limit search scope** (add time range filter)
 
 ### Slow Error Search
 
 **Symptoms:**
+
 - Error queries taking >200ms
 - Full table scans
 
 **Diagnosis:**
+
 ```sql
 EXPLAIN ANALYZE
 SELECT * FROM otel_traces
@@ -49,37 +56,43 @@ WHERE attributes->>'error.message' LIKE '%timeout%';
 ```
 
 **Solutions:**
+
 1. **Add composite index:** `(start_time, status)`
-2. **Use GIN index** on attributes (automatic)
-3. **Reduce time range** (add start/end filters)
+1. **Use GIN index** on attributes (automatic)
+1. **Reduce time range** (add start/end filters)
 
 ### High Memory Usage
 
 **Symptoms:**
+
 - Adapter process using >2GB RAM
 - OOM kills
 
 **Solutions:**
+
 1. **Reduce buffer size:** Set `batch_size=50` in settings
-2. **Reduce flush interval:** Set `batch_interval_seconds=3`
-3. **Limit trace history:** Partition old data
+1. **Reduce flush interval:** Set `batch_interval_seconds=3`
+1. **Limit trace history:** Partition old data
 
 ### Slow Batch Inserts
 
 **Symptoms:**
+
 - Buffer flush taking >1 second
 - Write backlog growing
 
 **Diagnosis:**
+
 ```sql
 SELECT count(*), min(start_time), max(start_time)
 FROM otel_traces;
 ```
 
 **Solutions:**
+
 1. **Use unlogged tables** (if durability not critical)
-2. **Increase connection pool:** Set `max_retries=10`
-3. **Batch in parallel** (multiple insert workers)
+1. **Increase connection pool:** Set `max_retries=10`
+1. **Batch in parallel** (multiple insert workers)
 
 ## Tuning Parameters
 

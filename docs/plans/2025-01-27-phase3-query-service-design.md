@@ -4,13 +4,14 @@
 **Status:** Approved Design
 **Implementing:** Vector similarity search and trace correlation queries
 
----
+______________________________________________________________________
 
 ## Executive Summary
 
 Phase 3 implements the QueryService that provides high-level query API for OTel telemetry data using SQLAlchemy ORM + Pgvector for vector similarity search. This completes the core OTel storage functionality - after Phase 3, the system can store traces with embeddings (Phase 1-2) and query them intelligently (Phase 3).
 
 **Key Features:**
+
 - Vector similarity search using Pgvector cosine similarity
 - Trace correlation queries (join traces, logs, metrics)
 - Time-series metric queries with optional aggregation
@@ -20,19 +21,21 @@ Phase 3 implements the QueryService that provides high-level query API for OTel 
 - Explicit error handling (never silent failures)
 
 **Design Decisions:**
+
 - Error handling: Empty list for no results, exceptions for DB errors
 - Return types: Pydantic models (TraceContext, TraceResult, MetricPoint, LogEntry)
 - SQL escape hatch: Read-only validation (must start with SELECT/WITH)
 - Metric aggregation: Optional `aggregate: str | None` parameter
 - Vector search: Cosine similarity without IVFFlat index (deferred to Phase 5)
 
----
+______________________________________________________________________
 
 ## Architecture Overview
 
 **File:** `oneiric/adapters/observability/queries.py`
 
 **Component hierarchy:**
+
 ```
 OTelStorageAdapter
     ├── EmbeddingService (Phase 2) ✓
@@ -44,6 +47,7 @@ OTelStorageAdapter
 ```
 
 **QueryService lifecycle:**
+
 ```python
 class QueryService:
     def __init__(self, session_factory: async_sessionmaker):
@@ -56,7 +60,7 @@ class QueryService:
 
 **Single Responsibility:** QueryService ONLY queries data. Storage, embedding generation, and lifecycle are separate concerns.
 
----
+______________________________________________________________________
 
 ## Query API Design
 
@@ -183,7 +187,7 @@ async def custom_query(
     """
 ```
 
----
+______________________________________________________________________
 
 ## Data Models
 
@@ -263,7 +267,7 @@ def _orm_to_result(self, orm_model: TraceModel) -> TraceResult:
     )
 ```
 
----
+______________________________________________________________________
 
 ## Vector Similarity Implementation
 
@@ -310,6 +314,7 @@ async def find_similar_traces(
 ```
 
 **Key points:**
+
 - `<=>` is Pgvector's cosine distance operator
 - Cosine similarity = `1 - cosine_distance`
 - Filter: `similarity > threshold` (e.g., 0.85)
@@ -317,7 +322,7 @@ async def find_similar_traces(
 - No IVFFlat index yet (deferred to Phase 5)
 - Fallback to sequential scan (still works, just slower)
 
----
+______________________________________________________________________
 
 ## Error Handling
 
@@ -347,30 +352,36 @@ class InvalidEmbeddingError(QueryError):
 ### Error Handling by Method
 
 **find_similar_traces():**
+
 - Invalid embedding dimension → `raise InvalidEmbeddingError`
 - Database connection error → `raise` (bubble up)
 - No results → Return `[]` (not an error)
 
 **get_traces_by_error():**
+
 - Invalid error_pattern → Return `[]` (SQL LIKE handles it)
 - Database error → `raise` (bubble up)
 - No matches → Return `[]`
 
 **get_trace_context():**
+
 - Trace ID not found → `raise TraceNotFoundError`
 - Database error → `raise` (bubble up)
 
 **custom_query():**
+
 - SQL doesn't start with SELECT/WITH → `raise InvalidSQLError`
 - SQL injection attempt (params mismatch) → `raise InvalidSQLError`
 - Database error → `raise` (bubble up)
 
 **get_metrics_by_time_range():**
+
 - Invalid aggregate interval → `raise ValueError`
 - Database error → `raise` (bubble up)
 - No data → Return `[]`
 
 **search_logs():**
+
 - Invalid datetime range → `raise ValueError`
 - Database error → `raise` (bubble up)
 - No matches → Return `[]`
@@ -385,56 +396,68 @@ self._logger.error("query-failed", method="find_similar_traces",
                    error=str(exc))
 ```
 
----
+______________________________________________________________________
 
 ## Testing Strategy
 
 **File:** `tests/adapters/observability/test_queries.py`
 
 ### Unit Tests (Fast, No Database)
+
 **12 tests total:**
 
 1. **ORM conversion** (1 test)
+
    - `test_orm_to_trace_result_conversion()` - Verify TraceModel → TraceResult
 
-2. **SQL validation** (3 tests)
+1. **SQL validation** (3 tests)
+
    - `test_custom_query_select_allowed()` - SELECT passes
    - `test_custom_query_with_allowed()` - WITH passes
    - `test_custom_query_insert_rejected()` - INSERT raises InvalidSQLError
 
-3. **Aggregation parsing** (2 tests)
+1. **Aggregation parsing** (2 tests)
+
    - `test_parse_aggregate_interval_valid()` - "5m", "1h" parsed correctly
    - `test_parse_aggregate_interval_invalid()` - "7x" raises ValueError
 
-4. **Error handling** (3 tests)
+1. **Error handling** (3 tests)
+
    - `test_find_similar_traces_invalid_dimension()` - Wrong embedding size raises
    - `test_get_trace_context_not_found()` - Missing trace raises NotFoundError
    - `test_custom_query_injection_attempt()` - Malicious SQL rejected
 
-5. **Query construction** (3 tests)
+1. **Query construction** (3 tests)
+
    - Test WHERE clauses built correctly
    - Test ORDER BY applied
    - Test LIMIT enforced
 
 ### Integration Tests (Slow, Requires PostgreSQL)
+
 **8 tests total:**
 
 1. **Vector similarity** (2 tests)
+
    - `test_find_similar_traces_returns_results()` - Finds similar traces
    - `test_find_similar_traces_threshold_filtering()` - Filters by similarity
 
-2. **Error search** (2 tests)
+1. **Error search** (2 tests)
+
    - `test_get_traces_by_error_pattern_matching()` - SQL LIKE works
    - `test_get_traces_by_error_with_filters()` - service/time filters work
 
-3. **Time-series metrics** (2 tests)
+1. **Time-series metrics** (2 tests)
+
    - `test_get_metrics_raw_data()` - Returns all points
    - `test_get_metrics_aggregated()` - 5-minute buckets work
 
-4. **Log search** (1 test)
+1. **Log search** (1 test)
+
    - `test_search_logs_with_trace_correlation()` - Finds logs by trace_id
 
-5. **Trace context** (1 test)
+1. **Trace context** (1 test)
+
    - `test_get_trace_context_complete()` - Returns trace + logs + metrics
 
 **Test fixtures:**
@@ -452,18 +475,20 @@ async def sample_traces(query_service):
 ```
 
 **Coverage goals:**
+
 - Query construction: 100%
 - Error handling: 100%
 - ORM conversion: 100%
 - SQL validation: 100%
 
----
+______________________________________________________________________
 
 ## Performance Considerations
 
 ### Current Performance (Phase 3 - No Index)
 
 **Vector similarity search:**
+
 - Sequential scan through all traces
 - Complexity: O(n) where n = total traces
 - Expected latency:
@@ -472,6 +497,7 @@ async def sample_traces(query_service):
   - 100K traces: ~5s (unacceptable)
 
 **Why this is OK for Phase 3:**
+
 - System is new, dataset will be small initially
 - Defer optimization until we have real data (Phase 5)
 - IVFFlat index requires 1000+ traces to be effective
@@ -489,6 +515,7 @@ WITH (lists = 100);  -- 100 = sqrt(num_vectors)
 ```
 
 **Expected post-index performance:**
+
 - Vector similarity: ~10ms (100K traces)
 - 50x faster than sequential scan
 - Index maintenance overhead: ~5% on writes
@@ -496,16 +523,19 @@ WITH (lists = 100);  -- 100 = sqrt(num_vectors)
 ### Current Phase Optimizations
 
 **Connection pooling:**
+
 - SQLAlchemy session factory manages connections
 - Reuse sessions across queries
 - Configurable pool size (default: max_retries from settings)
 
 **Query batching:**
+
 - No N+1 query problems
 - Use `selectinload()` for eager loading relationships
 - Single query for trace context (join traces + logs + metrics)
 
 **Result limits:**
+
 - Default `limit=10` prevents large result sets
 - Max `limit=1000` enforced
 - Caller can paginate manually
@@ -513,11 +543,13 @@ WITH (lists = 100);  -- 100 = sqrt(num_vectors)
 ### Memory Usage
 
 **Per query:**
+
 - Embedding vector: 1.5KB
 - TraceResult: ~2KB
 - 100 results × 2KB = ~200KB per query
 
 **Session overhead:**
+
 - SQLAlchemy session: ~100KB
 - Connection: ~50KB
 - **Total per query: ~350KB**
@@ -534,29 +566,30 @@ self._logger.info("query-executed",
 ```
 
 **Performance targets:**
-- Vector similarity (no index): <500ms (up to 10K traces)
-- Error pattern search: <100ms
-- Time-series query: <200ms
-- Log search: <100ms
 
----
+- Vector similarity (no index): \<500ms (up to 10K traces)
+- Error pattern search: \<100ms
+- Time-series query: \<200ms
+- Log search: \<100ms
+
+______________________________________________________________________
 
 ## Implementation Plan
 
 ### Task Breakdown
 
 1. **Create queries.py** - QueryService class with all methods
-2. **Add Pydantic models** - TraceResult, LogEntry, MetricPoint, TraceContext
-3. **Implement vector similarity** - Pgvector cosine similarity
-4. **Implement trace correlation** - get_trace_context with joins
-5. **Implement error search** - SQL LIKE pattern matching
-6. **Implement time-series queries** - With aggregation
-7. **Implement log search** - Full-text with trace correlation
-8. **SQL escape hatch** - Read-only validation
-9. **Error handling** - Custom error types
-10. **Tests** - Unit + integration tests
-11. **Integration** - Connect with OTelStorageAdapter
-12. **Documentation** - Docstrings + examples
+1. **Add Pydantic models** - TraceResult, LogEntry, MetricPoint, TraceContext
+1. **Implement vector similarity** - Pgvector cosine similarity
+1. **Implement trace correlation** - get_trace_context with joins
+1. **Implement error search** - SQL LIKE pattern matching
+1. **Implement time-series queries** - With aggregation
+1. **Implement log search** - Full-text with trace correlation
+1. **SQL escape hatch** - Read-only validation
+1. **Error handling** - Custom error types
+1. **Tests** - Unit + integration tests
+1. **Integration** - Connect with OTelStorageAdapter
+1. **Documentation** - Docstrings + examples
 
 ### Estimated Time
 
@@ -564,11 +597,12 @@ self._logger.info("query-executed",
 - Testing: 1 hour
 - **Total: 4 hours**
 
----
+______________________________________________________________________
 
 ## Success Criteria
 
 ### Functional
+
 - ✅ Find similar traces using vector similarity
 - ✅ Search traces by error pattern
 - ✅ Query metrics with time aggregation
@@ -577,31 +611,34 @@ self._logger.info("query-executed",
 - ✅ Execute read-only SQL queries safely
 
 ### Performance
-- ✅ Vector similarity: <500ms (up to 10K traces)
-- ✅ Error search: <100ms
-- ✅ Time-series query: <200ms
-- ✅ Log search: <100ms
+
+- ✅ Vector similarity: \<500ms (up to 10K traces)
+- ✅ Error search: \<100ms
+- ✅ Time-series query: \<200ms
+- ✅ Log search: \<100ms
 
 ### Quality
+
 - ✅ Type hints on all functions
 - ✅ Docstrings on all public methods
 - ✅ 100% test coverage (core logic)
 - ✅ No suppress(Exception)
 - ✅ Comprehensive error handling
 
----
+______________________________________________________________________
 
 ## Next Steps
 
 After design approval:
-1. Create git worktree for Phase 3
-2. Implement QueryService
-3. Create tests (unit + integration)
-4. Integrate with OTelStorageAdapter
-5. Performance benchmarks
-6. Update documentation
 
----
+1. Create git worktree for Phase 3
+1. Implement QueryService
+1. Create tests (unit + integration)
+1. Integrate with OTelStorageAdapter
+1. Performance benchmarks
+1. Update documentation
+
+______________________________________________________________________
 
 **Status:** Ready for implementation approval
 **Estimated Time:** 4 hours

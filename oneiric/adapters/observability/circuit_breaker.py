@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 
 class CircuitBreakerOpenError(Exception):
     """Raised when circuit breaker is OPEN and blocking requests."""
+
     pass
 
 
@@ -24,11 +26,7 @@ class CircuitBreaker:
     HALF_OPEN: str = "HALF_OPEN"
     OPEN: str = "OPEN"
 
-    def __init__(
-        self,
-        failure_threshold: int = 5,
-        timeout_seconds: int = 60
-    ) -> None:
+    def __init__(self, failure_threshold: int = 5, timeout_seconds: int = 60) -> None:
         """Initialize circuit breaker.
 
         Args:
@@ -60,7 +58,7 @@ class CircuitBreaker:
                 self.state = self.HALF_OPEN
             else:
                 raise CircuitBreakerOpenError(
-                    f"Circuit breaker is OPEN ({self._timeout - (time.time() - self.last_failure_time):.0f}s until HALF_OPEN)"
+                    f"Circuit breaker is OPEN ({self._timeout - (time.time() - (self.last_failure_time or 0)):.0f}s until HALF_OPEN)"
                 )
 
         try:

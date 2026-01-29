@@ -8,11 +8,12 @@
 
 **Tech Stack:** PostgreSQL IVFFlat, pytest-benchmark, SQLAlchemy EXPLAIN, Structlog metrics
 
----
+______________________________________________________________________
 
 ## Task 1: Add IVFFlat index migration
 
 **Files:**
+
 - Modify: `oneiric/adapters/observability/migrations.py`
 - Modify: `oneiric/adapters/observability/otel.py`
 
@@ -274,11 +275,12 @@ Tests cover threshold checking and index creation.
 "
 ```
 
----
+______________________________________________________________________
 
 ## Task 2: Create performance benchmark suite
 
 **Files:**
+
 - Create: `tests/benchmarks/test_otel_performance.py`
 - Modify: `pyproject.toml` (add pytest-benchmark dependency)
 
@@ -418,11 +420,12 @@ Establishes baseline metrics for optimization validation.
 "
 ```
 
----
+______________________________________________________________________
 
 ## Task 3: Add query optimization indexes
 
 **Files:**
+
 - Modify: `oneiric/adapters/observability/models.py`
 - Modify: `oneiric/adapters/observability/migrations.py`
 - Create: `tests/adapters/observability/test_query_indexes.py`
@@ -538,11 +541,12 @@ Tests verify indexes are created correctly.
 "
 ```
 
----
+______________________________________________________________________
 
 ## Task 4: Add performance monitoring
 
 **Files:**
+
 - Create: `oneiric/adapters/observability/monitoring.py`
 - Modify: `oneiric/adapters/observability/queries.py` (add metrics)
 - Create: `tests/adapters/observability/test_monitoring.py`
@@ -724,11 +728,12 @@ Tests cover metrics recording and reset.
 "
 ```
 
----
+______________________________________________________________________
 
 ## Task 5: Create deployment documentation
 
 **Files:**
+
 - Create: `docs/runbooks/OTEL_INDEX_MANAGEMENT.md`
 - Create: `docs/runbooks/OTEL_PERFORMANCE_TUNING.md`
 
@@ -736,7 +741,7 @@ Tests cover metrics recording and reset.
 
 Create `docs/runbooks/OTEL_INDEX_MANAGEMENT.md`:
 
-```markdown
+````markdown
 # OTel Storage Adapter - Index Management Guide
 
 ## Overview
@@ -778,7 +783,7 @@ ON traces (start_time, status);
 
 CREATE INDEX CONCURRENTLY ix_traces_attributes
 ON traces USING GIN (attributes);
-```
+````
 
 ## Index Monitoring
 
@@ -810,6 +815,7 @@ FROM traces;
 **Symptom:** Vector queries still slow after 1000+ traces
 
 **Check:**
+
 ```sql
 SELECT indexname FROM pg_indexes
 WHERE tablename = 'traces' AND indexname LIKE '%ivfflat%';
@@ -822,6 +828,7 @@ WHERE tablename = 'traces' AND indexname LIKE '%ivfflat%';
 **Symptom:** Write performance degraded
 
 **Check:**
+
 ```sql
 SELECT
     indexname,
@@ -832,6 +839,7 @@ ORDER BY pg_relation_size(indexrelid) DESC;
 ```
 
 **Solution:**
+
 ```sql
 REINDEX INDEX CONCURRENTLY ix_traces_embedding_ivfflat;
 ```
@@ -841,10 +849,12 @@ REINDEX INDEX CONCURRENTLY ix_traces_embedding_ivfflat;
 **Symptom:** Index taking >5% write time
 
 **Solutions:**
+
 1. Increase `lists` parameter (try 200 or 300)
-2. Reduce data ingestion rate
-3. Consider partitioning by time
-```
+1. Reduce data ingestion rate
+1. Consider partitioning by time
+
+````
 
 **Step 2: Create performance tuning runbook**
 
@@ -881,20 +891,23 @@ EXPLAIN ANALYZE
 SELECT * FROM traces
 ORDER BY embedding <=> '[...384-dim vector...]'
 LIMIT 10;
-```
+````
 
 **Solutions:**
+
 1. **Create IVFFlat index** (see Index Management Guide)
-2. **Increase similarity threshold** (reduce result set)
-3. **Limit search scope** (add time range filter)
+1. **Increase similarity threshold** (reduce result set)
+1. **Limit search scope** (add time range filter)
 
 ### Slow Error Search
 
 **Symptoms:**
+
 - Error queries taking >200ms
 - Full table scans
 
 **Diagnosis:**
+
 ```sql
 EXPLAIN ANALYZE
 SELECT * FROM traces
@@ -902,37 +915,43 @@ WHERE attributes->>'error.message' LIKE '%timeout%';
 ```
 
 **Solutions:**
+
 1. **Add composite index:** `(start_time, status)`
-2. **Use GIN index** on attributes (automatic)
-3. **Reduce time range** (add start/end filters)
+1. **Use GIN index** on attributes (automatic)
+1. **Reduce time range** (add start/end filters)
 
 ### High Memory Usage
 
 **Symptoms:**
+
 - Adapter process using >2GB RAM
 - OOM kills
 
 **Solutions:**
+
 1. **Reduce buffer size:** Set `batch_size=50` in settings
-2. **Reduce flush interval:** Set `batch_interval_seconds=3`
-3. **Limit trace history:** Partition old data
+1. **Reduce flush interval:** Set `batch_interval_seconds=3`
+1. **Limit trace history:** Partition old data
 
 ### Slow Batch Inserts
 
 **Symptoms:**
+
 - Buffer flush taking >1 second
 - Write backlog growing
 
 **Diagnosis:**
+
 ```sql
 SELECT count(*), min(start_time), max(start_time)
 FROM traces;
 ```
 
 **Solutions:**
+
 1. **Use unlogged tables** (if durability not critical)
-2. **Increase connection pool:** Set `max_retries=10`
-3. **Batch in parallel** (multiple insert workers)
+1. **Increase connection pool:** Set `max_retries=10`
+1. **Batch in parallel** (multiple insert workers)
 
 ## Tuning Parameters
 
@@ -1046,13 +1065,14 @@ Before production deployment:
 - [ ] Monitoring configured
 - [ ] Runbooks reviewed
 - [ ] Rollback plan documented
-```
+
+````
 
 **Step 3: Run markdown linting**
 
 ```bash
 mdfmt docs/runbooks/OTEL_*.md
-```
+````
 
 **Step 4: Commit**
 
@@ -1075,7 +1095,7 @@ Essential for production operations.
 "
 ```
 
----
+______________________________________________________________________
 
 ## Summary
 
@@ -1090,6 +1110,7 @@ This plan provides:
 ✅ **Performance focus** - Benchmarks to validate improvements
 
 **Total breakdown:**
+
 - **Task 1:** IVFFlat index migration (automatic creation, threshold check)
 - **Task 2:** Performance benchmark suite (pytest-benchmark, baselines)
 - **Task 3:** Query optimization indexes (composite, GIN)
@@ -1101,7 +1122,8 @@ This plan provides:
 **Cross-repo note:** Mahavishnu repository modifications are out of scope for this plan
 
 **Expected outcomes:**
+
 1. 10-50x vector search performance improvement
-2. Production-ready monitoring and metrics
-3. Comprehensive operational documentation
-4. Validated performance improvements via benchmarks
+1. Production-ready monitoring and metrics
+1. Comprehensive operational documentation
+1. Validated performance improvements via benchmarks

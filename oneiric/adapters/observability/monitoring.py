@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import time
 from collections import defaultdict
 from typing import Any
 
@@ -40,9 +39,9 @@ class OTelMetrics:
         Returns:
             Dictionary with query counts, timing percentiles, and index usage
         """
-        summary = {
-            "query_counts": dict(self._query_counts),
-            "index_usage": dict(self._index_usage),
+        summary: dict[str, Any] = {
+            "query_counts": self._query_counts.copy(),
+            "index_usage": self._index_usage.copy(),
             "query_times_p50": {},
             "query_times_p95": {},
         }
@@ -51,8 +50,12 @@ class OTelMetrics:
         for method, times in self._query_times.items():
             if times:
                 sorted_times = sorted(times)
-                summary["query_times_p50"][method] = sorted_times[len(sorted_times) // 2]
-                summary["query_times_p95"][method] = sorted_times[int(len(sorted_times) * 0.95)]
+                summary["query_times_p50"][method] = int(
+                    sorted_times[len(sorted_times) // 2]
+                )
+                summary["query_times_p95"][method] = int(
+                    sorted_times[int(len(sorted_times) * 0.95)]
+                )
 
         return summary
 

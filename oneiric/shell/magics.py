@@ -1,7 +1,8 @@
 """Base IPython magic commands for admin shell."""
 
 from typing import Any
-from IPython.core.magic import Magics, magics_class, line_magic
+
+from IPython.core.magic import Magics, line_magic, magics_class
 
 
 @magics_class
@@ -49,4 +50,5 @@ class BaseMagics(Magics):
         """
         print("Shell Status:")
         print(f"  Application: {self.app.__class__.__name__ if self.app else 'None'}")
-        print(f"  Shell: IPython {self.shell.__version__}")
+        shell_version = getattr(self.shell, "__version__", "unknown")
+        print(f"  Shell: IPython {shell_version}")

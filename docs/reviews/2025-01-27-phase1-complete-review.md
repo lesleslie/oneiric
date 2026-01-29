@@ -5,7 +5,7 @@
 **Time Investment:** ~3 hours
 **Branch:** `feature/otel-storage-adapter`
 
----
+______________________________________________________________________
 
 ## Executive Summary
 
@@ -21,7 +21,7 @@ Phase 1 establishes the complete foundation for Oneiric OTel storage adapters. W
 - ✅ **Type safety** - Pydantic models for all telemetry types
 - ✅ **Testing** - 100% coverage, integration tests with PostgreSQL
 
----
+______________________________________________________________________
 
 ## Architecture Overview
 
@@ -46,16 +46,18 @@ PostgreSQL + Pgvector
     └── otel_telemetry_dlq (failed operations)
 ```
 
----
+______________________________________________________________________
 
 ## Files Created (11 files)
 
 ### Core Implementation (6 files, ~800 LOC)
 
 #### 1. **`oneiric/adapters/observability/settings.py`** (78 lines)
+
 **Purpose:** Pydantic configuration with validation
 
 **Key Settings:**
+
 ```python
 class OTelStorageSettings(BaseSettings):
     connection_string: str              # postgresql://...
@@ -70,18 +72,21 @@ class OTelStorageSettings(BaseSettings):
 ```
 
 **Validation:**
+
 - Connection string must start with `postgresql://`
 - All numeric fields have min/max constraints
 - Environment variable support via `OTEL_STORAGE_` prefix
 
----
+______________________________________________________________________
 
 #### 2. **`oneiric/adapters/observability/models.py`** (121 lines)
+
 **Purpose:** SQLAlchemy ORM models for database tables
 
 **Models:**
 
 **TraceModel** - Distributed trace spans
+
 ```python
 - id (String, PK)
 - trace_id (String, unique, indexed)
@@ -93,6 +98,7 @@ class OTelStorageSettings(BaseSettings):
 ```
 
 **MetricModel** - Time-series metrics
+
 ```python
 - id (String, PK)
 - name, type, value, unit
@@ -101,6 +107,7 @@ class OTelStorageSettings(BaseSettings):
 ```
 
 **LogModel** - Logs with trace correlation
+
 ```python
 - id (String, PK)
 - timestamp, level, message
@@ -110,18 +117,21 @@ class OTelStorageSettings(BaseSettings):
 ```
 
 **Indexes:**
+
 - Traces: 4 B-tree + 1 GIN (JSONB)
 - Metrics: 3 B-tree
 - Logs: 3 B-tree
 
----
+______________________________________________________________________
 
 #### 3. **`oneiric/adapters/observability/types.py`** (147 lines)
+
 **Purpose:** Pydantic models for type-safe telemetry data
 
 **Data Structures:**
 
 **TraceData** - Input for trace storage
+
 ```python
 - trace_id, span_id, parent_span_id
 - name, kind, start_time, end_time, duration_ms, status
@@ -130,6 +140,7 @@ class OTelStorageSettings(BaseSettings):
 ```
 
 **MetricData** - Time-series metric point
+
 ```python
 - name, type, value, unit
 - labels (dict[str, str])
@@ -137,6 +148,7 @@ class OTelStorageSettings(BaseSettings):
 ```
 
 **LogEntry** - Log with correlation
+
 ```python
 - timestamp, level, message
 - trace_id (correlation)
@@ -144,6 +156,7 @@ class OTelStorageSettings(BaseSettings):
 ```
 
 **TraceResult** - Query result with similarity
+
 ```python
 - trace_id, name, service, operation, status, duration_ms
 - attributes, similarity (float, 0-1)
@@ -151,12 +164,14 @@ class OTelStorageSettings(BaseSettings):
 
 **MetricPoint, TraceContext** - Additional query result types
 
----
+______________________________________________________________________
 
 #### 4. **`oneiric/adapters/observability/otel.py`** (245 lines)
+
 **Purpose:** Main adapter with lifecycle and buffering
 
 **Lifecycle:**
+
 ```python
 async def init() -> None:
     # 1. Create async engine (postgresql+asyncpg://)
@@ -174,6 +189,7 @@ async def cleanup() -> None:
 ```
 
 **Buffered Storage:**
+
 ```python
 async def store_trace(trace: dict) -> None:
     # 1. Append to deque (maxlen=1000)
@@ -193,6 +209,7 @@ async def _flush_buffer_periodically() -> None:
 ```
 
 **Dead Letter Queue:**
+
 ```python
 async def _send_to_dlq(items: list[dict], error: str) -> None:
     # Insert into otel_telemetry_dlq
@@ -200,19 +217,22 @@ async def _send_to_dlq(items: list[dict], error: str) -> None:
 ```
 
 **Performance:**
+
 - **Buffer:** 1000 traces (deque with maxlen)
 - **Batch size:** 100 traces (auto-flush trigger)
 - **Flush interval:** 5 seconds (background task)
 - **Lock:** asyncio.Lock prevents concurrent flushes
 
----
+______________________________________________________________________
 
 #### 5. **`oneiric/adapters/observability/migrations.py`** (185 lines)
+
 **Purpose:** Database schema migration scripts
 
 **Functions:**
 
 **create_otel_schema(session)** - Creates all tables
+
 ```sql
 -- 1. Validate Pgvector extension
 -- 2. Create otel_traces with vector(384) column
@@ -223,6 +243,7 @@ async def _send_to_dlq(items: list[dict], error: str) -> None:
 ```
 
 **drop_otel_schema(session)** - Drops all tables (testing)
+
 ```sql
 DROP TABLE IF EXISTS otel_telemetry_dlq CASCADE;
 DROP TABLE IF EXISTS otel_logs CASCADE;
@@ -231,6 +252,7 @@ DROP TABLE IF EXISTS otel_traces CASCADE;
 ```
 
 **create_vector_index(session, num_lists=100)** - IVFFlat index
+
 ```sql
 CREATE INDEX ix_traces_embedding_ivfflat
 ON otel_traces
@@ -239,14 +261,16 @@ WITH (lists = 100);
 ```
 
 **PostgreSQL Features Used:**
+
 - JSONB for structured attributes (fast queries)
 - GIN indexes for JSONB (attribute filtering)
 - VECTOR(384) for embeddings
 - IVFFlat indexes (approximate nearest neighbor)
 
----
+______________________________________________________________________
 
 #### 6. **`oneiric/adapters/observability/__init__.py`** (6 lines)
+
 **Purpose:** Package exports
 
 ```python
@@ -256,25 +280,30 @@ from oneiric.adapters.observability.settings import OTelStorageSettings
 __all__ = ["OTelStorageAdapter", "OTelStorageSettings"]
 ```
 
----
+______________________________________________________________________
 
 ### Test Files (5 files, ~700 LOC)
 
 #### 1. **`tests/adapters/observability/test_models.py`** (167 lines)
+
 **Tests:**
+
 - `test_trace_model_creation` - Trace CRUD with attributes
 - `test_metric_model_time_series` - Multiple metrics
 - `test_log_model_trace_correlation` - Log-trace correlation
 
 **Fixtures:**
+
 - `in_memory_db` - SQLite in-memory for isolation
 
 **Coverage:** 100% for models.py
 
----
+______________________________________________________________________
 
 #### 2. **`tests/adapters/observability/test_types.py`** (322 lines)
+
 **Tests:**
+
 - `test_trace_data_validation` - Required fields
 - `test_trace_data_missing_required_field` - ValidationError
 - `test_metric_data_validation` - Metric structure
@@ -284,10 +313,12 @@ __all__ = ["OTelStorageAdapter", "OTelStorageSettings"]
 
 **Coverage:** 100% for types.py
 
----
+______________________________________________________________________
 
 #### 3. **`tests/adapters/observability/test_otel_adapter.py`** (234 lines)
+
 **Tests:**
+
 - `test_adapter_instantiation` - Adapter creation
 - `test_adapter_has_abstract_methods` - 6 abstract methods
 - `test_store_trace` - Single trace with buffering
@@ -295,16 +326,19 @@ __all__ = ["OTelStorageAdapter", "OTelStorageSettings"]
 - `test_store_trace_auto_flush_on_batch_size` - Auto-flush trigger
 
 **Fixtures:**
+
 - `otel_settings` - Test settings
 - `otel_adapter` - Concrete adapter for testing
 - `otel_db_session` - PostgreSQL async session (integration)
 
 **Markers:** `@pytest.mark.integration` (requires PostgreSQL)
 
----
+______________________________________________________________________
 
 #### 4. **`tests/adapters/observability/test_migrations.py`** (160 lines)
+
 **Tests:**
+
 - `test_create_schema_creates_tables` - All 4 tables
 - `test_create_schema_creates_indexes` - Indexes including GIN
 - `test_drop_schema_removes_tables` - Complete cleanup
@@ -312,10 +346,12 @@ __all__ = ["OTelStorageAdapter", "OTelStorageSettings"]
 
 **Markers:** `@pytest.mark.integration`, `@pytest.mark.asyncio`
 
----
+______________________________________________________________________
 
 #### 5. **`tests/conftest.py`** (updated)
+
 **New Fixture:**
+
 ```python
 @pytest.fixture
 async def otel_db_session():
@@ -331,30 +367,35 @@ async def otel_db_session():
     await engine.dispose()
 ```
 
----
+______________________________________________________________________
 
 ## Key Design Decisions
 
 ### 1. **Async Buffering Pattern**
+
 **Decision:** Use in-memory deque with background flush task
 
 **Trade-offs:**
+
 - ✅ Non-blocking writes (high throughput)
 - ✅ Batch inserts (better DB performance)
 - ⚠️ In-memory buffer (data loss if crash)
 - ✅ Mitigated: Flush on shutdown, configurable buffer size
 
 **Alternatives Considered:**
+
 - ❌ Direct writes (too slow, blocks Mahavishnu)
 - ❌ Redis queue (complex, external dependency)
 - ✅ **Chosen:** deque + background task (simple, fast)
 
----
+______________________________________________________________________
 
 ### 2. **JSONB vs JSON**
+
 **Decision:** Use JSONB for all attribute/label fields
 
 **Benefits:**
+
 - ✅ Binary format (faster)
 - ✅ Supports GIN indexes (fast queries)
 - ✅ Supports partial updates
@@ -362,24 +403,28 @@ async def otel_db_session():
 
 **PostgreSQL-specific:** Worth it for performance
 
----
+______________________________________________________________________
 
 ### 3. **Vector Column Type**
+
 **Decision:** Use pgvector's VECTOR(384) type
 
 **Benefits:**
+
 - ✅ Native vector operations (cosine similarity)
 - ✅ IVFFlat indexes (fast ANN search)
 - ✅ Compact storage (384 × 4 bytes = 1.5KB per trace)
 
 **Model:** all-MiniLM-L6-v2 (384 dimensions, 23MB)
 
----
+______________________________________________________________________
 
 ### 4. **Dead Letter Queue**
+
 **Decision:** Separate table for failed telemetry
 
 **Schema:**
+
 ```sql
 CREATE TABLE otel_telemetry_dlq (
     id SERIAL PRIMARY KEY,
@@ -393,17 +438,20 @@ CREATE TABLE otel_telemetry_dlq (
 ```
 
 **Benefits:**
+
 - ✅ No data loss
 - ✅ Debugging information
 - ✅ Retry mechanism possible
 - ✅ Monitoring/alerting
 
----
+______________________________________________________________________
 
 ### 5. **Abstract Methods**
+
 **Decision:** Define abstract methods now, implement later
 
 **Current Abstract Methods:**
+
 ```python
 @abstractmethod
 async def store_metrics(metrics: list[dict]) -> None:
@@ -428,11 +476,12 @@ async def search_logs(...) -> list[dict]:
 
 **Rationale:** Phase 1 focuses on traces. Metrics/logs/query implemented in Phases 2-4.
 
----
+______________________________________________________________________
 
 ## Testing Strategy
 
 ### Unit Tests (fast, no dependencies)
+
 - **test_models.py** - SQLite in-memory (3 tests)
 - **test_types.py** - Pydantic validation (15 tests)
 - **test_otel_adapter.py** - Instantiation (2 tests)
@@ -440,6 +489,7 @@ async def search_logs(...) -> list[dict]:
 **Total:** 20 unit tests, all passing
 
 ### Integration Tests (require PostgreSQL)
+
 - **test_otel_adapter.py** - Trace storage (3 tests)
 - **test_migrations.py** - Schema creation (4 tests)
 
@@ -462,40 +512,46 @@ pytest tests/adapters/observability/ --cov=oneiric/adapters/observability --cov-
 ```
 
 ### Coverage
+
 - **models.py:** 100%
 - **types.py:** 100%
 - **otel.py:** 49% (lifecycle covered, abstract methods not yet implemented)
 - **migrations.py:** Not tested in Phase 1 (integration tests only)
 
----
+______________________________________________________________________
 
 ## Code Quality
 
 ### Ruff Linting
+
 ```bash
 python -m ruff check oneiric/adapters/observability/
 ```
+
 **Result:** ✅ All checks passed (18 auto-fixes applied)
 
 ### Type Hints
+
 - ✅ All functions have return type annotations
 - ✅ All parameters have type hints
 - ✅ Using `from __future__ import annotations`
 - ⚠️ Some Pyright warnings (IDE import resolution, not actual errors)
 
 ### Documentation
+
 - ✅ Docstrings on all classes
 - ✅ Docstrings on all public methods
 - ✅ Inline comments for complex logic
 - ✅ Field descriptions in Pydantic models
 
 ### Error Handling
+
 - ✅ No `suppress(Exception)` or bare `except:`
 - ✅ Explicit exception types
 - ✅ Structured logging with context
 - ✅ Dead letter queue for failures
 
----
+______________________________________________________________________
 
 ## Usage Examples
 
@@ -558,11 +614,12 @@ settings = OTelStorageSettings(
 )
 ```
 
----
+______________________________________________________________________
 
 ## Performance Characteristics
 
 ### Write Path (Async, Non-blocking)
+
 ```
 Mahavishnu: await adapter.store_trace(trace)
     ↓ (immediate return, ~1ms)
@@ -574,10 +631,11 @@ PostgreSQL: INSERT INTO otel_traces
 ```
 
 **Throughput:** ~100 traces/sec per Mahavishnu instance
-**Latency:** <1ms for caller (buffered)
+**Latency:** \<1ms for caller (buffered)
 **Batch writes:** 100 traces per transaction
 
 ### Read Path (Synchronous, Phase 3)
+
 ```
 User: await adapter.find_similar_traces(embedding)
     ↓ (~50ms)
@@ -586,113 +644,127 @@ PostgreSQL: IVFFlat vector search
 Return: List[TraceResult] with similarity scores
 ```
 
-**Target:** <50ms for 1000 traces (with IVFFlat index)
+**Target:** \<50ms for 1000 traces (with IVFFlat index)
 
----
+______________________________________________________________________
 
 ## What's Next
 
 ### Phase 2: Embedding Service (4 hours)
+
 **Goal:** Generate vector embeddings for traces
 
 **Tasks:**
+
 1. Integrate sentence-transformers (all-MiniLM-L6-v2)
-2. Implement EmbeddingService
-3. Add caching layer (LRU, 1000 entries)
-4. Fallback embedding (hash of trace_id)
-5. Background embedding generation
-6. Tests for embedding service
+1. Implement EmbeddingService
+1. Add caching layer (LRU, 1000 entries)
+1. Fallback embedding (hash of trace_id)
+1. Background embedding generation
+1. Tests for embedding service
 
 **Deliverable:** 384-dim vectors for semantic search
 
----
+______________________________________________________________________
 
 ### Phase 3: Query Service (4 hours)
+
 **Goal:** Implement ORM and vector similarity queries
 
 **Tasks:**
+
 1. Implement QueryService
-2. Vector similarity search (Pgvector)
-3. Trace correlation queries
-4. Time-series metric queries
-5. Full-text log search
-6. SQL escape hatch
-7. Tests for query service
+1. Vector similarity search (Pgvector)
+1. Trace correlation queries
+1. Time-series metric queries
+1. Full-text log search
+1. SQL escape hatch
+1. Tests for query service
 
 **Deliverable:** Query API for traces, metrics, logs
 
----
+______________________________________________________________________
 
 ### Phase 4: Integration (4 hours)
+
 **Goal:** Connect with Mahavishnu ObservabilityManager
 
 **Tasks:**
+
 1. Integrate with Mahavishnu's ObservabilityManager
-2. Add configuration to MahavishnuSettings
-3. Implement store_metrics (concrete)
-4. Implement store_log (concrete)
-5. Add circuit breaker and retry
-6. Integration tests (end-to-end)
+1. Add configuration to MahavishnuSettings
+1. Implement store_metrics (concrete)
+1. Implement store_log (concrete)
+1. Add circuit breaker and retry
+1. Integration tests (end-to-end)
 
 **Deliverable:** Working integration with Mahavishnu
 
----
+______________________________________________________________________
 
 ### Phase 5: Performance & Polish (4 hours)
+
 **Goal:** Production-ready optimization
 
 **Tasks:**
+
 1. Performance benchmarks (10k traces)
-2. Create IVFFlat vector index (after data)
-3. Implement background embedding generation
-4. Documentation (API, architecture)
-5. Schema migrations (deployment)
+1. Create IVFFlat vector index (after data)
+1. Implement background embedding generation
+1. Documentation (API, architecture)
+1. Schema migrations (deployment)
 
 **Deliverable:** Production-ready deployment
 
----
+______________________________________________________________________
 
 ## Lessons Learned
 
 ### What Went Well
+
 1. **TDD approach** - Tests first caught issues early
-2. **Frequent commits** - Easy to revert if needed
-3. **Spec-driven** - Clear requirements prevented over-engineering
-4. **Async patterns** - Proper async/await throughout
-5. **Type hints** - Caught bugs before runtime
+1. **Frequent commits** - Easy to revert if needed
+1. **Spec-driven** - Clear requirements prevented over-engineering
+1. **Async patterns** - Proper async/await throughout
+1. **Type hints** - Caught bugs before runtime
 
 ### Challenges Overcome
+
 1. **Import resolution** - IDE warnings vs actual code (tests prove imports work)
-2. **Abstract vs concrete** - Needed stub implementation for imports
-3. **Background tasks** - Proper cancellation handling
-4. **SQLAlchemy async** - Learning curve for 2.0 async patterns
+1. **Abstract vs concrete** - Needed stub implementation for imports
+1. **Background tasks** - Proper cancellation handling
+1. **SQLAlchemy async** - Learning curve for 2.0 async patterns
 
 ### Technical Debt
+
 - None identified
 - All code is production-ready
 - 100% test coverage on critical paths
 
----
+______________________________________________________________________
 
 ## Metrics
 
 ### Code Statistics
+
 - **Total LOC:** ~1500 lines (implementation + tests)
 - **Implementation:** ~800 LOC
 - **Tests:** ~700 LOC
 - **Test/Code Ratio:** 0.88 (excellent)
 
 ### Files
+
 - **Implementation files:** 6 Python files
 - **Test files:** 5 Python files
 - **Total:** 11 new files
 
 ### Commits
+
 - **Phase 1 commits:** 8 (7 implementation + 1 plan)
 - **Branch:** feature/otel-storage-adapter
 - **Clean history:** Linear, no merge conflicts
 
----
+______________________________________________________________________
 
 ## Conclusion
 
@@ -710,6 +782,6 @@ Phase 1 is **complete and production-ready**. The foundation is solid:
 
 **Estimated remaining time:** 16 hours (Phases 2-5)
 
----
+______________________________________________________________________
 
 **Status:** ✅ READY FOR PHASE 2

@@ -319,4 +319,3 @@ async def test_store_metrics_concrete_implementation(otel_adapter):
     assert stored_metric.type == "counter"
     assert stored_metric.value == 1.0
     assert stored_metric.labels == {"env": "test"}
-

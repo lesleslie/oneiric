@@ -10,11 +10,12 @@
 
 **Cross-Repo Note:** This plan primarily modifies the oneiric-otel-storage repository, but also requires coordination with the mahavishnu repository for ObservabilityManager integration.
 
----
+______________________________________________________________________
 
 ## Task 1: Create circuit breaker implementation
 
 **Files:**
+
 - Create: `oneiric/adapters/observability/circuit_breaker.py`
 - Create: `tests/adapters/observability/test_circuit_breaker.py`
 
@@ -287,11 +288,12 @@ Tests cover all state transitions and edge cases.
 "
 ```
 
----
+______________________________________________________________________
 
 ## Task 2: Create retry utilities
 
 **Files:**
+
 - Create: `oneiric/adapters/observability/resilience.py`
 - Modify: `pyproject.toml`
 
@@ -422,11 +424,12 @@ Tests cover retry logic and exhaustion.
 "
 ```
 
----
+______________________________________________________________________
 
 ## Task 3: Implement concrete methods in OTelStorageAdapter
 
 **Files:**
+
 - Modify: `oneiric/adapters/observability/otel.py`
 - Modify: `tests/adapters/observability/test_otel_adapter.py`
 
@@ -495,6 +498,7 @@ Expected: FAIL - Methods are abstract or not implemented
 Modify `oneiric/adapters/observability/otel.py`:
 
 Add imports:
+
 ```python
 from oneiric.adapters.observability.models import LogModel, MetricModel
 from oneiric.adapters.observability.types import MetricData
@@ -595,11 +599,12 @@ Tests cover concrete implementation.
 "
 ```
 
----
+______________________________________________________________________
 
 ## Task 4: Create Mahavishnu integration tests (prepare for cross-repo work)
 
 **Files:**
+
 - Create: `tests/integration/test_mahavishnu_integration.py`
 
 **Step 1: Write integration tests**
@@ -701,7 +706,7 @@ Test marked as integration and requires PostgreSQL.
 "
 ```
 
----
+______________________________________________________________________
 
 ## Summary
 
@@ -717,6 +722,7 @@ This plan provides:
 ✅ **Integration tests** - Prepared for cross-repo work
 
 **Total breakdown:**
+
 - **Task 1:** Circuit breaker implementation (8 tests)
 - **Task 2:** Retry utilities (2 tests)
 - **Task 3:** Concrete methods in OTelStorageAdapter
@@ -727,6 +733,7 @@ This plan provides:
 **Cross-repo note:** Mahavishnu repository modifications are out of scope for this plan
 
 **Next steps after this plan:**
+
 1. Execute Tasks 1-4 in oneiric-otel-storage repository
-2. Create separate implementation plan for mahavishnu repository
-3. Coordinate changes across both repositories
+1. Create separate implementation plan for mahavishnu repository
+1. Coordinate changes across both repositories

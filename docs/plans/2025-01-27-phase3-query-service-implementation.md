@@ -8,11 +8,12 @@
 
 **Tech Stack:** SQLAlchemy (async ORM), Pgvector (cosine similarity), Pydantic (result models), numpy (vector operations)
 
----
+______________________________________________________________________
 
 ## Task 1: Create Pydantic result models
 
 **Files:**
+
 - Modify: `oneiric/adapters/observability/types.py`
 
 **Step 1: Write tests for Pydantic models**
@@ -209,11 +210,12 @@ Tests cover model creation with valid data.
 "
 ```
 
----
+______________________________________________________________________
 
 ## Task 2: Create QueryService class with ORM conversion
 
 **Files:**
+
 - Create: `oneiric/adapters/observability/queries.py`
 - Create: `tests/adapters/observability/test_queries.py`
 
@@ -348,11 +350,12 @@ Tests cover ORM → Pydantic conversion.
 "
 ```
 
----
+______________________________________________________________________
 
 ## Task 3: Implement vector similarity search
 
 **Files:**
+
 - Modify: `oneiric/adapters/observability/queries.py`
 - Modify: `tests/adapters/observability/test_queries.py`
 
@@ -520,11 +523,12 @@ Tests cover valid queries and dimension validation.
 "
 ```
 
----
+______________________________________________________________________
 
 ## Task 4: Implement error pattern search
 
 **Files:**
+
 - Modify: `oneiric/adapters/observability/queries.py`
 - Modify: `tests/adapters/observability/test_queries.py`
 
@@ -667,11 +671,12 @@ Tests cover pattern matching and filter application.
 "
 ```
 
----
+______________________________________________________________________
 
 ## Task 5: Implement trace context (correlation query)
 
 **Files:**
+
 - Modify: `oneiric/adapters/observability/queries.py`
 - Modify: `tests/adapters/observability/test_queries.py`
 
@@ -837,11 +842,12 @@ Tests cover complete context and missing trace error.
 "
 ```
 
----
+______________________________________________________________________
 
 ## Task 6: Implement SQL escape hatch
 
 **Files:**
+
 - Modify: `oneiric/adapters/observability/queries.py`
 - Modify: `tests/adapters/observability/test_queries.py`
 
@@ -996,11 +1002,12 @@ Tests cover allowed queries and dangerous pattern rejection.
 "
 ```
 
----
+______________________________________________________________________
 
 ## Task 7: Integrate QueryService with OTelStorageAdapter
 
 **Files:**
+
 - Modify: `oneiric/adapters/observability/otel.py`
 - Modify: `tests/adapters/observability/test_otel_adapter.py`
 
@@ -1034,7 +1041,7 @@ async def test_query_service_integration(otel_adapter, sample_traces_with_embedd
 pytest tests/adapters/observability/test_otel_adapter.py::test_query_service_integration -v
 ```
 
-Expected: FAIL - _query_service doesn't exist
+Expected: FAIL - \_query_service doesn't exist
 
 **Step 3: Integrate QueryService into OTelStorageAdapter**
 
@@ -1078,7 +1085,7 @@ Integration test verifies QueryService is accessible.
 "
 ```
 
----
+______________________________________________________________________
 
 ## Summary
 
@@ -1094,6 +1101,7 @@ This plan provides:
 ✅ **Integration tests** - Database tests (marked)
 
 **Total breakdown:**
+
 - **Task 1:** Pydantic result models (4 tests)
 - **Task 2:** QueryService class with ORM conversion (1 test)
 - **Task 3:** Vector similarity search (2 tests)

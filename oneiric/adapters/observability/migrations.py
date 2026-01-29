@@ -207,41 +207,45 @@ async def create_ivfflat_index_if_ready(session) -> bool:
 
         if trace_count < 1000:
             logger.info(
-                "ivfflat-index-skipped",
-                trace_count=trace_count,
-                threshold=1000,
-                reason="Insufficient traces for IVFFlat index"
+                "ivfflat-index-skipped: trace_count=%s threshold=%s reason=%s",
+                trace_count,
+                1000,
+                "Insufficient traces for IVFFlat index",
             )
             return False
 
         # Check if index already exists
-        result = await session.execute(text("""
+        result = await session.execute(
+            text("""
             SELECT indexname FROM pg_indexes
             WHERE tablename = 'otel_traces' AND indexname LIKE '%ivfflat%'
-        """))
+        """)
+        )
         if result.fetchone():
-            logger.info("ivfflat-index-exists", message="Index already exists")
+            logger.info("ivfflat-index-exists: Index already exists")
             return False
 
         # Create IVFFlat index
-        await session.execute(text("""
+        await session.execute(
+            text("""
             CREATE INDEX CONCURRENTLY ix_traces_embedding_ivfflat
             ON otel_traces
             USING ivfflat (embedding vector_cosine_ops)
             WITH (lists = 100)
-        """))
+        """)
+        )
         await session.commit()
 
         logger.info(
-            "ivfflat-index-created",
-            trace_count=trace_count,
-            index_type="ivfflat",
-            lists=100
+            "ivfflat-index-created: trace_count=%s index_type=%s lists=%s",
+            trace_count,
+            "ivfflat",
+            100,
         )
         return True
 
     except Exception as exc:
-        logger.error("ivfflat-index-failed", error=str(exc))
+        logger.error("ivfflat-index-failed: %s", str(exc))
         await session.rollback()
         raise
 
@@ -258,18 +262,20 @@ async def create_query_optimization_indexes(session) -> None:
 
     try:
         # Composite index for time-range error queries
-        await session.execute(text("""
+        await session.execute(
+            text("""
             CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_traces_start_time_status
             ON otel_traces (start_time, status)
-        """))
+        """)
+        )
 
         # GIN index for JSON attribute queries (already exists in schema, skip)
         # Note: ix_traces_attributes_gin is already created in create_otel_schema
 
         await session.commit()
-        logger.info("query-indexes-created", indexes=["start_time_status"])
+        logger.info("query-indexes-created: indexes=%s", ["start_time_status"])
 
     except Exception as exc:
-        logger.error("query-indexes-failed", error=str(exc))
+        logger.error("query-indexes-failed: %s", str(exc))
         await session.rollback()
         raise

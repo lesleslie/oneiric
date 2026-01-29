@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from functools import wraps
-from typing import Callable
 import asyncio
+from collections.abc import Callable
+from functools import wraps
 
 
 def with_retry(max_attempts: int = 3):
@@ -19,6 +19,7 @@ def with_retry(max_attempts: int = 3):
     Returns:
         Decorated async function
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(*args, **kwargs):
@@ -31,11 +32,12 @@ def with_retry(max_attempts: int = 3):
                     last_exception = exc
                     if attempt < max_attempts - 1:
                         # Exponential backoff: 100ms, 200ms, 400ms, etc.
-                        delay = min(0.1 * (2 ** attempt), 1.0)
+                        delay = min(0.1 * (2**attempt), 1.0)
                         await asyncio.sleep(delay)
 
             # All attempts failed
             raise last_exception
 
         return wrapper
+
     return decorator

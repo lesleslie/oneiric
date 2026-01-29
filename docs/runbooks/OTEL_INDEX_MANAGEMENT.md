@@ -7,22 +7,26 @@ The OTel Storage Adapter uses IVFFlat vector indexing for fast similarity search
 ## Index Types
 
 ### IVFFlat Vector Index
+
 - **Purpose:** Fast vector similarity search (10-50x improvement)
 - **Trigger:** Automatic creation after 1000+ traces
 - **Location:** `ix_traces_embedding_ivfflat`
 - **Maintenance:** Reindex after significant data changes
 
 ### B-Tree Indexes
+
 - **Purpose:** Standard queries (trace_id, time ranges, status)
 - **Created:** Automatically during schema creation
 - **Maintenance:** PostgreSQL autovacuum handles
 
 ### GIN Index
+
 - **Purpose:** JSON attribute queries
 - **Location:** `ix_traces_attributes_gin`
 - **Maintenance:** Periodic REINDEX recommended
 
 ### Composite Index
+
 - **Purpose:** Time-range error queries
 - **Location:** `ix_traces_start_time_status`
 - **Maintenance:** PostgreSQL autovacuum handles
@@ -76,6 +80,7 @@ FROM otel_traces;
 **Symptom:** Vector queries still slow after 1000+ traces
 
 **Check:**
+
 ```sql
 SELECT indexname FROM pg_indexes
 WHERE tablename = 'otel_traces' AND indexname LIKE '%ivfflat%';
@@ -88,6 +93,7 @@ WHERE tablename = 'otel_traces' AND indexname LIKE '%ivfflat%';
 **Symptom:** Write performance degraded
 
 **Check:**
+
 ```sql
 SELECT
     indexname,
@@ -98,6 +104,7 @@ ORDER BY pg_relation_size(indexrelid) DESC;
 ```
 
 **Solution:**
+
 ```sql
 REINDEX INDEX CONCURRENTLY ix_traces_embedding_ivfflat;
 ```
@@ -107,6 +114,7 @@ REINDEX INDEX CONCURRENTLY ix_traces_embedding_ivfflat;
 **Symptom:** Index taking >5% write time
 
 **Solutions:**
+
 1. Increase `lists` parameter (try 200 or 300)
-2. Reduce data ingestion rate
-3. Consider partitioning by time
+1. Reduce data ingestion rate
+1. Consider partitioning by time

@@ -4,20 +4,21 @@
 **Status:** Approved Design
 **Implementing:** Vector embeddings for trace similarity search
 
----
+______________________________________________________________________
 
 ## Executive Summary
 
 Phase 2 implements the EmbeddingService that generates 384-dimensional vector embeddings from trace telemetry using sentence-transformers (all-MiniLM-L6-v2 model). These embeddings enable semantic similarity search - finding traces that are "similar" even without exact keyword matches.
 
 **Key Features:**
+
 - sentence-transformers integration (all-MiniLM-L6-v2, 384 dimensions)
 - LRU caching (1000 entries, ~1.5MB memory)
 - Fallback embeddings on model failure
 - Async generation (non-blocking)
 - Comprehensive testing with mocks
 
----
+______________________________________________________________________
 
 ## Architecture Overview
 
@@ -47,7 +48,7 @@ Return np.ndarray (384,)
 
 **Single Responsibility:** EmbeddingService ONLY generates embeddings. Storage, querying, and lifecycle are separate concerns.
 
----
+______________________________________________________________________
 
 ## Components
 
@@ -56,6 +57,7 @@ Return np.ndarray (384,)
 **File:** `oneiric/adapters/observability/embeddings.py`
 
 **Interface:**
+
 ```python
 class EmbeddingService:
     """Generate embeddings for trace similarity search."""
@@ -83,19 +85,21 @@ class EmbeddingService:
 ```
 
 **Responsibilities:**
+
 - Lazy-load sentence-transformers model on first use
 - Generate human-readable text from trace
 - Encode text to vector
 - Cache results (LRU, 1000 entries)
 - Fallback to hash-based vector on failure
 
----
+______________________________________________________________________
 
 ### 2. Text Construction
 
 **Strategy:** Convert trace dict → human-readable text
 
 **Template:**
+
 ```python
 text = (
     f"{service} {operation} {status} in {duration_ms}ms "
@@ -105,6 +109,7 @@ text = (
 ```
 
 **Example:**
+
 ```python
 Input:
 {
@@ -125,44 +130,50 @@ Output:
 ```
 
 **Why this works:**
+
 - sentence-transformers understands semantic meaning
 - "connection timeout" ≈ "network error" (cosine similarity >0.8)
 - HTTP status codes capture error types
 - Service/operation provide context
 
----
+______________________________________________________________________
 
 ### 3. Caching Layer
 
 **Implementation:** `functools.lru_cache(maxsize=1000)`
 
 **Cache key generation:**
+
 ```python
 cache_key = hash(frozenset(sorted(trace.items())))
 ```
 
 **Behavior:**
-- **Hit:** Return cached embedding immediately (<1ms)
+
+- **Hit:** Return cached embedding immediately (\<1ms)
 - **Miss:** Generate embedding (50-100ms), cache it
 - **Eviction:** LRU removes oldest when cache >1000
 
 **Memory:**
+
 - Each embedding: 384 × 4 bytes = ~1.5KB
 - 1000 embeddings: ~1.5MB total
 - Configurable via `settings.cache_size`
 
 **Cache effectiveness:**
+
 - Expected hit rate: 60-80% (repeated traces)
 - Same trace attributes = same embedding
 - Cache key changes if attributes change
 
----
+______________________________________________________________________
 
 ### 4. Fallback Logic
 
 **Purpose:** Generate embeddings when model fails
 
 **Implementation:**
+
 ```python
 def _generate_fallback_embedding(trace_id: str) -> np.ndarray:
     """Generate deterministic vector from trace_id hash."""
@@ -177,12 +188,14 @@ def _generate_fallback_embedding(trace_id: str) -> np.ndarray:
 ```
 
 **Properties:**
+
 - Deterministic: same trace_id = same vector
-- Fast: <1ms (no ML model)
+- Fast: \<1ms (no ML model)
 - Enables similarity search (same traces cluster)
 - No external dependencies
 
 **When to use:**
+
 - Model not installed
 - Model download fails
 - Model inference OOM error
@@ -190,6 +203,7 @@ def _generate_fallback_embedding(trace_id: str) -> np.ndarray:
 - Invalid trace data
 
 **Monitoring:**
+
 ```python
 logger.warning(
     "embedding-generation-failed",
@@ -199,11 +213,12 @@ logger.warning(
 )
 ```
 
----
+______________________________________________________________________
 
 ## Data Flow
 
 ### Synchronous Flow (for testing)
+
 ```
 1. EmbeddingService.embed_trace(trace_dict)
     ↓
@@ -221,6 +236,7 @@ logger.warning(
 ```
 
 ### Async Flow (production)
+
 ```
 1. OTelStorageAdapter.store_trace(trace_dict)
     ├─ Store trace immediately (no embedding yet)
@@ -236,41 +252,48 @@ logger.warning(
 ```
 
 **Why async in production:**
+
 - Embedding takes 50-100ms
 - Would block Mahavishnu if synchronous
 - Better to store trace fast, embed later
 - Fallback embedding enables immediate search
 
----
+______________________________________________________________________
 
 ## Error Handling
 
 ### Failure Scenarios
 
 1. **Model not installed**
+
    - First download attempt fails
    - Network error
    - **Action:** Use fallback, log warning
 
-2. **Model corrupted**
+1. **Model corrupted**
+
    - Downloaded file broken
    - Incompatible version
    - **Action:** Use fallback, log error
 
-3. **OOM error**
+1. **OOM error**
+
    - Not enough RAM for 23MB model
    - **Action:** Use fallback, log critical error
 
-4. **Invalid trace data**
+1. **Invalid trace data**
+
    - Missing required fields
    - Wrong data types
    - **Action:** Use fallback, log warning
 
-5. **Model timeout**
+1. **Model timeout**
+
    - Inference takes too long
    - **Action:** Use fallback, log warning
 
 ### Error Handling Pattern
+
 ```python
 try:
     embedding = await self._generate_embedding(trace)
@@ -288,12 +311,13 @@ except Exception as exc:
 ```
 
 **Benefits:**
+
 - ✅ Trace storage never fails
 - ✅ Deterministic fallback
 - ✅ Monitoring via logs
 - ✅ Can re-embed later
 
----
+______________________________________________________________________
 
 ## Testing Strategy
 
@@ -302,15 +326,17 @@ except Exception as exc:
 **File:** `tests/adapters/observability/test_embeddings.py`
 
 **Tests:**
+
 1. `test_text_construction_success()` - Build text from trace
-2. `test_text_construction_empty_attributes()` - Handle missing attributes
-3. `test_cache_key_generation()` - Deterministic cache keys
-4. `test_fallback_embedding_deterministic()` - Same ID = same vector
-5. `test_fallback_embedding_dimension()` - 384 dimensions
-6. `test_cache_hit_miss()` - LRU behavior
-7. `test_model_failure_fallback()` - Exception handling
+1. `test_text_construction_empty_attributes()` - Handle missing attributes
+1. `test_cache_key_generation()` - Deterministic cache keys
+1. `test_fallback_embedding_deterministic()` - Same ID = same vector
+1. `test_fallback_embedding_dimension()` - 384 dimensions
+1. `test_cache_hit_miss()` - LRU behavior
+1. `test_model_failure_fallback()` - Exception handling
 
 **Fixtures:**
+
 ```python
 @pytest.fixture
 def sample_trace_dict():
@@ -334,11 +360,12 @@ def mock_sentence_transformer(monkeypatch):
 ### Integration Tests (slow, requires model)
 
 **Tests:**
+
 1. `test_real_model_embedding_dimension()` - Output shape (384,)
-2. `test_embedding_similarity()` - Same trace = same embedding
-3. `test_embedding_uniqueness()` - Different traces = different embeddings
-4. `test_cache_behavior_real_model()` - Cache hit/miss with real model
-5. `test_model_download()` - First download works
+1. `test_embedding_similarity()` - Same trace = same embedding
+1. `test_embedding_uniqueness()` - Different traces = different embeddings
+1. `test_cache_behavior_real_model()` - Cache hit/miss with real model
+1. `test_model_download()` - First download works
 
 **Markers:** `@pytest.mark.integration`, `@pytest.mark.slow`
 
@@ -349,36 +376,41 @@ def mock_sentence_transformer(monkeypatch):
 - Fallback logic: 100%
 - Error handling: 100%
 
----
+______________________________________________________________________
 
 ## Performance Considerations
 
 ### Model Loading
+
 - **First call:** ~2-5 seconds (download + load)
-- **Subsequent calls:** <100ms (already loaded)
+- **Subsequent calls:** \<100ms (already loaded)
 - **Lazy loading:** Load on first `embed_trace()` call
 
 ### Embedding Generation
-- **Cached:** <1ms (hash lookup)
+
+- **Cached:** \<1ms (hash lookup)
 - **Uncached:** 50-100ms (model inference)
 - **Target hit rate:** 60-80%
 
 ### Memory
+
 - **Model size:** 23MB (all-MiniLM-L6-v2)
 - **Cache size:** 1.5MB (1000 embeddings × 1.5KB)
 - **Total:** ~25MB per process
 
 ### Optimization Opportunities
+
 - Background model loading (preload on adapter init)
 - Batch embedding (multiple traces at once)
 - Model quantization (INT8 vs FP32)
 - Larger cache (10,000 entries = 15MB)
 
----
+______________________________________________________________________
 
 ## Configuration
 
 **Add to `OTelStorageSettings`:**
+
 ```python
 class OTelStorageSettings(BaseSettings):
     # ... existing fields ...
@@ -399,20 +431,20 @@ class OTelStorageSettings(BaseSettings):
 
 **No new config needed** - reusing existing fields.
 
----
+______________________________________________________________________
 
 ## Implementation Plan
 
 ### Task Breakdown
 
 1. **Create embeddings.py** - EmbeddingService class
-2. **Text construction** - Build text from trace dict
-3. **Cache integration** - lru_cache with cache key
-4. **Fallback logic** - Hash-based embedding
-5. **Error handling** - Try/except with logging
-6. **Tests** - Unit + integration tests
-7. **Integration** - Connect with OTelStorageAdapter
-8. **Documentation** - Docstrings + examples
+1. **Text construction** - Build text from trace dict
+1. **Cache integration** - lru_cache with cache key
+1. **Fallback logic** - Hash-based embedding
+1. **Error handling** - Try/except with logging
+1. **Tests** - Unit + integration tests
+1. **Integration** - Connect with OTelStorageAdapter
+1. **Documentation** - Docstrings + examples
 
 ### Estimated Time
 
@@ -421,11 +453,12 @@ class OTelStorageSettings(BaseSettings):
 - Integration: 1 hour
 - **Total: 4 hours**
 
----
+______________________________________________________________________
 
 ## Success Criteria
 
 ### Functional
+
 - ✅ Generate 384-dim embeddings from traces
 - ✅ LRU cache (1000 entries) working
 - ✅ Fallback embedding on model failure
@@ -433,30 +466,33 @@ class OTelStorageSettings(BaseSettings):
 - ✅ Different traces = different embeddings
 
 ### Performance
-- ✅ Cached embedding: <1ms
-- ✅ Uncached embedding: <100ms
-- ✅ Memory: <25MB total
+
+- ✅ Cached embedding: \<1ms
+- ✅ Uncached embedding: \<100ms
+- ✅ Memory: \<25MB total
 
 ### Quality
+
 - ✅ Type hints on all functions
 - ✅ Docstrings on all public methods
 - ✅ 100% test coverage (core logic)
 - ✅ No suppress(Exception)
 - ✅ Comprehensive error handling
 
----
+______________________________________________________________________
 
 ## Next Steps
 
 After design approval:
-1. Create git worktree for Phase 2
-2. Implement EmbeddingService
-3. Create tests (unit + integration)
-4. Integrate with OTelStorageAdapter
-5. Performance benchmarks
-6. Update documentation
 
----
+1. Create git worktree for Phase 2
+1. Implement EmbeddingService
+1. Create tests (unit + integration)
+1. Integrate with OTelStorageAdapter
+1. Performance benchmarks
+1. Update documentation
+
+______________________________________________________________________
 
 **Status:** Ready for implementation approval
 **Estimated Time:** 4 hours

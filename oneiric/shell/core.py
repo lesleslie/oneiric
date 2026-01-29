@@ -2,7 +2,7 @@
 
 import asyncio
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from IPython.terminal.embed import InteractiveShellEmbed
 from IPython.terminal.ipapp import load_default_config
@@ -27,7 +27,7 @@ class AdminShell:
         >>> shell.start()
     """
 
-    def __init__(self, app: Any, config: Optional[ShellConfig] = None) -> None:
+    def __init__(self, app: Any, config: ShellConfig | None = None) -> None:
         """Initialize admin shell.
 
         Args:
@@ -36,7 +36,7 @@ class AdminShell:
         """
         self.app = app
         self.config = config or ShellConfig()
-        self.shell: Optional[InteractiveShellEmbed] = None
+        self.shell: InteractiveShellEmbed | None = None
         self._build_namespace()
 
     def _build_namespace(self) -> None:
@@ -46,7 +46,7 @@ class AdminShell:
         including the application instance, asyncio utilities,
         logging, and optional Rich formatting tools.
         """
-        self.namespace: Dict[str, Any] = {
+        self.namespace: dict[str, Any] = {
             # Application
             "app": self.app,
             # Async utilities
@@ -107,9 +107,9 @@ class AdminShell:
         """
         return f"""
 {self.config.banner}
-{'=' * 60}
+{"=" * 60}
 Type 'help()' for Python help or %help_shell for shell commands.
-{'=' * 60}
+{"=" * 60}
 """
 
     def _register_magics(self) -> None:
@@ -120,7 +120,8 @@ Type 'help()' for Python help or %help_shell for shell commands.
         """
         magics = BaseMagics(self.shell)
         magics.set_app(self.app)
-        self.shell.register_magics(magics)
+        if self.shell:
+            self.shell.register_magics(magics)
 
     def add_helper(self, name: str, func: Any) -> None:
         """Add a helper function to shell namespace.

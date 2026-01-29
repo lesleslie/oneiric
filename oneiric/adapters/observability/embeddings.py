@@ -10,6 +10,7 @@ import numpy as np
 
 try:
     from sentence_transformers import SentenceTransformer
+
     SENTENCE_TRANSFORMERS_AVAILABLE = True
 except ImportError:
     SENTENCE_TRANSFORMERS_AVAILABLE = False
@@ -46,7 +47,9 @@ class EmbeddingService:
         # Build attributes string
         attr_str = " ".join(f"{k}={v}" for k, v in sorted(attributes.items()))
 
-        return f"{service} {operation} {status} in {duration_ms}ms attributes: {attr_str}"
+        return (
+            f"{service} {operation} {status} in {duration_ms}ms attributes: {attr_str}"
+        )
 
     def _generate_cache_key(self, trace: dict[str, Any]) -> int:
         """Generate cache key from trace dict.
@@ -78,10 +81,7 @@ class EmbeddingService:
 
         # Convert to 384-dim vector
         # Each byte (0-255) becomes a value in [0, 1]
-        return np.array([
-            (hash_int >> i) & 0xFF
-            for i in range(384)
-        ]) / 255.0
+        return np.array([(hash_int >> i) & 0xFF for i in range(384)]) / 255.0
 
     def _load_model(self) -> Any:
         """Lazy-load sentence-transformers model.
@@ -90,7 +90,9 @@ class EmbeddingService:
             Loaded SentenceTransformer model
         """
         if not SENTENCE_TRANSFORMERS_AVAILABLE:
-            raise ImportError("sentence-transformers is not installed. Install it with: pip install sentence-transformers")
+            raise ImportError(
+                "sentence-transformers is not installed. Install it with: pip install sentence-transformers"
+            )
 
         if self._model is None:
             self._model = SentenceTransformer(self._model_name)
@@ -133,6 +135,7 @@ class EmbeddingService:
             384-dim vector embedding
         """
         from oneiric.core.logging import get_logger
+
         logger = get_logger("otel.embedding")
 
         try:
@@ -154,6 +157,6 @@ class EmbeddingService:
                 "embedding-generation-failed",
                 error=str(exc),
                 trace_id=trace.get("trace_id"),
-                fallback=True
+                fallback=True,
             )
             return self._generate_fallback_embedding(trace.get("trace_id", "unknown"))

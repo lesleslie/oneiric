@@ -1,12 +1,13 @@
 """Base formatters for admin shell display."""
 
 from dataclasses import dataclass
-from typing import Any, List, Dict, Optional
+from typing import Any, Optional
 
 try:
     from rich.console import Console
+    from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
     from rich.table import Table
-    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
+
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False
@@ -24,9 +25,9 @@ class TableColumn:
     """
 
     name: str
-    width: Optional[int] = None
-    justify: str = "left"
-    style: Optional[str] = None
+    width: int | None = None
+    justify: str = "left"  # type: ignore[assignment]
+    style: str | None = None
 
 
 class BaseTableFormatter:
@@ -53,8 +54,8 @@ class BaseTableFormatter:
     def format_table(
         self,
         title: str,
-        columns: List[TableColumn],
-        rows: List[Dict[str, Any]],
+        columns: list[TableColumn],
+        rows: list[dict[str, Any]],
     ) -> None:
         """Display a table.
 
@@ -70,7 +71,10 @@ class BaseTableFormatter:
         table = Table(title=title)
         for col in columns:
             table.add_column(
-                col.name, width=col.width, justify=col.justify, style=col.style
+                col.name,
+                width=col.width,
+                justify=col.justify,  # type: ignore[arg-type]
+                style=col.style,
             )
 
         for row in rows:
@@ -79,7 +83,7 @@ class BaseTableFormatter:
         self.console.print(table)
 
     def _format_table_fallback(
-        self, title: str, columns: List[TableColumn], rows: List[Dict[str, Any]]
+        self, title: str, columns: list[TableColumn], rows: list[dict[str, Any]]
     ) -> None:
         """Fallback table formatting without Rich.
 
@@ -124,8 +128,8 @@ class BaseLogFormatter:
 
     def format_logs(
         self,
-        logs: List[Dict[str, Any]],
-        level: Optional[str] = None,
+        logs: list[dict[str, Any]],
+        level: str | None = None,
         tail: int = 50,
     ) -> None:
         """Display log entries with optional filtering.
@@ -151,7 +155,7 @@ class BaseLogFormatter:
         else:
             self._format_logs_fallback(logs)
 
-    def _format_logs_rich(self, logs: List[Dict[str, Any]]) -> None:
+    def _format_logs_rich(self, logs: list[dict[str, Any]]) -> None:
         """Format logs with Rich colors.
 
         Args:
@@ -169,11 +173,10 @@ class BaseLogFormatter:
             timestamp = log.get("timestamp", "")[:19]
             message = log.get("message", "")
 
-            self.console.print(
-                f"[{timestamp}] [{level}] {message}", style=style
-            )
+            if self.console:
+                self.console.print(f"[{timestamp}] [{level}] {message}", style=style)
 
-    def _format_logs_fallback(self, logs: List[Dict[str, Any]]) -> None:
+    def _format_logs_fallback(self, logs: list[dict[str, Any]]) -> None:
         """Format logs without Rich.
 
         Args:

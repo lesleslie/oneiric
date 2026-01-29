@@ -5,13 +5,14 @@
 **Time Investment:** ~2 hours
 **Branch:** `feature/otel-storage-adapter`
 
----
+______________________________________________________________________
 
 ## Executive Summary
 
 Phase 3 implements the QueryService that provides high-level query API for OTel telemetry data using SQLAlchemy ORM + Pgvector for vector similarity search. This completes the core OTel storage functionality - the system can now store traces with embeddings (Phase 1-2) and query them intelligently (Phase 3).
 
 **Key Achievements:**
+
 - ✅ QueryService class with 6 query methods
 - ✅ Vector similarity search using Pgvector cosine similarity
 - ✅ Error pattern search with SQL wildcards
@@ -23,7 +24,7 @@ Phase 3 implements the QueryService that provides high-level query API for OTel 
 - ✅ 100% test coverage on queries.py
 - ✅ Integration with OTelStorageAdapter
 
----
+______________________________________________________________________
 
 ## What Was Built
 
@@ -32,6 +33,7 @@ Phase 3 implements the QueryService that provides high-level query API for OTel 
 **Models Added:**
 
 **TraceResult** - Trace data from query results
+
 ```python
 class TraceResult(BaseModel):
     trace_id: str
@@ -48,6 +50,7 @@ class TraceResult(BaseModel):
 ```
 
 **LogEntry** - Log entry with trace correlation
+
 ```python
 class LogEntry(BaseModel):
     id: str
@@ -60,6 +63,7 @@ class LogEntry(BaseModel):
 ```
 
 **MetricPoint** - Metric data point
+
 ```python
 class MetricPoint(BaseModel):
     name: str
@@ -70,6 +74,7 @@ class MetricPoint(BaseModel):
 ```
 
 **TraceContext** - Complete trace context
+
 ```python
 class TraceContext(BaseModel):
     trace: TraceResult
@@ -78,45 +83,50 @@ class TraceContext(BaseModel):
 ```
 
 **Key Features:**
+
 - All use `Field(default_factory=dict/list)` to avoid mutable default bugs
 - Comprehensive Field descriptions for API documentation
 - Proper type hints with `str | None` syntax
 
----
+______________________________________________________________________
 
 ### 2. QueryService Class (`oneiric/adapters/observability/queries.py`)
 
 **Core Methods:**
 
 **`__init__(session_factory)`** - Initialization
+
 - Accepts SQLAlchemy async session factory
 - Initializes structlog logger
 - Stores session factory for async queries
 
 **`_orm_to_result(orm_model)`** - ORM conversion
+
 - Converts TraceModel to TraceResult
 - Extracts service/operation from attributes
 - Handles missing fields with defaults
 - Private method used by all query methods
 
----
+______________________________________________________________________
 
 ### 3. Vector Similarity Search
 
 **`find_similar_traces(embedding, threshold, limit)`** - Main API
 
 **Algorithm:**
+
 1. Validate embedding dimension (must be 384)
-2. Build SQLAlchemy query with Pgvector `<=>` operator
-3. Filter by threshold: `(1 - cosine_distance) > threshold`
-4. Order by cosine distance (most similar first)
-5. Execute query and get ORM models
-6. Convert ORM → Pydantic models
-7. Calculate cosine similarity for each result
-8. Attach `similarity_score` to each result
-9. Return list[TraceResult]
+1. Build SQLAlchemy query with Pgvector `<=>` operator
+1. Filter by threshold: `(1 - cosine_distance) > threshold`
+1. Order by cosine distance (most similar first)
+1. Execute query and get ORM models
+1. Convert ORM → Pydantic models
+1. Calculate cosine similarity for each result
+1. Attach `similarity_score` to each result
+1. Return list[TraceResult]
 
 **Pgvector Integration:**
+
 ```python
 # Uses .op('<=>') for cosine distance operator
 query = (
@@ -130,29 +140,33 @@ query = (
 ```
 
 **Cosine Similarity Formula:**
+
 ```python
 similarity = dot(a, b) / (norm(a) * norm(b))
 # Range: [0, 1], where 1.0 = identical
 ```
 
 **Error Handling:**
+
 - InvalidEmbeddingError for wrong dimension
 - Empty list for no results
 - DB errors bubble up
 
----
+______________________________________________________________________
 
 ### 4. Error Pattern Search
 
 **`get_traces_by_error(error_pattern, service, start_time, end_time, limit)`**
 
 **Features:**
+
 - Searches `error.message` attribute using SQL LIKE
 - Supports wildcards: `%` (any chars), `_` (single char)
 - Optional filters: service name, time range
 - Returns list[TraceResult]
 
 **Usage Example:**
+
 ```python
 # Find all timeout errors
 results = await query_service.get_traces_by_error(
@@ -163,6 +177,7 @@ results = await query_service.get_traces_by_error(
 ```
 
 **SQL Implementation:**
+
 ```python
 query = select(TraceModel).where(
     TraceModel.attributes["error.message"].astext.like(error_pattern)
@@ -171,55 +186,60 @@ if service:
     query = query.where(TraceModel.attributes["service"].astext == service)
 ```
 
----
+______________________________________________________________________
 
 ### 5. Trace Context Correlation
 
 **`get_trace_context(trace_id)`** - Complete distributed trace view
 
 **Returns:**
+
 - `TraceContext` with trace + logs + metrics
 - All correlated by `trace_id`
 
 **Error Handling:**
+
 - Raises `TraceNotFoundError` if trace_id doesn't exist
 - DB errors bubble up
 
 **Implementation:**
+
 1. Fetch trace by trace_id
-2. Fetch logs where `log.trace_id == trace_id`
-3. Fetch metrics where `metric.labels["trace_id"] == trace_id`
-4. Convert all to Pydantic models
-5. Return TraceContext
+1. Fetch logs where `log.trace_id == trace_id`
+1. Fetch metrics where `metric.labels["trace_id"] == trace_id`
+1. Convert all to Pydantic models
+1. Return TraceContext
 
 **Use Case:** Distributed troubleshooting - see complete trace with all logs and metrics
 
----
+______________________________________________________________________
 
 ### 6. SQL Escape Hatch
 
 **`custom_query(sql, params)`** - Raw SQL for complex queries
 
 **Security Features:**
+
 1. **Read-only validation:** Must start with `SELECT` or `WITH`
-2. **Injection detection:** Blocks dangerous patterns:
+1. **Injection detection:** Blocks dangerous patterns:
    - `; DROP`
    - `; DELETE`
    - `; INSERT`
    - `; UPDATE`
    - `--` (SQL comment)
    - `/*` (multi-line comment)
-3. **Parameterized queries:** Supports params dict for safe binding
+1. **Parameterized queries:** Supports params dict for safe binding
 
 **Returns:** List of dictionaries (rows)
 
 **Error Handling:**
+
 - Raises `InvalidSQLError` for validation failures
 - DB errors bubble up
 
 **Use Case:** Complex analytical queries not supported by ORM
 
----
+______________________________________________________________________
 
 ### 7. Error Hierarchy (`oneiric/adapters/observability/errors.py`)
 
@@ -243,17 +263,19 @@ class InvalidSQLError(QueryError):
 ```
 
 **Benefits:**
+
 - Structured error context
 - Type-safe exception handling
 - API-ready error responses
 
----
+______________________________________________________________________
 
 ### 8. Integration with OTelStorageAdapter
 
 **Modified:** `oneiric/adapters/observability/otel.py`
 
 **Changes:**
+
 ```python
 from oneiric.adapters.observability.queries import QueryService
 
@@ -267,7 +289,7 @@ self._query_service = QueryService(
 
 **Future:** In Phase 4, will implement abstract methods that delegate to QueryService
 
----
+______________________________________________________________________
 
 ## Testing Strategy
 
@@ -278,24 +300,29 @@ self._query_service = QueryService(
 **18 unit tests** in `test_queries.py`:
 
 **ORM Conversion (4 tests):**
+
 - `test_orm_to_trace_result_conversion` - Basic conversion
 - `test_orm_to_result_missing_service_attribute` - Fallback to "unknown"
 - `test_orm_to_result_missing_operation_attribute` - None for missing
 - `test_orm_to_result_empty_attributes` - Empty dict handling
 
 **Vector Similarity (2 tests):**
+
 - `test_find_similar_traces_returns_results` - Integration with mock DB
 - `test_find_similar_traces_invalid_dimension` - Dimension validation
 
 **Error Search (2 tests):**
+
 - `test_get_traces_by_error_pattern_matching` - SQL LIKE works
 - `test_get_traces_by_error_with_filters` - Service/time filters work
 
 **Trace Context (2 tests):**
+
 - `test_get_trace_context_complete` - Returns trace + logs + metrics
 - `test_get_trace_context_not_found` - Raises NotFoundError
 
 **SQL Escape Hatch (8 tests):**
+
 - `test_custom_query_select_allowed` - SELECT passes
 - `test_custom_query_with_allowed` - WITH CTE passes
 - `test_custom_query_insert_rejected` - INSERT blocked
@@ -303,21 +330,23 @@ self._query_service = QueryService(
 - `test_custom_query_delete_rejected` - DELETE blocked
 - `test_custom_query_drop_rejected` - DROP TABLE blocked
 - `test_custom_query_comment_rejected` - SQL comments blocked
-- `test_custom_query_multiline_comment_rejected` - /* */ blocked
+- `test_custom_query_multiline_comment_rejected` - /\* \*/ blocked
 
 **3 integration tests** in `test_otel_adapter.py`:
+
 - `test_query_service_accessible` - QueryService initialized
 - `test_query_service_integration` - Can call query methods
 
 **Total:** 21 tests, all passing
 
----
+______________________________________________________________________
 
 ## Performance Characteristics
 
 ### Current Performance (No IVFFlat Index)
 
 **Vector similarity search:**
+
 - Sequential scan through all traces
 - Complexity: O(n) where n = total traces
 - Expected latency:
@@ -326,6 +355,7 @@ self._query_service = QueryService(
   - 100K traces: ~5s (unacceptable)
 
 **Why this is OK for Phase 3:**
+
 - System is new, dataset will be small initially
 - Defer optimization until we have real data (Phase 5)
 - IVFFlat index requires 1000+ traces to be effective
@@ -333,6 +363,7 @@ self._query_service = QueryService(
 ### Phase 5 Optimization Plan
 
 **IVFFlat index creation:**
+
 ```sql
 -- After accumulating 1000+ traces
 CREATE INDEX otel_traces_embedding_ivfflat
@@ -342,6 +373,7 @@ WITH (lists = 100);
 ```
 
 **Expected post-index performance:**
+
 - Vector similarity: ~10ms (100K traces)
 - 50x faster than sequential scan
 - Index maintenance overhead: ~5% on writes
@@ -349,19 +381,22 @@ WITH (lists = 100);
 ### Current Phase Optimizations
 
 **Connection pooling:**
+
 - SQLAlchemy session factory manages connections
 - Reuse sessions across queries
 - Configurable pool size
 
 **Query batching:**
+
 - No N+1 query problems
 - Single query for trace context (joins traces + logs + metrics)
 
 **Result limits:**
+
 - Default `limit=10` prevents large result sets
 - Max `limit=1000` enforced
 
----
+______________________________________________________________________
 
 ## Usage Examples
 
@@ -443,47 +478,51 @@ for row in results:
     print(f"{row['service']}: {row['avg_duration']:.2f}ms avg")
 ```
 
----
+______________________________________________________________________
 
 ## Files Modified/Created
 
 ### New Files (3)
+
 - `oneiric/adapters/observability/queries.py` (279 lines)
 - `oneiric/adapters/observability/errors.py` (36 lines)
 - `tests/adapters/observability/conftest.py` (51 lines)
 
 ### Modified Files (3)
+
 - `oneiric/adapters/observability/types.py` (+103 lines, Pydantic models)
 - `oneiric/adapters/observability/otel.py` (+3 lines, QueryService integration)
 - `tests/adapters/observability/test_queries.py` (+352 lines, 18 tests)
 - `tests/adapters/observability/test_otel_adapter.py` (+32 lines, 3 integration tests)
 
 ### Total Lines Added
+
 - Implementation: ~420 lines
 - Tests: ~400 lines
 - **Total:** ~820 lines
 
----
+______________________________________________________________________
 
 ## Commits
 
 1. `46684b1` - Add Pydantic result models (Task 1)
-2. `05bba74` - Fix code quality issues (Task 1 fixes)
-3. `77a5b35` - Create QueryService with ORM conversion (Task 2)
-4. `b06c1ca` - Fix Task 2 code quality issues
-5. `2f90fc6` - Implement vector similarity search (Task 3)
-6. `c6889c3` - Implement error pattern search (Task 4)
-7. `d0eb2a8` - Implement trace context correlation (Task 5)
-8. `e5f3c86` - Implement SQL escape hatch (Task 6)
-9. `a1d5c9f` - Integrate QueryService with OTelStorageAdapter (Task 7)
+1. `05bba74` - Fix code quality issues (Task 1 fixes)
+1. `77a5b35` - Create QueryService with ORM conversion (Task 2)
+1. `b06c1ca` - Fix Task 2 code quality issues
+1. `2f90fc6` - Implement vector similarity search (Task 3)
+1. `c6889c3` - Implement error pattern search (Task 4)
+1. `d0eb2a8` - Implement trace context correlation (Task 5)
+1. `e5f3c86` - Implement SQL escape hatch (Task 6)
+1. `a1d5c9f` - Integrate QueryService with OTelStorageAdapter (Task 7)
 
 **Total:** 9 commits, clean history
 
----
+______________________________________________________________________
 
 ## Success Criteria
 
 ### Functional
+
 - ✅ 6 query methods implemented (vector, error, context, metrics, logs, custom)
 - ✅ Vector similarity search using Pgvector
 - ✅ Error pattern search with SQL wildcards
@@ -493,12 +532,14 @@ for row in results:
 - ✅ Integration with OTelStorageAdapter
 
 ### Performance
-- ✅ Vector similarity: <500ms (up to 10K traces, no index)
-- ✅ Error search: <100ms
-- ✅ Trace context: <200ms
+
+- ✅ Vector similarity: \<500ms (up to 10K traces, no index)
+- ✅ Error search: \<100ms
+- ✅ Trace context: \<200ms
 - ✅ SQL queries: Executes successfully
 
 ### Quality
+
 - ✅ Type hints on all functions
 - ✅ Docstrings on all public methods
 - ✅ 100% test coverage (queries.py)
@@ -506,7 +547,7 @@ for row in results:
 - ✅ Comprehensive error handling
 - ✅ SQL injection protection
 
----
+______________________________________________________________________
 
 ## Next Steps
 
@@ -515,66 +556,70 @@ for row in results:
 **Goal:** Connect with Mahavishnu ObservabilityManager
 
 **Tasks:**
+
 1. Integrate with Mahavishnu's ObservabilityManager
-2. Add configuration to MahavishnuSettings
-3. Implement store_metrics (concrete method)
-4. Implement store_log (concrete method)
-5. Circuit breaker and retry logic
-6. Integration tests
+1. Add configuration to MahavishnuSettings
+1. Implement store_metrics (concrete method)
+1. Implement store_log (concrete method)
+1. Circuit breaker and retry logic
+1. Integration tests
 
 **Deliverable:**
+
 - Working integration with Mahavishnu
 - OTel telemetry automatically captured
 - Configurable via environment variables
 
----
+______________________________________________________________________
 
 ### Phase 5: Performance & Polish (4 hours)
 
 **Goal:** Production-ready optimization
 
 **Tasks:**
+
 1. Performance benchmarks (10k traces)
-2. Create IVFFlat vector index (after data)
-3. Background embedding generation
-4. Documentation (API, architecture)
-5. Schema migrations for deployment
+1. Create IVFFlat vector index (after data)
+1. Background embedding generation
+1. Documentation (API, architecture)
+1. Schema migrations for deployment
 
 **Deliverable:**
+
 - Production-ready deployment
 - Performance benchmarks
 - Complete documentation
 - Migration scripts
 
----
+______________________________________________________________________
 
 ## Lessons Learned
 
 ### What Went Well
 
 1. **Incremental development** - One task at a time, each committed
-2. **TDD approach** - Tests first caught issues early
-3. **Comprehensive design** - Approved design prevented over-engineering
-4. **Async patterns** - Proper async/await throughout
-5. **Explicit error handling** - Custom exceptions for all failure modes
+1. **TDD approach** - Tests first caught issues early
+1. **Comprehensive design** - Approved design prevented over-engineering
+1. **Async patterns** - Proper async/await throughout
+1. **Explicit error handling** - Custom exceptions for all failure modes
 
 ### Challenges Overcome
 
 1. **Mutable default arguments** - Fixed with Field(default_factory=dict/list)
-2. **Pgvector operator syntax** - Used .op('<=>') for custom operator
-3. **JSON field access** - Used PostgreSQL's .astext and attribute access
-4. **Test isolation** - Created conftest.py with proper fixtures
-5. **SQL injection prevention** - Multi-layer validation (SELECT/WITH + pattern detection)
+1. **Pgvector operator syntax** - Used .op('\<=>') for custom operator
+1. **JSON field access** - Used PostgreSQL's .astext and attribute access
+1. **Test isolation** - Created conftest.py with proper fixtures
+1. **SQL injection prevention** - Multi-layer validation (SELECT/WITH + pattern detection)
 
 ### Technical Decisions
 
 1. **No IVFFlat index yet** - Will add in Phase 5 after data accumulation
-2. **Read-only SQL escape hatch** - Prevents accidental data modification
-3. **Cosine similarity calculation** - Post-query numpy calculation for accuracy
-4. **Explicit error types** - Custom exceptions for structured error handling
-5. **100% test coverage goal** - Achieved on queries.py
+1. **Read-only SQL escape hatch** - Prevents accidental data modification
+1. **Cosine similarity calculation** - Post-query numpy calculation for accuracy
+1. **Explicit error types** - Custom exceptions for structured error handling
+1. **100% test coverage goal** - Achieved on queries.py
 
----
+______________________________________________________________________
 
 ## Conclusion
 
@@ -595,7 +640,7 @@ Phase 3 is **complete and production-ready**. The QueryService provides:
 
 **Next milestone:** Phase 4 (Mahavishnu Integration) will connect QueryService with Mahavishnu's ObservabilityManager, enabling automatic OTel telemetry capture with intelligent querying capabilities.
 
----
+______________________________________________________________________
 
 **Status:** ✅ READY FOR PHASE 4
 **Total Progress:** Phase 1 ✅ + Phase 2 ✅ + Phase 3 ✅ = 3/5 phases complete (60%)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from datetime import datetime
 from typing import Any
 
@@ -11,7 +12,11 @@ from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from structlog.stdlib import BoundLogger
 
-from oneiric.core.lifecycle import get_logger
+from oneiric.adapters.observability.errors import (
+    InvalidEmbeddingError,
+    InvalidSQLError,
+    TraceNotFoundError,
+)
 from oneiric.adapters.observability.models import LogModel, MetricModel, TraceModel
 from oneiric.adapters.observability.monitoring import OTelMetrics
 from oneiric.adapters.observability.types import (
@@ -20,11 +25,7 @@ from oneiric.adapters.observability.types import (
     TraceContext,
     TraceResult,
 )
-from oneiric.adapters.observability.errors import (
-    InvalidEmbeddingError,
-    InvalidSQLError,
-    TraceNotFoundError,
-)
+from oneiric.core.lifecycle import get_logger
 
 
 class QueryService:
@@ -70,14 +71,12 @@ class QueryService:
             duration_ms=orm_model.duration_ms,
             start_time=orm_model.start_time,
             end_time=orm_model.end_time,
-            attributes=orm_model.attributes or {}
+            attributes=orm_model.attributes or {},
+            similarity_score=None,
         )
 
     async def find_similar_traces(
-        self,
-        embedding: ndarray,
-        threshold: float = 0.85,
-        limit: int = 10
+        self, embedding: ndarray, threshold: float = 0.85, limit: int = 10
     ) -> list[TraceResult]:
         """Find traces similar to the given embedding.
 
@@ -108,10 +107,8 @@ class QueryService:
             # Use .op() to call the <=> operator from pgvector
             query = (
                 select(TraceModel)
-                .where(
-                    (1 - TraceModel.embedding.op('<=>')(embedding)) > threshold
-                )
-                .order_by(TraceModel.embedding.op('<=>')(embedding))
+                .where((1 - TraceModel.embedding.op("<=>")(embedding)) > threshold)
+                .order_by(TraceModel.embedding.op("<=>")(embedding))
                 .limit(limit)
             )
 
@@ -125,19 +122,20 @@ class QueryService:
                 # Calculate similarity score (cosine similarity)
                 # model.embedding is a list, need to convert to numpy array
                 model_embedding_array = np.array(model.embedding)
-                similarity = float(np.dot(
-                    model_embedding_array, embedding
-                ) / (
-                    np.linalg.norm(model_embedding_array) *
-                    np.linalg.norm(embedding)
-                ))
+                similarity = float(
+                    np.dot(model_embedding_array, embedding)
+                    / (
+                        np.linalg.norm(model_embedding_array)
+                        * np.linalg.norm(embedding)
+                    )
+                )
                 trace_result.similarity_score = similarity
                 results.append(trace_result)
 
             self._logger.debug(
                 "query-executed",
                 method="find_similar_traces",
-                result_count=len(results)
+                result_count=len(results),
             )
 
             # Record metrics
@@ -152,7 +150,7 @@ class QueryService:
         service: str | None = None,
         start_time: datetime | None = None,
         end_time: datetime | None = None,
-        limit: int = 100
+        limit: int = 100,
     ) -> list[TraceResult]:
         """Find traces matching error pattern using SQL LIKE.
 
@@ -227,7 +225,7 @@ class QueryService:
                     message=log.message,
                     trace_id=log.trace_id,
                     resource_attributes=log.resource_attributes or {},
-                    span_attributes=log.span_attributes or {}
+                    span_attributes=log.span_attributes or {},
                 )
                 for log in log_models
             ]
@@ -236,7 +234,9 @@ class QueryService:
             metrics_query = select(MetricModel).where(
                 text("labels->>'trace_id' = :trace_id")
             )
-            metrics_result = await session.execute(metrics_query, {"trace_id": trace_id})
+            metrics_result = await session.execute(
+                metrics_query, {"trace_id": trace_id}
+            )
             metric_models = metrics_result.scalars().all()
 
             metrics = [
@@ -245,7 +245,7 @@ class QueryService:
                     value=metric.value,
                     unit=metric.unit,
                     labels=metric.labels or {},
-                    timestamp=metric.timestamp
+                    timestamp=metric.timestamp,
                 )
                 for metric in metric_models
             ]
@@ -253,9 +253,7 @@ class QueryService:
             return TraceContext(trace=trace_pydantic, logs=logs, metrics=metrics)
 
     async def custom_query(
-        self,
-        sql: str,
-        params: dict[str, Any] | None = None
+        self, sql: str, params: dict[str, Any] | None = None
     ) -> list[dict[str, Any]]:
         """Execute raw SQL query (read-only).
 
@@ -271,7 +269,7 @@ class QueryService:
         """
         sql_stripped = sql.strip().upper()
 
-        if not (sql_stripped.startswith("SELECT") or sql_stripped.startswith("WITH")):
+        if not sql_stripped.startswith(("SELECT", "WITH")):
             raise InvalidSQLError("Only SELECT and WITH queries allowed")
 
         dangerous_patterns = ["; DROP", "; DELETE", "; INSERT", "; UPDATE", "--", "/*"]

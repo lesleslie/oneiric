@@ -29,7 +29,9 @@ class TraceModel(Base):
 
     __tablename__ = "traces"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid4())
+    )
     trace_id: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
     parent_span_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     trace_state: Mapped[str | None] = mapped_column(String(256), nullable=True)
@@ -44,7 +46,9 @@ class TraceModel(Base):
     embedding_model: Mapped[str | None] = mapped_column(
         String(100), nullable=True, default="all-MiniLM-L6-v2"
     )
-    embedding_generated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    embedding_generated_at: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True
+    )
 
     __table_args__ = (
         Index("ix_traces_trace_id", "trace_id"),
@@ -69,7 +73,9 @@ class MetricModel(Base):
 
     __tablename__ = "metrics"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid4())
+    )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     type: Mapped[str] = mapped_column(String(50), nullable=False)
     value: Mapped[float] = mapped_column(Float, nullable=False)
@@ -99,7 +105,9 @@ class LogModel(Base):
 
     __tablename__ = "logs"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid4())
+    )
     timestamp: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     level: Mapped[str] = mapped_column(String(50), nullable=False)
     message: Mapped[str] = mapped_column(Text, nullable=False)
