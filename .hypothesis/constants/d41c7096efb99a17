@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/remote/__init__.py
+# hypothesis_version: 6.151.4
+
+['RemoteManifest', 'RemoteManifestEntry', 'RemoteSyncResult', 'RemoteSyncTelemetry', 'remote_sync_loop', 'sync_remote_manifest']

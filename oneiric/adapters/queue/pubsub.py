@@ -1,5 +1,3 @@
-"""Google Cloud Pub/Sub adapter used for DAG triggers."""
-
 from __future__ import annotations
 
 import asyncio
@@ -16,8 +14,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class PubSubQueueSettings(BaseModel):
-    """Settings for Pub/Sub topic + optional subscription."""
-
     project_id: str
     topic: str
     subscription: str | None = Field(
@@ -30,12 +26,10 @@ class PubSubQueueSettings(BaseModel):
 
 
 class PubSubQueueAdapter:
-    """Adapter that publishes workflow triggers to Pub/Sub topics."""
-
     metadata = AdapterMetadata(
         category="queue",
         provider="pubsub",
-        factory="oneiric.adapters.queue.pubsub:PubSubQueueAdapter",
+        factory="oneiric.adapters.queue.pubsub: PubSubQueueAdapter",
         capabilities=["queue", "fanout", "events"],
         stack_level=40,
         priority=410,

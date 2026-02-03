@@ -1,5 +1,3 @@
-"""Helpers for action payload normalization."""
-
 from __future__ import annotations
 
 

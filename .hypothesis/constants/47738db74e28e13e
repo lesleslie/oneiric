@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/messaging/apns.py
+# hypothesis_version: 6.151.4
+
+[200, 370, 'APNS', 'APNS auth key ID.', 'APNSClient', 'APNs', 'APNsClient', 'Messaging', 'NotificationRequest', 'adapter', 'alert', 'apns', 'apns-adapter-cleanup', 'apns-adapter-init', 'apns-id', 'apns-message', 'apns_id', 'aps', 'auth_key', 'body', 'cert_file', 'client', 'close', 'collapse_id', 'connect', 'custom', 'disconnect', 'expiration', 'headers', 'id', 'key_file', 'key_id', 'key_password', 'messaging', 'notifications', 'priority', 'push', 'push_type', 'send', 'send_notification', 'shutdown', 'status', 'status_code', 'team_id', 'title', 'topic', 'use_sandbox']

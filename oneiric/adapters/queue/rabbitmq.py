@@ -1,5 +1,3 @@
-"""RabbitMQ queue adapter built on aio-pika."""
-
 from __future__ import annotations
 
 import asyncio
@@ -16,10 +14,8 @@ from oneiric.core.resolution import CandidateSource
 
 
 class RabbitMQQueueSettings(BaseModel):
-    """Configuration for the RabbitMQ adapter."""
-
     url: str = Field(
-        default="amqp://guest:guest@localhost/", description="AMQP connection URL."
+        default="amqp://guest: guest@localhost/", description="AMQP connection URL."
     )
     queue: str = Field(
         default="oneiric-queue",
@@ -54,12 +50,10 @@ class RabbitMQQueueSettings(BaseModel):
 
 
 class RabbitMQQueueAdapter:
-    """Adapter that publishes to and consumes from RabbitMQ queues."""
-
     metadata = AdapterMetadata(
         category="queue",
         provider="rabbitmq",
-        factory="oneiric.adapters.queue.rabbitmq:RabbitMQQueueAdapter",
+        factory="oneiric.adapters.queue.rabbitmq: RabbitMQQueueAdapter",
         capabilities=["queue", "streaming"],
         stack_level=20,
         priority=320,
@@ -217,7 +211,7 @@ class RabbitMQQueueAdapter:
         return channel.default_exchange
 
     async def _build_message(self, body: bytes, headers: dict[str, Any]) -> Any:
-        if self._channel_factory:  # assume tests provide message objects
+        if self._channel_factory:
             return type("Message", (), {"body": body, "headers": headers})()
         try:
             from aio_pika import Message  # type: ignore

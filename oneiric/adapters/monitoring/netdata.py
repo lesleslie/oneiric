@@ -1,5 +1,3 @@
-"""Netdata monitoring adapter."""
-
 from __future__ import annotations
 
 import asyncio
@@ -22,8 +20,6 @@ except Exception:  # pragma: no cover - optional dependency import
 
 
 class NetdataMonitoringSettings(BaseModel):
-    """Configuration for the Netdata adapter."""
-
     base_url: str = Field(
         default="http://127.0.0.1:19999",
         description="Base URL for the Netdata server.",
@@ -57,12 +53,10 @@ class NetdataMonitoringSettings(BaseModel):
 
 
 class NetdataMonitoringAdapter:
-    """Adapter that integrates Oneiric with Netdata for system and application monitoring."""
-
     metadata = AdapterMetadata(
         category="monitoring",
         provider="netdata",
-        factory="oneiric.adapters.monitoring.netdata:NetdataMonitoringAdapter",
+        factory="oneiric.adapters.monitoring.netdata: NetdataMonitoringAdapter",
         capabilities=["metrics", "monitoring", "visualization"],
         stack_level=28,
         priority=215,
@@ -88,7 +82,6 @@ class NetdataMonitoringAdapter:
             raise LifecycleError("httpx-missing")
 
         try:
-            # Initialize the httpx client for Netdata API
             headers = {}
             if self._settings.api_key:
                 headers["X-API-Key"] = self._settings.api_key.get_secret_value()
@@ -99,10 +92,8 @@ class NetdataMonitoringAdapter:
                 timeout=self._settings.timeout,
             )
 
-            # Verify connectivity to Netdata server
             await self.health()
 
-            # Start metrics collection if enabled
             if self._settings.enable_metrics_collection:
                 self._metrics_task = asyncio.create_task(self._collect_metrics_loop())
 
@@ -121,22 +112,19 @@ class NetdataMonitoringAdapter:
             return False
 
         try:
-            # Check if we can reach the Netdata server using the info endpoint
             response = await self._client.get("/api/v1/info")
             return response.status_code < 400
         except Exception:  # pragma: no cover - network error path
             return False
 
     async def cleanup(self) -> None:
-        # Cancel metrics collection task if running
         if self._metrics_task and not self._metrics_task.done():
             self._metrics_task.cancel()
             try:
                 await self._metrics_task
             except asyncio.CancelledError:
-                pass  # Expected when cancelling the task
+                pass
 
-        # Close the httpx client
         if self._client:
             await self._client.aclose()
 
@@ -144,15 +132,12 @@ class NetdataMonitoringAdapter:
         self._logger.info("adapter-cleanup-complete", adapter="netdata")
 
     async def _collect_metrics_loop(self) -> None:
-        """Continuously collect and report metrics to Netdata."""
         while True:
             try:
                 await asyncio.sleep(self._settings.metrics_refresh_interval)
 
-                # Collect Oneiric-specific metrics
                 await self._collect_oneiric_metrics()
             except asyncio.CancelledError:
-                # Task cancelled, exit the loop
                 break
             except Exception as e:  # pragma: no cover - error handling
                 self._logger.warning(
@@ -162,14 +147,10 @@ class NetdataMonitoringAdapter:
                 )
 
     async def _collect_oneiric_metrics(self) -> None:
-        """Collect and report Oneiric-specific metrics to Netdata."""
         if not self._client:
             return
 
         try:
-            # Example: Report Oneiric component counts
-            # This would need to be connected to actual Oneiric metrics
-            # For now, we'll just log that the collection is happening
             self._logger.debug("collecting-oneiric-metrics")
         except Exception as e:  # pragma: no cover - error handling
             self._logger.warning("oneiric-metrics-collection-error", error=str(e))
@@ -177,13 +158,10 @@ class NetdataMonitoringAdapter:
     async def send_custom_metric(
         self, chart_name: str, dimension: str, value: float, units: str = "value"
     ) -> bool:
-        """Send a custom metric to Netdata via its data collection API."""
         if not self._client:
             return False
 
         try:
-            # Netdata's API for pushing custom metrics
-            # Using the API endpoint that allows pushing metrics
             payload = {
                 "chart": chart_name,
                 "dimensions": {dimension: value},

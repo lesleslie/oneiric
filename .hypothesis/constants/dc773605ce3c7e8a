@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/http/aiohttp.py
+# hypothesis_version: 6.151.4
+
+[1000.0, 225, 400, 500, 'GET', 'POST', 'Platform Core', 'adapter', 'adapter-init', 'adapter.http', 'adapter.http.aiohttp', 'adapter.http.request', 'aiohttp', 'domain', 'headers', 'http', 'http.method', 'http.status_code', 'http.timeout', 'http.url', 'http://', 'https://', 'key', 'oneiric.domain', 'oneiric.key', 'oneiric.operation', 'oneiric.provider', 'oneiric.success', 'operation', 'provider', 'rest', 'ssl', 'stream', 'timeout']

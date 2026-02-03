@@ -1,5 +1,3 @@
-"""Resiliency helpers backed by aiobreaker and tenacity."""
-
 from __future__ import annotations
 
 import inspect
@@ -40,8 +38,6 @@ _ADAPTIVE_RETRY_STATE: dict[str, AdaptiveRetryState] = {}
 
 
 class CircuitBreakerOpen(Exception):
-    """Raised when the circuit breaker prevents new calls."""
-
     def __init__(self, name: str, retry_after: float) -> None:
         self.name = name
         self.retry_after = max(retry_after, 0.0)
@@ -50,8 +46,6 @@ class CircuitBreakerOpen(Exception):
 
 
 class CircuitBreaker:
-    """Thin wrapper around :mod:`aiobreaker` with Oneiric semantics."""
-
     def __init__(
         self,
         *,
@@ -117,8 +111,6 @@ async def run_with_retry(  # noqa: C901
     adaptive_key: str | None = None,
     attributes: dict[str, str] | None = None,
 ) -> T:
-    """Execute an operation with exponential backoff + jitter via tenacity."""
-
     attempts = max(attempts, 1)
     tuned_base, tuned_max, tuned_jitter = _tune_backoff(
         adaptive_key, base_delay, max_delay, jitter

@@ -1,5 +1,3 @@
-"""Workflow bridge with DAG orchestration helpers."""
-
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -34,8 +32,6 @@ if TYPE_CHECKING:  # pragma: no cover - hints only
 
 
 class WorkflowBridge(DomainBridge):
-    """Domain bridge that can execute DAG-driven workflows."""
-
     def __init__(
         self,
         resolver: Resolver,
@@ -90,8 +86,6 @@ class WorkflowBridge(DomainBridge):
         self._dag_specs = dag_map
 
     def dag_specs(self) -> dict[str, dict[str, Any]]:
-        """Return a snapshot of known DAG specifications."""
-
         return dict(self._dag_specs)
 
     async def execute_dag(
@@ -104,18 +98,14 @@ class WorkflowBridge(DomainBridge):
         use_checkpoint_store: bool = True,
         resume_from_checkpoint: bool = True,
     ) -> DAGRunResult:
-        """Execute the DAG associated with the workflow key."""
-        # Validate workflow and dependencies
         dag_spec = self._get_dag_spec(workflow_key)
         self._ensure_activity_allowed(workflow_key)
         if not self._task_bridge:
             raise LifecycleError("workflow-dag-missing-task-bridge")
 
-        # Build task definitions and graph
         task_defs = self._build_task_definitions(dag_spec, context)
         graph = build_graph(task_defs)
 
-        # Load or create checkpoint data
         checkpoint_data = self._load_checkpoint_data(
             workflow_key,
             checkpoint,
@@ -123,7 +113,6 @@ class WorkflowBridge(DomainBridge):
             resume_from_checkpoint=resume_from_checkpoint,
         )
 
-        # Execute DAG with checkpoint handling
         run_result = await self._execute_with_checkpoint(
             graph,
             workflow_key,
@@ -146,8 +135,6 @@ class WorkflowBridge(DomainBridge):
         provider: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Enqueue workflow execution via configured queue adapter."""
-
         if not self._queue_bridge:
             raise LifecycleError("workflow-queue-bridge-missing")
         candidate = self.resolver.resolve(self.domain, workflow_key)
@@ -184,7 +171,6 @@ class WorkflowBridge(DomainBridge):
         return result
 
     def _get_dag_spec(self, workflow_key: str) -> dict[str, Any]:
-        """Get and validate DAG specification."""
         dag_spec = self._dag_specs.get(workflow_key)
         if not dag_spec:
             raise LifecycleError(f"workflow-dag-missing ({workflow_key})")
@@ -193,7 +179,6 @@ class WorkflowBridge(DomainBridge):
     def _build_task_definitions(
         self, dag_spec: dict[str, Any], context: dict[str, Any] | None
     ) -> list[DAGTask]:
-        """Build task definitions from DAG specification."""
         nodes_raw: Any = dag_spec.get("nodes") or dag_spec.get("tasks") or []
         nodes: list[dict[str, Any]] = nodes_raw if isinstance(nodes_raw, list) else []
         task_defs: list[DAGTask] = []
@@ -225,7 +210,6 @@ class WorkflowBridge(DomainBridge):
         use_checkpoint_store: bool,
         resume_from_checkpoint: bool,
     ) -> dict[str, Any]:
-        """Load checkpoint data from provided checkpoint or store."""
         if checkpoint is not None:
             return dict(checkpoint)
         if not use_checkpoint_store:
@@ -243,7 +227,6 @@ class WorkflowBridge(DomainBridge):
         *,
         use_checkpoint_store: bool,
     ) -> DAGRunResult:
-        """Execute DAG with checkpoint save/clear handling."""
         try:
             run_result = await execute_dag(
                 graph,
@@ -268,7 +251,7 @@ class WorkflowBridge(DomainBridge):
         context: dict[str, Any] | None,
     ):
         async def _run():
-            assert self._task_bridge is not None  # Type guard
+            assert self._task_bridge is not None
             handle = await self._task_bridge.use(task_key)  # type: ignore[arg-type]
             instance = cast(TaskHandlerProtocol, handle.instance)
             runner = getattr(instance, "run", None)
@@ -287,8 +270,6 @@ class WorkflowBridge(DomainBridge):
         metadata: dict[str, Any] | None,
         workflow_provider: str | None,
     ) -> dict[str, Any]:
-        """Construct payload passed to queue adapters."""
-
         return {
             "workflow": workflow_key,
             "run_id": uuid4().hex,

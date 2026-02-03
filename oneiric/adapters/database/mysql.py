@@ -1,5 +1,3 @@
-"""MySQL database adapter."""
-
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
@@ -14,8 +12,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class MySQLDatabaseSettings(BaseModel):
-    """Configuration for the MySQL adapter."""
-
     host: str = "localhost"
     port: int = 3306
     user: str = "root"
@@ -29,12 +25,10 @@ class MySQLDatabaseSettings(BaseModel):
 
 
 class MySQLDatabaseAdapter:
-    """aiomysql-backed MySQL adapter."""
-
     metadata = AdapterMetadata(
         category="database",
         provider="mysql",
-        factory="oneiric.adapters.database.mysql:MySQLDatabaseAdapter",
+        factory="oneiric.adapters.database.mysql: MySQLDatabaseAdapter",
         capabilities=["sql", "pool"],
         stack_level=30,
         priority=450,

@@ -1,5 +1,3 @@
-"""NATS queue adapter."""
-
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
@@ -63,7 +61,7 @@ class NATSQueueAdapter(EnsureClientMixin):
     metadata = AdapterMetadata(
         category="queue",
         provider="nats",
-        factory="oneiric.adapters.queue.nats:NATSQueueAdapter",
+        factory="oneiric.adapters.queue.nats: NATSQueueAdapter",
         capabilities=["queue", "pubsub"],
         stack_level=25,
         priority=320,

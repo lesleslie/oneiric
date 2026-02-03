@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/actions/metadata.py
+# hypothesis_version: 6.151.4
+
+['action', 'action.metadata', 'capabilities', 'description', 'domains', 'owner', 'requires_secrets', 'settings_model', 'side_effect_free']

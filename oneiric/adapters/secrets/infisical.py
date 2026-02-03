@@ -1,5 +1,3 @@
-"""Infisical secrets adapter."""
-
 from __future__ import annotations
 
 import asyncio
@@ -16,8 +14,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class InfisicalSecretSettings(BaseModel):
-    """Configuration for the Infisical adapter."""
-
     base_url: str = Field(
         default="https://app.infisical.com", description="Infisical API base URL."
     )
@@ -34,12 +30,10 @@ class InfisicalSecretSettings(BaseModel):
 
 
 class InfisicalSecretAdapter:
-    """Fetches secrets from Infisical with simple caching."""
-
     metadata = AdapterMetadata(
         category="secrets",
         provider="infisical",
-        factory="oneiric.adapters.secrets.infisical:InfisicalSecretAdapter",
+        factory="oneiric.adapters.secrets.infisical: InfisicalSecretAdapter",
         capabilities=["remote", "http", "cache"],
         stack_level=40,
         priority=600,

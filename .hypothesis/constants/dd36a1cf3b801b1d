@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/__init__.py
+# hypothesis_version: 6.151.4
+
+['0.0.0', 'DemoAdapter', '__version__', 'oneiric']

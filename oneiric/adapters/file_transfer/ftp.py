@@ -1,5 +1,3 @@
-"""FTP file transfer adapter."""
-
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -14,8 +12,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class FTPFileTransferSettings(BaseModel):
-    """Configuration for FTP/SFTP connections."""
-
     host: str
     username: str
     password: SecretStr
@@ -26,12 +22,10 @@ class FTPFileTransferSettings(BaseModel):
 
 
 class FTPFileTransferAdapter:
-    """Upload/download files via FTP (aioftp)."""
-
     metadata = AdapterMetadata(
         category="file_transfer",
         provider="ftp",
-        factory="oneiric.adapters.file_transfer.ftp:FTPFileTransferAdapter",
+        factory="oneiric.adapters.file_transfer.ftp: FTPFileTransferAdapter",
         capabilities=["upload", "download", "delete", "list"],
         stack_level=20,
         priority=340,
@@ -59,7 +53,6 @@ class FTPFileTransferAdapter:
         )
 
     async def init(self) -> None:
-        """Connect to FTP server."""
         if self._client:
             self._logger.info("ftp-adapter-init-reuse-client")
             return
@@ -90,7 +83,6 @@ class FTPFileTransferAdapter:
         self._logger.info("ftp-adapter-init")
 
     async def cleanup(self) -> None:
-        """Close connection."""
         if self._client and self._owns_client:
             from contextlib import suppress
 

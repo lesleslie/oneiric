@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/observability/models.py
+# hypothesis_version: 6.151.4
+
+[100, 255, 256, 384, 'all-MiniLM-L6-v2', 'ix_logs_level', 'ix_logs_timestamp', 'ix_logs_trace_id', 'ix_metrics_name', 'ix_metrics_timestamp', 'ix_metrics_type', 'ix_traces_name', 'ix_traces_start_time', 'ix_traces_status', 'ix_traces_trace_id', 'level', 'logs', 'metrics', 'name', 'start_time', 'status', 'timestamp', 'trace_id', 'traces', 'type']

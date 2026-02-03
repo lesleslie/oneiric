@@ -1,5 +1,3 @@
-"""Google Cloud Storage adapter."""
-
 from __future__ import annotations
 
 import asyncio
@@ -9,15 +7,13 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from oneiric.adapters.metadata import AdapterMetadata
-from oneiric.adapters.storage.utils import is_not_found_error
+from oneiric.adapters.storage.error_detection import is_not_found_error
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
 
 
 class GCSStorageSettings(BaseModel):
-    """Configuration for the GCS adapter."""
-
     bucket: str = Field(description="Name of the target GCS bucket.")
     project: str | None = Field(default=None, description="GCP project ID.")
     credentials_file: Path | None = Field(
@@ -31,12 +27,10 @@ class GCSStorageSettings(BaseModel):
 
 
 class GCSStorageAdapter:
-    """Google Cloud Storage adapter with async-friendly wrappers."""
-
     metadata = AdapterMetadata(
         category="storage",
         provider="gcs",
-        factory="oneiric.adapters.storage.gcs:GCSStorageAdapter",
+        factory="oneiric.adapters.storage.gcs: GCSStorageAdapter",
         capabilities=["blob", "stream", "delete", "bucket"],
         stack_level=30,
         priority=450,
@@ -130,7 +124,6 @@ class GCSStorageAdapter:
         return self._bucket
 
     def _list_names(self, bucket: Any, prefix: str) -> list[str]:  # type: ignore[valid-type]
-        """List blob names from bucket with the given prefix."""
         blobs: Any = bucket.list_blobs(prefix=prefix)
         result: list[str] = [blob.name for blob in blobs]
         return result

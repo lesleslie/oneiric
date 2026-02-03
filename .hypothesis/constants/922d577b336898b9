@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/domains/events.py
+# hypothesis_version: 6.151.4
+
+['any_of', 'broadcast', 'equals', 'event', 'event_priority', 'exists', 'fanout_policy', 'filters', 'handle', 'max_concurrency', 'name', 'path', 'priority', 'retry_policy', 'topics']

@@ -1,7 +1,7 @@
-"""Messaging adapters (email/SMS providers)."""
-
 from .apns import APNSPushAdapter, APNSPushSettings
-from .common import (
+from .fcm import FCMPushAdapter, FCMPushSettings
+from .mailgun import MailgunAdapter, MailgunSettings
+from .messaging_types import (
     EmailRecipient,
     MessagingSendResult,
     NotificationMessage,
@@ -9,8 +9,6 @@ from .common import (
     OutboundSMSMessage,
     SMSRecipient,
 )
-from .fcm import FCMPushAdapter, FCMPushSettings
-from .mailgun import MailgunAdapter, MailgunSettings
 from .sendgrid import SendGridAdapter, SendGridSettings
 from .slack import SlackAdapter, SlackSettings
 from .teams import TeamsAdapter, TeamsSettings

@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/actions/task.py
+# hypothesis_version: 6.151.4
+
+[100, 360, 10000, 525600, '*', ',', '-', '/', '?', 'Platform Core', 'TaskScheduleAction', 'TaskScheduleSettings', 'UTC', 'action.task.schedule', 'cron', 'cron_expression', 'current', 'default', 'end_time', 'every_seconds', 'forbid', 'id', 'interval', 'interval_seconds', 'iterations', 'limit', 'max_runs', 'name', 'next_run', 'payload', 'plan', 'priority', 'queue', 'queue_name', 'rule', 'rule_id', 'rule_name', 'runs_remaining', 'schedule', 'scheduled', 'start_time', 'status', 'tags', 'task', 'task-action-schedule', 'task.schedule', 'task_type', 'true', 'unscheduled', 'upcoming', 'upcoming_runs', 'workflow']

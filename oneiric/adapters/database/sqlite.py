@@ -1,5 +1,3 @@
-"""SQLite database adapter."""
-
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
@@ -14,8 +12,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class SQLiteDatabaseSettings(BaseModel):
-    """Configuration for the SQLite adapter."""
-
     path: str = Field(
         default=":memory:", description="Path to the SQLite database file."
     )
@@ -24,12 +20,10 @@ class SQLiteDatabaseSettings(BaseModel):
 
 
 class SQLiteDatabaseAdapter:
-    """A lightweight SQLite adapter for dev/test scenarios."""
-
     metadata = AdapterMetadata(
         category="database",
         provider="sqlite",
-        factory="oneiric.adapters.database.sqlite:SQLiteDatabaseAdapter",
+        factory="oneiric.adapters.database.sqlite: SQLiteDatabaseAdapter",
         capabilities=["sql"],
         stack_level=5,
         priority=50,

@@ -1,5 +1,3 @@
-"""Domain bridge for resolver-managed actions."""
-
 from __future__ import annotations
 
 from oneiric.core.config import LayerSettings
@@ -11,8 +9,6 @@ from oneiric.runtime.supervisor import ServiceSupervisor
 
 
 class ActionBridge(DomainBridge):
-    """Thin wrapper for the shared DomainBridge wired to the 'action' domain."""
-
     def __init__(
         self,
         resolver: Resolver,

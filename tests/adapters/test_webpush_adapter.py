@@ -5,7 +5,7 @@ import json
 import pytest
 from pydantic import SecretStr
 
-from oneiric.adapters.messaging.common import NotificationMessage
+from oneiric.adapters.messaging.messaging_types import NotificationMessage
 from oneiric.adapters.messaging.webpush import WebPushAdapter, WebPushSettings
 from oneiric.core.lifecycle import LifecycleError
 

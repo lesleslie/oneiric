@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/graph/neo4j.py
+# hypothesis_version: 6.151.4
+
+[400, ':', 'CREATE (n', 'Data Platform', 'Neo4j username.', 'RETURN 1;', 'adapter', 'adapter.graph.neo4j', 'close', 'cypher', 'data', 'graph', 'n', 'neo4j', 'neo4j-adapter-init', 'nodes', 'r', 'relationships']

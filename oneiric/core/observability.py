@@ -1,5 +1,3 @@
-"""Observability utilities."""
-
 from __future__ import annotations
 
 from collections.abc import Iterator, Mapping
@@ -15,8 +13,6 @@ from .logging import get_logger, scoped_log_context
 
 
 class ObservabilityConfig(BaseModel):
-    """Declarative configuration for tracing/metrics hooks."""
-
     service_name: str = Field(default="oneiric")
     instrumentation_scope: str = Field(default="oneiric.core")
 

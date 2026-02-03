@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from oneiric.adapters.embedding.common import EmbeddingBatch, EmbeddingResult
+from oneiric.adapters.embedding.embedding_interface import EmbeddingBatch, EmbeddingResult
 from oneiric.adapters.embedding.sentence_transformers import (
     SentenceTransformersAdapter,
     SentenceTransformersSettings,

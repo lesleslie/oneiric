@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/actions/compression.py
+# hypothesis_version: 6.151.4
+
+[445, 450, ',', ':', 'Platform Core', 'action.compression', 'algorithm', 'ascii', 'base64', 'blake2b', 'builtin-compression', 'builtin-hash', 'bz2', 'checksum', 'compress', 'compression.encode', 'compression.hash', 'data', 'decompress', 'digest', 'encoding', 'hash', 'hash-action-digest', 'hashed', 'hex', 'lzma', 'mode', 'salt', 'salted', 'service', 'sha256', 'sha512', 'status', 'task', 'text', 'utf-8', 'validate', 'value', 'workflow', 'zlib']

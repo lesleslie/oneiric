@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/nosql/dynamodb.py
+# hypothesis_version: 6.151.4
+
+[430, 'Attributes', 'ConditionExpression', 'ConsistentRead', 'Data Platform', 'Item', 'Items', 'Key', 'Limit', 'ReturnValues', 'UPDATED_NEW', 'UpdateExpression', 'adapter', 'aws_access_key_id', 'aws_session_token', 'conditional_writes', 'documents', 'dynamodb', 'endpoint_url', 'id', 'key-value', 'load', 'nosql', 'oneiric', 'region_name', 'scan', 'us-east-1']

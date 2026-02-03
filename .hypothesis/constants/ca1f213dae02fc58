@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/messaging/mailgun.py
+# hypothesis_version: 6.151.4
+
+[320, 500, 'Content-Type', 'Messaging', '^(us|eu)$', 'adapter', 'api', 'bcc', 'cc', 'email', 'eu', 'false', 'from', 'h:Reply-To', 'html', 'id', 'mailgun', 'mailgun-adapter-init', 'mailgun-http-error', 'mailgun-message', 'mailgun-send-failed', 'messaging', 'o:require-tls', 'o:skip-verification', 'o:tag', 'o:testmode', 'o:tracking', 'subject', 'templating', 'text', 'to', 'transactional', 'true', 'us', 'yes']

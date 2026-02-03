@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/monitoring/netdata.py
+# hypothesis_version: 6.151.4
+
+[1.0, 10.0, 30.0, 215, 400, '/api/v1/data', '/api/v1/info', 'Observability', 'X-API-Key', 'adapter', 'adapter-init', 'chart', 'development', 'dimensions', 'httpx-missing', 'metrics', 'monitoring', 'netdata', 'netdata-init-failed', 'units', 'value', 'visualization']

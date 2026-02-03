@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/runtime/watchers.py
+# hypothesis_version: 6.151.4
+
+[5.0, 'ONEIRIC_CONFIG', 'ONEIRIC_SERVERLESS', 'activity_state', 'auto', 'domain', 'draining', 'events', 'paused', 'poll', 'watcher-init']

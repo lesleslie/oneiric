@@ -1,5 +1,3 @@
-"""Postgres database adapter."""
-
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
@@ -14,8 +12,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class PostgresDatabaseSettings(BaseModel):
-    """Configuration for the Postgres adapter."""
-
     dsn: str | None = Field(
         default=None,
         description="Optional DSN string; overrides host/port/database if provided.",
@@ -32,12 +28,10 @@ class PostgresDatabaseSettings(BaseModel):
 
 
 class PostgresDatabaseAdapter:
-    """Asyncpg-backed Postgres adapter with lifecycle hooks."""
-
     metadata = AdapterMetadata(
         category="database",
         provider="postgres",
-        factory="oneiric.adapters.database.postgres:PostgresDatabaseAdapter",
+        factory="oneiric.adapters.database.postgres: PostgresDatabaseAdapter",
         capabilities=["sql", "pool", "transactions"],
         stack_level=30,
         priority=500,

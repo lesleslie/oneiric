@@ -1,5 +1,3 @@
-"""Telemetry helpers for remote refresh loops."""
-
 from __future__ import annotations
 
 import json

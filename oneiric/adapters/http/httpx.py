@@ -1,5 +1,3 @@
-"""HTTP adapter backed by httpx.Client (supports async shim when needed)."""
-
 from __future__ import annotations
 
 import asyncio
@@ -10,7 +8,7 @@ import httpx
 from pydantic import Field
 
 from oneiric.adapters.metadata import AdapterMetadata
-from oneiric.core.http_helpers import observed_http_request
+from oneiric.core.http_instrumentation import observed_http_request
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.observability import inject_trace_context
@@ -39,8 +37,6 @@ class HTTPClientSettings(BaseURLSettings):
 
 
 class _AsyncClientShim:
-    """Async-friendly wrapper for httpx.Client when AsyncClient is unavailable."""
-
     def __init__(
         self,
         *,
@@ -79,7 +75,7 @@ class HTTPClientAdapter:
     metadata = AdapterMetadata(
         category="http",
         provider="httpx",
-        factory="oneiric.adapters.http.httpx:HTTPClientAdapter",
+        factory="oneiric.adapters.http.httpx: HTTPClientAdapter",
         capabilities=["http", "rest", "otlp"],
         stack_level=10,
         priority=200,
@@ -105,7 +101,6 @@ class HTTPClientAdapter:
         )
 
     async def init(self) -> None:
-        """Initialise AsyncClient with optional base URL + defaults."""
         async_client_cls: type[Any] = (
             getattr(httpx, "AsyncClient", None) or _AsyncClientShim
         )
@@ -128,7 +123,6 @@ class HTTPClientAdapter:
         )
 
     async def health(self) -> bool:
-        """Run a lightweight GET when base_url is configured."""
         if not self._client:
             return False
         if not self._settings.base_url:
@@ -141,7 +135,6 @@ class HTTPClientAdapter:
             return False
 
     async def cleanup(self) -> None:
-        """Dispose AsyncClient (or mocked equivalent)."""
         if self._client is None:
             return
         close_method = getattr(self._client, "aclose", None)

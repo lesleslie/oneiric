@@ -160,7 +160,7 @@ sandbox_mode = true                  # Keeps calls in SendGrid's sandbox
    import asyncio
 
    from oneiric.adapters import AdapterBridge, register_builtin_adapters
-   from oneiric.adapters.messaging.common import EmailRecipient, OutboundEmailMessage
+   from oneiric.adapters.messaging.messaging_types import EmailRecipient, OutboundEmailMessage
    from oneiric.core.config import load_settings
    from oneiric.core.lifecycle import LifecycleManager
    from oneiric.core.resolution import Resolver
@@ -209,7 +209,7 @@ ONEIRIC_CONFIG=~/.oneiric.toml uv run python - <<'PY'
 import asyncio
 
 from oneiric.adapters import AdapterBridge, register_builtin_adapters
-from oneiric.adapters.messaging.common import OutboundSMSMessage, SMSRecipient
+from oneiric.adapters.messaging.messaging_types import OutboundSMSMessage, SMSRecipient
 from oneiric.core.config import load_settings
 from oneiric.core.lifecycle import LifecycleManager
 from oneiric.core.resolution import Resolver
@@ -245,7 +245,7 @@ import asyncio
 from datetime import datetime
 
 from oneiric.adapters import AdapterBridge, register_builtin_adapters
-from oneiric.adapters.nosql.common import NoSQLQuery
+from oneiric.adapters.nosql.nosql_types import NoSQLQuery
 from oneiric.core.config import load_settings
 from oneiric.core.lifecycle import LifecycleManager
 from oneiric.core.resolution import Resolver
@@ -521,7 +521,7 @@ ONEIRIC_CONFIG=~/.oneiric.toml uv run python - <<'PY'
 import asyncio
 
 from oneiric.adapters import AdapterBridge, register_builtin_adapters
-from oneiric.adapters.messaging.common import NotificationMessage
+from oneiric.adapters.messaging.messaging_types import NotificationMessage
 from oneiric.core.config import load_settings
 from oneiric.core.lifecycle import LifecycleManager
 from oneiric.core.resolution import Resolver

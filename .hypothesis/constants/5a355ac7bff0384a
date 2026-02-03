@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/llm/__init__.py
+# hypothesis_version: 6.151.4
+
+['AnthropicLLM', 'AnthropicLLMSettings', 'LLMBase', 'LLMBaseSettings', 'LLMCapability', 'LLMFunctionCall', 'LLMMessage', 'LLMModelInfo', 'LLMProvider', 'LLMResponse', 'LLMStreamChunk', 'LLMToolCall', 'MessageRole', 'OpenAILLMAdapter', 'OpenAILLMSettings']

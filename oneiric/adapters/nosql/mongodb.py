@@ -1,5 +1,3 @@
-"""MongoDB adapter built on top of Motor."""
-
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
@@ -12,7 +10,7 @@ from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
 
-from .common import NoSQLAdapterBase, NoSQLBaseSettings, NoSQLDocument, NoSQLQuery
+from .nosql_types import NoSQLAdapterBase, NoSQLBaseSettings, NoSQLDocument, NoSQLQuery
 
 if TYPE_CHECKING:  # pragma: no cover - optional dependency typing
     from motor.motor_asyncio import (
@@ -27,8 +25,6 @@ else:  # pragma: no cover - runtime guard
 
 
 class MongoDBSettings(NoSQLBaseSettings):
-    """Configuration for the MongoDB adapter."""
-
     uri: str | None = Field(
         default=None,
         description="Optional MongoDB URI; overrides discrete host/port credentials when set.",
@@ -63,12 +59,10 @@ class MongoDBSettings(NoSQLBaseSettings):
 
 
 class MongoDBAdapter(NoSQLAdapterBase):
-    """Motor-backed MongoDB adapter with CRUD helpers."""
-
     metadata = AdapterMetadata(
         category="nosql",
         provider="mongodb",
-        factory="oneiric.adapters.nosql.mongodb:MongoDBAdapter",
+        factory="oneiric.adapters.nosql.mongodb: MongoDBAdapter",
         capabilities=[
             "documents",
             "aggregation",
@@ -219,8 +213,6 @@ class MongoDBAdapter(NoSQLAdapterBase):
         return self._db[collection or self._settings.default_collection]
 
     def _client_params(self) -> dict[str, Any]:
-        """Build Motor client parameters."""
-
         params: dict[str, Any] = {
             "serverSelectionTimeoutMS": int(self._settings.connect_timeout * 1000),
             "socketTimeoutMS": int(self._settings.operation_timeout * 1000),

@@ -1,5 +1,3 @@
-"""Event bridge hooking into the runtime dispatcher."""
-
 from __future__ import annotations
 
 from typing import Any, cast
@@ -24,8 +22,6 @@ from .protocols import EventHandlerProtocol
 
 
 class EventBridge(DomainBridge):
-    """Domain bridge that wires resolver candidates into the event dispatcher."""
-
     def __init__(
         self,
         resolver: Resolver,
@@ -52,8 +48,6 @@ class EventBridge(DomainBridge):
         self.refresh_dispatcher()
 
     def refresh_dispatcher(self) -> None:
-        """Rebuild dispatcher handlers from the resolver's current candidates."""
-
         handlers: list[EventHandler] = []
         for candidate in self.resolver.list_active(self.domain):
             handler = self._build_handler(candidate)
@@ -67,8 +61,6 @@ class EventBridge(DomainBridge):
         payload: dict[str, Any],
         headers: dict[str, Any] | None = None,
     ) -> list[HandlerResult]:
-        """Dispatch an event to registered handlers."""
-
         envelope = EventEnvelope(topic=topic, payload=payload, headers=headers or {})
         results = await self._dispatcher.dispatch(envelope)
         if self._telemetry:
@@ -76,8 +68,6 @@ class EventBridge(DomainBridge):
         return results
 
     def handler_snapshot(self) -> list[dict[str, Any]]:
-        """Return metadata describing registered event handlers."""
-
         snapshot: list[dict[str, Any]] = []
         for handler in self._dispatcher.handlers():
             filters: list[dict[str, Any]] = []

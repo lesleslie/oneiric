@@ -1,5 +1,3 @@
-"""Environment-backed secrets adapter."""
-
 from __future__ import annotations
 
 import os
@@ -30,7 +28,7 @@ class EnvSecretAdapter:
     metadata = AdapterMetadata(
         category="secrets",
         provider="env",
-        factory="oneiric.adapters.secrets.env:EnvSecretAdapter",
+        factory="oneiric.adapters.secrets.env: EnvSecretAdapter",
         capabilities=["read"],
         stack_level=10,
         priority=100,

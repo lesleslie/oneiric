@@ -1,5 +1,3 @@
-"""Sentry monitoring adapter."""
-
 from __future__ import annotations
 
 import asyncio
@@ -22,8 +20,6 @@ except Exception:  # pragma: no cover - optional dependency import
 
 
 class SentryMonitoringSettings(BaseModel):
-    """Configuration for the Sentry adapter."""
-
     dsn: SecretStr | None = Field(
         default=None,
         description="Sentry DSN; falls back to SENTRY_DSN env var when omitted.",
@@ -48,12 +44,10 @@ class SentryMonitoringSettings(BaseModel):
 
 
 class SentryMonitoringAdapter:
-    """Adapter that configures sentry-sdk with async-friendly cleanup."""
-
     metadata = AdapterMetadata(
         category="monitoring",
         provider="sentry",
-        factory="oneiric.adapters.monitoring.sentry:SentryMonitoringAdapter",
+        factory="oneiric.adapters.monitoring.sentry: SentryMonitoringAdapter",
         capabilities=["logging", "tracing", "errors"],
         stack_level=27,
         priority=210,

@@ -1,5 +1,3 @@
-"""Kafka queue adapter built on aiokafka."""
-
 from __future__ import annotations
 
 import inspect
@@ -15,10 +13,8 @@ from oneiric.core.resolution import CandidateSource
 
 
 class KafkaQueueSettings(BaseModel):
-    """Configuration for the Kafka adapter."""
-
     bootstrap_servers: Sequence[str] | str = Field(
-        default_factory=lambda: ["localhost:9092"],
+        default_factory=lambda: ["localhost: 9092"],
         description="Kafka bootstrap servers.",
     )
     topic: str = Field(
@@ -59,12 +55,10 @@ class KafkaQueueSettings(BaseModel):
 
 
 class KafkaQueueAdapter:
-    """Adapter that publishes to and consumes from Kafka topics."""
-
     metadata = AdapterMetadata(
         category="queue",
         provider="kafka",
-        factory="oneiric.adapters.queue.kafka:KafkaQueueAdapter",
+        factory="oneiric.adapters.queue.kafka: KafkaQueueAdapter",
         capabilities=["queue", "streaming", "fanout"],
         stack_level=20,
         priority=310,

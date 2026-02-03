@@ -1,5 +1,3 @@
-"""Cloudflare DNS adapter."""
-
 from __future__ import annotations
 
 from typing import Any, Literal
@@ -16,8 +14,6 @@ from oneiric.core.settings_mixins import TimeoutSettings
 
 
 class CloudflareDNSSettings(TimeoutSettings):
-    """Configuration for Cloudflare DNS."""
-
     zone_id: str = Field(description="Cloudflare zone identifier")
     api_token: SecretStr = Field(description="Cloudflare API token with DNS edit scope")
     base_url: AnyHttpUrl = Field(
@@ -27,12 +23,10 @@ class CloudflareDNSSettings(TimeoutSettings):
 
 
 class CloudflareDNSAdapter(HTTPXClientMixin):
-    """Manage DNS records via the Cloudflare API."""
-
     metadata = AdapterMetadata(
         category="dns",
         provider="cloudflare",
-        factory="oneiric.adapters.dns.cloudflare:CloudflareDNSAdapter",
+        factory="oneiric.adapters.dns.cloudflare: CloudflareDNSAdapter",
         capabilities=["record.manage", "record.list"],
         stack_level=30,
         priority=320,
@@ -57,7 +51,6 @@ class CloudflareDNSAdapter(HTTPXClientMixin):
         )
 
     async def init(self) -> None:
-        """Initialize HTTP client."""
         if self._client is None:
             headers = {
                 "Authorization": f"Bearer {self._settings.api_token.get_secret_value()}",
@@ -79,12 +72,10 @@ class CloudflareDNSAdapter(HTTPXClientMixin):
         self._logger.info("cloudflare-dns-init")
 
     async def cleanup(self) -> None:
-        """Dispose HTTP client."""
         await self._cleanup_client()
         self._logger.info("cloudflare-dns-cleanup")
 
     async def health(self) -> bool:
-        """Lightweight zone read."""
         client = self._ensure_client("cloudflare-dns-client-not-initialized")
         try:
             response = await client.get(f"/zones/{self._settings.zone_id}")
@@ -97,7 +88,6 @@ class CloudflareDNSAdapter(HTTPXClientMixin):
     async def list_records(
         self, *, record_type: str | None = None, name: str | None = None
     ) -> list[dict[str, Any]]:
-        """List DNS records in the zone."""
         params: dict[str, Any] = {}
         if record_type:
             params["type"] = record_type
@@ -120,7 +110,6 @@ class CloudflareDNSAdapter(HTTPXClientMixin):
         proxied: bool | None = None,
         priority: int | None = None,
     ) -> dict[str, Any]:
-        """Create a DNS record."""
         payload: dict[str, Any] = {
             "type": record_type,
             "name": name,
@@ -148,7 +137,6 @@ class CloudflareDNSAdapter(HTTPXClientMixin):
         proxied: bool | None = None,
         priority: int | None = None,
     ) -> dict[str, Any]:
-        """Update an existing DNS record."""
         payload: dict[str, Any] = {}
         if name is not None:
             payload["name"] = name
@@ -168,7 +156,6 @@ class CloudflareDNSAdapter(HTTPXClientMixin):
         return resp.get("result", {})
 
     async def delete_record(self, record_id: str) -> bool:
-        """Delete a DNS record."""
         resp = await self._request(
             "DELETE",
             f"/zones/{self._settings.zone_id}/dns_records/{record_id}",

@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/dns/cloudflare.py
+# hypothesis_version: 6.151.4
+
+[120, 320, 400, '; ', 'A', 'AAAA', 'Authorization', 'CNAME', 'Content-Type', 'DELETE', 'GET', 'MX', 'NS', 'PATCH', 'POST', 'Platform Core', 'SRV', 'TXT', 'adapter', 'application/json', 'cloudflare', 'cloudflare-dns-init', 'content', 'dns', 'errors', 'message', 'name', 'priority', 'proxied', 'record.list', 'record.manage', 'result', 'success', 'ttl', 'type', 'unknown-error']

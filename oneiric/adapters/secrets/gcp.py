@@ -1,5 +1,3 @@
-"""Google Cloud Secret Manager adapter."""
-
 from __future__ import annotations
 
 import asyncio
@@ -16,8 +14,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class GCPSecretManagerSettings(BaseModel):
-    """Settings for accessing Google Cloud Secret Manager."""
-
     project_id: str = Field(description="Target GCP project for secrets.")
     credentials_file: Path | None = Field(
         default=None,
@@ -35,12 +31,10 @@ class GCPSecretManagerSettings(BaseModel):
 
 
 class GCPSecretManagerAdapter:
-    """Async adapter that fetches secrets from Google Cloud Secret Manager."""
-
     metadata = AdapterMetadata(
         category="secrets",
         provider="gcp-secret-manager",
-        factory="oneiric.adapters.secrets.gcp:GCPSecretManagerAdapter",
+        factory="oneiric.adapters.secrets.gcp: GCPSecretManagerAdapter",
         capabilities=["remote", "cache"],
         stack_level=50,
         priority=550,

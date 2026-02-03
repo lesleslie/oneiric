@@ -1,5 +1,3 @@
-"""Workflow automation action kits."""
-
 from __future__ import annotations
 
 from collections.abc import Iterable
@@ -17,8 +15,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class WorkflowAuditSettings(BaseModel):
-    """Settings for the workflow audit action kit."""
-
     channel: str = Field(
         default="workflow",
         description="Default audit channel name stored on every record.",
@@ -38,12 +34,10 @@ class WorkflowAuditSettings(BaseModel):
 
 
 class WorkflowAuditAction:
-    """Action kit that records workflow audit/notification events."""
-
     metadata = ActionMetadata(
         key="workflow.audit",
         provider="builtin-workflow-audit",
-        factory="oneiric.actions.workflow:WorkflowAuditAction",
+        factory="oneiric.actions.workflow: WorkflowAuditAction",
         description="Structured workflow audit/notification helper with redaction",
         domains=["workflow", "task", "event"],
         capabilities=["audit-log", "notify", "redact"],
@@ -118,8 +112,6 @@ class WorkflowAuditAction:
 
 
 class WorkflowNotifySettings(BaseModel):
-    """Settings for workflow notification helpers."""
-
     default_channel: str = Field(
         default="workflow",
         description="Channel used when payload omits 'channel'.",
@@ -139,12 +131,10 @@ class WorkflowNotifySettings(BaseModel):
 
 
 class WorkflowNotifyAction:  # noqa: C901
-    """Action kit that emits structured workflow notifications."""
-
     metadata = ActionMetadata(
         key="workflow.notify",
         provider="builtin-workflow-notify",
-        factory="oneiric.actions.workflow:WorkflowNotifyAction",
+        factory="oneiric.actions.workflow: WorkflowNotifyAction",
         description="Workflow notification helper that logs structured messages",
         domains=["workflow", "task", "event"],
         capabilities=["notify", "broadcast", "context"],
@@ -217,8 +207,6 @@ class WorkflowNotifyAction:  # noqa: C901
 
 
 class WorkflowStepSpec(BaseModel):
-    """Declarative specification for a workflow step."""
-
     model_config = ConfigDict(extra="forbid")
 
     step_id: str = Field(description="Unique step identifier")
@@ -248,8 +236,6 @@ class WorkflowStepSpec(BaseModel):
 
 
 class WorkflowDefinitionSpec(BaseModel):
-    """Workflow definition accepted by the orchestrator action."""
-
     model_config = ConfigDict(extra="forbid")
 
     workflow_id: str = Field(description="Unique workflow identifier")
@@ -277,8 +263,6 @@ class WorkflowDefinitionSpec(BaseModel):
 
 
 class WorkflowOrchestratorSettings(BaseModel):
-    """Settings that control workflow orchestration planning."""
-
     max_parallel_steps: int = Field(
         default=4,
         ge=1,
@@ -301,12 +285,10 @@ class WorkflowOrchestratorSettings(BaseModel):
 
 
 class WorkflowOrchestratorAction:
-    """Action kit that builds deterministic workflow execution plans."""
-
     metadata = ActionMetadata(
         key="workflow.orchestrate",
         provider="builtin-workflow-orchestrator",
-        factory="oneiric.actions.workflow:WorkflowOrchestratorAction",
+        factory="oneiric.actions.workflow: WorkflowOrchestratorAction",
         description="Workflow planner producing versioned dependency graphs",
         domains=["workflow", "task", "event"],
         capabilities=["plan", "graph", "versioned"],
@@ -447,7 +429,6 @@ class WorkflowOrchestratorAction:
     def _validate_step(
         self, step: WorkflowStepSpec, existing: dict[str, dict[str, Any]]
     ) -> None:
-        """Validate step before normalization."""
         if step.step_id in existing:
             raise LifecycleError("workflow-orchestrate-duplicate-step")
         depends_on = self._dedupe_dependencies(step.depends_on)
@@ -455,7 +436,6 @@ class WorkflowOrchestratorAction:
             raise LifecycleError("workflow-orchestrate-self-dependency")
 
     def _build_normalized_step(self, step: WorkflowStepSpec) -> dict[str, Any]:
-        """Build normalized step dictionary."""
         return {
             "spec": step,
             "depends_on": self._dedupe_dependencies(step.depends_on),
@@ -472,7 +452,6 @@ class WorkflowOrchestratorAction:
         }
 
     def _validate_dependencies(self, normalized: dict[str, dict[str, Any]]) -> None:
-        """Validate all dependencies exist."""
         for data in normalized.values():
             for dep in data["depends_on"]:
                 if dep not in normalized:
@@ -517,8 +496,6 @@ class WorkflowOrchestratorAction:
 
 
 class WorkflowRetrySettings(BaseModel):
-    """Settings for workflow retry helpers."""
-
     max_attempts: int = Field(
         default=3, ge=1, description="Total attempts before exhaust"
     )
@@ -537,12 +514,10 @@ class WorkflowRetrySettings(BaseModel):
 
 
 class WorkflowRetryAction:
-    """Action kit that computes retry/backoff schedules for workflows."""
-
     metadata = ActionMetadata(
         key="workflow.retry",
         provider="builtin-workflow-retry",
-        factory="oneiric.actions.workflow:WorkflowRetryAction",
+        factory="oneiric.actions.workflow: WorkflowRetryAction",
         description="Workflow retry helper providing deterministic backoff guidance",
         domains=["workflow", "task", "event"],
         capabilities=["retry", "backoff", "control"],

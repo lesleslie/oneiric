@@ -1,5 +1,3 @@
-"""Remote manifest loader and artifact fetcher."""
-
 from __future__ import annotations
 
 import asyncio
@@ -39,7 +37,7 @@ logger = get_logger("remote")
 
 VALID_DOMAINS = {"adapter", "action", "service", "task", "event", "workflow"}
 
-# Default HTTP timeout for remote fetches (30 seconds)
+
 DEFAULT_HTTP_TIMEOUT = 30.0
 
 _REMOTE_BREAKERS: dict[str, CircuitBreaker] = {}
@@ -114,76 +112,50 @@ class ArtifactManager:
     async def fetch(
         self, uri: str, sha256: str | None, headers: dict[str, str]
     ) -> Path:
-        """Fetch artifact with path traversal protection and timeout.
-
-        Args:
-            uri: URI to fetch (HTTP/HTTPS or local file path)
-            sha256: Expected SHA256 digest (optional)
-            headers: HTTP headers for request
-
-        Returns:
-            Path to cached artifact
-
-        Raises:
-            ValueError: If path traversal detected or digest mismatch
-        """
-        # Validate and sanitize URI
         self._validate_uri(uri)
         filename = self._get_safe_filename(uri, sha256)
         destination = self._get_destination_path(filename)
 
-        # Return cached file if available
         if destination.exists():
             if sha256:
                 _assert_digest(destination, sha256)
             return destination
 
-        # Try local file first
         local_result = self._try_local_file(uri, destination, sha256)
         if local_result:
             return local_result
 
-        # Fetch from remote HTTP/HTTPS
         return await self._fetch_remote_file(uri, destination, sha256, headers)
 
     def _validate_uri(self, uri: str) -> None:  # noqa: C901
-        """Validate URI for security issues."""
         if not uri:
             raise ValueError("URI cannot be empty")
         if uri.startswith("file://") and not self.allow_file_uris:
             raise ValueError("file URI access disabled for artifacts")
 
-        # Block path traversal attempts
         if ".." in uri and not uri.startswith(("http://", "https://", "file://")):
             raise ValueError(f"Path traversal attempt detected in URI: {uri}")
 
-        # Block absolute paths unless they're file:// URLs
         if uri.startswith("/") and not uri.startswith("file://"):
             raise ValueError(f"Path traversal attempt detected in URI: {uri}")
 
-        # Block relative paths with directory separators
         if not uri.startswith(("http://", "https://", "file://")):
-            # Check for directory traversal characters
             if "/" in uri or "\\" in uri:
                 raise ValueError(f"Path traversal attempt detected in URI: {uri}")
 
     def _get_safe_filename(self, uri: str, sha256: str | None) -> str:
-        """Get safe filename from URI or SHA256."""
         if sha256:
-            return sha256  # SHA256 is safe (hex string)
+            return sha256
 
-        # Sanitize filename from URI
         filename = Path(uri).name
         if "/" in filename or "\\" in filename or ".." in filename:
             raise ValueError(f"Path traversal attempt detected in URI: {uri}")
         return filename
 
     def _get_destination_path(self, filename: str) -> Path:
-        """Get validated destination path within cache directory."""
         destination = (self.cache_dir / filename).resolve()
         cache_dir_resolved = self.cache_dir.resolve()
 
-        # CRITICAL: Verify destination is within cache_dir
         if not destination.is_relative_to(cache_dir_resolved):
             raise ValueError(
                 f"Path traversal attempt detected: {destination} "
@@ -195,8 +167,6 @@ class ArtifactManager:
     def _try_local_file(
         self, uri: str, destination: Path, sha256: str | None
     ) -> Path | None:
-        """Try to fetch from local file system."""
-        # Only handle file:// URIs (absolute paths are blocked in validation)
         if not uri.startswith("file://"):
             return None
         if not self.allow_file_uris:
@@ -205,7 +175,6 @@ class ArtifactManager:
         local_path = Path(uri[7:])
         _assert_allowed_path(local_path, self.allowed_file_uri_roots)
 
-        # Copy local file to cache
         if local_path.exists():
             data = local_path.read_bytes()
             destination.write_bytes(data)
@@ -218,17 +187,13 @@ class ArtifactManager:
     async def _fetch_remote_file(
         self, uri: str, destination: Path, sha256: str | None, headers: dict[str, str]
     ) -> Path:
-        """Fetch file from remote HTTP/HTTPS URL."""
-        # Validate URI scheme
         if not uri.startswith(("http://", "https://")):
             raise ValueError(
                 f"Unsupported URI scheme (must be http://, https://, or file://): {uri}"
             )
 
-        # Download to temporary file
         tmp_file = await self._download_to_temp_file(uri, headers)
 
-        # Verify digest and rename
         try:
             if sha256:
                 _assert_digest(tmp_file, sha256)
@@ -239,7 +204,6 @@ class ArtifactManager:
             raise
 
     async def _download_to_temp_file(self, uri: str, headers: dict[str, str]) -> Path:
-        """Download URI to temporary file."""
         tmp_file: Path | None = None
         try:
             async with httpx.AsyncClient(
@@ -262,7 +226,7 @@ class ArtifactManager:
                 tmp_file.unlink(missing_ok=True)
             raise
 
-        assert tmp_file is not None  # For type checkers
+        assert tmp_file is not None
         return tmp_file
 
 
@@ -273,8 +237,6 @@ async def sync_remote_manifest(
     secrets: SecretsHook | None = None,
     manifest_url: str | None = None,
 ) -> RemoteSyncResult | None:
-    """Fetch a remote manifest and register its entries against the resolver."""
-
     url = manifest_url or config.manifest_url
     if not url:
         logger.info("remote-skip", reason="no-manifest-url")
@@ -319,8 +281,6 @@ async def remote_sync_loop(
     manifest_url: str | None = None,
     interval_override: float | None = None,
 ) -> None:
-    """Continuously refresh remote manifest candidates based on refresh_interval."""
-
     url = manifest_url or config.manifest_url
     if not url:
         logger.info("remote-refresh-skip", reason="no-manifest-url")
@@ -390,7 +350,7 @@ async def _run_sync(
         base_delay=retry_base_delay,
         max_delay=retry_max_delay,
         jitter=retry_jitter,
-        adaptive_key=f"remote:manifest:{_remote_host(url)}",
+        adaptive_key=f"remote: manifest:{_remote_host(url)}",
         attributes=_retry_attributes(url, "manifest.fetch"),
     )
     manifest = _parse_manifest(manifest_data, signature_policy=config)
@@ -426,7 +386,7 @@ async def _run_sync(
                 base_delay=retry_base_delay,
                 max_delay=retry_max_delay,
                 jitter=retry_jitter,
-                adaptive_key=f"remote:artifact:{_remote_host(entry.uri)}",
+                adaptive_key=f"remote: artifact:{_remote_host(entry.uri)}",
                 attributes=_retry_attributes(entry.uri, "artifact.fetch"),
             )
         if entry.sha256:
@@ -522,18 +482,6 @@ def _parse_manifest(  # noqa: C901
     verify_signature: bool = True,
     signature_policy: RemoteSourceConfig | None = None,
 ) -> RemoteManifest:
-    """Parse and optionally verify remote manifest.
-
-    Args:
-        text: Raw manifest text (JSON or YAML)
-        verify_signature: Whether to verify signature (default: True)
-
-    Returns:
-        Parsed RemoteManifest
-
-    Raises:
-        ValueError: If manifest is invalid or signature verification fails
-    """
     try:
         data = json.loads(text)
     except json.JSONDecodeError:
@@ -637,11 +585,8 @@ def _parse_timestamp(value: Any) -> datetime | None:
 def _candidate_from_entry(
     entry: RemoteManifestEntry, artifact_path: Path | None
 ) -> Candidate:
-    """Convert manifest entry to Candidate with full metadata propagation (Stage 4 enhancement)."""
-    # Build metadata dictionary
     metadata = _build_candidate_metadata(entry, artifact_path)
 
-    # Filter out None values
     metadata = {key: value for key, value in metadata.items() if value is not None}
 
     return Candidate(
@@ -659,13 +604,10 @@ def _candidate_from_entry(
 def _build_candidate_metadata(
     entry: RemoteManifestEntry, artifact_path: Path | None
 ) -> dict[str, Any]:
-    """Build complete metadata dictionary for candidate."""
     metadata = entry.metadata.copy()
 
-    # Add core metadata
     _add_core_metadata(metadata, entry, artifact_path)
 
-    # Add domain-specific metadata
     _add_adapter_metadata(metadata, entry)
     _add_action_metadata(metadata, entry)
     _add_dependency_metadata(metadata, entry)
@@ -680,7 +622,6 @@ def _build_candidate_metadata(
 def _add_core_metadata(
     metadata: dict[str, Any], entry: RemoteManifestEntry, artifact_path: Path | None
 ) -> None:
-    """Add core metadata fields."""
     metadata.update(
         {
             "remote_uri": entry.uri,
@@ -692,7 +633,6 @@ def _add_core_metadata(
 
 
 def _add_adapter_metadata(metadata: dict[str, Any], entry: RemoteManifestEntry) -> None:
-    """Add adapter-specific metadata."""
     if entry.capabilities:
         metadata["capabilities"] = entry.capability_names
         metadata["capability_descriptors"] = entry.capability_payloads()
@@ -704,7 +644,6 @@ def _add_adapter_metadata(metadata: dict[str, Any], entry: RemoteManifestEntry) 
 
 
 def _add_action_metadata(metadata: dict[str, Any], entry: RemoteManifestEntry) -> None:
-    """Add action-specific metadata."""
     metadata["side_effect_free"] = entry.side_effect_free
     if entry.timeout_seconds is not None:
         metadata["timeout_seconds"] = entry.timeout_seconds
@@ -715,7 +654,6 @@ def _add_action_metadata(metadata: dict[str, Any], entry: RemoteManifestEntry) -
 def _add_dependency_metadata(
     metadata: dict[str, Any], entry: RemoteManifestEntry
 ) -> None:
-    """Add dependency constraint metadata."""
     if entry.requires:
         metadata["requires"] = entry.requires
     if entry.conflicts_with:
@@ -725,7 +663,6 @@ def _add_dependency_metadata(
 def _add_platform_metadata(
     metadata: dict[str, Any], entry: RemoteManifestEntry
 ) -> None:
-    """Add platform constraint metadata."""
     if entry.python_version:
         metadata["python_version"] = entry.python_version
     if entry.os_platform:
@@ -735,7 +672,6 @@ def _add_platform_metadata(
 def _add_documentation_metadata(
     metadata: dict[str, Any], entry: RemoteManifestEntry
 ) -> None:
-    """Add documentation metadata."""
     if entry.license:
         metadata["license"] = entry.license
     if entry.documentation_url:
@@ -743,7 +679,6 @@ def _add_documentation_metadata(
 
 
 def _add_event_metadata(metadata: dict[str, Any], entry: RemoteManifestEntry) -> None:
-    """Add event-specific metadata."""
     if entry.event_topics:
         metadata["topics"] = entry.event_topics
     if entry.event_max_concurrency is not None:
@@ -757,7 +692,6 @@ def _add_event_metadata(metadata: dict[str, Any], entry: RemoteManifestEntry) ->
 
 
 def _add_dag_metadata(metadata: dict[str, Any], entry: RemoteManifestEntry) -> None:
-    """Add DAG metadata."""
     if entry.dag:
         metadata["dag"] = entry.dag
 
@@ -782,10 +716,6 @@ def _assert_allowed_path(path: Path, allowed_roots: Sequence[str]) -> None:
 
 
 def _validate_entry(entry: RemoteManifestEntry) -> str | None:
-    """Comprehensive validation of remote manifest entry.
-
-    Validates domain, key format, provider, factory format, and bounds.
-    """
     from oneiric.core.security import (
         validate_factory_string,
         validate_key_format,
@@ -793,7 +723,6 @@ def _validate_entry(entry: RemoteManifestEntry) -> str | None:
         validate_stack_level_bounds,
     )
 
-    # Validate basic fields
     if error := _validate_domain(entry):
         return error
     if error := _validate_key_field(entry, validate_key_format):
@@ -803,13 +732,11 @@ def _validate_entry(entry: RemoteManifestEntry) -> str | None:
     if error := _validate_factory_field(entry, validate_factory_string):
         return error
 
-    # Validate bounds
     if error := _validate_bounds(
         entry, validate_priority_bounds, validate_stack_level_bounds
     ):
         return error
 
-    # Validate URI
     if error := _validate_uri_field(entry):
         return error
 
@@ -817,14 +744,12 @@ def _validate_entry(entry: RemoteManifestEntry) -> str | None:
 
 
 def _validate_domain(entry: RemoteManifestEntry) -> str | None:
-    """Validate domain field."""
     if entry.domain not in VALID_DOMAINS:
         return f"unsupported domain '{entry.domain}'"
     return None
 
 
 def _validate_key_field(entry: RemoteManifestEntry, validate_key_format) -> str | None:
-    """Validate key field."""
     if not entry.key:
         return "missing key"
     is_valid, error = validate_key_format(entry.key)
@@ -836,7 +761,6 @@ def _validate_key_field(entry: RemoteManifestEntry, validate_key_format) -> str 
 def _validate_provider_field(
     entry: RemoteManifestEntry, validate_key_format
 ) -> str | None:
-    """Validate provider field."""
     if not entry.provider:
         return "missing provider"
     is_valid, error = validate_key_format(entry.provider)
@@ -848,7 +772,6 @@ def _validate_provider_field(
 def _validate_factory_field(
     entry: RemoteManifestEntry, validate_factory_string
 ) -> str | None:
-    """Validate factory field."""
     if not entry.factory:
         return "missing factory"
     is_valid, error = validate_factory_string(entry.factory)
@@ -860,14 +783,11 @@ def _validate_factory_field(
 def _validate_bounds(
     entry: RemoteManifestEntry, validate_priority_bounds, validate_stack_level_bounds
 ) -> str | None:
-    """Validate priority and stack level bounds."""
-    # Priority bounds
     if entry.priority is not None:
         is_valid, error = validate_priority_bounds(entry.priority)
         if not is_valid:
             return error
 
-    # Stack level bounds
     if entry.stack_level is not None:
         is_valid, error = validate_stack_level_bounds(entry.stack_level)
         if not is_valid:
@@ -877,7 +797,6 @@ def _validate_bounds(
 
 
 def _validate_uri_field(entry: RemoteManifestEntry) -> str | None:
-    """Validate URI field for path traversal."""
     if entry.uri and entry.uri.startswith(".."):
         return f"URI contains path traversal: {entry.uri}"
     return None

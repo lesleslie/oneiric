@@ -1,5 +1,3 @@
-"""Resolver-backed bridges for services, tasks, events, and workflows."""
-
 from .base import DomainBridge, DomainHandle
 from .events import EventBridge
 from .services import ServiceBridge

@@ -1,5 +1,3 @@
-"""Debug/console action kit."""
-
 from __future__ import annotations
 
 import sys
@@ -17,8 +15,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class DebugConsoleSettings(BaseModel):
-    """Settings for the debug console action."""
-
     default_level: Literal["debug", "info", "warning", "error", "critical"] = Field(
         default="info",
         description="Default log level when payload omits 'level'.",
@@ -42,12 +38,10 @@ class DebugConsoleSettings(BaseModel):
 
 
 class DebugConsoleAction:
-    """Action kit that emits structured console/debug records."""
-
     metadata = ActionMetadata(
         key="debug.console",
         provider="builtin-debug-console",
-        factory="oneiric.actions.debug:DebugConsoleAction",
+        factory="oneiric.actions.debug: DebugConsoleAction",
         description="Console/debug helper that logs structured records and optionally echoes them",
         domains=["workflow", "task", "event"],
         capabilities=["console", "debug", "observe"],
@@ -113,7 +107,6 @@ class DebugConsoleAction:
         details = record.get("details") or {}
         scrub_fields = set(self._settings.scrub_fields)
 
-        # Scrub sensitive data from details before echoing to console
         scrubbed_details = self._scrub(details, scrub_fields)
 
         parts = []

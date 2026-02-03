@@ -1,5 +1,3 @@
-"""SFTP file transfer adapter."""
-
 from __future__ import annotations
 
 import io
@@ -15,8 +13,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class SFTPFileTransferSettings(BaseModel):
-    """Configuration for SFTP connections."""
-
     host: str
     username: str
     password: SecretStr | None = None
@@ -29,12 +25,10 @@ class SFTPFileTransferSettings(BaseModel):
 
 
 class SFTPFileTransferAdapter:
-    """Upload/download files via SFTP (asyncssh)."""
-
     metadata = AdapterMetadata(
         category="file_transfer",
         provider="sftp",
-        factory="oneiric.adapters.file_transfer.sftp:SFTPFileTransferAdapter",
+        factory="oneiric.adapters.file_transfer.sftp: SFTPFileTransferAdapter",
         capabilities=["upload", "download", "delete", "list"],
         stack_level=20,
         priority=330,
@@ -64,7 +58,6 @@ class SFTPFileTransferAdapter:
         )
 
     async def init(self) -> None:
-        """Establish SFTP connection."""
         if self._sftp:
             self._logger.info("sftp-adapter-init-reuse-client")
             return
@@ -101,7 +94,6 @@ class SFTPFileTransferAdapter:
         self._logger.info("sftp-adapter-init")
 
     async def cleanup(self) -> None:
-        """Close connection."""
         if self._owns_conn and self._sftp:
             await self._sftp.exit()
         if self._owns_conn and self._conn:

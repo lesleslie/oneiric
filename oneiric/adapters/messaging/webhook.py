@@ -1,5 +1,3 @@
-"""Generic webhook notification adapter."""
-
 from __future__ import annotations
 
 import httpx
@@ -12,24 +10,20 @@ from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
 from oneiric.core.settings_mixins import TimeoutSettings
 
-from .common import MessagingSendResult, NotificationMessage
+from .messaging_types import MessagingSendResult, NotificationMessage
 
 
 class WebhookSettings(TimeoutSettings):
-    """Settings for the generic webhook adapter."""
-
     url: AnyHttpUrl
     method: str = Field(default="POST")
     headers: dict[str, str] = Field(default_factory=dict)
 
 
 class WebhookAdapter(HTTPXClientMixin):
-    """Adapter that dispatches arbitrary JSON payloads to a configurable webhook."""
-
     metadata = AdapterMetadata(
         category="messaging",
         provider="webhook",
-        factory="oneiric.adapters.messaging.webhook:WebhookAdapter",
+        factory="oneiric.adapters.messaging.webhook: WebhookAdapter",
         capabilities=["notifications"],
         stack_level=25,
         priority=350,

@@ -1,4 +1,3 @@
-"""Runtime helpers that wrap asyncio.TaskGroup with structured logging."""
 
 from __future__ import annotations
 
@@ -16,11 +15,9 @@ CoroutineFactory = Callable[[], Awaitable[Any]]
 
 
 class TaskGroupError(RuntimeError):
-    """Raised when TaskGroup helpers are misused."""
 
 
 class RuntimeTaskGroup:
-    """Wrapper around asyncio.TaskGroup that tracks tasks and logs lifecycle events."""
 
     def __init__(self, name: str = "oneiric.nursery") -> None:
         self.name = name
@@ -38,11 +35,10 @@ class RuntimeTaskGroup:
         if not self._group:
             return None
 
-        # Call the underlying TaskGroup's __aexit__
-        # Note: TaskGroup.__aexit__ returns None, but context managers can return bool
+
         result: bool | None = await self._group.__aexit__(exc_type, exc, tb)  # type: ignore[func-returns-value]
 
-        # Cleanup logging (always executed after __aexit__)
+
         self._logger.debug(
             "taskgroup-exit", name=self.name, exc=str(exc) if exc else None
         )
@@ -65,7 +61,7 @@ class RuntimeTaskGroup:
         else:
             coro_awaitable = coro_or_factory
 
-        # Cast Awaitable to Coroutine for TaskGroup compatibility
+
         if not isinstance(coro_awaitable, Coroutine):
 
             async def _wrap() -> Any:
@@ -95,7 +91,6 @@ class RuntimeTaskGroup:
 
 
 class AnyioTaskGroup:
-    """AnyIO TaskGroup wrapper that adds logging + optional concurrency limits."""
 
     def __init__(
         self,
@@ -202,13 +197,12 @@ async def run_with_taskgroup(
 
 
 def run_sync(main: Callable[[], Awaitable[Any]]) -> Any:
-    """Run an async callable with asyncio.run and install debug logging."""
 
     logger = get_logger("runtime")
     logger.debug("runtime-start")
     coro_awaitable = main()
 
-    # Cast Awaitable to Coroutine for asyncio.run compatibility
+
     if not isinstance(coro_awaitable, Coroutine):
 
         async def _wrap() -> Any:

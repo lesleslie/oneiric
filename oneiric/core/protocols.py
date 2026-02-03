@@ -1,5 +1,3 @@
-"""Protocol interfaces shared across core configuration helpers."""
-
 from __future__ import annotations
 
 from typing import Protocol

@@ -1,5 +1,3 @@
-"""Automation trigger/rule evaluation action kit."""
-
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
@@ -15,8 +13,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class AutomationCondition(BaseModel):
-    """Declarative condition applied to context payloads."""
-
     field: str = Field(description="Dotted path referencing a context field.")
     operator: Literal[
         "equals",
@@ -39,8 +35,6 @@ class AutomationCondition(BaseModel):
 
 
 class AutomationRule(BaseModel):
-    """Rule describing an action to trigger when all conditions match."""
-
     name: str = Field(description="Rule identifier for observability.")
     action: str = Field(description="Action key to trigger when the rule matches.")
     payload: dict[str, Any] = Field(
@@ -58,8 +52,6 @@ class AutomationRule(BaseModel):
 
 
 class AutomationTriggerPayload(BaseModel):
-    """Typed payload for automation triggers."""
-
     model_config = ConfigDict(extra="forbid")
 
     context: Mapping[str, Any] = Field(
@@ -77,8 +69,6 @@ class AutomationTriggerPayload(BaseModel):
 
 
 class AutomationTriggerSettings(BaseModel):
-    """Settings for automation trigger evaluation."""
-
     max_rules: int = Field(
         default=20,
         ge=1,
@@ -88,12 +78,10 @@ class AutomationTriggerSettings(BaseModel):
 
 
 class AutomationTriggerAction:
-    """Action kit that evaluates declarative automation rules."""
-
     metadata = ActionMetadata(
         key="automation.trigger",
         provider="builtin-automation-trigger",
-        factory="oneiric.actions.automation:AutomationTriggerAction",
+        factory="oneiric.actions.automation: AutomationTriggerAction",
         description="Evaluates declarative automation rules and emits the matched actions/payloads",
         domains=["workflow", "task"],
         capabilities=["trigger", "rules", "selection"],
@@ -167,29 +155,24 @@ class AutomationTriggerAction:
         op = condition.operator
         expected = condition.value
 
-        # Simple comparison operators
         if op == "equals":
             return actual == expected
         if op == "not_equals":
             return actual != expected
 
-        # Collection operators
         if op == "contains":
             return self._contains(actual, expected)
         if op == "in":
             return self._in_collection(actual, expected)
 
-        # Numeric comparison operators
         if op in {"greater_than", "greater_or_equal", "less_than", "less_or_equal"}:
             return self._evaluate_numeric_operator(op, actual, expected)
 
-        # Existence operators
         if op == "exists":
             return actual is not None
         if op == "absent":
             return actual is None
 
-        # Boolean operators
         if op == "truthy":
             return bool(actual)
         if op == "falsy":
@@ -198,7 +181,6 @@ class AutomationTriggerAction:
         raise LifecycleError("automation-trigger-operator-invalid")
 
     def _evaluate_numeric_operator(self, op: str, actual: Any, expected: Any) -> bool:
-        """Evaluate numeric comparison operators."""
         comparison_map = {
             "greater_than": "gt",
             "greater_or_equal": "gte",
@@ -255,7 +237,6 @@ class AutomationTriggerAction:
         return current
 
     def _resolve_segment(self, current: Any, segment: str) -> Any:
-        """Resolve a single segment of a path."""
         if isinstance(current, Mapping):
             return current.get(segment)
 
@@ -265,13 +246,11 @@ class AutomationTriggerAction:
         return None
 
     def _is_sequence_not_string(self, value: Any) -> bool:
-        """Check if value is a sequence but not a string."""
         return isinstance(value, Sequence) and not isinstance(
             value, (str, bytes, bytearray)
         )
 
     def _resolve_index(self, sequence: Sequence, segment: str) -> Any:
-        """Resolve an index in a sequence."""
         try:
             index = int(segment)
         except ValueError:

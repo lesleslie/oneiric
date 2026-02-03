@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/cache/redis.py
+# hypothesis_version: 6.151.4
+
+[0.0, 2.0, 5.0, 400, 1000, 1024, 6379, 65535, 'Platform Core', 'Redis server port.', 'aclose', 'adapter', 'adapter-init', 'adapter-init-failed', 'adapter.cache.redis', 'cache', 'client_name', 'close', 'connection_pool', 'decode_responses', 'disconnect', 'distributed', 'kv', 'localhost', 'max_idle_seconds', 'max_keys', 'max_size_bytes', 'oneiric', 'password', 'px', 'redis', 'redis-cache', 'redis-init-failed', 'socket_timeout', 'ssl', 'ttl', 'username']

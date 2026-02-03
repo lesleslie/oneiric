@@ -1,5 +1,3 @@
-"""Durable execution hooks for workflow DAG runs."""
-
 from __future__ import annotations
 
 import sqlite3
@@ -17,8 +15,6 @@ from oneiric.runtime.protocols import WorkflowExecutionStoreProtocol
 
 
 class WorkflowExecutionStore:
-    """SQLite-backed store for durable workflow execution state."""
-
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)

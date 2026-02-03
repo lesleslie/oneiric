@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/storage/s3.py
+# hypothesis_version: 6.151.4
+
+[400, '404', 'Body', 'Bucket', 'Contents', 'ContinuationToken', 'Data Platform', 'IsTruncated', 'Key', 'NoSuchKey', 'Prefix', 'adapter', 'adapter-health-error', 'adapter-init', 'adapter.storage.s3', 'aioboto3-missing', 'aws_access_key_id', 'aws_session_token', 'blob', 'bucket', 'config', 'delete', 'endpoint_url', 'profile_name', 'region_name', 's3', 's3-storage', 's3v4', 'service_name', 'storage', 'stream']

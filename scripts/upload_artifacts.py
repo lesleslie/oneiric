@@ -1,23 +1,4 @@
 #!/usr/bin/env python3
-"""Upload artifacts (wheels, manifests) to S3/GCS.
-
-This script uploads build artifacts to cloud storage for remote manifest delivery.
-
-Usage:
-    # Upload to S3
-    python scripts/upload_artifacts.py \\
-      --artifact dist/oneiric-1.0.0-py3-none-any.whl \\
-      --backend s3 \\
-      --bucket oneiric-releases \\
-      --key releases/v1.0.0/oneiric.whl
-
-    # Upload to GCS
-    python scripts/upload_artifacts.py \\
-      --artifact dist/manifest.yaml \\
-      --backend gcs \\
-      --bucket oneiric-releases \\
-      --key releases/v1.0.0/manifest.yaml
-"""
 
 from __future__ import annotations
 
@@ -43,22 +24,6 @@ def upload_to_s3(
     region: str = "us-east-1",
     public_read: bool = False,
 ) -> str:
-    """Upload artifact to AWS S3.
-
-    Args:
-        artifact_path: Path to local artifact file
-        bucket: S3 bucket name
-        key: Object key (path within bucket)
-        region: AWS region (default: us-east-1)
-        public_read: Whether to make object publicly readable
-
-    Returns:
-        Public HTTPS URL to uploaded artifact
-
-    Raises:
-        ImportError: If boto3 not installed
-        Exception: If upload fails
-    """
     if boto3 is None:
         raise ImportError(
             "boto3 is required for S3 uploads. Install with: pip install boto3"
@@ -72,12 +37,12 @@ def upload_to_s3(
 
     s3 = boto3.client("s3", region_name=region)
 
-    # Build extra args
+
     extra_args = {}
     if public_read:
         extra_args["ACL"] = "public-read"
 
-    # Upload
+
     with artifact_path.open("rb") as f:
         s3.upload_fileobj(f, bucket, key, ExtraArgs=extra_args or None)
 
@@ -92,21 +57,6 @@ def upload_to_gcs(
     blob_name: str,
     public_read: bool = False,
 ) -> str:
-    """Upload artifact to Google Cloud Storage.
-
-    Args:
-        artifact_path: Path to local artifact file
-        bucket: GCS bucket name
-        blob_name: Blob name (path within bucket)
-        public_read: Whether to make blob publicly readable
-
-    Returns:
-        Public HTTPS URL to uploaded artifact
-
-    Raises:
-        ImportError: If google-cloud-storage not installed
-        Exception: If upload fails
-    """
     if storage is None:
         raise ImportError(
             "google-cloud-storage is required for GCS uploads. "
@@ -120,10 +70,10 @@ def upload_to_gcs(
 
     blob = storage.Client().bucket(bucket).blob(blob_name)
 
-    # Upload
+
     blob.upload_from_filename(str(artifact_path))
 
-    # Set public access if requested
+
     if public_read:
         blob.make_public()
 
@@ -138,7 +88,7 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Upload wheel to S3
+
   python scripts/upload_artifacts.py \\
     --artifact dist/oneiric-1.0.0-py3-none-any.whl \\
     --backend s3 \\
@@ -147,7 +97,7 @@ Examples:
     --region us-east-1 \\
     --public-read
 
-  # Upload manifest to GCS
+
   python scripts/upload_artifacts.py \\
     --artifact dist/manifest.yaml \\
     --backend gcs \\
@@ -199,7 +149,7 @@ Installation:
 
     args = parser.parse_args()
 
-    # Validate artifact exists
+
     if not args.artifact.exists():
         print(f"✗ Error: Artifact not found: {args.artifact}", file=sys.stderr)
         sys.exit(1)

@@ -1,5 +1,3 @@
-"""Data processing/enrichment/validation action kits."""
-
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
@@ -15,8 +13,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class DataTransformSettings(BaseModel):
-    """Settings governing field selection/renaming/defaults."""
-
     include_fields: list[str] | None = Field(
         default=None,
         description="When set, only these fields survive the transform.",
@@ -36,12 +32,10 @@ class DataTransformSettings(BaseModel):
 
 
 class DataTransformAction:  # noqa: C901
-    """Action kit that reshapes dictionaries using declarative rules."""
-
     metadata = ActionMetadata(
         key="data.transform",
         provider="builtin-data-transform",
-        factory="oneiric.actions.data:DataTransformAction",
+        factory="oneiric.actions.data: DataTransformAction",
         description="Data processing helper for selecting/renaming fields and applying defaults",
         domains=["task", "service", "workflow"],
         capabilities=["transform", "enrich", "validate"],
@@ -144,8 +138,6 @@ class DataTransformAction:  # noqa: C901
 
 
 class DataSanitizeSettings(BaseModel):
-    """Settings controlling sanitization behavior."""
-
     allow_fields: list[str] | None = Field(
         default=None,
         description="Optional allowlist restricting which fields survive sanitization.",
@@ -169,12 +161,10 @@ class DataSanitizeSettings(BaseModel):
 
 
 class DataSanitizeAction:
-    """Action kit that drops/masks sensitive fields."""
-
     metadata = ActionMetadata(
         key="data.sanitize",
         provider="builtin-data-sanitize",
-        factory="oneiric.actions.data:DataSanitizeAction",
+        factory="oneiric.actions.data: DataSanitizeAction",
         description="Sanitizes payloads by masking or removing sensitive fields",
         domains=["task", "service", "workflow"],
         capabilities=["sanitize", "redact", "filter"],
@@ -316,8 +306,6 @@ class DataSanitizeAction:
 
 
 class ValidationFieldRule(BaseModel):
-    """Rule describing a field requirement."""
-
     name: str
     type: Literal["str", "int", "float", "bool", "dict", "list", "any"] = Field(
         default="str"
@@ -327,8 +315,6 @@ class ValidationFieldRule(BaseModel):
 
 
 class ValidationSchemaSettings(BaseModel):
-    """Settings for schema validation action."""
-
     fields: list[ValidationFieldRule] = Field(default_factory=list)
     allow_extra: bool = Field(
         default=True,
@@ -341,12 +327,10 @@ class ValidationSchemaSettings(BaseModel):
 
 
 class ValidationSchemaAction:
-    """Action kit that validates payloads with lightweight schema rules."""
-
     metadata = ActionMetadata(
         key="validation.schema",
         provider="builtin-validation-schema",
-        factory="oneiric.actions.data:ValidationSchemaAction",
+        factory="oneiric.actions.data: ValidationSchemaAction",
         description="Validates records against declarative field requirements",
         domains=["task", "service", "workflow"],
         capabilities=["validate", "guard", "schema"],
@@ -387,10 +371,8 @@ class ValidationSchemaAction:
         validated: dict[str, Any] = {}
         required_names = {rule.name for rule in fields if rule.required}
 
-        # Validate field rules
         errors, validated = self._validate_fields(record, fields, fail_fast)
 
-        # Check for extra fields
         if not allow_extra:
             self._check_extra_fields(record, fields, errors)
 
@@ -409,12 +391,10 @@ class ValidationSchemaAction:
         }
 
     def _get_allow_extra(self, payload: dict) -> bool:
-        """Extract allow_extra setting from payload or settings."""
         allow_extra = payload.get("allow_extra")
         return self._settings.allow_extra if allow_extra is None else allow_extra
 
     def _get_fail_fast(self, payload: dict) -> bool:
-        """Extract fail_fast setting from payload or settings."""
         fail_fast = payload.get("fail_fast")
         return self._settings.fail_fast if fail_fast is None else fail_fast
 
@@ -424,7 +404,6 @@ class ValidationSchemaAction:
         fields: list[ValidationFieldRule],
         fail_fast: bool,
     ) -> tuple[list[str], dict[str, Any]]:
-        """Validate fields against rules."""
         errors: list[str] = []
         validated: dict[str, Any] = {}
 
@@ -446,7 +425,6 @@ class ValidationSchemaAction:
     def _validate_single_field(
         self, rule: ValidationFieldRule, value: Any
     ) -> str | None:
-        """Validate a single field and return error message if invalid."""
         if value is None:
             if not rule.allow_null and rule.required:
                 return f"{rule.name} missing"
@@ -464,7 +442,6 @@ class ValidationSchemaAction:
         fields: list[ValidationFieldRule],
         errors: list[str],
     ) -> None:
-        """Check for unexpected fields not in schema."""
         field_names = {rule.name for rule in fields}
         extra = [key for key in record.keys() if key not in field_names]
         if extra:

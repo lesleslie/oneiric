@@ -1,5 +1,3 @@
-"""Runtime metrics helpers for events and workflow DAGs."""
-
 from __future__ import annotations
 
 from opentelemetry import metrics
@@ -47,8 +45,6 @@ def record_event_handler_metrics(
     duration_ms: float,
     attempts: int,
 ) -> None:
-    """Record duration/attempt telemetry for an event handler invocation."""
-
     attrs: dict[str, str] = {
         "handler": handler,
         "topic": topic,
@@ -68,8 +64,6 @@ def record_workflow_node_metrics(
     duration_ms: float,
     attempts: int,
 ) -> None:
-    """Record duration/attempt telemetry for a workflow DAG node execution."""
-
     attrs: dict[str, str] = {
         "workflow": workflow,
         "node": node,

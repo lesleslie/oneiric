@@ -1,5 +1,3 @@
-"""Remote manifest metrics helpers."""
-
 from __future__ import annotations
 
 from opentelemetry import metrics

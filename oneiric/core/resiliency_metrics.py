@@ -1,5 +1,3 @@
-"""Metrics helpers for retry/backoff and circuit breaker events."""
-
 from __future__ import annotations
 
 from opentelemetry import metrics

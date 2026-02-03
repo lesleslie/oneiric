@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/remote/models.py
+# hypothesis_version: 6.151.4
+
+['before', 'capabilities', 'description', 'ed25519', 'event_types', 'metadata', 'name', 'payload_schema', 'remote', 'schema_format', 'security']

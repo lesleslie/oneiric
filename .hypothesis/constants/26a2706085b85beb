@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/runtime/durable.py
+# hypothesis_version: 6.151.4
+
+['completed', 'failed', 'running', 'skipped']

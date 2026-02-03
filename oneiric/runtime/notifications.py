@@ -1,5 +1,3 @@
-"""Helpers for routing workflow.notify payloads to ChatOps adapters."""
-
 from __future__ import annotations
 
 import inspect
@@ -8,7 +6,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from oneiric.adapters import AdapterBridge
-from oneiric.adapters.messaging.common import (
+from oneiric.adapters.messaging.messaging_types import (
     MessagingSendResult,
     NotificationMessage,
 )
@@ -18,8 +16,6 @@ from oneiric.core.logging import get_logger
 
 @dataclass
 class NotificationRoute:
-    """Configuration describing how to deliver a workflow notification."""
-
     adapter_key: str | None = None
     adapter_provider: str | None = None
     target: str | None = None
@@ -31,8 +27,6 @@ class NotificationRoute:
 
 
 class NotificationRouter:
-    """Routes workflow.notify payloads to messaging adapters."""
-
     def __init__(
         self,
         adapter_bridge: AdapterBridge,
@@ -52,8 +46,6 @@ class NotificationRouter:
         record: Mapping[str, Any],
         route: NotificationRoute | None = None,
     ) -> MessagingSendResult | None:
-        """Send a workflow notification using the resolved adapter."""
-
         route = route or NotificationRoute()
         adapter_key = route.adapter_key or self._default_adapter_key
         if not adapter_key:

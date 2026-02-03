@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/actions/debug.py
+# hypothesis_version: 6.151.4
+
+[390, '***', 'Platform Core', '[debug]', 'action.debug.console', 'console', 'critical', 'debug', 'debug-console', 'debug.console', 'details', 'echo', 'emitted', 'error', 'event', 'include_timestamp', 'info', 'key', 'level', 'message', 'observe', 'password', 'prefix', 'scrub_fields', 'secret', 'status', 'task', 'timestamp', 'token', 'warning', 'workflow']

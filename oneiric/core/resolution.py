@@ -1,5 +1,3 @@
-"""Resolver and candidate registry."""
-
 from __future__ import annotations
 
 import os
@@ -41,8 +39,6 @@ class CandidateSource(str, Enum):
 
 
 class Candidate(BaseModel):
-    """Normalized representation of a resolvable component."""
-
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     domain: str
@@ -62,8 +58,6 @@ class Candidate(BaseModel):
 
 
 class ResolverSettings(BaseModel):
-    """Resolver behavior toggles and overrides."""
-
     default_priority: int = 0
     selections: dict[str, dict[str, str]] = Field(default_factory=dict)
 
@@ -109,25 +103,6 @@ class ResolutionExplanation:
 
 
 class CandidateRegistry:
-    """Thread-safe registry for component candidates.
-
-    This registry manages component resolution with 4-tier precedence:
-    1. Explicit override (selections in config)
-    2. Inferred priority (from ONEIRIC_STACK_ORDER or path hints)
-    3. Stack level (Z-index style layering)
-    4. Registration order (last registered wins)
-
-    Thread Safety:
-        All public methods are thread-safe using a reentrant lock (RLock).
-        The lock allows the same thread to acquire it multiple times,
-        which is necessary for methods that call other methods internally.
-
-    Example:
-        >>> registry = CandidateRegistry()
-        >>> registry.register_candidate(candidate)  # Thread-safe
-        >>> active = registry.resolve("adapter", "cache")  # Thread-safe
-    """
-
     def __init__(self, settings: ResolverSettings | None = None) -> None:
         self.settings = settings or ResolverSettings()
         self._logger = get_logger("resolver")
@@ -137,19 +112,9 @@ class CandidateRegistry:
         self._active: dict[tuple[str, str], Candidate | None] = {}
         self._shadowed: dict[tuple[str, str], list[Candidate]] = {}
         self._sequence = 0
-        self._lock = threading.RLock()  # Reentrant lock for thread safety
-
-    # Public API -----------------------------------------------------------------
+        self._lock = threading.RLock()
 
     def register_candidate(self, candidate: Candidate) -> None:
-        """Register a new candidate (thread-safe).
-
-        Args:
-            candidate: Candidate to register
-
-        Thread Safety:
-            Uses internal lock to ensure atomic registration and recomputation.
-        """
         with self._lock:
             stored = candidate.model_copy(deep=True)
             if stored.priority is None:
@@ -178,19 +143,6 @@ class CandidateRegistry:
         *,
         require_all: bool = True,
     ) -> Candidate | None:
-        """Resolve a candidate (thread-safe).
-
-        Args:
-            domain: Component domain
-            key: Component key
-            provider: Optional provider filter
-
-        Returns:
-            Resolved candidate or None
-
-        Thread Safety:
-            Read operation protected by lock for consistency.
-        """
         with self._lock:
             if provider:
                 candidates = self._candidates.get((domain, key), [])
@@ -213,17 +165,6 @@ class CandidateRegistry:
             return explanation.winner
 
     def list_active(self, domain: str) -> list[Candidate]:
-        """List all active candidates for a domain (thread-safe).
-
-        Args:
-            domain: Component domain
-
-        Returns:
-            List of active candidates
-
-        Thread Safety:
-            Acquires lock to ensure consistent snapshot.
-        """
         with self._lock:
             return [
                 cand
@@ -232,17 +173,6 @@ class CandidateRegistry:
             ]
 
     def list_shadowed(self, domain: str) -> list[Candidate]:
-        """List all shadowed candidates for a domain (thread-safe).
-
-        Args:
-            domain: Component domain
-
-        Returns:
-            List of shadowed candidates
-
-        Thread Safety:
-            Acquires lock to ensure consistent snapshot.
-        """
         with self._lock:
             shadowed: list[Candidate] = []
             for (cand_domain, _), cands in self._shadowed.items():
@@ -258,18 +188,6 @@ class CandidateRegistry:
         capabilities: Iterable[str] | None = None,
         require_all: bool = True,
     ) -> ResolutionExplanation:
-        """Explain resolution decision (thread-safe).
-
-        Args:
-            domain: Component domain
-            key: Component key
-
-        Returns:
-            Detailed resolution explanation
-
-        Thread Safety:
-            Acquires lock to ensure consistent scoring.
-        """
         with self._lock:
             return self._score_candidates(
                 domain,
@@ -277,8 +195,6 @@ class CandidateRegistry:
                 capabilities=capabilities,
                 require_all=require_all,
             )
-
-    # Internal helpers -----------------------------------------------------------
 
     def _recompute(self, domain: str, key: str) -> None:
         explanation = self._score_candidates(domain, key)
@@ -332,7 +248,6 @@ class CandidateRegistry:
         override_provider: str | None,
         required: list[str],
     ) -> CandidateRank:
-        """Rank a single candidate and return CandidateRank."""
         reasons: list[str] = []
         override_score = int(
             bool(override_provider and cand.provider == override_provider)
@@ -415,8 +330,6 @@ def register_pkg(
 
 
 class Resolver:
-    """High-level facade that wraps the candidate registry."""
-
     def __init__(self, settings: ResolverSettings | None = None) -> None:
         self.settings = settings or ResolverSettings()
         self.registry = CandidateRegistry(self.settings)
@@ -493,7 +406,6 @@ def _candidate_supports_capabilities(
 
 
 def _extract_capabilities_from_list(capabilities: Any) -> set[str]:
-    """Extract capability names from a list of capabilities."""
     result: set[str] = set()
     if isinstance(capabilities, str):
         result.add(capabilities)
@@ -505,7 +417,6 @@ def _extract_capabilities_from_list(capabilities: Any) -> set[str]:
 
 
 def _extract_capabilities_from_descriptors(descriptors: Any) -> set[str]:
-    """Extract capability names from capability descriptors."""
     result: set[str] = set()
     if isinstance(descriptors, Iterable):
         for item in descriptors:
@@ -515,7 +426,6 @@ def _extract_capabilities_from_descriptors(descriptors: Any) -> set[str]:
 
 
 def _candidate_capabilities(candidate: Candidate) -> set[str]:
-    """Extract all capability names from a candidate."""
     metadata = candidate.metadata or {}
     capabilities = metadata.get("capabilities") or []
     descriptors = metadata.get("capability_descriptors") or []

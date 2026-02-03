@@ -1,5 +1,3 @@
-"""Adapter-level metrics helpers."""
-
 from __future__ import annotations
 
 from typing import Any
@@ -85,8 +83,6 @@ def record_adapter_queue_depth(
 def capture_adapter_state_metrics(
     instance: Any, *, category: str, provider: str
 ) -> None:
-    """Attempt to capture pool/queue metrics from adapter instances."""
-
     pool_size = _extract_numeric(
         instance,
         ("pool_size", "connections", "active_connections", "max_connections"),

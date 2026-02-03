@@ -1,5 +1,3 @@
-"""ArangoDB graph adapter."""
-
 from __future__ import annotations
 
 import asyncio
@@ -16,10 +14,8 @@ from oneiric.core.resolution import CandidateSource
 
 
 class ArangoDBGraphSettings(BaseModel):
-    """Configuration for the ArangoDB adapter."""
-
     hosts: str = Field(
-        default="http://localhost:8529", description="HTTP hosts URI for ArangoDB."
+        default="http://localhost: 8529", description="HTTP hosts URI for ArangoDB."
     )
     database: str = Field(default="_system", description="Database name to connect to.")
     graph: str | None = Field(
@@ -36,12 +32,10 @@ class ArangoDBGraphSettings(BaseModel):
 
 
 class ArangoDBGraphAdapter:
-    """Adapter that exposes basic vertex/edge helpers backed by python-arango."""
-
     metadata = AdapterMetadata(
         category="graph",
         provider="arangodb",
-        factory="oneiric.adapters.graph.arangodb:ArangoDBGraphAdapter",
+        factory="oneiric.adapters.graph.arangodb: ArangoDBGraphAdapter",
         capabilities=["vertices", "edges", "aql"],
         stack_level=30,
         priority=390,

@@ -1,5 +1,3 @@
-"""Firestore adapter built on google-cloud-firestore async client."""
-
 from __future__ import annotations
 
 import inspect
@@ -14,12 +12,10 @@ from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
 
-from .common import NoSQLAdapterBase, NoSQLBaseSettings, NoSQLDocument
+from .nosql_types import NoSQLAdapterBase, NoSQLBaseSettings, NoSQLDocument
 
 
 class FirestoreSettings(NoSQLBaseSettings):
-    """Configuration for the Firestore adapter."""
-
     project_id: str = Field(
         default="demo-project", description="Google Cloud project ID."
     )
@@ -32,17 +28,15 @@ class FirestoreSettings(NoSQLBaseSettings):
     )
     emulator_host: str | None = Field(
         default=None,
-        description="Optional Firestore emulator host (HOST:PORT). When set, this value is injected into FIRESTORE_EMULATOR_HOST.",
+        description="Optional Firestore emulator host (HOST: PORT). When set, this value is injected into FIRESTORE_EMULATOR_HOST.",
     )
 
 
 class FirestoreAdapter(NoSQLAdapterBase):
-    """Async Firestore adapter."""
-
     metadata = AdapterMetadata(
         category="nosql",
         provider="firestore",
-        factory="oneiric.adapters.nosql.firestore:FirestoreAdapter",
+        factory="oneiric.adapters.nosql.firestore: FirestoreAdapter",
         capabilities=["documents", "query", "serverless"],
         stack_level=30,
         priority=420,

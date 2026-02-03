@@ -1,5 +1,3 @@
-"""Action metadata + registry helpers."""
-
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
@@ -21,8 +19,6 @@ FactoryType = Callable[..., Any] | str
 
 
 class ActionMetadata(BaseModel):
-    """Declarative metadata describing a resolver-managed action kit."""
-
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     key: str = Field(description="Action kit identifier (e.g., compression.encode)")
@@ -74,8 +70,6 @@ def register_action_metadata(
     actions: Sequence[ActionMetadata],
     priority: int | None = None,
 ) -> None:
-    """Register metadata-defined action kits with the resolver."""
-
     register_metadata(
         resolver,
         package_name,

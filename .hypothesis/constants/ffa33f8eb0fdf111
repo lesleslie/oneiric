@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/graph/duckdb_pgq.py
+# hypothesis_version: 6.151.4
+
+[360, ':memory:', 'Data Platform', 'INSTALL pgq', 'LOAD pgq', 'SELECT 1 AS ok', '_', 'adapter', 'analytics', 'close', 'description', 'duckdb_pgq', 'executemany', 'graph', 'ok', 'pgq', 'pgq_edges', 'pgq_identifier', 'source_id', 'table_edges', 'target_id']

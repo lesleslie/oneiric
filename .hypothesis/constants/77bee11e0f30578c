@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/secrets/aws.py
+# hypothesis_version: 6.151.4
+
+[560, '404', 'Code', 'Error', 'ResourceNotFound', 'SecretBinary', 'SecretId', 'SecretString', 'Security', 'VersionStage', 'adapter', 'adapter-health-error', 'adapter-init', 'adapter.secrets.aws', 'aioboto3-missing', 'args', 'aws-secret-manager', 'aws_access_key_id', 'aws_session_token', 'cache', 'close', 'endpoint_url', 'profile_name', 'region_name', 'remote', 'response', 'secrets', 'secretsmanager', 'service_name', 'utf-8']

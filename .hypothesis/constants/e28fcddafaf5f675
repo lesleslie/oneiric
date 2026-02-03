@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/vector/pinecone.py
+# hypothesis_version: 6.151.4
+
+[30.0, 100, 500, 'Data Platform', 'adapter', 'aws', 'batch_operations', 'cloud', 'cosine', 'default', 'environment', 'filter', 'id', 'ids', 'include_metadata', 'include_values', 'matches', 'metadata', 'metadata_filtering', 'namespace', 'namespaces', 'p1.x1', 'pinecone', 'pod', 'pod_type', 'pods', 'region', 'replicas', 'score', 'serverless', 'shards', 'top_k', 'total_vector_count', 'upserted_count', 'us-east-1', 'us-west1-gcp-free', 'values', 'vector', 'vector_count', 'vector_search', 'vectors']

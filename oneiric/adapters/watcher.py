@@ -1,5 +1,3 @@
-"""Adapter config watcher wrapper."""
-
 from __future__ import annotations
 
 from oneiric.core.config import OneiricSettings, load_settings

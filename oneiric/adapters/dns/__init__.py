@@ -1,5 +1,3 @@
-"""DNS adapters."""
-
 from .cloudflare import CloudflareDNSAdapter, CloudflareDNSSettings
 from .gcdns import GCDNSAdapter, GCDNSSettings
 from .route53 import Route53DNSAdapter, Route53DNSSettings

@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/remote/metrics.py
+# hypothesis_version: 6.151.4
+
+[128, '...', '1', 'error', 'ms', 'oneiric.remote', 'source', 'unknown', 'url']

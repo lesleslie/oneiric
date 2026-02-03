@@ -1,5 +1,3 @@
-"""Runtime cache management for MCP servers."""
-
 from __future__ import annotations
 
 import json
@@ -15,21 +13,17 @@ logger = get_logger(__name__)
 
 @dataclass
 class CacheEntry:
-    """Cache entry data structure."""
-
     key: str
     value: Any
     timestamp: float
-    ttl: float | None = None  # Time-to-live in seconds
+    ttl: float | None = None
 
     def is_expired(self) -> bool:
-        """Check if cache entry is expired."""
         if self.ttl is None:
             return False
         return time.time() > self.timestamp + self.ttl
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert cache entry to dictionary."""
         return {
             "key": self.key,
             "value": self.value,
@@ -39,7 +33,6 @@ class CacheEntry:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> CacheEntry:
-        """Create cache entry from dictionary."""
         return cls(
             key=data["key"],
             value=data["value"],
@@ -49,14 +42,12 @@ class CacheEntry:
 
 
 class RuntimeCacheManager:
-    """Manages runtime cache for MCP servers."""
-
     def __init__(
         self,
         cache_dir: str = ".oneiric_cache",
         server_name: str = "mcp-server",
         max_entries: int = 1000,
-        default_ttl: float | None = 3600,  # 1 hour default TTL
+        default_ttl: float | None = 3600,
     ):
         self.cache_dir = Path(cache_dir)
         self.server_name = server_name
@@ -67,20 +58,16 @@ class RuntimeCacheManager:
         self.initialized = False
 
     async def initialize(self) -> None:
-        """Initialize cache manager."""
         logger.info(f"Initializing RuntimeCacheManager for {self.server_name}")
 
-        # Create cache directory if it doesn't exist
         self.cache_dir.mkdir(exist_ok=True)
 
-        # Load cache from disk if it exists
         await self._load_cache()
 
         self.initialized = True
         logger.info(f"Cache manager initialized: {self.cache_file}")
 
     async def _load_cache(self) -> None:
-        """Load cache from disk."""
         if self.cache_file.exists():
             try:
                 with self.cache_file.open(encoding="utf-8") as f:
@@ -90,7 +77,7 @@ class RuntimeCacheManager:
                     for entry_data in data:
                         try:
                             entry = CacheEntry.from_dict(entry_data)
-                            # Only add non-expired entries
+
                             if not entry.is_expired():
                                 self.cache[entry.key] = entry
                         except (KeyError, TypeError) as e:
@@ -103,11 +90,9 @@ class RuntimeCacheManager:
                 logger.error(f"Failed to load cache {self.cache_file}: {e}")
 
     async def set(self, key: str, value: Any, ttl: float | None = None) -> None:
-        """Set a value in the cache."""
         if not self.initialized:
             await self.initialize()
 
-        # Use default TTL if not specified
         if ttl is None:
             ttl = self.default_ttl
 
@@ -115,16 +100,13 @@ class RuntimeCacheManager:
 
         self.cache[key] = entry
 
-        # Save cache to disk
         await self._save_cache()
 
-        # Clean up expired entries
         await self._cleanup_expired_entries()
 
         logger.debug(f"Cache set: {key}")
 
     async def get(self, key: str) -> Any | None:
-        """Get a value from the cache."""
         if not self.initialized:
             await self.initialize()
 
@@ -133,7 +115,6 @@ class RuntimeCacheManager:
         if entry is None:
             return None
 
-        # Check if entry is expired
         if entry.is_expired():
             await self.delete(key)
             return None
@@ -142,7 +123,6 @@ class RuntimeCacheManager:
         return entry.value
 
     async def delete(self, key: str) -> bool:
-        """Delete a value from the cache."""
         if not self.initialized:
             await self.initialize()
 
@@ -155,15 +135,12 @@ class RuntimeCacheManager:
         return False
 
     async def clear(self) -> None:
-        """Clear the entire cache."""
         self.cache = {}
         await self._save_cache()
         logger.info("Cache cleared")
 
     async def _save_cache(self) -> None:
-        """Save cache to disk."""
         try:
-            # Convert cache entries to serializable format
             cache_data = []
             for entry in self.cache.values():
                 cache_data.append(entry.to_dict())
@@ -177,7 +154,6 @@ class RuntimeCacheManager:
             raise
 
     async def _cleanup_expired_entries(self) -> None:
-        """Clean up expired cache entries."""
         expired_keys = []
 
         for key, entry in self.cache.items():
@@ -192,7 +168,6 @@ class RuntimeCacheManager:
             await self._save_cache()
 
     async def get_cache_stats(self) -> dict[str, Any]:
-        """Get cache statistics."""
         return {
             "total_entries": len(self.cache),
             "max_entries": self.max_entries,
@@ -201,13 +176,10 @@ class RuntimeCacheManager:
         }
 
     async def cleanup(self) -> None:
-        """Clean up cache manager resources."""
         logger.info(f"Cleaning up RuntimeCacheManager for {self.server_name}")
 
-        # Save final cache state
         await self._save_cache()
 
-        # Clear in-memory cache
         self.cache = {}
         self.initialized = False
 

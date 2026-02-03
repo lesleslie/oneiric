@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/storage/gcs.py
+# hypothesis_version: 6.151.4
+
+[404, 450, '404', 'Data Platform', 'GCP project ID.', 'Not Found', 'adapter', 'adapter-health-error', 'adapter-init', 'adapter.storage.gcs', 'blob', 'bucket', 'credentials', 'delete', 'gcs', 'gcs-storage', 'project', 'storage', 'stream']

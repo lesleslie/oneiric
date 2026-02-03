@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/metadata.py
+# hypothesis_version: 6.151.4
+
+['adapter', 'adapter.metadata', 'capabilities', 'description', 'owner', 'requires_secrets', 'settings_model', 'version']

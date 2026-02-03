@@ -1,5 +1,3 @@
-"""In-memory cache adapter with lifecycle hooks."""
-
 from __future__ import annotations
 
 import asyncio
@@ -16,8 +14,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class MemoryCacheSettings(BaseModel):
-    """Provider settings for the memory cache adapter."""
-
     default_ttl: float | None = Field(
         default=None,
         ge=0.0,
@@ -31,12 +27,10 @@ class MemoryCacheSettings(BaseModel):
 
 
 class MemoryCacheAdapter:
-    """Async-friendly in-memory cache with optional TTL and max entry count."""
-
     metadata = AdapterMetadata(
         category="cache",
         provider="memory",
-        factory="oneiric.adapters.cache.memory:MemoryCacheAdapter",
+        factory="oneiric.adapters.cache.memory: MemoryCacheAdapter",
         capabilities=["kv", "ttl"],
         stack_level=5,
         priority=100,

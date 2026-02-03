@@ -1,5 +1,3 @@
-"""Entry-point discovery helpers for Oneiric plugins."""
-
 from __future__ import annotations
 
 from collections import abc
@@ -40,8 +38,6 @@ class PluginErrorRecord:
 
 @dataclass
 class PluginRegistrationReport:
-    """Diagnostics describing plugin bootstrap activity."""
-
     groups: list[str] = field(default_factory=list)
     registered: int = 0
     entries: list[PluginEntryRecord] = field(default_factory=list)
@@ -69,24 +65,16 @@ class _FactoryLoadResult:
 
 
 def iter_entry_points(group: str) -> Sequence[metadata.EntryPoint]:
-    """Return entry points for the supplied group (PyPI metadata helper)."""
-
     entry_points = metadata.entry_points()
     if hasattr(entry_points, "select"):
         return tuple(entry_points.select(group=group))
-    # Fallback for dict-like EntryPoints on older Python
+
     if hasattr(entry_points, "get"):
         return tuple(entry_points.get(group, []))  # type: ignore[attr-defined]
     return ()
 
 
 def load_callables(group: str) -> list[Callable[[], object]]:
-    """Load callable factories exposed via an entry-point group.
-
-    Any entry point that fails to load is logged and skipped so plugin discovery
-    remains best-effort.
-    """
-
     return [
         result.factory
         for result in _load_entry_point_factories(group)
@@ -95,8 +83,6 @@ def load_callables(group: str) -> list[Callable[[], object]]:
 
 
 def discover_metadata(group: str) -> Iterable[object]:
-    """Convenience wrapper that calls each plugin factory and yields metadata."""
-
     for factory in load_callables(group):
         try:
             yield factory()
@@ -115,8 +101,6 @@ def register_entrypoint_plugins(
     *,
     skip_if_loaded: bool = True,
 ) -> PluginRegistrationReport:
-    """Load entry-point plugins and register returned candidates."""
-
     if not config:
         return PluginRegistrationReport.empty()
 
@@ -144,7 +128,6 @@ def register_entrypoint_plugins(
 
 
 def _build_plugin_groups(config: PluginsConfig) -> list[str]:
-    """Build list of plugin groups to load."""
     groups: list[str] = []
     if config.auto_load:
         groups.extend(DEFAULT_ENTRY_POINT_GROUPS)
@@ -155,7 +138,6 @@ def _build_plugin_groups(config: PluginsConfig) -> list[str]:
 def _process_plugin_groups(
     resolver: Resolver, groups: list[str]
 ) -> PluginRegistrationReport:
-    """Process all plugin groups and build registration report."""
     seen = set()
     report = PluginRegistrationReport()
 
@@ -172,7 +154,6 @@ def _process_plugin_groups(
 def _process_plugin_group(
     resolver: Resolver, group: str, report: PluginRegistrationReport
 ) -> None:
-    """Process a single plugin group."""
     for result in _load_entry_point_factories(group):
         if not result.factory:
             _record_factory_error(group, result, report)
@@ -180,17 +161,14 @@ def _process_plugin_group(
 
         payload, had_error = _invoke_factory(group, result, report)
         if had_error:
-            # Error already recorded by _invoke_factory
             continue
 
-        # Process payload (even if None - will be validated by _register_payload_candidates)
         _register_payload_candidates(resolver, group, result, payload, report)
 
 
 def _record_factory_error(
     group: str, result: _FactoryLoadResult, report: PluginRegistrationReport
 ) -> None:
-    """Record error for failed factory load."""
     report.errors.append(
         PluginErrorRecord(
             group=group,
@@ -203,11 +181,6 @@ def _record_factory_error(
 def _invoke_factory(
     group: str, result: _FactoryLoadResult, report: PluginRegistrationReport
 ) -> tuple[object | None, bool]:
-    """Invoke factory and handle errors.
-
-    Returns:
-        Tuple of (payload, had_error) where had_error indicates if an exception occurred.
-    """
     if result.factory is None:
         return (None, True)
 
@@ -236,7 +209,6 @@ def _register_payload_candidates(
     payload: object,
     report: PluginRegistrationReport,
 ) -> None:
-    """Normalize and register candidates from payload."""
     normalized = _normalize_candidates(payload)
     if not normalized:
         report.errors.append(
@@ -275,7 +247,6 @@ def _normalize_candidates(payload: object) -> list[Candidate]:
             candidates.extend(_normalize_candidates(item))
         return candidates
 
-    # Only reached if payload is not None, Candidate, AdapterMetadata, or Iterable
     logger.warning(
         "plugin-unsupported-payload",
         type=type(payload).__name__,

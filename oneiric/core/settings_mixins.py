@@ -1,5 +1,3 @@
-"""Reusable settings fragments."""
-
 from __future__ import annotations
 
 from pydantic import AnyHttpUrl, BaseModel, Field

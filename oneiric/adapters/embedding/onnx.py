@@ -1,5 +1,3 @@
-"""ONNX Runtime embeddings adapter implementation for optimized inference."""
-
 from __future__ import annotations
 
 import asyncio
@@ -16,7 +14,7 @@ from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
 
-from .common import (
+from .embedding_interface import (
     EmbeddingBase,
     EmbeddingBaseSettings,
     EmbeddingBatch,
@@ -26,7 +24,6 @@ from .common import (
     PoolingStrategy,
 )
 
-# Check if onnxruntime and transformers are available
 _onnx_available = (
     importlib.util.find_spec("onnxruntime") is not None
     and importlib.util.find_spec("transformers") is not None
@@ -34,8 +31,6 @@ _onnx_available = (
 
 
 class ONNXEmbeddingSettings(EmbeddingBaseSettings):
-    """ONNX-specific embedding settings."""
-
     model_config = ConfigDict(env_prefix="ONNX_")
 
     model_path: str = Field(description="Path to ONNX model file")
@@ -52,7 +47,6 @@ class ONNXEmbeddingSettings(EmbeddingBaseSettings):
         description="ONNX execution providers (CPUExecutionProvider, CUDAExecutionProvider, etc.)",
     )
 
-    # Model optimization
     enable_cpu_mem_arena: bool = Field(
         default=True,
         description="Enable CPU memory arena for better performance",
@@ -74,7 +68,6 @@ class ONNXEmbeddingSettings(EmbeddingBaseSettings):
         description="Number of threads for intra-op parallelism (0 = auto)",
     )
 
-    # Processing settings
     max_seq_length: int = Field(
         default=512,
         description="Maximum sequence length for tokenization",
@@ -82,7 +75,6 @@ class ONNXEmbeddingSettings(EmbeddingBaseSettings):
     pooling_strategy: PoolingStrategy = Field(default=PoolingStrategy.MEAN)
     batch_size: int = Field(default=32)
 
-    # Edge optimization
     optimize_for_inference: bool = Field(
         default=True,
         description="Enable inference optimizations",
@@ -96,17 +88,14 @@ class ONNXEmbeddingSettings(EmbeddingBaseSettings):
         description="Graph optimization level (ORT_DISABLE_ALL, ORT_ENABLE_BASIC, ORT_ENABLE_EXTENDED, ORT_ENABLE_ALL)",
     )
 
-    # Override base settings defaults
     model: str = Field(default=EmbeddingModel.ONNX_ALL_MINILM_L6_V2.value)
 
 
 class ONNXEmbeddingAdapter(EmbeddingBase):
-    """ONNX Runtime embeddings adapter implementing the lifecycle contract."""
-
     metadata = AdapterMetadata(
         category="embedding",
         provider="onnx",
-        factory="oneiric.adapters.embedding.onnx:ONNXEmbeddingAdapter",
+        factory="oneiric.adapters.embedding.onnx: ONNXEmbeddingAdapter",
         version="1.0.0",
         description="ONNX Runtime embeddings adapter for high-performance inference and edge deployment",
         capabilities=[
@@ -122,11 +111,11 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
             "vector_normalization",
             "on_device",
         ],
-        stack_level=25,  # Lower than sentence_transformers (30) - more optimized
-        priority=450,  # Between OpenAI (500) and sentence_transformers (400)
+        stack_level=25,
+        priority=450,
         source=CandidateSource.LOCAL_PKG,
         owner="AI Platform",
-        requires_secrets=False,  # No API key required - runs locally
+        requires_secrets=False,
         settings_model=ONNXEmbeddingSettings,
     )
 
@@ -144,7 +133,6 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
         )
 
     async def init(self) -> None:
-        """Initialize ONNX embeddings adapter."""
         self._logger.info("onnx-adapter-init-start")
 
         if not _onnx_available:
@@ -153,10 +141,8 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
             )
 
         try:
-            # Load model and tokenizer
             await self._load_model()
 
-            # Test with a simple embedding request
             test_result = await self.embed_text("initialization test")
             self._logger.debug(
                 "onnx-test-success",
@@ -170,7 +156,6 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
             raise LifecycleError(f"onnx-init-failed: {exc}") from exc
 
     async def _load_model(self) -> None:
-        """Load the ONNX model and tokenizer."""
         try:
             import importlib
 
@@ -183,7 +168,6 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
                 tokenizer=self._settings.tokenizer_name,
             )
 
-            # Load tokenizer in executor
             self._tokenizer = await asyncio.get_event_loop().run_in_executor(
                 None,
                 lambda: transformers.AutoTokenizer.from_pretrained(
@@ -192,7 +176,6 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
                 ),
             )
 
-            # Configure ONNX session options
             session_options = ort.SessionOptions()
             session_options.enable_cpu_mem_arena = self._settings.enable_cpu_mem_arena
             session_options.enable_mem_pattern = self._settings.enable_mem_pattern
@@ -207,7 +190,6 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
                     self._settings.intra_op_num_threads
                 )
 
-            # Set graph optimization level
             opt_level_map = {
                 "ORT_DISABLE_ALL": ort.GraphOptimizationLevel.ORT_DISABLE_ALL,
                 "ORT_ENABLE_BASIC": ort.GraphOptimizationLevel.ORT_ENABLE_BASIC,
@@ -219,7 +201,6 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
                 ort.GraphOptimizationLevel.ORT_ENABLE_ALL,
             )
 
-            # Create ONNX session in executor
             self._session = await asyncio.get_event_loop().run_in_executor(
                 None,
                 lambda: ort.InferenceSession(
@@ -229,7 +210,6 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
                 ),
             )
 
-            # Get input/output names
             if self._session is not None:
                 self._input_names = [
                     input_node.name for input_node in self._session.get_inputs()
@@ -250,18 +230,15 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
             raise LifecycleError(f"onnx-model-load-failed: {exc}") from exc
 
     async def _ensure_client(self) -> tuple[Any, Any]:
-        """Ensure ONNX session and tokenizer are initialized."""
         if self._session is None or self._tokenizer is None:
             await self._load_model()
         return self._session, self._tokenizer
 
     async def health(self) -> bool:
-        """Check if ONNX embeddings service is healthy."""
         if not self._session or not self._tokenizer:
             return False
 
         try:
-            # Test with a simple embedding request
             await self.embed_text("health check test")
             return True
         except Exception as exc:
@@ -269,7 +246,6 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
             return False
 
     async def cleanup(self) -> None:
-        """Cleanup ONNX session and tokenizer resources."""
         if self._session is not None:
             try:
                 del self._session
@@ -294,7 +270,6 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
         texts: list[str],
         tokenizer: Any,
     ) -> dict[str, np.ndarray]:
-        """Tokenize batch of texts for ONNX processing."""
         return await asyncio.get_event_loop().run_in_executor(
             None,
             lambda: tokenizer(
@@ -310,7 +285,6 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
         self,
         tokenized: dict[str, np.ndarray],
     ) -> dict[str, np.ndarray]:
-        """Prepare inputs for ONNX inference."""
         onnx_inputs: dict[str, np.ndarray] = {}
 
         for input_name in self._input_names:
@@ -328,7 +302,6 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
         text: str,
         tokenizer: Any,
     ) -> int | None:
-        """Safely count tokens with error handling."""
         if not hasattr(tokenizer, "encode"):
             return None
 
@@ -344,7 +317,6 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
         model: str,
         token_count: int | None,
     ) -> EmbeddingResult:
-        """Create single embedding result with metadata."""
         return EmbeddingResult(
             text=text,
             embedding=embedding.tolist(),
@@ -367,31 +339,24 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
         model: str,
         normalize: bool,
     ) -> list[EmbeddingResult]:
-        """Process a single batch of texts."""
-        # Tokenize
         inputs = await self._tokenize_batch(batch_texts, tokenizer)
 
-        # Prepare ONNX inputs
         onnx_inputs = self._prepare_onnx_inputs(inputs)
 
-        # Run inference in executor
         outputs = await asyncio.get_event_loop().run_in_executor(
             None,
             lambda: session.run(self._output_names, onnx_inputs),
         )
 
-        # Apply pooling
         embeddings = await self._apply_pooling(
             outputs[0],
             inputs["attention_mask"],
             self._settings.pooling_strategy,
         )
 
-        # Normalize if requested
         if normalize:
             embeddings = self._normalize_embeddings(embeddings)
 
-        # Create results with token counting
         return [
             self._create_embedding_result(
                 text,
@@ -411,7 +376,6 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
         model: str,
         normalize: bool,
     ) -> list[EmbeddingResult]:
-        """Process all text batches and return results."""
         results = []
         batches = self._batch_texts(texts, batch_size)
 
@@ -446,11 +410,9 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
         batch_size: int,
         **kwargs: Any,
     ) -> EmbeddingBatch:
-        """Generate embeddings for multiple texts using ONNX Runtime."""
         start_time = time.time()
         session, tokenizer = await self._ensure_client()
 
-        # Process all batches
         results = await self._process_all_batches(
             texts,
             batch_size,
@@ -460,7 +422,6 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
             normalize,
         )
 
-        # Aggregate metrics
         processing_time = time.time() - start_time
         total_tokens = sum(result.tokens or 0 for result in results)
 
@@ -478,9 +439,7 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
         attention_mask: np.ndarray,
         strategy: PoolingStrategy,
     ) -> np.ndarray:
-        """Apply pooling strategy to token embeddings."""
         if strategy == PoolingStrategy.MEAN:
-            # Mean pooling with attention mask
             input_mask_expanded = np.expand_dims(attention_mask, axis=-1)
             input_mask_expanded = np.repeat(
                 input_mask_expanded,
@@ -498,7 +457,6 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
             return result
 
         if strategy == PoolingStrategy.MAX:
-            # Max pooling
             input_mask_expanded = np.expand_dims(attention_mask, axis=-1)
             input_mask_expanded = np.repeat(
                 input_mask_expanded,
@@ -515,12 +473,10 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
             return result
 
         if strategy == PoolingStrategy.CLS:
-            # CLS token pooling (first token)
             result = token_embeddings[:, 0]
             return result
 
         if strategy == PoolingStrategy.WEIGHTED_MEAN:
-            # Weighted mean (simple implementation)
             weights = np.expand_dims(attention_mask, axis=-1).astype(np.float32)
             weighted_embeddings = token_embeddings * weights
             sum_embeddings = np.sum(weighted_embeddings, axis=1)
@@ -531,7 +487,6 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
         raise ValueError(f"Unsupported pooling strategy: {strategy}")
 
     def _normalize_embeddings(self, embeddings: np.ndarray) -> np.ndarray:
-        """Normalize embeddings using L2 normalization."""
         norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
         norms = np.clip(norms, a_min=1e-12, a_max=None)
         result: np.ndarray = embeddings / norms
@@ -545,14 +500,11 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
         model: str,
         **kwargs: Any,
     ) -> list[EmbeddingBatch]:
-        """Embed large documents with chunking."""
         batches = []
 
         for document in documents:
-            # Split document into chunks
             chunks = self._chunk_text(document, chunk_size, chunk_overlap)
 
-            # Generate embeddings for chunks
             batch = await self._embed_texts(
                 chunks,
                 model=model,
@@ -561,7 +513,6 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
                 **kwargs,
             )
 
-            # Add document metadata
             for result in batch.results:
                 result.metadata.update(
                     {
@@ -582,7 +533,6 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
         embedding2: list[float],
         method: str,
     ) -> float:
-        """Compute similarity between two embeddings."""
         if method == "cosine":
             return EmbeddingUtils.cosine_similarity(embedding1, embedding2)
         if method == "euclidean":
@@ -595,7 +545,6 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
         raise ValueError(f"Unsupported similarity method: {method}")
 
     async def _get_model_info(self, model: str) -> dict[str, Any]:
-        """Get information about the ONNX model."""
         model_info: dict[str, Any] = {
             "name": model,
             "provider": "onnx",
@@ -619,8 +568,6 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
         return model_info
 
     async def _list_models(self) -> list[dict[str, Any]]:
-        """List common ONNX embedding models."""
-        # These would typically be downloaded/converted models
         models = [
             {
                 "name": "onnx-all-MiniLM-L6-v2",
@@ -648,7 +595,6 @@ class ONNXEmbeddingAdapter(EmbeddingBase):
         ]
 
     async def get_performance_metrics(self) -> dict[str, Any]:
-        """Get ONNX runtime performance metrics."""
         if not self._session:
             return {}
 

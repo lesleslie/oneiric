@@ -1,5 +1,3 @@
-"""OTLP monitoring adapter for OpenTelemetry traces + metrics."""
-
 from __future__ import annotations
 
 import asyncio
@@ -16,8 +14,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class OTLPObservabilitySettings(BaseModel):
-    """Settings for configuring OTLP exporters."""
-
     endpoint: str = Field(
         default="http://127.0.0.1:4317", description="OTLP collector endpoint."
     )
@@ -57,12 +53,10 @@ class _OTLPComponents:
 
 
 class OTLPObservabilityAdapter:
-    """Adapter that wires OpenTelemetry SDK exporters for OTLP endpoints."""
-
     metadata = AdapterMetadata(
         category="monitoring",
         provider="otel-otlp",
-        factory="oneiric.adapters.monitoring.otlp:OTLPObservabilityAdapter",
+        factory="oneiric.adapters.monitoring.otlp: OTLPObservabilityAdapter",
         capabilities=["metrics", "tracing"],
         stack_level=29,
         priority=205,

@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/queue/pubsub.py
+# hypothesis_version: 6.151.4
+
+[410, 'Platform Core', 'ack_id', 'ack_ids', 'adapter', 'adapter.queue.pubsub', 'attributes', 'close', 'data', 'events', 'fanout', 'max_messages', 'message_id', 'ordering_key', 'pubsub', 'pubsub-adapter-init', 'pubsub-health-failed', 'queue', 'received_messages', 'subscription', 'utf-8']

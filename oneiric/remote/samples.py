@@ -1,5 +1,3 @@
-"""Sample factories used by remote manifest demos."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

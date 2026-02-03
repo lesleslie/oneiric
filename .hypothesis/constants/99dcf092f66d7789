@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/dns/route53.py
+# hypothesis_version: 6.151.4
+
+[300, 310, '1', 'A', 'AAAA', 'Action', 'CNAME', 'CREATE', 'ChangeInfo', 'Changes', 'DELETE', 'Hosted zone ID', 'HostedZoneId', 'Id', 'MX', 'NS', 'Name', 'Platform Core', 'ResourceRecordSet', 'ResourceRecordSets', 'ResourceRecords', 'SRV', 'StartRecordName', 'StartRecordType', 'TTL', 'TXT', 'Type', 'UPSERT', 'Value', 'adapter', 'adapter.dns.route53', 'dns', 'record.list', 'record.manage', 'route53', 'route53-dns-cleanup', 'route53-dns-init', 'us-east-1']

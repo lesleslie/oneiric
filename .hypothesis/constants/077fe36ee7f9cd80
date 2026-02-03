@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/queue/cloudtasks.py
+# hypothesis_version: 6.151.4
+
+[400, 1000, 'Content-Type', 'POST', 'Platform Core', 'adapter', 'application/json', 'audience', 'body', 'close', 'cloudtasks', 'cloudtasks-task', 'dispatch_deadline', 'headers', 'http_method', 'http_request', 'name', 'nanos', 'oidc_token', 'queue', 'schedule_time', 'scheduler', 'seconds', 'url', 'utf-8']

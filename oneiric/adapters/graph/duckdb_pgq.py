@@ -1,5 +1,3 @@
-"""DuckDB PGQ adapter."""
-
 from __future__ import annotations
 
 import asyncio
@@ -17,8 +15,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class DuckDBPGQSettings(BaseModel):
-    """Configuration for DuckDB PGQ adapter."""
-
     database: str = Field(
         default=":memory:",
         description="DuckDB database path; use ':memory:' for in-memory graphs.",
@@ -42,7 +38,6 @@ class DuckDBPGQSettings(BaseModel):
     )
 
     def ensure_database_dir(self) -> None:
-        """Create parent directory when database points to a file."""
         if self.database not in (":memory:", "", None):
             path = Path(self.database)
             if path.parent:
@@ -50,12 +45,10 @@ class DuckDBPGQSettings(BaseModel):
 
 
 class DuckDBPGQAdapter:
-    """Adapter exposing PGQ helpers on top of DuckDB."""
-
     metadata = AdapterMetadata(
         category="graph",
         provider="duckdb_pgq",
-        factory="oneiric.adapters.graph.duckdb_pgq:DuckDBPGQAdapter",
+        factory="oneiric.adapters.graph.duckdb_pgq: DuckDBPGQAdapter",
         capabilities=["pgq", "table_edges", "analytics"],
         stack_level=30,
         priority=360,
@@ -109,7 +102,6 @@ class DuckDBPGQAdapter:
         self._logger.info("duckdb-pgq-adapter-cleanup")
 
     async def ingest_edges(self, edges: Sequence[tuple[str, str]]) -> None:
-        """Insert multiple edges into the configured edge table."""
         if not edges:
             return
         table = self._table_identifier()
@@ -117,7 +109,6 @@ class DuckDBPGQAdapter:
         await self._executemany(sql, edges)
 
     async def neighbors(self, node_id: str) -> list[str]:
-        """Return direct neighbors for the provided node."""
         table = self._table_identifier()
         sql = f"SELECT {self._target_column()} FROM {table} WHERE {self._source_column()} = ?"
         rows = await self.query(sql, parameters=(node_id,))
@@ -130,7 +121,6 @@ class DuckDBPGQAdapter:
     async def query(
         self, sql: str, *, parameters: Iterable[Any] | None = None
     ) -> list[dict[str, Any]]:
-        """Execute a SQL/PGQ query and return rows as dicts."""
         conn = await self._ensure_connection()
         params_tuple: tuple[Any, ...] = tuple(parameters or ())
 
@@ -161,7 +151,6 @@ class DuckDBPGQAdapter:
         return conn
 
     async def _bootstrap(self) -> None:
-        """Install/Load PGQ extension and ensure edge table exists."""
         if not self._conn:
             return
         if self._settings.install_pgq and not self._settings.read_only:

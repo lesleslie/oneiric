@@ -1,5 +1,3 @@
-"""Shared persistence helpers for domain pause/drain state."""
-
 from __future__ import annotations
 
 import sqlite3
@@ -37,8 +35,6 @@ class DomainActivity:
 
 
 class DomainActivityStore:
-    """SQLite-backed persistence for domain pause/drain activity."""
-
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -111,8 +107,6 @@ class DomainActivityStore:
                 note=note,
             )
         return snapshot
-
-    # internal -----------------------------------------------------------------
 
     @contextmanager
     def _connection(self) -> Iterator[sqlite3.Connection]:

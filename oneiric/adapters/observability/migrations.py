@@ -1,28 +1,9 @@
-"""Database migration scripts for OTel telemetry storage.
-
-This module provides functions to create and drop the database schema
-for OpenTelemetry traces, metrics, logs, and dead-letter queue tables.
-Includes vector index creation for semantic similarity search.
-"""
-
 from __future__ import annotations
 
 from sqlalchemy import text
 
 
 async def create_otel_schema(session) -> None:
-    """Create all OTel telemetry tables and indexes.
-
-    Creates the following tables:
-    - otel_traces: Distributed trace spans with vector embeddings
-    - otel_metrics: Time-series metric data points
-    - otel_logs: Log entries with trace correlation
-    - otel_telemetry_dlq: Dead-letter queue for failed telemetry
-
-    Args:
-        session: SQLAlchemy async session
-    """
-    # Create otel_traces table
     await session.execute(
         text(
             """
@@ -46,7 +27,6 @@ async def create_otel_schema(session) -> None:
         )
     )
 
-    # Create otel_metrics table
     await session.execute(
         text(
             """
@@ -63,7 +43,6 @@ async def create_otel_schema(session) -> None:
         )
     )
 
-    # Create otel_logs table
     await session.execute(
         text(
             """
@@ -80,7 +59,6 @@ async def create_otel_schema(session) -> None:
         )
     )
 
-    # Create otel_telemetry_dlq table
     await session.execute(
         text(
             """
@@ -97,7 +75,6 @@ async def create_otel_schema(session) -> None:
         )
     )
 
-    # Create indexes for otel_traces
     await session.execute(
         text("CREATE INDEX IF NOT EXISTS ix_traces_trace_id ON otel_traces(trace_id)")
     )
@@ -118,7 +95,6 @@ async def create_otel_schema(session) -> None:
         )
     )
 
-    # Create indexes for otel_metrics
     await session.execute(
         text("CREATE INDEX IF NOT EXISTS ix_metrics_name ON otel_metrics(name)")
     )
@@ -131,7 +107,6 @@ async def create_otel_schema(session) -> None:
         text("CREATE INDEX IF NOT EXISTS ix_metrics_type ON otel_metrics(type)")
     )
 
-    # Create indexes for otel_logs
     await session.execute(
         text("CREATE INDEX IF NOT EXISTS ix_logs_timestamp ON otel_logs(timestamp)")
     )
@@ -146,13 +121,6 @@ async def create_otel_schema(session) -> None:
 
 
 async def drop_otel_schema(session) -> None:
-    """Drop all OTel telemetry tables.
-
-    This is primarily intended for testing purposes.
-
-    Args:
-        session: SQLAlchemy async session
-    """
     await session.execute(text("DROP TABLE IF EXISTS otel_telemetry_dlq CASCADE"))
     await session.execute(text("DROP TABLE IF EXISTS otel_logs CASCADE"))
     await session.execute(text("DROP TABLE IF EXISTS otel_metrics CASCADE"))
@@ -161,16 +129,6 @@ async def drop_otel_schema(session) -> None:
 
 
 async def create_vector_index(session, num_lists: int = 100) -> None:
-    """Create IVFFlat vector index for similarity search.
-
-    Creates an approximate nearest neighbor index on the embedding column
-    using the IVFFlat access method for efficient vector similarity search.
-
-    Args:
-        session: SQLAlchemy async session
-        num_lists: Number of lists for IVFFlat (default: 100)
-                   Recommendation: num_lists = num_rows / 1000
-    """
     await session.execute(
         text(
             f"""
@@ -185,23 +143,11 @@ async def create_vector_index(session, num_lists: int = 100) -> None:
 
 
 async def create_ivfflat_index_if_ready(session) -> bool:
-    """Create IVFFlat index if sufficient traces exist.
-
-    IVFFlat indexes require 1000+ vectors to be effective.
-    This function checks trace count and creates index if threshold met.
-
-    Args:
-        session: SQLAlchemy async session
-
-    Returns:
-        True if index created, False if skipped
-    """
     import logging
 
     logger = logging.getLogger(__name__)
 
     try:
-        # Check trace count
         result = await session.execute(text("SELECT COUNT(*) FROM otel_traces"))
         trace_count = result.scalar()
 
@@ -214,7 +160,6 @@ async def create_ivfflat_index_if_ready(session) -> bool:
             )
             return False
 
-        # Check if index already exists
         result = await session.execute(
             text("""
             SELECT indexname FROM pg_indexes
@@ -225,7 +170,6 @@ async def create_ivfflat_index_if_ready(session) -> bool:
             logger.info("ivfflat-index-exists: Index already exists")
             return False
 
-        # Create IVFFlat index
         await session.execute(
             text("""
             CREATE INDEX CONCURRENTLY ix_traces_embedding_ivfflat
@@ -251,26 +195,17 @@ async def create_ivfflat_index_if_ready(session) -> bool:
 
 
 async def create_query_optimization_indexes(session) -> None:
-    """Create indexes for common query patterns.
-
-    Creates composite and GIN indexes for optimized error search
-    and time-range queries.
-    """
     import logging
 
     logger = logging.getLogger(__name__)
 
     try:
-        # Composite index for time-range error queries
         await session.execute(
             text("""
             CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_traces_start_time_status
             ON otel_traces (start_time, status)
         """)
         )
-
-        # GIN index for JSON attribute queries (already exists in schema, skip)
-        # Note: ix_traces_attributes_gin is already created in create_otel_schema
 
         await session.commit()
         logger.info("query-indexes-created: indexes=%s", ["start_time_status"])

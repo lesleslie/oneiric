@@ -1,5 +1,3 @@
-"""DuckDB database adapter with lifecycle integration."""
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -14,8 +12,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class DuckDBDatabaseSettings(BaseModel):
-    """Configuration for the DuckDB adapter."""
-
     database_url: str = Field(
         default="duckdb:///data/app.duckdb",
         description="DuckDB connection URL (duckdb:// for sync, duckdb+async:// for async)",
@@ -41,7 +37,6 @@ class DuckDBDatabaseSettings(BaseModel):
     @field_validator("database_url")
     @classmethod
     def validate_database_url(cls, value: str) -> str:
-        """Validate that database URL starts with duckdb:// or duckdb+async://."""
         if not value.startswith(("duckdb://", "duckdb+async://")):
             raise ValueError(
                 "Database URL must start with duckdb:// or duckdb+async://"
@@ -50,11 +45,9 @@ class DuckDBDatabaseSettings(BaseModel):
 
     @property
     def database_path(self) -> Path | None:
-        """Extract database path from URL."""
-        # Parse URL to get path
         if ":///" in self.database_url:
             path_part = self.database_url.split("///", 1)[1]
-            # Remove query parameters
+
             if "?" in path_part:
                 path_part = path_part.split("?")[0]
             if path_part and path_part != ":memory:":
@@ -63,12 +56,10 @@ class DuckDBDatabaseSettings(BaseModel):
 
 
 class DuckDBDatabaseAdapter:
-    """DuckDB adapter optimized for analytical workloads and in-memory processing."""
-
     metadata = AdapterMetadata(
         category="database",
         provider="duckdb",
-        factory="oneiric.adapters.database.duckdb:DuckDBDatabaseAdapter",
+        factory="oneiric.adapters.database.duckdb: DuckDBDatabaseAdapter",
         capabilities=[
             "sql",
             "analytics",
@@ -95,19 +86,16 @@ class DuckDBDatabaseAdapter:
         )
 
     async def init(self) -> None:
-        """Initialize DuckDB connection and apply configuration."""
         try:
             import duckdb
         except ImportError as exc:
             raise LifecycleError("duckdb-import-failed: pip install duckdb") from exc
 
-        # Ensure parent directory exists for file-based databases
         db_path = self._settings.database_path
         if db_path:
             db_path.parent.mkdir(parents=True, exist_ok=True)
             self._logger.debug("duckdb-database-path", path=str(db_path))
 
-        # Extract database path from URL
         database = ":memory:"
         if ":///" in self._settings.database_url:
             path_part = self._settings.database_url.split("///", 1)[1]
@@ -115,7 +103,6 @@ class DuckDBDatabaseAdapter:
                 path_part = path_part.split("?")[0]
             database = path_part or ":memory:"
 
-        # Connect to DuckDB
         try:
             self._conn = duckdb.connect(
                 database=database,
@@ -129,7 +116,6 @@ class DuckDBDatabaseAdapter:
         except Exception as exc:
             raise LifecycleError(f"duckdb-connection-failed: {exc}") from exc
 
-        # Apply configuration
         await self._set_threads()
         await self._apply_pragmas()
         await self._install_extensions()
@@ -138,7 +124,6 @@ class DuckDBDatabaseAdapter:
         self._logger.info("duckdb-adapter-init-success", database=database)
 
     async def _set_threads(self) -> None:
-        """Set number of threads for query execution."""
         if self._settings.threads is None:
             return
 
@@ -148,21 +133,17 @@ class DuckDBDatabaseAdapter:
         self._logger.debug("duckdb-threads-set", threads=threads)
 
     async def _apply_pragmas(self) -> None:
-        """Apply PRAGMA settings."""
         if not self._settings.pragmas:
             return
 
         conn = self._ensure_conn()
         for pragma, value in self._settings.pragmas.items():
-            # Convert value to string
             value_str = value if isinstance(value, str) else str(value)
 
-            # Check if value is numeric
             numeric_check = value_str.lstrip("-+").replace(".", "", 1).isdigit()
             if isinstance(value, (int, float)) or numeric_check:
                 clause = value_str
             else:
-                # Escape single quotes in string values
                 escaped = value_str.replace("'", "''")
                 clause = f"'{escaped}'"
 
@@ -170,13 +151,11 @@ class DuckDBDatabaseAdapter:
             self._logger.debug("duckdb-pragma-applied", pragma=pragma, value=clause)
 
     async def _install_extensions(self) -> None:
-        """Install and load DuckDB extensions."""
         if not self._settings.extensions or self._settings.read_only:
             return
 
         conn = self._ensure_conn()
         for extension in self._settings.extensions:
-            # Sanitize extension name
             safe_ext = extension.replace('"', "").replace("'", "")
 
             try:
@@ -189,7 +168,6 @@ class DuckDBDatabaseAdapter:
                 )
 
     async def _set_temp_directory(self) -> None:
-        """Set temporary directory for spill-to-disk."""
         if not self._settings.temp_directory:
             return
 
@@ -200,7 +178,6 @@ class DuckDBDatabaseAdapter:
         )
 
     async def health(self) -> bool:
-        """Check if DuckDB connection is healthy."""
         if not self._conn:
             return False
 
@@ -213,7 +190,6 @@ class DuckDBDatabaseAdapter:
             return False
 
     async def cleanup(self) -> None:
-        """Cleanup DuckDB connection."""
         if self._conn:
             try:
                 self._conn.close()
@@ -225,7 +201,6 @@ class DuckDBDatabaseAdapter:
         self._logger.info("duckdb-cleanup-complete")
 
     async def execute(self, query: str, *args: Any) -> int:
-        """Execute a SQL query and return number of affected rows."""
         conn = self._ensure_conn()
 
         try:
@@ -234,10 +209,8 @@ class DuckDBDatabaseAdapter:
             else:
                 result = conn.execute(query)
 
-            # DuckDB doesn't always provide rowcount, try to get it
             rowcount = 0
             try:
-                # For INSERT/UPDATE/DELETE, DuckDB returns affected rows
                 rowcount = len(result.fetchall()) if result.description else 0
             except Exception:
                 rowcount = 0
@@ -248,7 +221,6 @@ class DuckDBDatabaseAdapter:
             raise LifecycleError(f"duckdb-execute-failed: {exc}") from exc
 
     async def fetch_all(self, query: str, *args: Any) -> list[tuple[Any, ...]]:
-        """Execute a SQL query and fetch all rows."""
         conn = self._ensure_conn()
 
         try:
@@ -266,7 +238,6 @@ class DuckDBDatabaseAdapter:
             raise LifecycleError(f"duckdb-fetch-all-failed: {exc}") from exc
 
     async def fetch_one(self, query: str, *args: Any) -> tuple[Any, ...] | None:
-        """Execute a SQL query and fetch one row."""
         conn = self._ensure_conn()
 
         try:
@@ -284,7 +255,6 @@ class DuckDBDatabaseAdapter:
             raise LifecycleError(f"duckdb-fetch-one-failed: {exc}") from exc
 
     async def fetch_df(self, query: str, *args: Any) -> Any:
-        """Execute a SQL query and return results as a pandas DataFrame."""
         conn = self._ensure_conn()
 
         try:
@@ -293,7 +263,6 @@ class DuckDBDatabaseAdapter:
             else:
                 result = conn.execute(query)
 
-            # DuckDB natively returns DataFrames via df() method
             df = result.df()
             return df
         except ImportError as exc:
@@ -305,7 +274,6 @@ class DuckDBDatabaseAdapter:
             raise LifecycleError(f"duckdb-fetch-df-failed: {exc}") from exc
 
     async def fetch_arrow(self, query: str, *args: Any) -> Any:
-        """Execute a SQL query and return results as an Arrow table."""
         conn = self._ensure_conn()
 
         try:
@@ -314,7 +282,6 @@ class DuckDBDatabaseAdapter:
             else:
                 result = conn.execute(query)
 
-            # DuckDB natively returns Arrow tables via arrow() method
             arrow_table = result.arrow()
             return arrow_table
         except ImportError as exc:
@@ -326,12 +293,10 @@ class DuckDBDatabaseAdapter:
             raise LifecycleError(f"duckdb-fetch-arrow-failed: {exc}") from exc
 
     def _ensure_conn(self) -> Any:
-        """Ensure connection is initialized."""
         if not self._conn:
             raise LifecycleError("duckdb-connection-not-initialized")
         return self._conn
 
     @property
     def connection(self) -> Any:
-        """Get the underlying DuckDB connection."""
         return self._ensure_conn()

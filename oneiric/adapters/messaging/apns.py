@@ -1,5 +1,3 @@
-"""Apple Push Notification Service (APNS) adapter."""
-
 from __future__ import annotations
 
 import inspect
@@ -14,12 +12,10 @@ from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
 
-from .common import MessagingSendResult, NotificationMessage
+from .messaging_types import MessagingSendResult, NotificationMessage
 
 
 class APNSPushSettings(BaseModel):
-    """Settings for the APNS adapter."""
-
     topic: str = Field(description="APNS topic/bundle identifier.")
     use_sandbox: bool = Field(default=False, description="Use the sandbox gateway.")
     key_id: str | None = Field(default=None, description="APNS auth key ID.")
@@ -49,12 +45,10 @@ class APNSPushSettings(BaseModel):
 
 
 class APNSPushAdapter:
-    """Adapter that sends mobile push notifications through APNS."""
-
     metadata = AdapterMetadata(
         category="messaging",
         provider="apns",
-        factory="oneiric.adapters.messaging.apns:APNSPushAdapter",
+        factory="oneiric.adapters.messaging.apns: APNSPushAdapter",
         capabilities=["notifications", "push"],
         stack_level=20,
         priority=370,
@@ -94,7 +88,6 @@ class APNSPushAdapter:
             self._logger.info("apns-adapter-init")
             return
 
-        # Defer default client initialization until first send.
         self._logger.info("apns-adapter-init", deferred_client=True)
 
     async def cleanup(self) -> None:
@@ -210,7 +203,6 @@ class APNSPushAdapter:
         payload: dict[str, Any],
         send_kwargs: dict[str, Any],
     ) -> Any | None:
-        """Try to send via send_notification method."""
         if not hasattr(client, "send_notification"):
             return None
         try:
@@ -228,7 +220,6 @@ class APNSPushAdapter:
         payload: dict[str, Any],
         send_kwargs: dict[str, Any],
     ) -> Any | None:
-        """Try to send via send method."""
         if not hasattr(client, "send"):
             return None
         try:
@@ -246,7 +237,6 @@ class APNSPushAdapter:
         payload: dict[str, Any],
         send_kwargs: dict[str, Any],
     ) -> Any | None:
-        """Try to send via NotificationRequest object."""
         request_cls = getattr(self._aioapns, "NotificationRequest", None)
         if request_cls is None:
             return None
@@ -266,17 +256,14 @@ class APNSPushAdapter:
         payload: dict[str, Any],
         send_kwargs: dict[str, Any],
     ) -> Any:
-        # Try send_notification method
         result = await self._try_send_notification(client, token, payload, send_kwargs)
         if result is not None:
             return result
 
-        # Try send method
         result = await self._try_send(client, token, payload, send_kwargs)
         if result is not None:
             return result
 
-        # Try NotificationRequest object
         result = await self._try_notification_request(
             client, token, payload, send_kwargs
         )

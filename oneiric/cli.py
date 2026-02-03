@@ -1,5 +1,3 @@
-"""Oneiric command line utilities."""
-
 from __future__ import annotations
 
 import asyncio
@@ -183,7 +181,6 @@ def _default_notification_adapter_key(settings: OneiricSettings) -> str | None:
 
 
 def _extract_notification_metadata(candidate: Candidate) -> dict[str, Any] | None:
-    """Extract notification metadata from workflow candidate."""
     metadata = candidate.metadata.get("notifications")
     if not isinstance(metadata, Mapping):
         return None
@@ -334,7 +331,6 @@ def _event_results_payload(results: list[HandlerResult]) -> list[dict[str, Any]]
 
 
 def _load_manifest_from_path(path: Path) -> RemoteManifest:
-    """Load manifest JSON/YAML into a RemoteManifest model."""
     text = path.read_text()
     try:
         return RemoteManifest.model_validate_json(text)
@@ -560,7 +556,7 @@ def _initialize_state(
     settings = load_settings(config_path)
     env_profile = os.getenv("ONEIRIC_PROFILE")
     settings = apply_profile_with_fallback(settings, profile or env_profile)
-    # Suppress events unless debug mode is enabled
+
     suppress_events = not settings.app.debug
     configure_logging(settings.logging, suppress_events=suppress_events)
     resolver = Resolver(settings=resolver_settings_from_config(settings))
@@ -941,7 +937,6 @@ def _resolve_http_port(port_option: int | None) -> int:
 
 
 def _print_remote_config(settings: OneiricSettings, payload: dict[str, Any]) -> None:
-    """Print remote configuration details."""
     print(f"Cache dir: {settings.remote.cache_dir}")
     manifest_url = settings.remote.manifest_url or "not configured"
     print(f"Manifest URL: {manifest_url}")
@@ -952,7 +947,6 @@ def _print_remote_config(settings: OneiricSettings, payload: dict[str, Any]) -> 
 
 
 def _print_remote_success_status(telemetry) -> None:
-    """Print last successful sync status."""
     metrics = _build_remote_metrics(telemetry)
     print(
         f"Last success: {telemetry.last_success_at} from {telemetry.last_source or 'unknown'}; "
@@ -970,7 +964,6 @@ def _print_remote_success_status(telemetry) -> None:
 
 
 def _print_remote_failure_status(telemetry) -> None:
-    """Print last failed sync status."""
     print(
         "Last failure: "
         f"{telemetry.last_failure_at} (error={telemetry.last_error or 'unknown'}; "
@@ -979,7 +972,6 @@ def _print_remote_failure_status(telemetry) -> None:
 
 
 def _build_remote_metrics(telemetry) -> str:
-    """Build metrics string for remote sync."""
     metric_parts = [f"registered={telemetry.last_registered or 0}"]
     if telemetry.last_duration_ms is not None:
         metric_parts.append(f"duration_ms={telemetry.last_duration_ms:.2f}")
@@ -1043,7 +1035,6 @@ def _workflow_target_keys(  # noqa: C901
 
 
 def _parse_dependency_list(depends: Any) -> list[str]:
-    """Parse dependency specification into a normalized list."""
     if isinstance(depends, Sequence) and not isinstance(depends, (str, bytes)):
         return list(depends)
     elif depends:
@@ -1052,7 +1043,6 @@ def _parse_dependency_list(depends: Any) -> list[str]:
 
 
 def _build_workflow_node(entry: Mapping[str, Any]) -> dict[str, Any] | None:
-    """Build a workflow node entry from raw spec, or None if invalid."""
     node_id = entry.get("id") or entry.get("key")
     if not node_id:
         return None
@@ -1065,7 +1055,6 @@ def _build_workflow_node(entry: Mapping[str, Any]) -> dict[str, Any] | None:
         "depends_on": depends_list,
     }
 
-    # Add optional fields if present
     for opt_field in ("payload", "checkpoint", "retry_policy"):
         value = entry.get(opt_field)
         if value:
@@ -1130,7 +1119,6 @@ def _emit_inspector_payload(payload: dict[str, Any], json_output: bool) -> None:
 
 
 def _enrich_workflow_plan(plan: dict[str, Any], candidate: Candidate | None) -> None:
-    """Enrich workflow plan with scheduler and notifications metadata."""
     if not candidate:
         return
 
@@ -1154,7 +1142,6 @@ def _build_workflow_plans(
     bridge: WorkflowBridge,
     filters: Sequence[str],
 ) -> tuple[dict[str, Any], list[str]]:
-    """Build workflow plans for filtered or all workflows."""
     specs = bridge.dag_specs()
     targets = _workflow_target_keys(filters, specs.keys())
     plans: dict[str, Any] = {}
@@ -1183,13 +1170,11 @@ def _workflow_plan_payload(
     bridge: WorkflowBridge,
     filters: Sequence[str],
 ) -> dict[str, Any]:
-    """Generate workflow plan payload."""
     plans, missing = _build_workflow_plans(resolver, bridge, filters)
     return {"workflows": plans, "missing": missing}
 
 
 def _format_workflow_node(node: dict[str, Any]) -> str:
-    """Format a single workflow node entry."""
     depends = node.get("depends_on") or []
     depends_text = ", ".join(depends) if depends else "root"
     retry_policy = node.get("retry_policy")
@@ -1202,7 +1187,6 @@ def _format_workflow_node(node: dict[str, Any]) -> str:
 
 
 def _print_workflow_metadata(record: dict[str, Any]) -> None:
-    """Print workflow scheduler and notifications metadata."""
     scheduler = record.get("scheduler")
     if scheduler:
         print(f"    scheduler={scheduler}")
@@ -1212,13 +1196,11 @@ def _print_workflow_metadata(record: dict[str, Any]) -> None:
 
 
 def _print_workflow_nodes(nodes: list[dict[str, Any]]) -> None:
-    """Print all workflow nodes."""
     for node in nodes:
         print(_format_workflow_node(node))
 
 
 def _print_single_workflow_plan(workflow_key: str, record: dict[str, Any]) -> None:
-    """Print a single workflow plan entry."""
     queue = record.get("queue_category") or "queue"
     print(
         f"- {workflow_key}: nodes={record.get('node_count', 0)} edges={record.get('edge_count', 0)} queue={queue}"
@@ -1228,7 +1210,6 @@ def _print_single_workflow_plan(workflow_key: str, record: dict[str, Any]) -> No
 
 
 def _print_workflow_plan(data: dict[str, Any]) -> None:
-    """Print workflow plan summary."""
     workflows = data.get("workflows") or {}
     if not workflows:
         print("No workflow plans available.")
@@ -1244,7 +1225,6 @@ def _print_workflow_plan(data: dict[str, Any]) -> None:
 
 
 def _print_workflow_last_run(last_run: dict[str, Any]) -> None:
-    """Print workflow last run information."""
     if not last_run:
         return
     duration = float(last_run.get("total_duration_ms", 0.0))
@@ -1253,7 +1233,6 @@ def _print_workflow_last_run(last_run: dict[str, Any]) -> None:
 
 
 def _print_workflow_inspector_node(node: dict[str, Any]) -> None:
-    """Print a single workflow inspector node."""
     depends = node.get("depends_on") or []
     depends_text = ", ".join(depends) if depends else "root"
     retry_policy = node.get("retry_policy")
@@ -1264,7 +1243,6 @@ def _print_workflow_inspector_node(node: dict[str, Any]) -> None:
 
 
 def _print_single_workflow_inspector(workflow_key: str, record: dict[str, Any]) -> None:
-    """Print a single workflow inspector entry."""
     queue = record.get("queue_category") or "queue"
     entry_nodes = record.get("entry_nodes") or []
     entry_text = ", ".join(entry_nodes) if entry_nodes else "n/a"
@@ -1277,7 +1255,6 @@ def _print_single_workflow_inspector(workflow_key: str, record: dict[str, Any]) 
 
 
 def _print_workflow_inspector(data: dict[str, Any]) -> None:
-    """Print workflow inspector summary."""
     summary = data.get("summary") or {}
     if not summary:
         print("No workflow DAGs registered.")
@@ -1293,7 +1270,6 @@ def _print_workflow_inspector(data: dict[str, Any]) -> None:
 
 
 def _format_filter_clause(clause: dict[str, Any]) -> str:
-    """Format a single filter clause into a string."""
     parts = [clause.get("path")]
     if clause.get("equals") is not None:
         parts.append(f"== {clause['equals']}")
@@ -1308,7 +1284,6 @@ def _format_filter_clause(clause: dict[str, Any]) -> str:
 
 
 def _print_handler_filters(filters: list[dict[str, Any]]) -> None:
-    """Print event handler filters."""
     if not filters:
         return
     print("    filters:")
@@ -1317,7 +1292,6 @@ def _print_handler_filters(filters: list[dict[str, Any]]) -> None:
 
 
 def _print_single_handler(handler: dict[str, Any]) -> None:
-    """Print a single event handler's details."""
     topics = handler.get("topics") or ["*"]
     topics_text = ", ".join(topics)
     print(
@@ -1331,7 +1305,6 @@ def _print_single_handler(handler: dict[str, Any]) -> None:
 
 
 def _print_event_handlers(handlers: list[dict[str, Any]]) -> None:
-    """Print all event handlers."""
     if not handlers:
         print("No event handlers registered.")
         return
@@ -1341,7 +1314,6 @@ def _print_event_handlers(handlers: list[dict[str, Any]]) -> None:
 
 
 def _print_last_event(last_event: dict[str, Any]) -> None:
-    """Print the last event summary."""
     if not last_event:
         return
     print(
@@ -1356,7 +1328,6 @@ def _print_last_event(last_event: dict[str, Any]) -> None:
 
 
 def _print_event_inspector(data: dict[str, Any]) -> None:
-    """Print event inspector summary."""
     handlers = data.get("handlers") or []
     _print_event_handlers(handlers)
     last_event = data.get("last_event") or {}
@@ -1449,7 +1420,6 @@ def _handle_health(
 def _filter_health_statuses(
     lifecycle: LifecycleManager, domain: str | None, key: str | None
 ):
-    """Filter lifecycle statuses by domain and key."""
     statuses = lifecycle.all_statuses()
     if domain:
         statuses = [status for status in statuses if status.domain == domain]
@@ -1461,14 +1431,12 @@ def _filter_health_statuses(
 def _add_probe_results(
     lifecycle: LifecycleManager, payload: list[dict[str, Any]]
 ) -> None:
-    """Add probe results to payload entries."""
     probe_results = asyncio.run(_probe_lifecycle_entries(lifecycle, payload))
     for entry in payload:
         entry["probe_result"] = probe_results.get((entry["domain"], entry["key"]))
 
 
 def _print_health_statuses(payload: list[dict[str, Any]]) -> None:
-    """Print health status entries to console."""
     if not payload:
         print("No lifecycle statuses recorded yet.")
         return
@@ -1478,7 +1446,6 @@ def _print_health_statuses(payload: list[dict[str, Any]]) -> None:
 
 
 def _print_health_entry(entry: dict[str, Any]) -> None:
-    """Print a single health status entry."""
     state = entry["state"]
     current = entry.get("current_provider")
     pending = entry.get("pending_provider") or "none"
@@ -1625,7 +1592,6 @@ def _activity_summary(
 
 
 def _build_domain_activity_report(bridge) -> dict[str, Any] | None:
-    """Build activity report for a single domain."""
     snapshot = bridge.activity_snapshot()
     rows = []
     counts = {"paused": 0, "draining": 0, "note_only": 0}
@@ -1651,7 +1617,6 @@ def _build_domain_activity_report(bridge) -> dict[str, Any] | None:
 
 
 def _update_state_counts(counts: dict[str, int], state) -> None:
-    """Update counts based on state flags."""
     if state.paused:
         counts["paused"] += 1
     if state.draining:
@@ -1661,7 +1626,6 @@ def _update_state_counts(counts: dict[str, int], state) -> None:
 
 
 def _update_totals(totals: dict[str, int], counts: dict[str, int]) -> None:
-    """Add domain counts to totals."""
     totals["paused"] += counts["paused"]
     totals["draining"] += counts["draining"]
     totals["note_only"] += counts["note_only"]
@@ -1678,7 +1642,6 @@ def _print_activity_report(report: dict[str, Any]) -> None:
 
 
 def _print_activity_totals(totals: dict[str, int]) -> None:
-    """Print overall activity totals."""
     print(
         "Total activity: paused={paused} draining={draining} note-only={notes}".format(
             paused=totals.get("paused", 0),
@@ -1689,13 +1652,11 @@ def _print_activity_totals(totals: dict[str, int]) -> None:
 
 
 def _print_domain_activity_reports(domains: dict[str, Any]) -> None:
-    """Print per-domain activity reports."""
     for domain in sorted(domains.keys()):
         _print_domain_activity(domain, domains[domain])
 
 
 def _print_domain_activity(domain: str, domain_data: dict[str, Any]) -> None:
-    """Print activity report for a single domain."""
     counts = domain_data.get("counts", {})
     print(
         f"{domain} activity: paused={counts.get('paused', 0)} "
@@ -1707,7 +1668,6 @@ def _print_domain_activity(domain: str, domain_data: dict[str, Any]) -> None:
 
 
 def _print_activity_entry(entry: dict[str, Any]) -> None:
-    """Print a single activity entry."""
     status = _format_entry_status(entry)
     note_part = f" note={entry['note']}" if entry.get("note") else ""
     print(f"  - {entry['key']}: {status}{note_part}")
@@ -1724,7 +1684,6 @@ def _print_load_test_result(result: LoadTestResult) -> None:
 
 
 def _format_entry_status(entry: dict[str, Any]) -> str:
-    """Format status string from entry flags."""
     status_bits = []
     if entry["paused"]:
         status_bits.append("paused")
@@ -1773,7 +1732,6 @@ def _print_runtime_health(
 
 
 def _print_runtime_status(snapshot: dict[str, Any]) -> None:
-    """Print runtime status (watchers, remote, orchestrator)."""
     watchers = "running" if snapshot.get("watchers_running") else "stopped"
     remote = "enabled" if snapshot.get("remote_enabled") else "disabled"
     pid = snapshot.get("orchestrator_pid") or "n/a"
@@ -1781,7 +1739,6 @@ def _print_runtime_status(snapshot: dict[str, Any]) -> None:
 
 
 def _print_remote_budget_if_present(snapshot: dict[str, Any], remote_config) -> None:
-    """Print remote budget line if duration is present."""
     if snapshot.get("last_remote_duration_ms") is not None:
         print(
             "  "
@@ -1792,7 +1749,6 @@ def _print_remote_budget_if_present(snapshot: dict[str, Any], remote_config) -> 
 
 
 def _print_remote_sync_info(snapshot: dict[str, Any]) -> None:
-    """Print remote sync timestamp, error, and registration count."""
     if snapshot.get("last_remote_sync_at"):
         print(f"  last_remote_sync={snapshot['last_remote_sync_at']}")
     if snapshot.get("last_remote_error"):
@@ -1802,7 +1758,6 @@ def _print_remote_sync_info(snapshot: dict[str, Any]) -> None:
 
 
 def _print_remote_duration_info(snapshot: dict[str, Any], remote_config) -> None:
-    """Print remote duration with budget comparison."""
     duration = snapshot.get("last_remote_duration_ms")
     if duration is None:
         return
@@ -1814,7 +1769,6 @@ def _print_remote_duration_info(snapshot: dict[str, Any], remote_config) -> None
 
 
 def _print_remote_domain_counts(snapshot: dict[str, Any]) -> None:
-    """Print per-domain registration counts."""
     per_domain = snapshot.get("last_remote_per_domain") or {}
     if not per_domain:
         return
@@ -1825,13 +1779,11 @@ def _print_remote_domain_counts(snapshot: dict[str, Any]) -> None:
 
 
 def _print_remote_skipped(snapshot: dict[str, Any]) -> None:
-    """Print skipped remote count if present."""
     if snapshot.get("last_remote_skipped"):
         print(f"  last_remote_skipped={snapshot['last_remote_skipped']}")
 
 
 def _print_activity_snapshot(snapshot: dict[str, Any]) -> None:
-    """Print persisted pause/drain state."""
     activity = snapshot.get("activity_state") or {}
     if not activity:
         return
@@ -1841,7 +1793,6 @@ def _print_activity_snapshot(snapshot: dict[str, Any]) -> None:
 
 
 def _print_lifecycle_snapshot(snapshot: dict[str, Any]) -> None:  # noqa: C901
-    """Print lifecycle status summary/details."""
     lifecycle_state = snapshot.get("lifecycle_state") or {}
     if not lifecycle_state:
         return
@@ -1929,7 +1880,6 @@ def _print_secrets_summary(metadata: dict[str, Any]) -> None:
 
 
 def _print_activity_summary(activity: dict[str, Any]) -> None:
-    """Print activity summary counts."""
     summary = _activity_counts_from_mapping(activity)
     print(
         "  activity-summary: paused={paused} draining={draining}".format(
@@ -1940,7 +1890,6 @@ def _print_activity_summary(activity: dict[str, Any]) -> None:
 
 
 def _print_domain_activity_details(activity: dict[str, Any]) -> None:
-    """Print per-domain activity details."""
     print("  domain_activity:")
     for domain, entries in activity.items():
         for key, state in entries.items():
@@ -1950,7 +1899,6 @@ def _print_domain_activity_details(activity: dict[str, Any]) -> None:
 
 
 def _format_activity_status(state: dict[str, Any]) -> str:
-    """Format activity status flags."""
     status = []
     if state.get("paused"):
         status.append("paused")
@@ -1960,7 +1908,6 @@ def _format_activity_status(state: dict[str, Any]) -> str:
 
 
 def _format_activity_note(state: dict[str, Any]) -> str:
-    """Format activity note suffix."""
     note = state.get("note")
     return f" note={note}" if note else ""
 
@@ -2029,17 +1976,14 @@ def cli_root(
         typer.echo(ctx.get_help())
         raise typer.Exit()
 
-    # Configure early logging before initializing state
     if suppress_events:
         from oneiric.core.logging import configure_early_logging
 
         configure_early_logging(suppress_events=True)
 
-    # Set debug flag in environment to be picked up by configuration
     if debug:
         os.environ["ONEIRIC_APP__DEBUG"] = "true"
     else:
-        # Remove the environment variable if it was set previously
         os.environ.pop("ONEIRIC_APP__DEBUG", None)
 
     ctx.obj = _initialize_state(config, imports or [], demo, profile)
@@ -2157,7 +2101,6 @@ def action_invoke(
 
 
 def _scrub_sensitive_data(value: str) -> str:
-    """Scrub sensitive data from strings before display."""
     sensitive_keywords = ["secret", "token", "password", "key"]
     if any(sensitive in value.lower() for sensitive in sensitive_keywords):
         return "***"
@@ -2165,7 +2108,6 @@ def _scrub_sensitive_data(value: str) -> str:
 
 
 def _format_event_result(result: HandlerResult) -> str:
-    """Format a single event handler result."""
     status = "ok" if result.success else "error"
     suffix = f" attempts={result.attempts}"
 
@@ -2601,7 +2543,6 @@ def _http_server_enabled(
 
 @app.command("supervisor-info")
 def supervisor_info(ctx: typer.Context) -> None:
-    """Show the current supervisor feature flag + env overrides."""
     state = _state(ctx)
     profile_toggle = getattr(state.settings.profile, "supervisor_enabled", True)
     runtime_toggle = getattr(
@@ -2788,7 +2729,6 @@ def manifest_pack(
         False, "--stdout", help="Write JSON to stdout regardless of output path."
     ),
 ) -> None:
-    """Package a manifest file into canonical JSON for serverless builds."""
     manifest = _load_manifest_from_path(input_path)
     if stdout or str(output_path) == "-":
         typer.echo(manifest.model_dump_json(indent=2 if pretty else None))
@@ -2832,7 +2772,6 @@ def manifest_export(  # noqa: C901
         False, "--stdout", help="Write output to stdout regardless of output path."
     ),
 ) -> None:
-    """Export builtin registry metadata as a remote manifest."""
     normalized_format = format.lower()
     if normalized_format not in {"yaml", "json"}:
         raise typer.BadParameter("Format must be 'yaml' or 'json'.")
@@ -2868,7 +2807,6 @@ def manifest_export(  # noqa: C901
 
 
 def _load_signing_key(private_key: Path) -> Ed25519PrivateKey:
-    """Load ED25519 private key from file."""
     from cryptography.hazmat.primitives import serialization
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
@@ -2885,8 +2823,6 @@ def _load_signing_key(private_key: Path) -> Ed25519PrivateKey:
 def _create_signature_entry(
     signing_key: Ed25519PrivateKey, canonical: str, key_id: str | None
 ) -> dict[str, Any]:
-    """Create signature entry from signing key."""
-
     signature = base64.b64encode(signing_key.sign(canonical.encode("utf-8"))).decode(
         "ascii"
     )
@@ -2902,7 +2838,6 @@ def _set_timestamps(
     expires_at: str | None,
     expires_in: int | None,
 ) -> None:
-    """Set signed_at and expires_at timestamps on manifest."""
     if issued_at:
         manifest_dict["signed_at"] = issued_at
     elif not manifest_dict.get("signed_at"):
@@ -2919,7 +2854,6 @@ def _set_timestamps(
 def _apply_signature_to_manifest(
     manifest_dict: dict[str, Any], signature_entry: dict[str, Any], append: bool
 ) -> None:
-    """Apply signature entry to manifest dict."""
     use_signatures = append or bool(manifest_dict.get("signatures"))
     if use_signatures:
         signatures = list(manifest_dict.get("signatures") or [])
@@ -2933,7 +2867,6 @@ def _apply_signature_to_manifest(
 
 
 def _render_manifest(manifest_dict: dict[str, Any], target: Path) -> str:
-    """Render manifest dict to JSON or YAML string."""
     if target.suffix.lower() == ".json":
         return json.dumps(manifest_dict, indent=2)
     return yaml.safe_dump(
@@ -3002,7 +2935,6 @@ def manifest_sign(  # noqa: C901
         help="Append signature to signatures list instead of overwriting.",
     ),
 ) -> None:
-    """Sign a manifest with an ED25519 private key."""
     manifest = _load_manifest_from_path(input_path)
     manifest_dict = manifest.model_dump(exclude_none=True)
     canonical = get_canonical_manifest_for_signing(manifest_dict)
@@ -3124,10 +3056,8 @@ def start_command(
         help="Path to PID file for the background process.",
     ),
 ) -> None:
-    """Start the Oneiric orchestrator as a background process."""
     state = _state(ctx)
 
-    # Use the provided PID file or default to settings cache directory
     if pid_file is None:
         pid_file = str(
             Path(state.settings.runtime_paths.cache_dir) / "orchestrator.pid"
@@ -3139,7 +3069,6 @@ def start_command(
         print(f"Orchestrator is already running (PID: {process_manager.pid})")
         raise typer.Exit(code=1)
 
-    # Start the orchestrator process in the background
     success = process_manager.start_process(
         config_path=config,
         profile=profile,
@@ -3169,10 +3098,8 @@ def stop_command(
         help="Path to PID file for the background process.",
     ),
 ) -> None:
-    """Stop the running Oneiric orchestrator process."""
     state = _state(ctx)
 
-    # Use the provided PID file or default to settings cache directory
     if pid_file is None:
         pid_file = str(
             Path(state.settings.runtime_paths.cache_dir) / "orchestrator.pid"
@@ -3200,10 +3127,8 @@ def process_status_command(
     ),
     json_output: bool = typer.Option(False, "--json", help="Emit status as JSON."),
 ) -> None:
-    """Check the status of the Oneiric orchestrator process."""
     state = _state(ctx)
 
-    # Use the provided PID file or default to settings cache directory
     if pid_file is None:
         pid_file = str(
             Path(state.settings.runtime_paths.cache_dir) / "orchestrator.pid"

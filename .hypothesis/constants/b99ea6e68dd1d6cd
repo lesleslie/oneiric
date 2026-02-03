@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/runtime/notifications.py
+# hypothesis_version: 6.151.4
+
+['adapter-missing', 'channel', 'context', 'info', 'level', 'message', 'notification-sent', 'notification-skip', 'send_notification', 'status_code', 'workflow']

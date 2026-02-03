@@ -1,5 +1,3 @@
-"""File transfer adapters."""
-
 from .ftp import FTPFileTransferAdapter, FTPFileTransferSettings
 from .http_artifact import HTTPArtifactAdapter, HTTPArtifactSettings
 from .http_upload import HTTPSUploadAdapter, HTTPSUploadSettings

@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from oneiric.adapters.messaging.apns import APNSPushAdapter, APNSPushSettings
-from oneiric.adapters.messaging.common import NotificationMessage
+from oneiric.adapters.messaging.messaging_types import NotificationMessage
 from oneiric.core.lifecycle import LifecycleError
 
 

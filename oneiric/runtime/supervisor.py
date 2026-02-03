@@ -1,5 +1,3 @@
-"""Lightweight service supervisor that enforces pause/drain semantics."""
-
 from __future__ import annotations
 
 import asyncio
@@ -27,8 +25,6 @@ class _Listener:
 
 
 class ServiceSupervisor:
-    """Polls the activity store and exposes pause/drain decisions."""
-
     def __init__(
         self,
         activity_store: ActivityStoreProtocol,
@@ -46,16 +42,12 @@ class ServiceSupervisor:
         self.refresh()
 
     async def start(self) -> None:
-        """Start the background polling loop."""
-
         if self._task:
             return
         self._stopped.clear()
         self._task = asyncio.create_task(self._poll_loop(), name="service.supervisor")
 
     async def stop(self) -> None:
-        """Stop the background polling loop."""
-
         if not self._task:
             return
         self._stopped.set()
@@ -68,8 +60,6 @@ class ServiceSupervisor:
             self._task = None
 
     def refresh(self) -> None:
-        """Refresh cached activity state from the backing store."""
-
         snapshot = self._activity_store.snapshot()
         deltas = self._calculate_deltas(snapshot)
         with self._lock:
@@ -78,8 +68,6 @@ class ServiceSupervisor:
             self._notify_listeners(deltas)
 
     def snapshot(self) -> dict[str, dict[str, DomainActivity]]:
-        """Return an in-memory snapshot of the current state."""
-
         with self._lock:
             return {domain: state.copy() for domain, state in self._state.items()}
 
@@ -90,11 +78,6 @@ class ServiceSupervisor:
         domain: str | None = None,
         fire_immediately: bool = False,
     ) -> Callable[[], None]:
-        """Register a callback invoked when activity entries change.
-
-        Returns a callable that removes the listener when invoked.
-        """
-
         token = next(self._listener_seq)
         with self._lock:
             self._listeners[token] = _Listener(domain=domain, callback=callback)
@@ -114,17 +97,12 @@ class ServiceSupervisor:
         return _remove
 
     def should_accept_work(self, domain: str, key: str) -> bool:
-        """Return True when the domain/key is neither paused nor draining."""
-
         state = self._state.get(domain, {}).get(key)
         if state is None:
-            # Default to allowed when no entry exists.
             return True
         return not state.paused and not state.draining
 
     def activity_state(self, domain: str, key: str) -> DomainActivity:
-        """Return the cached activity entry for domain/key."""
-
         state = self._state.get(domain, {}).get(key)
         if state is None:
             return DomainActivity()
@@ -183,8 +161,6 @@ class ServiceSupervisor:
             )
 
     async def _poll_loop(self) -> None:
-        """Background loop that refreshes state on an interval."""
-
         try:
             while not self._stopped.is_set():
                 self.refresh()

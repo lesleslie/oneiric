@@ -1,5 +1,3 @@
-"""Adapter bridge scaffolding."""
-
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -25,8 +23,6 @@ class AdapterHandle:
 
 
 class AdapterBridge(DomainBridge):
-    """Coordinates adapters via the resolver + lifecycle manager."""
-
     def __init__(
         self,
         resolver: Resolver,

@@ -1,12 +1,10 @@
-"""HTTP adapter backed by aiohttp.ClientSession."""
-
 from __future__ import annotations
 
 import time
 from typing import Any
 from urllib.parse import urljoin
 
-try:  # Optional dependency used only when the adapter is instantiated.
+try:
     import aiohttp
     from aiohttp import ClientResponse
 
@@ -27,12 +25,10 @@ from .httpx import HTTPClientSettings
 
 
 class AioHTTPAdapter:
-    """Async HTTP adapter using aiohttp."""
-
     metadata = AdapterMetadata(
         category="http",
         provider="aiohttp",
-        factory="oneiric.adapters.http.aiohttp:AioHTTPAdapter",
+        factory="oneiric.adapters.http.aiohttp: AioHTTPAdapter",
         capabilities=["http", "rest", "stream"],
         stack_level=12,
         priority=225,

@@ -1,5 +1,3 @@
-"""Workflow checkpoint persistence helpers."""
-
 from __future__ import annotations
 
 import json
@@ -12,8 +10,6 @@ from typing import Any
 
 
 class WorkflowCheckpointStore:
-    """SQLite-backed persistence for workflow DAG checkpoints."""
-
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -21,8 +17,6 @@ class WorkflowCheckpointStore:
         self._ensure_schema()
 
     def load(self, workflow_key: str) -> dict[str, Any]:
-        """Load checkpoint payload for the workflow key."""
-
         with self._connection() as conn:
             conn: sqlite3.Connection
             row = conn.execute(
@@ -37,8 +31,6 @@ class WorkflowCheckpointStore:
             return {}
 
     def save(self, workflow_key: str, checkpoint: Mapping[str, Any]) -> None:
-        """Persist checkpoint mapping for the workflow key."""
-
         payload = json.dumps(dict(checkpoint))
         with self._connection() as conn:
             conn: sqlite3.Connection
@@ -53,8 +45,6 @@ class WorkflowCheckpointStore:
             conn.commit()
 
     def clear(self, workflow_key: str) -> None:
-        """Remove checkpoint state for the workflow key."""
-
         with self._connection() as conn:
             conn: sqlite3.Connection
             conn.execute(
@@ -62,8 +52,6 @@ class WorkflowCheckpointStore:
                 (workflow_key,),
             )
             conn.commit()
-
-    # internal helpers -----------------------------------------------------
 
     @contextmanager
     def _connection(self) -> Iterator[sqlite3.Connection]:

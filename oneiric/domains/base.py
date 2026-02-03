@@ -1,5 +1,3 @@
-"""Generic resolver-backed domain bridge."""
-
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
@@ -29,8 +27,6 @@ class DomainHandle:
 
 
 class DomainBridge:
-    """Reusable bridge for resolver-backed domains."""
-
     def __init__(
         self,
         domain: str,
@@ -140,8 +136,6 @@ class DomainBridge:
         ).as_dict()
 
     def should_accept_work(self, key: str) -> bool:
-        """Return True when the domain/key is not paused or draining."""
-
         if self._supervisor:
             return self._supervisor.should_accept_work(self.domain, key)
         state = self.activity_state(key)
@@ -246,8 +240,6 @@ class DomainBridge:
     def _handle_supervisor_update(
         self, domain: str, key: str, state: DomainActivity
     ) -> None:
-        """Sync internal cache when supervisor broadcasts updates."""
-
         if domain != self.domain:
             return
         if state.is_default():

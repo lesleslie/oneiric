@@ -1,5 +1,3 @@
-"""Protocol interface for queue adapters used by workflows."""
-
 from __future__ import annotations
 
 from collections.abc import Mapping

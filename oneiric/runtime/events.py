@@ -1,5 +1,3 @@
-"""Lightweight event dispatcher prototype for orchestration parity work."""
-
 from __future__ import annotations
 
 import time
@@ -17,8 +15,6 @@ from oneiric.runtime.metrics import record_event_handler_metrics
 
 
 class EventEnvelope(msgspec.Struct):
-    """Structured event payload used by the dispatcher prototype."""
-
     topic: str
     payload: dict[str, Any]
     headers: dict[str, Any] = {}
@@ -30,8 +26,6 @@ _UNSET = object()
 
 
 def _resolve_filter_path(envelope: EventEnvelope, path: str) -> Any:
-    """Resolve dotted path within envelope topic/payload/headers."""
-
     if path == "topic":
         return envelope.topic
     if path.startswith("payload."):
@@ -53,8 +47,6 @@ def _resolve_filter_path(envelope: EventEnvelope, path: str) -> Any:
 
 @dataclass(slots=True)
 class EventFilter:
-    """Filter descriptor applied to envelope fields."""
-
     path: str
     equals: Any = _UNSET
     any_of: Sequence[Any] | None = None
@@ -76,8 +68,6 @@ class EventFilter:
 def parse_event_filters(  # noqa: C901
     entries: Iterable[Mapping[str, Any]] | None,
 ) -> tuple[EventFilter, ...]:
-    """Convert raw metadata entries into EventFilter structs."""
-
     if not entries:
         return ()
     filters: list[EventFilter] = []
@@ -107,8 +97,6 @@ def parse_event_filters(  # noqa: C901
 
 @dataclass(slots=True)
 class EventHandler:
-    """Metadata describing a registered event handler."""
-
     name: str
     callback: EventHandlerCallable
     topics: Sequence[str] | None = None
@@ -129,8 +117,6 @@ class EventHandler:
 
 @dataclass(slots=True)
 class HandlerResult:
-    """Result object returned after invoking a handler."""
-
     handler: str
     success: bool
     duration: float
@@ -140,8 +126,6 @@ class HandlerResult:
 
 
 class EventDispatcher:
-    """Fan-out dispatcher that executes handlers concurrently via anyio."""
-
     def __init__(self, handlers: Iterable[EventHandler] | None = None) -> None:
         self._handlers: list[EventHandler] = sorted(
             list(handlers or []), key=lambda handler: handler.priority, reverse=True
@@ -153,13 +137,9 @@ class EventDispatcher:
         self._handlers.sort(key=lambda item: item.priority, reverse=True)
 
     def handlers(self) -> tuple[EventHandler, ...]:
-        """Return snapshot of registered handlers."""
-
         return tuple(self._handlers)
 
     async def dispatch(self, envelope: EventEnvelope) -> list[HandlerResult]:
-        """Dispatch an event to all interested handlers."""
-
         candidates = [
             handler for handler in self._handlers if handler.accepts(envelope)
         ]
@@ -306,5 +286,4 @@ class EventDispatcher:
                     topic=envelope.topic,
                     attempts=attempts,
                     duration_ms=duration * 1000.0,
-                    # Note: Avoid logging envelope.payload directly to prevent sensitive data exposure
                 )

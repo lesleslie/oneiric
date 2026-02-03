@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/core/resolution.py
+# hypothesis_version: 6.151.4
+
+[',', ':', 'ONEIRIC_STACK_ORDER', 'adapters', 'candidate-registered', 'capabilities', 'domain', 'entry_point', 'events', 'key', 'local_pkg', 'manual', 'metadata', 'name', 'ordered', 'package', 'path', 'priority', 'provider', 'reasons', 'remote_manifest', 'resolved', 'resolver', 'score', 'selected', 'services', 'source', 'tasks', 'vendor', 'workflows']

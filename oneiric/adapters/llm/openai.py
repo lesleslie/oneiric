@@ -1,5 +1,3 @@
-"""OpenAI LLM adapter for GPT models."""
-
 from __future__ import annotations
 
 import asyncio
@@ -9,7 +7,7 @@ from typing import Any
 
 from pydantic import Field, SecretStr
 
-from oneiric.adapters.llm.common import (
+from oneiric.adapters.llm.llm_interface import (
     LLMBase,
     LLMBaseSettings,
     LLMCapability,
@@ -25,29 +23,22 @@ from oneiric.core.resolution import CandidateSource
 
 
 class OpenAILLMSettings(LLMBaseSettings):
-    """Settings for OpenAI LLM adapter."""
-
-    # OpenAI-specific settings
     openai_api_key: SecretStr | None = Field(default=None)
     openai_organization: str | None = Field(default=None)
     openai_base_url: str = Field(default="https://api.openai.com/v1")
 
-    # Model defaults
     model: str = Field(default="gpt-3.5-turbo")
 
-    # Advanced OpenAI settings
     user: str | None = Field(default=None)
     logprobs: bool | None = Field(default=None)
     top_logprobs: int | None = Field(default=None, ge=0, le=5)
 
 
 class OpenAILLMAdapter(LLMBase):
-    """OpenAI LLM adapter implementation."""
-
     metadata = AdapterMetadata(
         category="llm",
         provider="openai",
-        factory="oneiric.adapters.llm.openai:OpenAILLMAdapter",
+        factory="oneiric.adapters.llm.openai: OpenAILLMAdapter",
         description="OpenAI GPT adapter with chat, streaming, tool-calling, and JSON mode support",
         capabilities=[
             "chat_completion",
@@ -77,7 +68,6 @@ class OpenAILLMAdapter(LLMBase):
         max_retries: int = 3,
         **kwargs: Any,
     ) -> None:
-        # Convert string api_key to SecretStr
         if isinstance(openai_api_key, str):
             openai_api_key = SecretStr(openai_api_key)
 
@@ -97,20 +87,17 @@ class OpenAILLMAdapter(LLMBase):
 
     @property
     def settings(self) -> OpenAILLMSettings:
-        """Get adapter settings with correct type."""
         return self._settings  # type: ignore[return-value]
 
     async def init(self) -> None:
-        """Initialize the OpenAI LLM adapter."""
         self._logger.info("Initializing OpenAI LLM adapter")
         await self._ensure_client()
         self._logger.info("OpenAI LLM adapter initialized successfully")
 
     async def health(self) -> bool:
-        """Check if OpenAI service is healthy."""
         try:
             client = await self._ensure_client()
-            # Simple models list call to verify connectivity
+
             await client.models.list()
             return True
         except Exception as e:
@@ -118,7 +105,6 @@ class OpenAILLMAdapter(LLMBase):
             return False
 
     async def cleanup(self) -> None:
-        """Cleanup OpenAI adapter resources."""
         self._logger.info("Cleaning up OpenAI LLM adapter")
         if self._client:
             await self._client.close()
@@ -126,7 +112,6 @@ class OpenAILLMAdapter(LLMBase):
         self._logger.info("OpenAI LLM adapter cleanup complete")
 
     async def _ensure_client(self) -> Any:
-        """Ensure OpenAI client is initialized."""
         if self._client is not None:
             return self._client
 
@@ -136,7 +121,6 @@ class OpenAILLMAdapter(LLMBase):
             msg = "openai package required for OpenAI LLM adapter"
             raise ImportError(msg) from e
 
-        # Get API key from settings
         api_key = self.settings.openai_api_key or self.settings.api_key
         if not api_key:
             msg = "OpenAI API key is required"
@@ -170,13 +154,11 @@ class OpenAILLMAdapter(LLMBase):
         stream: bool,
         **kwargs: Any,
     ) -> LLMResponse:
-        """Generate chat completion using OpenAI."""
         client = await self._ensure_client()
         normalized_messages = self._normalize_messages(messages)
 
         start_time = asyncio.get_event_loop().time()
 
-        # Build request parameters
         params = self._build_openai_request_params(
             normalized_messages, model, temperature, max_tokens, **kwargs
         )
@@ -185,12 +167,10 @@ class OpenAILLMAdapter(LLMBase):
             response = await client.chat.completions.create(**params)
             latency_ms = int((asyncio.get_event_loop().time() - start_time) * 1000)
 
-            # Extract response data
             choice = response.choices[0]
             message = choice.message
             function_calls = self._extract_function_calls(message)
 
-            # Get token usage and cost
             prompt_tokens, completion_tokens, total_tokens = (
                 self._extract_openai_token_usage(response)
             )
@@ -226,7 +206,6 @@ class OpenAILLMAdapter(LLMBase):
         max_tokens: int,
         **kwargs: Any,
     ) -> dict[str, Any]:
-        """Build request parameters for OpenAI API."""
         params: dict[str, Any] = {
             "model": model,
             "messages": normalized_messages,
@@ -235,21 +214,17 @@ class OpenAILLMAdapter(LLMBase):
             "stream": False,
         }
 
-        # Add optional parameters from settings
         self._add_optional_settings_params(params)
 
-        # Add function/tool calling parameters
         self._add_function_tool_params(params, kwargs)
 
         return params
 
     def _add_optional_settings_params(self, params: dict[str, Any]) -> None:
-        """Add optional parameters from settings to request."""
         self._add_numeric_params(params)
         self._add_conditional_params(params)
 
     def _add_numeric_params(self, params: dict[str, Any]) -> None:
-        """Add numeric parameters that differ from defaults."""
         optional_settings = {
             "top_p": (self.settings.top_p, 1.0),
             "frequency_penalty": (self.settings.frequency_penalty, 0.0),
@@ -261,7 +236,6 @@ class OpenAILLMAdapter(LLMBase):
                 params[param_name] = value
 
     def _add_conditional_params(self, params: dict[str, Any]) -> None:
-        """Add parameters that are set (non-empty/non-None)."""
         conditional_params = [
             ("stop", self.settings.stop),
             ("logit_bias", self.settings.logit_bias),
@@ -278,7 +252,6 @@ class OpenAILLMAdapter(LLMBase):
     def _add_function_tool_params(
         self, params: dict[str, Any], kwargs: dict[str, Any]
     ) -> None:
-        """Add function and tool calling parameters to request."""
         if kwargs.get("functions"):
             params["functions"] = kwargs["functions"]
         if kwargs.get("function_call"):
@@ -289,7 +262,6 @@ class OpenAILLMAdapter(LLMBase):
             params["tool_choice"] = kwargs["tool_choice"]
 
     def _extract_function_calls(self, message: Any) -> list[dict[str, Any]] | None:
-        """Extract function calls from OpenAI message."""
         if hasattr(message, "function_call") and message.function_call:
             return [
                 {
@@ -310,7 +282,6 @@ class OpenAILLMAdapter(LLMBase):
         return None
 
     def _extract_openai_token_usage(self, response: Any) -> tuple[int, int, int]:
-        """Extract token usage from OpenAI response."""
         prompt_tokens = response.usage.prompt_tokens if response.usage else 0
         completion_tokens = response.usage.completion_tokens if response.usage else 0
         total_tokens = response.usage.total_tokens if response.usage else 0
@@ -324,11 +295,9 @@ class OpenAILLMAdapter(LLMBase):
         max_tokens: int,
         **kwargs: Any,
     ) -> AsyncGenerator[LLMStreamChunk]:
-        """Generate streaming chat completion using OpenAI."""
         client = await self._ensure_client()
         normalized_messages = self._normalize_messages(messages)
 
-        # Build request parameters
         params = self._build_stream_request_params(
             normalized_messages, model, temperature, max_tokens, **kwargs
         )
@@ -349,7 +318,6 @@ class OpenAILLMAdapter(LLMBase):
         max_tokens: int,
         **kwargs: Any,
     ) -> dict[str, Any]:
-        """Build request parameters for streaming completion."""
         params: dict[str, Any] = {
             "model": model,
             "messages": normalized_messages,
@@ -358,14 +326,12 @@ class OpenAILLMAdapter(LLMBase):
             "stream": True,
         }
 
-        # Add optional parameters
         self._add_stream_settings_params(params)
         self._add_stream_function_params(params, kwargs)
 
         return params
 
     def _add_stream_settings_params(self, params: dict[str, Any]) -> None:
-        """Add optional settings parameters for streaming."""
         if self.settings.top_p != 1.0:
             params["top_p"] = self.settings.top_p
         if self.settings.frequency_penalty != 0.0:
@@ -382,7 +348,6 @@ class OpenAILLMAdapter(LLMBase):
     def _add_stream_function_params(
         self, params: dict[str, Any], kwargs: dict[str, Any]
     ) -> None:
-        """Add function/tool calling parameters for streaming."""
         if kwargs.get("functions"):
             params["functions"] = kwargs["functions"]
         if kwargs.get("tools"):
@@ -391,7 +356,6 @@ class OpenAILLMAdapter(LLMBase):
     async def _process_stream_chunks(
         self, stream: Any, model: str
     ) -> AsyncGenerator[LLMStreamChunk]:
-        """Process streaming response chunks."""
         async for chunk in stream:
             if not chunk.choices:
                 continue
@@ -416,7 +380,6 @@ class OpenAILLMAdapter(LLMBase):
         model: str,
         **kwargs: Any,
     ) -> LLMResponse:
-        """Generate chat completion with function calling."""
         return await self._chat(
             messages=messages,
             model=model,
@@ -434,7 +397,6 @@ class OpenAILLMAdapter(LLMBase):
         model: str,
         **kwargs: Any,
     ) -> LLMResponse:
-        """Generate chat completion with tool use."""
         return await self._chat(
             messages=messages,
             model=model,
@@ -446,14 +408,11 @@ class OpenAILLMAdapter(LLMBase):
         )
 
     async def _get_model_info(self, model: str) -> LLMModelInfo:
-        """Get information about an OpenAI model."""
         if model in self._model_cache:
             return self._model_cache[model]
 
-        # Static model information (OpenAI doesn't provide this via API)
         model_data = _OPENAI_MODEL_DATA.get(model)
         if not model_data:
-            # Default fallback for unknown models
             model_data = {
                 "context_length": 4096,
                 "max_output_tokens": 4096,
@@ -485,7 +444,6 @@ class OpenAILLMAdapter(LLMBase):
         return model_info
 
     async def _list_models(self) -> list[LLMModelInfo]:
-        """List available OpenAI models."""
         models = []
         for model_name in _OPENAI_MODEL_DATA.keys():
             model_info = await self._get_model_info(model_name)
@@ -493,23 +451,18 @@ class OpenAILLMAdapter(LLMBase):
         return models
 
     async def _count_tokens(self, text: str, model: str) -> int:
-        """Count tokens using tiktoken."""
         try:
             import tiktoken
 
             encoding = tiktoken.encoding_for_model(model)
             return len(encoding.encode(text))
         except ImportError:
-            # Fallback to rough estimation
             return await super()._count_tokens(text, model)
         except Exception:
-            # If model not found in tiktoken, use rough estimation
             return await super()._count_tokens(text, model)
 
 
-# OpenAI model data (as of January 2025)
 _OPENAI_MODEL_DATA: dict[str, dict[str, Any]] = {
-    # GPT-4 Turbo
     "gpt-4-turbo": {
         "context_length": 128000,
         "max_output_tokens": 4096,
@@ -543,7 +496,6 @@ _OPENAI_MODEL_DATA: dict[str, dict[str, Any]] = {
         "cost_per_1k_input_tokens": 0.01,
         "cost_per_1k_output_tokens": 0.03,
     },
-    # GPT-4
     "gpt-4": {
         "context_length": 8192,
         "max_output_tokens": 8192,
@@ -574,7 +526,6 @@ _OPENAI_MODEL_DATA: dict[str, dict[str, Any]] = {
         "cost_per_1k_input_tokens": 0.06,
         "cost_per_1k_output_tokens": 0.12,
     },
-    # GPT-3.5 Turbo
     "gpt-3.5-turbo": {
         "context_length": 16385,
         "max_output_tokens": 4096,
@@ -606,7 +557,6 @@ _OPENAI_MODEL_DATA: dict[str, dict[str, Any]] = {
         "cost_per_1k_input_tokens": 0.003,
         "cost_per_1k_output_tokens": 0.004,
     },
-    # GPT-4 Vision
     "gpt-4-vision-preview": {
         "context_length": 128000,
         "max_output_tokens": 4096,

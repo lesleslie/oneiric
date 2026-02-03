@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-"""
-Wrapper script to run skylos on smaller batches of files to avoid timeout issues.
-"""
 
 import subprocess
 import sys
@@ -9,7 +6,6 @@ from pathlib import Path
 
 
 def run_skylos_on_directory(directory, exclude_folders):
-    """Run skylos on a single directory with exclude folders."""
     cmd = ["uv", "run", "skylos", str(directory), "--json", "--confidence", "86"]
 
     for folder in exclude_folders:
@@ -30,7 +26,6 @@ def run_skylos_on_directory(directory, exclude_folders):
 
 
 def main():
-    """Main function to run skylos on all directories."""
     base_dir = Path("oneiric")
     exclude_folders = [
         ".venv",
@@ -45,7 +40,7 @@ def main():
         "tests",
     ]
 
-    # Directories to analyze
+
     directories = [
         "core",
         "adapters/cache",

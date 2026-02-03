@@ -1,5 +1,3 @@
-"""Storage adapter implementations."""
-
 from .azure import AzureBlobStorageAdapter, AzureBlobStorageSettings
 from .gcs import GCSStorageAdapter, GCSStorageSettings
 from .local import LocalStorageAdapter, LocalStorageSettings

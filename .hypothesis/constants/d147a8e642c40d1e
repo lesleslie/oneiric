@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/secrets/env.py
+# hypothesis_version: 6.151.4
+
+[100, 'ONEIRIC_SECRET_', 'Platform Core', 'adapter', 'adapter-init', 'adapter.secrets.env', 'env', 'env-secrets', 'read', 'secrets']

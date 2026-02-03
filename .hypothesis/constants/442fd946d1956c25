@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/messaging/fcm.py
+# hypothesis_version: 6.151.4
+
+[200, 380, 'Firebase project ID.', 'Messaging', 'adapter', 'android', 'apns', 'body', 'data', 'delete_app', 'fcm', 'fcm-adapter-cleanup', 'fcm-adapter-init', 'fcm-send-missing', 'message_id', 'messaging', 'notification', 'notifications', 'oneiric-fcm', 'projectId', 'push', 'send', 'title', 'token', 'webpush']

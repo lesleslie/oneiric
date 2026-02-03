@@ -1,5 +1,3 @@
-"""Helpers to register built-in adapter metadata."""
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -74,8 +72,6 @@ from .vector import AgentDBAdapter, PineconeAdapter, QdrantAdapter
 
 
 def builtin_adapter_metadata() -> list[AdapterMetadata]:
-    """Return metadata for built-in adapters shipped with Oneiric."""
-
     return [
         MemoryCacheAdapter.metadata,
         RedisCacheAdapter.metadata,
@@ -137,8 +133,6 @@ def builtin_adapter_metadata() -> list[AdapterMetadata]:
 
 
 def register_builtin_adapters(resolver: Resolver) -> None:
-    """Register built-in adapters with the resolver."""
-
     adapters = builtin_adapter_metadata()
     register_adapter_metadata(
         resolver,

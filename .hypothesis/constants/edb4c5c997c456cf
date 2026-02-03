@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/identity/auth0.py
+# hypothesis_version: 6.151.4
+
+[5.0, 300, 500, 'RS256', 'Security', 'adapter', 'adapter-health-error', 'adapter-init', 'auth0', 'auth0-identity', 'identity', 'jwks', 'jwks-missing-keys', 'jwt', 'keys', 'kid', 'token-key-not-found', 'token-missing-kid', 'userinfo']

@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/secrets/file.py
+# hypothesis_version: 6.151.4
+
+[150, 'Platform Core', 'adapter', 'adapter-init', 'adapter.secrets.file', 'file', 'file-secrets', 'invalid-secrets-file', 'json', 'read', 'secrets', 'secrets-file-missing']

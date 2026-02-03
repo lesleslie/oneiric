@@ -1,5 +1,3 @@
-"""DynamoDB adapter built on aioboto3."""
-
 from __future__ import annotations
 
 import inspect
@@ -14,12 +12,10 @@ from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
 
-from .common import NoSQLAdapterBase, NoSQLBaseSettings, NoSQLDocument
+from .nosql_types import NoSQLAdapterBase, NoSQLBaseSettings, NoSQLDocument
 
 
 class DynamoDBSettings(NoSQLBaseSettings):
-    """Configuration for the DynamoDB adapter."""
-
     table_name: str = Field(
         default="oneiric", description="Target DynamoDB table name."
     )
@@ -52,12 +48,10 @@ class DynamoDBSettings(NoSQLBaseSettings):
 
 
 class DynamoDBAdapter(NoSQLAdapterBase):
-    """Adapter that wraps DynamoDB tables via aioboto3."""
-
     metadata = AdapterMetadata(
         category="nosql",
         provider="dynamodb",
-        factory="oneiric.adapters.nosql.dynamodb:DynamoDBAdapter",
+        factory="oneiric.adapters.nosql.dynamodb: DynamoDBAdapter",
         capabilities=["documents", "key-value", "scan", "conditional_writes"],
         stack_level=30,
         priority=430,

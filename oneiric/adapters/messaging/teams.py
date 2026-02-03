@@ -1,5 +1,3 @@
-"""Microsoft Teams notification adapter."""
-
 from __future__ import annotations
 
 import httpx
@@ -12,23 +10,19 @@ from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
 from oneiric.core.settings_mixins import TimeoutSettings
 
-from .common import MessagingSendResult, NotificationMessage
+from .messaging_types import MessagingSendResult, NotificationMessage
 
 
 class TeamsSettings(TimeoutSettings):
-    """Configuration for Teams incoming webhook notifications."""
-
     webhook_url: AnyHttpUrl
     default_theme_color: str = Field(default="0078D4")
 
 
 class TeamsAdapter(HTTPXClientMixin):
-    """Adapter that posts adaptive cards to Microsoft Teams webhooks."""
-
     metadata = AdapterMetadata(
         category="messaging",
         provider="teams",
-        factory="oneiric.adapters.messaging.teams:TeamsAdapter",
+        factory="oneiric.adapters.messaging.teams: TeamsAdapter",
         capabilities=["notifications", "chatops"],
         stack_level=25,
         priority=345,
@@ -61,7 +55,6 @@ class TeamsAdapter(HTTPXClientMixin):
         self._logger.info("teams-adapter-cleanup")
 
     async def health(self) -> bool:
-        # Teams webhooks do not expose a lightweight health endpoint; perform a HEAD to the webhook URL.
         client = self._ensure_client("teams-client-not-initialized")
         try:
             response = await client.head(str(self._settings.webhook_url))

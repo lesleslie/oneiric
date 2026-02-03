@@ -1,5 +1,3 @@
-"""Redis Streams queue adapter."""
-
 from __future__ import annotations
 
 import asyncio
@@ -24,8 +22,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class RedisStreamsQueueSettings(BaseModel):
-    """Settings for the Redis Streams adapter."""
-
     stream: str = Field(
         default="oneiric-queue", description="Stream key backing the queue."
     )
@@ -34,7 +30,7 @@ class RedisStreamsQueueSettings(BaseModel):
         default="oneiric-consumer", description="Consumer name for read operations."
     )
     url: str = Field(
-        default="redis://localhost:6379/0", description="Redis connection URL."
+        default="redis://localhost: 6379/0", description="Redis connection URL."
     )
     block_ms: int = Field(
         default=1000,
@@ -58,12 +54,10 @@ class RedisStreamsQueueSettings(BaseModel):
 
 
 class RedisStreamsQueueAdapter(EnsureClientMixin):
-    """Queue adapter backed by Redis Streams consumer groups."""
-
     metadata = AdapterMetadata(
         category="queue",
         provider="redis-streams",
-        factory="oneiric.adapters.queue.redis_streams:RedisStreamsQueueAdapter",
+        factory="oneiric.adapters.queue.redis_streams: RedisStreamsQueueAdapter",
         capabilities=["queue", "pubsub", "fanout"],
         stack_level=20,
         priority=300,
@@ -135,13 +129,11 @@ class RedisStreamsQueueAdapter(EnsureClientMixin):
         self._logger.info("adapter-cleanup-complete", adapter="redis-streams-queue")
 
     async def _close_client_connection(self) -> None:
-        """Close the Redis client connection if available."""
         if close := getattr(self._client, "close", None):
             if inspect.isawaitable(maybe := close()):
                 await maybe
 
     async def _disconnect_connection_pool(self) -> None:
-        """Disconnect the connection pool if available."""
         if pool := getattr(self._client, "connection_pool", None):
             if disconnect := getattr(pool, "disconnect", None):
                 if inspect.isawaitable(maybe := disconnect()):

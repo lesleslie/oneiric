@@ -1,14 +1,4 @@
 #!/usr/bin/env python3
-"""Generate remote manifest from codebase metadata.
-
-This script scans the codebase for registered adapters and actions, then generates
-a remote manifest with full v2 metadata.
-
-Usage:
-    python scripts/generate_manifest.py --output dist/manifest.yaml --version 1.0.0
-    python scripts/generate_manifest.py --output manifest.yaml --version 1.0.0 --no-adapters
-    python scripts/generate_manifest.py --output manifest.yaml --version 1.0.0 --no-actions
-"""
 
 from __future__ import annotations
 
@@ -18,7 +8,7 @@ from pathlib import Path
 
 import yaml
 
-# Add project root to path for imports
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from oneiric.actions.bootstrap import builtin_action_metadata
@@ -35,8 +25,7 @@ from oneiric.remote.models import (
 def adapter_to_manifest_entry(
     adapter: AdapterMetadata, version: str
 ) -> RemoteManifestEntry:
-    """Convert AdapterMetadata to RemoteManifestEntry with full v2 fields."""
-    # Get factory as import path string
+
     factory_str: str
     if isinstance(adapter.factory, str):
         factory_str = adapter.factory
@@ -45,7 +34,7 @@ def adapter_to_manifest_entry(
     else:
         raise ValueError(f"Unsupported factory type: {type(adapter.factory)}")
 
-    # Get settings model as import path string
+
     settings_model_str: str | None = None
     if adapter.settings_model:
         if isinstance(adapter.settings_model, str):
@@ -68,12 +57,12 @@ def adapter_to_manifest_entry(
         stack_level=adapter.stack_level or 0,
         priority=adapter.priority,
         version=adapter.version or version,
-        # Adapter-specific v2 fields
+
         capabilities=capability_descriptors,
         owner=adapter.owner,
         requires_secrets=adapter.requires_secrets,
         settings_model=settings_model_str,
-        # Documentation
+
         metadata={
             "description": adapter.description or "",
             "source": str(adapter.source),
@@ -84,8 +73,7 @@ def adapter_to_manifest_entry(
 def action_to_manifest_entry(
     action: ActionMetadata, version: str
 ) -> RemoteManifestEntry:
-    """Convert ActionMetadata to RemoteManifestEntry with full v2 fields."""
-    # Get factory as import path string
+
     factory_str: str
     if isinstance(action.factory, str):
         factory_str = action.factory
@@ -102,10 +90,10 @@ def action_to_manifest_entry(
         stack_level=action.stack_level or 0,
         priority=action.priority,
         version=action.version or version,
-        # Action-specific v2 fields
+
         side_effect_free=action.extras.get("side_effect_free", False),
         timeout_seconds=action.extras.get("timeout_seconds"),
-        # Documentation
+
         metadata={
             "description": action.description or "",
             "source": str(action.source),
@@ -121,22 +109,9 @@ def generate_manifest(
     include_actions: bool = True,
     pretty: bool = True,
 ) -> RemoteManifest:
-    """Generate manifest from builtin metadata.
-
-    Args:
-        output_path: Path to write manifest YAML
-        version: Default version for entries without explicit version
-        source: Manifest source identifier
-        include_adapters: Whether to include adapter entries
-        include_actions: Whether to include action entries
-        pretty: Whether to pretty-print YAML
-
-    Returns:
-        Generated RemoteManifest
-    """
     entries: list[RemoteManifestEntry] = []
 
-    # Generate adapter entries
+
     if include_adapters:
         print("Scanning builtin adapters...")
         for adapter_meta in builtin_adapter_metadata():
@@ -149,7 +124,7 @@ def generate_manifest(
                     f"  ✗ adapter/{adapter_meta.category} ({adapter_meta.provider}): {exc}"
                 )
 
-    # Generate action entries
+
     if include_actions:
         print("Scanning builtin actions...")
         for action_meta in builtin_action_metadata():
@@ -164,7 +139,7 @@ def generate_manifest(
 
     manifest = RemoteManifest(source=source, entries=entries)
 
-    # Write manifest
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w") as f:
         if pretty:
@@ -193,16 +168,16 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Generate complete manifest
+
   python scripts/generate_manifest.py --output dist/manifest.yaml --version 1.0.0
 
-  # Generate adapters only
+
   python scripts/generate_manifest.py --output adapters.yaml --version 1.0.0 --no-actions
 
-  # Generate actions only
+
   python scripts/generate_manifest.py --output actions.yaml --version 1.0.0 --no-adapters
 
-  # Use custom source identifier
+
   python scripts/generate_manifest.py \\
     --output manifest.yaml \\
     --version 1.0.0 \\

@@ -1,5 +1,3 @@
-"""Route53 DNS adapter."""
-
 from __future__ import annotations
 
 from collections.abc import Callable, Coroutine
@@ -14,8 +12,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class Route53DNSSettings(BaseModel):
-    """AWS Route53 configuration."""
-
     hosted_zone_id: str = Field(description="Hosted zone ID")
     region_name: str = Field(default="us-east-1")
     access_key_id: SecretStr | None = None
@@ -24,12 +20,10 @@ class Route53DNSSettings(BaseModel):
 
 
 class Route53DNSAdapter:
-    """Manage DNS records via AWS Route53."""
-
     metadata = AdapterMetadata(
         category="dns",
         provider="route53",
-        factory="oneiric.adapters.dns.route53:Route53DNSAdapter",
+        factory="oneiric.adapters.dns.route53: Route53DNSAdapter",
         capabilities=["record.manage", "record.list"],
         stack_level=30,
         priority=310,
@@ -58,7 +52,6 @@ class Route53DNSAdapter:
         )
 
     async def init(self) -> None:
-        """Initialize AWS client."""
         if self._client:
             self._logger.info("route53-dns-init-reuse-client")
             return
@@ -99,7 +92,6 @@ class Route53DNSAdapter:
         self._logger.info("route53-dns-init")
 
     async def cleanup(self) -> None:
-        """Dispose AWS client."""
         if self._owns_client and self._client_cm:
             await self._client_cm.__aexit__(None, None, None)
         self._client = None

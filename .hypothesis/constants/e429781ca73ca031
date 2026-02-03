@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/actions/serialization.py
+# hypothesis_version: 6.151.4
+
+[430, 'Platform Core', 'SerializationAction', 'action.serialization', 'ascii', 'base64', 'data', 'decode', 'decoded', 'encode', 'encoded', 'encoding', 'ensure_ascii', 'format', 'json', 'mode', 'path', 'pickle', 'serialization.encode', 'serialize', 'service', 'sort_keys', 'status', 'task', 'text', 'utf-8', 'value', 'workflow', 'yaml']

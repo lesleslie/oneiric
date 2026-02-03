@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/messaging/webpush.py
+# hypothesis_version: 6.151.4
+
+[0.5, 10.0, 200, 360, 'Location', 'Messaging', 'Notification', 'adapter', 'body', 'content_encoding', 'data', 'headers', 'location', 'messaging', 'notifications', 'payload', 'push', 'status_code', 'sub', 'subscription_info', 'title', 'ttl', 'vapid_claims', 'webpush', 'webpush-adapter-init', 'webpush-message']

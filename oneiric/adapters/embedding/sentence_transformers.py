@@ -1,5 +1,3 @@
-"""Sentence Transformers embeddings adapter with lifecycle integration."""
-
 from __future__ import annotations
 
 import asyncio
@@ -15,7 +13,7 @@ from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
 
-from .common import (
+from .embedding_interface import (
     EmbeddingBase,
     EmbeddingBaseSettings,
     EmbeddingBatch,
@@ -24,16 +22,12 @@ from .common import (
     EmbeddingUtils,
 )
 
-# Check if sentence-transformers is available
 _sentence_transformers_available = (
     importlib.util.find_spec("sentence_transformers") is not None
 )
 
 
 class SentenceTransformersSettings(EmbeddingBaseSettings):
-    """Sentence Transformers-specific embedding settings."""
-
-    # Model configuration
     device: str = Field(
         default="auto",
         description="Device to run model on (cpu, cuda, auto)",
@@ -46,7 +40,6 @@ class SentenceTransformersSettings(EmbeddingBaseSettings):
     revision: str | None = Field(default=None)
     trust_remote_code: bool = Field(default=False)
 
-    # Model optimization
     convert_to_numpy: bool = Field(default=True)
     convert_to_tensor: bool = Field(default=False)
     show_progress_bar: bool = Field(default=False)
@@ -55,22 +48,18 @@ class SentenceTransformersSettings(EmbeddingBaseSettings):
         description="Model precision (float32, float16)",
     )
 
-    # Edge optimization
     enable_quantization: bool = Field(default=False)
     memory_efficient: bool = Field(default=True)
 
-    # Override base settings defaults
     model: str = Field(default=EmbeddingModel.ALL_MINILM_L6_V2.value)
     batch_size: int = Field(default=32)
 
 
 class SentenceTransformersAdapter(EmbeddingBase):
-    """Sentence Transformers embeddings adapter implementing the lifecycle contract."""
-
     metadata = AdapterMetadata(
         category="embedding",
         provider="sentence_transformers",
-        factory="oneiric.adapters.embedding.sentence_transformers:SentenceTransformersAdapter",
+        factory="oneiric.adapters.embedding.sentence_transformers: SentenceTransformersAdapter",
         capabilities=[
             "batch_embedding",
             "edge_optimized",
@@ -81,10 +70,10 @@ class SentenceTransformersAdapter(EmbeddingBase):
             "on_device",
         ],
         stack_level=30,
-        priority=400,  # Lower priority than OpenAI (500) - open-source alternative
+        priority=400,
         source=CandidateSource.LOCAL_PKG,
         owner="AI Platform",
-        requires_secrets=False,  # No API key required - runs locally
+        requires_secrets=False,
         settings_model=SentenceTransformersSettings,
     )
 
@@ -100,7 +89,6 @@ class SentenceTransformersAdapter(EmbeddingBase):
         )
 
     async def init(self) -> None:
-        """Initialize Sentence Transformers adapter."""
         self._logger.info("sentence-transformers-adapter-init-start")
 
         if not _sentence_transformers_available:
@@ -109,10 +97,8 @@ class SentenceTransformersAdapter(EmbeddingBase):
             )
 
         try:
-            # Load model
             await self._load_model()
 
-            # Test with a simple embedding request
             test_result = await self.embed_text("initialization test")
             self._logger.debug(
                 "sentence-transformers-test-success",
@@ -128,7 +114,6 @@ class SentenceTransformersAdapter(EmbeddingBase):
             raise LifecycleError(f"sentence-transformers-init-failed: {exc}") from exc
 
     async def _load_model(self) -> None:
-        """Load the Sentence Transformer model."""
         try:
             import importlib
 
@@ -136,7 +121,6 @@ class SentenceTransformersAdapter(EmbeddingBase):
             st_mod = importlib.import_module("sentence_transformers")
             STClass = st_mod.SentenceTransformer
 
-            # Determine device
             if self._settings.device == "auto":
                 self._device = "cuda" if torch.cuda.is_available() else "cpu"
             else:
@@ -148,7 +132,6 @@ class SentenceTransformersAdapter(EmbeddingBase):
                 device=self._device,
             )
 
-            # Build model kwargs
             model_kwargs = {
                 "device": self._device,
                 "cache_folder": self._settings.cache_folder,
@@ -157,16 +140,13 @@ class SentenceTransformersAdapter(EmbeddingBase):
                 "trust_remote_code": self._settings.trust_remote_code,
             }
 
-            # Remove None values
             model_kwargs = {k: v for k, v in model_kwargs.items() if v is not None}
 
-            # Load model in executor to avoid blocking
             self._model = await asyncio.get_event_loop().run_in_executor(
                 None,
                 lambda: STClass(self._settings.model, **model_kwargs),
             )
 
-            # Apply optimizations
             if self._settings.precision == "float16" and self._device == "cuda":
                 self._model.half()
 
@@ -181,18 +161,15 @@ class SentenceTransformersAdapter(EmbeddingBase):
             raise LifecycleError(f"model-load-failed: {exc}") from exc
 
     async def _ensure_client(self) -> Any:
-        """Ensure Sentence Transformer model is loaded."""
         if self._model is None:
             await self._load_model()
         return self._model
 
     async def health(self) -> bool:
-        """Check if Sentence Transformers service is healthy."""
         if not self._model:
             return False
 
         try:
-            # Test with a simple embedding request
             await self.embed_text("health check test")
             return True
         except Exception as exc:
@@ -202,13 +179,11 @@ class SentenceTransformersAdapter(EmbeddingBase):
             return False
 
     async def cleanup(self) -> None:
-        """Cleanup Sentence Transformers resources."""
         if self._model is not None:
             try:
                 del self._model
                 self._model = None
 
-                # Clear CUDA cache if using GPU
                 from contextlib import suppress
 
                 with suppress(Exception):
@@ -234,12 +209,10 @@ class SentenceTransformersAdapter(EmbeddingBase):
         batch_size: int,
         **kwargs: Any,
     ) -> EmbeddingBatch:
-        """Generate embeddings for multiple texts using Sentence Transformers."""
         start_time = time.time()
         model_obj = await self._ensure_client()
 
         try:
-            # Generate embeddings in executor to avoid blocking
             embeddings = await asyncio.get_event_loop().run_in_executor(
                 None,
                 lambda: model_obj.encode(
@@ -252,13 +225,11 @@ class SentenceTransformersAdapter(EmbeddingBase):
                 ),
             )
 
-            # Convert to list format if numpy
             if hasattr(embeddings, "tolist"):
                 embeddings_list = embeddings.tolist()
             else:
                 embeddings_list = embeddings
 
-            # Create results
             results = []
             for i, (text, embedding) in enumerate(
                 zip(texts, embeddings_list, strict=False)
@@ -268,7 +239,7 @@ class SentenceTransformersAdapter(EmbeddingBase):
                     embedding=embedding,
                     model=model,
                     dimensions=len(embedding),
-                    tokens=None,  # Sentence Transformers doesn't provide token count
+                    tokens=None,
                     metadata={
                         "device": self._device,
                         "precision": self._settings.precision,
@@ -289,7 +260,7 @@ class SentenceTransformersAdapter(EmbeddingBase):
 
             return EmbeddingBatch(
                 results=results,
-                total_tokens=None,  # Not available for local models
+                total_tokens=None,
                 processing_time=processing_time,
                 model=model,
                 batch_size=len(results),
@@ -311,14 +282,11 @@ class SentenceTransformersAdapter(EmbeddingBase):
         model: str,
         **kwargs: Any,
     ) -> list[EmbeddingBatch]:
-        """Embed large documents with chunking."""
         batches = []
 
         for document in documents:
-            # Split document into chunks
             chunks = self._chunk_text(document, chunk_size, chunk_overlap)
 
-            # Generate embeddings for chunks
             batch = await self._embed_texts(
                 chunks,
                 model=model,
@@ -327,7 +295,6 @@ class SentenceTransformersAdapter(EmbeddingBase):
                 **kwargs,
             )
 
-            # Add document metadata
             for result in batch.results:
                 result.metadata.update(
                     {
@@ -348,7 +315,6 @@ class SentenceTransformersAdapter(EmbeddingBase):
         embedding2: list[float],
         method: str,
     ) -> float:
-        """Compute similarity between two embeddings."""
         if method == "cosine":
             return EmbeddingUtils.cosine_similarity(embedding1, embedding2)
         if method == "euclidean":
@@ -366,14 +332,11 @@ class SentenceTransformersAdapter(EmbeddingBase):
         documents: list[str],
         top_k: int = 5,
     ) -> list[tuple[str, float]]:
-        """Perform semantic similarity search using the model's built-in capabilities."""
         model_obj = await self._ensure_client()
 
-        # Generate embeddings
         query_embedding = await self.embed_text(query)
         doc_embeddings = await self.embed_texts(documents)
 
-        # Compute similarities using Sentence Transformers utilities
         similarities = await asyncio.get_event_loop().run_in_executor(
             None,
             lambda: model_obj.similarity(
@@ -382,20 +345,17 @@ class SentenceTransformersAdapter(EmbeddingBase):
             ),
         )
 
-        # Get top-k results
         if hasattr(similarities, "tolist"):
             similarities = similarities.tolist()[0]
         else:
             similarities = similarities[0]
 
-        # Sort by similarity (descending)
         results = list(zip(documents, similarities, strict=False))
         results.sort(key=itemgetter(1), reverse=True)
 
         return results[:top_k]
 
     async def _get_model_info(self, model: str) -> dict[str, Any]:
-        """Get information about a Sentence Transformer model."""
         model_info: dict[str, Any] = {
             "name": model,
             "provider": "sentence_transformers",
@@ -424,7 +384,6 @@ class SentenceTransformersAdapter(EmbeddingBase):
         return model_info
 
     async def _list_models(self) -> list[dict[str, Any]]:
-        """List popular Sentence Transformer models."""
         models = [
             {
                 "name": "all-MiniLM-L6-v2",

@@ -1,5 +1,3 @@
-"""Secret adapter implementations."""
-
 from .aws import AWSSecretManagerAdapter, AWSSecretManagerSettings
 from .env import EnvSecretAdapter, EnvSecretSettings
 from .file import FileSecretAdapter, FileSecretSettings

@@ -2,7 +2,7 @@ import httpx
 import pytest
 from pydantic import SecretStr
 
-from oneiric.adapters.messaging.common import NotificationMessage
+from oneiric.adapters.messaging.messaging_types import NotificationMessage
 from oneiric.adapters.messaging.slack import SlackAdapter, SlackSettings
 from oneiric.adapters.messaging.teams import TeamsAdapter, TeamsSettings
 from oneiric.adapters.messaging.webhook import WebhookAdapter, WebhookSettings

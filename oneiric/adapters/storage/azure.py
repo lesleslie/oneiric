@@ -1,5 +1,3 @@
-"""Azure Blob Storage adapter."""
-
 from __future__ import annotations
 
 from typing import Any
@@ -13,8 +11,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class AzureBlobStorageSettings(BaseModel):
-    """Configuration for the Azure Blob adapter."""
-
     container: str = Field(description="Target Azure Blob container name.")
     connection_string: str | None = Field(
         default=None,
@@ -35,12 +31,10 @@ class AzureBlobStorageSettings(BaseModel):
 
 
 class AzureBlobStorageAdapter:
-    """Async Azure Blob Storage adapter powered by azure-storage-blob."""
-
     metadata = AdapterMetadata(
         category="storage",
         provider="azure-blob",
-        factory="oneiric.adapters.storage.azure:AzureBlobStorageAdapter",
+        factory="oneiric.adapters.storage.azure: AzureBlobStorageAdapter",
         capabilities=["blob", "stream", "delete", "container"],
         stack_level=28,
         priority=425,

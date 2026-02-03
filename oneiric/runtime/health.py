@@ -1,5 +1,3 @@
-"""Runtime orchestrator health snapshot helpers."""
-
 from __future__ import annotations
 
 import json

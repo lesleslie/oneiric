@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/file_transfer/scp.py
+# hypothesis_version: 6.151.4
+
+[320, '.', '/', 'Infra', 'adapter', 'client_keys', 'delete', 'download', 'exit_status', 'file_transfer', 'host', 'known_hosts', 'list', 'password', 'port', 'scp', 'scp-adapter-cleanup', 'scp-adapter-init', 'scp-command-failed', 'scp-command-nonzero', 'scp-download-failed', 'scp-exists-failed', 'scp-upload-failed', 'stderr', 'stdout', 'upload', 'username', 'wb']

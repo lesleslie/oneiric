@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/storage/azure.py
+# hypothesis_version: 6.151.4
+
+[404, 425, '404', 'Data Platform', 'adapter', 'adapter-health-error', 'adapter-init', 'azure-blob', 'azure-blob-storage', 'blob', 'blobnotfound', 'close', 'container', 'delete', 'error_code', 'message', 'name', 'status_code', 'storage', 'stream']

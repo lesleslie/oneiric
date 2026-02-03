@@ -1,5 +1,3 @@
-"""Google Cloud DNS adapter."""
-
 from __future__ import annotations
 
 import asyncio
@@ -15,8 +13,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class GCDNSSettings(BaseModel):
-    """Configuration for Google Cloud DNS."""
-
     managed_zone: str = Field(description="Name of the managed zone.")
     project_id: str | None = Field(default=None, description="GCP project ID.")
     credentials_file: Path | None = Field(
@@ -27,12 +23,10 @@ class GCDNSSettings(BaseModel):
 
 
 class GCDNSAdapter:
-    """Manage DNS records via Google Cloud DNS."""
-
     metadata = AdapterMetadata(
         category="dns",
         provider="gcdns",
-        factory="oneiric.adapters.dns.gcdns:GCDNSAdapter",
+        factory="oneiric.adapters.dns.gcdns: GCDNSAdapter",
         capabilities=["record.manage", "record.list"],
         stack_level=30,
         priority=330,
@@ -60,7 +54,6 @@ class GCDNSAdapter:
         )
 
     async def init(self) -> None:
-        """Initialize the DNS client and managed zone."""
         if self._zone is not None:
             self._logger.info("gcdns-init-zone-reuse")
             return

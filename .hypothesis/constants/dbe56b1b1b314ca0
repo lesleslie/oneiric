@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/metrics.py
+# hypothesis_version: 6.151.4
+
+[0.0, '1', 'active_connections', 'adapter', 'backlog', 'connections', 'domain', 'failed', 'max_connections', 'ms', 'oneiric.adapters', 'operation', 'outcome', 'pending', 'pending_count', 'pool_size', 'provider', 'queue_depth', 'queue_size', 'success']

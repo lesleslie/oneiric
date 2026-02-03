@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/runtime/scheduler.py
+# hypothesis_version: 6.151.4
+
+[200, 400, 500, 8080, '/healthz', '/tasks/workflow', '0.0.0.0', 'SchedulerHTTPServer', 'checkpoint', 'completed', 'context', 'error', 'invalid-json', 'metadata', 'ok', 'processed_at', 'result', 'results', 'run_id', 'scheduler-http-error', 'status', 'workflow', 'workflow-key-missing', 'workflow-task-start', 'workflow_provider']

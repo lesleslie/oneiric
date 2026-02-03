@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from pydantic import SecretStr
 
-from oneiric.adapters.vector.common import VectorDocument
+from oneiric.adapters.vector.vector_types import VectorDocument
 from oneiric.adapters.vector.pinecone import PineconeAdapter, PineconeSettings
 
 

@@ -1,5 +1,3 @@
-"""Builtin compression and hashing action kits."""
-
 from __future__ import annotations
 
 import base64
@@ -20,8 +18,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class CompressionActionSettings(BaseModel):
-    """Settings for the compression action kit."""
-
     algorithm: Literal["zlib", "bz2", "lzma"] = Field(
         default="zlib",
         description="Default compression algorithm.",
@@ -35,12 +31,10 @@ class CompressionActionSettings(BaseModel):
 
 
 class CompressionAction:
-    """Action kit that compresses/decompresses payloads."""
-
     metadata = ActionMetadata(
         key="compression.encode",
         provider="builtin-compression",
-        factory="oneiric.actions.compression:CompressionAction",
+        factory="oneiric.actions.compression: CompressionAction",
         description="Utility action for compressing/decompressing short payloads",
         domains=["task", "workflow"],
         capabilities=["compress", "decompress"],
@@ -117,8 +111,6 @@ class CompressionAction:
 
 
 class HashActionSettings(BaseModel):
-    """Settings for the hashing action kit."""
-
     algorithm: Literal["sha256", "sha512", "blake2b"] = Field(
         default="sha256",
         description="Digest algorithm used when hashing payloads.",
@@ -134,12 +126,10 @@ class HashActionSettings(BaseModel):
 
 
 class HashAction:
-    """Action kit that computes deterministic hashes for payloads."""
-
     metadata = ActionMetadata(
         key="compression.hash",
         provider="builtin-hash",
-        factory="oneiric.actions.compression:HashAction",
+        factory="oneiric.actions.compression: HashAction",
         description="Stateless hashing helper that emits hex/base64 digests",
         domains=["task", "service", "workflow"],
         capabilities=["hash", "checksum", "validate"],

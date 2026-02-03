@@ -1,5 +1,3 @@
-"""Oneiric OpenTelemetry storage adapters."""
-
 from oneiric.adapters.observability.otel import OTelStorageAdapter
 from oneiric.adapters.observability.settings import OTelStorageSettings
 

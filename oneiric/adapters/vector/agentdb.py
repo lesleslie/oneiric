@@ -1,14 +1,3 @@
-"""AgentDB vector database adapter with lifecycle integration.
-
-AgentDB provides agents with a real cognitive layer optimized for:
-- In-memory vector search (sub-1ms latency)
-- Multi-node QUIC synchronization
-- Agent-specific memory patterns
-- Distributed AI systems
-
-This adapter bridges AgentDB's Node.js architecture with Python via MCP.
-"""
-
 from __future__ import annotations
 
 from typing import Any
@@ -20,51 +9,38 @@ from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
 
-from .common import VectorBase, VectorBaseSettings, VectorDocument, VectorSearchResult
+from .vector_types import (
+    VectorBase,
+    VectorBaseSettings,
+    VectorDocument,
+    VectorSearchResult,
+)
 
 
 class AgentDBSettings(VectorBaseSettings):
-    """AgentDB vector adapter settings."""
-
-    # MCP server connection (AgentDB runs as MCP server)
-    mcp_server_url: str = "stdio://agentdb"  # stdio or http
+    mcp_server_url: str = "stdio://agentdb"
     mcp_timeout: float = 30.0
 
-    # AgentDB-specific settings
-    storage_path: str | None = None  # Local file path for on-disk storage
-    in_memory: bool = True  # Use in-memory vs disk storage
-    sync_enabled: bool = False  # QUIC sync across nodes
-    sync_nodes: list[str] = Field(default_factory=list)  # Node URLs for QUIC sync
+    storage_path: str | None = None
+    in_memory: bool = True
+    sync_enabled: bool = False
+    sync_nodes: list[str] = Field(default_factory=list)
 
-    # Collection settings
     default_collection: str = "agent_memory"
     collection_prefix: str = "agent_"
 
-    # Vector configuration
     default_dimension: int = 1536
-    default_distance_metric: str = "cosine"  # cosine, euclidean, dot_product
+    default_distance_metric: str = "cosine"
 
-    # Performance tuning
-    cache_size_mb: int = 256  # In-memory cache size
+    cache_size_mb: int = 256
     max_connections: int = 10
 
 
 class AgentDBAdapter(VectorBase):
-    """AgentDB vector database adapter implementing the lifecycle contract.
-
-    AgentDB excels at:
-    - Real-time agent memory (sub-1ms access)
-    - Multi-node synchronization via QUIC
-    - Agent-specific cognitive patterns
-    - Hybrid vector search with HNSW
-
-    This adapter uses AgentDB's MCP server interface for Python integration.
-    """
-
     metadata = AdapterMetadata(
         category="vector",
         provider="agentdb",
-        factory="oneiric.adapters.vector.agentdb:AgentDBAdapter",
+        factory="oneiric.adapters.vector.agentdb: AgentDBAdapter",
         capabilities=[
             "vector_search",
             "batch_operations",
@@ -74,7 +50,7 @@ class AgentDBAdapter(VectorBase):
             "agent_optimized",
         ],
         stack_level=30,
-        priority=600,  # Higher priority for agent workloads
+        priority=600,
         source=CandidateSource.LOCAL_PKG,
         owner="AI Platform",
         requires_secrets=False,
@@ -93,12 +69,9 @@ class AgentDBAdapter(VectorBase):
         )
 
     async def _create_client(self) -> Any:
-        """Create AgentDB MCP client."""
         try:
-            # Import MCP client
             from mcp_common.client import MCPClient
 
-            # Create MCP connection to AgentDB
             self._logger.info(
                 "Creating AgentDB MCP client",
                 server_url=self._settings.mcp_server_url,
@@ -110,7 +83,6 @@ class AgentDBAdapter(VectorBase):
                 timeout=self._settings.mcp_timeout,
             )
 
-            # Initialize AgentDB via MCP
             await self._mcp_client.call_tool(
                 "agentdb_init",
                 {
@@ -131,19 +103,15 @@ class AgentDBAdapter(VectorBase):
             raise LifecycleError(f"Failed to initialize AgentDB adapter: {e}") from e
 
     async def _ensure_client(self) -> Any:
-        """Ensure AgentDB client is initialized."""
         if self._client is None:
             self._client = await self._create_client()
         return self._client
 
-    # Lifecycle hooks
     async def init(self) -> None:
-        """Initialize AgentDB adapter."""
         try:
             self._logger.info("Initializing AgentDB adapter")
             await self._ensure_client()
 
-            # Health check
             is_healthy = await self.health()
             if not is_healthy:
                 raise LifecycleError("AgentDB health check failed")
@@ -159,7 +127,6 @@ class AgentDBAdapter(VectorBase):
             raise
 
     async def health(self) -> bool:
-        """Check if AgentDB is healthy."""
         try:
             client = await self._ensure_client()
             result = await client.call_tool("agentdb_health", {})
@@ -169,7 +136,6 @@ class AgentDBAdapter(VectorBase):
             return False
 
     async def cleanup(self) -> None:
-        """Cleanup AgentDB resources."""
         try:
             if self._mcp_client:
                 await self._mcp_client.close()
@@ -179,7 +145,6 @@ class AgentDBAdapter(VectorBase):
         except Exception as e:
             self._logger.warning("Error during AgentDB cleanup", error=str(e))
 
-    # Core vector operations
     async def search(
         self,
         collection: str,
@@ -189,13 +154,11 @@ class AgentDBAdapter(VectorBase):
         include_vectors: bool = False,
         **kwargs: Any,
     ) -> list[VectorSearchResult]:
-        """Perform vector similarity search in AgentDB."""
         try:
             client = await self._ensure_client()
 
             collection_name = f"{self._settings.collection_prefix}{collection}"
 
-            # Call AgentDB search via MCP
             result = await client.call_tool(
                 "agentdb_search",
                 {
@@ -210,7 +173,6 @@ class AgentDBAdapter(VectorBase):
                 },
             )
 
-            # Transform to VectorSearchResult
             return [
                 VectorSearchResult(
                     id=hit["id"],
@@ -231,12 +193,10 @@ class AgentDBAdapter(VectorBase):
         documents: list[VectorDocument],
         **kwargs: Any,
     ) -> list[str]:
-        """Insert documents into AgentDB."""
         try:
             client = await self._ensure_client()
             collection_name = f"{self._settings.collection_prefix}{collection}"
 
-            # Prepare documents for AgentDB
             docs_data = [
                 {
                     "id": doc.id or f"{collection}_{hash(str(doc.vector))}",
@@ -246,7 +206,6 @@ class AgentDBAdapter(VectorBase):
                 for doc in documents
             ]
 
-            # Call AgentDB insert via MCP
             result = await client.call_tool(
                 "agentdb_insert",
                 {
@@ -267,12 +226,10 @@ class AgentDBAdapter(VectorBase):
         documents: list[VectorDocument],
         **kwargs: Any,
     ) -> list[str]:
-        """Upsert documents into AgentDB."""
         try:
             client = await self._ensure_client()
             collection_name = f"{self._settings.collection_prefix}{collection}"
 
-            # Prepare documents for AgentDB
             docs_data = [
                 {
                     "id": doc.id or f"{collection}_{hash(str(doc.vector))}",
@@ -282,7 +239,6 @@ class AgentDBAdapter(VectorBase):
                 for doc in documents
             ]
 
-            # Call AgentDB upsert via MCP
             result = await client.call_tool(
                 "agentdb_upsert",
                 {
@@ -303,12 +259,10 @@ class AgentDBAdapter(VectorBase):
         ids: list[str],
         **kwargs: Any,
     ) -> bool:
-        """Delete documents from AgentDB."""
         try:
             client = await self._ensure_client()
             collection_name = f"{self._settings.collection_prefix}{collection}"
 
-            # Call AgentDB delete via MCP
             result = await client.call_tool(
                 "agentdb_delete",
                 {
@@ -330,12 +284,10 @@ class AgentDBAdapter(VectorBase):
         include_vectors: bool = False,
         **kwargs: Any,
     ) -> list[VectorDocument]:
-        """Retrieve documents from AgentDB."""
         try:
             client = await self._ensure_client()
             collection_name = f"{self._settings.collection_prefix}{collection}"
 
-            # Call AgentDB get via MCP
             result = await client.call_tool(
                 "agentdb_get",
                 {
@@ -345,7 +297,6 @@ class AgentDBAdapter(VectorBase):
                 },
             )
 
-            # Transform to VectorDocument
             return [
                 VectorDocument(
                     id=doc["id"],
@@ -365,12 +316,10 @@ class AgentDBAdapter(VectorBase):
         filter_expr: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> int:
-        """Count documents in AgentDB collection."""
         try:
             client = await self._ensure_client()
             collection_name = f"{self._settings.collection_prefix}{collection}"
 
-            # Call AgentDB count via MCP
             result = await client.call_tool(
                 "agentdb_count",
                 {
@@ -385,7 +334,6 @@ class AgentDBAdapter(VectorBase):
             self._logger.error("AgentDB count failed", error=str(e))
             raise
 
-    # Collection management
     async def create_collection(
         self,
         name: str,
@@ -393,12 +341,10 @@ class AgentDBAdapter(VectorBase):
         distance_metric: str = "cosine",
         **kwargs: Any,
     ) -> bool:
-        """Create a new AgentDB collection."""
         try:
             client = await self._ensure_client()
             collection_name = f"{self._settings.collection_prefix}{name}"
 
-            # Call AgentDB create_collection via MCP
             result = await client.call_tool(
                 "agentdb_create_collection",
                 {
@@ -419,12 +365,10 @@ class AgentDBAdapter(VectorBase):
         name: str,
         **kwargs: Any,
     ) -> bool:
-        """Delete an AgentDB collection."""
         try:
             client = await self._ensure_client()
             collection_name = f"{self._settings.collection_prefix}{name}"
 
-            # Call AgentDB delete_collection via MCP
             result = await client.call_tool(
                 "agentdb_delete_collection",
                 {
@@ -439,15 +383,13 @@ class AgentDBAdapter(VectorBase):
             raise
 
     async def list_collections(self, **kwargs: Any) -> list[str]:
-        """List all AgentDB collections."""
         try:
             client = await self._ensure_client()
 
-            # Call AgentDB list_collections via MCP
             result = await client.call_tool("agentdb_list_collections", {})
 
             collections = result.get("collections", [])
-            # Strip prefix if present
+
             prefix = self._settings.collection_prefix
             return [
                 col[len(prefix) :] if col.startswith(prefix) else col
@@ -459,5 +401,4 @@ class AgentDBAdapter(VectorBase):
             raise
 
     def has_capability(self, capability: str) -> bool:
-        """Check if AgentDB adapter supports a specific capability."""
         return capability in self.metadata.capabilities

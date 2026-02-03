@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/runtime/events.py
+# hypothesis_version: 6.151.4
+
+[0.0, 0.25, 1000.0, '.', 'any_of', 'attempts', 'backoff_jitter', 'base_delay', 'broadcast', 'domain', 'equals', 'event', 'event-handler-error', 'event.handler', 'event_handler', 'event_topic', 'exclusive', 'exists', 'field', 'handler', 'headers.', 'in', 'initial_delay', 'jitter', 'key', 'max_attempts', 'max_backoff', 'max_delay', 'one_of', 'oneiric.event.topic', 'operation', 'path', 'payload.', 'runtime.events', 'topic', 'value']

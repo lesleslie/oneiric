@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/queue/nats.py
+# hypothesis_version: 6.151.4
+
+[0.0, 1.0, 2.0, 320, 'Messaging', 'adapter', 'adapter-init', 'adapter.queue.nats', 'nats', 'oneiric', 'oneiric-nats', 'pubsub', 'queue', 'queue-publish', 'queue-subscribe']

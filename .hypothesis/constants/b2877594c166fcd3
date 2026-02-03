@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/file_transfer/ftp.py
+# hypothesis_version: 6.151.4
+
+[0.5, 10.0, 340, '.', '/', 'Infra', 'adapter', 'delete', 'download', 'file_transfer', 'ftp', 'ftp-adapter-cleanup', 'ftp-adapter-init', 'ftp-delete-failed', 'ftp-download-failed', 'ftp-health-failed', 'ftp-list-failed', 'ftp-upload-failed', 'list', 'upload']

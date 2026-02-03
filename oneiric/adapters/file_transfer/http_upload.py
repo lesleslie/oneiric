@@ -1,5 +1,3 @@
-"""HTTPS upload adapter."""
-
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -15,8 +13,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class HTTPSUploadSettings(BaseModel):
-    """Configuration for HTTPS uploads."""
-
     base_url: AnyHttpUrl | None = Field(
         default=None,
         description="Optional base URL prepended to relative upload paths.",
@@ -43,12 +39,10 @@ class HTTPSUploadSettings(BaseModel):
 
 
 class HTTPSUploadAdapter:
-    """Upload artifacts over HTTPS using httpx."""
-
     metadata = AdapterMetadata(
         category="file_transfer",
         provider="https-upload",
-        factory="oneiric.adapters.file_transfer.http_upload:HTTPSUploadAdapter",
+        factory="oneiric.adapters.file_transfer.http_upload: HTTPSUploadAdapter",
         capabilities=["upload"],
         stack_level=15,
         priority=360,

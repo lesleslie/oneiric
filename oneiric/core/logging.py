@@ -1,5 +1,3 @@
-"""Structured logging helpers with configurable sinks + OTel context."""
-
 from __future__ import annotations
 
 import logging
@@ -25,13 +23,11 @@ from structlog.stdlib import BoundLogger
 DEFAULT_LOGGER_NAME = "oneiric"
 DEFAULT_FILE_SIZE = 5 * 1024 * 1024
 
-# Global flag for event suppression
+
 _SUPPRESS_EVENTS = False
 
 
 class LoggingSinkConfig(BaseModel):
-    """Declarative sink configuration for stdlib logging handlers."""
-
     target: Literal["stdout", "stderr", "file", "http"] = Field(
         default="stdout",
         description="Handler target (stdout/stderr/file/http).",
@@ -54,8 +50,6 @@ class LoggingSinkConfig(BaseModel):
 
 
 class LoggingConfig(BaseModel):
-    """Configuration payload for structlog + stdlib logging."""
-
     level: str = Field(default="INFO", description="Root log level.")
     emit_json: bool = Field(
         default=True,
@@ -95,8 +89,8 @@ def _otel_context_processor(
     logger: Any, method_name: str, event_dict: dict[str, Any]
 ) -> dict[str, Any]:
     if (context := trace.get_current_span().get_span_context()) and context.is_valid:
-        event_dict.setdefault("trace_id", f"{context.trace_id:032x}")
-        event_dict.setdefault("span_id", f"{context.span_id:016x}")
+        event_dict.setdefault("trace_id", f"{context.trace_id: 032x}")
+        event_dict.setdefault("span_id", f"{context.span_id: 016x}")
     return event_dict
 
 
@@ -153,7 +147,6 @@ def _build_handlers(cfg: LoggingConfig) -> list[logging.Handler]:
 
 
 def _create_handler(sink: LoggingSinkConfig) -> logging.Handler:
-    """Create a logging handler from sink configuration."""
     handler = _create_handler_for_target(sink)
     handler.setLevel(getattr(logging, sink.level.upper(), logging.INFO))
     handler.setFormatter(logging.Formatter("%(message)s"))
@@ -161,7 +154,6 @@ def _create_handler(sink: LoggingSinkConfig) -> logging.Handler:
 
 
 def _create_handler_for_target(sink: LoggingSinkConfig) -> logging.Handler:
-    """Create handler based on target type."""
     target = sink.target
 
     if target == "stdout":
@@ -180,7 +172,6 @@ def _create_handler_for_target(sink: LoggingSinkConfig) -> logging.Handler:
 
 
 def _create_file_handler(sink: LoggingSinkConfig) -> logging.Handler:
-    """Create rotating file handler."""
     path = Path(sink.path or "oneiric.log")
     path.parent.mkdir(parents=True, exist_ok=True)
     return logging.handlers.RotatingFileHandler(
@@ -192,7 +183,6 @@ def _create_file_handler(sink: LoggingSinkConfig) -> logging.Handler:
 
 
 def _create_http_handler(sink: LoggingSinkConfig) -> logging.Handler:
-    """Create HTTP handler."""
     if not sink.endpoint:
         raise ValueError("HTTP sink requires 'endpoint'.")
 
@@ -208,16 +198,13 @@ def _create_http_handler(sink: LoggingSinkConfig) -> logging.Handler:
     )
 
 
-# Global variable to store the event suppression state
 _SUPPRESS_EVENTS = False
 
 
 def _filter_event_logs(logger, method_name, event_dict):
-    """Filter event logs based on global suppression flag."""
     global _SUPPRESS_EVENTS
-    # Only suppress logs that have an 'event' field (like 'swap-complete', 'domain-ready')
+
     if _SUPPRESS_EVENTS and "event" in event_dict:
-        # Return empty dict to suppress the event log
         return {}
     return event_dict
 
@@ -225,19 +212,14 @@ def _filter_event_logs(logger, method_name, event_dict):
 def configure_logging(
     config: LoggingConfig | None = None, suppress_events: bool | None = None
 ) -> None:
-    """Configure structlog and the stdlib logging bridge."""
-
     cfg = config or LoggingConfig()
 
-    # Determine if events should be suppressed based on explicit parameter,
-    # global flag, or debug setting from config
     global _SUPPRESS_EVENTS
-    # Default to not suppressing events unless explicitly specified
+
     should_suppress_events = False
     if suppress_events is not None:
         should_suppress_events = suppress_events
 
-    # Update the global suppression flag for the filter function
     _SUPPRESS_EVENTS = should_suppress_events
 
     timestamper = structlog.processors.TimeStamper(fmt=cfg.timestamper_format)
@@ -254,7 +236,6 @@ def configure_logging(
         structlog.processors.format_exc_info,
     ]
 
-    # Add event filter if suppression is enabled
     if should_suppress_events:
         processor_chain.insert(0, _filter_event_logs)
 
@@ -286,16 +267,12 @@ def configure_logging(
 
 
 def bind_log_context(**values: Any) -> None:
-    """Bind structured context (domain/key/provider/etc.) for subsequent logs."""
-
     filtered = {key: value for key, value in values.items() if value is not None}
     if filtered:
         bind_contextvars(**filtered)
 
 
 def clear_log_context(*keys: str) -> None:
-    """Clear bound context for the provided keys (or all when empty)."""
-
     if keys:
         unbind_contextvars(*keys)
     else:
@@ -304,8 +281,6 @@ def clear_log_context(*keys: str) -> None:
 
 @contextmanager
 def scoped_log_context(**values: Any) -> Any:
-    """Bind structured context for a scope and restore prior values."""
-
     previous = get_contextvars()
     bind_log_context(**values)
     try:
@@ -319,23 +294,11 @@ def scoped_log_context(**values: Any) -> Any:
 
 
 def configure_early_logging(suppress_events: bool = False) -> None:
-    """
-    Configure Oneiric logging early to control event output.
-
-    This should be called as early as possible in the initialization process
-    to ensure it takes effect before any logging occurs.
-
-    Args:
-        suppress_events: If True, suppress event logs to console
-    """
-    # Store the suppress_events flag in a global variable that can be accessed later
     global _SUPPRESS_EVENTS
     _SUPPRESS_EVENTS = suppress_events
 
 
 def get_logger(name: str | None = None, **initial_values: Any) -> BoundLogger:
-    """Return a structlog bound logger configured for the service."""
-
     logger = structlog.get_logger(name or DEFAULT_LOGGER_NAME)
     if initial_values:
         return logger.bind(**initial_values)

@@ -1,4 +1,3 @@
-"""NetworkX-backed DAG builder/executor prototype for orchestration parity."""
 
 from __future__ import annotations
 
@@ -24,7 +23,6 @@ logger = get_logger("runtime.dag")
 
 
 class _TaskFailedAfterRetries(Exception):
-    """Internal exception to propagate retry attempt count."""
 
     def __init__(self, attempts: int, original_error: Exception):
         self.attempts = attempts
@@ -34,7 +32,6 @@ class _TaskFailedAfterRetries(Exception):
 
 @dataclass(slots=True)
 class DAGTask:
-    """Task definition used by the DAG prototype."""
 
     key: str
     depends_on: Sequence[str] = field(default_factory=tuple)
@@ -43,12 +40,10 @@ class DAGTask:
 
 
 class DAGExecutionError(RuntimeError):
-    """Raised when DAG execution fails."""
 
 
 @dataclass(slots=True)
 class DAGExecutionHooks:
-    """Optional callbacks invoked during DAG execution."""
 
     on_run_start: HookCallable | None = None
     on_run_complete: HookCallable | None = None
@@ -67,7 +62,6 @@ class DAGRunResult(TypedDict):
 
 
 def build_graph(tasks: Iterable[DAGTask]) -> nx.DiGraph:
-    """Build a NetworkX DiGraph from the provided DAG tasks."""
 
     graph = nx.DiGraph()
     for task in tasks:
@@ -81,7 +75,6 @@ def build_graph(tasks: Iterable[DAGTask]) -> nx.DiGraph:
 
 
 def plan_levels(graph: nx.DiGraph) -> list[list[str]]:
-    """Return execution generations for the DAG."""
 
     return [list(generation) for generation in nx.topological_generations(graph)]
 
@@ -94,17 +87,6 @@ async def execute_dag(  # noqa: C901
     run_id: str | None = None,
     hooks: DAGExecutionHooks | None = None,
 ) -> DAGRunResult:
-    """Execute the DAG level-by-level using anyio TaskGroups.
-
-    Args:
-        graph: NetworkX DAG produced by :func:`build_graph`.
-        checkpoint: Optional mutable mapping used to persist node results across runs.
-            When provided, completed node outputs/durations/attempts are stored in the
-            mapping, and pre-existing snapshots allow nodes to be skipped on retries.
-
-    Returns:
-        Mapping containing the resolved run_id and node execution results.
-    """
     results: dict[str, Any] = {}
     workflow_label = workflow_key or "unknown"
     resolved_run_id = run_id or uuid4().hex
@@ -193,7 +175,6 @@ async def _execute_task_node(
     run_id: str,
     hooks: DAGExecutionHooks | None,
 ) -> None:
-    """Execute a single task node with checkpointing and retry."""
     task: DAGTask = graph.nodes[task_node]["task"]
     if not task.runner:
         raise DAGExecutionError(f"Task {task.key} missing runner")
@@ -286,7 +267,6 @@ async def _execute_task_node(
 def _load_from_checkpoint(
     task: DAGTask, checkpoint: MutableMapping[str, Any] | None, results: dict[str, Any]
 ) -> bool:
-    """Load task results from checkpoint if available."""
     if not checkpoint or task.key not in checkpoint:
         return False
 
@@ -301,7 +281,6 @@ def _load_from_checkpoint(
 
 
 def _parse_retry_policy(policy: dict[str, Any]) -> dict[str, Any]:
-    """Parse and normalize retry policy configuration."""
     max_attempts = int(policy.get("attempts") or policy.get("max_attempts") or 1)
     base_delay = float(policy.get("base_delay") or policy.get("initial_delay") or 0.0)
     max_delay = float(
@@ -324,7 +303,6 @@ def _parse_retry_policy(policy: dict[str, Any]) -> dict[str, Any]:
 async def _run_task_with_retry(
     task: DAGTask, config: dict[str, Any]
 ) -> tuple[int, Any]:
-    """Run task with retry logic, returning (attempts, value)."""
     attempts = 0
 
     async def _execute() -> Any:
@@ -363,7 +341,6 @@ def _store_task_results(
     results: dict[str, Any],
     checkpoint: MutableMapping[str, Any] | None,
 ) -> None:
-    """Store task execution results."""
     duration = time.perf_counter() - start
     results[task.key] = value
     results[f"{task.key}__duration"] = duration
@@ -378,7 +355,6 @@ def _store_task_results(
 def _record_success_metrics(
     task: DAGTask, workflow_label: str, start: float, attempts: int
 ) -> None:
-    """Record successful task execution metrics."""
     duration = time.perf_counter() - start
     record_workflow_node_metrics(
         workflow=workflow_label,
@@ -392,7 +368,6 @@ def _record_success_metrics(
 def _record_failure_metrics(
     task: DAGTask, workflow_label: str, start: float, attempts: int
 ) -> None:
-    """Record failed task execution metrics."""
     duration = time.perf_counter() - start
     record_workflow_node_metrics(
         workflow=workflow_label,

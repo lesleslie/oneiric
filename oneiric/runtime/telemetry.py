@@ -1,5 +1,3 @@
-"""Runtime observability telemetry helpers."""
-
 from __future__ import annotations
 
 import json
@@ -17,8 +15,6 @@ telemetry_logger = get_logger("runtime.telemetry")
 
 @dataclass
 class RuntimeObservabilitySnapshot:
-    """Combined event + workflow telemetry payload."""
-
     last_event: dict[str, Any] | None = None
     last_workflow: dict[str, Any] | None = None
 
@@ -32,8 +28,6 @@ class RuntimeObservabilitySnapshot:
 
 
 def load_runtime_telemetry(path: str | Path) -> RuntimeObservabilitySnapshot:
-    """Load runtime telemetry snapshot from disk."""
-
     file = Path(path)
     if not file.exists():
         return RuntimeObservabilitySnapshot()
@@ -53,8 +47,6 @@ def load_runtime_telemetry(path: str | Path) -> RuntimeObservabilitySnapshot:
 
 
 class RuntimeTelemetryRecorder:
-    """Persist workflow + event telemetry for CLI inspectors and dashboards."""
-
     def __init__(self, target_path: str | Path) -> None:
         self._path = Path(target_path)
         self._logger = telemetry_logger
@@ -84,8 +76,6 @@ class RuntimeTelemetryRecorder:
             node_count=payload.get("node_count", 0),
             total_duration_ms=payload.get("total_duration_ms", 0.0),
         )
-
-    # internal -----------------------------------------------------------------
 
     def _event_payload(self, topic: str, results: Sequence[Any]) -> dict[str, Any]:
         handlers: list[dict[str, Any]] = []
@@ -165,8 +155,6 @@ class RuntimeTelemetryRecorder:
 
 
 def runtime_telemetry_path(cache_dir: str | Path) -> Path:
-    """Return the default path used for runtime telemetry payloads."""
-
     return Path(cache_dir) / RUNTIME_TELEMETRY_FILENAME
 
 

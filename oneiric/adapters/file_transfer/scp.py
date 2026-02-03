@@ -1,5 +1,3 @@
-"""SCP file transfer adapter."""
-
 from __future__ import annotations
 
 import os
@@ -19,8 +17,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class SCPFileTransferSettings(BaseModel):
-    """Configuration for SCP transfers."""
-
     host: str
     username: str
     password: SecretStr | None = None
@@ -33,12 +29,10 @@ class SCPFileTransferSettings(BaseModel):
 
 
 class SCPFileTransferAdapter:
-    """Upload/download files via SCP using asyncssh."""
-
     metadata = AdapterMetadata(
         category="file_transfer",
         provider="scp",
-        factory="oneiric.adapters.file_transfer.scp:SCPFileTransferAdapter",
+        factory="oneiric.adapters.file_transfer.scp: SCPFileTransferAdapter",
         capabilities=["upload", "download", "delete", "list"],
         stack_level=20,
         priority=320,
@@ -69,8 +63,6 @@ class SCPFileTransferAdapter:
         )
 
     async def init(self) -> None:
-        """Establish SSH connection for SCP operations."""
-
         if self._conn:
             self._logger.info("scp-adapter-init-reuse-connection")
             return

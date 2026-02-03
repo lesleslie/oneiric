@@ -1,5 +1,3 @@
-"""Process management for Oneiric orchestrator."""
-
 import asyncio
 import os
 import signal
@@ -10,14 +8,11 @@ from typing import Any
 
 
 class ProcessManager:
-    """Manages the lifecycle of the Oneiric orchestrator process."""
-
     def __init__(self, pid_file: str | Path | None = None):
         self.pid_file = Path(pid_file or "./.oneiric.pid")
         self.pid: int | None = None
 
     def is_running(self) -> bool:
-        """Check if the orchestrator process is running."""
         if not self.pid_file.exists():
             return False
 
@@ -28,12 +23,10 @@ class ProcessManager:
         except (ValueError, FileNotFoundError):
             return False
 
-        # Check if process is actually running
         try:
-            os.kill(pid, 0)  # Signal 0 checks if process exists without affecting it
+            os.kill(pid, 0)
             return True
         except OSError:
-            # Process doesn't exist, clean up stale PID file
             self.pid_file.unlink(missing_ok=True)
             return False
 
@@ -50,10 +43,8 @@ class ProcessManager:
         http_host: str = "0.0.0.0",
         no_http: bool = False,
     ) -> list[str]:
-        """Build the command list for starting the orchestrator."""
         cmd = [sys.executable, "-m", "oneiric.cli", "orchestrate"]
 
-        # Build command arguments using a data-driven approach
         value_args = {
             "--config": config_path,
             "--profile": profile,
@@ -70,7 +61,6 @@ class ProcessManager:
             if value:
                 cmd.extend([flag, value])
 
-        # Add boolean flags
         if no_remote:
             cmd.append("--no-remote")
         if no_workflow_checkpoints:
@@ -93,12 +83,10 @@ class ProcessManager:
         http_host: str = "0.0.0.0",
         no_http: bool = False,
     ) -> bool:
-        """Start the orchestrator process in the background."""
         if self.is_running():
             print(f"Orchestrator is already running (PID: {self.pid})")
             return False
 
-        # Prepare the command to run the orchestrator in the background
         cmd = self._build_orchestrate_command(
             config_path=config_path,
             profile=profile,
@@ -112,13 +100,12 @@ class ProcessManager:
             no_http=no_http,
         )
 
-        # Start the process in the background
         process = subprocess.Popen(
             cmd,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             stdin=subprocess.DEVNULL,
-            start_new_session=True,  # This creates a new process group
+            start_new_session=True,
             env={
                 **os.environ,
                 "ONEIRIC_BACKGROUND": "1",
@@ -126,7 +113,6 @@ class ProcessManager:
             },
         )
 
-        # Write PID to file
         self.pid_file.parent.mkdir(parents=True, exist_ok=True)
         with open(self.pid_file, "w") as f:
             f.write(str(process.pid))
@@ -135,7 +121,6 @@ class ProcessManager:
         return True
 
     def stop_process(self) -> bool:
-        """Stop the running orchestrator process."""
         if not self.is_running():
             print("Orchestrator is not running")
             return False
@@ -145,25 +130,20 @@ class ProcessManager:
             return False
 
         try:
-            # Send SIGTERM to gracefully terminate the process
             os.kill(self.pid, signal.SIGTERM)
 
-            # Wait a bit to see if process terminates gracefully
-            for _ in range(10):  # Wait up to 10 seconds
+            for _ in range(10):
                 try:
-                    os.kill(self.pid, 0)  # Check if process still exists
+                    os.kill(self.pid, 0)
                     asyncio.run(asyncio.sleep(1))
                 except OSError:
-                    # Process is gone
                     break
 
-            # If process still exists, send SIGKILL
             try:
                 os.kill(self.pid, signal.SIGKILL)
             except OSError:
-                pass  # Process already terminated
+                pass
 
-            # Remove PID file
             self.pid_file.unlink(missing_ok=True)
             print(f"Orchestrator (PID: {self.pid}) stopped")
             return True
@@ -172,7 +152,6 @@ class ProcessManager:
             return False
 
     def get_status(self) -> dict[str, Any]:
-        """Get the status of the orchestrator process."""
         running = self.is_running()
         status = {
             "running": running,

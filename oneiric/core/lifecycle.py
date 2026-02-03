@@ -1,4 +1,3 @@
-"""Lifecycle and hot-swap helpers."""
 
 from __future__ import annotations
 
@@ -25,7 +24,6 @@ CleanupHook = Callable[[Any], Awaitable[None] | None]
 
 
 class LifecycleError(RuntimeError):
-    """Raised when activation or swap fails."""
 
 
 @dataclass
@@ -46,7 +44,6 @@ class LifecycleHooks:
 
 @dataclass
 class LifecycleSafetyOptions:
-    """Runtime safety knobs for lifecycle operations."""
 
     activation_timeout: float = 30.0
     health_timeout: float = 5.0
@@ -57,21 +54,10 @@ class LifecycleSafetyOptions:
 
 
 def resolve_factory(factory: str | FactoryCallable) -> FactoryCallable:
-    """Resolve factory to callable with security validation.
-
-    Args:
-        factory: Either a callable or a string in format "module.path:function"
-
-    Returns:
-        Callable factory function
-
-    Raises:
-        LifecycleError: If factory string is invalid or blocked by security policy
-    """
     if callable(factory):
         return factory
 
-    # Validate factory string format and security policy
+
     allowed_prefixes = load_factory_allowlist()
     is_valid, error = validate_factory_string(factory, allowed_prefixes)
     if not is_valid:
@@ -138,7 +124,6 @@ _UNSET = object()
 
 
 class LifecycleManager:
-    """Instantiate and hot-swap resolver-backed candidates."""
 
     def __init__(
         self,
@@ -215,7 +200,6 @@ class LifecycleManager:
         )
         return True
 
-    # internal -----------------------------------------------------------------
 
     def _require_candidate(
         self, domain: str, key: str, provider: str | None
@@ -542,7 +526,7 @@ def _status_from_dict(entry: Any) -> LifecycleStatus | None:
     status.last_health_at = _parse_timestamp(entry.get("last_health_at"))
     last_duration = entry.get("last_swap_duration_ms")
     if _is_number(last_duration):
-        assert last_duration is not None  # Type guard for mypy
+        assert last_duration is not None
         status.last_swap_duration_ms = float(last_duration)
     history: Any = entry.get("recent_swap_durations_ms") or []
     if isinstance(history, list):

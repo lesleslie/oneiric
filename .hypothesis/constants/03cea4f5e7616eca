@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/monitoring/sentry.py
+# hypothesis_version: 6.151.4
+
+[0.0, 1.0, 210, 'Observability', 'SENTRY_DSN', 'adapter', 'adapter-init', 'attach_stacktrace', 'before_send', 'development', 'domain', 'dsn', 'enable_tracing', 'environment', 'errors', 'event_handler', 'event_topic', 'exception', 'extra', 'fingerprint', 'flush', 'key', 'logging', 'monitoring', 'node', 'oneiric', 'oneiric.domain', 'oneiric.key', 'oneiric.provider', 'operation', 'profiles_sample_rate', 'provider', 'release', 'run_id', 'send_default_pii', 'sentry', 'sentry-dsn-missing', 'sentry-init-failed', 'sentry-sdk-missing', 'shutdown', 'tags', 'traces_sample_rate', 'tracing', 'type', 'unknown', 'values', 'workflow']

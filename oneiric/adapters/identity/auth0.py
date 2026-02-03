@@ -1,5 +1,3 @@
-"""Auth0-backed identity adapter."""
-
 from __future__ import annotations
 
 import asyncio
@@ -20,8 +18,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class Auth0IdentitySettings(BaseModel):
-    """Settings for the Auth0 identity adapter."""
-
     domain: str = Field(description="Auth0 tenant domain, e.g., example.us.auth0.com")
     audience: str = Field(description="Expected audience claim for issued tokens.")
     algorithms: Sequence[str] = Field(default=("RS256",), min_length=1)
@@ -34,12 +30,10 @@ class Auth0IdentitySettings(BaseModel):
 
 
 class Auth0IdentityAdapter(HTTPXClientMixin):
-    """Validates Auth0-issued JWTs using cached JWKS data."""
-
     metadata = AdapterMetadata(
         category="identity",
         provider="auth0",
-        factory="oneiric.adapters.identity.auth0:Auth0IdentityAdapter",
+        factory="oneiric.adapters.identity.auth0: Auth0IdentityAdapter",
         capabilities=["jwt", "jwks", "userinfo"],
         stack_level=40,
         priority=500,

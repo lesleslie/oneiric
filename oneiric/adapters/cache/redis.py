@@ -1,4 +1,3 @@
-"""Redis cache adapter with lifecycle integration."""
 
 from __future__ import annotations
 
@@ -8,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field, RedisDsn
 
-try:  # Optional dependency – only required when the Redis adapter is used.
+try:
     from coredis import Redis
     from coredis.cache import TrackingCache
     from coredis.exceptions import RedisError
@@ -18,7 +17,6 @@ except ImportError:  # pragma: no cover - exercised when extras missing
     Redis = TrackingCache = None  # type: ignore
 
     class RedisError(Exception):
-        """Fallback RedisError when coredis is unavailable."""
 
     _COREDIS_AVAILABLE = False
 
@@ -33,7 +31,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class RedisCacheSettings(BaseModel):
-    """Settings for the Redis cache adapter."""
 
     url: RedisDsn | None = Field(
         default=None,
@@ -92,12 +89,11 @@ class RedisCacheSettings(BaseModel):
 
 
 class RedisCacheAdapter(EnsureClientMixin):
-    """Redis cache adapter implementing the lifecycle contract."""
 
     metadata = AdapterMetadata(
         category="cache",
         provider="redis",
-        factory="oneiric.adapters.cache.redis:RedisCacheAdapter",
+        factory="oneiric.adapters.cache.redis: RedisCacheAdapter",
         capabilities=["kv", "ttl", "distributed"],
         stack_level=10,
         priority=400,
@@ -162,7 +158,6 @@ class RedisCacheAdapter(EnsureClientMixin):
         self._logger.info("adapter-cleanup-complete", adapter="redis-cache")
 
     async def _close_client(self) -> None:
-        """Close the Redis client connection."""
         if not self._client:
             return
 
@@ -178,7 +173,6 @@ class RedisCacheAdapter(EnsureClientMixin):
                 await result
 
     async def _disconnect_pool(self) -> None:
-        """Disconnect the connection pool."""
         if not self._client:
             return
 

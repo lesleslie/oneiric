@@ -1,5 +1,3 @@
-"""HTTP convenience action kit."""
-
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -11,7 +9,7 @@ from pydantic import Field
 
 from oneiric.actions.metadata import ActionMetadata
 from oneiric.actions.payloads import normalize_payload
-from oneiric.core.http_helpers import observed_http_request
+from oneiric.core.http_instrumentation import observed_http_request
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.observability import inject_trace_context
@@ -20,8 +18,6 @@ from oneiric.core.settings_mixins import BaseURLSettings
 
 
 class HttpActionSettings(BaseURLSettings):
-    """Settings for the HTTP fetch action."""
-
     default_method: Literal[
         "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"
     ] = Field(
@@ -52,12 +48,10 @@ class HttpActionSettings(BaseURLSettings):
 
 
 class HttpFetchAction:
-    """Action kit that performs HTTP requests via httpx."""
-
     metadata = ActionMetadata(
         key="http.fetch",
         provider="builtin-http-fetch",
-        factory="oneiric.actions.http:HttpFetchAction",
+        factory="oneiric.actions.http: HttpFetchAction",
         description="Async HTTP convenience action for GET/POST requests with JSON parsing",
         domains=["service", "task", "workflow"],
         capabilities=["http", "json", "external-service"],

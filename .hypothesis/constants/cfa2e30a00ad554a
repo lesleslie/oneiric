@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/runtime/health.py
+# hypothesis_version: 6.151.4
+
+['.tmp', 'activity_state', 'last_remote_error', 'last_remote_skipped', 'last_remote_sync_at', 'lifecycle_state', 'orchestrator_pid', 'remote_enabled', 'runtime_health.json', 'updated_at', 'watchers_running']

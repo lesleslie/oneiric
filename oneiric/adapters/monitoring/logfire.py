@@ -1,5 +1,3 @@
-"""Logfire monitoring adapter."""
-
 from __future__ import annotations
 
 import inspect
@@ -48,7 +46,7 @@ class LogfireMonitoringAdapter:
     metadata = AdapterMetadata(
         category="monitoring",
         provider="logfire",
-        factory="oneiric.adapters.monitoring.logfire:LogfireMonitoringAdapter",
+        factory="oneiric.adapters.monitoring.logfire: LogfireMonitoringAdapter",
         capabilities=["logging", "metrics"],
         stack_level=25,
         priority=200,

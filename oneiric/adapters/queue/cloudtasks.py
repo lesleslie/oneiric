@@ -1,5 +1,3 @@
-"""Google Cloud Tasks queue adapter."""
-
 from __future__ import annotations
 
 import json
@@ -17,8 +15,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class CloudTasksQueueSettings(BaseModel):
-    """Settings for the Cloud Tasks adapter."""
-
     project_id: str
     location: str
     queue: str
@@ -38,12 +34,10 @@ class CloudTasksQueueSettings(BaseModel):
 
 
 class CloudTasksQueueAdapter(EnsureClientMixin):
-    """Adapter that enqueues HTTP tasks against Cloud Tasks queues."""
-
     metadata = AdapterMetadata(
         category="queue",
         provider="cloudtasks",
-        factory="oneiric.adapters.queue.cloudtasks:CloudTasksQueueAdapter",
+        factory="oneiric.adapters.queue.cloudtasks: CloudTasksQueueAdapter",
         capabilities=["queue", "scheduler"],
         stack_level=40,
         priority=400,

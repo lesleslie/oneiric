@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/domains/workflows.py
+# hypothesis_version: 6.151.4
+
+['QueueAdapterProtocol', 'category', 'context', 'dag', 'depends_on', 'enqueue', 'id', 'key', 'metadata', 'nodes', 'options', 'payload', 'provider', 'queue', 'queue_category', 'queue_provider', 'queued_at', 'results', 'retry_policy', 'run', 'run_id', 'scheduler', 'task', 'task_name', 'tasks', 'workflow', 'workflow-enqueued', 'workflow_provider']

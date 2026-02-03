@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/actions/http.py
+# hypothesis_version: 6.151.4
+
+[0.1, 10.0, 405, 1000, '/', 'DELETE', 'GET', 'HEAD', 'OPTIONS', 'PATCH', 'POST', 'PUT', 'Platform Core', 'action', 'action.http', 'action.http.fetch', 'action.http.request', 'allow_redirects', 'builtin-http-fetch', 'content', 'data', 'elapsed_ms', 'error', 'external-service', 'headers', 'http', 'http-action-request', 'http.fetch', 'json', 'method', 'ok', 'params', 'path', 'query', 'raise_for_status', 'service', 'status', 'status_code', 'success', 'task', 'text', 'timeout', 'url', 'verify', 'workflow']

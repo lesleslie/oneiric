@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/runtime/process_manager.py
+# hypothesis_version: 6.151.4
+
+['--config', '--http-host', '--http-port', '--manifest', '--no-http', '--no-remote', '--profile', '--refresh-interval', '-m', './.oneiric.pid', '0.0.0.0', '1', 'ONEIRIC_BACKGROUND', 'ONEIRIC_PID_FILE', 'PID is not available', 'oneiric.cli', 'orchestrate', 'pid', 'pid_file', 'pid_file_exists', 'running', 'w']

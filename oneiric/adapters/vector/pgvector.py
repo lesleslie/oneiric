@@ -1,5 +1,3 @@
-"""Postgres pgvector adapter with lifecycle integration."""
-
 from __future__ import annotations
 
 import json
@@ -16,14 +14,17 @@ from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
 
-from .common import VectorBase, VectorBaseSettings, VectorDocument, VectorSearchResult
+from .vector_types import (
+    VectorBase,
+    VectorBaseSettings,
+    VectorDocument,
+    VectorSearchResult,
+)
 
 SAFE_IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 class PgvectorSettings(VectorBaseSettings):
-    """Settings for the pgvector adapter."""
-
     dsn: str | None = Field(
         default=None,
         description="Optional DSN string to override discrete connection fields.",
@@ -46,12 +47,10 @@ class PgvectorSettings(VectorBaseSettings):
 
 
 class PgvectorAdapter(VectorBase):
-    """Asyncpg-backed adapter for the pgvector Postgres extension."""
-
     metadata = AdapterMetadata(
         category="vector",
         provider="pgvector",
-        factory="oneiric.adapters.vector.pgvector:PgvectorAdapter",
+        factory="oneiric.adapters.vector.pgvector: PgvectorAdapter",
         capabilities=[
             "vector_search",
             "batch_operations",

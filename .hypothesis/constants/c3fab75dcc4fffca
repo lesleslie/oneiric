@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/database/postgres.py
+# hypothesis_version: 6.151.4
+
+[500, 1000, 5432, 'Data Platform', 'SELECT 1;', 'adapter', 'adapter-health-error', 'adapter-init', 'asyncpg-missing', 'command_timeout', 'database', 'dsn', 'host', 'localhost', 'max_size', 'min_size', 'password', 'pool', 'port', 'postgres', 'postgres-database', 'sql', 'ssl', 'statement_cache_size', 'transactions', 'user']

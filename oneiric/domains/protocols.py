@@ -1,5 +1,3 @@
-"""Protocol interfaces for resolver-backed domain handlers."""
-
 from __future__ import annotations
 
 from typing import Any, Protocol

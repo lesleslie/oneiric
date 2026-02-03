@@ -1,10 +1,8 @@
-"""LLM adapters for Oneiric."""
-
 from oneiric.adapters.llm.anthropic import (
     AnthropicLLM,
     AnthropicLLMSettings,
 )
-from oneiric.adapters.llm.common import (
+from oneiric.adapters.llm.llm_interface import (
     LLMBase,
     LLMBaseSettings,
     LLMCapability,
@@ -23,24 +21,19 @@ from oneiric.adapters.llm.openai import (
 )
 
 __all__ = [
-    # Base classes
     "LLMBase",
     "LLMBaseSettings",
-    # Enums
     "LLMProvider",
     "LLMCapability",
     "MessageRole",
-    # Models
     "LLMMessage",
     "LLMResponse",
     "LLMStreamChunk",
     "LLMModelInfo",
     "LLMFunctionCall",
     "LLMToolCall",
-    # Anthropic
     "AnthropicLLM",
     "AnthropicLLMSettings",
-    # OpenAI
     "OpenAILLMAdapter",
     "OpenAILLMSettings",
 ]

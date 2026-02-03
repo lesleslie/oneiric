@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/llm/common.py
+# hypothesis_version: 6.151.4
+
+[-2.0, 0.0, 0.7, 1.0, 2.0, 60.0, 1000, 'adapter.llm.base', 'anthropic', 'assistant', 'audio', 'aws_bedrock', 'azure_openai', 'chat_completion', 'code_generation', 'content', 'function', 'function_call', 'function_calling', 'google_vertex', 'gpt-3.5-turbo', 'json_mode', 'local', 'name', 'ollama', 'openai', 'role', 'streaming', 'system', 'text_generation', 'tool', 'tool_calls', 'tool_use', 'user', 'vision']

@@ -1,5 +1,3 @@
-"""Event dispatch and hook routing action kit."""
-
 from __future__ import annotations
 
 import asyncio
@@ -22,8 +20,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class EventHookConfig(BaseModel):
-    """Configuration for individual webhook/event hooks."""
-
     model_config = ConfigDict(extra="forbid")
 
     name: str = Field(description="Hook identifier for logging/metrics.")
@@ -52,8 +48,6 @@ class EventHookConfig(BaseModel):
 
 
 class EventDispatchSettings(BaseModel):
-    """Settings for event dispatch hooks."""
-
     default_topic: str = Field(
         default="events.default",
         description="Topic used when payload omits one.",
@@ -84,12 +78,10 @@ class EventDispatchSettings(BaseModel):
 
 
 class EventDispatchAction:  # noqa: C901
-    """Action kit that emits structured events and optional hooks."""
-
     metadata = ActionMetadata(
         key="event.dispatch",
         provider="builtin-event-dispatch",
-        factory="oneiric.actions.event:EventDispatchAction",
+        factory="oneiric.actions.event: EventDispatchAction",
         description="Dispatches structured events and optional webhook hooks with concurrency limits",
         domains=["event", "task", "workflow"],
         capabilities=["dispatch", "emit", "hook"],

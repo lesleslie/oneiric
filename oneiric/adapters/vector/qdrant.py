@@ -1,5 +1,3 @@
-"""Qdrant vector database adapter with lifecycle integration."""
-
 from __future__ import annotations
 
 import uuid as uuid_module
@@ -12,38 +10,36 @@ from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
 
-from .common import VectorBase, VectorBaseSettings, VectorDocument, VectorSearchResult
+from .vector_types import (
+    VectorBase,
+    VectorBaseSettings,
+    VectorDocument,
+    VectorSearchResult,
+)
 
 
 class QdrantSettings(VectorBaseSettings):
-    """Qdrant vector adapter settings."""
-
-    url: str = "http://localhost:6333"
+    url: str = "http://localhost: 6333"
     api_key: SecretStr | None = None
 
-    # Connection settings
     grpc_port: int | None = None
     prefer_grpc: bool = True
     https: bool | None = None
 
-    # Performance settings
     timeout: float = 30.0
 
-    # Collection settings
     default_collection: str = "documents"
 
-    # Vector configuration
     on_disk_vectors: bool = False
     hnsw_config: dict[str, Any] = Field(
         default_factory=lambda: {
             "m": 16,
             "ef_construct": 100,
             "full_scan_threshold": 10000,
-            "max_indexing_threads": 0,  # 0 = auto
+            "max_indexing_threads": 0,
         }
     )
 
-    # Quantization settings
     enable_quantization: bool = False
     quantization_config: dict[str, Any] = Field(
         default_factory=lambda: {
@@ -57,12 +53,10 @@ class QdrantSettings(VectorBaseSettings):
 
 
 class QdrantAdapter(VectorBase):
-    """Qdrant vector database adapter implementing the lifecycle contract."""
-
     metadata = AdapterMetadata(
         category="vector",
         provider="qdrant",
-        factory="oneiric.adapters.vector.qdrant:QdrantAdapter",
+        factory="oneiric.adapters.vector.qdrant: QdrantAdapter",
         capabilities=[
             "vector_search",
             "batch_operations",
@@ -90,30 +84,24 @@ class QdrantAdapter(VectorBase):
         )
 
     async def _create_client(self) -> Any:  # noqa: C901
-        """Create Qdrant client."""
         try:
             from qdrant_client import AsyncQdrantClient
 
-            # Build connection parameters
             connection_params: dict[str, Any] = {
                 "url": self._settings.url,
                 "timeout": self._settings.timeout,
                 "prefer_grpc": self._settings.prefer_grpc,
             }
 
-            # Add API key if provided
             if self._settings.api_key:
                 connection_params["api_key"] = self._settings.api_key.get_secret_value()
 
-            # Add gRPC port if specified
             if self._settings.grpc_port:
                 connection_params["grpc_port"] = self._settings.grpc_port
 
-            # Add HTTPS setting if specified
             if self._settings.https is not None:
                 connection_params["https"] = self._settings.https
 
-            # Create async client
             client = AsyncQdrantClient(**connection_params)
 
             self._logger.debug("qdrant-client-initialized")
@@ -126,19 +114,16 @@ class QdrantAdapter(VectorBase):
             raise LifecycleError(f"qdrant-client-creation-failed: {exc}") from exc
 
     async def _ensure_client(self) -> Any:
-        """Ensure Qdrant client is available."""
         if self._client is None:
             self._client = await self._create_client()
         return self._client
 
     async def init(self) -> None:
-        """Initialize Qdrant vector adapter."""
         self._logger.info("qdrant-adapter-init-start")
 
         try:
             client = await self._ensure_client()
 
-            # Check connection
             health_info = await client.get_cluster_info()
             self._logger.debug("qdrant-cluster-status", status=str(health_info))
 
@@ -153,11 +138,9 @@ class QdrantAdapter(VectorBase):
         dimension: int | None = None,
         distance_metric: str = "cosine",
     ) -> bool:
-        """Ensure Qdrant collection exists, create if needed."""
         client = await self._ensure_client()
 
         try:
-            # Check if collection exists
             collections = await client.get_collections()
             existing_collections = [col.name for col in collections.collections]
 
@@ -167,10 +150,8 @@ class QdrantAdapter(VectorBase):
             if dimension is None:
                 dimension = self._settings.default_dimension
 
-            # Import required types
             from qdrant_client.models import Distance, VectorParams
 
-            # Map distance metric
             distance_map = {
                 "cosine": Distance.COSINE,
                 "euclidean": Distance.EUCLID,
@@ -180,14 +161,12 @@ class QdrantAdapter(VectorBase):
 
             distance = distance_map.get(distance_metric.lower(), Distance.COSINE)
 
-            # Create vector configuration
             vectors_config = VectorParams(
                 size=dimension,
                 distance=distance,
                 on_disk=self._settings.on_disk_vectors,
             )
 
-            # Create HNSW configuration
             from qdrant_client.models import HnswConfigDiff
 
             hnsw_config = HnswConfigDiff(
@@ -203,7 +182,6 @@ class QdrantAdapter(VectorBase):
                 ),
             )
 
-            # Create quantization config if enabled
             quantization_config = None
             if self._settings.enable_quantization:
                 from qdrant_client.models import (
@@ -226,7 +204,6 @@ class QdrantAdapter(VectorBase):
                     ),
                 )
 
-            # Create collection
             await client.create_collection(
                 collection_name=collection_name,
                 vectors_config=vectors_config,
@@ -246,12 +223,10 @@ class QdrantAdapter(VectorBase):
             return False
 
     async def health(self) -> bool:
-        """Check if Qdrant is healthy."""
         if not self._client:
             return False
 
         try:
-            # Check if we can get cluster info
             await self._client.get_cluster_info()
             return True
         except Exception as exc:
@@ -259,7 +234,6 @@ class QdrantAdapter(VectorBase):
             return False
 
     async def cleanup(self) -> None:
-        """Cleanup Qdrant resources."""
         if self._client:
             try:
                 await self._client.close()
@@ -279,17 +253,14 @@ class QdrantAdapter(VectorBase):
         include_vectors: bool = False,
         **kwargs: Any,
     ) -> list[VectorSearchResult]:
-        """Perform vector similarity search in Qdrant."""
         client = await self._ensure_client()
         collection_name = collection or self._settings.default_collection
 
         try:
-            # Build filter
             qdrant_filter = None
             if filter_expr:
                 qdrant_filter = self._build_qdrant_filter(filter_expr)
 
-            # Perform search
             search_result = await client.search(
                 collection_name=collection_name,
                 query_vector=query_vector,
@@ -300,7 +271,6 @@ class QdrantAdapter(VectorBase):
                 score_threshold=kwargs.get("score_threshold"),
             )
 
-            # Convert to VectorSearchResult
             results = []
             for point in search_result:
                 result = VectorSearchResult(
@@ -318,7 +288,6 @@ class QdrantAdapter(VectorBase):
             return []
 
     def _build_qdrant_filter(self, filter_expr: dict[str, Any]) -> Any | None:
-        """Build Qdrant filter from filter expression."""
         try:
             from qdrant_client.models import (
                 FieldCondition,
@@ -353,7 +322,6 @@ class QdrantAdapter(VectorBase):
         documents: list[VectorDocument],
         **kwargs: Any,
     ) -> list[str]:
-        """Insert documents with vectors into Qdrant."""
         return await self.upsert(collection, documents, **kwargs)
 
     async def upsert(  # noqa: C901
@@ -362,18 +330,15 @@ class QdrantAdapter(VectorBase):
         documents: list[VectorDocument],
         **kwargs: Any,
     ) -> list[str]:
-        """Upsert documents with vectors into Qdrant."""
         client = await self._ensure_client()
         collection_name = collection or self._settings.default_collection
 
-        # Ensure collection exists
         dimension = len(documents[0].vector) if documents else None
         await self._ensure_collection_exists(collection_name, dimension)
 
         try:
             from qdrant_client.models import PointStruct
 
-            # Prepare points for upsert
             points = []
             document_ids = []
 
@@ -391,7 +356,6 @@ class QdrantAdapter(VectorBase):
                 )
                 points.append(point)
 
-            # Batch upsert
             batch_size = self._settings.batch_size
             for i in range(0, len(points), batch_size):
                 batch = points[i : i + batch_size]
@@ -399,7 +363,7 @@ class QdrantAdapter(VectorBase):
                 operation_info = await client.upsert(
                     collection_name=collection_name,
                     points=batch,
-                    wait=True,  # Wait for operation to complete
+                    wait=True,
                 )
 
                 if operation_info.status.name != "COMPLETED":
@@ -421,14 +385,12 @@ class QdrantAdapter(VectorBase):
         ids: list[str],
         **kwargs: Any,
     ) -> bool:
-        """Delete documents by IDs from Qdrant."""
         client = await self._ensure_client()
         collection_name = collection or self._settings.default_collection
 
         try:
             from qdrant_client.models import PointIdsList
 
-            # Delete points
             operation_info = await client.delete(
                 collection_name=collection_name,
                 points_selector=PointIdsList(points=ids),
@@ -448,12 +410,10 @@ class QdrantAdapter(VectorBase):
         include_vectors: bool = False,
         **kwargs: Any,
     ) -> list[VectorDocument]:
-        """Retrieve documents by IDs from Qdrant."""
         client = await self._ensure_client()
         collection_name = collection or self._settings.default_collection
 
         try:
-            # Retrieve points
             points = await client.retrieve(
                 collection_name=collection_name,
                 ids=ids,
@@ -482,17 +442,14 @@ class QdrantAdapter(VectorBase):
         filter_expr: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> int:
-        """Count documents in Qdrant collection."""
         client = await self._ensure_client()
         collection_name = collection or self._settings.default_collection
 
         try:
-            # Build filter
             qdrant_filter = None
             if filter_expr:
                 qdrant_filter = self._build_qdrant_filter(filter_expr)
 
-            # Count points
             count_result = await client.count(
                 collection_name=collection_name,
                 count_filter=qdrant_filter,
@@ -511,7 +468,6 @@ class QdrantAdapter(VectorBase):
         distance_metric: str = "cosine",
         **kwargs: Any,
     ) -> bool:
-        """Create a new collection in Qdrant."""
         return await self._ensure_collection_exists(name, dimension, distance_metric)
 
     async def delete_collection(
@@ -519,7 +475,6 @@ class QdrantAdapter(VectorBase):
         name: str,
         **kwargs: Any,
     ) -> bool:
-        """Delete a collection in Qdrant."""
         client = await self._ensure_client()
 
         try:
@@ -531,7 +486,6 @@ class QdrantAdapter(VectorBase):
             return False
 
     async def list_collections(self, **kwargs: Any) -> list[str]:
-        """List all collections in Qdrant."""
         client = await self._ensure_client()
 
         try:
@@ -551,17 +505,14 @@ class QdrantAdapter(VectorBase):
         include_vectors: bool = False,
         **kwargs: Any,
     ) -> tuple[list[VectorDocument], str | None]:
-        """Scroll through documents in Qdrant collection."""
         client = await self._ensure_client()
         collection_name = collection or self._settings.default_collection
 
         try:
-            # Build filter
             qdrant_filter = None
             if filter_expr:
                 qdrant_filter = self._build_qdrant_filter(filter_expr)
 
-            # Scroll through points
             scroll_result = await client.scroll(
                 collection_name=collection_name,
                 limit=limit,
@@ -571,9 +522,8 @@ class QdrantAdapter(VectorBase):
                 with_vectors=include_vectors,
             )
 
-            # Convert to VectorDocument
             documents = []
-            for point in scroll_result[0]:  # First element is the list of points
+            for point in scroll_result[0]:
                 doc = VectorDocument(
                     id=str(point.id),
                     vector=point.vector if include_vectors else [],
@@ -581,7 +531,7 @@ class QdrantAdapter(VectorBase):
                 )
                 documents.append(doc)
 
-            next_offset = scroll_result[1]  # Second element is the next offset
+            next_offset = scroll_result[1]
             return documents, next_offset
 
         except Exception as exc:
@@ -589,7 +539,6 @@ class QdrantAdapter(VectorBase):
             return [], None
 
     def has_capability(self, capability: str) -> bool:
-        """Check if Qdrant adapter supports a specific capability."""
         supported_capabilities = {
             "vector_search",
             "batch_operations",

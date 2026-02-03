@@ -1,5 +1,3 @@
-"""Runtime orchestrator wiring bridges, watchers, and remote sync."""
-
 from __future__ import annotations
 
 import asyncio
@@ -47,8 +45,6 @@ logger = get_logger("runtime.orchestrator")
 
 
 class RuntimeOrchestrator:
-    """Manages domain bridges, selection watchers, and remote sync loops."""
-
     def __init__(
         self,
         settings: OneiricSettings,
@@ -169,8 +165,6 @@ class RuntimeOrchestrator:
         self._secrets_task: asyncio.Task[None] | None = None
 
     async def sync_remote(self, manifest_url: str | None = None):
-        """Run a single remote sync and refresh runtime health metadata."""
-
         try:
             result = await sync_remote_manifest(
                 self.resolver,
@@ -201,8 +195,6 @@ class RuntimeOrchestrator:
         refresh_interval_override: float | None = None,
         enable_remote: bool = True,
     ) -> None:
-        """Start config watchers and (optionally) the remote refresh loop."""
-
         if self._watchers_enabled:
             for watcher in self._watchers:
                 await watcher.start()
@@ -238,8 +230,6 @@ class RuntimeOrchestrator:
             )
 
     async def stop(self) -> None:
-        """Stop config watchers and cancel any running remote loop."""
-
         if self._watchers_enabled:
             for watcher in self._watchers:
                 await watcher.stop()
@@ -273,8 +263,6 @@ class RuntimeOrchestrator:
         return None
 
     async def _remote_loop(self, manifest_url: str | None, interval: float) -> None:
-        """Background task that periodically refreshes the remote manifest."""
-
         if not manifest_url:
             logger.info("remote-refresh-skip", reason="no-manifest-url")
             return
@@ -302,7 +290,6 @@ class RuntimeOrchestrator:
         last_remote_skipped: int | None = None,
         last_remote_duration_ms: float | None = None,
     ) -> None:
-        """Persist runtime health snapshot updates to disk."""
         if not self._health_path:
             return
 
@@ -333,7 +320,6 @@ class RuntimeOrchestrator:
         last_remote_skipped: int | None,
         last_remote_duration_ms: float | None,
     ) -> None:
-        """Apply individual health field updates."""
         updates = [
             ("watchers_running", watchers_running),
             ("remote_enabled", remote_enabled),
@@ -350,7 +336,6 @@ class RuntimeOrchestrator:
                 setattr(self._health, field_name, value)
 
     def _update_activity_state(self) -> None:
-        """Update activity state from activity store."""
         snapshot = None
         if self._supervisor:
             snapshot = self._supervisor.snapshot()
@@ -365,7 +350,6 @@ class RuntimeOrchestrator:
         }
 
     def _update_lifecycle_state(self) -> None:
-        """Record lifecycle manager status entries."""
         statuses = self.lifecycle.all_statuses()
         if not statuses:
             self._health.lifecycle_state = {}

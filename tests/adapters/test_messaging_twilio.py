@@ -4,7 +4,7 @@ import httpx
 import pytest
 from pydantic import SecretStr
 
-from oneiric.adapters.messaging.common import OutboundSMSMessage, SMSRecipient
+from oneiric.adapters.messaging.messaging_types import OutboundSMSMessage, SMSRecipient
 from oneiric.adapters.messaging.twilio import (
     TwilioAdapter,
     TwilioSettings,

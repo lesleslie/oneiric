@@ -1,5 +1,3 @@
-"""Firebase Cloud Messaging (FCM) adapter."""
-
 from __future__ import annotations
 
 import asyncio
@@ -14,12 +12,10 @@ from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
 
-from .common import MessagingSendResult, NotificationMessage
+from .messaging_types import MessagingSendResult, NotificationMessage
 
 
 class FCMPushSettings(BaseModel):
-    """Settings for the Firebase Cloud Messaging adapter."""
-
     project_id: str | None = Field(default=None, description="Firebase project ID.")
     credentials_file: Path | None = Field(
         default=None, description="Path to a Firebase service account JSON file."
@@ -34,12 +30,10 @@ class FCMPushSettings(BaseModel):
 
 
 class FCMPushAdapter:
-    """Adapter that sends push notifications via Firebase Cloud Messaging."""
-
     metadata = AdapterMetadata(
         category="messaging",
         provider="fcm",
-        factory="oneiric.adapters.messaging.fcm:FCMPushAdapter",
+        factory="oneiric.adapters.messaging.fcm: FCMPushAdapter",
         capabilities=["notifications", "push"],
         stack_level=20,
         priority=380,

@@ -1,5 +1,3 @@
-"""Monitoring adapters."""
-
 from .logfire import LogfireMonitoringAdapter, LogfireMonitoringSettings
 from .netdata import NetdataMonitoringAdapter, NetdataMonitoringSettings
 from .otlp import OTLPObservabilityAdapter, OTLPObservabilitySettings

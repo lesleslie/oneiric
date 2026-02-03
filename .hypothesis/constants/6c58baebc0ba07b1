@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/runtime/supervisor.py
+# hypothesis_version: 6.151.4
+
+[0.1, 2.0, 'runtime.supervisor', 'service.supervisor']

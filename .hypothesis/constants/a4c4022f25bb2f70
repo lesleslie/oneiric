@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/remote/security.py
+# hypothesis_version: 6.151.4
+
+['\x00', ',', '.', '..', '/', '127.0.0.1', '3600', '60', ':', '::1', 'Signature is empty', '\\', 'ascii', 'expires_at', 'false', 'future-timestamp', 'invalid-public-key', 'issued_at', 'link-local', 'localhost', 'loopback', 'loopback-ipv6', 'manifest-expired', 'manifest-too-old', 'private-ipv4', 'private-ipv6', 'remote.security', 'replay-blocked', 'reserved-ipv6', 'sanitized_file', 'signature', 'signature-verified', 'signature_algorithm', 'signatures', 'ssrf-blocked', 'true', 'utf-8']

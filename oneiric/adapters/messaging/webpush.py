@@ -1,5 +1,3 @@
-"""Web push notification adapter."""
-
 from __future__ import annotations
 
 import asyncio
@@ -15,12 +13,10 @@ from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
 
-from .common import MessagingSendResult, NotificationMessage
+from .messaging_types import MessagingSendResult, NotificationMessage
 
 
 class WebPushSettings(BaseModel):
-    """Settings for the web push adapter."""
-
     vapid_private_key: SecretStr | None = Field(
         default=None, description="VAPID private key contents."
     )
@@ -28,7 +24,7 @@ class WebPushSettings(BaseModel):
         default=None, description="Path to the VAPID private key file."
     )
     vapid_claims_subject: str = Field(
-        default="mailto:notifications@oneiric.local",
+        default="mailto: notifications@oneiric.local",
         description="VAPID claims subject (mailto: or https://).",
     )
     default_subscription_info: dict[str, Any] | None = Field(
@@ -39,12 +35,10 @@ class WebPushSettings(BaseModel):
 
 
 class WebPushAdapter:
-    """Adapter that sends browser push notifications via Web Push."""
-
     metadata = AdapterMetadata(
         category="messaging",
         provider="webpush",
-        factory="oneiric.adapters.messaging.webpush:WebPushAdapter",
+        factory="oneiric.adapters.messaging.webpush: WebPushAdapter",
         capabilities=["notifications", "push"],
         stack_level=20,
         priority=360,

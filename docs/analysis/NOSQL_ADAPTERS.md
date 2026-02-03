@@ -69,7 +69,7 @@ import asyncio
 from datetime import datetime
 
 from oneiric.adapters import AdapterBridge, register_builtin_adapters
-from oneiric.adapters.nosql.common import NoSQLQuery
+from oneiric.adapters.nosql.nosql_types import NoSQLQuery
 from oneiric.core.config import load_settings
 from oneiric.core.lifecycle import LifecycleManager
 from oneiric.core.resolution import Resolver

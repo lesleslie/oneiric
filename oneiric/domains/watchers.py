@@ -1,5 +1,3 @@
-"""Config watchers for domain bridges."""
-
 from __future__ import annotations
 
 from collections.abc import Callable

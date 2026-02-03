@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/vector/qdrant.py
+# hypothesis_version: 6.151.4
+
+[0.99, 30.0, 100, 500, 10000, 'COMPLETED', 'Data Platform', 'adapter', 'always_ram', 'api_key', 'batch_operations', 'cosine', 'documents', 'dot_product', 'ef_construct', 'euclidean', 'full_scan_threshold', 'grpc_port', 'https', 'int8', 'm', 'manhattan', 'max_indexing_threads', 'metadata_filtering', 'prefer_grpc', 'qdrant', 'qdrant-count-failed', 'qdrant-delete-failed', 'qdrant-scroll-failed', 'qdrant-search-failed', 'qdrant-upsert-failed', 'quantile', 'quantization', 'scalar', 'score_threshold', 'scroll', 'streaming', 'timeout', 'type', 'url', 'vector', 'vector_search']

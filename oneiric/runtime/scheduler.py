@@ -1,5 +1,3 @@
-"""HTTP scheduler helpers for workflow queue integrations."""
-
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -16,15 +14,11 @@ except ModuleNotFoundError:  # pragma: no cover - import deferred until runtime
 
 
 class WorkflowTaskProcessor:
-    """Processes workflow tasks delivered via HTTP callbacks."""
-
     def __init__(self, workflow_bridge: WorkflowBridge) -> None:
         self._workflow_bridge = workflow_bridge
         self._logger = get_logger("runtime.scheduler.processor")
 
     async def process(self, payload: Mapping[str, Any]) -> dict[str, Any]:
-        """Execute the workflow run described by the payload."""
-
         workflow_key = payload.get("workflow")
         if not workflow_key or not isinstance(workflow_key, str):
             raise ValueError("workflow-key-missing")
@@ -68,8 +62,6 @@ class WorkflowTaskProcessor:
 
 
 class SchedulerHTTPServer:
-    """Minimal aiohttp server that handles Cloud Tasks HTTP callbacks."""
-
     def __init__(
         self,
         processor: WorkflowTaskProcessor,
@@ -93,7 +85,7 @@ class SchedulerHTTPServer:
         self._site: web.TCPSite | None = None
 
     async def start(self) -> None:
-        assert web is not None  # For typing
+        assert web is not None
         self._runner = web.AppRunner(self._app)
         await self._runner.setup()
         self._site = web.TCPSite(self._runner, self._host, self._port)
@@ -141,7 +133,6 @@ class SchedulerHTTPServer:
 
 
 def _safe_dumps(payload: Any) -> str:
-    """aiohttp json response helper that avoids non-serializable errors."""
     import json
 
     return json.dumps(payload, default=str)

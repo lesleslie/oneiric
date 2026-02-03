@@ -1,5 +1,3 @@
-"""File-backed secrets adapter."""
-
 from __future__ import annotations
 
 import json
@@ -31,7 +29,7 @@ class FileSecretAdapter:
     metadata = AdapterMetadata(
         category="secrets",
         provider="file",
-        factory="oneiric.adapters.secrets.file:FileSecretAdapter",
+        factory="oneiric.adapters.secrets.file: FileSecretAdapter",
         capabilities=["read"],
         stack_level=20,
         priority=150,

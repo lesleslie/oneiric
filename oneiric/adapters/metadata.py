@@ -1,5 +1,3 @@
-"""Adapter metadata + discovery helpers."""
-
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
@@ -21,8 +19,6 @@ FactoryType = Callable[..., Any] | str
 
 
 class AdapterMetadata(BaseModel):
-    """Declarative metadata that can be turned into resolver candidates."""
-
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     category: str
@@ -72,8 +68,6 @@ def register_adapter_metadata(
     adapters: Sequence[AdapterMetadata],
     priority: int | None = None,
 ) -> None:
-    """Helper that registers metadata-driven adapters via register_pkg inference."""
-
     register_metadata(
         resolver,
         package_name,

@@ -1,5 +1,3 @@
-"""HTTP artifact transfer adapter."""
-
 from __future__ import annotations
 
 import hashlib
@@ -15,8 +13,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class HTTPArtifactSettings(BaseModel):
-    """Configuration for HTTP artifact downloads."""
-
     base_url: AnyHttpUrl | None = Field(
         default=None, description="Optional base URL prepended to artifact paths."
     )
@@ -25,12 +21,10 @@ class HTTPArtifactSettings(BaseModel):
 
 
 class HTTPArtifactAdapter:
-    """Download artifacts via HTTP(S) with optional checksum validation."""
-
     metadata = AdapterMetadata(
         category="file_transfer",
         provider="http",
-        factory="oneiric.adapters.file_transfer.http_artifact:HTTPArtifactAdapter",
+        factory="oneiric.adapters.file_transfer.http_artifact: HTTPArtifactAdapter",
         capabilities=["download"],
         stack_level=15,
         priority=350,
@@ -83,7 +77,6 @@ class HTTPArtifactAdapter:
             return False
 
     async def download(self, path_or_url: str, *, sha256: str | None = None) -> bytes:
-        """Download artifact bytes."""
         client = self._ensure_client()
         url = path_or_url
         if self._settings.base_url and not path_or_url.startswith("http"):

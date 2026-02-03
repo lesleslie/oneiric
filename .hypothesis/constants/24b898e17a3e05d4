@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/messaging/sendgrid.py
+# hypothesis_version: 6.151.4
+
+[300, 500, '/mail/send', '/scopes', 'Authorization', 'Content-Type', 'Date', 'Messaging', 'X-Message-ID', 'X-Message-Id', 'adapter', 'application/json', 'bcc', 'categories', 'cc', 'content', 'custom_args', 'email', 'enable', 'from', 'headers', 'mail_settings', 'messaging', 'name', 'personalizations', 'reply_to', 'sandbox_mode', 'sendgrid', 'sendgrid-http-error', 'sendgrid-message', 'sendgrid-send-failed', 'subject', 'templating', 'text/html', 'text/plain', 'to', 'transactional', 'type', 'value']

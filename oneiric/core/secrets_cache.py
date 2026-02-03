@@ -1,5 +1,3 @@
-"""Utility cache for secret lookups."""
-
 from __future__ import annotations
 
 import threading
@@ -15,8 +13,6 @@ class _CacheEntry:
 
 
 class SecretValueCache:
-    """Time-bounded cache for secret values."""
-
     def __init__(self, ttl_seconds: float) -> None:
         self._ttl = max(ttl_seconds, 0.0)
         self._enabled = self._ttl > 0
@@ -53,7 +49,6 @@ class SecretValueCache:
             return self._invalidate_specific_keys(keys, provider)
 
     def _invalidate_all(self, provider: str | None) -> int:
-        """Invalidate all entries or all entries for a specific provider."""
         if provider is None:
             count = len(self._entries)
             self._entries.clear()
@@ -69,7 +64,6 @@ class SecretValueCache:
     def _invalidate_specific_keys(
         self, keys: Sequence[str], provider: str | None
     ) -> int:
-        """Invalidate specific keys, optionally filtered by provider."""
         target_ids = set(keys)
         removed = 0
 
@@ -86,6 +80,5 @@ class SecretValueCache:
         target_ids: set[str],
         provider: str | None,
     ) -> bool:
-        """Check if a cache key should be invalidated."""
         provider_match = provider is None or cache_key[0] == provider
         return provider_match and cache_key[1] in target_ids

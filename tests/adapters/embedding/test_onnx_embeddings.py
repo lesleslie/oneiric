@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from oneiric.adapters.embedding.common import PoolingStrategy
+from oneiric.adapters.embedding.embedding_interface import PoolingStrategy
 from oneiric.adapters.embedding.onnx import ONNXEmbeddingAdapter, ONNXEmbeddingSettings
 
 

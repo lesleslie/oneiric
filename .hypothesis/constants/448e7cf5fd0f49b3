@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/plugins.py
+# hypothesis_version: 6.151.4
+
+['__name__', 'entries', 'errors', 'get', 'groups', 'not-callable', 'oneiric.adapters', 'oneiric.events', 'oneiric.services', 'oneiric.tasks', 'oneiric.workflows', 'plugin-load-failed', 'plugin-not-callable', 'plugins', 'plugins-registered', 'registered', 'select']

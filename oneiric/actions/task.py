@@ -1,5 +1,3 @@
-"""Task scheduling action kit."""
-
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -18,8 +16,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class TaskScheduleSettings(BaseModel):
-    """Settings controlling schedule planning defaults."""
-
     default_queue: str = Field(
         default="default",
         description="Queue assigned when payload omits 'queue'.",
@@ -42,8 +38,6 @@ class TaskScheduleSettings(BaseModel):
 
 
 class TaskSchedulePayload(BaseModel):
-    """Typed payload for cron/interval scheduling."""
-
     model_config = ConfigDict(extra="forbid")
 
     task_type: str = Field(description="Task type to enqueue when the rule fires.")
@@ -109,8 +103,6 @@ class TaskSchedulePayload(BaseModel):
 
 @dataclass(slots=True)
 class _ScheduleRule:
-    """Runtime representation of a schedule definition."""
-
     rule_id: str
     name: str
     task_type: str
@@ -126,9 +118,7 @@ class _ScheduleRule:
 
 
 class _CronExpression:  # noqa: C901
-    """Minimal cron parser that supports */step, ranges, and lists."""
-
-    _MAX_SEARCH_MINUTES = 525_600  # Prevent runaway loops (≈1 year)
+    _MAX_SEARCH_MINUTES = 525_600
 
     def __init__(self, expression: str) -> None:
         parts = expression.split()
@@ -139,7 +129,7 @@ class _CronExpression:  # noqa: C901
         self._hours = self._parse_field(hour, 0, 23)
         self._days = self._parse_field(dom, 1, 31)
         self._months = self._parse_field(month, 1, 12)
-        # allow 0-7 with both representing Sunday
+
         self._weekdays = self._parse_field(dow, 0, 7, wrap_sunday=True)
 
     def next_after(self, current: datetime) -> datetime:
@@ -199,7 +189,6 @@ class _CronExpression:  # noqa: C901
         return sorted(allowed)
 
     def _extract_step(self, part: str) -> tuple[int, str]:
-        """Extract step value and range expression from cron part."""
         if "/" not in part:
             return 1, part
 
@@ -217,7 +206,6 @@ class _CronExpression:  # noqa: C901
     def _parse_range(
         self, range_expr: str, minimum: int, maximum: int
     ) -> tuple[int, int]:
-        """Parse range expression into start and end values."""
         if range_expr in {"*", "?"}:
             return minimum, maximum
 
@@ -237,7 +225,6 @@ class _CronExpression:  # noqa: C901
         range_expr: str,
         wrap_sunday: bool,
     ) -> None:
-        """Validate range values are within bounds."""
         if wrap_sunday:
             if start < minimum and start != 7:
                 raise ValueError("Day-of-week values must be between 0 and 7")
@@ -259,12 +246,10 @@ class _CronExpression:  # noqa: C901
 
 
 class TaskScheduleAction:
-    """Action kit that plans cron/interval task schedules."""
-
     metadata = ActionMetadata(
         key="task.schedule",
         provider="builtin-task-schedule",
-        factory="oneiric.actions.task:TaskScheduleAction",
+        factory="oneiric.actions.task: TaskScheduleAction",
         description="Builds cron/interval schedules for resolver-managed task runners",
         domains=["task", "workflow"],
         capabilities=["schedule", "plan", "cron"],
@@ -402,7 +387,6 @@ class TaskScheduleAction:
         base_time: datetime,
         preview_count: int,
     ) -> tuple[datetime | None, list[str]]:
-        """Compute next run and upcoming runs."""
         state = {
             "next_run": None,
             "runs_remaining": rule.max_runs,
@@ -453,7 +437,7 @@ class TaskScheduleAction:
             state["runs_remaining"] -= 1
 
     def _should_stop_schedule_iteration(self, state: dict, rule: _ScheduleRule) -> bool:
-        return False  # Continue by default
+        return False
 
     def _schedule_complete(self, state: dict) -> bool:
         if state["limit"] > 0 and len(state["upcoming"]) >= state["limit"]:
@@ -465,7 +449,6 @@ class TaskScheduleAction:
         return False
 
     def _build_rule_dict(self, rule: _ScheduleRule) -> dict[str, Any]:
-        """Build rule dictionary for response."""
         return {
             "rule_id": rule.rule_id,
             "name": rule.name,

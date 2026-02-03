@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/secrets/gcp.py
+# hypothesis_version: 6.151.4
+
+[550, '404', 'NOT_FOUND', 'Security', '__oneiric_health__', 'adapter', 'adapter-health-error', 'adapter-init', 'adapter.secrets.gcp', 'args', 'cache', 'close', 'code', 'gcp-secret-manager', 'latest', 'name', 'remote', 'secrets', 'utf-8']

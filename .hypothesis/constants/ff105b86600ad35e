@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/core/metrics.py
+# hypothesis_version: 6.151.4
+
+[0.0, '1', 'cleared', 'domain', 'draining', 'failed', 'key', 'ms', 'oneiric.core', 'outcome', 'paused', 'provider', 'resumed', 'state', 'success', 'unknown']

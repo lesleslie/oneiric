@@ -1,5 +1,3 @@
-"""Settings and secrets helpers."""
-
 from __future__ import annotations
 
 import inspect
@@ -171,8 +169,6 @@ class RuntimeProfileConfig(BaseModel):
 
 
 class RuntimePathsConfig(BaseModel):
-    """Filesystem locations + toggles for runtime persistence helpers."""
-
     workflow_checkpoints_enabled: bool = True
     workflow_checkpoints_path: str | None = Field(
         default=None,
@@ -181,8 +177,6 @@ class RuntimePathsConfig(BaseModel):
 
 
 class RuntimeSupervisorConfig(BaseModel):
-    """Supervisor loop feature flag + tuning knobs."""
-
     enabled: bool = True
     poll_interval: float = Field(
         default=2.0,
@@ -192,8 +186,6 @@ class RuntimeSupervisorConfig(BaseModel):
 
 
 class OneiricMCPConfig(BaseModel):
-    """Base configuration for MCP servers."""
-
     http_port: int = 8000
     http_host: str = "127.0.0.1"
     enable_http_transport: bool = True
@@ -229,8 +221,6 @@ class OneiricSettings(BaseModel):
 
 
 def load_settings(path: str | Path | None = None) -> OneiricSettings:
-    """Load settings from TOML/JSON file and environment overrides."""
-
     data: dict[str, Any] = {}
     config_path = path or os.getenv("ONEIRIC_CONFIG")
     if config_path:
@@ -280,8 +270,6 @@ def runtime_observability_path(settings: OneiricSettings) -> Path:
 
 
 def workflow_checkpoint_path(settings: OneiricSettings) -> Path | None:
-    """Resolve workflow checkpoint path (or None when disabled)."""
-
     if not settings.runtime_paths.workflow_checkpoints_enabled:
         return None
     override = settings.runtime_paths.workflow_checkpoints_path
@@ -294,8 +282,6 @@ def workflow_checkpoint_path(settings: OneiricSettings) -> Path | None:
 def apply_runtime_profile(
     settings: OneiricSettings, profile_name: str | None
 ) -> OneiricSettings:
-    """Return a copy of settings with the requested runtime profile applied."""
-
     target = (profile_name or settings.profile.name or "default").lower()
     updated = settings.model_copy(deep=True)
     if target in ("", "default"):
@@ -322,8 +308,6 @@ def apply_runtime_profile(
 def apply_profile_with_fallback(
     settings: OneiricSettings, profile_name: str | None
 ) -> OneiricSettings:
-    """Apply an explicit or configured runtime profile if necessary."""
-
     explicit = profile_name or ""
     if explicit:
         return apply_runtime_profile(settings, explicit)
@@ -335,8 +319,6 @@ def apply_profile_with_fallback(
 
 
 class SecretsHook:
-    """Resolve secrets via configured adapter or inline map."""
-
     def __init__(self, lifecycle: LifecycleManager, config: SecretsConfig) -> None:
         self.lifecycle = lifecycle
         self.config = config
@@ -369,8 +351,6 @@ class SecretsHook:
         return resolved
 
     async def prefetch(self) -> bool:
-        """Ensure the configured provider is activated before first use."""
-
         provider = await self._ensure_provider()
         ready = provider is not None
         if ready:
@@ -387,7 +367,6 @@ class SecretsHook:
         provider: str | None = None,
         include_provider_cache: bool = True,
     ) -> int:
-        """Invalidate cached secrets and optionally refresh provider caches."""
         removed = self.invalidate(keys=keys, provider=provider)
         if include_provider_cache:
             await self._invalidate_provider_cache()
@@ -395,8 +374,6 @@ class SecretsHook:
 
     @property
     def prefetched(self) -> bool:
-        """Return True when the secrets provider has been activated."""
-
         return self._prefetched
 
     async def _ensure_provider(self) -> SecretsProviderProtocol | None:
@@ -422,7 +399,6 @@ class SecretsHook:
         keys: Sequence[str] | None = None,
         provider: str | None = None,
     ) -> int:
-        """Invalidate cached secret values. Returns number of entries removed."""
         provider_key = self._cache_key(provider) if provider else None
         removed = self._cache.invalidate(keys, provider_key)
         self._logger.info(

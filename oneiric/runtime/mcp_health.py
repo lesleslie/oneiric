@@ -1,5 +1,3 @@
-"""Health monitoring for MCP servers."""
-
 from __future__ import annotations
 
 import time
@@ -13,8 +11,6 @@ logger = get_logger(__name__)
 
 
 class HealthStatus(Enum):
-    """Health status enumeration."""
-
     HEALTHY = "healthy"
     UNHEALTHY = "unhealthy"
     DEGRADED = "degraded"
@@ -24,8 +20,6 @@ class HealthStatus(Enum):
 
 @dataclass
 class ComponentHealth:
-    """Health information for a specific component."""
-
     name: str
     status: HealthStatus
     details: dict[str, Any] = None
@@ -44,7 +38,6 @@ class ComponentHealth:
         self.error = error
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert component health to dictionary."""
         result = {
             "name": self.name,
             "status": self.status.value,
@@ -57,8 +50,6 @@ class ComponentHealth:
 
 @dataclass
 class HealthCheckResponse:
-    """Health check response structure."""
-
     status: HealthStatus
     components: list[ComponentHealth]
     timestamp: str
@@ -74,11 +65,9 @@ class HealthCheckResponse:
         self.metadata = {}
 
     def add_metadata(self, key: str, value: Any) -> None:
-        """Add metadata to the health check response."""
         self.metadata[key] = value
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert health check response to dictionary."""
         return {
             "status": self.status.value,
             "components": [comp.to_dict() for comp in self.components],
@@ -88,11 +77,9 @@ class HealthCheckResponse:
         }
 
     def is_healthy(self) -> bool:
-        """Check if the overall status is healthy."""
         return self.status == HealthStatus.HEALTHY
 
     def has_unhealthy_components(self) -> bool:
-        """Check if any components are unhealthy."""
         return any(
             comp.status in (HealthStatus.UNHEALTHY, HealthStatus.DEGRADED)
             for comp in self.components
@@ -100,19 +87,15 @@ class HealthCheckResponse:
 
 
 class HealthMonitor:
-    """Health monitoring utility for MCP servers."""
-
     def __init__(self, server_name: str = "mcp-server"):
         self.server_name = server_name
 
     def create_health_response(
         self, components: list[ComponentHealth], timestamp: str | None = None
     ) -> HealthCheckResponse:
-        """Create a health check response from components."""
         if timestamp is None:
             timestamp = time.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-        # Determine overall status
         status = self._determine_overall_status(components)
 
         return HealthCheckResponse(
@@ -122,16 +105,12 @@ class HealthMonitor:
     def _determine_overall_status(
         self, components: list[ComponentHealth]
     ) -> HealthStatus:
-        """Determine overall health status from component statuses."""
-        # If any component is unhealthy, overall status is unhealthy
         if any(comp.status == HealthStatus.UNHEALTHY for comp in components):
             return HealthStatus.UNHEALTHY
 
-        # If any component is degraded, overall status is degraded
         if any(comp.status == HealthStatus.DEGRADED for comp in components):
             return HealthStatus.DEGRADED
 
-        # If all components are healthy, overall status is healthy
         return HealthStatus.HEALTHY
 
     def create_component_health(
@@ -141,7 +120,6 @@ class HealthMonitor:
         details: dict[str, Any] = None,
         error: str | None = None,
     ) -> ComponentHealth:
-        """Create a component health object."""
         return ComponentHealth(name, status, details, error)
 
 

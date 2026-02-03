@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/runtime/telemetry.py
+# hypothesis_version: 6.151.4
+
+[0.0, 1000.0, '.tmp', 'attempts', 'depends_on', 'duration', 'duration_ms', 'entry_nodes', 'error', 'failures', 'handler', 'handlers', 'id', 'key', 'last_event', 'last_workflow', 'matched_handlers', 'node', 'node_count', 'nodes', 'recorded_at', 'retry_policy', 'runtime.telemetry', 'success', 'task', 'tasks', 'topic', 'total_duration_ms', 'unknown', 'workflow']

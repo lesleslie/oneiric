@@ -1,5 +1,3 @@
-"""Twilio SMS adapter."""
-
 from __future__ import annotations
 
 import base64
@@ -18,12 +16,10 @@ from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
 from oneiric.core.settings_mixins import TimeoutSettings
 
-from .common import MessagingSendResult, OutboundSMSMessage
+from .messaging_types import MessagingSendResult, OutboundSMSMessage
 
 
 class TwilioSettings(TimeoutSettings):
-    """Configuration for Twilio REST API interactions."""
-
     account_sid: str
     auth_token: SecretStr
     from_number: str = Field(
@@ -44,12 +40,10 @@ class TwilioSettings(TimeoutSettings):
 
 
 class TwilioAdapter(HTTPXClientMixin):
-    """Adapter that sends SMS messages through the Twilio REST API."""
-
     metadata = AdapterMetadata(
         category="messaging",
         provider="twilio",
-        factory="oneiric.adapters.messaging.twilio:TwilioAdapter",
+        factory="oneiric.adapters.messaging.twilio: TwilioAdapter",
         capabilities=["sms", "notifications"],
         stack_level=20,
         priority=330,
@@ -171,8 +165,6 @@ class TwilioAdapter(HTTPXClientMixin):
 
 
 class TwilioSignatureValidator:
-    """Validates webhook signatures from Twilio callbacks."""
-
     def __init__(self, auth_token: str) -> None:
         self._auth_token = auth_token
 

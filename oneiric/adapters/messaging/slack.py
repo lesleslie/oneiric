@@ -1,5 +1,3 @@
-"""Slack notification adapter."""
-
 from __future__ import annotations
 
 import httpx
@@ -12,12 +10,10 @@ from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
 from oneiric.core.settings_mixins import TimeoutSettings
 
-from .common import MessagingSendResult, NotificationMessage
+from .messaging_types import MessagingSendResult, NotificationMessage
 
 
 class SlackSettings(TimeoutSettings):
-    """Configuration for Slack chat.postMessage calls."""
-
     token: SecretStr
     default_channel: str | None = Field(
         default=None,
@@ -29,12 +25,10 @@ class SlackSettings(TimeoutSettings):
 
 
 class SlackAdapter(HTTPXClientMixin):
-    """Slack adapter that posts messages via chat.postMessage."""
-
     metadata = AdapterMetadata(
         category="messaging",
         provider="slack",
-        factory="oneiric.adapters.messaging.slack:SlackAdapter",
+        factory="oneiric.adapters.messaging.slack: SlackAdapter",
         capabilities=["notifications", "chatops"],
         stack_level=25,
         priority=340,
@@ -100,11 +94,9 @@ class SlackAdapter(HTTPXClientMixin):
         if not channel:
             raise LifecycleError("slack-channel-missing")
 
-        # Build and send payload
         payload = self._build_slack_payload(message, channel)
         response = await self._send_slack_request(client, payload)
 
-        # Validate and extract response
         self._validate_slack_response(response)
         ts = response.json().get("ts", "slack-message")
 
@@ -117,13 +109,11 @@ class SlackAdapter(HTTPXClientMixin):
     def _build_slack_payload(
         self, message: NotificationMessage, channel: str
     ) -> dict[str, object]:
-        """Build Slack API payload from message."""
         payload: dict[str, object] = {
             "channel": channel,
             "text": message.text,
         }
 
-        # Add optional content
         if message.blocks:
             payload["blocks"] = message.blocks
         if message.attachments:
@@ -131,13 +121,11 @@ class SlackAdapter(HTTPXClientMixin):
         if message.title:
             payload.setdefault("title", message.title)
 
-        # Add default settings
         if self._settings.default_username:
             payload.setdefault("username", self._settings.default_username)
         if self._settings.default_icon_emoji:
             payload.setdefault("icon_emoji", self._settings.default_icon_emoji)
 
-        # Merge extra payload
         if message.extra_payload:
             payload.update(message.extra_payload)
 
@@ -146,7 +134,6 @@ class SlackAdapter(HTTPXClientMixin):
     async def _send_slack_request(
         self, client: httpx.AsyncClient, payload: dict[str, object]
     ) -> httpx.Response:
-        """Send request to Slack API with error handling."""
         try:
             response = await client.post("/chat.postMessage", json=payload)
             response.raise_for_status()
@@ -163,7 +150,6 @@ class SlackAdapter(HTTPXClientMixin):
             raise LifecycleError("slack-http-error") from exc
 
     def _validate_slack_response(self, response: httpx.Response) -> None:
-        """Validate Slack API response for errors."""
         payload_json = response.json()
         if not payload_json.get("ok", False):
             error_msg = payload_json.get("error", "unknown-error")

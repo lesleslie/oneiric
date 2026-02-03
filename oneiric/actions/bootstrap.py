@@ -1,5 +1,3 @@
-"""Register builtin action kits."""
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -25,8 +23,6 @@ from .workflow import (
 
 
 def builtin_action_metadata() -> list[ActionMetadata]:
-    """Return metadata for builtin action kits."""
-
     return [
         CompressionAction.metadata,
         HashAction.metadata,
@@ -49,8 +45,6 @@ def builtin_action_metadata() -> list[ActionMetadata]:
 
 
 def register_builtin_actions(resolver: Resolver) -> None:
-    """Register builtin action metadata with the resolver."""
-
     register_action_metadata(
         resolver,
         package_name="oneiric.actions",

@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/monitoring/otlp.py
+# hypothesis_version: 6.151.4
+
+[5.0, 10.0, 205, 1000, 'Observability', 'adapter', 'adapter-init', 'development', 'grpc', 'metrics', 'monitoring', 'oneiric', 'otel-otlp', 'service.name', 'service.version', 'shutdown', 'tracing']

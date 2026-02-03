@@ -1,5 +1,3 @@
-"""Task bridge."""
-
 from __future__ import annotations
 
 from oneiric.core.config import LayerSettings

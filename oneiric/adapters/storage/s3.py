@@ -1,5 +1,3 @@
-"""S3-backed storage adapter."""
-
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
@@ -8,7 +6,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from oneiric.adapters.metadata import AdapterMetadata
-from oneiric.adapters.storage.utils import is_not_found_error
+from oneiric.adapters.storage.error_detection import is_not_found_error
 from oneiric.core.client_mixins import EnsureClientMixin
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
@@ -16,8 +14,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class S3StorageSettings(BaseModel):
-    """Settings for the S3-backed storage adapter."""
-
     bucket: str
     region: str | None = Field(default=None)
     endpoint_url: str | None = Field(default=None)
@@ -36,12 +32,10 @@ class S3StorageSettings(BaseModel):
 
 
 class S3StorageAdapter(EnsureClientMixin):
-    """Async S3 adapter powered by aioboto3 clients."""
-
     metadata = AdapterMetadata(
         category="storage",
         provider="s3",
-        factory="oneiric.adapters.storage.s3:S3StorageAdapter",
+        factory="oneiric.adapters.storage.s3: S3StorageAdapter",
         capabilities=["blob", "stream", "delete", "bucket"],
         stack_level=25,
         priority=400,

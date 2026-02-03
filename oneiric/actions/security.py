@@ -1,5 +1,3 @@
-"""Security, signature, and token helper actions."""
-
 from __future__ import annotations
 
 import base64
@@ -20,8 +18,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class SecuritySignatureSettings(BaseModel):
-    """Settings controlling signature generation."""
-
     algorithm: Literal["sha256", "sha512", "blake2b"] = Field(
         default="sha256",
         description="Digest algorithm used when hashing the payload.",
@@ -45,12 +41,10 @@ class SecuritySignatureSettings(BaseModel):
 
 
 class SecuritySignatureAction:
-    """Action kit that generates deterministic HMAC signatures."""
-
     metadata = ActionMetadata(
         key="security.signature",
         provider="builtin-security-signature",
-        factory="oneiric.actions.security:SecuritySignatureAction",
+        factory="oneiric.actions.security: SecuritySignatureAction",
         description="Security helper generating HMAC signatures for outbound requests",
         domains=["service", "task", "workflow"],
         capabilities=["signature", "hmac", "validation"],
@@ -130,8 +124,6 @@ class SecuritySignatureAction:
 
 
 class SecuritySecureSettings(BaseModel):
-    """Settings controlling secure token/password helpers."""
-
     token_length: int = Field(
         default=32, description="Default length for generated tokens."
     )
@@ -146,12 +138,10 @@ class SecuritySecureSettings(BaseModel):
 
 
 class SecuritySecureAction:
-    """Action kit that generates tokens and secures passwords."""
-
     metadata = ActionMetadata(
         key="security.secure",
         provider="builtin-security-secure",
-        factory="oneiric.actions.security:SecuritySecureAction",
+        factory="oneiric.actions.security: SecuritySecureAction",
         description="Generates secure tokens/password hashes and verifies credentials",
         domains=["service", "task", "workflow"],
         capabilities=["secure", "token", "password"],

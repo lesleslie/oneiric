@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/core/logging.py
+# hypothesis_version: 6.151.4
+
+[1024, '%(message)s', '.', '/', 'INFO', 'POST', 'Root log level.', 'adapter', 'category', 'domain', 'event', 'event_handler', 'event_topic', 'file', 'http', 'https', 'iso', 'key', 'node', 'oneiric', 'oneiric.adapter', 'oneiric.category', 'oneiric.domain', 'oneiric.event.topic', 'oneiric.key', 'oneiric.log', 'oneiric.node', 'oneiric.operation', 'oneiric.provider', 'oneiric.run_id', 'oneiric.workflow', 'operation', 'provider', 'run_id', 'service.name', 'service.version', 'span_id', 'stderr', 'stdout', 'trace_id', 'utf-8', 'workflow']

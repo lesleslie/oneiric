@@ -1,5 +1,3 @@
-"""Shared httpx client helpers for adapters."""
-
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -10,8 +8,6 @@ from oneiric.core.lifecycle import LifecycleError
 
 
 class HTTPXClientMixin:
-    """Mixin that manages httpx.AsyncClient lifecycle."""
-
     def __init__(self, *, client: httpx.AsyncClient | None = None) -> None:
         self._client = client
         self._owns_client = client is None

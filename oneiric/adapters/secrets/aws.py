@@ -1,5 +1,3 @@
-"""AWS Secrets Manager adapter."""
-
 from __future__ import annotations
 
 import asyncio
@@ -16,8 +14,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class AWSSecretManagerSettings(BaseModel):
-    """Settings for interacting with AWS Secrets Manager."""
-
     region: str = Field(description="AWS region where the secrets live.")
     endpoint_url: str | None = Field(
         default=None, description="Optional custom endpoint (e.g., LocalStack)."
@@ -38,12 +34,10 @@ class AWSSecretManagerSettings(BaseModel):
 
 
 class AWSSecretManagerAdapter:
-    """Async adapter powered by aioboto3's Secrets Manager client."""
-
     metadata = AdapterMetadata(
         category="secrets",
         provider="aws-secret-manager",
-        factory="oneiric.adapters.secrets.aws:AWSSecretManagerAdapter",
+        factory="oneiric.adapters.secrets.aws: AWSSecretManagerAdapter",
         capabilities=["remote", "cache"],
         stack_level=52,
         priority=560,

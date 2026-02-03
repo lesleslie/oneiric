@@ -1,5 +1,3 @@
-"""Neo4j graph adapter."""
-
 from __future__ import annotations
 
 import inspect
@@ -15,10 +13,8 @@ from oneiric.core.resolution import CandidateSource
 
 
 class Neo4jGraphSettings(BaseModel):
-    """Configuration for the Neo4j adapter."""
-
     uri: str = Field(
-        default="bolt://localhost:7687", description="Bolt URI for the Neo4j instance."
+        default="bolt://localhost: 7687", description="Bolt URI for the Neo4j instance."
     )
     database: str | None = Field(
         default=None, description="Optional database name (Neo4j Enterprise)."
@@ -36,12 +32,10 @@ class Neo4jGraphSettings(BaseModel):
 
 
 class Neo4jGraphAdapter:
-    """Adapter that performs basic graph CRUD and queries via Neo4j's async driver."""
-
     metadata = AdapterMetadata(
         category="graph",
         provider="neo4j",
-        factory="oneiric.adapters.graph.neo4j:Neo4jGraphAdapter",
+        factory="oneiric.adapters.graph.neo4j: Neo4jGraphAdapter",
         capabilities=["nodes", "relationships", "cypher"],
         stack_level=30,
         priority=400,

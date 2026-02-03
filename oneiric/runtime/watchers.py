@@ -1,5 +1,3 @@
-"""Generic selection/config watchers with filesystem events."""
-
 from __future__ import annotations
 
 import asyncio
@@ -23,8 +21,6 @@ LayerSelector = Callable[[OneiricSettings], LayerSettings]
 
 
 class SelectionWatcher:
-    """Polls configuration for domain selection changes and triggers swaps."""
-
     def __init__(
         self,
         name: str,

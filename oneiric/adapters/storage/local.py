@@ -1,5 +1,3 @@
-"""Filesystem-backed storage adapter."""
-
 from __future__ import annotations
 
 import asyncio
@@ -15,8 +13,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class LocalStorageSettings(BaseModel):
-    """Settings for the local filesystem storage adapter."""
-
     base_path: Path = Field(
         default=Path("./.oneiric_storage"),
         description="Directory where blobs are persisted.",
@@ -28,12 +24,10 @@ class LocalStorageSettings(BaseModel):
 
 
 class LocalStorageAdapter:
-    """Simple filesystem-backed blob storage."""
-
     metadata = AdapterMetadata(
         category="storage",
         provider="local",
-        factory="oneiric.adapters.storage.local:LocalStorageAdapter",
+        factory="oneiric.adapters.storage.local: LocalStorageAdapter",
         capabilities=["blob", "stream", "delete"],
         stack_level=20,
         priority=200,

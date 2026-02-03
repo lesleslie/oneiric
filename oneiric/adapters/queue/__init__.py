@@ -1,5 +1,3 @@
-"""Queue adapter implementations."""
-
 from .cloudtasks import CloudTasksQueueAdapter, CloudTasksQueueSettings
 from .kafka import KafkaQueueAdapter, KafkaQueueSettings
 from .nats import NATSQueueAdapter, NATSQueueSettings

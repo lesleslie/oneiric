@@ -1,9 +1,3 @@
-"""SQLAlchemy models for OTel telemetry storage.
-
-This module defines the database models for storing OpenTelemetry traces, metrics, and logs
-with support for vector embeddings and time-series queries.
-"""
-
 from __future__ import annotations
 
 from datetime import datetime
@@ -15,18 +9,10 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):
-    """Base class for all OTel storage models."""
-
     pass
 
 
 class TraceModel(Base):
-    """Distributed trace with vector embeddings.
-
-    Represents a single span from a distributed trace, including its duration,
-    status, attributes, and optional vector embedding for semantic search.
-    """
-
     __tablename__ = "traces"
 
     id: Mapped[str] = mapped_column(
@@ -65,12 +51,6 @@ class TraceModel(Base):
 
 
 class MetricModel(Base):
-    """Time-series metric data point.
-
-    Represents a single metric measurement with its value, unit, labels,
-    and timestamp for time-series queries.
-    """
-
     __tablename__ = "metrics"
 
     id: Mapped[str] = mapped_column(
@@ -97,12 +77,6 @@ class MetricModel(Base):
 
 
 class LogModel(Base):
-    """Log entry with trace correlation.
-
-    Represents a single log record with severity level, message, and optional
-    correlation with trace/span IDs for distributed tracing context.
-    """
-
     __tablename__ = "logs"
 
     id: Mapped[str] = mapped_column(

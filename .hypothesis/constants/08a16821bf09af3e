@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/core/http_helpers.py
+# hypothesis_version: 6.151.4
+
+[1000.0, 'domain', 'http.method', 'http.status_code', 'http.timeout', 'http.url', 'key', 'oneiric.domain', 'oneiric.key', 'oneiric.operation', 'oneiric.provider', 'oneiric.success', 'operation', 'provider']

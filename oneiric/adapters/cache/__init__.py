@@ -1,5 +1,3 @@
-"""Cache adapter implementations."""
-
 from .memory import MemoryCacheAdapter, MemoryCacheSettings
 from .redis import RedisCacheAdapter, RedisCacheSettings
 

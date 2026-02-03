@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/runtime/dag.py
+# hypothesis_version: 6.151.4
+
+[0.0, 0.25, 1000.0, 'attempts', 'backoff_jitter', 'base_delay', 'dag-hook-failed', 'domain', 'initial_delay', 'jitter', 'key', 'max_attempts', 'max_backoff', 'max_delay', 'node', 'oneiric.workflow.key', 'operation', 'results', 'run_id', 'runtime.dag', 'runtime.workflow', 'task', 'unknown', 'workflow', 'workflow.node', 'workflow.run']

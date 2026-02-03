@@ -1,6 +1,4 @@
-"""Embedding adapters for Oneiric."""
-
-from oneiric.adapters.embedding.common import (
+from oneiric.adapters.embedding.embedding_interface import (
     EmbeddingBase,
     EmbeddingBaseSettings,
     EmbeddingBatch,
@@ -26,27 +24,20 @@ from oneiric.adapters.embedding.sentence_transformers import (
 )
 
 __all__ = [
-    # Base classes
     "EmbeddingBase",
     "EmbeddingBaseSettings",
-    # Models
     "EmbeddingModel",
     "EmbeddingResult",
     "EmbeddingBatch",
-    # Utilities
     "EmbeddingUtils",
     "EmbeddingVector",
     "EmbeddingMatrix",
-    # Enums
     "PoolingStrategy",
     "VectorNormalization",
-    # OpenAI
     "OpenAIEmbeddingAdapter",
     "OpenAIEmbeddingSettings",
-    # Sentence Transformers
     "SentenceTransformersAdapter",
     "SentenceTransformersSettings",
-    # ONNX
     "ONNXEmbeddingAdapter",
     "ONNXEmbeddingSettings",
 ]

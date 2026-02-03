@@ -1,5 +1,3 @@
-"""Shared metadata helpers for resolver-managed domains."""
-
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence

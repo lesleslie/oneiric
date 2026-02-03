@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/database/mysql.py
+# hypothesis_version: 6.151.4
+
+[10.0, 450, 3306, 'Data Platform', 'SELECT 1;', 'adapter', 'adapter-health-error', 'adapter-init', 'aiomysql-missing', 'database', 'localhost', 'mysql', 'mysql-database', 'pool', 'root', 'sql', 'utf8mb4']

@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/runtime/orchestrator.py
+# hypothesis_version: 6.151.4
+
+[2.0, 'adapter', 'enabled', 'event', 'last_remote_error', 'last_remote_skipped', 'last_remote_sync_at', 'no-manifest-url', 'orchestrator_pid', 'poll_interval', 'remote-refresh-error', 'remote-refresh-skip', 'remote.sync.loop', 'remote_enabled', 'runtime.orchestrator', 'runtime_supervisor', 'secrets.refresh.loop', 'service', 'supervisor_enabled', 'task', 'watchers_enabled', 'watchers_running', 'workflow']

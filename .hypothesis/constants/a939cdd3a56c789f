@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/cache/memory.py
+# hypothesis_version: 6.151.4
+
+[0.0, 100, 'Platform Core', 'adapter', 'adapter-init', 'adapter.cache.memory', 'cache', 'kv', 'memory', 'memory-cache', 'ttl']

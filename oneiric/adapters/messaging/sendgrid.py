@@ -1,5 +1,3 @@
-"""SendGrid email adapter with httpx client."""
-
 from __future__ import annotations
 
 from typing import Any
@@ -14,12 +12,10 @@ from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
 from oneiric.core.settings_mixins import TimeoutSettings
 
-from .common import EmailRecipient, MessagingSendResult, OutboundEmailMessage
+from .messaging_types import EmailRecipient, MessagingSendResult, OutboundEmailMessage
 
 
 class SendGridSettings(TimeoutSettings):
-    """Configuration for the SendGrid adapter."""
-
     api_key: SecretStr
     from_email: EmailStr
     from_name: str | None = None
@@ -43,12 +39,10 @@ class SendGridSettings(TimeoutSettings):
 
 
 class SendGridAdapter(HTTPXClientMixin):
-    """SendGrid-backed messaging adapter using the REST API."""
-
     metadata = AdapterMetadata(
         category="messaging",
         provider="sendgrid",
-        factory="oneiric.adapters.messaging.sendgrid:SendGridAdapter",
+        factory="oneiric.adapters.messaging.sendgrid: SendGridAdapter",
         capabilities=["email", "transactional", "templating"],
         stack_level=20,
         priority=300,
