@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/vector/agentdb.py
+# hypothesis_version: 6.151.4
+
+[30.0, 256, 600, 1536, 'AI Platform', 'AgentDB count failed', 'AgentDB get failed', 'adapter', 'agent_', 'agent_memory', 'agent_optimized', 'agentdb', 'agentdb_count', 'agentdb_delete', 'agentdb_get', 'agentdb_health', 'agentdb_init', 'agentdb_insert', 'agentdb_search', 'agentdb_upsert', 'batch_operations', 'cache_size_mb', 'collection', 'collections', 'cosine', 'count', 'dimension', 'distance_metric', 'documents', 'filter', 'healthy', 'id', 'ids', 'in_memory', 'include_vectors', 'limit', 'metadata', 'metadata_filtering', 'query_vector', 'quic_sync', 'real_time', 'results', 'score', 'status', 'stdio://agentdb', 'storage_path', 'success', 'vector', 'vector_search']

@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import asyncio
@@ -15,6 +14,8 @@ CoroutineFactory = Callable[[], Awaitable[Any]]
 
 
 class TaskGroupError(RuntimeError):
+
+    pass
 
 
 class RuntimeTaskGroup:
@@ -35,9 +36,7 @@ class RuntimeTaskGroup:
         if not self._group:
             return None
 
-
         result: bool | None = await self._group.__aexit__(exc_type, exc, tb)  # type: ignore[func-returns-value]
-
 
         self._logger.debug(
             "taskgroup-exit", name=self.name, exc=str(exc) if exc else None
@@ -60,7 +59,6 @@ class RuntimeTaskGroup:
             coro_awaitable = coro_or_factory()
         else:
             coro_awaitable = coro_or_factory
-
 
         if not isinstance(coro_awaitable, Coroutine):
 
@@ -197,11 +195,9 @@ async def run_with_taskgroup(
 
 
 def run_sync(main: Callable[[], Awaitable[Any]]) -> Any:
-
     logger = get_logger("runtime")
     logger.debug("runtime-start")
     coro_awaitable = main()
-
 
     if not isinstance(coro_awaitable, Coroutine):
 

@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import asyncio
@@ -17,6 +16,8 @@ except ImportError:  # pragma: no cover - exercised when extras missing
     Redis = TrackingCache = None  # type: ignore
 
     class RedisError(Exception):
+
+        pass
 
     _COREDIS_AVAILABLE = False
 

@@ -9,19 +9,22 @@ This directory contains comprehensive runbooks for common operational tasks, inc
 ### Core Runbooks
 
 1. **[Incident Response](INCIDENT_RESPONSE.md)** - Emergency procedures
+
    - Severity classification (P0-P3)
    - On-call escalation paths
    - Communication templates
    - Post-mortem process
 
-2. **[Troubleshooting](TROUBLESHOOTING.md)** - Common issues and solutions
+1. **[Troubleshooting](TROUBLESHOOTING.md)** - Common issues and solutions
+
    - Component resolution failures
    - Hot-swap problems
    - Remote sync errors
    - Performance issues
    - Security incidents
 
-3. **[Maintenance](MAINTENANCE.md)** - Routine operational tasks
+1. **[Maintenance](MAINTENANCE.md)** - Routine operational tasks
+
    - Config updates without downtime
    - Hot-swap procedures
    - Health check management
@@ -30,18 +33,21 @@ This directory contains comprehensive runbooks for common operational tasks, inc
 ### Advanced Operations
 
 4. **[Service Supervisor](SERVICE_SUPERVISOR.md)** - Process supervision
+
    - systemd service configuration
    - Auto-restart policies
    - Log management
    - Graceful shutdown
 
-5. **[OTel Index Management](OTEL_INDEX_MANAGEMENT.md)** - Observability data
+1. **[OTel Index Management](OTEL_INDEX_MANAGEMENT.md)** - Observability data
+
    - Elasticsearch index lifecycle
    - Retention policies
    - Index optimization
    - Storage management
 
-6. **[OTel Performance Tuning](OTEL_PERFORMANCE_TUNING.md)** - Telemetry optimization
+1. **[OTel Performance Tuning](OTEL_PERFORMANCE_TUNING.md)** - Telemetry optimization
+
    - Sampling strategies
    - Batch size tuning
    - Exporter configuration
@@ -109,23 +115,23 @@ graph TD
 ### Component Not Found
 
 1. Check registration: `oneiric list --domain <domain>`
-2. Verify config: `settings/<domain>.yml`
-3. Check logs for resolution errors
-4. Verify package imports
+1. Verify config: `settings/<domain>.yml`
+1. Check logs for resolution errors
+1. Verify package imports
 
 ### Hot-Swap Failed
 
 1. Check new provider factory
-2. Verify health check logic
-3. Check cleanup implementation
-4. Review rollback logs
+1. Verify health check logic
+1. Check cleanup implementation
+1. Review rollback logs
 
 ### Remote Sync Issues
 
 1. Check network connectivity
-2. Verify manifest URL
-3. Check signature verification
-4. Review cache directory
+1. Verify manifest URL
+1. Check signature verification
+1. Review cache directory
 
 ## Maintenance Windows
 
@@ -148,6 +154,7 @@ graph TD
 ## Runbook Maintenance
 
 Runbooks should be:
+
 - **Reviewed quarterly** for accuracy
 - **Updated after** every major incident
 - **Tested during** tabletop exercises
@@ -162,8 +169,9 @@ Runbooks should be:
 ## Contributing
 
 To add or update runbooks:
+
 1. Follow the existing template and structure
-2. Include code examples and commands
-3. Add decision trees where helpful
-4. Review with on-call team before publishing
-5. Update this README when adding new runbooks
+1. Include code examples and commands
+1. Add decision trees where helpful
+1. Review with on-call team before publishing
+1. Update this README when adding new runbooks

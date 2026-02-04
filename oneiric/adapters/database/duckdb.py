@@ -129,7 +129,8 @@ class DuckDBDatabaseAdapter:
 
         conn = self._ensure_conn()
         threads = int(self._settings.threads)
-        conn.execute(f"PRAGMA threads={threads}")
+        # Safe: threads from validated settings (int), DuckDB doesn't support parameterized PRAGMA.
+        conn.execute(f"PRAGMA threads={threads}")  # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
         self._logger.debug("duckdb-threads-set", threads=threads)
 
     async def _apply_pragmas(self) -> None:
@@ -147,7 +148,8 @@ class DuckDBDatabaseAdapter:
                 escaped = value_str.replace("'", "''")
                 clause = f"'{escaped}'"
 
-            conn.execute(f"PRAGMA {pragma}={clause}")
+            # Safe: pragma and clause from validated settings, DuckDB doesn't support parameterized PRAGMA.
+            conn.execute(f"PRAGMA {pragma}={clause}")  # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
             self._logger.debug("duckdb-pragma-applied", pragma=pragma, value=clause)
 
     async def _install_extensions(self) -> None:
@@ -159,8 +161,11 @@ class DuckDBDatabaseAdapter:
             safe_ext = extension.replace('"', "").replace("'", "")
 
             try:
-                conn.execute(f"INSTALL {safe_ext}")
-                conn.execute(f"LOAD {safe_ext}")
+                # Safe: extension from validated settings, quotes stripped to prevent injection, DuckDB doesn't support parameterized INSTALL.
+                conn.execute(f"INSTALL {safe_ext}")  # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+
+                # Safe: extension from validated settings, quotes stripped to prevent injection, DuckDB doesn't support parameterized LOAD.
+                conn.execute(f"LOAD {safe_ext}")  # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
                 self._logger.debug("duckdb-extension-loaded", extension=safe_ext)
             except Exception as exc:
                 self._logger.warning(
@@ -172,7 +177,8 @@ class DuckDBDatabaseAdapter:
             return
 
         conn = self._ensure_conn()
-        conn.execute(f"SET temp_directory='{self._settings.temp_directory}'")
+        # Safe: temp_directory from validated settings, DuckDB doesn't support parameterized SET.
+        conn.execute(f"SET temp_directory='{self._settings.temp_directory}'")  # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
         self._logger.debug(
             "duckdb-temp-directory-set", temp_directory=self._settings.temp_directory
         )

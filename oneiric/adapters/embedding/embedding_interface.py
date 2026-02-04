@@ -249,7 +249,7 @@ class EmbeddingBase(ABC):
 
         while start < len(text):
             end = start + chunk_size
-            chunk = text[start:end]
+            chunk = text[start: end]
             chunks.append(chunk)
 
             if end >= len(text):

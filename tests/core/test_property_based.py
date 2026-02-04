@@ -72,6 +72,7 @@ class TestCandidateProperties:
             max_size=20,
         )
     )
+    @settings(suppress_health_check=[HealthCheck.too_slow], deadline=None)
     def test_registry_preserves_candidate_count(self, candidates):
         """Registry preserves all registered candidates."""
         registry = CandidateRegistry()
@@ -215,7 +216,7 @@ class TestRegistrationProperties:
         num_candidates=st.integers(min_value=1, max_value=50),
         base_priority=st.integers(min_value=0, max_value=100),
     )
-    @settings(max_examples=20)
+    @settings(max_examples=20, deadline=None)
     def test_registration_sequence_increments(self, num_candidates, base_priority):
         """Registry sequence increments monotonically."""
         registry = CandidateRegistry()

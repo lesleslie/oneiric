@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/nosql/nosql_types.py
+# hypothesis_version: 6.151.4
+
+[5.0, 30.0, '%s-complete', '%s-error', '%s-start', 'adapter.nosql.base']

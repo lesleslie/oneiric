@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings
 
 class OTelStorageSettings(BaseSettings):
     connection_string: str = Field(
-        default="postgresql://postgres: postgres@localhost:5432/otel",
+        default="postgresql://postgres: postgres@localhost: 5432/otel",
         description="PostgreSQL connection string with pgvector extension",
     )
 

@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/messaging/slack.py
+# hypothesis_version: 6.151.4
+
+[340, 500, '/auth.test', '/chat.postMessage', 'Authorization', 'Content-Type', 'Messaging', 'adapter', 'attachments', 'blocks', 'channel', 'chatops', 'error', 'icon_emoji', 'messaging', 'notifications', 'ok', 'slack', 'slack-adapter-init', 'slack-health-failed', 'slack-http-error', 'slack-message', 'slack-send-error', 'slack-send-failed', 'text', 'title', 'ts', 'unknown-error', 'username']

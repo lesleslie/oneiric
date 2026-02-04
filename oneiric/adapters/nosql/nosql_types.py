@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -44,16 +43,18 @@ class NoSQLAdapterBase(ABC):
 
     @abstractmethod
     async def init(self) -> None:
+        pass
 
     @abstractmethod
     async def health(self) -> bool:
+        pass
 
     @abstractmethod
     async def cleanup(self) -> None:
+        pass
 
     @asynccontextmanager
     async def span(self, event: str, **extra: Any) -> AsyncIterator[None]:
-
         self._logger.debug("%s-start", event, **extra)
         try:
             yield

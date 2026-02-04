@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/embedding/openai.py
+# hypothesis_version: 6.151.4
+
+[0.0, 2e-05, 0.0001, 0.00013, 60.0, 100, 500, 1536, 3000, 3072, 8191, 1000000, 'AI Platform', 'adapter', 'batch_embedding', 'chunk_overlap', 'chunk_size', 'cosine', 'default_dimensions', 'description', 'dimensions', 'document_id', 'dot', 'embedding', 'encoding_format', 'euclidean', 'float', 'health check test', 'index', 'initialization test', 'input', 'is_chunk', 'manhattan', 'max_dimensions', 'max_tokens', 'model', 'name', 'object', 'openai', 'price_per_1k_tokens', 'provider', 'rate_limiting', 'text-embedding-3', 'text_preprocessing', 'type', 'usage', 'vector_normalization']

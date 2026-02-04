@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/actions/data.py
+# hypothesis_version: 6.151.4
+
+[385, 390, 395, '***', 'Data Platform', 'Platform Core', 'action.data.sanitize', 'allow', 'allow_extra', 'allow_fields', 'any', 'applied', 'bool', 'case_sensitive', 'data', 'data-action-sanitize', 'data.sanitize', 'data.transform', 'defaults', 'defaults_applied', 'dict', 'drop', 'drop_fields', 'enrich', 'errors', 'exclude_fields', 'fail_fast', 'fields', 'filter', 'float', 'guard', 'include_fields', 'int', 'invalid', 'list', 'mask', 'mask_fields', 'mask_value', 'masked', 'record', 'redact', 'removed', 'rename_applied', 'rename_fields', 'sanitize', 'sanitized', 'schema', 'service', 'status', 'str', 'task', 'transform', 'transformed', 'valid', 'validate', 'validated', 'validation.schema', 'workflow']

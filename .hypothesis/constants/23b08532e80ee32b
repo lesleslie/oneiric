@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/remote/samples.py
+# hypothesis_version: 6.151.4
+
+['name', 'payload', 'remote-event', 'remote-service', 'remote-task', 'remote-workflow', 'topic', 'unknown']

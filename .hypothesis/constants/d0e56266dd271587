@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/observability/monitoring.py
+# hypothesis_version: 6.151.4
+
+[0.95, 'index_usage', 'query_counts', 'query_times_p50', 'query_times_p95']

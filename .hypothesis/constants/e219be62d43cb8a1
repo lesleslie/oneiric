@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/database/sqlite.py
+# hypothesis_version: 6.151.4
+
+[':memory:', 'Data Platform', 'SELECT 1;', 'adapter', 'adapter-health-error', 'adapter-init', 'aiosqlite-missing', 'database', 'sql', 'sqlite', 'sqlite-database']

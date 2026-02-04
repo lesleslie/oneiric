@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hmac
 import os
 import re
 from typing import Any
@@ -128,3 +129,39 @@ def validate_stack_level_bounds(stack_level: Any) -> tuple[bool, str | None]:
         )
 
     return True, None
+
+
+def constant_time_compare(a: str, b: str) -> bool:
+    if not isinstance(a, str) or not isinstance(b, str):
+        raise TypeError(
+            f"constant_time_compare requires str arguments, got {type(a).__name__} and {type(b).__name__}"
+        )
+
+
+    return hmac.compare_digest(a.encode("utf-8"), b.encode("utf-8"))
+
+
+def timing_safe_compare(a: str | bytes, b: str | bytes) -> bool:
+
+    if isinstance(a, str) and isinstance(b, str):
+        return hmac.compare_digest(a.encode("utf-8"), b.encode("utf-8"))
+
+
+    if isinstance(a, bytes) and isinstance(b, bytes):
+        return hmac.compare_digest(a, b)
+
+
+    raise TypeError(
+        f"timing_safe_compare requires both arguments to be str or both to be bytes, "
+        f"got {type(a).__name__} and {type(b).__name__}"
+    )
+
+
+def constant_time_bytes_compare(a: bytes, b: bytes) -> bool:
+    if not isinstance(a, bytes) or not isinstance(b, bytes):
+        raise TypeError(
+            f"constant_time_bytes_compare requires bytes arguments, got {type(a).__name__} and {type(b).__name__}"
+        )
+
+
+    return hmac.compare_digest(a, b)

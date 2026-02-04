@@ -48,6 +48,25 @@ def concrete_adapter(otel_settings):
 @pytest_asyncio.fixture
 async def otel_adapter(otel_settings):
     """Create initialized OTel adapter with database schema for integration tests."""
+    import asyncio
+    import asyncpg
+
+    # Try to connect first, skip if not available
+    try:
+        conn = await asyncio.wait_for(
+            asyncpg.connect(
+                host="localhost",
+                port=5432,
+                user="postgres",
+                password="postgres",
+                database="otel_test"
+            ),
+            timeout=2.0
+        )
+        await conn.close()
+    except Exception:
+        pytest.skip("PostgreSQL database not available - skipping integration test")
+
     # Import the concrete adapter class (will be implemented in otel.py)
     from oneiric.adapters.observability.models import LogModel, MetricModel
 
@@ -161,6 +180,25 @@ async def test_store_trace_buffers_writes(otel_adapter):
 @pytest.mark.asyncio
 async def test_store_trace_auto_flush_on_batch_size(otel_adapter):
     """Test that buffer auto-flushes when reaching batch_size."""
+    import asyncio
+    import asyncpg
+
+    # Try to connect first, skip if not available
+    try:
+        conn = await asyncio.wait_for(
+            asyncpg.connect(
+                host="localhost",
+                port=5432,
+                user="postgres",
+                password="postgres",
+                database="otel_test"
+            ),
+            timeout=2.0
+        )
+        await conn.close()
+    except Exception:
+        pytest.skip("PostgreSQL database not available - skipping integration test")
+
     # Create adapter with small batch size
     from oneiric.adapters.observability.settings import OTelStorageSettings
     small_batch_settings = OTelStorageSettings(

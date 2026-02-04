@@ -118,8 +118,28 @@ async def otel_db_session():
     - Port: 5432
 
     Tests using this fixture should be marked with @pytest.mark.integration
+
+    Skip if database is not available.
     """
+    import asyncio
     from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+    import asyncpg
+
+    # Try to connect first, skip if not available
+    try:
+        conn = await asyncio.wait_for(
+            asyncpg.connect(
+                host="localhost",
+                port=5432,
+                user="postgres",
+                password="postgres",
+                database="otel_test"
+            ),
+            timeout=2.0
+        )
+        await conn.close()
+    except Exception:
+        pytest.skip("PostgreSQL database not available - skipping integration test")
 
     engine = create_async_engine(
         "postgresql+asyncpg://postgres:postgres@localhost:5432/otel_test"

@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/observability/embeddings.py
+# hypothesis_version: 6.151.4
+
+[255.0, 255, 384, 1000, 'UNKNOWN', 'all-MiniLM-L6-v2', 'attributes', 'duration_ms', 'embedding-generated', 'operation', 'otel.embedding', 'service', 'status', 'trace_id', 'unknown']

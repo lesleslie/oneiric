@@ -96,7 +96,8 @@ class SerializationAction:
         else:
             text = None
 
-            data_bytes = pickle.dumps(value, protocol=pickle.HIGHEST_PROTOCOL)
+            # Pickle is intentionally used for Python object serialization in trusted workflows. For untrusted data, use json/yaml formats instead.
+            data_bytes = pickle.dumps(value, protocol=pickle.HIGHEST_PROTOCOL)  # nosemgrep: python.lang.security.deserialization.pickle.avoid-pickle
         await self._maybe_write_path(payload.get("path"), data_bytes, fmt)
         self._logger.info("serialization-action-encoded", fmt=fmt, mode="encode")
         result = {
@@ -119,7 +120,8 @@ class SerializationAction:
             text = raw.decode("utf-8")
             data = yaml.safe_load(text)
         else:
-            data = pickle.loads(raw)
+            # Pickle is intentionally used for Python object serialization in trusted workflows. For untrusted data, use json/yaml formats instead.
+            data = pickle.loads(raw)  # nosemgrep: python.lang.security.deserialization.pickle.avoid-pickle
         self._logger.info("serialization-action-decoded", fmt=fmt, mode="decode")
         return {
             "status": "decoded",

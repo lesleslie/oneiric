@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/actions/automation.py
+# hypothesis_version: 6.151.4
+
+[200, 365, '.', 'Comparison operator.', 'Platform Core', '[', ']', 'absent', 'action', 'automation.trigger', 'condition_count', 'contains', 'context', 'equals', 'evaluated_rules', 'exists', 'falsy', 'forbid', 'greater_or_equal', 'greater_than', 'gt', 'gte', 'in', 'less_or_equal', 'less_than', 'lt', 'lte', 'matched_rules', 'name', 'noop', 'not_equals', 'payload', 'rules', 'selection', 'status', 'task', 'trigger', 'triggered', 'truthy', 'workflow']

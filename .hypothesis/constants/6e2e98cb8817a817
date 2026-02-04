@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/observability/types.py
+# hypothesis_version: 6.151.4
+
+['Log message', 'Log timestamp', 'Metric name', 'Metric timestamp', 'Metric value', 'Operation name', 'Service name', 'Span end timestamp', 'Span identifier', 'Span start timestamp', 'Spans in this trace', 'Trace attributes', 'Trace end timestamp', 'Trace/root span name']

@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/queue/kafka.py
+# hypothesis_version: 6.151.4
+
+[0.0, 30.0, 310, 1000, 'Messaging', 'SASL username.', 'adapter', 'adapter.queue.kafka', 'auto_offset_reset', 'bootstrap_servers', 'client_id', 'enable_auto_commit', 'fanout', 'group_id', 'headers', 'kafka', 'kafka-publish', 'key', 'latest', 'localhost: 9092', 'offset', 'oneiric', 'oneiric-consumer', 'oneiric-events', 'partition', 'partitions_for', 'queue', 'queue-adapter-init', 'sasl_mechanism', 'sasl_plain_password', 'sasl_plain_username', 'security_protocol', 'start', 'stop', 'streaming', 'timestamp', 'topic', 'topic-not-found', 'topics', 'value']

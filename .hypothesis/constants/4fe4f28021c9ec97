@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/core/config.py
+# hypothesis_version: 6.151.4
+
+[0.0, 0.1, 0.25, 1.0, 2.0, 5.0, 10.0, 30.0, 60.0, 300.0, 600.0, 5000.0, 8000, '*', ',', '.env', '.json', '.oneiric_cache', '.tml', '.toml', '127.0.0.1', 'Authorization', 'ONEIRIC_', 'ONEIRIC_CONFIG', 'ONEIRIC_MCP_', '__', 'action', 'adapter', 'allow', 'clear_cache', 'config', 'config-file-missing', 'default', 'dev', 'development', 'event', 'false', 'get_secret', 'invalidate_cache', 'name', 'oneiric', 'profile', 'refresh', 'secret-cache-hit', 'secrets', 'secrets-prefetched', 'serverless', 'service', 'task', 'true', 'workflow', '{']

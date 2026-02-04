@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/nosql/mongodb.py
+# hypothesis_version: 6.151.4
+
+[440, 1000, 27017, 'Data Platform', '_id', 'adapter', 'aggregation', 'authSource', 'deleted_count', 'documents', 'filtering', 'host', 'inserted_id', 'localhost', 'matched_count', 'mongodb', 'mongodb-adapter-init', 'nosql', 'oneiric', 'password', 'ping', 'port', 'replicaSet', 'socketTimeoutMS', 'tls', 'upserted_id', 'username']

@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/http/httpx.py
+# hypothesis_version: 6.151.4
+
+[0.1, 10.0, 200, 500, '/', 'AsyncClient', 'GET', 'POST', 'Platform Core', 'aclose', 'adapter', 'adapter-init', 'adapter.http', 'adapter.http.httpx', 'adapter.http.request', 'base_url', 'close', 'get', 'headers', 'http', 'httpx', 'otlp', 'post', 'request', 'rest', 'timeout', 'transport', 'url', 'verify']

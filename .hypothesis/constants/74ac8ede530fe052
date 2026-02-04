@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/graph/arangodb.py
+# hypothesis_version: 6.151.4
+
+[30.0, 390, 'ArangoDB username.', 'Data Platform', 'RETURN 1', '_from', '_system', '_to', 'adapter', 'aql', 'arangodb', 'close', 'db', 'edges', 'graph', 'root', 'vertices']

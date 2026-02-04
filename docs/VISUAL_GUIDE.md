@@ -7,16 +7,16 @@ ______________________________________________________________________
 ## Table of Contents
 
 1. [Architecture Overview](#1-architecture-overview)
-2. [Resolution System](#2-resolution-system)
-3. [Lifecycle Management](#3-lifecycle-management)
-4. [Remote Manifest Delivery](#4-remote-manifest-delivery)
-5. [Domain Bridge Pattern](#5-domain-bridge-pattern)
-6. [Complete Request Flow](#6-complete-request-flow)
-7. [Quality & Testing](#7-quality--testing)
-8. [Security Architecture](#8-security-architecture)
-9. [Performance & Deployment](#9-performance--deployment)
-10. [Troubleshooting](#10-troubleshooting)
-11. [CLI Command Reference](#11-cli-command-reference)
+1. [Resolution System](#2-resolution-system)
+1. [Lifecycle Management](#3-lifecycle-management)
+1. [Remote Manifest Delivery](#4-remote-manifest-delivery)
+1. [Domain Bridge Pattern](#5-domain-bridge-pattern)
+1. [Complete Request Flow](#6-complete-request-flow)
+1. [Quality & Testing](#7-quality--testing)
+1. [Security Architecture](#8-security-architecture)
+1. [Performance & Deployment](#9-performance--deployment)
+1. [Troubleshooting](#10-troubleshooting)
+1. [CLI Command Reference](#11-cli-command-reference)
 
 ______________________________________________________________________
 
@@ -188,6 +188,7 @@ graph LR
 ```
 
 **Score Tuple Example:**
+
 ```
 (override_score, capability_score, priority, stack_level, sequence)
      ↓              ↓               ↓           ↓          ↓
@@ -1157,16 +1158,16 @@ ______________________________________________________________________
 ### Key Flows to Understand
 
 1. **New to Oneiric?** Start with [Architecture Overview](#1-architecture-overview)
-2. **Understanding resolution?** See [4-Tier Precedence Flow](#2-resolution-system)
-3. **Implementing hot-swap?** Check [Hot-Swap Flow](#3-lifecycle-management)
-4. **Using remote manifests?** Read [Remote Sync Architecture](#4-remote-manifest-delivery)
-5. **Building your own domain?** Study [Domain Bridge Pattern](#5-domain-bridge-pattern)
-6. **End-to-end understanding?** Review [Complete Request Flow](#6-complete-request-flow)
-7. **Checking test coverage?** View [Test Coverage by Module](#7-quality--testing)
-8. **Understanding security?** See [Security Hardening Layers](#8-security-architecture)
-9. **Performance tuning?** Check [Performance Optimization Flow](#9-performance--deployment)
-10. **Troubleshooting issues?** Use [Troubleshooting Decision Trees](#10-troubleshooting)
-11. **Using CLI commands?** Reference [CLI Command Structure](#11-cli-command-reference)
+1. **Understanding resolution?** See [4-Tier Precedence Flow](#2-resolution-system)
+1. **Implementing hot-swap?** Check [Hot-Swap Flow](#3-lifecycle-management)
+1. **Using remote manifests?** Read [Remote Sync Architecture](#4-remote-manifest-delivery)
+1. **Building your own domain?** Study [Domain Bridge Pattern](#5-domain-bridge-pattern)
+1. **End-to-end understanding?** Review [Complete Request Flow](#6-complete-request-flow)
+1. **Checking test coverage?** View [Test Coverage by Module](#7-quality--testing)
+1. **Understanding security?** See [Security Hardening Layers](#8-security-architecture)
+1. **Performance tuning?** Check [Performance Optimization Flow](#9-performance--deployment)
+1. **Troubleshooting issues?** Use [Troubleshooting Decision Trees](#10-troubleshooting)
+1. **Using CLI commands?** Reference [CLI Command Structure](#11-cli-command-reference)
 
 ### Diagram Types Used
 
@@ -1179,6 +1180,7 @@ ______________________________________________________________________
 ______________________________________________________________________
 
 **Need more visual help?** See:
+
 - [README.md](../README.md) - Quick start with code examples
 - [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) - Visual ACB → Oneiric mapping
 - [CLI_REFERENCE.md](CLI_REFERENCE.md) - Command flow diagrams

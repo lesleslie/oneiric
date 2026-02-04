@@ -44,7 +44,7 @@ class QueryService:
             start_time=orm_model.start_time,
             end_time=orm_model.end_time,
             attributes=orm_model.attributes or {},
-            similarity_score=None,
+            similarity=None,
         )
 
     async def find_similar_traces(
@@ -80,7 +80,7 @@ class QueryService:
                         * np.linalg.norm(embedding)
                     )
                 )
-                trace_result.similarity_score = similarity
+                trace_result.similarity = similarity
                 results.append(trace_result)
 
             self._logger.debug(
@@ -164,6 +164,7 @@ class QueryService:
             metrics = [
                 MetricPoint(
                     name=metric.name,
+                    type=metric.type,
                     value=metric.value,
                     unit=metric.unit,
                     labels=metric.labels or {},
@@ -172,7 +173,29 @@ class QueryService:
                 for metric in metric_models
             ]
 
-            return TraceContext(trace=trace_pydantic, logs=logs, metrics=metrics)
+
+            from oneiric.adapters.observability.types import TraceData
+            trace_data = TraceData(
+                trace_id=trace_model.trace_id,
+                span_id=trace_model.id,
+                parent_span_id=None,
+                name=trace_model.name,
+                kind="INTERNAL",
+                start_time=trace_model.start_time,
+                end_time=trace_model.end_time or trace_model.start_time,
+                duration_ms=trace_model.duration_ms or 0,
+                status=trace_model.status,
+                attributes=trace_model.attributes or {},
+                service=trace_pydantic.service,
+                operation=trace_pydantic.operation or "unknown",
+            )
+
+            return TraceContext(
+                trace_id=trace_id,
+                spans=[trace_data],
+                logs=logs,
+                metrics=metrics
+            )
 
     async def custom_query(
         self, sql: str, params: dict[str, Any] | None = None

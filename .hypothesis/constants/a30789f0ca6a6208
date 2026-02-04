@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/observability/settings.py
+# hypothesis_version: 6.151.4
+
+[0.0, 0.85, 1.0, 100, 128, 384, 1000, 1024, 10000, 'all-MiniLM-L6-v2', 'connection_string', 'postgresql://']

@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/actions/security.py
+# hypothesis_version: 6.151.4
+
+[390, 400, 100000, ',', ':', 'Security', 'X-Oneiric-Signature', 'a', 'algorithm', 'ascii', 'b', 'base64', 'blake2b', 'body', 'compare', 'data', 'encoding', 'equal', 'hash', 'header', 'hex', 'hmac', 'include_timestamp', 'iterations', 'length', 'message', 'mode', 'password', 'password-hash', 'password-verify', 'salt', 'secret', 'secure', 'security.secure', 'security.signature', 'service', 'sha256', 'sha512', 'signature', 'signed', 'status', 'task', 'timestamp', 'token', 'utf-8', 'valid', 'validation', 'workflow']

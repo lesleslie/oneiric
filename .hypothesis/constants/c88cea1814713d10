@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/file_transfer/http_upload.py
+# hypothesis_version: 6.151.4
+
+[1.0, 5.0, 30.0, 360, 500, '/', 'Authorization', 'Bearer', 'Content-Type', 'Location', 'PUT', 'Platform Core', 'adapter', 'file_transfer', 'http', 'https-upload', 'https-upload-cleanup', 'https-upload-failed', 'https-upload-init', 'upload']

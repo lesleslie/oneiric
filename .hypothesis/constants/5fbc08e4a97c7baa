@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/actions/event.py
+# hypothesis_version: 6.151.4
+
+[5.0, 370, 400, 1000, 'EventDispatchAction', 'EventHookConfig', 'Hook endpoint URL.', 'POST', 'Platform Core', 'application/json', 'code', 'content-type', 'data', 'delivered', 'disabled', 'dispatch', 'dispatched', 'dry-run', 'dry_run', 'duration_ms', 'emit', 'event', 'event.dispatch', 'event_id', 'events.default', 'failed', 'forbid', 'hook', 'hooks', 'metadata', 'name', 'oneiric.runtime', 'payload', 'queued', 'reason', 'skipped', 'source', 'status', 'subscriptions', 'task', 'timestamp', 'topic', 'utf-8', 'workflow', 'x-hook-secret']

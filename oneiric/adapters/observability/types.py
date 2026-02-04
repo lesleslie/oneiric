@@ -43,7 +43,7 @@ class MetricData(BaseModel):
 
 
 class LogEntry(BaseModel):
-    id: str = Field(..., description="Log entry identifier")
+    id: str | None = Field(None, description="Log entry identifier (auto-generated if not provided)")
     timestamp: datetime = Field(..., description="Log timestamp")
     level: str = Field(
         ..., description="Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)"
@@ -71,18 +71,21 @@ class TraceResult(BaseModel):
     duration_ms: float | None = Field(
         None, description="Trace duration in milliseconds"
     )
-    start_time: datetime = Field(..., description="Trace start timestamp")
+    start_time: datetime | None = Field(None, description="Trace start timestamp")
     end_time: datetime | None = Field(None, description="Trace end timestamp")
     attributes: dict[str, Any] = Field(
         default_factory=dict, description="Trace attributes"
     )
-    similarity_score: float | None = Field(
+    similarity: float | None = Field(
         None, description="Similarity score for vector search"
     )
 
 
 class MetricPoint(BaseModel):
     name: str = Field(..., description="Metric name")
+    type: str = Field(
+        ..., description="Metric type (GAUGE, COUNTER, HISTOGRAM, SUMMARY)"
+    )
     value: float = Field(..., description="Metric value")
     unit: str | None = Field(
         None, description="Metric unit (e.g., seconds, bytes, requests)"
@@ -94,7 +97,10 @@ class MetricPoint(BaseModel):
 
 
 class TraceContext(BaseModel):
-    trace: TraceResult = Field(..., description="Trace result")
+    trace_id: str = Field(..., description="Unique trace identifier")
+    spans: list[TraceData] = Field(
+        default_factory=list, description="Spans in this trace"
+    )
     logs: list[LogEntry] = Field(
         default_factory=list, description="Log entries correlated to this trace"
     )

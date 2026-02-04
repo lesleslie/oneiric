@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/file_transfer/http_artifact.py
+# hypothesis_version: 6.151.4
+
+[1.0, 30.0, 350, 500, '/', 'Platform Core', 'adapter', 'download', 'file_transfer', 'http', 'http-artifact-init']

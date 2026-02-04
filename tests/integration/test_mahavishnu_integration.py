@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import asyncpg
 import pytest
 from datetime import datetime, UTC
 
@@ -14,6 +16,22 @@ async def test_mahavishnu_can_store_traces():
     This test prepares for Mahavishnu integration by verifying
     the adapter interface is compatible.
     """
+    # Try to connect first, skip if not available
+    try:
+        conn = await asyncio.wait_for(
+            asyncpg.connect(
+                host="localhost",
+                port=5432,
+                user="postgres",
+                password="postgres",
+                database="otel_test"
+            ),
+            timeout=2.0
+        )
+        await conn.close()
+    except Exception:
+        pytest.skip("PostgreSQL database not available - skipping integration test")
+
     from oneiric.adapters.observability.otel import OTelStorageAdapter
     from oneiric.adapters.observability.settings import OTelStorageSettings
     from oneiric.adapters.observability.migrations import create_otel_schema

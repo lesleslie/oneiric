@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/monitoring/logfire.py
+# hypothesis_version: 6.151.4
+
+[200, 'LOGFIRE_TOKEN', 'Observability', 'adapter', 'configure', 'instrument_httpx', 'instrument_pydantic', 'logfire', 'logfire-configured', 'logging', 'metrics', 'monitoring', 'oneiric', 'service.version', 'service_name', 'shutdown', 'tags', 'token']

@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/llm/openai.py
+# hypothesis_version: 6.151.4
+
+[0.0, 0.0005, 0.0015, 0.003, 0.004, 0.01, 0.03, 0.06, 0.12, 0.7, 1.0, 60.0, 500, 1000, 4096, 8192, 16385, 32768, 128000, 'AI Platform', 'adapter.llm.openai', 'arguments', 'auto', 'base_url', 'capabilities', 'chat_completion', 'context_length', 'created', 'frequency_penalty', 'function_call', 'function_calling', 'functions', 'gpt-3.5-turbo', 'gpt-3.5-turbo-16k', 'gpt-4', 'gpt-4-32k', 'gpt-4-turbo', 'gpt-4-turbo-preview', 'gpt-4-vision-preview', 'id', 'json_mode', 'llm', 'logit_bias', 'logprobs', 'max_output_tokens', 'max_tokens', 'messages', 'model', 'n', 'name', 'openai', 'presence_penalty', 'response_format', 'seed', 'stop', 'stream', 'streaming', 'supports_functions', 'supports_json_mode', 'supports_tools', 'supports_vision', 'system_fingerprint', 'temperature', 'tool_calls', 'tool_choice', 'tool_use', 'tools', 'top_logprobs', 'top_p', 'type', 'user', 'vision']

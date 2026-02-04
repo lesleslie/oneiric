@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/messaging/twilio.py
+# hypothesis_version: 6.151.4
+
+[200, 330, 500, '2010-04-01', 'Body', 'Content-Type', 'From', 'MediaUrl', 'Messaging', 'MessagingServiceSid', 'StatusCallback', 'To', '^\\+[1-9]\\d{7,14}$', 'adapter', 'dry_run', 'messaging', 'notifications', 'sid', 'sms', 'true', 'twilio', 'twilio-adapter-init', 'twilio-dry-run', 'twilio-health-failed', 'twilio-http-error', 'twilio-message', 'twilio-send-failed']

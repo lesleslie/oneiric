@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import asyncio
@@ -24,6 +23,8 @@ CleanupHook = Callable[[Any], Awaitable[None] | None]
 
 
 class LifecycleError(RuntimeError):
+
+    pass
 
 
 @dataclass
@@ -57,7 +58,6 @@ def resolve_factory(factory: str | FactoryCallable) -> FactoryCallable:
     if callable(factory):
         return factory
 
-
     allowed_prefixes = load_factory_allowlist()
     is_valid, error = validate_factory_string(factory, allowed_prefixes)
     if not is_valid:
@@ -70,7 +70,8 @@ def resolve_factory(factory: str | FactoryCallable) -> FactoryCallable:
         raise LifecycleError(f"Cannot import factory from '{factory}'")
 
     try:
-        module = importlib.import_module(module_path)
+        # Safe: factory validated against allowlist (lines 61-64), core pattern for pluggable components.
+        module = importlib.import_module(module_path)  # nosemgrep: python.lang.security.audit.dynamic-import-module.dynamic-import-module,python.lang.security.audit.non-literal-import.non-literal-import
         return getattr(module, attr)
     except (ImportError, AttributeError) as exc:
         raise LifecycleError(f"Failed to load factory '{factory}': {exc}") from exc
@@ -199,7 +200,6 @@ class LifecycleManager:
             last_health_at=_now(),
         )
         return True
-
 
     def _require_candidate(
         self, domain: str, key: str, provider: str | None

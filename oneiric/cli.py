@@ -730,7 +730,8 @@ def _import_modules(modules: Iterable[str]) -> None:
     for dotted in modules:
         if not dotted:
             continue
-        importlib.import_module(dotted)
+        # Safe: dynamic module loading from configuration, intended for plugin system.
+        importlib.import_module(dotted)  # nosemgrep: python.lang.security.audit.dynamic-import-module.dynamic-import-module,python.lang.security.audit.non-literal-import.non-literal-import
         logger.info("module-imported", module=dotted)
 
 

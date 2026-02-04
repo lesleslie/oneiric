@@ -9,24 +9,28 @@ This directory contains comprehensive guides for setting up production-grade mon
 ### Core Components
 
 1. **[Prometheus Setup](PROMETHEUS_SETUP.md)** - Metrics collection and querying
+
    - Installation and configuration
    - Oneiric metrics integration
    - Query examples and dashboards
    - Best practices for production
 
-2. **[Grafana Dashboards](GRAFANA_DASHBOARDS.md)** - Visualization and monitoring
+1. **[Grafana Dashboards](GRAFANA_DASHBOARDS.md)** - Visualization and monitoring
+
    - Pre-built dashboard configurations
    - Custom dashboard creation
    - Panel setup and queries
    - Alerting rules
 
-3. **[Loki Setup](LOKI_SETUP.md)** - Log aggregation and analysis
+1. **[Loki Setup](LOKI_SETUP.md)** - Log aggregation and analysis
+
    - Loki installation
    - Structured logging integration
    - Log querying with LogQL
    - Retention policies
 
-4. **[Alerting Setup](ALERTING_SETUP.md)** - Proactive monitoring
+1. **[Alerting Setup](ALERTING_SETUP.md)** - Proactive monitoring
+
    - AlertManager configuration
    - Alert rule definitions
    - Notification channels (PagerDuty, Slack, email)
@@ -99,6 +103,7 @@ See individual setup guides for detailed configuration.
 ## Support
 
 For issues or questions:
+
 - Check troubleshooting guides in `../runbooks/`
 - Review [TROUBLESHOOTING.md](../runbooks/TROUBLESHOOTING.md)
 - Open an issue on GitHub

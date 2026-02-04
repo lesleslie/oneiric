@@ -129,6 +129,7 @@ async def drop_otel_schema(session) -> None:
 
 
 async def create_vector_index(session, num_lists: int = 100) -> None:
+    # Safe: num_lists from function parameter (int), CREATE INDEX doesn't support parameterized lists. # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query,python.sqlalchemy.security.audit.avoid-sqlalchemy-text.avoid-sqlalchemy-text
     await session.execute(
         text(
             f"""

@@ -10,17 +10,17 @@ ______________________________________________________________________
 ## Table of Contents
 
 1. [Installation & Setup](#installation--setup)
-2. [Global Options](#global-options)
-3. [Domain Commands](#domain-commands)
-4. [Resolution Commands](#resolution-commands)
-5. [Lifecycle Commands](#lifecycle-commands)
-6. [Orchestration Commands](#orchestration-commands)
-7. [Event & Workflow Commands](#event--workflow-commands)
-8. [Remote Manifest Commands](#remote-manifest-commands)
-9. [Observability Commands](#observability-commands)
-10. [Plugin & Secrets Commands](#plugin--secrets-commands)
-11. [Common Patterns](#common-patterns)
-12. [Troubleshooting](#troubleshooting)
+1. [Global Options](#global-options)
+1. [Domain Commands](#domain-commands)
+1. [Resolution Commands](#resolution-commands)
+1. [Lifecycle Commands](#lifecycle-commands)
+1. [Orchestration Commands](#orchestration-commands)
+1. [Event & Workflow Commands](#event--workflow-commands)
+1. [Remote Manifest Commands](#remote-manifest-commands)
+1. [Observability Commands](#observability-commands)
+1. [Plugin & Secrets Commands](#plugin--secrets-commands)
+1. [Common Patterns](#common-patterns)
+1. [Troubleshooting](#troubleshooting)
 
 ______________________________________________________________________
 
@@ -109,6 +109,7 @@ messaging      sendgrid    10           10        builtin
 ```
 
 **Use Cases:**
+
 - Discover available adapters/services
 - Verify provider registration
 - Check shadowed candidates
@@ -150,6 +151,7 @@ oneiric.cli status --domain adapter --key cache --verbose
 ```
 
 **Use Cases:**
+
 - Check if component is active
 - Verify configuration
 - Debug resolution issues
@@ -192,6 +194,7 @@ Shadowed candidates:
 ```
 
 **Use Cases:**
+
 - Understand resolution logic
 - Debug unexpected provider selection
 - Verify configuration precedence
@@ -220,13 +223,15 @@ oneiric.cli swap --domain service --key payment-processor --provider stripe
 ```
 
 **What Happens:**
+
 1. Resolve new provider
-2. Instantiate new instance
-3. Run health check
-4. If healthy: bind, cleanup old, complete
-5. If unhealthy: rollback (unless `--force`)
+1. Instantiate new instance
+1. Run health check
+1. If healthy: bind, cleanup old, complete
+1. If unhealthy: rollback (unless `--force`)
 
 **Use Cases:**
+
 - Update provider without restart
 - A/B test different implementations
 - Emergency provider switch
@@ -282,6 +287,7 @@ Overall: 3/4 healthy
 ```
 
 **Use Cases:**
+
 - Pre-deployment health checks
 - Monitoring dashboards
 - Incident response
@@ -304,6 +310,7 @@ oneiric.cli pause --resume --domain service --key email-sender
 ```
 
 **Use Cases:**
+
 - Maintenance windows
 - Graceful degradation
 - Testing without impact
@@ -322,10 +329,12 @@ oneiric.cli drain --resume --domain service --key worker
 ```
 
 **Difference from Pause:**
+
 - **Pause:** Immediate stop
 - **Drain:** Finish in-flight work, then stop
 
 **Use Cases:**
+
 - Zero-downtime deployments
 - Graceful shutdowns
 - Queue draining
@@ -372,6 +381,7 @@ oneiric.cli activity --state draining
 ```
 
 **Use Cases:**
+
 - Check system state before changes
 - Verify maintenance mode
 - Dashboard data source
@@ -414,6 +424,7 @@ Profile: serverless
 ```
 
 **Use Cases:**
+
 - Verify supervisor is running
 - Debug pause/drain behavior
 - Validate serverless profile
@@ -463,6 +474,7 @@ oneiric.cli orchestrate --events --inspect-json
 | `--inspect-json` | Output inspection as JSON | False |
 
 **Use Cases:**
+
 - Long-running service orchestrator
 - Cloud Run deployment
 - Remote manifest sync
@@ -507,6 +519,7 @@ Results:
 ```
 
 **Use Cases:**
+
 - Test event handlers
 - Manual event triggering
 - Integration testing
@@ -568,6 +581,7 @@ Nodes (4):
 ```
 
 **Use Cases:**
+
 - Understand workflow structure
 - Verify dependencies
 - Debug execution order
@@ -598,6 +612,7 @@ oneiric.cli workflow run --workflow myapp.workflows.process \
 ```
 
 **Use Cases:**
+
 - Manual workflow execution
 - Testing workflows
 - Debug failures
@@ -637,6 +652,7 @@ ETA: 2025-02-02T10:35:00Z
 ```
 
 **Use Cases:**
+
 - Cloud Tasks integration
 - Async workflow execution
 - Pub/Sub integration
@@ -668,6 +684,7 @@ oneiric.cli action-invoke workflow.notify \
 ```
 
 **Use Cases:**
+
 - Send notifications from CLI
 - Test notification routing
 - ChatOps integration
@@ -696,6 +713,7 @@ oneiric.cli remote-sync --manifest manifest.yaml --verbose
 ```
 
 **Use Cases:**
+
 - Load remote components
 - Continuous sync in production
 - CDN-based component delivery
@@ -738,6 +756,7 @@ Sync Metrics:
 ```
 
 **Use Cases:**
+
 - Verify remote sync health
 - Check registration counts
 - Monitor sync latency
@@ -767,6 +786,7 @@ oneiric.cli manifest pack \
 ```
 
 **Use Cases:**
+
 - Cloud Run deployment
 - JSON manifest generation
 - Manifest signing
@@ -793,6 +813,7 @@ oneiric.cli manifest verify \
 ```
 
 **Use Cases:**
+
 - Manifest security
 - Supply chain integrity
 - Remote manifest verification
@@ -841,6 +862,7 @@ Last Workflow Execution:
 ```
 
 **Use Cases:**
+
 - Debug runtime behavior
 - Performance analysis
 - Error tracking
@@ -868,6 +890,7 @@ oneiric.cli logs --json
 ```
 
 **Use Cases:**
+
 - Local debugging
 - Log inspection
 - Error investigation
@@ -912,6 +935,7 @@ Loaded: 5 candidates
 ```
 
 **Use Cases:**
+
 - Verify plugin loading
 - Debug plugin issues
 - Audit installed plugins
@@ -933,6 +957,7 @@ oneiric.cli secrets rotate --keys api_key --dry-run
 ```
 
 **Use Cases:**
+
 - Force secret refresh
 - Rotate credentials
 - Clear cached secrets
@@ -1093,6 +1118,7 @@ ______________________________________________________________________
 ### Issue: Command not found
 
 **Solution:**
+
 ```bash
 # Use full module path
 python -m oneiric.cli [command]
@@ -1105,6 +1131,7 @@ oneiric [command]
 ### Issue: Config file not found
 
 **Solution:**
+
 ```bash
 # Set config explicitly
 export ONEIRIC_CONFIG=/path/to/config.toml
@@ -1116,6 +1143,7 @@ cp docs/examples/demo_settings.toml ~/.oneiric.toml
 ### Issue: "No candidate found"
 
 **Solution:**
+
 ```bash
 # Check what's registered
 oneiric.cli list --domain adapter --shadowed
@@ -1130,6 +1158,7 @@ oneiric.cli --demo list --domain adapter
 ### Issue: Swap fails health check
 
 **Solution:**
+
 ```bash
 # Check health manually
 oneiric.cli health --domain adapter --key cache --provider memcached
@@ -1144,6 +1173,7 @@ oneiric.cli logs --tail
 ### Issue: Remote sync fails
 
 **Solution:**
+
 ```bash
 # Check manifest URL
 curl -v $MANIFEST_URL
@@ -1161,6 +1191,7 @@ oneiric.cli remote-sync --manifest manifest.yaml --verbose
 ### Issue: Orchestrator won't start
 
 **Solution:**
+
 ```bash
 # Check config
 oneiric.cli supervisor-info
@@ -1178,6 +1209,7 @@ tail -f .oneiric_cache/runtime.log
 ### Issue: Events not dispatching
 
 **Solution:**
+
 ```bash
 # Check event handlers
 oneiric.cli orchestrate --events --inspect-json
@@ -1195,6 +1227,7 @@ oneiric.cli status --domain event --key dispatcher
 ### Issue: Workflow fails
 
 **Solution:**
+
 ```bash
 # Check workflow plan
 oneiric.cli workflow plan --workflow myapp.workflows.process

@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/remote/security.py
+# hypothesis_version: 6.151.4
+
+['\x00', ',', '.', '..', '/', ':', 'Signature is empty', '\\', 'ascii', 'invalid-public-key', 'remote.security', 'sanitized_file', 'signature', 'signature-verified', 'signature_algorithm', 'signatures', 'utf-8']

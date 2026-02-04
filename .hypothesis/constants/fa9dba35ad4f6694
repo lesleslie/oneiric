@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/queue/redis_streams.py
+# hypothesis_version: 6.151.4
+
+[0.0, 2.0, 300, 1000, '+', '-', '0', '>', 'BUSYGROUP', 'Consumer group name.', 'Messaging', 'adapter', 'adapter-init', 'approximate', 'close', 'connection_pool', 'consumer', 'delivery_count', 'disconnect', 'fanout', 'idle', 'maxlen', 'message_id', 'oneiric', 'oneiric-consumer', 'oneiric-queue', 'payload', 'pubsub', 'queue', 'queue-ack', 'queue-enqueue', 'queue-group-created', 'redis-streams', 'redis-streams-queue']

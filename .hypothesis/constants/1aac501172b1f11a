@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/embedding/sentence_transformers.py
+# hypothesis_version: 6.151.4
+
+[384, 400, 768, '290MB', '420MB', '80MB', '970MB', 'AI Platform', 'adapter', 'all-MiniLM-L6-v2', 'all-distilroberta-v1', 'all-mpnet-base-v2', 'auto', 'balanced', 'batch_embedding', 'cache_folder', 'chunk_overlap', 'chunk_size', 'cosine', 'cpu', 'cuda', 'description', 'device', 'dimensions', 'document_id', 'dot', 'edge_optimized', 'embedding', 'euclidean', 'float16', 'float32', 'general_purpose', 'health check test', 'high_accuracy', 'index', 'initialization test', 'is_chunk', 'local', 'manhattan', 'max_seq_length', 'multilingual', 'name', 'normalized', 'on_device', 'pooling_strategies', 'precision', 'provider', 'qa_retrieval', 'recommended_for', 'requires_api_key', 'revision', 'semantic_search', 'size', 'tokenizer', 'tolist', 'torch', 'trust_remote_code', 'type', 'use_auth_token']

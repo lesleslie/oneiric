@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/observability/queries.py
+# hypothesis_version: 6.151.4
+
+[0.85, 100, 384, 1000, '--', '/*', '; DELETE', '; DROP', '; INSERT', '; UPDATE', '<=>', 'INTERNAL', 'SELECT', 'WITH', 'error_pattern', 'find_similar_traces', 'operation', 'otel.queries', 'query-executed', 'service', 'trace_id', 'unknown']

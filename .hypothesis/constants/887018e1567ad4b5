@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/file_transfer/sftp.py
+# hypothesis_version: 6.151.4
+
+[330, '.', 'Infra', 'adapter', 'client_keys', 'delete', 'download', 'file_transfer', 'host', 'known_hosts', 'list', 'password', 'port', 'sftp', 'sftp-adapter-cleanup', 'sftp-adapter-init', 'sftp-delete-failed', 'sftp-download-failed', 'sftp-health-failed', 'sftp-list-failed', 'sftp-upload-failed', 'upload', 'username']

@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/observability/otel.py
+# hypothesis_version: 6.151.4
+
+[0.85, 1000, 'INFO', 'SELECT 1;', 'adapter', 'adapter-cleanup', 'adapter-health-error', 'adapter-init', 'adapter-init-failed', 'all-MiniLM-L6-v2', 'attributes', 'dlq-insert-failed', 'duration_ms', 'end_time', 'error_message', 'flush-buffer-error', 'gauge', 'id', 'kind', 'labels', 'log-store-failed', 'log-stored', 'log.level', 'log.message', 'metrics-store-failed', 'metrics-stored', 'name', 'observability', 'otel', 'otel-storage', 'parent_span_id', 'postgresql://', 'raw_data', 'start_time', 'status', 'timestamp', 'trace-store-failed', 'trace_id', 'trace_state', 'traces-stored', 'type', 'unit', 'value']

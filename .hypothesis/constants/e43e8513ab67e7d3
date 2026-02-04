@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/llm/anthropic.py
+# hypothesis_version: 6.151.4
+
+[0.00025, 0.0008, 0.00125, 0.003, 0.004, 0.015, 0.075, 0.7, 1.0, 480, 1000, 4096, 10000, 200000, '2023-06-01', 'AI Platform', 'anthropic', 'arguments', 'budget_tokens', 'chat_completion', 'close', 'content', 'description', 'enabled', 'extended_thinking', 'function', 'id', 'input_schema', 'llm', 'max_tokens', 'messages', 'model', 'name', 'parameters', 'role', 'stop_sequence', 'streaming', 'system', 'temperature', 'text', 'thinking', 'tool_calling', 'tool_use', 'tools', 'top_k', 'top_p', 'type', 'usage', 'vision']

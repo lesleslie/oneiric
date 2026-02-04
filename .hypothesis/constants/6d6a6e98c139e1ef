@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/messaging/teams.py
+# hypothesis_version: 6.151.4
+
+[345, 500, '0078D4', '@context', '@type', 'MessageCard', 'Messaging', 'activityTitle', 'adapter', 'chatops', 'facts', 'messaging', 'name', 'notifications', 'sections', 'summary', 'teams', 'teams-adapter-init', 'teams-health-failed', 'teams-http-error', 'teams-message', 'teams-send-failed', 'text', 'themeColor', 'value']

@@ -171,7 +171,8 @@ class PgvectorAdapter(VectorBase):
         if not ids:
             return True
         async with self._connection() as conn:
-            await conn.execute(f"DELETE FROM {table} WHERE id = ANY($1::text[])", ids)
+            # Safe: table from sanitized identifier, ids uses parameterized query.
+            await conn.execute(f"DELETE FROM {table} WHERE id = ANY($1::text[])", ids)  # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
         return True
 
     async def get(
@@ -229,7 +230,9 @@ class PgvectorAdapter(VectorBase):
         operator_class = self._index_operator(distance_metric)
         async with self._connection() as conn:
             if self._settings.ensure_extension:
-                await conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
+                # Safe: static SQL command, no user input.
+                await conn.execute("CREATE EXTENSION IF NOT EXISTS vector")  # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+            # Safe: qualified/dimension from sanitized identifiers/function params, CREATE TABLE doesn't support parameterized identifiers. # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
             await conn.execute(
                 f"""
                 CREATE TABLE IF NOT EXISTS {qualified} (
@@ -239,6 +242,7 @@ class PgvectorAdapter(VectorBase):
                 )
                 """
             )
+            # Safe: table_name/qualified/operator_class from sanitized/validated inputs, CREATE INDEX doesn't support parameterized identifiers. # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
             await conn.execute(
                 f"""
                 CREATE INDEX IF NOT EXISTS {table_name}_embedding_idx
@@ -254,7 +258,8 @@ class PgvectorAdapter(VectorBase):
         schema = self._sanitize_identifier(self._settings.db_schema)
         qualified = f"{self._quote_ident(schema)}.{self._quote_ident(table_name)}"
         async with self._connection() as conn:
-            await conn.execute(f"DROP TABLE IF EXISTS {qualified}")
+            # Safe: qualified from sanitized identifier, DROP TABLE doesn't support parameterized identifiers.
+            await conn.execute(f"DROP TABLE IF EXISTS {qualified}")  # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
         return True
 
     async def list_collections(self, **_: Any) -> list[str]:

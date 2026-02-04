@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/vector/pgvector.py
+# hypothesis_version: 6.151.4
+
+[100, 450, 1000, 5432, '$2', '$3', ', embedding', '<#>', '<->', '<=>', 'Data Platform', 'PgvectorAdapter', 'PgvectorSettings', 'RETURNING id', 'SELECT 1;', '[^A-Za-z0-9_]', '_', 'adapter', 'batch_operations', 'collections', 'command_timeout', 'cosine', 'database', 'distance', 'dot_product', 'dsn', 'embedding', 'euclidean', 'host', 'id', 'id, metadata', 'inner_product', 'l2', 'localhost', 'max_size', 'metadata', 'metadata_filtering', 'min_size', 'password', 'pgvector', 'port', 'postgres', 'public', 'sql', 'ssl', 'table_name', 'user', 'vector', 'vector_cosine_ops', 'vector_ip_ops', 'vector_l2_ops', 'vector_search', 'vectors_']

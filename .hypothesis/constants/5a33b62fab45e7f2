@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/dns/gcdns.py
+# hypothesis_version: 6.151.4
+
+[300, 330, 'A', 'AAAA', 'CNAME', 'Default record TTL.', 'GCP project ID.', 'MX', 'NS', 'Platform Core', 'SRV', 'TXT', 'adapter', 'adapter.dns.gcdns', 'dns', 'gcdns', 'gcdns-change-failed', 'gcdns-cleanup', 'gcdns-health-failed', 'gcdns-init', 'id', 'name', 'record.list', 'record.manage', 'rrdatas', 'ttl', 'type']

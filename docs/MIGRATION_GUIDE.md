@@ -50,6 +50,7 @@ graph LR
 ### Architecture Comparison
 
 **ACB (Before):**
+
 ```mermaid
 graph LR
     APP[Application] --> DEP[depends.get]
@@ -59,6 +60,7 @@ graph LR
 ```
 
 **Oneiric (After):**
+
 ```mermaid
 graph LR
     APP[Application] --> RES[Resolver]
@@ -76,6 +78,7 @@ graph LR
 ```
 
 **Key Differences:**
+
 - ✅ **Explicit domains** - No more implicit adapter-only resolution
 - ✅ **Hot-swapping** - Update components without restart
 - ✅ **Universal** - Same patterns for all component types
@@ -114,9 +117,10 @@ await handle.instance.set("key", "value")
 ```
 
 **Key Changes:**
+
 1. Explicit resolver setup (not implicit like ACB)
-2. Domain-bridge pattern (AdapterBridge, ServiceBridge, etc.)
-3. Explicit key resolution ("cache" instead of type-based)
+1. Domain-bridge pattern (AdapterBridge, ServiceBridge, etc.)
+1. Explicit key resolution ("cache" instead of type-based)
 
 ______________________________________________________________________
 
@@ -159,6 +163,7 @@ service = MyService(bridge)
 ```
 
 **Benefits:**
+
 - Explicit dependencies (easier to test)
 - Explainable resolution
 - Hot-swappable at runtime
@@ -241,6 +246,7 @@ register_adapter_metadata(
 ```
 
 **Key Improvements:**
+
 - `health_check()` method for hot-swap validation
 - `cleanup()` method for graceful shutdown
 - Explicit metadata for explainability
@@ -288,6 +294,7 @@ adapters:
 ```
 
 **Key Changes:**
+
 - Explicit `selections` block
 - `provider_settings` instead of nested `settings`
 - Environment variable support via `$VAR` syntax
@@ -535,11 +542,13 @@ ______________________________________________________________________
 ### Pattern 1: Conditional Adapter Selection
 
 **ACB:**
+
 ```python
 cache = depends.get(Cache)  # Which one? Unknown
 ```
 
 **Oneiric:**
+
 ```python
 handle = await bridge.use("cache", provider="redis")  # Explicit
 # Or use config selections
@@ -549,11 +558,13 @@ handle = await bridge.use("cache")  # Uses config
 ### Pattern 2: Multiple Adapters of Same Type
 
 **ACB:**
+
 ```python
 # Difficult - requires custom DI setup
 ```
 
 **Oneiric:**
+
 ```python
 # Easy - use different keys
 cache_primary = await bridge.use("cache", key="cache-primary")
@@ -563,11 +574,13 @@ cache_session = await bridge.use("cache", key="cache-session")
 ### Pattern 3: Testing with Mock Adapters
 
 **ACB:**
+
 ```python
 # Requires overriding DI container
 ```
 
 **Oneiric:**
+
 ```python
 # Just register a mock resolver
 test_resolver = Resolver()
@@ -584,11 +597,13 @@ test_bridge = AdapterBridge(test_resolver, test_lifecycle, test_settings)
 ### Pattern 4: Environment-Specific Configuration
 
 **ACB:**
+
 ```python
 # Complex env-specific configs
 ```
 
 **Oneiric:**
+
 ```python
 # Use stack levels or priorities
 # Local: stack_level=0
@@ -606,6 +621,7 @@ ______________________________________________________________________
 ### Example 1: Web Service
 
 **ACB:**
+
 ```python
 from acb import depends, AdapterSettings
 from acb.adapters.cache import Cache
@@ -622,6 +638,7 @@ class OrderService:
 ```
 
 **Oneiric:**
+
 ```python
 from oneiric.adapters import AdapterBridge
 from oneiric.domains import TaskBridge
@@ -649,6 +666,7 @@ service = OrderService(adapter_bridge, task_bridge)
 ### Example 2: Event Handler
 
 **ACB:**
+
 ```python
 from acb import depends
 from acb.adapters.queue import Queue
@@ -662,6 +680,7 @@ class OrderCreatedHandler:
 ```
 
 **Oneiric:**
+
 ```python
 from oneiric.domains import EventBridge, TaskBridge
 
@@ -740,6 +759,7 @@ ______________________________________________________________________
 **Cause:** No adapters registered for that key.
 
 **Solution:**
+
 ```python
 # Check what's registered
 resolver.explain("adapter", "cache")
@@ -756,6 +776,7 @@ resolver.register(Candidate(...))
 **Cause:** New provider failed health check.
 
 **Solution:**
+
 ```python
 # Check health manually
 await lifecycle.probe_instance_health("adapter", "cache", provider="memcached")
@@ -769,6 +790,7 @@ await lifecycle.swap("adapter", "cache", provider="memcached", force=True)
 **Cause:** `ONEIRIC_CONFIG` not set or file doesn't exist.
 
 **Solution:**
+
 ```bash
 export ONEIRIC_CONFIG=/path/to/config.toml
 # Or use default: ~/.oneiric.toml

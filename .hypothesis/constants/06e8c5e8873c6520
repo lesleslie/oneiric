@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/secrets/infisical.py
+# hypothesis_version: 6.151.4
+
+[5.0, 404, 600, '/', '/api/v3/secrets/raw', 'Authorization', 'Secret path/folder.', 'Security', 'adapter', 'adapter-health-error', 'adapter-init', 'cache', 'environment', 'http', 'infisical', 'infisical-secrets', 'projectId', 'remote', 'secret-value-missing', 'secretName', 'secretPath', 'secretValue', 'secrets']

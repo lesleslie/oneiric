@@ -29,7 +29,7 @@ def _patch_observed_span(monkeypatch: pytest.MonkeyPatch) -> dict[str, DummySpan
         holder["span"] = span
         yield span
 
-    monkeypatch.setattr("oneiric.core.http_helpers.observed_span", _observed_span)
+    monkeypatch.setattr("oneiric.core.http_instrumentation.observed_span", _observed_span)
     return holder
 
 

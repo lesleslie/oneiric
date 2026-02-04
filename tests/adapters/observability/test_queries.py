@@ -122,8 +122,8 @@ async def test_find_similar_traces_returns_results(sample_traces_with_embeddings
     assert len(results) <= 5
     # Verify all results have similarity scores
     for result in results:
-        assert result.similarity_score is not None
-        assert 0.0 <= result.similarity_score <= 1.0
+        assert result.similarity is not None
+        assert 0.0 <= result.similarity <= 1.0
 
 
 @pytest.mark.unit
@@ -295,8 +295,8 @@ async def test_get_trace_context_success():
 
     context = await query_service.get_trace_context("context-trace-1")
 
-    assert context.trace.trace_id == "context-trace-1"
-    assert context.trace.service == "context-service"
+    assert context.trace_id == "context-trace-1"
+    assert len(context.spans) == 1
     assert len(context.logs) == 2
     assert len(context.metrics) == 2
     assert context.logs[0].message == "Log message 0"

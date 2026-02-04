@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/core/runtime.py
+# hypothesis_version: 6.151.4
+
+['oneiric.nursery', 'runtime', 'runtime-start', 'runtime-stop', 'taskgroup-enter', 'taskgroup-exit', 'taskgroup-start', 'taskgroup-task-end', 'taskgroup-task-start']

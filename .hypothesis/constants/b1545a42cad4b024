@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/database/duckdb.py
+# hypothesis_version: 6.151.4
+
+[100, '"', "'", "''", '-+', '.', '///', ':///', ':memory:', '?', 'Data Platform', 'SELECT 1', 'adapter', 'analytics', 'columnar', 'database', 'database_url', 'duckdb', 'duckdb+async://', 'duckdb-connected', 'duckdb-database-path', 'duckdb-threads-set', 'duckdb://', 'embedded', 'extensions', 'in_memory', 'sql']

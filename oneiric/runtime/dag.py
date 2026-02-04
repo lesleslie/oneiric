@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import inspect
@@ -41,6 +40,8 @@ class DAGTask:
 
 class DAGExecutionError(RuntimeError):
 
+    pass
+
 
 @dataclass(slots=True)
 class DAGExecutionHooks:
@@ -62,7 +63,6 @@ class DAGRunResult(TypedDict):
 
 
 def build_graph(tasks: Iterable[DAGTask]) -> nx.DiGraph:
-
     graph = nx.DiGraph()
     for task in tasks:
         graph.add_node(task.key, task=task)
@@ -75,7 +75,6 @@ def build_graph(tasks: Iterable[DAGTask]) -> nx.DiGraph:
 
 
 def plan_levels(graph: nx.DiGraph) -> list[list[str]]:
-
     return [list(generation) for generation in nx.topological_generations(graph)]
 
 

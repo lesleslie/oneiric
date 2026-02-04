@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/messaging/__init__.py
+# hypothesis_version: 6.151.4
+
+['APNSPushAdapter', 'APNSPushSettings', 'EmailRecipient', 'FCMPushAdapter', 'FCMPushSettings', 'MailgunAdapter', 'MailgunSettings', 'MessagingSendResult', 'NotificationMessage', 'OutboundEmailMessage', 'OutboundSMSMessage', 'SMSRecipient', 'SendGridAdapter', 'SendGridSettings', 'SlackAdapter', 'SlackSettings', 'TeamsAdapter', 'TeamsSettings', 'TwilioAdapter', 'TwilioSettings', 'WebPushAdapter', 'WebPushSettings', 'WebhookAdapter', 'WebhookSettings']
