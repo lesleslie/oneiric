@@ -2995,37 +2995,6 @@ def secrets_rotate_command(
     typer.echo(f"Invalidated {removed} cached secret value(s).")
 
 
-
-@app.command("shell")
-def shell_command() -> None:
-    """Start the interactive admin shell for configuration and lifecycle management.
-
-    Provides an IPython environment pre-configured with:
-    - Configuration layer inspection
-    - Settings validation and reloading
-    - Lifecycle state queries
-    - Session tracking via Session-Buddy MCP
-
-    Example:
-        $ oneiric shell
-        Oneiric> show_layers()           # Show config layer precedence
-        Oneiric> validate_config()       # Validate current configuration
-        Oneiric> reload_settings()       # Reload from all layers
-    """
-
-    async def _shell():
-        from oneiric.shell import OneiricShell
-
-        # Load configuration
-        config = load_settings()
-
-        # Create and start shell
-        shell = OneiricShell(config)
-        shell.start()
-
-    asyncio.run(_shell())
-
-
 @app.command("start")
 def start_command(
     ctx: typer.Context,
