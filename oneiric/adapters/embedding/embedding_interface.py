@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field, SecretStr
@@ -26,7 +26,7 @@ def _require_numpy() -> Any:
     return _NP_MODULE
 
 
-class EmbeddingModel(str, Enum):
+class EmbeddingModel(StrEnum):
     TEXT_EMBEDDING_3_SMALL = "text-embedding-3-small"
     TEXT_EMBEDDING_3_LARGE = "text-embedding-3-large"
     TEXT_EMBEDDING_ADA_002 = "text-embedding-ada-002"
@@ -41,14 +41,14 @@ class EmbeddingModel(str, Enum):
     ONNX_ALL_MPNET_BASE_V2 = "onnx-all-mpnet-base-v2"
 
 
-class PoolingStrategy(str, Enum):
+class PoolingStrategy(StrEnum):
     MEAN = "mean"
     MAX = "max"
     CLS = "cls"
     WEIGHTED_MEAN = "weighted_mean"
 
 
-class VectorNormalization(str, Enum):
+class VectorNormalization(StrEnum):
     L2 = "l2"
     L1 = "l1"
     NONE = "none"
@@ -249,7 +249,7 @@ class EmbeddingBase(ABC):
 
         while start < len(text):
             end = start + chunk_size
-            chunk = text[start: end]
+            chunk = text[start:end]
             chunks.append(chunk)
 
             if end >= len(text):

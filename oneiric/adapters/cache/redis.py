@@ -16,7 +16,6 @@ except ImportError:  # pragma: no cover - exercised when extras missing
     Redis = TrackingCache = None  # type: ignore
 
     class RedisError(Exception):
-
         pass
 
     _COREDIS_AVAILABLE = False
@@ -32,7 +31,6 @@ from oneiric.core.resolution import CandidateSource
 
 
 class RedisCacheSettings(BaseModel):
-
     url: RedisDsn | None = Field(
         default=None,
         description="Full Redis connection URL; overrides host/port/db when provided.",
@@ -90,7 +88,6 @@ class RedisCacheSettings(BaseModel):
 
 
 class RedisCacheAdapter(EnsureClientMixin):
-
     metadata = AdapterMetadata(
         category="cache",
         provider="redis",

@@ -14,12 +14,10 @@ CoroutineFactory = Callable[[], Awaitable[Any]]
 
 
 class TaskGroupError(RuntimeError):
-
     pass
 
 
 class RuntimeTaskGroup:
-
     def __init__(self, name: str = "oneiric.nursery") -> None:
         self.name = name
         self._logger = get_logger(name)
@@ -89,7 +87,6 @@ class RuntimeTaskGroup:
 
 
 class AnyioTaskGroup:
-
     def __init__(
         self,
         name: str,

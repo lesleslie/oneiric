@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import os
 import platform
-import threading
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from mcp import ClientSession, StdioServerParameters
@@ -16,7 +14,6 @@ from tenacity import (
     retry,
     stop_after_attempt,
     wait_exponential,
-    retry_if_exception_type,
 )
 
 logger = logging.getLogger(__name__)
@@ -37,9 +34,8 @@ class SessionEventEmitter:
             session_buddy_path: Path to Session-Buddy package (for stdio MCP)
         """
         self.component_name = component_name
-        self.session_buddy_path = (
-            session_buddy_path
-            or os.getenv("SESSION_BUDDY_PATH", "/Users/les/Projects/session-buddy")
+        self.session_buddy_path = session_buddy_path or os.getenv(
+            "SESSION_BUDDY_PATH", "/Users/les/Projects/session-buddy"
         )
 
         # MCP server parameters (stdio transport)
@@ -73,7 +69,7 @@ class SessionEventEmitter:
         """Check if Session-Buddy MCP is available."""
         # Check circuit breaker
         if self._circuit_open_until:
-            if datetime.now(timezone.utc) < self._circuit_open_until:
+            if datetime.now(UTC) < self._circuit_open_until:
                 return False  # Circuit is open
             else:
                 # Reset circuit breaker
@@ -96,7 +92,7 @@ class SessionEventEmitter:
         self._consecutive_failures += 1
         if self._consecutive_failures >= 3:
             # Open circuit for 60 seconds
-            self._circuit_open_until = datetime.now(timezone.utc) + timedelta(seconds=60)
+            self._circuit_open_until = datetime.now(UTC) + timedelta(seconds=60)
             logger.warning("Circuit breaker opened - Session-Buddy unavailable")
 
     @retry(
@@ -146,7 +142,7 @@ class SessionEventEmitter:
             if isinstance(result, list) and len(result) > 0:
                 # First item is usually TextContent with text attribute
                 first_item = result[0]
-                if hasattr(first_item, 'text'):
+                if hasattr(first_item, "text"):
                     session_id = first_item.text
                     logger.info(f"Session started: {session_id}")
                     return session_id
@@ -202,7 +198,7 @@ class SessionEventEmitter:
             }
 
             session = await self._get_session()
-            result = await session.call_tool("track_session_end", event)
+            await session.call_tool("track_session_end", event)
             logger.info(f"Session ended: {session_id}")
             return True
 
@@ -219,7 +215,7 @@ class SessionEventEmitter:
 
 def _get_timestamp() -> str:
     """Get ISO 8601 timestamp."""
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def _get_user_info() -> dict[str, str]:

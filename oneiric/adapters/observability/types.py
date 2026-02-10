@@ -43,7 +43,9 @@ class MetricData(BaseModel):
 
 
 class LogEntry(BaseModel):
-    id: str | None = Field(None, description="Log entry identifier (auto-generated if not provided)")
+    id: str | None = Field(
+        None, description="Log entry identifier (auto-generated if not provided)"
+    )
     timestamp: datetime = Field(..., description="Log timestamp")
     level: str = Field(
         ..., description="Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)"

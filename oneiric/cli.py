@@ -731,7 +731,9 @@ def _import_modules(modules: Iterable[str]) -> None:
         if not dotted:
             continue
         # Safe: dynamic module loading from configuration, intended for plugin system.
-        importlib.import_module(dotted)  # nosemgrep: python.lang.security.audit.dynamic-import-module.dynamic-import-module,python.lang.security.audit.non-literal-import.non-literal-import
+        importlib.import_module(
+            dotted
+        )  # nosemgrep: python.lang.security.audit.dynamic-import-module.dynamic-import-module,python.lang.security.audit.non-literal-import.non-literal-import
         logger.info("module-imported", module=dotted)
 
 
@@ -2993,7 +2995,6 @@ def secrets_rotate_command(
         )
     )
     typer.echo(f"Invalidated {removed} cached secret value(s).")
-
 
 
 @app.command("shell")

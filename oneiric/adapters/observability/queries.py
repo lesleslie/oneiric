@@ -173,8 +173,8 @@ class QueryService:
                 for metric in metric_models
             ]
 
-
             from oneiric.adapters.observability.types import TraceData
+
             trace_data = TraceData(
                 trace_id=trace_model.trace_id,
                 span_id=trace_model.id,
@@ -191,10 +191,7 @@ class QueryService:
             )
 
             return TraceContext(
-                trace_id=trace_id,
-                spans=[trace_data],
-                logs=logs,
-                metrics=metrics
+                trace_id=trace_id, spans=[trace_data], logs=logs, metrics=metrics
             )
 
     async def custom_query(

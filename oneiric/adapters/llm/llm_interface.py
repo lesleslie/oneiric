@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field, SecretStr
@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, SecretStr
 from oneiric.core.logging import get_logger
 
 
-class LLMProvider(str, Enum):
+class LLMProvider(StrEnum):
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
     AZURE_OPENAI = "azure_openai"
@@ -21,7 +21,7 @@ class LLMProvider(str, Enum):
     LOCAL = "local"
 
 
-class LLMCapability(str, Enum):
+class LLMCapability(StrEnum):
     TEXT_GENERATION = "text_generation"
     CHAT_COMPLETION = "chat_completion"
     FUNCTION_CALLING = "function_calling"
@@ -33,7 +33,7 @@ class LLMCapability(str, Enum):
     JSON_MODE = "json_mode"
 
 
-class MessageRole(str, Enum):
+class MessageRole(StrEnum):
     SYSTEM = "system"
     USER = "user"
     ASSISTANT = "assistant"

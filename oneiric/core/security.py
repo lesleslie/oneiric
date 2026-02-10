@@ -137,7 +137,6 @@ def constant_time_compare(a: str, b: str) -> bool:
             f"constant_time_compare requires str arguments, got {type(a).__name__} and {type(b).__name__}"
         )
 
-
     return hmac.compare_digest(a.encode("utf-8"), b.encode("utf-8"))
 
 
@@ -146,10 +145,8 @@ def timing_safe_compare(a: str | bytes, b: str | bytes) -> bool:
     if isinstance(a, str) and isinstance(b, str):
         return hmac.compare_digest(a.encode("utf-8"), b.encode("utf-8"))
 
-
     if isinstance(a, bytes) and isinstance(b, bytes):
         return hmac.compare_digest(a, b)
-
 
     raise TypeError(
         f"timing_safe_compare requires both arguments to be str or both to be bytes, "
@@ -162,6 +159,5 @@ def constant_time_bytes_compare(a: bytes, b: bytes) -> bool:
         raise TypeError(
             f"constant_time_bytes_compare requires bytes arguments, got {type(a).__name__} and {type(b).__name__}"
         )
-
 
     return hmac.compare_digest(a, b)

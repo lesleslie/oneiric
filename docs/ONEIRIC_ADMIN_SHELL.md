@@ -64,9 +64,9 @@ OneiricSettings
 Oneiric uses a layered configuration system with the following precedence (highest to lowest):
 
 1. **Environment Variables** - Runtime overrides (`ONEIRIC_*`)
-2. **Local YAML** - `settings/local.yaml` (gitignored)
-3. **YAML Config** - `settings/oneiric.yaml` (committed)
-4. **Defaults** - Pydantic field defaults
+1. **Local YAML** - `settings/local.yaml` (gitignored)
+1. **YAML Config** - `settings/oneiric.yaml` (committed)
+1. **Defaults** - Pydantic field defaults
 
 Example output from `show_layers()`:
 

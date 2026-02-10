@@ -14,11 +14,13 @@ from __future__ import annotations
 import asyncio
 import logging
 
+from oneiric.core.config import OneiricSettings
+
+from .config import ShellConfig
+
 # Use relative imports to avoid circular dependency
 from .core import AdminShell
-from .config import ShellConfig
 from .session_tracker import SessionEventEmitter
-from oneiric.core.config import OneiricSettings
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +123,7 @@ class OneiricShell(AdminShell):
 
         return f"""
 Oneiric Admin Shell v{version}
-{'=' * 60}
+{"=" * 60}
 Universal Component Resolution & Lifecycle Management
 
 Session Tracking: Enabled
@@ -144,7 +146,7 @@ Available Objects:
   OneiricSettings     - Configuration class
 
 Type 'help()' for Python help or %help_shell for shell commands
-{'=' * 60}
+{"=" * 60}
 """
 
     async def _reload_settings(self) -> None:
@@ -218,7 +220,9 @@ Type 'help()' for Python help or %help_shell for shell commands
             if self._session_id:
                 logger.info(f"Oneiric shell session started: {self._session_id}")
             else:
-                logger.debug("Session tracking unavailable (Session-Buddy MCP not reachable)")
+                logger.debug(
+                    "Session tracking unavailable (Session-Buddy MCP not reachable)"
+                )
         except Exception as e:
             logger.debug(f"Failed to emit session start: {e}")
 

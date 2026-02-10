@@ -24,15 +24,15 @@ Example:
     ...     environment=EnvironmentInfo(
     ...         python_version="3.13.0",
     ...         platform="Linux-6.5.0-x86_64",
-    ...         cwd="/home/john/projects/mahavishnu"
-    ...     )
+    ...         cwd="/home/john/projects/mahavishnu",
+    ...     ),
     ... )
 """
 
 from __future__ import annotations
 
 import re
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -87,7 +87,7 @@ class EnvironmentInfo(BaseModel):
         >>> env = EnvironmentInfo(
         ...     python_version="3.13.0",
         ...     platform="Linux-6.5.0-x86_64",
-        ...     cwd="/home/john/projects"
+        ...     cwd="/home/john/projects",
         ... )
     """
 
@@ -152,8 +152,8 @@ class SessionStartEvent(BaseModel):
         ...     environment=EnvironmentInfo(
         ...         python_version="3.13.0",
         ...         platform="Linux-6.5.0-x86_64",
-        ...         cwd="/home/john/projects"
-        ...     )
+        ...         cwd="/home/john/projects",
+        ...     ),
         ... )
     """
 
@@ -300,7 +300,7 @@ class SessionStartEvent(BaseModel):
             raise ValueError(
                 f"Invalid ISO 8601 timestamp: {v} (missing time component, expected format: 2026-02-06T12:34:56.789Z)"
             )
-        
+
         try:
             # Try parsing with timezone
             datetime.fromisoformat(v.replace("Z", "+00:00"))
@@ -344,7 +344,7 @@ class SessionEndEvent(BaseModel):
         >>> event = SessionEndEvent(
         ...     session_id="sess_abc123",
         ...     timestamp="2026-02-06T13:45:67.890Z",
-        ...     metadata={"exit_reason": "user_exit"}
+        ...     metadata={"exit_reason": "user_exit"},
         ... )
     """
 
@@ -402,7 +402,7 @@ class SessionEndEvent(BaseModel):
             raise ValueError(
                 f"Invalid ISO 8601 timestamp: {v} (missing time component, expected format: 2026-02-06T12:34:56.789Z)"
             )
-        
+
         try:
             # Try parsing with timezone
             datetime.fromisoformat(v.replace("Z", "+00:00"))

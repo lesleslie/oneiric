@@ -172,7 +172,9 @@ class PgvectorAdapter(VectorBase):
             return True
         async with self._connection() as conn:
             # Safe: table from sanitized identifier, ids uses parameterized query.
-            await conn.execute(f"DELETE FROM {table} WHERE id = ANY($1::text[])", ids)  # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+            await conn.execute(
+                f"DELETE FROM {table} WHERE id = ANY($1::text[])", ids
+            )  # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
         return True
 
     async def get(
@@ -231,7 +233,9 @@ class PgvectorAdapter(VectorBase):
         async with self._connection() as conn:
             if self._settings.ensure_extension:
                 # Safe: static SQL command, no user input.
-                await conn.execute("CREATE EXTENSION IF NOT EXISTS vector")  # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+                await conn.execute(
+                    "CREATE EXTENSION IF NOT EXISTS vector"
+                )  # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
             # Safe: qualified/dimension from sanitized identifiers/function params, CREATE TABLE doesn't support parameterized identifiers. # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
             await conn.execute(
                 f"""
@@ -259,7 +263,9 @@ class PgvectorAdapter(VectorBase):
         qualified = f"{self._quote_ident(schema)}.{self._quote_ident(table_name)}"
         async with self._connection() as conn:
             # Safe: qualified from sanitized identifier, DROP TABLE doesn't support parameterized identifiers.
-            await conn.execute(f"DROP TABLE IF EXISTS {qualified}")  # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+            await conn.execute(
+                f"DROP TABLE IF EXISTS {qualified}"
+            )  # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
         return True
 
     async def list_collections(self, **_: Any) -> list[str]:

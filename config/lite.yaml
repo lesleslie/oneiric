@@ -1,0 +1,110 @@
+# Oneiric Lite Mode Configuration
+#
+# This is the minimal configuration for Oneiric lite mode.
+# Lite mode is designed for:
+# - Quick testing and development
+# - CI/CD pipelines
+# - Users new to Oneiric
+#
+# Setup time: < 2 minutes
+# External dependencies: Zero
+
+app:
+  name: "oneiric"
+  environment: "dev"
+  debug: false
+
+# Remote configuration (DISABLED in lite mode)
+remote:
+  enabled: false
+  signature_required: false
+  signature_threshold: 1
+  refresh_interval: null  # No auto-refresh
+  manifest_url: null  # Local manifests only
+  verify_tls: true
+  cache_dir: ".oneiric_cache"
+  max_retries: 3
+  retry_base_delay: 1.0
+  retry_max_delay: 30.0
+
+# Runtime profile (LITE)
+profile:
+  name: "lite"
+  remote_enabled: false  # No remote resolution
+  inline_manifest_only: true  # Local manifests only
+  watchers_enabled: true  # File watchers for config changes
+  supervisor_enabled: false  # No runtime supervisor needed
+
+# Lifecycle configuration
+lifecycle:
+  activation_timeout: 30.0
+  health_timeout: 5.0
+  cleanup_timeout: 10.0
+  hook_timeout: 5.0
+  shield_tasks: true
+
+# Logging configuration
+logging:
+  level: "INFO"
+  format: "json"
+  handlers:
+    - type: "console"
+      level: "INFO"
+    - type: "file"
+      level: "DEBUG"
+      path: "logs/oneiric.log"
+
+# Plugins configuration
+plugins:
+  auto_load: false  # Don't auto-load plugins in lite mode
+  entry_points: []
+
+# Secrets configuration
+secrets:
+  domain: "adapter"
+  key: "secrets"
+  provider: null  # No secrets provider in lite mode
+  cache_ttl_seconds: 600.0
+  refresh_interval: null
+  inline: {}  # Use inline secrets only
+
+# Domain configurations (all local)
+adapters:
+  selections: {}
+  provider_settings: {}
+  options: {}
+
+services:
+  selections: {}
+  provider_settings: {}
+  options: {}
+
+tasks:
+  selections: {}
+  provider_settings: {}
+  options: {}
+
+events:
+  selections: {}
+  provider_settings: {}
+  options: {}
+
+workflows:
+  selections: {}
+  provider_settings: {}
+  options: {}
+
+actions:
+  selections: {}
+  provider_settings: {}
+  options: {}
+
+# Runtime paths configuration
+runtime_paths:
+  workflow_checkpoints_enabled: false  # No checkpoints in lite mode
+  workflow_checkpoints_path: null
+
+# Runtime supervisor configuration
+runtime_supervisor:
+  enabled: false  # Disabled in lite mode
+  poll_interval: 2.0

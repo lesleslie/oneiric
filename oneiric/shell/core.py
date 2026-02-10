@@ -1,5 +1,5 @@
-import atexit
 import asyncio
+import atexit
 import logging
 import threading
 from typing import Any
@@ -68,7 +68,7 @@ class AdminShell:
     def _notify_session_start_async(self) -> None:
         """Notify session start asynchronously without blocking shell startup."""
         try:
-            loop = asyncio.get_running_loop()
+            asyncio.get_running_loop()
             # Create task in existing loop
             asyncio.create_task(self._notify_session_start())
         except RuntimeError:
@@ -86,7 +86,9 @@ class AdminShell:
                     component_name=self._get_component_name() or "unknown",
                 )
             except ImportError:
-                logger.debug("SessionEventEmitter not available - session tracking disabled")
+                logger.debug(
+                    "SessionEventEmitter not available - session tracking disabled"
+                )
                 return
 
         if self.session_tracker:
@@ -111,6 +113,7 @@ class AdminShell:
     def _sync_session_end(self) -> None:
         """Synchronous session end handler (runs in thread)."""
         if self.session_id and self.session_tracker:
+
             def emit_in_thread():
                 """Emit session end in background thread."""
                 try:

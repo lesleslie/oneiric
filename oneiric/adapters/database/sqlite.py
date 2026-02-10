@@ -63,7 +63,9 @@ class SQLiteDatabaseAdapter:
         )
         for pragma, value in self._settings.pragmas.items():
             # Safe: pragma and value from validated settings, SQLite doesn't support parameterized PRAGMA.
-            await self._conn.execute(f"PRAGMA {pragma}={value}")  # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+            await self._conn.execute(
+                f"PRAGMA {pragma}={value}"
+            )  # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
         await self._conn.commit()
         self._logger.info(
             "adapter-init", adapter="sqlite-database", path=self._settings.path

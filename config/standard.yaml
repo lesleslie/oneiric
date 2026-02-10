@@ -1,0 +1,129 @@
+# Oneiric Standard Mode Configuration
+#
+# This is the full-featured configuration for Oneiric standard mode.
+# Standard mode is designed for:
+# - Daily development
+# - Production deployments
+# - Multi-server coordination
+# - Team collaboration
+#
+# Setup time: ~ 5 minutes
+# External dependencies: Dhruva (optional)
+
+app:
+  name: "oneiric"
+  environment: "production"
+  debug: false
+
+# Remote configuration (ENABLED in standard mode)
+remote:
+  enabled: true
+  signature_required: true  # Require signed manifests
+  signature_threshold: 1
+  signature_max_age_seconds: null  # No max age
+  signature_require_expiry: false
+  refresh_interval: 300.0  # Sync every 5 minutes
+  manifest_url: null  # Set via CLI: --manifest-url <url>
+  verify_tls: true
+  cache_dir: ".oneiric_cache"
+  max_retries: 3
+  retry_base_delay: 1.0
+  retry_max_delay: 30.0
+  retry_jitter: 0.25
+  circuit_breaker_threshold: 5
+  circuit_breaker_reset: 60.0
+  allow_file_uris: false
+  allowed_file_uri_roots: []
+  latency_budget_ms: 5000.0
+  auth:
+    header_name: "Authorization"
+    secret_id: null
+    token: null
+
+# Runtime profile (STANDARD)
+profile:
+  name: "standard"
+  remote_enabled: true  # Remote resolution enabled
+  inline_manifest_only: false  # Remote manifests allowed
+  watchers_enabled: true  # File watchers for config changes
+  supervisor_enabled: true  # Runtime supervisor for health
+
+# Lifecycle configuration
+lifecycle:
+  activation_timeout: 30.0
+  health_timeout: 5.0
+  cleanup_timeout: 10.0
+  hook_timeout: 5.0
+  shield_tasks: true
+
+# Logging configuration
+logging:
+  level: "INFO"
+  format: "json"
+  handlers:
+    - type: "console"
+      level: "INFO"
+    - type: "file"
+      level: "DEBUG"
+      path: "logs/oneiric.log"
+
+# Plugins configuration
+plugins:
+  auto_load: true  # Auto-load built-in plugins
+  entry_points:
+    - "oneiric.adapters"
+    - "oneiric.services"
+    - "oneiric.tasks"
+    - "oneiric.events"
+    - "oneiric.workflows"
+    - "oneiric.actions"
+
+# Secrets configuration
+secrets:
+  domain: "adapter"
+  key: "secrets"
+  provider: null  # Set via environment or config
+  cache_ttl_seconds: 600.0
+  refresh_interval: null
+  inline: {}
+
+# Domain configurations (local + remote)
+adapters:
+  selections: {}
+  provider_settings: {}
+  options: {}
+
+services:
+  selections: {}
+  provider_settings: {}
+  options: {}
+
+tasks:
+  selections: {}
+  provider_settings: {}
+  options: {}
+
+events:
+  selections: {}
+  provider_settings: {}
+  options: {}
+
+workflows:
+  selections: {}
+  provider_settings: {}
+  options: {}
+
+actions:
+  selections: {}
+  provider_settings: {}
+  options: {}
+
+# Runtime paths configuration
+runtime_paths:
+  workflow_checkpoints_enabled: true  # Enable checkpoints
+  workflow_checkpoints_path: null  # Use default
+
+# Runtime supervisor configuration
+runtime_supervisor:
+  enabled: true  # Enabled in standard mode
+  poll_interval: 2.0

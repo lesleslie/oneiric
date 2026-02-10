@@ -6,7 +6,7 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 from typing import (
     Any,
@@ -31,7 +31,7 @@ PATH_PRIORITY_HINTS = [
 ]
 
 
-class CandidateSource(str, Enum):
+class CandidateSource(StrEnum):
     LOCAL_PKG = "local_pkg"
     REMOTE_MANIFEST = "remote_manifest"
     ENTRY_POINT = "entry_point"

@@ -11,13 +11,11 @@ from oneiric.core.logging import get_logger
 
 
 class NoSQLDocument(BaseModel):
-
     id: str | None = None
     data: dict[str, Any] = Field(default_factory=dict)
 
 
 class NoSQLQuery(BaseModel):
-
     filters: dict[str, Any] = Field(default_factory=dict)
     projection: list[str] | None = None
     limit: int | None = None
@@ -25,14 +23,12 @@ class NoSQLQuery(BaseModel):
 
 
 class NoSQLBaseSettings(BaseModel):
-
     connect_timeout: float = 30.0
     operation_timeout: float = 30.0
     health_timeout: float = 5.0
 
 
 class NoSQLAdapterBase(ABC):
-
     def __init__(self, settings: NoSQLBaseSettings) -> None:
         self._settings = settings
         self._logger = get_logger("adapter.nosql.base")

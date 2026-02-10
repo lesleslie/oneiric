@@ -24,9 +24,9 @@ oneiric shell
 ## Configuration Layers (Precedence)
 
 1. **Environment** - `ONEIRIC_*` variables (highest)
-2. **Local** - `settings/local.yaml` (gitignored)
-3. **YAML** - `settings/oneiric.yaml` (committed)
-4. **Defaults** - Pydantic field defaults (lowest)
+1. **Local** - `settings/local.yaml` (gitignored)
+1. **YAML** - `settings/oneiric.yaml` (committed)
+1. **Defaults** - Pydantic field defaults (lowest)
 
 ## Session Tracking
 

@@ -23,7 +23,6 @@ CleanupHook = Callable[[Any], Awaitable[None] | None]
 
 
 class LifecycleError(RuntimeError):
-
     pass
 
 
@@ -45,7 +44,6 @@ class LifecycleHooks:
 
 @dataclass
 class LifecycleSafetyOptions:
-
     activation_timeout: float = 30.0
     health_timeout: float = 5.0
     cleanup_timeout: float = 10.0
@@ -71,7 +69,9 @@ def resolve_factory(factory: str | FactoryCallable) -> FactoryCallable:
 
     try:
         # Safe: factory validated against allowlist (lines 61-64), core pattern for pluggable components.
-        module = importlib.import_module(module_path)  # nosemgrep: python.lang.security.audit.dynamic-import-module.dynamic-import-module,python.lang.security.audit.non-literal-import.non-literal-import
+        module = importlib.import_module(
+            module_path
+        )  # nosemgrep: python.lang.security.audit.dynamic-import-module.dynamic-import-module,python.lang.security.audit.non-literal-import.non-literal-import
         return getattr(module, attr)
     except (ImportError, AttributeError) as exc:
         raise LifecycleError(f"Failed to load factory '{factory}': {exc}") from exc
@@ -125,7 +125,6 @@ _UNSET = object()
 
 
 class LifecycleManager:
-
     def __init__(
         self,
         resolver: Resolver,

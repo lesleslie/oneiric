@@ -34,15 +34,15 @@ try:
     _COREDIS_AVAILABLE = True
 except ImportError:  # pragma: no cover
     Redis = TrackingCache = None  # type: ignore
+
     class RedisError(Exception):
         pass
+
     _COREDIS_AVAILABLE = False
 
-from oneiric.adapters.metadata import AdapterMetadata
 from oneiric.adapters.cache.memory import MemoryCacheAdapter, MemoryCacheSettings
 from oneiric.adapters.cache.redis import RedisCacheAdapter, RedisCacheSettings
-from oneiric.core.client_mixins import EnsureClientMixin
-from oneiric.core.lifecycle import LifecycleError
+from oneiric.adapters.metadata import AdapterMetadata
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
 
@@ -77,7 +77,7 @@ class CacheMetrics:
         if self.total_requests == 0:
             return 0.0
         hits = self.l1_hits + self.l2_hits
-        return (hits / self.total_requests * 100)
+        return hits / self.total_requests * 100
 
     @property
     def avg_latency_ms(self) -> float:
@@ -208,7 +208,7 @@ class MultiTierCacheAdapter:
         factory="oneiric.adapters.cache.multitier:MultiTierCacheAdapter",
         capabilities=["kv", "ttl", "distributed", "lru", "metrics"],
         stack_level=15,  # Higher than individual cache adapters
-        priority=500,   # Highest priority cache adapter
+        priority=500,  # Highest priority cache adapter
         source=CandidateSource.LOCAL_PKG,
         owner="Platform Core",
         requires_secrets=True,
@@ -317,7 +317,9 @@ class MultiTierCacheAdapter:
                 if self._settings.enable_metrics:
                     self._metrics.l1_hits += 1
                     self._metrics.l1_latency_ms += l1_latency
-                self._logger.debug("l1-cache-hit", key=key, latency_ms=f"{l1_latency:.2f}")
+                self._logger.debug(
+                    "l1-cache-hit", key=key, latency_ms=f"{l1_latency:.2f}"
+                )
                 return value
             else:
                 if self._settings.enable_metrics:
@@ -335,7 +337,9 @@ class MultiTierCacheAdapter:
                     self._metrics.l2_hits += 1
                     self._metrics.l2_latency_ms += l2_latency
 
-                self._logger.debug("l2-cache-hit", key=key, latency_ms=f"{l2_latency:.2f}")
+                self._logger.debug(
+                    "l2-cache-hit", key=key, latency_ms=f"{l2_latency:.2f}"
+                )
 
                 # Write back to L1 for future access
                 if self._settings.write_back_l1_on_l2_hit and self._l1:

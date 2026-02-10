@@ -22,7 +22,6 @@ logger = get_logger("runtime.dag")
 
 
 class _TaskFailedAfterRetries(Exception):
-
     def __init__(self, attempts: int, original_error: Exception):
         self.attempts = attempts
         self.original_error = original_error
@@ -31,7 +30,6 @@ class _TaskFailedAfterRetries(Exception):
 
 @dataclass(slots=True)
 class DAGTask:
-
     key: str
     depends_on: Sequence[str] = field(default_factory=tuple)
     runner: TaskCallable | None = None
@@ -39,13 +37,11 @@ class DAGTask:
 
 
 class DAGExecutionError(RuntimeError):
-
     pass
 
 
 @dataclass(slots=True)
 class DAGExecutionHooks:
-
     on_run_start: HookCallable | None = None
     on_run_complete: HookCallable | None = None
     on_run_error: HookCallable | None = None
