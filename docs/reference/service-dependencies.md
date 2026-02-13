@@ -6,7 +6,7 @@ This document describes the service dependencies and integration points for Onei
 
 Oneiric is designed as a **standalone resolver** that can operate independently or integrate with other ecosystem services. It has no required runtime dependencies but provides optional integrations for enhanced functionality.
 
----
+______________________________________________________________________
 
 ## Required Services
 
@@ -24,7 +24,7 @@ Oneiric is designed as a **standalone resolver** that can operate independently 
 
 Oneiric can run completely offline with local configuration and adapters only.
 
----
+______________________________________________________________________
 
 ## Optional Integrations
 
@@ -33,6 +33,7 @@ Oneiric can run completely offline with local configuration and adapters only.
 **Role**: Orchestrator - Coordinates workflows across repositories
 
 **Integration Purpose**:
+
 - Component resolution for multi-repo workflows
 - Cross-repository adapter sharing
 - Workflow execution coordination
@@ -41,6 +42,7 @@ Oneiric can run completely offline with local configuration and adapters only.
 **Protocol**: MCP (Model Context Protocol)
 
 **Connection Details**:
+
 ```bash
 # Default URL
 http://localhost:8680/mcp
@@ -50,12 +52,14 @@ export MAHAVISHNU_MCP_URL="http://localhost:8680/mcp"
 ```
 
 **Features**:
+
 - **Remote Resolution**: Resolve adapters from Mahavishnu's registry
 - **Workflow Routing**: Route workflows through Mahavishnu orchestrator
 - **Pool Management**: Execute tasks on Mahavishnu worker pools
 - **Memory Aggregation**: Cross-pool memory search and retrieval
 
 **Health Check**:
+
 ```bash
 # Check Mahavishnu connection
 oneiric health --probe --json
@@ -65,6 +69,7 @@ oneiric remote-status --json
 ```
 
 **When to Use**:
+
 - Multi-repository workflow orchestration
 - Distributed task execution
 - Cross-service component sharing
@@ -72,13 +77,14 @@ oneiric remote-status --json
 
 **Startup Order**: Oneiric → Mahavishnu (Oneiric must be running before Mahavishnu connects)
 
----
+______________________________________________________________________
 
 ### Dhruva (Curator)
 
 **Role**: Asset Manager - Manages adapter distribution and remote manifests
 
 **Integration Purpose**:
+
 - Remote adapter distribution
 - Signed manifest delivery
 - Adapter version management
@@ -87,6 +93,7 @@ oneiric remote-status --json
 **Protocol**: MCP (Model Context Protocol)
 
 **Connection Details**:
+
 ```bash
 # Default URL
 http://localhost:8683/mcp
@@ -96,12 +103,14 @@ export DHruVA_MCP_URL="http://localhost:8683/mcp"
 ```
 
 **Features**:
+
 - **Remote Manifests**: Fetch signed manifests from Dhruva
 - **Adapter Registry**: Discover and install adapters remotely
 - **Version Control**: Track adapter versions and dependencies
 - **Signature Verification**: ED25519 signature validation for security
 
 **Health Check**:
+
 ```bash
 # Sync from Dhruva manifest
 oneiric remote-sync \
@@ -113,6 +122,7 @@ oneiric manifest verify --input manifest.json
 ```
 
 **When to Use**:
+
 - Production deployments with remote adapter management
 - Multi-environment configuration synchronization
 - Signed manifest delivery for security
@@ -120,24 +130,27 @@ oneiric manifest verify --input manifest.json
 
 **Startup Order**: Oneiric → Dhruva (Oneiric fetches from Dhruva on startup)
 
----
+______________________________________________________________________
 
 ### Cloud Storage (Configuration Backup)
 
 **Role**: Optional backup for remote configuration
 
 **Supported Providers**:
+
 - **AWS S3**: `s3://bucket-name/path/to/config.yaml`
 - **Azure Blob Storage**: `azure://container/path/to/config.yaml`
 - **Google Cloud Storage**: `gs://bucket-name/path/to/config.yaml`
 
 **Integration Purpose**:
+
 - Remote configuration backup
 - Disaster recovery
 - Multi-environment synchronization
 - Configuration versioning
 
 **Configuration**:
+
 ```yaml
 # oneiric.yaml
 remote_config:
@@ -148,6 +161,7 @@ remote_config:
 ```
 
 **Environment Variables**:
+
 ```bash
 # AWS S3
 export AWS_ACCESS_KEY_ID="your-access-key"
@@ -164,6 +178,7 @@ export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account.json"
 ```
 
 **When to Use**:
+
 - Production configuration backup
 - Disaster recovery
 - Multi-region deployment
@@ -171,38 +186,43 @@ export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account.json"
 
 **Required**: Optional - Oneiric works without cloud storage
 
----
+______________________________________________________________________
 
 ### Optional MCP Integrations
 
 Oneiric can connect to any MCP-compliant service for extended functionality:
 
 **Session-Buddy (Session Manager)**
+
 - **URL**: http://localhost:8678/mcp
 - **Purpose**: Session context and state management
 - **Use Case**: Share session state across workflows
 
 **Akosha (Diviner)**
+
 - **URL**: http://localhost:8682/mcp
 - **Purpose**: Knowledge graph and memory aggregation
 - **Use Case**: Cross-session memory retrieval
 
 **Crackerjack (Inspector)**
+
 - **URL**: http://localhost:8676/mcp
 - **Purpose**: Quality checks and CI/CD integration
 - **Use Case**: Automated quality gates
 
----
+______________________________________________________________________
 
 ## Startup Order
 
 ### Standalone Mode (Lite)
+
 ```
 Oneiric only
 No external dependencies
 ```
 
 ### Ecosystem Mode (Standard)
+
 ```
 1. Oneiric (Resolver) - must start first
 2. Dhruva (Curator) - optional, for remote manifests
@@ -211,11 +231,12 @@ No external dependencies
 
 **Rationale**: Oneiric must be running before other services can connect to it for component resolution.
 
----
+______________________________________________________________________
 
 ## Network Configuration
 
 ### Local Development
+
 ```bash
 # All services on localhost
 export ONEIRIC_HOST="127.0.0.1"
@@ -225,6 +246,7 @@ export DHruVA_MCP_URL="http://localhost:8683/mcp"
 ```
 
 ### Production Deployment
+
 ```bash
 # Use explicit interfaces
 export ONEIRIC_HOST="10.0.1.10"  # Explicit IP
@@ -235,7 +257,7 @@ export DHruVA_MCP_URL="http://dhruva:8683/mcp"
 
 **Security Note**: For production, bind to explicit interfaces (not `0.0.0.0`) and use firewall rules to restrict access.
 
----
+______________________________________________________________________
 
 ## Health and Readiness
 
@@ -277,18 +299,20 @@ oneiric health --json
 }
 ```
 
----
+______________________________________________________________________
 
 ## Troubleshooting
 
 ### "Cannot resolve adapter"
 
 **Symptoms**:
+
 ```
 Error: No adapter found for key 'postgresql'
 ```
 
 **Diagnosis**:
+
 ```bash
 # Check adapter registry
 oneiric list --domain adapter --shadowed
@@ -298,32 +322,38 @@ oneiric remote-status --json
 ```
 
 **Solutions**:
+
 1. **Adapter not registered**: Install adapter locally or enable remote resolution
+
    ```bash
    oneiric activate adapter postgresql --provider pgvector
    ```
 
-2. **Remote resolution disabled**: Enable remote resolution
+1. **Remote resolution disabled**: Enable remote resolution
+
    ```bash
    export ONEIRIC_MODE=standard
    oneiric enable-remote --url http://localhost:8683/mcp
    ```
 
-3. **Dhruva unreachable**: Check connection
+1. **Dhruva unreachable**: Check connection
+
    ```bash
    curl http://localhost:8683/mcp/health
    ```
 
----
+______________________________________________________________________
 
 ### "Remote sync failed"
 
 **Symptoms**:
+
 ```
 Error: Failed to sync from remote manifest
 ```
 
 **Diagnosis**:
+
 ```bash
 # Verify manifest URL
 oneiric remote-sync --manifest /path/to/manifest.yaml --verify-only
@@ -333,31 +363,37 @@ oneiric manifest verify --input manifest.json
 ```
 
 **Solutions**:
+
 1. **Invalid manifest**: Verify manifest syntax
+
    ```bash
    oneiric manifest validate --input manifest.yaml
    ```
 
-2. **Signature verification failed**: Check public key
+1. **Signature verification failed**: Check public key
+
    ```bash
    export ONEIRIC_MANIFEST_PUBLIC_KEY="/path/to/public_key.pem"
    ```
 
-3. **Network error**: Check connectivity
+1. **Network error**: Check connectivity
+
    ```bash
    curl -I http://localhost:8683/mcp/manifest
    ```
 
----
+______________________________________________________________________
 
 ### "Component not responding"
 
 **Symptoms**:
+
 ```
 Error: Adapter 'postgresql' not responding
 ```
 
 **Diagnosis**:
+
 ```bash
 # Check activity state
 oneiric activity --domain adapter --key postgresql
@@ -367,31 +403,37 @@ oneiric health --probe --json
 ```
 
 **Solutions**:
+
 1. **Paused state**: Resume component
+
    ```bash
    oneiric resume adapter postgresql
    ```
 
-2. **Draining state**: Wait for drain to complete
+1. **Draining state**: Wait for drain to complete
+
    ```bash
    oneiric activity --domain adapter --key postgresql
    ```
 
-3. **Lifecycle error**: Check logs
+1. **Lifecycle error**: Check logs
+
    ```bash
    oneiric status --domain adapter --key postgresql --json
    ```
 
----
+______________________________________________________________________
 
 ### "Mahavishnu connection refused"
 
 **Symptoms**:
+
 ```
 Error: Connection refused to Mahavishnu MCP server
 ```
 
 **Diagnosis**:
+
 ```bash
 # Check Mahavishnu status
 curl http://localhost:8680/mcp/health
@@ -401,27 +443,32 @@ oneiric remote-status --json
 ```
 
 **Solutions**:
+
 1. **Mahavishnu not running**: Start Mahavishnu
+
    ```bash
    mahavishnu mcp start
    ```
 
-2. **Wrong URL**: Update configuration
+1. **Wrong URL**: Update configuration
+
    ```bash
    export MAHAVISHNU_MCP_URL="http://localhost:8680/mcp"
    ```
 
-3. **Firewall blocking**: Check network rules
+1. **Firewall blocking**: Check network rules
+
    ```bash
    # Allow TCP 8680
    sudo ufw allow 8680/tcp
    ```
 
----
+______________________________________________________________________
 
 ## Configuration Examples
 
 ### Lite Mode (Standalone)
+
 ```yaml
 # oneiric.yaml
 mode: "lite"
@@ -434,6 +481,7 @@ adapters:
 ```
 
 ### Standard Mode (With Dhruva)
+
 ```yaml
 # oneiric.yaml
 mode: "standard"
@@ -449,6 +497,7 @@ adapters:
 ```
 
 ### Production Mode (Full Ecosystem)
+
 ```yaml
 # oneiric.yaml
 mode: "standard"
@@ -466,23 +515,26 @@ orchestrator:
   mahavishnu_url: "http://mahavishnu:8680/mcp"
 ```
 
----
+______________________________________________________________________
 
 ## Monitoring and Observability
 
 ### Metrics to Monitor
 
 **Dependency Health**:
+
 - Mahavishnu connection status
 - Dhruva sync success rate
 - Remote manifest fetch latency
 
 **Component Health**:
+
 - Adapter registration count
 - Service active/draining/paused counts
 - Lifecycle state transitions
 
 **Performance**:
+
 - Resolution latency (p50, p95, p99)
 - Remote sync duration
 - Health check response time
@@ -503,36 +555,41 @@ oneiric status --json > oneiric_status.json
 ### Dashboards
 
 Recommended dashboards:
+
 - **Dependency Health**: Mahavishnu/Dhruva connection status
 - **Component Lifecycle**: Active/paused/drained component counts
 - **Resolution Performance**: Latency histograms
 - **Remote Sync**: Success rate, duration, error breakdown
 
----
+______________________________________________________________________
 
 ## Security Considerations
 
 ### Network Security
+
 - **Local Dev**: Bind to `127.0.0.1` only
 - **Production**: Bind to explicit interface with firewall rules
 - **MCP Connections**: Use TLS in production
 
 ### Authentication
+
 - **Mahavishnu**: JWT-based authentication
 - **Dhruva**: API token or mutual TLS
 - **Cloud Storage**: IAM roles or service accounts
 
 ### Signature Verification
+
 - **Remote Manifests**: ED25519 signatures required
 - **Public Key**: Configure via `ONEIRIC_MANIFEST_PUBLIC_KEY`
 - **Verification Failure**: Reject unsigned manifests
 
 ### Secrets Management
+
 - **Never Commit Secrets**: Use environment variables
 - **Rotate Secrets**: Use `oneiric secrets rotate`
 - **Secret Providers**: Infisical, AWS Secrets Manager, GCP Secret Manager
 
----
+______________________________________________________________________
 
 ## Next Steps
 
@@ -542,7 +599,7 @@ Recommended dashboards:
 - [Troubleshooting Guide](../runbooks/TROUBLESHOOTING.md) - Common issues and solutions
 - [Production Deployment](../deployment/PRODUCTION.md) - Production best practices
 
----
+______________________________________________________________________
 
 **Last Updated**: 2025-02-09
 **Oneiric Version**: v0.3.3

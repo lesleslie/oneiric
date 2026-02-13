@@ -2,7 +2,7 @@
 
 Oneiric supports two operational modes designed for different use cases: **Lite Mode** for development and testing, and **Standard Mode** for production deployments with remote resolution and distributed configuration.
 
----
+______________________________________________________________________
 
 ## Mode Comparison
 
@@ -18,7 +18,7 @@ Oneiric supports two operational modes designed for different use cases: **Lite 
 | **Dependencies** | None | Dhruva (optional) |
 | **Network Required** | No | Yes (for remote features) |
 
----
+______________________________________________________________________
 
 ## Lite Mode (Development)
 
@@ -33,16 +33,19 @@ Lite Mode is designed for **local development and testing**. It operates complet
 ### Features
 
 **Local Configuration**:
+
 - File-based configuration (YAML/TOML/JSON)
 - No remote fetching
 - Fast startup (< 100ms)
 
 **Built-in Adapters**:
+
 - 80+ adapters included
 - No remote installation needed
 - All adapters available immediately
 
 **Simple Lifecycle**:
+
 - No remote sync
 - No signature verification
 - Direct component activation
@@ -98,6 +101,7 @@ services:
 ### Usage Patterns
 
 **Development Workflow**:
+
 ```bash
 # Install Oneiric
 uv add oneiric
@@ -117,6 +121,7 @@ oneiric resolve
 ```
 
 **Testing Workflow**:
+
 ```bash
 # Use test configuration
 export ONEIRIC_CONFIG="tests/config/test.yaml"
@@ -144,7 +149,7 @@ oneiric stop
 ❌ **Manual Updates**: Adapters must be updated manually
 ❌ **Single Environment**: No multi-environment support
 
----
+______________________________________________________________________
 
 ## Standard Mode (Production)
 
@@ -159,21 +164,25 @@ Standard Mode is designed for **production deployments** with remote resolution,
 ### Features
 
 **Remote Resolution**:
+
 - Fetch adapters from Dhruva
 - Signed manifest delivery
 - Automatic version updates
 
 **Distributed Configuration**:
+
 - Cloud backup (S3/Azure/GCS)
 - Multi-environment support
 - Configuration versioning
 
 **Enhanced Security**:
+
 - ED25519 signature verification
 - TLS for MCP connections
 - Secret management integration
 
 **Operational Resilience**:
+
 - Automatic health checks
 - Graceful degradation
 - Remote sync retry logic
@@ -262,6 +271,7 @@ export MAHAVISHNU_MCP_URL="http://mahavishnu:8680/mcp"
 ### Usage Patterns
 
 **Production Deployment**:
+
 ```bash
 # Configure environment
 export ONEIRIC_MODE=standard
@@ -280,6 +290,7 @@ oneiric health --probe --json
 ```
 
 **Multi-Environment Setup**:
+
 ```bash
 # Development
 export ONEIRIC_ENV=dev
@@ -309,21 +320,24 @@ oneiric start
 ### Requirements
 
 **Optional Services**:
+
 - **Dhruva** (for remote manifests): http://localhost:8683/mcp
 - **Mahavishnu** (for orchestration): http://localhost:8680/mcp
 - **Cloud Storage** (for backup): S3/Azure/GCS
 
 **Network Access**:
+
 - Connectivity to Dhruva MCP server
 - Connectivity to cloud storage (if using backup)
 - Outbound internet access (if using public cloud)
 
 **Security**:
+
 - ED25519 public key for manifest verification
 - TLS certificates for MCP connections
 - IAM roles for cloud storage access
 
----
+______________________________________________________________________
 
 ## Mode Switching
 
@@ -371,7 +385,7 @@ oneiric load oneiric_backup.yaml
 oneiric start
 ```
 
----
+______________________________________________________________________
 
 ## Serverless Profile (Cloud Run)
 
@@ -447,7 +461,7 @@ health_path = "/tmp/runtime_health.json"
 ❌ **No Remote Sync**: Manifest must be baked in
 ❌ **No Watchers**: File watching disabled
 
----
+______________________________________________________________________
 
 ## Mode Selection Guide
 
@@ -476,7 +490,7 @@ health_path = "/tmp/runtime_health.json"
 - **Stateless**: Your workload is request-scoped and stateless
 - **Fast Startup**: You need sub-second cold start times
 
----
+______________________________________________________________________
 
 ## Performance Comparison
 
@@ -489,13 +503,14 @@ health_path = "/tmp/runtime_health.json"
 | **Remote Sync** | N/A | ~ 500ms | N/A |
 | **Scale to Zero** | No | No | Yes |
 
----
+______________________________________________________________________
 
 ## Troubleshooting
 
 ### "Remote sync failed in Standard Mode"
 
 **Solution**: Check Dhruva connectivity and manifest URL
+
 ```bash
 # Check Dhruva health
 curl http://localhost:8683/mcp/health
@@ -510,6 +525,7 @@ ping dhruva
 ### "Cannot find adapter in Lite Mode"
 
 **Solution**: Use Standard Mode or install adapter locally
+
 ```bash
 # Option 1: Switch to Standard Mode
 export ONEIRIC_MODE=standard
@@ -522,6 +538,7 @@ oneiric activate adapter postgresql --provider pgvector
 ### "Manifest signature verification failed"
 
 **Solution**: Check public key configuration
+
 ```bash
 # Verify public key path
 export ONEIRIC_MANIFEST_PUBLIC_KEY="/path/to/public_key.pem"
@@ -533,7 +550,7 @@ oneiric manifest verify --input manifest.json
 export ONEIRIC_VERIFY_SIGNATURES=false
 ```
 
----
+______________________________________________________________________
 
 ## Next Steps
 
@@ -543,7 +560,7 @@ export ONEIRIC_VERIFY_SIGNATURES=false
 - [Cloud Run Guide](../deployment/CLOUD_RUN.md) - Serverless deployment
 - [Troubleshooting](../runbooks/TROUBLESHOOTING.md) - Common issues and solutions
 
----
+______________________________________________________________________
 
 ## Appendix: Configuration Templates
 
@@ -624,7 +641,7 @@ provider = "pgvector"
 connection_string = "postgresql://prod-db/pgvector"
 ```
 
----
+______________________________________________________________________
 
 **Last Updated**: 2025-02-09
 **Oneiric Version**: v0.3.3

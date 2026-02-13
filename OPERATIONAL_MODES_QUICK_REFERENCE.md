@@ -28,6 +28,7 @@ oneiric start
 ## Files Created
 
 **Core Implementation:**
+
 - `oneiric/modes/base.py` - Base interface
 - `oneiric/modes/lite.py` - Lite mode
 - `oneiric/modes/standard.py` - Standard mode
@@ -35,14 +36,17 @@ oneiric start
 - `oneiric/modes/__init__.py` - Mode registry
 
 **Configuration:**
+
 - `config/lite.yaml` - Lite mode config
 - `config/standard.yaml` - Standard mode config
 
 **Scripts & Tests:**
+
 - `scripts/dev-start.sh` - Startup script
 - `tests/unit/test_modes.py` - Unit tests (32 tests)
 
 **Documentation:**
+
 - `docs/guides/operational-modes.md` - User guide
 - `OPERATIONAL_MODES_COMPLETE.md` - Implementation summary
 

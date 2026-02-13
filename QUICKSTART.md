@@ -27,7 +27,7 @@ oneiric list --domain service
 
 **What you learned**: Basic installation, configuration loading, and component listing.
 
----
+______________________________________________________________________
 
 ## Level 2: Adapter Lifecycle (2 minutes) 🔧
 
@@ -59,7 +59,7 @@ oneiric drain adapter postgresql --note "Maintenance window"
 
 **What you learned**: Adapter activation, resolution explanation, lifecycle management (pause/resume/drain).
 
----
+______________________________________________________________________
 
 ## Level 3: Advanced Resolution (2 minutes) 🎯
 
@@ -96,7 +96,7 @@ oneiric event emit \
 
 **What you learned**: Remote resolution, dependency management, workflow execution, event dispatch.
 
----
+______________________________________________________________________
 
 ## Operational Modes
 
@@ -112,6 +112,7 @@ oneiric start
 ```
 
 **Features**:
+
 - Local configuration only
 - File-based persistence
 - No remote resolution
@@ -127,37 +128,42 @@ oneiric start --remote-url http://dhruva:8683/mcp
 ```
 
 **Features**:
+
 - Remote resolution enabled
 - Distributed configuration
 - Adapter distribution via Dhruva
 - Cloud backup support
 - Production-ready scaling
 
----
+______________________________________________________________________
 
 ## Service Dependencies
 
 ### Required Services
+
 - **None** - Oneiric is fully standalone and can operate without any external services
 
 ### Optional Integrations
 
 **Mahavishnu (Orchestrator)**
+
 - **Purpose**: Component resolution for workflows
 - **Protocol**: MCP
 - **URL**: http://localhost:8680/mcp
 
 **Dhruva (Curator)**
+
 - **Purpose**: Adapter distribution and remote manifests
 - **Protocol**: MCP
 - **URL**: http://localhost:8683/mcp
 
 **Cloud Storage**
+
 - **Purpose**: Remote configuration backup
 - **Providers**: AWS S3, Azure Blob, GCS
 - **Required**: Optional
 
----
+______________________________________________________________________
 
 ## Quick Reference
 
@@ -196,11 +202,12 @@ oneiric activity --domain adapter --json
 oneiric remote-status --json
 ```
 
----
+______________________________________________________________________
 
 ## Next Steps
 
 ### Documentation
+
 - [Configuration Reference](docs/reference/config.md) - Complete configuration options
 - [Adapter Guide](docs/guides/adapters.md) - Creating and using adapters
 - [MCP Integration](docs/integration/mcp.md) - MCP server setup
@@ -208,21 +215,24 @@ oneiric remote-status --json
 - [Operational Modes](docs/guides/operational-modes.md) - Mode comparison and setup
 
 ### Examples
+
 - [Local CLI Demo](docs/examples/LOCAL_CLI_DEMO.md) - Interactive examples
 - [FastBlocks Parity](docs/examples/FASTBLOCKS_PARITY_FIXTURE.yaml) - Production fixture
 - [Observability Guide](docs/OBSERVABILITY_GUIDE.md) - Monitoring and telemetry
 
 ### Advanced Features
+
 - [Remote Manifests](docs/REMOTE_MANIFEST_SCHEMA.md) - Signed remote delivery
 - [Event System](docs/CLI_REFERENCE.md#events) - Event dispatch and fan-out
 - [Workflow Orchestration](docs/CLI_REFERENCE.md#workflows) - DAG execution
 - [Admin Shell](docs/ONEIRIC_ADMIN_SHELL.md) - Interactive debugging
 
----
+______________________________________________________________________
 
 ## Troubleshooting
 
 ### "Cannot resolve adapter"
+
 ```bash
 # Check adapter registry
 oneiric list --domain adapter --shadowed
@@ -235,6 +245,7 @@ oneiric health --probe
 ```
 
 ### "Remote sync failed"
+
 ```bash
 # Check manifest URL
 oneiric remote-sync --manifest /path/to/manifest.yaml --verify-only
@@ -247,6 +258,7 @@ oneiric remote-status --json
 ```
 
 ### "Component not responding"
+
 ```bash
 # Check activity state
 oneiric activity --domain adapter --key postgresql
@@ -258,7 +270,7 @@ oneiric resume adapter postgresql
 oneiric health --probe --json
 ```
 
----
+______________________________________________________________________
 
 ## Ecosystem Role
 
@@ -272,7 +284,7 @@ Oneiric is the **Resolver** in the ecosystem architecture:
 
 **Role Taxonomy**: `resolver` - Manages configuration, components, and lifecycle
 
----
+______________________________________________________________________
 
 ## Getting Help
 
@@ -281,6 +293,6 @@ Oneiric is the **Resolver** in the ecosystem architecture:
 - **Audit Report**: [docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md](docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md)
 - **Migration Guide**: [docs/ONEIRIC_VS_ACB.md](docs/ONEIRIC_VS_ACB.md) - migrating from ACB
 
----
+______________________________________________________________________
 
 **Production Ready**: Oneiric is production-ready with 79.4% coverage, comprehensive testing, and zero critical issues. See the [Stage 5 Audit Report](docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md) for complete metrics.
