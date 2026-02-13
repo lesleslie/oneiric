@@ -835,7 +835,7 @@ wheels = [
 
 [[package]]
 name = "crackerjack"
-version = "0.52.0"
+version = "0.52.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiofiles" },
@@ -844,6 +844,7 @@ dependencies = [
     { name = "codespell" },
     { name = "complexipy" },
     { name = "creosote" },
+    { name = "docstring-to-markdown" },
     { name = "fastapi" },
     { name = "fastmcp" },
     { name = "hatchling" },
@@ -893,9 +894,9 @@ dependencies = [
     { name = "websockets" },
     { name = "zuban" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/13/76/77b131cc340f26fc21318f4a29c889225aa51085ac837f6289f79f0aa3aa/crackerjack-0.52.0.tar.gz", hash = "sha256:1151ee765fad2ce26ac378613c9ae726d3be35d4bd4cbbb9aacbf53f5c6173ea", size = 3679193, upload-time = "2026-02-10T06:55:45.643Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/cf/7e/d1915486a40286685559720930a53f3f39bf7c57f9ce7a68c79f5e5e8f14/crackerjack-0.52.3.tar.gz", hash = "sha256:080c5b4c70a885399c7362cc7c9a45fc964f5922f87a2b96bf6d7bb3109eb4ac", size = 6355895, upload-time = "2026-02-13T17:41:42.518Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/83/13/45743fd5ad7d23e7aefc6b99682f904855eeb52eeadc34a65d2134d19063/crackerjack-0.52.0-py3-none-any.whl", hash = "sha256:b2735d55bd387d00ab75d7734e2a3db32bdee1b1c471bd5ade384c05cd451fda", size = 1079522, upload-time = "2026-02-10T06:55:38.878Z" },
+    { url = "https://files.pythonhosted.org/packages/ba/81/65954c4cf3262c4d73fd6fc61ff9cf27170b9da98c7e8212c7b34fdb177b/crackerjack-0.52.3-py3-none-any.whl", hash = "sha256:5040b15a653cce62c6abe974423f3fc46fbfdfc472146c07e1aca5bc8805f49d", size = 1244952, upload-time = "2026-02-13T17:41:33.127Z" },
 ]
 
 [[package]]
@@ -1090,6 +1091,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/b2/9d/c3b43da9515bd270df0f80548d9944e389870713cc1fe2b8fb35fe2bcefd/docstring_parser-0.17.0.tar.gz", hash = "sha256:583de4a309722b3315439bb31d64ba3eebada841f2e2cee23b99df001434c912", size = 27442, upload-time = "2025-07-21T07:35:01.868Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/55/e2/2537ebcff11c1ee1ff17d8d0b6f4db75873e3b0fb32c2d4a2ee31ecb310a/docstring_parser-0.17.0-py3-none-any.whl", hash = "sha256:cf2569abd23dce8099b300f9b4fa8191e9582dda731fd533daf54c4551658708", size = 36896, upload-time = "2025-07-21T07:35:00.684Z" },
+]
+
+[[package]]
+name = "docstring-to-markdown"
+version = "0.17"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "importlib-metadata" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/52/d8/8abe80d62c5dce1075578031bcfde07e735bcf0afe2886dd48b470162ab4/docstring_to_markdown-0.17.tar.gz", hash = "sha256:df72a112294c7492487c9da2451cae0faeee06e86008245c188c5761c9590ca3", size = 32260, upload-time = "2025-05-02T15:09:07.932Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/56/7b/af3d0da15bed3a8665419bb3a630585756920f4ad67abfdfef26240ebcc0/docstring_to_markdown-0.17-py3-none-any.whl", hash = "sha256:fd7d5094aa83943bf5f9e1a13701866b7c452eac19765380dead666e36d3711c", size = 23479, upload-time = "2025-05-02T15:09:06.676Z" },
 ]
 
 [[package]]
@@ -2525,7 +2539,7 @@ wheels = [
 
 [[package]]
 name = "mcp-common"
-version = "0.9.0"
+version = "0.9.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cryptography" },
@@ -2539,9 +2553,9 @@ dependencies = [
     { name = "typer" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fb/59/7f1a7a95dc7a673a99ec110fb62365d65055ed53c358ab9a371c4519b29f/mcp_common-0.9.0.tar.gz", hash = "sha256:f05311a3be35e69b6010f5cc782ccbe30d739785d2d3f2f7e7d279799e900be3", size = 1859066, upload-time = "2026-02-13T07:12:28.059Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/49/9c/7c0779d47378e3f593d80918cfa7791d2ce34dada528f6ecd12d7d42a43b/mcp_common-0.9.1.tar.gz", hash = "sha256:5c7dcea727342b4c94d616fcdc2de24afc8c73a8b0a4f1c7ae6384216084ea24", size = 1859093, upload-time = "2026-02-13T11:31:42.63Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d6/d9/68d8b715fd90b27d06119212800ba10db0dd1167eddba1bc5c2c69a11477/mcp_common-0.9.0-py3-none-any.whl", hash = "sha256:8a2a27a26816d2e9c50b3d4ddd1a21927ab73cbd3664180aeebb444e44b538c7", size = 330188, upload-time = "2026-02-13T07:12:30.348Z" },
+    { url = "https://files.pythonhosted.org/packages/08/15/b6db474b897c806a50cef8858d90660de947b914a306631fcf44d95f65bd/mcp_common-0.9.1-py3-none-any.whl", hash = "sha256:23700b74c87791f18e08d537d650527b05b1989a950450577fe6b803599c93aa", size = 330186, upload-time = "2026-02-13T11:31:44.32Z" },
 ]
 
 [[package]]
@@ -3098,7 +3112,7 @@ wheels = [
 
 [[package]]
 name = "oneiric"
-version = "0.7.0"
+version = "0.7.1"
 source = { editable = "." }
 dependencies = [
     { name = "aiobreaker" },
@@ -5635,7 +5649,7 @@ wheels = [
 
 [[package]]
 name = "typer"
-version = "0.23.0"
+version = "0.23.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-doc" },
@@ -5643,21 +5657,21 @@ dependencies = [
     { name = "rich" },
     { name = "shellingham" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7e/e6/44e073787aa57cd71c151f44855232feb0f748428fd5242d7366e3c4ae8b/typer-0.23.0.tar.gz", hash = "sha256:d8378833e47ada5d3d093fa20c4c63427cc4e27127f6b349a6c359463087d8cc", size = 120181, upload-time = "2026-02-11T15:22:18.637Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fd/07/b822e1b307d40e263e8253d2384cf98c51aa2368cc7ba9a07e523a1d964b/typer-0.23.1.tar.gz", hash = "sha256:2070374e4d31c83e7b61362fd859aa683576432fd5b026b060ad6b4cd3b86134", size = 120047, upload-time = "2026-02-13T10:04:30.984Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7a/ed/d6fca788b51d0d4640c4bc82d0e85bad4b49809bca36bf4af01b4dcb66a7/typer-0.23.0-py3-none-any.whl", hash = "sha256:79f4bc262b6c37872091072a3cb7cb6d7d79ee98c0c658b4364bdcde3c42c913", size = 56668, upload-time = "2026-02-11T15:22:21.075Z" },
+    { url = "https://files.pythonhosted.org/packages/d5/91/9b286ab899c008c2cb05e8be99814807e7fbbd33f0c0c960470826e5ac82/typer-0.23.1-py3-none-any.whl", hash = "sha256:3291ad0d3c701cbf522012faccfbb29352ff16ad262db2139e6b01f15781f14e", size = 56813, upload-time = "2026-02-13T10:04:32.008Z" },
 ]
 
 [[package]]
 name = "typer-slim"
-version = "0.23.0"
+version = "0.23.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1f/8a/881cfd399a119db89619dc1b93d36e2fb6720ddb112bceff41203f1abd72/typer_slim-0.23.0.tar.gz", hash = "sha256:be8b60243df27cfee444c6db1b10a85f4f3e54d940574f31a996f78aa35a8254", size = 4773, upload-time = "2026-02-11T15:22:19.106Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/da/22/b9c47b8655937b6877d40791b937931702ba9c5f9d28753199266aa96f50/typer_slim-0.23.1.tar.gz", hash = "sha256:dfe92a6317030ee2380f65bf92e540d7c77fefcc689e10d585b4925b45b5e06a", size = 4762, upload-time = "2026-02-13T10:04:26.416Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/07/3e/ba3a222c80ee070d9497ece3e1fe77253c142925dd4c90f04278aac0a9eb/typer_slim-0.23.0-py3-none-any.whl", hash = "sha256:1d693daf22d998a7b1edab8413cdcb8af07254154ce3956c1664dc11b01e2f8b", size = 3399, upload-time = "2026-02-11T15:22:17.792Z" },
+    { url = "https://files.pythonhosted.org/packages/ad/8a/5764b851659345f34787f1b6eb30b9d308bbd6c294825cbe38b6b869c97a/typer_slim-0.23.1-py3-none-any.whl", hash = "sha256:8146d5df1eb89f628191c4c604c8464fa841885d0733c58e6e700ff0228adac5", size = 3397, upload-time = "2026-02-13T10:04:27.132Z" },
 ]
 
 [[package]]
