@@ -8,6 +8,8 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any, cast
 
+import yaml
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from oneiric.runtime.health import default_runtime_health_path
@@ -220,18 +222,152 @@ class OneiricSettings(BaseModel):
     )
 
 
-def load_settings(path: str | Path | None = None) -> OneiricSettings:
+def load_settings(
+    path: str | Path | None = None,
+    project_name: str = "oneiric",
+) -> OneiricSettings:
+    """Load Oneiric settings with XDG-compliant layered configuration.
+
+    Configuration priority (highest to lowest):
+    1. Explicit path argument
+    2. {PROJECT_NAME}_CONFIG environment variable
+    3. Environment variable overrides ({PROJECT_NAME}_{SETTING}__)
+    4. XDG user config: ~/.config/{project_name}/config.yaml
+    5. Project local override: settings/local.yaml (development)
+    6. Code defaults
+
+    Note: XDG config overrides project local config because user preferences
+    should take precedence over repository defaults.
+
+    Args:
+        path: Optional explicit config file path (highest priority)
+        project_name: Project identifier for XDG/environment variable lookup
+            (e.g., "oneiric", "session_buddy", "crackerjack")
+
+    Returns:
+        Validated OneiricSettings instance with all layers applied
+
+    Examples:
+        >>> # Load with defaults
+        >>> settings = load_settings()
+
+        >>> # Load for specific project (uses XDG config)
+        >>> settings = load_settings(project_name="session_buddy")
+
+        >>> # Load with explicit config override
+        >>> settings = load_settings(path="/path/to/config.yaml")
+    """
     data: dict[str, Any] = {}
-    config_path = path or os.getenv("ONEIRIC_CONFIG")
+
+    # Track if we have an explicit config (to apply as final override)
+    explicit_config_data: dict[str, Any] | None = None
+    config_path = path or os.getenv(f"{project_name.upper()}_CONFIG")
     if config_path:
         file = Path(config_path)
         if file.exists():
-            data = _read_file(file)
+            explicit_config_data = _read_file(file)
+            logger.info(
+                "explicit-config-loaded",
+                path=str(file),
+                layer="explicit",
+            )
         else:
-            logger.warning("config-file-missing", path=str(file))
+            logger.warning(
+                "config-file-missing",
+                path=str(file),
+                layer="explicit",
+            )
 
-    merged = _deep_merge(data, _env_overrides())
-    return OneiricSettings.model_validate(merged)
+    # Layer 1: Project local override (settings/local.yaml)
+    # Lowest priority (development-specific, user config should override)
+    local_yaml = Path("settings") / "local.yaml"
+    if local_yaml.exists():
+        try:
+            local_data = _read_file(local_yaml)
+            data = _deep_merge(data, local_data)
+            logger.info(
+                "local-config-loaded",
+                path=str(local_yaml),
+                layer="project-local",
+            )
+        except (json.JSONDecodeError, tomllib.TOMLDecodeError, yaml.YAMLError) as e:
+            logger.warning(
+                "local-config-parse-error",
+                path=str(local_yaml),
+                error=str(e),
+                layer="project-local",
+            )
+
+    # Layer 2: XDG user config (~/.config/{project_name}/config.yaml)
+    # Higher priority than project local (user config > project defaults)
+    xdg_config_home = os.environ.get("XDG_CONFIG_HOME", "~/.config")
+    xdg_config_path = Path(xdg_config_home).expanduser() / project_name / "config.yaml"
+    if xdg_config_path.exists():
+        try:
+            xdg_data = _read_file(xdg_config_path)
+            data = _deep_merge(data, xdg_data)
+            logger.info(
+                "xdg-config-loaded",
+                path=str(xdg_config_path),
+                project=project_name,
+                layer="xdg",
+            )
+        except (json.JSONDecodeError, tomllib.TOMLDecodeError, yaml.YAMLError) as e:
+            logger.warning(
+                "xdg-config-parse-error",
+                path=str(xdg_config_path),
+                error=str(e),
+                layer="xdg",
+            )
+
+    # Layer 3: Environment variable overrides (highest priority)
+    env_data = _env_overrides(project_name)
+    if env_data:
+        data = _deep_merge(data, env_data)
+        logger.info(
+            "env-overrides-applied",
+            count=len(env_data),
+            project=project_name,
+            layer="environment",
+        )
+
+    # Layer 4: Explicit config (absolute highest priority)
+    # Applied LAST to override all other layers
+    if explicit_config_data is not None:
+        data = _deep_merge(data, explicit_config_data)
+        logger.info(
+            "explicit-config-applied",
+            layer="explicit-final",
+        )
+        try:
+            xdg_data = _read_file(xdg_config_path)
+            data = _deep_merge(data, xdg_data)
+            logger.info(
+                "xdg-config-loaded",
+                path=str(xdg_config_path),
+                project=project_name,
+                layer="xdg",
+            )
+        except (json.JSONDecodeError, tomllib.TOMLDecodeError, yaml.YAMLError) as e:
+            logger.warning(
+                "xdg-config-parse-error",
+                path=str(xdg_config_path),
+                error=str(e),
+                layer="xdg",
+            )
+
+    # Layer 4: Environment variable overrides (highest priority)
+    env_data = _env_overrides(project_name)
+    if env_data:
+        data = _deep_merge(data, env_data)
+        logger.info(
+            "env-overrides-applied",
+            count=len(env_data),
+            project=project_name,
+            layer="environment",
+        )
+
+    return OneiricSettings.model_validate(data)
 
 
 def resolver_settings_from_config(settings: OneiricSettings) -> ResolverSettings:
@@ -428,13 +564,37 @@ class SecretsHook:
         return (override or self._default_cache_key or "default").lower()
 
 
-def _env_overrides(prefix: str = "ONEIRIC_") -> dict[str, Any]:  # noqa: C901
+def _env_overrides(project_name: str = "oneiric") -> dict[str, Any]:  # noqa: C901
+    """Generate environment variable overrides for a project.
+
+    Environment variables should be formatted as:
+    {PROJECT_NAME}_{SECTION}__{FIELD}
+
+    Examples:
+        ONEIRIC_REMOTE__CACHE_DIR=/tmp/cache
+        SESSION_BUDDY_LOGGING__LEVEL=DEBUG
+        CRACKERJACK_REMOTE__ENABLED=false
+
+    Args:
+        project_name: Project name used for environment variable prefix
+            (e.g., "oneiric", "session_buddy", "crackerjack")
+
+    Returns:
+        Dict of configuration overrides from environment variables
+    """
+    # Convert project name to env prefix (e.g., "session_buddy" -> "SESSION_BUDDY_")
+    prefix = f"{project_name.upper()}_"
+
     overrides: dict[str, Any] = {}
     for key, value in os.environ.items():
         if not key.startswith(prefix):
             continue
+        # Remove prefix and split on __ to get nested keys
+        # Example: "REMOTE__CACHE_DIR" -> ["remote", "cache_dir"]
         path = key[len(prefix) :].lower().split("__")
         coerced = _coerce_env_value(value)
+
+        # Special handling for profile (single-level override)
         if len(path) == 1 and path[0] == "profile":
             profile_section = overrides.setdefault("profile", {})
             if isinstance(profile_section, dict):
@@ -442,10 +602,13 @@ def _env_overrides(prefix: str = "ONEIRIC_") -> dict[str, Any]:  # noqa: C901
             else:
                 overrides["profile"] = {"name": coerced}
             continue
+
+        # Build nested dict structure
         cursor = overrides
         for part in path[:-1]:
             cursor = cursor.setdefault(part, {})
         cursor[path[-1]] = coerced
+
     return overrides
 
 
@@ -464,13 +627,47 @@ def _coerce_env_value(value: str) -> Any:
 
 
 def _read_file(path: Path) -> dict[str, Any]:
+    """Read configuration file and return parsed dictionary.
+
+    Supports multiple formats:
+    - YAML (.yaml, .yml)
+    - TOML (.toml, .tml)
+    - JSON (.json or starts with '{')
+
+    Args:
+        path: Path to configuration file
+
+    Returns:
+        Parsed configuration dictionary
+
+    Raises:
+        tomllib.TOMLDecodeError: If TOML parsing fails
+        json.JSONDecodeError: If JSON parsing fails
+        yaml.YAMLError: If YAML parsing fails
+    """
     content = path.read_text()
+
+    # Try YAML first (most common for config files)
+    if path.suffix in {".yaml", ".yml"}:
+        try:
+            return yaml.safe_load(content) or {}
+        except yaml.YAMLError as e:
+            logger.error("yaml-parse-error", path=str(path), error=str(e))
+            raise
+
+    # Try TOML
     if path.suffix in {".toml", ".tml"}:
         return tomllib.loads(content)
+
+    # Try JSON
     if path.suffix == ".json":
         return json.loads(content)
+
+    # Detect JSON by content
     if content.strip().startswith("{"):
         return json.loads(content)
+
+    # Default to TOML for backwards compatibility
     return tomllib.loads(content)
 
 
