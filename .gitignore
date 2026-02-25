@@ -98,3 +98,9 @@ wheels/
 # XDG - DELETE candidates
 .obsidian/
 
+
+# Archive directories
+.archive/
+.archives/
+.backup/
+.backups/
