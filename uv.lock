@@ -2602,7 +2602,7 @@ wheels = [
 
 [[package]]
 name = "mcp-common"
-version = "0.9.7"
+version = "0.9.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cryptography" },
@@ -2616,9 +2616,9 @@ dependencies = [
     { name = "typer" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8a/59/1d5c47fd6b192fbb26ab485f81e10b27a2173d4303de5fc671b8347a54ea/mcp_common-0.9.7.tar.gz", hash = "sha256:a8e0faa5d05098a19983e489a1047655bc7da262d51c86e68da4ec273fbd3173", size = 1843856, upload-time = "2026-03-20T12:49:53.402Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/79/a9/4e31015cf0fb3359163c06db0113a9acb610cf39cb33fa5d5a26c035251c/mcp_common-0.9.8.tar.gz", hash = "sha256:ad292a235fa3150c83fdaa2b73713187dff7a02cc5f2e8789a47796bd03c3b14", size = 1843984, upload-time = "2026-03-20T13:05:49.285Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4c/af/96b26c6cd347ef1cf68189318fb42ce5590039c65e85e0370842bfe4c75c/mcp_common-0.9.7-py3-none-any.whl", hash = "sha256:74d166fa979dc5e02fe844697dc6ce5fec9235248701d9970beed0324adcb8fc", size = 351607, upload-time = "2026-03-20T12:49:51.989Z" },
+    { url = "https://files.pythonhosted.org/packages/d7/79/fb714fc27f1fd14a6cf2291aff8f60521e4e754973cd163f72b5f0ad2882/mcp_common-0.9.8-py3-none-any.whl", hash = "sha256:a4906b88a4e9ceb2ef92c4a7075b2a61e699de067150cfb8dae949b72a79ddb6", size = 351607, upload-time = "2026-03-20T13:05:51.022Z" },
 ]
 
 [package.optional-dependencies]
@@ -3194,7 +3194,7 @@ wheels = [
 
 [[package]]
 name = "oneiric"
-version = "0.8.0"
+version = "0.8.1"
 source = { editable = "." }
 dependencies = [
     { name = "aiobreaker" },
@@ -5159,7 +5159,7 @@ wheels = [
 
 [[package]]
 name = "session-buddy"
-version = "0.14.3"
+version = "0.14.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiofiles" },
@@ -5168,6 +5168,7 @@ dependencies = [
     { name = "duckdb" },
     { name = "fastmcp" },
     { name = "hatchling" },
+    { name = "mcp-common", extra = ["treesitter"] },
     { name = "numpy" },
     { name = "onnxruntime" },
     { name = "prometheus-client" },
@@ -5182,9 +5183,9 @@ dependencies = [
     { name = "typer" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/38/88/1f00b0dade0f59c0ad750076f97a261741d9efb13836be7cfd575f6dbcc1/session_buddy-0.14.3.tar.gz", hash = "sha256:05d9512bff3be54900b58aa88a65d869e67de85c25307399b822a42eaf722559", size = 6739919, upload-time = "2026-02-20T18:52:09.164Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ac/e5/4fe377795c1f116fa170dcdd613513856f36fa02a75ce4a35692160c4dd0/session_buddy-0.14.4.tar.gz", hash = "sha256:04cbe2c2eed69dfe623c27ecfe26457896378dba918f3e25b6788b336af8a07e", size = 6526957, upload-time = "2026-03-20T13:04:10.856Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/05/62/54b1cf9019dff5b223ee8767bcc26941bbe543c517ace2c20cd90295daca/session_buddy-0.14.3-py3-none-any.whl", hash = "sha256:fce7660c7e8f08202258940998479a7db18d6b9e8ef5f08e674a777e3862a7b5", size = 3243579, upload-time = "2026-02-20T18:51:59.478Z" },
+    { url = "https://files.pythonhosted.org/packages/11/25/72a245b31e0e3c18bc5b0e7da2a684156cbf6b6bd48a9acc0ef8be1a4706/session_buddy-0.14.4-py3-none-any.whl", hash = "sha256:41aee02c5faf85b0bb38ab44486b2d7082a1cc3118569aea731c1a7a2c21a79b", size = 3261949, upload-time = "2026-03-20T13:04:01.97Z" },
 ]
 
 [[package]]
@@ -5216,7 +5217,7 @@ wheels = [
 
 [[package]]
 name = "skylos"
-version = "4.1.0"
+version = "4.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ca9" },
@@ -5235,7 +5236,10 @@ dependencies = [
     { name = "tree-sitter-go" },
     { name = "tree-sitter-typescript" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4f/23/a29d2011b0380976f2d4028102bc54613ab4ebdb99ee89772182c393e84e/skylos-4.1.0.tar.gz", hash = "sha256:2ec064c238a242b417c7f4f930a5db6ebc90031482959aff2f6f2d1df57413da", size = 666453, upload-time = "2026-03-20T05:43:00.886Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1b/d1/c4ccb74290899dd1a9203e542aacbeb2a0df191d6dad307917a913dbc034/skylos-4.1.1.tar.gz", hash = "sha256:eb6b18eb587db4e266c6679df84fe3334787aefc2429c47fbd92845adec74fbb", size = 678204, upload-time = "2026-03-20T13:02:18.024Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fc/e0/786368c464ca42c39978ffd8f54fe04d5d399d2679c859952fa3d23b35db/skylos-4.1.1-py3-none-any.whl", hash = "sha256:ee499e4367f148a8f32eb055ac2ece0bb67eaf84fc0b285aa0ef55d534bffb8c", size = 472583, upload-time = "2026-03-20T13:02:15.947Z" },
+]
 
 [[package]]
 name = "sniffio"
