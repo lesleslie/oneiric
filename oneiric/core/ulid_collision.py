@@ -5,8 +5,8 @@ providing retry strategies and resolution tracking.
 """
 
 import logging
-from typing import Optional
-from oneiric.core.ulid import generate, is_ulid, get_timestamp
+
+from oneiric.core.ulid import generate
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +25,7 @@ class CollisionError(Exception):
             f"ULID collision detected: {new_ulid} already exists as {existing_ulid}"
         )
 
+
 def detect_collision(new_ulid: str, existing_ulids: set[str]) -> bool:
     """Check if new ULID collides with existing set.
 
@@ -36,6 +37,7 @@ def detect_collision(new_ulid: str, existing_ulids: set[str]) -> bool:
         True if collision detected
     """
     return new_ulid in existing_ulids
+
 
 def register_collision(existing_ulid: str, new_ulid: str, context: str) -> None:
     """Register collision for monitoring and analysis.
@@ -55,6 +57,7 @@ def register_collision(existing_ulid: str, new_ulid: str, context: str) -> None:
     logger.warning(
         f"ULID collision #{_collision_count}: {new_ulid} collided with {existing_ulid} in {context}"
     )
+
 
 def generate_with_retry(
     max_attempts: int = 3,
@@ -82,11 +85,16 @@ def generate_with_retry(
 
         # Collision detected - register and retry
         register_collision(new_ulid, new_ulid, context)
-        logger.warning(f"Collision attempt {attempt + 1}/{max_attempts}, regenerating...")
+        logger.warning(
+            f"Collision attempt {attempt + 1}/{max_attempts}, regenerating..."
+        )
 
     # Only raise error if collision detected and attempts exhausted
     if attempt == max_attempts - 1 and detect_collision(new_ulid, existing_ulids):
-        raise CollisionError(new_ulid, existing_ulids.pop() if existing_ulids else "empty_set")
+        raise CollisionError(
+            new_ulid, existing_ulids.pop() if existing_ulids else "empty_set"
+        )
+
 
 def get_collision_stats() -> dict[str, int]:
     """Get collision statistics for monitoring.

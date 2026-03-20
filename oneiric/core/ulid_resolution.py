@@ -7,8 +7,7 @@ and complete traceability.
 """
 
 import logging
-from datetime import datetime, UTC
-from typing import Dict, List, Optional
+from datetime import UTC, datetime
 
 # Oneiric imports
 try:
@@ -26,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 # Global registry of ULID → system mappings
-_ulid_registry: Dict[str, "SystemReference"] = {}
+_ulid_registry: dict[str, "SystemReference"] = {}
 
 
 class SystemReference:
@@ -37,7 +36,7 @@ class SystemReference:
         ulid: str,
         system: str,  # "akosha", "crackerjack", "session_buddy", "mahavishnu"
         reference_type: str,  # "entity", "test", "session", "workflow", "pool_execution"
-        metadata: Optional[Dict] = None,
+        metadata: dict | None = None,
     ):
         self.ulid = ulid
         self.system = system
@@ -61,7 +60,7 @@ def register_reference(
     ulid: str,
     system: str,
     reference_type: str,
-    metadata: Optional[Dict] = None,
+    metadata: dict | None = None,
 ) -> None:
     """Register ULID cross-system reference.
 
@@ -76,7 +75,7 @@ def register_reference(
     logger.debug(f"Registered ULID reference: {ulid} → {system}:{reference_type}")
 
 
-def resolve_ulid(ulid: str) -> Optional[SystemReference]:
+def resolve_ulid(ulid: str) -> SystemReference | None:
     """Resolve ULID to system reference.
 
     Args:
@@ -88,7 +87,7 @@ def resolve_ulid(ulid: str) -> Optional[SystemReference]:
     return _ulid_registry.get(ulid)
 
 
-def find_references_by_system(system: str) -> List["SystemReference"]:
+def find_references_by_system(system: str) -> list["SystemReference"]:
     """Find all references from a specific system.
 
     Args:
@@ -103,7 +102,7 @@ def find_references_by_system(system: str) -> List["SystemReference"]:
 def find_related_ulids(
     ulid: str,
     time_window_ms: int = 60000,  # 1 minute default
-) -> List[str]:
+) -> list[str]:
     """Find ULIDs related by time proximity.
 
     Args:
@@ -129,7 +128,7 @@ def find_related_ulids(
     return related
 
 
-def get_cross_system_trace(ulid: str) -> Dict[str, any]:
+def get_cross_system_trace(ulid: str) -> dict[str, any]:
     """Get complete cross-system trace for ULID.
 
     Args:
@@ -160,7 +159,7 @@ def get_cross_system_trace(ulid: str) -> Dict[str, any]:
     }
 
 
-def export_registry() -> Dict[str, Dict]:
+def export_registry() -> dict[str, dict]:
     """Export complete registry for debugging/analysis.
 
     Returns:
@@ -177,14 +176,14 @@ def export_registry() -> Dict[str, Dict]:
     }
 
 
-def get_registry_stats() -> Dict[str, int]:
+def get_registry_stats() -> dict[str, int]:
     """Get registry statistics for monitoring.
 
     Returns:
         Dictionary with registration metrics
     """
-    system_counts: Dict[str, int] = {}
-    type_counts: Dict[str, int] = {}
+    system_counts: dict[str, int] = {}
+    type_counts: dict[str, int] = {}
 
     for ref in _ulid_registry.values():
         system_counts[ref.system] = system_counts.get(ref.system, 0) + 1

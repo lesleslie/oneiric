@@ -14,12 +14,12 @@ Key functions:
 """
 
 import logging
-from typing import Any, Dict
 from datetime import datetime
+from typing import Any
 
 # Oneiric imports
 try:
-    from oneiric.core.ulid import generate, is_ulid, get_timestamp
+    from oneiric.core.ulid import generate, get_timestamp, is_ulid
 except ImportError:
     # Fallback if Oneiric is not available (e.g., during standalone migration)
     generate = None  # Will use dhruva directly if Oneiric wrapper unavailable
@@ -66,7 +66,10 @@ def detect_id_type(identifier: str) -> str:
 
     # Check for UUID format (36-char with 4 dashes)
     import re
-    uuid_pattern = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
+
+    uuid_pattern = re.compile(
+        r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    )
     if uuid_pattern.match(identifier.lower()):
         return "uuid"
 
@@ -81,7 +84,7 @@ def generate_migration_map(
     table_name: str,
     id_column: str,
     limit: int = 1000,
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """Generate mapping from legacy IDs to ULIDs for a table.
 
     Args:
@@ -134,23 +137,23 @@ def create_expand_contract_migration(
     logger.info(f"Generating expand-contract SQL for {table_name}.{new_column}")
 
     sql_statements = [
-        f"-- EXPAND phase: Add new ULID column alongside legacy ID",
+        "-- EXPAND phase: Add new ULID column alongside legacy ID",
         f"ALTER TABLE {table_name} ADD COLUMN {new_column} TEXT;",
         "",
-        f"-- MIGRATION phase: Backfill ULIDs for existing records",
+        "-- MIGRATION phase: Backfill ULIDs for existing records",
         f"UPDATE {table_name} SET {new_column} = generate_ulid() WHERE {new_column} IS NULL;",
         "",
-        f"-- SWITCH phase: Update foreign keys to use ULID",
+        "-- SWITCH phase: Update foreign keys to use ULID",
         f"-- Application code changes needed to reference {new_column}",
         "",
-        f"-- CONTRACT phase: Remove legacy ID column (after verification period)",
+        "-- CONTRACT phase: Remove legacy ID column (after verification period)",
         f"ALTER TABLE {table_name} DROP COLUMN {id_column};",
-    "",
-    f"-- Note: For SQLite, DROP COLUMN requires copying table to new table",
-        f"-- Recommended verification period: 30 days",
-    "",
-        f"-- Alternative: Use dual-write pattern if foreign keys prevent DROP",
-    "",
+        "",
+        "-- Note: For SQLite, DROP COLUMN requires copying table to new table",
+        "-- Recommended verification period: 30 days",
+        "",
+        "-- Alternative: Use dual-write pattern if foreign keys prevent DROP",
+        "",
     ]
 
     return sql_statements
@@ -199,7 +202,7 @@ def validate_migration_integrity(
 def estimate_migration_time(
     record_count: int,
     records_per_second: float = 1000.0,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Estimate migration time for planning.
 
     Args:

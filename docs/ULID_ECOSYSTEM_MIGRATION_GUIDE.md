@@ -7,6 +7,7 @@ Complete guide for migrating ecosystem systems to ULID-based identifiers.
 **Migration Goal:** Transition all ecosystem systems (Dhruva, Oneiric, Akosha, Crackerjack, Session-Buddy, Mahavishnu) to use unified ULID identifiers for cross-system correlation and time-ordered traceability.
 
 **Migration Status:**
+
 - ✅ Dhruva: Already using ULID (128-bit, Crockford Base32)
 - ✅ Oneiric: ULID foundation complete (monotonicity, collision detection, migration utilities)
 - ⏳ Akosha: Analysis complete, migration pending (LOW complexity)
@@ -19,15 +20,16 @@ Complete guide for migrating ecosystem systems to ULID-based identifiers.
 All systems use expand-contract pattern for zero-downtime migration:
 
 1. **EXPAND Phase:** Add new ULID column alongside legacy identifiers
-2. **MIGRATION Phase:** Backfill ULIDs for existing records
-3. **SWITCH Phase:** Update application code to reference ULID column
-4. **CONTRACT Phase:** Remove legacy identifier columns after verification period
+1. **MIGRATION Phase:** Backfill ULIDs for existing records
+1. **SWITCH Phase:** Update application code to reference ULID column
+1. **CONTRACT Phase:** Remove legacy identifier columns after verification period
 
 ## System-Specific Migration Procedures
 
 ### Akosha Knowledge Graph Migration
 
 **Current State:**
+
 - Entity IDs: `f"system:{system_id}"`, `f"user:{user_id}"`
 - Storage: In-memory (no Dhruva persistence yet)
 - Complexity: **LOW** (can switch incrementally)
@@ -50,6 +52,7 @@ class GraphEntity:
 ```
 
 **Validation:**
+
 ```python
 # After migration, verify:
 entities = knowledge_graph.get_all_entities()
@@ -59,6 +62,7 @@ assert all(is_valid_ulid(e.entity_id) for e in entities)
 ### Crackerjack Test Tracking Migration
 
 **Current State:**
+
 - Schema: `id INTEGER PRIMARY KEY AUTOINCREMENT` + `job_id TEXT UNIQUE NOT NULL`
 - All foreign keys already reference `job_id TEXT`
 - Complexity: **VERY LOW** (no schema changes needed!)
@@ -98,6 +102,7 @@ def create_test_job(test_file: str) -> str:
 ### Session-Buddy Session Tracking Migration
 
 **Current State:**
+
 - Session IDs: `f"{project_name}-{timestamp}"`
 - Storage: DuckDB with VARCHAR columns
 - Foreign Keys: None (flexible schema)
@@ -143,6 +148,7 @@ def create_session(project_name: str) -> str:
 **Location:** `/Users/les/Projects/mahavishnu/mahavishnu/core/workflow_models.py`
 
 **Features:**
+
 - `WorkflowExecution` with ULID validation
 - `PoolExecution` with ULID validation
 - `WorkflowCheckpoint` with ULID validation
@@ -168,6 +174,7 @@ execution = WorkflowExecution(
 **Location:** `/Users/les/Projects/oneiric/oneiric/core/ulid_resolution.py`
 
 **Capabilities:**
+
 - Register ULID references with system metadata
 - Resolve ULID to source system
 - Find references by system
@@ -288,6 +295,7 @@ assert 1000/elapsed > 10000, 'Generation too slow! < 10,000 ops/sec'
 **Rollback Steps:**
 
 1. **Stop all application services:**
+
 ```bash
 # Stop Mahavishnu
 mahavishnu mcp stop
@@ -300,6 +308,7 @@ crackerjack stop
 ```
 
 2. **Restore from backup:**
+
 ```bash
 # Restore databases
 cd /path/to/backups
@@ -314,6 +323,7 @@ git revert <migration-commit-hash>
 ```
 
 3. **Verify restore:**
+
 ```bash
 # Validate restored data
 sqlite3 crackerjack.db "PRAGMA integrity_check;"
@@ -325,6 +335,7 @@ session-buddy mcp start
 ```
 
 4. **Document rollback:**
+
 ```markdown
 # ROLLBACK NOTE
 Date: [date]
@@ -368,20 +379,23 @@ watch -n 10 'echo "=== Migration Health ===" \
 ### Baseline Performance (Post-Migration)
 
 **ULID Generation:**
+
 - Throughput: **~98,000 - 985,000 ops/sec**
 - Collision Rate: **0%** (zero collisions in 10,000 ULIDs)
 - Monotonic: **100%** (ULIDs sortable by generation time)
 
 **ULID Resolution:**
+
 - Registration: **~5,000 ops/sec** (0.2ms per operation)
 - Resolution: **~655,000 ops/sec** (0.0015ms per lookup)
 - Find Related: **~0.002ms** per query (100 ULIDs in registry)
 
 **Migration Targets:**
-- Akosha: Maintain <100ms per entity operation
-- Crackerjack: Maintain <50ms per test lookup
-- Session-Buddy: Maintain <75ms per session lookup
-- Mahavishnu: <10ms per workflow operation
+
+- Akosha: Maintain \<100ms per entity operation
+- Crackerjack: Maintain \<50ms per test lookup
+- Session-Buddy: Maintain \<75ms per session lookup
+- Mahavishnu: \<10ms per workflow operation
 
 ## Success Criteria
 
@@ -401,6 +415,7 @@ Migration is successful when ALL criteria met:
 ### Common Issues
 
 **Issue:** ULID validation failing
+
 ```python
 # Solution: Check Oneiric import
 from oneiric.core.ulid import is_config_ulid
@@ -408,6 +423,7 @@ print(is_config_ulid("01ARZ3NDEKTS6PQRYF"))  # Should be True
 ```
 
 **Issue:** Cross-system resolution not working
+
 ```python
 # Solution: Verify registration
 from oneiric.core.ulid_resolution import export_registry
@@ -415,6 +431,7 @@ print(export_registry())  # Should show all registered ULIDs
 ```
 
 **Issue:** Performance degradation
+
 ```bash
 # Solution: Check registry size
 python -c "
@@ -427,15 +444,16 @@ print(f'Max recommended: 100000 entries')
 ## Next Steps
 
 1. **Execute system migrations** (see System-Specific sections above)
-2. **Run post-migration validation** (see Validation Procedures)
-3. **Update application code** to use ULID references
-4. **Deploy cross-system resolution service** (already complete)
-5. **Monitor performance** for 7 days post-migration
-6. **Remove legacy columns** after verification period (CONTRACT phase)
+1. **Run post-migration validation** (see Validation Procedures)
+1. **Update application code** to use ULID references
+1. **Deploy cross-system resolution service** (already complete)
+1. **Monitor performance** for 7 days post-migration
+1. **Remove legacy columns** after verification period (CONTRACT phase)
 
 ## Contact
 
 For migration support or questions:
+
 - **Architecture:** See `/Users/les/Projects/mahavishnu/docs/adr/` ADRs
 - **Implementation:** See individual project documentation
 - **Testing:** See test files in `tests/integration/test_ulid_cross_system_integration.py`

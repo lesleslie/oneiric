@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module external.system.id="java-source" type="PYTHON_MODULE" version="4">
   <component name="NewModuleRootManager">
-    <content url="file://$MODULE_DIR$">
-      <excludeFolder url="file://$MODULE_DIR$/.venv" />
-    </content>
+    <content url="file://$MODULE_DIR$/docs/examples/plugins/hello_oneiric_plugin" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="jdk" jdkName="uv (oneiric)" jdkType="Python SDK" />
   </component>
 </module>

@@ -257,18 +257,160 @@ class OTelStorageAdapter(ABC):
             self._logger.error("metrics-store-failed", error=str(exc))
             raise
 
-    @abstractmethod
     async def find_similar_traces(
         self, embedding: list[float], threshold: float = 0.85
     ) -> list[dict]:
-        raise NotImplementedError
+        """Find traces similar to the provided embedding vector.
 
-    @abstractmethod
+        Uses pgvector cosine similarity search to find traces with embeddings
+        that exceed the similarity threshold.
+
+        Args:
+            embedding: 384-dimensional embedding vector for similarity comparison.
+            threshold: Minimum cosine similarity score (0.0 to 1.0). Defaults to 0.85.
+
+        Returns:
+            List of trace dictionaries with trace_id, span_id, name, service,
+            operation, status, duration_ms, start_time, end_time, attributes,
+            and similarity score.
+        """
+        if self._query_service is None:
+            self._logger.error("query-service-not-initialized")
+            return []
+
+        try:
+            import numpy as np
+
+            embedding_array = np.array(embedding, dtype=np.float32)
+
+            results = await self._query_service.find_similar_traces(
+                embedding=embedding_array,
+                threshold=threshold,
+                limit=getattr(self._settings, "query_limit", 100),
+            )
+
+            self._logger.debug(
+                "similar-traces-found",
+                count=len(results),
+                threshold=threshold,
+            )
+
+            return [result.model_dump() for result in results]
+
+        except Exception as exc:
+            self._logger.error(
+                "find-similar-traces-failed",
+                error=str(exc),
+                threshold=threshold,
+            )
+            raise
+
     async def get_traces_by_error(
         self, error_type: str, service: str | None = None
     ) -> list[dict]:
-        raise NotImplementedError
+        """Get traces that match an error pattern.
 
-    @abstractmethod
+        Searches trace attributes for error messages matching the provided
+        pattern using SQL LIKE matching.
+
+        Args:
+            error_type: Error pattern to search for (SQL LIKE pattern).
+            service: Optional service name to filter by.
+
+        Returns:
+            List of trace dictionaries with trace_id, span_id, name, service,
+            operation, status, duration_ms, start_time, end_time, and attributes.
+        """
+        if self._query_service is None:
+            self._logger.error("query-service-not-initialized")
+            return []
+
+        try:
+            results = await self._query_service.get_traces_by_error(
+                error_pattern=error_type,
+                service=service,
+                limit=getattr(self._settings, "query_limit", 100),
+            )
+
+            self._logger.debug(
+                "error-traces-found",
+                count=len(results),
+                error_type=error_type,
+                service=service,
+            )
+
+            return [result.model_dump() for result in results]
+
+        except Exception as exc:
+            self._logger.error(
+                "get-traces-by-error-failed",
+                error=str(exc),
+                error_type=error_type,
+                service=service,
+            )
+            raise
+
     async def search_logs(self, trace_id: str, level: str | None = None) -> list[dict]:
-        raise NotImplementedError
+        """Search logs by trace ID and optional log level.
+
+        Retrieves log entries associated with a specific trace, optionally
+        filtered by log level (DEBUG, INFO, WARNING, ERROR, CRITICAL).
+
+        Args:
+            trace_id: The trace ID to search logs for.
+            level: Optional log level filter.
+
+        Returns:
+            List of log dictionaries with id, timestamp, level, message,
+            trace_id, resource_attributes, and span_attributes.
+        """
+        if self._session_factory is None:
+            self._logger.error("session-factory-not-initialized")
+            return []
+
+        try:
+            from sqlalchemy import select
+
+            async with self._session_factory() as session:
+                query = select(LogModel).where(LogModel.trace_id == trace_id)
+
+                if level:
+                    query = query.where(LogModel.level == level.upper())
+
+                query = query.order_by(LogModel.timestamp.desc()).limit(
+                    getattr(self._settings, "query_limit", 100)
+                )
+
+                result = await session.execute(query)
+                log_models = result.scalars().all()
+
+                logs = [
+                    {
+                        "id": log.id,
+                        "timestamp": log.timestamp.isoformat() if log.timestamp else None,
+                        "level": log.level,
+                        "message": log.message,
+                        "trace_id": log.trace_id,
+                        "resource_attributes": log.resource_attributes or {},
+                        "span_attributes": log.span_attributes or {},
+                    }
+                    for log in log_models
+                ]
+
+                self._logger.debug(
+                    "logs-found",
+                    count=len(logs),
+                    trace_id=trace_id,
+                    level=level,
+                )
+
+                return logs
+
+        except Exception as exc:
+            self._logger.error(
+                "search-logs-failed",
+                error=str(exc),
+                trace_id=trace_id,
+                level=level,
+            )
+            raise

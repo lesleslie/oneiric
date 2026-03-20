@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Any, cast
 
 import yaml
-
 from pydantic import BaseModel, ConfigDict, Field
 
 from oneiric.runtime.health import default_runtime_health_path

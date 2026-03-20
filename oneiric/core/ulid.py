@@ -8,7 +8,11 @@ support for Oneiric, enabling:
 - Time-based config history queries
 
 Example:
-    >>> from oneiric.core.ulid import generate_config_id, is_config_ulid, extract_timestamp
+    >>> from oneiric.core.ulid import (
+    ...     generate_config_id,
+    ...     is_config_ulid,
+    ...     extract_timestamp,
+    ... )
     >>> config_id = generate_config_id()
     >>> print(config_id)  # e.g., 01ARZ3NDEKTS6PQRYF
     >>> is_ulid = is_config_ulid(config_id)
@@ -23,11 +27,11 @@ from typing import Any
 # Try to import from dhruva, fallback to local implementation
 try:
     from dhruva import ULID, generate, get_timestamp, is_ulid
+
     DHURUVA_AVAILABLE = True
 except ImportError:
     DHURUVA_AVAILABLE = False
     # Fallback implementation if dhruva is not available
-    import os
     import secrets
 
     BASE32_ALPHABET = "0123456789abcdefghjkmnpqrstvwxyz"
@@ -221,9 +225,7 @@ class ConfigTraceability:
 
     Example:
         >>> trace = ConfigTraceability(
-        ...     config_id=generate_config_id(),
-        ...     source="oneiric",
-        ...     change_type="update"
+        ...     config_id=generate_config_id(), source="oneiric", change_type="update"
         ... )
         >>> print(trace.config_id)
         >>> print(trace.timestamp_ms)
@@ -342,7 +344,10 @@ def detect_ulid_in_config(value: Any) -> list[str]:
         List of detected ULID strings
 
     Example:
-        >>> config = {"ref": "01ARZ3NDEKTS6PQRYF", "nested": {"id": "01XKD6RF5Y2K1VQH9"}}
+        >>> config = {
+        ...     "ref": "01ARZ3NDEKTS6PQRYF",
+        ...     "nested": {"id": "01XKD6RF5Y2K1VQH9"},
+        ... }
         >>> ulids = detect_ulid_in_config(config)
         >>> print(len(ulids))
         2
