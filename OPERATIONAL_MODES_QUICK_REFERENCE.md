@@ -22,7 +22,7 @@ oneiric start
 | Remote Resolution | No | Yes |
 | Signature Required | Optional | Required |
 | Manifest Sync | Manual | Auto |
-| External Dependencies | Zero | Dhruva (optional) |
+| External Dependencies | Zero | Druva (optional) |
 | Best For | Development, Testing | Production, Teams |
 
 ## Files Created

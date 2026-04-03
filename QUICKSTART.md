@@ -124,14 +124,14 @@ oneiric start
 
 ```bash
 export ONEIRIC_MODE=standard
-oneiric start --remote-url http://dhruva:8683/mcp
+oneiric start --remote-url http://druva:8683/mcp
 ```
 
 **Features**:
 
 - Remote resolution enabled
 - Distributed configuration
-- Adapter distribution via Dhruva
+- Adapter distribution via Druva
 - Cloud backup support
 - Production-ready scaling
 
@@ -151,7 +151,7 @@ ______________________________________________________________________
 - **Protocol**: MCP
 - **URL**: http://localhost:8680/mcp
 
-**Dhruva (Curator)**
+**Druva (Curator)**
 
 - **Purpose**: Adapter distribution and remote manifests
 - **Protocol**: MCP
@@ -240,7 +240,7 @@ oneiric list --domain adapter --shadowed
 # Enable remote resolution
 oneiric enable-remote --url http://localhost:8683/mcp
 
-# Verify Dhruva connection
+# Verify Druva connection
 oneiric health --probe
 ```
 

@@ -13,7 +13,7 @@ from oneiric.core.ulid_migration import (
 
 def test_detect_ulid_type():
     """Should correctly identify ULID format."""
-    # Valid Crockford Base32 ULIDs (from Dhruva)
+    # Valid Crockford Base32 ULIDs (from Druva)
     assert detect_id_type("01kh85b0x6000a9vb7cgn42ed8") == "ulid"
     assert detect_id_type("01kh85b0x70004j6njsda15ffh") == "ulid"
     assert detect_id_type("550e8400-e29b-41d4-a716-446655440000") == "uuid"  # UUID format

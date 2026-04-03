@@ -2,7 +2,7 @@
 
 ## Overview
 
-Implement progressive complexity operational modes (Lite and Standard) for Oneiric, similar to other ecosystem projects (Session-Buddy, Mahavishnu, Akosha, Dhruva).
+Implement progressive complexity operational modes (Lite and Standard) for Oneiric, similar to other ecosystem projects (Session-Buddy, Mahavishnu, Akosha, Druva).
 
 ## Objectives
 
@@ -21,7 +21,7 @@ Implement progressive complexity operational modes (Lite and Standard) for Oneir
 | **Cloud Backup** | No | Yes |
 | **Manifest Sync** | Manual only | Auto-sync with watch |
 | **Signature Verification** | Optional | Required |
-| **External Services** | Zero dependencies | Optional Dhruva remote |
+| **External Services** | Zero dependencies | Optional Druva remote |
 | **Best For** | Development, Testing, CI/CD | Production, Multi-server |
 
 ## Phase 1: Create Mode System
@@ -87,7 +87,7 @@ class OperationMode(ABC):
 - **Signature Verification**: Required
 - **Manifest Sync**: Auto-sync with watch
 - **Cloud Backup**: Enabled (optional)
-- **External Dependencies**: Dhruva (optional)
+- **External Dependencies**: Druva (optional)
 
 ### 1.4 Mode Registry
 

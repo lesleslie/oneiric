@@ -2,7 +2,7 @@
 
 ## Summary
 
-Successfully implemented operational modes for Oneiric with progressive complexity (Lite and Standard modes), matching the pattern used in other ecosystem projects (Session-Buddy, Mahavishnu, Akosha, Dhruva).
+Successfully implemented operational modes for Oneiric with progressive complexity (Lite and Standard modes), matching the pattern used in other ecosystem projects (Session-Buddy, Mahavishnu, Akosha, Druva).
 
 ## Implementation Status
 
@@ -125,7 +125,7 @@ Coverage for mode files: 80-100%
 | **Manifest Sync** | Manual only | Auto-sync with watch |
 | **Signature Required** | Optional | Required |
 | **Runtime Supervisor** | Disabled | Enabled |
-| **External Dependencies** | Zero | Dhruva (optional) |
+| **External Dependencies** | Zero | Druva (optional) |
 | **Best For** | Development, Testing, CI/CD | Production, Multi-server, Teams |
 
 ## Usage Examples
@@ -241,7 +241,7 @@ Add pre-flight checks to validate:
 
 - **Python Version**: 3.13+
 - **Oneiric Version**: v0.5.1+
-- **Ecosystem**: Compatible with Session-Buddy, Mahavishnu, Akosha, Dhruva mode patterns
+- **Ecosystem**: Compatible with Session-Buddy, Mahavishnu, Akosha, Druva mode patterns
 - **Backward Compatibility**: 100% - existing configs work unchanged
 
 ## Testing

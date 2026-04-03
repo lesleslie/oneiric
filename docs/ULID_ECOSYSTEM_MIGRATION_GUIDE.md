@@ -4,11 +4,11 @@ Complete guide for migrating ecosystem systems to ULID-based identifiers.
 
 ## Overview
 
-**Migration Goal:** Transition all ecosystem systems (Dhruva, Oneiric, Akosha, Crackerjack, Session-Buddy, Mahavishnu) to use unified ULID identifiers for cross-system correlation and time-ordered traceability.
+**Migration Goal:** Transition all ecosystem systems (Druva, Oneiric, Akosha, Crackerjack, Session-Buddy, Mahavishnu) to use unified ULID identifiers for cross-system correlation and time-ordered traceability.
 
 **Migration Status:**
 
-- ✅ Dhruva: Already using ULID (128-bit, Crockford Base32)
+- ✅ Druva: Already using ULID (128-bit, Crockford Base32)
 - ✅ Oneiric: ULID foundation complete (monotonicity, collision detection, migration utilities)
 - ⏳ Akosha: Analysis complete, migration pending (LOW complexity)
 - ⏳ Crackerjack: Analysis complete, migration pending (VERY LOW complexity - job_id already TEXT)
@@ -31,14 +31,14 @@ All systems use expand-contract pattern for zero-downtime migration:
 **Current State:**
 
 - Entity IDs: `f"system:{system_id}"`, `f"user:{user_id}"`
-- Storage: In-memory (no Dhruva persistence yet)
+- Storage: In-memory (no Druva persistence yet)
 - Complexity: **LOW** (can switch incrementally)
 
 **Migration Steps:**
 
 ```python
 # 1. Update entity models to use ULID
-from dhruva import generate
+from druva import generate
 
 class GraphEntity:
     def __init__(self, entity_type: str, properties: dict):
@@ -48,7 +48,7 @@ class GraphEntity:
         self.created_at = datetime.utcnow()
 
 # 2. Update knowledge graph operations
-# 3. Add Dhruva adapter for persistence (future work)
+# 3. Add Druva adapter for persistence (future work)
 ```
 
 **Validation:**
@@ -91,7 +91,7 @@ WHERE j.job_id IS NULL;
 
 ```python
 # Update job creation to use ULID
-from dhruva import generate
+from druva import generate
 
 def create_test_job(test_file: str) -> str:
     job_id = generate()  # Generate ULID instead of AUTOINCREMENT ID
@@ -133,7 +133,7 @@ WHERE session_ulid IS NULL;
 
 ```python
 # Update session creation to use ULID
-from dhruva import generate
+from druva import generate
 
 def create_session(project_name: str) -> str:
     session_ulid = generate()  # Generate ULID
@@ -190,7 +190,7 @@ from oneiric.core.ulid_resolution import (
     resolve_ulid,
     get_cross_system_trace,
 )
-from dhruva import generate
+from druva import generate
 
 # Register workflow execution
 workflow_ulid = generate()
@@ -273,7 +273,7 @@ sqlite3 session_buddy.db "SELECT COUNT(*) FROM sessions WHERE session_ulID IS NU
 # 3. Performance validation
 echo "=== Performance validation ==="
 python -c "
-from dhruva import generate
+from druva import generate
 import time
 
 # Generate 1000 ULIDs

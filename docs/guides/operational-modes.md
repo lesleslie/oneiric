@@ -12,10 +12,10 @@ ______________________________________________________________________
 | **Configuration** | Local only | Local + Remote |
 | **Remote Resolution** | No | Yes |
 | **Cloud Backup** | No | Yes |
-| **Adapter Distribution** | Local only | Via Dhruva |
+| **Adapter Distribution** | Local only | Via Druva |
 | **Manifest Sync** | Manual | Automatic |
 | **Best For** | Development, Testing | Production, Multi-env |
-| **Dependencies** | None | Dhruva (optional) |
+| **Dependencies** | None | Druva (optional) |
 | **Network Required** | No | Yes (for remote features) |
 
 ______________________________________________________________________
@@ -155,17 +155,17 @@ ______________________________________________________________________
 
 ### Overview
 
-Standard Mode is designed for **production deployments** with remote resolution, distributed configuration, and cloud backup support. It integrates with Dhruva for adapter distribution and can sync configuration from cloud storage.
+Standard Mode is designed for **production deployments** with remote resolution, distributed configuration, and cloud backup support. It integrates with Druva for adapter distribution and can sync configuration from cloud storage.
 
 ### Setup Time
 
-**~ 5 minutes** including Dhruva and cloud configuration
+**~ 5 minutes** including Druva and cloud configuration
 
 ### Features
 
 **Remote Resolution**:
 
-- Fetch adapters from Dhruva
+- Fetch adapters from Druva
 - Signed manifest delivery
 - Automatic version updates
 
@@ -220,7 +220,7 @@ mode: "standard"
 # Remote configuration
 remote:
   enabled: true
-  url: "http://dhruva:8683/mcp"
+  url: "http://druva:8683/mcp"
   manifest: "docs/sample_remote_manifest.yaml"
   refresh_interval: 120
   verify_signatures: true
@@ -255,7 +255,7 @@ orchestrator:
 export ONEIRIC_MODE=standard
 
 # Remote configuration
-export DHruVA_MCP_URL="http://dhruva:8683/mcp"
+export DHruVA_MCP_URL="http://druva:8683/mcp"
 export ONEIRIC_REMOTE_MANIFEST="s3://my-bucket/manifest.json"
 export ONEIRIC_MANIFEST_PUBLIC_KEY="/path/to/public_key.pem"
 
@@ -275,7 +275,7 @@ export MAHAVISHNU_MCP_URL="http://mahavishnu:8680/mcp"
 ```bash
 # Configure environment
 export ONEIRIC_MODE=standard
-export DHruVA_MCP_URL="http://dhruva:8683/mcp"
+export DHruVA_MCP_URL="http://druva:8683/mcp"
 
 # Sync from production manifest
 oneiric remote-sync \
@@ -321,13 +321,13 @@ oneiric start
 
 **Optional Services**:
 
-- **Dhruva** (for remote manifests): http://localhost:8683/mcp
+- **Druva** (for remote manifests): http://localhost:8683/mcp
 - **Mahavishnu** (for orchestration): http://localhost:8680/mcp
 - **Cloud Storage** (for backup): S3/Azure/GCS
 
 **Network Access**:
 
-- Connectivity to Dhruva MCP server
+- Connectivity to Druva MCP server
 - Connectivity to cloud storage (if using backup)
 - Outbound internet access (if using public cloud)
 
@@ -477,7 +477,7 @@ ______________________________________________________________________
 
 - **Production Deployment**: You're deploying to production and need reliability
 - **Multi-Environment**: You have dev/staging/prod environments
-- **Remote Adapters**: You need to fetch adapters from Dhruva
+- **Remote Adapters**: You need to fetch adapters from Druva
 - **Cloud Backup**: You want configuration backup in cloud storage
 - **Team Collaboration**: Multiple teams need to share configurations
 - **Compliance**: You need signature verification and audit trails
@@ -509,17 +509,17 @@ ______________________________________________________________________
 
 ### "Remote sync failed in Standard Mode"
 
-**Solution**: Check Dhruva connectivity and manifest URL
+**Solution**: Check Druva connectivity and manifest URL
 
 ```bash
-# Check Dhruva health
+# Check Druva health
 curl http://localhost:8683/mcp/health
 
 # Verify manifest URL
 oneiric remote-sync --verify-only --manifest manifest.yaml
 
 # Check network connectivity
-ping dhruva
+ping druva
 ```
 
 ### "Cannot find adapter in Lite Mode"
@@ -594,7 +594,7 @@ mode: standard
 
 remote:
   enabled: true
-  url: "http://dhruva:8683/mcp"
+  url: "http://druva:8683/mcp"
   manifest: "docs/sample_remote_manifest.yaml"
   refresh_interval: 120
   verify_signatures: true

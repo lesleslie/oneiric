@@ -15,7 +15,7 @@ from oneiric.core.ulid_resolution import (
     export_registry,
     get_registry_stats,
 )
-from dhruva import generate
+from druva import generate
 
 
 def bench_registration(count: int = 100) -> dict:

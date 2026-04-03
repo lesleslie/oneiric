@@ -1,6 +1,6 @@
 [project]
 name = "oneiric"
-version = "0.8.2"
+version = "0.8.3"
 description = "Universal resolution layer for pluggable components with hot-swapping and remote manifest delivery"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -22,6 +22,7 @@ dependencies = [
     "msgspec>=0.18.6",
     "networkx>=3.2.0",
     "ipython>=8.0.0",  # Admin shell support
+    "dhara>=0.8.2",
 ]
 
 [project.optional-dependencies]

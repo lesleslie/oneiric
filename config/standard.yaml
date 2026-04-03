@@ -8,7 +8,7 @@
 # - Team collaboration
 #
 # Setup time: ~ 5 minutes
-# External dependencies: Dhruva (optional)
+# External dependencies: Druva (optional)
 
 app:
   name: "oneiric"

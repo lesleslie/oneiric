@@ -22,7 +22,7 @@ try:
     from oneiric.core.ulid import generate, get_timestamp, is_ulid
 except ImportError:
     # Fallback if Oneiric is not available (e.g., during standalone migration)
-    generate = None  # Will use dhruva directly if Oneiric wrapper unavailable
+    generate = None  # Will use druva directly if Oneiric wrapper unavailable
     is_ulid = None
     get_timestamp = None
 
@@ -60,7 +60,7 @@ def detect_id_type(identifier: str) -> str:
 
             "system_akosha", "user_akosha", "ulid", "oid", "uuid", "custom"
     """
-    # Check if it's a valid ULID from Oneiric/Dhruva
+    # Check if it's a valid ULID from Oneiric/Druva
     if is_ulid is not None and is_ulid(identifier):
         return "ulid"
 

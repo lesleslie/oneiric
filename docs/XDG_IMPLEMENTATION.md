@@ -197,8 +197,8 @@ ______________________________________________________________________
 │   └── config.yaml          # Crackerjack user config
 ├── akosha/
 │   └── config.yaml          # Akosha user config
-├── dhruva/
-│   └── config.yaml          # Dhruva user config
+├── druva/
+│   └── config.yaml          # Druva user config
 └── mahavishnu/
     └── config.yaml          # Mahavishnu user config
 ```
@@ -240,7 +240,7 @@ ______________________________________________________________________
 
 ### Phase 3: Roll Out to Projects
 
-For each project (session-buddy, crackerjack, akosha, dhruva, mahavishnu):
+For each project (session-buddy, crackerjack, akosha, druva, mahavishnu):
 
 1. Bump oneiric dependency
 1. Update `load_settings()` calls to pass `project_name`

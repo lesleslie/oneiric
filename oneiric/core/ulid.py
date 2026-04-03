@@ -3,7 +3,7 @@
 This module provides ULID (Universally Unique Lexicographically Sortable Identifier)
 support for Oneiric, enabling:
 - Time-ordered configuration traceability
-- Cross-system correlation with dhruva OIDs
+- Cross-system correlation with druva OIDs
 - Globally unique configuration IDs
 - Time-based config history queries
 
@@ -24,14 +24,14 @@ from __future__ import annotations
 import time
 from typing import Any
 
-# Try to import from dhruva, fallback to local implementation
+# Try to import from druva, fallback to local implementation
 try:
-    from dhruva import ULID, generate, get_timestamp, is_ulid
+    from druva import ULID, generate, get_timestamp, is_ulid
 
     DHURUVA_AVAILABLE = True
 except ImportError:
     DHURUVA_AVAILABLE = False
-    # Fallback implementation if dhruva is not available
+    # Fallback implementation if druva is not available
     import secrets
 
     BASE32_ALPHABET = "0123456789abcdefghjkmnpqrstvwxyz"

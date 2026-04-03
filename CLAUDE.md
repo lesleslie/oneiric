@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+For a shorter, tool-neutral bootstrap document, start with `AGENTS.md`.
+
 ## Project Overview
 
 Oneiric is a **universal resolution layer** for pluggable components with hot-swapping, multi-domain support, and remote manifest delivery. It extracts and modernizes the component discovery and lifecycle patterns into a standalone infrastructure layer.
@@ -582,17 +584,10 @@ This project follows crackerjack's clean code philosophy:
 - **Python 3.13+ modern patterns**: Use `|` unions, pathlib over os.path
 
 ```bash
-
 python -m crackerjack
-
-
-python -m crackerjack - t
-
-
-python -m crackerjack - - ai - agent - t
-
-
-python -m crackerjack - a patch
+python -m crackerjack -t
+python -m crackerjack --ai-agent -t
+python -m crackerjack -a patch
 ```
 
 1. **Plan with crackerjack-architect**: Ensure proper architecture from the start

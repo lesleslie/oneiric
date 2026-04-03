@@ -79,7 +79,7 @@ oneiric remote-status --json
 
 ______________________________________________________________________
 
-### Dhruva (Curator)
+### Druva (Curator)
 
 **Role**: Asset Manager - Manages adapter distribution and remote manifests
 
@@ -104,7 +104,7 @@ export DHruVA_MCP_URL="http://localhost:8683/mcp"
 
 **Features**:
 
-- **Remote Manifests**: Fetch signed manifests from Dhruva
+- **Remote Manifests**: Fetch signed manifests from Druva
 - **Adapter Registry**: Discover and install adapters remotely
 - **Version Control**: Track adapter versions and dependencies
 - **Signature Verification**: ED25519 signature validation for security
@@ -112,7 +112,7 @@ export DHruVA_MCP_URL="http://localhost:8683/mcp"
 **Health Check**:
 
 ```bash
-# Sync from Dhruva manifest
+# Sync from Druva manifest
 oneiric remote-sync \
   --manifest docs/sample_remote_manifest.yaml \
   --refresh-interval 120
@@ -128,7 +128,7 @@ oneiric manifest verify --input manifest.json
 - Signed manifest delivery for security
 - Adapter distribution across teams
 
-**Startup Order**: Oneiric → Dhruva (Oneiric fetches from Dhruva on startup)
+**Startup Order**: Oneiric → Druva (Oneiric fetches from Druva on startup)
 
 ______________________________________________________________________
 
@@ -225,7 +225,7 @@ No external dependencies
 
 ```
 1. Oneiric (Resolver) - must start first
-2. Dhruva (Curator) - optional, for remote manifests
+2. Druva (Curator) - optional, for remote manifests
 3. Mahavishnu (Orchestrator) - optional, for workflow coordination
 ```
 
@@ -252,7 +252,7 @@ export DHruVA_MCP_URL="http://localhost:8683/mcp"
 export ONEIRIC_HOST="10.0.1.10"  # Explicit IP
 export ONEIRIC_PORT=8681
 export MAHAVISHNU_MCP_URL="http://mahavishnu:8680/mcp"
-export DHruVA_MCP_URL="http://dhruva:8683/mcp"
+export DHruVA_MCP_URL="http://druva:8683/mcp"
 ```
 
 **Security Note**: For production, bind to explicit interfaces (not `0.0.0.0`) and use firewall rules to restrict access.
@@ -286,7 +286,7 @@ oneiric health --json
       "url": "http://localhost:8680/mcp",
       "latency_ms": 5
     },
-    "dhruva": {
+    "druva": {
       "status": "connected",
       "url": "http://localhost:8683/mcp",
       "latency_ms": 3
@@ -336,7 +336,7 @@ oneiric remote-status --json
    oneiric enable-remote --url http://localhost:8683/mcp
    ```
 
-1. **Dhruva unreachable**: Check connection
+1. **Druva unreachable**: Check connection
 
    ```bash
    curl http://localhost:8683/mcp/health
@@ -480,7 +480,7 @@ adapters:
     connection_string: "postgresql://localhost/db"
 ```
 
-### Standard Mode (With Dhruva)
+### Standard Mode (With Druva)
 
 ```yaml
 # oneiric.yaml
@@ -503,7 +503,7 @@ adapters:
 mode: "standard"
 remote:
   enabled: true
-  url: "http://dhruva:8683/mcp"
+  url: "http://druva:8683/mcp"
   manifest: "s3://my-bucket/oneiric/manifest.json"
   refresh_interval: 300
 cloud_backup:
@@ -524,7 +524,7 @@ ______________________________________________________________________
 **Dependency Health**:
 
 - Mahavishnu connection status
-- Dhruva sync success rate
+- Druva sync success rate
 - Remote manifest fetch latency
 
 **Component Health**:
@@ -556,7 +556,7 @@ oneiric status --json > oneiric_status.json
 
 Recommended dashboards:
 
-- **Dependency Health**: Mahavishnu/Dhruva connection status
+- **Dependency Health**: Mahavishnu/Druva connection status
 - **Component Lifecycle**: Active/paused/drained component counts
 - **Resolution Performance**: Latency histograms
 - **Remote Sync**: Success rate, duration, error breakdown
@@ -574,7 +574,7 @@ ______________________________________________________________________
 ### Authentication
 
 - **Mahavishnu**: JWT-based authentication
-- **Dhruva**: API token or mutual TLS
+- **Druva**: API token or mutual TLS
 - **Cloud Storage**: IAM roles or service accounts
 
 ### Signature Verification
