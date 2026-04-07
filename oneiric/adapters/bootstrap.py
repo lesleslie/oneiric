@@ -61,6 +61,7 @@ from .secrets import (
     FileSecretAdapter,
     GCPSecretManagerAdapter,
     InfisicalSecretAdapter,
+    KeyringSecretAdapter,
 )
 from .storage import (
     AzureBlobStorageAdapter,
@@ -100,6 +101,7 @@ def builtin_adapter_metadata() -> list[AdapterMetadata]:
         Auth0IdentityAdapter.metadata,
         EnvSecretAdapter.metadata,
         FileSecretAdapter.metadata,
+        KeyringSecretAdapter.metadata,
         InfisicalSecretAdapter.metadata,
         GCPSecretManagerAdapter.metadata,
         AWSSecretManagerAdapter.metadata,

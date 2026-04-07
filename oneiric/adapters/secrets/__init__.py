@@ -3,6 +3,7 @@ from .env import EnvSecretAdapter, EnvSecretSettings
 from .file import FileSecretAdapter, FileSecretSettings
 from .gcp import GCPSecretManagerAdapter, GCPSecretManagerSettings
 from .infisical import InfisicalSecretAdapter, InfisicalSecretSettings
+from .keyring import KeyringSecretAdapter, KeyringSecretSettings
 
 __all__ = [
     "AWSSecretManagerAdapter",
@@ -11,8 +12,10 @@ __all__ = [
     "EnvSecretSettings",
     "FileSecretAdapter",
     "FileSecretSettings",
-    "InfisicalSecretAdapter",
-    "InfisicalSecretSettings",
     "GCPSecretManagerAdapter",
     "GCPSecretManagerSettings",
+    "InfisicalSecretAdapter",
+    "InfisicalSecretSettings",
+    "KeyringSecretAdapter",
+    "KeyringSecretSettings",
 ]

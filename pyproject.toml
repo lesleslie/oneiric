@@ -1,6 +1,6 @@
 [project]
 name = "oneiric"
-version = "0.8.3"
+version = "0.9.0"
 description = "Universal resolution layer for pluggable components with hot-swapping and remote manifest delivery"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -23,9 +23,13 @@ dependencies = [
     "networkx>=3.2.0",
     "ipython>=8.0.0",  # Admin shell support
     "dhara>=0.8.2",
+    "onnxruntime<1.24",  # Required by crackerjack→session-buddy; pin for macOS x86_64
 ]
 
 [project.optional-dependencies]
+secrets-keyring = [
+    "keyring>=25.0",
+]
 dev = [
     "pytest>=9.0.1",
     "pytest-asyncio>=1.3.0",
@@ -38,7 +42,6 @@ dev = [
     "session-buddy>=0.10.0",
     "filelock>=3.20.1",  # Fix for CVE-2025-68146
     "zensical>=0.0.15",
-    "onnxruntime<1.24",  # Pin for macOS x86_64 compatibility (session-buddy dep)
 ]
 cache = [
     "coredis>=5.3.0",
@@ -357,6 +360,7 @@ exclude-deps = [
     "email-validator",
     "google-cloud-secret-manager",
     "google-cloud-storage",
+    "keyring",
     "watchfiles",
 ]
 
