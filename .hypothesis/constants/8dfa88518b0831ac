@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/modes/lite.py
+# hypothesis_version: 6.151.11
+
+['description', 'lite', 'manifest_sync', 'remote_resolution', 'use_case']

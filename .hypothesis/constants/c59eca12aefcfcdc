@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/shell/magics.py
+# hypothesis_version: 6.151.11
+
+['Shell Status:', '__version__', 'unknown']

@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/shell/event_models.py
+# hypothesis_version: 6.151.11
+
+[100, 500, 4194304, '+00:00', '1.0', 'System hostname', 'T', 'User information', 'Z', '^[a-zA-Z0-9_-]+$', 'after', 'component_name', 'cwd', 'event_id', 'event_type', 'event_version', 'home', 'session_end', 'session_start', 'timestamp', 'username']

@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/cache/multitier.py
+# hypothesis_version: 6.151.11
+
+[0.0, 100, 500, 600, 1000, 6379, 10000, 65535, 86400, 'Platform Core', 'Redis server port.', 'adapter', 'adapter-init', 'avg_latency_ms', 'cache', 'cache-cleared', 'cache-delete', 'cache-miss', 'cache-set', 'combined_hit_rate', 'distributed', 'error', 'kv', 'l1-cache-hit', 'l1-cache-invalidated', 'l1_hit_rate', 'l1_hits', 'l1_misses', 'l2-cache-hit', 'l2:', 'l2_hit_rate', 'l2_hits', 'l2_misses', 'localhost', 'lru', 'metrics', 'metrics-reset', 'metrics_disabled', 'multitier', 'multitier-cache', 'total_requests', 'ttl']

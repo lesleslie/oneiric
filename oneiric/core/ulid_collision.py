@@ -62,12 +62,16 @@ def register_collision(existing_ulid: str, new_ulid: str, context: str) -> None:
 def generate_with_retry(
     max_attempts: int = 3,
     context: str = "unknown",
+    _generate_fn=None,
+    _existing_ulids: set[str] | None = None,
 ) -> str:
     """Generate ULID with collision retry.
 
     Args:
         max_attempts: Maximum generation attempts (default: 3)
         context: Context for collision tracking
+        _generate_fn: Optional override for generate function (for testing)
+        _existing_ulids: Optional pre-populated set of existing ULIDs (for testing)
 
     Returns:
         Valid ULID string
@@ -75,25 +79,26 @@ def generate_with_retry(
     Raises:
         CollisionError: If all attempts result in collisions
     """
-    existing_ulids = set()  # In practice, load from storage
+    _gen = _generate_fn or generate
+    existing_ulids = _existing_ulids if _existing_ulids is not None else set()
 
     for attempt in range(max_attempts):
-        new_ulid = generate()
+        new_ulid = _gen()
 
         if not detect_collision(new_ulid, existing_ulids):
             return new_ulid
 
-        # Collision detected - register and retry
+        # Collision detected - track it for future checks and register
+        existing_ulids.add(new_ulid)
         register_collision(new_ulid, new_ulid, context)
         logger.warning(
             f"Collision attempt {attempt + 1}/{max_attempts}, regenerating..."
         )
 
-    # Only raise error if collision detected and attempts exhausted
-    if attempt == max_attempts - 1 and detect_collision(new_ulid, existing_ulids):
-        raise CollisionError(
-            new_ulid, existing_ulids.pop() if existing_ulids else "empty_set"
-        )
+    # All attempts exhausted with collisions
+    raise CollisionError(
+        new_ulid, next(iter(existing_ulids)) if existing_ulids else "empty_set"
+    )
 
 
 def get_collision_stats() -> dict[str, int]:

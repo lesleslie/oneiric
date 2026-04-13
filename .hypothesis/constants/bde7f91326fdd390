@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/shell/core.py
+# hypothesis_version: 6.151.11
+
+['Console', 'Linux', 'Table', 'adapters', 'app', 'asyncio', 'component_version', 'duration_seconds', 'logger', 'rich.console', 'rich.table', 'run', 'unknown']

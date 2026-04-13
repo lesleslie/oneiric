@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/core/ulid_migration.py
+# hypothesis_version: 6.151.11
+
+[0.01, 1000.0, 1000, 'MigrationPlan', 'custom', 'detect_id_type', 'estimated_hours', 'estimated_minutes', 'estimated_seconds', 'expand-contract', 'fallback_ulid', 'oid', 'record_count', 'ulid', 'uuid']

@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/modes/standard.py
+# hypothesis_version: 6.151.11
+
+['.oneiric_cache', '.write_test', 'cloud_backup', 'description', 'manifest_sync', 'remote_resolution', 'standard', 'use_case']

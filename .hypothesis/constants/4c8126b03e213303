@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/shell/session_tracker.py
+# hypothesis_version: 6.151.11
+
+[100, 500, '--directory', '-m', '1.0', 'SESSION_BUDDY_PATH', 'USER', 'USERNAME', 'component_name', 'cwd', 'environment', 'event_id', 'event_type', 'event_version', 'health_check', 'home', 'hostname', 'metadata', 'pid', 'platform', 'python', 'python_version', 'run', 'session_buddy', 'session_end', 'session_id', 'session_start', 'shell_type', 'text', 'timestamp', 'track_session_end', 'track_session_start', 'unknown', 'user', 'username', 'uv', '~']

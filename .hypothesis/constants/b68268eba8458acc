@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/adapters/secrets/keyring.py
+# hypothesis_version: 6.151.11
+
+[200, 'Platform Core', 'adapter', 'adapter-init', 'adapter-init-skip', 'keyring', 'keyring-access-error', 'keyring-secrets', 'oneiric', 'read', 'secrets']

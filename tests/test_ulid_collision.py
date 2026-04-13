@@ -9,16 +9,22 @@ from oneiric.core.ulid_collision import (
 )
 
 
+@pytest.fixture(autouse=True)
+def reset_collision_state():
+    """Reset global collision tracking state between tests."""
+    import oneiric.core.ulid_collision as m
+    m._collision_count = 0
+    m._collision_registry.clear()
+    yield
+
+
 def test_no_collision_when_unique():
     """Should return ULID when no collision."""
-    existing = {"existing1", "existing2"}
-    # Use unittest.mock to patch generate function
-    from unittest.mock import patch
-    import oneiric.core.ulid_collision as collision_module
-
-    with patch.object(collision_module, 'generate', return_value="unique_ulid"):
-        result = collision_module.generate_with_retry(context="test")
-        assert result == "unique_ulid"
+    result = generate_with_retry(
+        context="test",
+        _generate_fn=lambda: "unique_ulid",
+    )
+    assert result == "unique_ulid"
 
 
 def test_collision_detection():
@@ -29,14 +35,18 @@ def test_collision_detection():
 
 
 def test_collision_retry_raises_after_max_attempts():
-    """Should raise after max attempts."""
-    from unittest.mock import patch
-    import oneiric.core.ulid_collision as collision_module
+    """Should raise CollisionError after exhausting all attempts.
 
-    # Patch generate to always return colliding value
-    with patch.object(collision_module, 'generate', return_value="colliding_ulid"):
-        with pytest.raises(CollisionError):
-            collision_module.generate_with_retry(max_attempts=2, context="test")
+    Seed existing_ulids so the first generate() already collides,
+    then with max_attempts=1 the function must raise.
+    """
+    with pytest.raises(CollisionError):
+        generate_with_retry(
+            max_attempts=1,
+            context="test",
+            _generate_fn=lambda: "already_exists",
+            _existing_ulids={"already_exists"},
+        )
 
 
 def test_get_collision_stats():

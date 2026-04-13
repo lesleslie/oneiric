@@ -437,9 +437,9 @@ class TestRetryLogic:
         emitter.available = True
 
         with patch.object(emitter, "_check_availability", return_value=True):
-            # Should return None on persistent error
+            # Should return False on persistent error
             result = await emitter.emit_session_end("test-session-123")
-            assert result is None
+            assert result is False
 
 
 class TestMCPClientSessionManagement:
@@ -550,9 +550,9 @@ class TestGracefulDegradation:
         emitter.available = True
 
         with patch.object(emitter, "_check_availability", return_value=True):
-            # Should not raise, should return None
+            # Should not raise, should return False
             result = await emitter.emit_session_end("test-session-123")
-            assert result is None
+            assert result is False
 
 
 @pytest.mark.integration

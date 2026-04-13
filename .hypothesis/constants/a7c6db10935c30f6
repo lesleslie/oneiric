@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/core/ulid.py
+# hypothesis_version: 6.151.11
+
+[1000.0, 1000, 'CollisionError', 'ConfigTraceability', 'SystemReference', '_bytes', '_change_type', '_config_id', '_metadata', '_source', '_str', '_timestamp_ms', 'big', 'change_type', 'config_id', 'export_registry', 'extract_timestamp', 'find_related_ulids', 'generate_config_id', 'generate_with_retry', 'get_collision_stats', 'get_registry_stats', 'is_config_ulid', 'metadata', 'oneiric', 'parse_config_ulid', 'register_reference', 'resolve_ulid', 'source', 'timestamp_ms', 'timestamp_seconds', 'unknown']

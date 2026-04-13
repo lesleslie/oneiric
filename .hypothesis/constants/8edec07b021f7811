@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/shell/__init__.py
+# hypothesis_version: 6.151.11
+
+['AdminShell', 'BaseLogFormatter', 'BaseTableFormatter', 'EnvironmentInfo', 'OneiricShell', 'SessionEndEvent', 'SessionStartEvent', 'ShellConfig', 'TableColumn', 'UserInfo']

@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/shell/formatters.py
+# hypothesis_version: 6.151.11
+
+[120, ' | ', '-', '=', 'Console', 'DEBUG', 'ERROR', 'INFO', 'No logs to display', 'WARNING', 'blue', 'bold red', 'bold yellow', 'dim', 'left', 'level', 'message', 'timestamp']

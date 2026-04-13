@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/modes/__init__.py
+# hypothesis_version: 6.151.11
+
+[', ', '-', 'LiteMode', 'OperationMode', 'StandardMode', '_', 'create_mode', 'get_mode', 'lite', 'register_mode', 'standard']

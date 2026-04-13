@@ -3,6 +3,7 @@
 import pytest
 from oneiric.core.ulid_resolution import (
     SystemReference,
+    _ulid_registry,
     register_reference,
     resolve_ulid,
     find_references_by_system,
@@ -11,9 +12,15 @@ from oneiric.core.ulid_resolution import (
 )
 
 
+@pytest.fixture(autouse=True)
+def clear_registry():
+    """Clear the global ULID registry between tests."""
+    _ulid_registry.clear()
+    yield
+
+
 def test_register_and_resolve_akosha_entity():
     """Should register and resolve Akosha entity reference."""
-    # Register
     ulid = "01ARZ3NDEKTS6PQRYF"
     register_reference(
         ulid=ulid,
@@ -22,18 +29,16 @@ def test_register_and_resolve_akosha_entity():
         metadata={"entity_type": "test", "name": "test_entity"},
     )
 
-    # Resolve
     ref = resolve_ulid(ulid)
 
-    # Assert
     assert ref is not None
     assert ref.ulid == ulid
     assert ref.system == "akosha"
     assert ref.reference_type == "entity"
-    # Use .get() for dict since metadata is plain dict
     if ref.metadata:
         entity_type = ref.metadata.get("entity_type")
-        assert entity_type == "test_entity"
+        assert entity_type == "test"
+        assert ref.metadata.get("name") == "test_entity"
 
 
 def test_register_and_resolve_crackerjack_test():
@@ -144,10 +149,6 @@ def test_find_related_ulids():
 
 def test_export_and_stats():
     """Should export registry and calculate stats."""
-    # Clear registry for clean test
-    from oneiric.core.ulid_resolution import _ulid_registry
-    _ulid_registry.clear()
-
     # Register test references
     register_reference(
         ulid="01ARZ3NDEKTS6PQRYF",

@@ -1,0 +1,4 @@
+# file: /Users/les/Projects/oneiric/oneiric/shell/config.py
+# hypothesis_version: 6.151.11
+
+[1.0, 5.0, 60.0, 120, 300, 'Enable auto-refresh', 'Maximum table width', 'Oneiric Admin Shell', 'Shell banner text', 'Show full tracebacks']
