@@ -8,7 +8,6 @@ from pathlib import Path
 
 import yaml
 
-
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from oneiric.actions.bootstrap import builtin_action_metadata

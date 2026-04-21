@@ -2,19 +2,17 @@
 
 from __future__ import annotations
 
-import asyncio
 import os
-import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from oneiric.shell.session_tracker import (
     SessionEventEmitter,
+    _get_environment_info,
     _get_timestamp,
     _get_user_info,
-    _get_environment_info,
 )
 
 
@@ -109,7 +107,7 @@ class TestSessionEventEmitter:
     async def test_check_availability_circuit_breaker_resets(self, emitter, mock_session):
         """Test circuit breaker resets after timeout."""
         # Set circuit breaker to past
-        emitter._circuit_open_until = datetime.now(timezone.utc) - timedelta(seconds=10)
+        emitter._circuit_open_until = datetime.now(UTC) - timedelta(seconds=10)
         emitter._consecutive_failures = 3
 
         mock_session.call_tool = AsyncMock()
@@ -368,7 +366,7 @@ class TestCircuitBreakerBehavior:
     @pytest.mark.asyncio
     async def test_circuit_breaker_duration(self, emitter):
         """Test circuit breaker opens for 60 seconds."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         emitter._consecutive_failures = 3
         emitter._handle_failure()
 
@@ -380,7 +378,7 @@ class TestCircuitBreakerBehavior:
     async def test_circuit_breaker_auto_reset(self, emitter, mock_session):
         """Test circuit breaker automatically resets."""
         # Set circuit breaker to past
-        emitter._circuit_open_until = datetime.now(timezone.utc) - timedelta(seconds=1)
+        emitter._circuit_open_until = datetime.now(UTC) - timedelta(seconds=1)
         emitter._consecutive_failures = 3
 
         mock_session.call_tool = AsyncMock()
@@ -397,7 +395,7 @@ class TestCircuitBreakerBehavior:
     async def test_circuit_breaker_blocks_calls(self, emitter):
         """Test circuit breaker blocks MCP calls while open."""
         # Set circuit breaker to future
-        emitter._circuit_open_until = datetime.now(timezone.utc) + timedelta(seconds=60)
+        emitter._circuit_open_until = datetime.now(UTC) + timedelta(seconds=60)
         emitter._consecutive_failures = 3
 
         # Should return False without attempting MCP call
@@ -413,7 +411,6 @@ class TestRetryLogic:
         """Test that emit methods have retry decorators."""
         # Check that retry decorator is present (method should have __wrapped__ attribute)
         # This verifies tenacity is configured
-        from tenacity import RetryError
         assert hasattr(emitter.emit_session_start, '__wrapped__') or callable(emitter.emit_session_start)
         assert hasattr(emitter.emit_session_end, '__wrapped__') or callable(emitter.emit_session_end)
 

@@ -16,12 +16,10 @@ Run with:
 """
 
 import asyncio
-from pathlib import Path
 
-from oneiric.core.config import Settings, load_settings
-from oneiric.core.resolution import Resolver
-from oneiric.core.lifecycle import LifecycleManager
 from oneiric.adapters import AdapterBridge, register_builtin_adapters
+from oneiric.core.lifecycle import LifecycleManager
+from oneiric.core.resolution import Resolver
 
 
 async def main() -> None:

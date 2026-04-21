@@ -10,7 +10,8 @@ Run with:
 """
 
 import asyncio
-from oneiric.core.resolution import Resolver, Candidate
+
+from oneiric.core.resolution import Candidate, Resolver
 
 
 async def main() -> None:
@@ -96,7 +97,7 @@ async def main() -> None:
 
     result = resolver.resolve("adapter", "cache")
     print(f"  New selection: {result.provider}")
-    print(f"  Reason: Explicit selection (highest precedence)")
+    print("  Reason: Explicit selection (highest precedence)")
     print()
 
     # Show all registered candidates

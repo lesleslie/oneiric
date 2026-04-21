@@ -5,16 +5,13 @@ Tests core invariants using property-based testing.
 
 from __future__ import annotations
 
-import pytest
-from hypothesis import HealthCheck, assume, given, settings
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 from oneiric.core.resolution import (
     Candidate,
     CandidateRegistry,
     CandidateSource,
-    Resolver,
-    ResolverSettings,
     infer_priority,
     register_pkg,
 )
@@ -81,7 +78,7 @@ class TestCandidateProperties:
             registry.register_candidate(candidate)
 
         # Count unique (domain, key) pairs
-        unique_keys = set((c.domain, c.key) for c in candidates)
+        set((c.domain, c.key) for c in candidates)
 
         # Should have at least as many active as unique keys
         active = registry.list_active("adapter")

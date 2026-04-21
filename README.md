@@ -23,7 +23,7 @@ Oneiric extracts the resolver/lifecycle core from ACB and turns it into a stand-
 
 Crackerjack is used for repo-wide quality-control and CI/CD workflows around Oneiric changes. Keep local validation aligned with the documented Crackerjack path before merging.
 
----
+______________________________________________________________________
 
 ## Roadmap & Phase Tracking
 
@@ -32,7 +32,7 @@ Crackerjack is used for repo-wide quality-control and CI/CD workflows around One
 - [Orchestration Parity Plan](docs/implementation/ORCHESTRATION_PARITY_PLAN.md) — event dispatcher, DAG runtime, and supervisor milestones.
 - [Implementation Phase Tracker](docs/IMPLEMENTATION_PHASE_TRACKER.md) — numbered delivery phases with owners/status for every outstanding item.
 
----
+______________________________________________________________________
 
 ## Why Oneiric
 
@@ -46,7 +46,7 @@ Crackerjack is used for repo-wide quality-control and CI/CD workflows around One
 - **Plugin/secrets tooling:** Entry-point discovery auto-loads adapters/services/tasks/events/workflows (`oneiric.cli plugins`), while `SecretsHook` caches provider results and `oneiric.cli secrets rotate` invalidates cached values.
 - **Documentation + runbooks:** `docs/README.md` indexes 40+ living documents (architecture, telemetry, deployment, observability checklists, cut-over validation) so operational workflows match the runtime.
 
----
+______________________________________________________________________
 
 ## Domain Coverage & Built-ins
 
@@ -117,7 +117,7 @@ graph TB
 
 All domains share the same resolver semantics, lifecycle orchestration, logging, and activity controls.
 
----
+______________________________________________________________________
 
 ## Runtime & Orchestrator Capabilities
 
@@ -130,7 +130,7 @@ All domains share the same resolver semantics, lifecycle orchestration, logging,
 - **Notification router:** `NotificationRouter` converts `workflow.notify` payloads into `NotificationMessage` objects and sends them through messaging adapters. CLI `action-invoke workflow.notify --workflow … --send-notification` uses the same route metadata as runtime workflows.
 - **Remote status:** `oneiric.cli remote-status` loads cached remote telemetry (`remote_status.json`) with sync timestamps, per-domain counts, and latency budget comparisons (the manifest URL comes from settings, not the cache file).
 
----
+______________________________________________________________________
 
 ## Quick Start
 
@@ -231,7 +231,7 @@ ONEIRIC_PROFILE=serverless \
 
 Include the `supervisor-info` and `health --probe --json` output in release notes so Cloud Run deployers can prove the serverless profile, supervisor, and Secret Manager precedence were enabled. Full build/deploy transcripts live in `docs/deployment/CLOUD_RUN_BUILD.md`.
 
----
+______________________________________________________________________
 
 ## CLI Map
 
@@ -242,7 +242,7 @@ Include the `supervisor-info` and `health --probe --json` output in release note
 - **Observability:** `orchestrate --print-dag/--events --inspect-json`, `status --json`, `health --json`, `activity --json`, `action-invoke workflow.notify --send-notification`, and `remote-status --json` produce the artifacts referenced in `docs/examples/*_OBSERVABILITY.md`.
 - **Secrets & plugins:** `secrets rotate --keys k1,k2` invalidates cache entries, `secrets rotate --all` clears the provider cache, and `plugins` lists entry-point groups + candidate counts/errors for diagnostics.
 
----
+______________________________________________________________________
 
 ## Observability, Telemetry & ChatOps
 
@@ -253,7 +253,7 @@ Include the `supervisor-info` and `health --probe --json` output in release note
 - **Notification evidence:** `NotificationRoute` metadata can be derived from workflow definitions or CLI overrides; CLI transcripts should accompany telemetry + DAG/event payloads as documented in `docs/examples/CRACKERJACK_OBSERVABILITY.md`, `FASTBLOCKS_OBSERVABILITY.md`, and `SESSION_MGMT_MCP_OBSERVABILITY.md`.
 - **Parity/cut-over artifacts:** `docs/implementation/CUTOVER_VALIDATION_CHECKLIST.md` enumerates manifest snapshots, DAG/event JSON, telemetry archives, and ChatOps transcripts required before flipping Crackerjack/Fastblocks/Session-Mgmt to Oneiric.
 
----
+______________________________________________________________________
 
 ## Remote Manifests & Packaging
 
@@ -263,7 +263,7 @@ Include the `supervisor-info` and `health --probe --json` output in release note
 - **Telemetry:** Remote sync writes `remote_status.json` (duration, latency budget, per-domain registrations). Pair `remote-status --json` with telemetry pipelines.
 - **Fixtures/tests:** `docs/examples/FASTBLOCKS_PARITY_FIXTURE.yaml` feeds both docs and `tests/integration/test_migration_parity.py`; update the fixture + parity guides together to keep CI evidence in sync.
 
----
+______________________________________________________________________
 
 ## Documentation Map
 
@@ -276,7 +276,7 @@ Include the `supervisor-info` and `health --probe --json` output in release note
 - Reference specs: `docs/NEW_ARCH_SPEC.md`, `docs/RESOLUTION_LAYER_SPEC.md`, `docs/REMOTE_MANIFEST_SCHEMA.md`, `docs/SIGNATURE_VERIFICATION.md`, `docs/OBSERVABILITY_GUIDE.md`.
 - Operations: `docs/deployment/` (Cloud Run + systemd), `docs/monitoring/` (Prometheus/Grafana/Loki/alerts), `docs/runbooks/` (incidents, maintenance, troubleshooting).
 
----
+______________________________________________________________________
 
 ## Testing & Quality
 
@@ -301,7 +301,7 @@ python -m crackerjack -a patch
 - Runtime telemetry + notification router + supervisor paths are covered by `tests/runtime/test_telemetry.py`, `test_notifications.py`, `test_supervisor.py`, and CLI/integration suites.
 - `python -m crackerjack` mirrors the multi-repo gate used in Crackerjack/ACB/FastBlocks.
 
----
+______________________________________________________________________
 
 ## Contributing
 
@@ -310,7 +310,7 @@ python -m crackerjack -a patch
 1. Add or update tests for new runtime features, adapters, actions, or CLI flows.
 1. Update documentation/runbooks (especially observability guides + cut-over checklist) so reviewers can reproduce artifacts.
 
----
+______________________________________________________________________
 
 ## License & Support
 

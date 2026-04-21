@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
+
 import numpy as np
 import pytest
-
-from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from oneiric.adapters.observability.models import TraceModel
 

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 from oneiric.adapters.observability.monitoring import OTelMetrics
 
 

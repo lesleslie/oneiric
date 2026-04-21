@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import pytest
 from sqlalchemy import text
+
 from oneiric.adapters.observability.migrations import (
+    create_ivfflat_index_if_ready,
     create_otel_schema,
-    create_ivfflat_index_if_ready
 )
-from oneiric.adapters.observability.otel import OTelStorageAdapter
-from oneiric.adapters.observability.settings import OTelStorageSettings
 
 
 @pytest.mark.integration
@@ -20,7 +19,7 @@ async def test_ivfflat_index_not_created_below_threshold(otel_db_session):
     await create_otel_schema(otel_db_session)
 
     # Insert only 100 traces (below threshold)
-    from datetime import datetime, UTC
+    from datetime import UTC, datetime
 
     for i in range(100):
         await otel_db_session.execute(
@@ -61,7 +60,8 @@ async def test_ivfflat_index_created_above_threshold(otel_db_session):
     await create_otel_schema(otel_db_session)
 
     # Insert 1500 traces (above threshold)
-    from datetime import datetime, UTC
+    from datetime import UTC, datetime
+
     import numpy as np
 
     for i in range(1500):

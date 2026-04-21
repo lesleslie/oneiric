@@ -10,7 +10,6 @@ from pathlib import Path
 import yaml
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from oneiric.remote.models import RemoteManifest

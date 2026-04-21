@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
-from typing import Any
+
+import numpy as np
 import pytest
 
 from oneiric.adapters.observability.otel import OTelStorageAdapter
 from oneiric.adapters.observability.queries import QueryService
 from oneiric.adapters.observability.settings import OTelStorageSettings
-import numpy as np
 
 
 class ConcreteOTelStorageAdapter(OTelStorageAdapter):

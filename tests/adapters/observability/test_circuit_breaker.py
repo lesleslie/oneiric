@@ -3,8 +3,13 @@
 from __future__ import annotations
 
 import time
+
 import pytest
-from oneiric.adapters.observability.circuit_breaker import CircuitBreaker, CircuitBreakerOpenError
+
+from oneiric.adapters.observability.circuit_breaker import (
+    CircuitBreaker,
+    CircuitBreakerOpenError,
+)
 
 
 @pytest.fixture

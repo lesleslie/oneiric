@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import UTC, datetime
+
 import asyncpg
 import pytest
-from datetime import datetime, UTC
 
 
 @pytest.mark.integration
@@ -32,9 +33,9 @@ async def test_mahavishnu_can_store_traces():
     except Exception:
         pytest.skip("PostgreSQL database not available - skipping integration test")
 
+    from oneiric.adapters.observability.migrations import create_otel_schema
     from oneiric.adapters.observability.otel import OTelStorageAdapter
     from oneiric.adapters.observability.settings import OTelStorageSettings
-    from oneiric.adapters.observability.migrations import create_otel_schema
 
     settings = OTelStorageSettings(
         connection_string="postgresql://postgres:postgres@localhost:5432/otel_test"

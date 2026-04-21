@@ -9,8 +9,9 @@ Run with:
 """
 
 import asyncio
-from oneiric.core.resolution import Resolver, Candidate
-from oneiric.core.lifecycle import LifecycleManager, HealthCheckError
+
+from oneiric.core.lifecycle import HealthCheckError, LifecycleManager
+from oneiric.core.resolution import Candidate, Resolver
 
 
 class MockCache:

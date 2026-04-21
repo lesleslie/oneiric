@@ -1,21 +1,21 @@
 """ULID resolution service performance benchmarks."""
 
-import sys
 import os
+import sys
 import time
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from druva import generate
+
 from oneiric.core.ulid_resolution import (
+    export_registry,
+    find_related_ulids,
+    get_registry_stats,
     register_reference,
     resolve_ulid,
-    find_references_by_system,
-    find_related_ulids,
-    export_registry,
-    get_registry_stats,
 )
-from druva import generate
 
 
 def bench_registration(count: int = 100) -> dict:
@@ -70,7 +70,7 @@ def bench_resolution(count: int = 100) -> dict:
     # Benchmark resolution
     start = time.time()
     for ulid in test_ulids:
-        ref = resolve_ulid(ulid)
+        resolve_ulid(ulid)
     elapsed = time.time() - start
 
     return {
@@ -142,12 +142,12 @@ def bench_export_stats(count: int = 100) -> dict:
 
     # Benchmark export
     start = time.time()
-    exported = export_registry()
+    export_registry()
     export_elapsed = time.time() - start
 
     # Benchmark stats
     start = time.time()
-    stats = get_registry_stats()
+    get_registry_stats()
     stats_elapsed = time.time() - start
 
     return {

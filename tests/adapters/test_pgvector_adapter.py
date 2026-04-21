@@ -4,8 +4,8 @@ from typing import Any
 
 import pytest
 
-from oneiric.adapters.vector.vector_types import VectorDocument
 from oneiric.adapters.vector.pgvector import PgvectorAdapter, PgvectorSettings
+from oneiric.adapters.vector.vector_types import VectorDocument
 
 
 class _FakePgConnection:

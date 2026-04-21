@@ -210,7 +210,7 @@ ______________________________________________________________________
 
 - Configuration Reference - Complete configuration options
 - Adapter Guide - Creating and using adapters
-- MCP Integration - MCP server setup
+- [MCP Integration](docs/integration/mcp.md) - MCP server setup
 - [Service Dependencies](docs/reference/service-dependencies.md) - Ecosystem integration
 - [Operational Modes](docs/guides/operational-modes.md) - Mode comparison and setup
 

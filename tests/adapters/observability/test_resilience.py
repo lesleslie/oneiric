@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+
 from oneiric.adapters.observability.resilience import with_retry
 
 

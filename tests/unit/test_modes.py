@@ -14,7 +14,7 @@ from oneiric.modes import (
     get_mode,
     get_mode_from_environment,
 )
-from oneiric.modes.base import ModeConfig, OperationMode
+from oneiric.modes.base import ModeConfig
 from oneiric.modes.lite import LiteMode
 from oneiric.modes.standard import StandardMode
 from oneiric.modes.utils import (

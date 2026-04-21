@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-import pytest
+from datetime import UTC, datetime
+
 import numpy as np
-from datetime import datetime, UTC
+import pytest
 from sqlalchemy import text
 
 pytest_plugins = ("pytest_benchmark",)

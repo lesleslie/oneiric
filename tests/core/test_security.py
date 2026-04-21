@@ -36,8 +36,9 @@ class TestConstantTimeComparison:
 
     def test_compare_rejects_non_string_types(self):
         """Constant-time comparison rejects non-string types."""
-        from oneiric.core.security import constant_time_compare
         import pytest
+
+        from oneiric.core.security import constant_time_compare
 
         with pytest.raises(TypeError):
             constant_time_compare(b"bytes", "string")
@@ -61,8 +62,9 @@ class TestConstantTimeComparison:
 
     def test_timing_safe_compare_mixed_types_fails(self):
         """Timing-safe comparison rejects mixed types."""
-        from oneiric.core.security import timing_safe_compare
         import pytest
+
+        from oneiric.core.security import timing_safe_compare
 
         with pytest.raises(TypeError):
             timing_safe_compare("string", b"bytes")
@@ -83,21 +85,20 @@ class TestConstantTimeComparison:
 
     def test_constant_time_bytes_compare_rejects_non_bytes(self):
         """Constant-time bytes comparison rejects non-bytes types."""
-        from oneiric.core.security import constant_time_bytes_compare
         import pytest
+
+        from oneiric.core.security import constant_time_bytes_compare
 
         with pytest.raises(TypeError):
             constant_time_bytes_compare("string", b"bytes")
 
     def test_comparison_timing_consistency(self):
         """Verify that comparison time is independent of input position."""
-        from oneiric.core.security import constant_time_compare
         import timeit
 
+        from oneiric.core.security import constant_time_compare
+
         # Prepare test data - same length strings
-        equal_same = ["test"] * 100
-        equal_diff = ["xyz"] * 100
-        unequal_diff = ["abc"] * 100
 
         # Measure times for equal strings at different positions
         times_equal = []

@@ -12,8 +12,7 @@ import asyncio
 from pathlib import Path
 
 from oneiric.core.resolution import Resolver
-from oneiric.remote.loader import RemoteManifestLoader
-from oneiric.remote.models import Manifest, AdapterEntry, ServiceEntry
+from oneiric.remote.models import AdapterEntry, Manifest, ServiceEntry
 
 
 async def main() -> None:
@@ -79,7 +78,7 @@ async def main() -> None:
     print("2. Loading manifest from file...")
     sample_manifest_path = Path("docs/sample_remote_manifest.yaml")
     if sample_manifest_path.exists():
-        resolver = Resolver()
+        Resolver()
 
         # Note: In production, use trusted public keys
         # loader = RemoteManifestLoader(
@@ -110,12 +109,12 @@ async def main() -> None:
     # Demonstrate manifest structure
     print("4. Manifest structure:")
     print(f"   API Version: {manifest.api_version}")
-    print(f"   Adapters:")
+    print("   Adapters:")
     for adapter in manifest.adapters:
         print(f"     - {adapter.key} -> {adapter.provider}")
         print(f"       Import: {adapter.import_path}")
         print(f"       Stack Level: {adapter.metadata.get('stack_level', 0)}")
-    print(f"   Services:")
+    print("   Services:")
     for service in manifest.services:
         print(f"     - {service.key} -> {service.provider}")
     print()

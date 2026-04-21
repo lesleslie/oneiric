@@ -2,11 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
-
-import pytest
-
 from oneiric.core.lifecycle import (
     LifecycleError,
     LifecycleHooks,
@@ -16,7 +11,6 @@ from oneiric.core.lifecycle import (
     _parse_timestamp,
     _status_from_dict,
 )
-
 
 # ---------------------------------------------------------------------------
 # LifecycleError

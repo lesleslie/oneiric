@@ -1,10 +1,11 @@
 """Tests for ULID collision detection."""
 
 import pytest
+
 from oneiric.core.ulid_collision import (
+    CollisionError,
     detect_collision,
     generate_with_retry,
-    CollisionError,
     get_collision_stats,
 )
 

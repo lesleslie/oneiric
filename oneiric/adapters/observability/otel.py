@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from abc import ABC, abstractmethod
+from abc import ABC
 from collections import deque
 from datetime import UTC, datetime
 from typing import Any
@@ -387,7 +387,9 @@ class OTelStorageAdapter(ABC):
                 logs = [
                     {
                         "id": log.id,
-                        "timestamp": log.timestamp.isoformat() if log.timestamp else None,
+                        "timestamp": log.timestamp.isoformat()
+                        if log.timestamp
+                        else None,
                         "level": log.level,
                         "message": log.message,
                         "trace_id": log.trace_id,

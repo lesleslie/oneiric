@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from oneiric.adapters.observability.queries import QueryService
-from oneiric.adapters.observability.models import LogModel, MetricModel, TraceModel
+
 from oneiric.adapters.observability.errors import (
     InvalidSQLError,
     TraceNotFoundError,
 )
+from oneiric.adapters.observability.models import LogModel, MetricModel, TraceModel
+from oneiric.adapters.observability.queries import QueryService
 
 
 @pytest.fixture
@@ -104,8 +106,9 @@ def test_orm_to_result_empty_attributes(query_service):
 @pytest.mark.asyncio
 async def test_find_similar_traces_returns_results(sample_traces_with_embeddings):
     """Test vector similarity search returns similar traces."""
-    from oneiric.adapters.observability.queries import QueryService
     import numpy as np
+
+    from oneiric.adapters.observability.queries import QueryService
 
     # Create QueryService with the sample session factory
     query_service = QueryService(session_factory=sample_traces_with_embeddings)
@@ -130,9 +133,10 @@ async def test_find_similar_traces_returns_results(sample_traces_with_embeddings
 @pytest.mark.asyncio
 async def test_find_similar_traces_invalid_dimension(query_service):
     """Test invalid embedding dimension raises error."""
-    from oneiric.adapters.observability.errors import InvalidEmbeddingError
     import numpy as np
     import pytest
+
+    from oneiric.adapters.observability.errors import InvalidEmbeddingError
 
     bad_embedding = np.random.rand(128)  # Wrong dimension
 

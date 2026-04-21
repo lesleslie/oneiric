@@ -5,7 +5,10 @@ from __future__ import annotations
 import pytest
 
 from oneiric.adapters import AdapterBridge
-from oneiric.adapters.messaging.messaging_types import MessagingSendResult, NotificationMessage
+from oneiric.adapters.messaging.messaging_types import (
+    MessagingSendResult,
+    NotificationMessage,
+)
 from oneiric.core.config import LayerSettings
 from oneiric.core.lifecycle import LifecycleManager
 from oneiric.core.resolution import Candidate, Resolver

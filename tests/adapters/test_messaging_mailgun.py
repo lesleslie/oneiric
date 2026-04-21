@@ -4,8 +4,11 @@ import httpx
 import pytest
 from pydantic import SecretStr
 
-from oneiric.adapters.messaging.messaging_types import EmailRecipient, OutboundEmailMessage
 from oneiric.adapters.messaging.mailgun import MailgunAdapter, MailgunSettings
+from oneiric.adapters.messaging.messaging_types import (
+    EmailRecipient,
+    OutboundEmailMessage,
+)
 
 
 @pytest.mark.asyncio

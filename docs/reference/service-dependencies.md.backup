@@ -597,7 +597,7 @@ ______________________________________________________________________
 - Configuration Reference - Complete configuration options
 - MCP Integration - MCP server setup and protocol
 - [Troubleshooting Guide](../runbooks/TROUBLESHOOTING.md) - Common issues and solutions
-- Production Deployment - Production best practices
+- [Production Deployment](../deployment/PRODUCTION.md) - Production best practices
 
 ______________________________________________________________________
 

@@ -6,8 +6,8 @@ from typing import Any
 
 import pytest
 
-from oneiric.adapters.nosql.nosql_types import NoSQLDocument
 from oneiric.adapters.nosql.dynamodb import DynamoDBAdapter, DynamoDBSettings
+from oneiric.adapters.nosql.nosql_types import NoSQLDocument
 
 
 class FakeTable:

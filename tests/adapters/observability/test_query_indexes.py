@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import pytest
 from sqlalchemy import text
+
 from oneiric.adapters.observability.migrations import (
     create_otel_schema,
-    create_query_optimization_indexes
+    create_query_optimization_indexes,
 )
 
 

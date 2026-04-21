@@ -3,8 +3,8 @@ from uuid import UUID
 
 import pytest
 
-from oneiric.adapters.vector.vector_types import VectorDocument
 from oneiric.adapters.vector.pgvector import PgvectorAdapter, PgvectorSettings
+from oneiric.adapters.vector.vector_types import VectorDocument
 from oneiric.core.lifecycle import LifecycleError
 
 

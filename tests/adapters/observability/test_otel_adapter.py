@@ -49,6 +49,7 @@ def concrete_adapter(otel_settings):
 async def otel_adapter(otel_settings):
     """Create initialized OTel adapter with database schema for integration tests."""
     import asyncio
+
     import asyncpg
 
     # Try to connect first, skip if not available
@@ -68,7 +69,6 @@ async def otel_adapter(otel_settings):
         pytest.skip("PostgreSQL database not available - skipping integration test")
 
     # Import the concrete adapter class (will be implemented in otel.py)
-    from oneiric.adapters.observability.models import LogModel, MetricModel
 
     class TestOTelAdapter(OTelStorageAdapter):
         """Concrete implementation using actual store_log and store_metrics methods from base class."""
@@ -181,6 +181,7 @@ async def test_store_trace_buffers_writes(otel_adapter):
 async def test_store_trace_auto_flush_on_batch_size(otel_adapter):
     """Test that buffer auto-flushes when reaching batch_size."""
     import asyncio
+
     import asyncpg
 
     # Try to connect first, skip if not available
@@ -244,8 +245,9 @@ async def test_store_trace_auto_flush_on_batch_size(otel_adapter):
 @pytest.mark.asyncio
 async def test_store_trace_with_embedding(otel_adapter):
     """Test storing trace with generated embedding."""
-    from oneiric.adapters.observability.types import TraceData
     from datetime import datetime
+
+    from oneiric.adapters.observability.types import TraceData
 
     now = datetime.utcnow()
     trace = TraceData(
@@ -269,6 +271,7 @@ async def test_store_trace_with_embedding(otel_adapter):
 
     # Verify trace was stored with embedding
     from sqlalchemy import select
+
     from oneiric.adapters.observability.models import TraceModel
 
     async with otel_adapter._session_factory() as session:
@@ -286,7 +289,8 @@ async def test_store_trace_with_embedding(otel_adapter):
 @pytest.mark.asyncio
 async def test_store_log_concrete_implementation(otel_adapter):
     """Test concrete store_log implementation."""
-    from datetime import datetime, UTC
+    from datetime import UTC, datetime
+
     from oneiric.adapters.observability.models import LogModel
 
     log_data = {
@@ -327,7 +331,8 @@ async def test_store_log_concrete_implementation(otel_adapter):
 @pytest.mark.asyncio
 async def test_store_metrics_concrete_implementation(otel_adapter):
     """Test concrete store_metrics implementation."""
-    from datetime import datetime, UTC
+    from datetime import UTC, datetime
+
     from oneiric.adapters.observability.models import MetricModel
 
     metrics_data = [

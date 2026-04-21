@@ -7,10 +7,8 @@ with proper priority ordering and project-specific lookups.
 from __future__ import annotations
 
 import os
-from pathlib import Path
 from unittest.mock import patch
 
-import pytest
 import yaml
 
 from oneiric.core.config import _env_overrides, load_settings

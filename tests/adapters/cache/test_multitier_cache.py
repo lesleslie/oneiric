@@ -1,7 +1,6 @@
 """Tests for multi-tier cache adapter."""
 
-import asyncio
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -11,7 +10,6 @@ from oneiric.adapters.cache.multitier import (
     MultiTierCacheAdapter,
     MultiTierCacheSettings,
 )
-from oneiric.core.lifecycle import LifecycleError
 
 
 class TestCacheMetrics:

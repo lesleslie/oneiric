@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-from pydantic import ValidationError
 
 from oneiric.remote.models import (
     CapabilityDescriptor,
@@ -12,7 +11,6 @@ from oneiric.remote.models import (
     RemoteManifest,
     RemoteManifestEntry,
 )
-
 
 # ---------------------------------------------------------------------------
 # CapabilitySecurityProfile

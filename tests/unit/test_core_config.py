@@ -5,21 +5,20 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from pydantic import BaseModel, ValidationError
+from pydantic import ValidationError
 
 from oneiric.core.config import (
     OneiricSettings,
     RemoteAuthConfig,
     RemoteSourceConfig,
     SecretsConfig,
-    lifecycle_snapshot_path,
-    runtime_health_path,
     domain_activity_path,
+    lifecycle_snapshot_path,
+    resolver_settings_from_config,
+    runtime_health_path,
     runtime_observability_path,
     workflow_checkpoint_path,
-    resolver_settings_from_config,
 )
-
 
 # ---------------------------------------------------------------------------
 # OneiricSettings defaults

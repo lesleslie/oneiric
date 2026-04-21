@@ -287,7 +287,6 @@ class TestConfigBackwardsCompatibility:
 
     def test_adapter_configWatcher_uses_new_pattern(self):
         """AdapterConfigWatcher now uses the generalized pattern."""
-        from oneiric.adapters.watcher import AdapterConfigWatcher
         from oneiric.core.domain_settings import create_layer_selector
 
         # Verify that the new pattern is used internally
@@ -299,12 +298,6 @@ class TestConfigBackwardsCompatibility:
 
     def test_existing_domain_watchers_use_new_pattern(self):
         """All domain watchers use the generalized pattern."""
-        from oneiric.domains.watchers import (
-            ServiceConfigWatcher,
-            TaskConfigWatcher,
-            EventConfigWatcher,
-            WorkflowConfigWatcher,
-        )
         from oneiric.core.domain_settings import create_layer_selector
 
         settings = OneiricSettings()

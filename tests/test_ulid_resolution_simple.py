@@ -1,14 +1,14 @@
 """Tests for ULID resolution service - robust version."""
 
 import pytest
+
 from oneiric.core.ulid_resolution import (
-    SystemReference,
     _ulid_registry,
+    export_registry,
+    find_references_by_system,
+    get_registry_stats,
     register_reference,
     resolve_ulid,
-    find_references_by_system,
-    export_registry,
-    get_registry_stats,
 )
 
 

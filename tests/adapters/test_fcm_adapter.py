@@ -4,8 +4,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from oneiric.adapters.messaging.messaging_types import NotificationMessage
 from oneiric.adapters.messaging.fcm import FCMPushAdapter, FCMPushSettings
+from oneiric.adapters.messaging.messaging_types import NotificationMessage
 from oneiric.core.lifecycle import LifecycleError
 
 

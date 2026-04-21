@@ -24,6 +24,22 @@ from __future__ import annotations
 import time
 from typing import Any
 
+from oneiric.core.ulid_collision import (
+    CollisionError,
+    generate_with_retry,
+    get_collision_stats,
+)
+from oneiric.core.ulid_resolution import (
+    SystemReference,
+    export_registry,
+    find_references_by_system,
+    find_related_ulids,
+    get_cross_system_trace,
+    get_registry_stats,
+    register_reference,
+    resolve_ulid,
+)
+
 # Try to import from druva, fallback to local implementation
 try:
     from druva import ULID, generate, get_timestamp, is_ulid

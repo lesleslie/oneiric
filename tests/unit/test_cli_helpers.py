@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import json
-import math
-from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -13,6 +10,7 @@ import pytest
 from typer import BadParameter
 
 from oneiric.cli import (
+    DOMAINS,
     _activity_counts_from_mapping,
     _build_lifecycle_options,
     _build_workflow_node,
@@ -35,12 +33,10 @@ from oneiric.cli import (
     _scrub_sensitive_data,
     _set_timestamps,
     _swap_latency_summary,
-    DOMAINS,
 )
-from oneiric.core.lifecycle import LifecycleSafetyOptions, LifecycleStatus
+from oneiric.core.lifecycle import LifecycleStatus
 from oneiric.core.resolution import Candidate, CandidateSource
 from oneiric.runtime.events import HandlerResult
-
 
 # ---------------------------------------------------------------------------
 # _percentile

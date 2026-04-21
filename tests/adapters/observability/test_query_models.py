@@ -13,9 +13,14 @@ QueryService models:
 
 from __future__ import annotations
 
-from datetime import datetime, UTC
-import pytest
-from oneiric.adapters.observability.types import TraceResult, LogEntry, MetricPoint, TraceContext
+from datetime import UTC, datetime
+
+from oneiric.adapters.observability.types import (
+    LogEntry,
+    MetricPoint,
+    TraceContext,
+    TraceResult,
+)
 
 
 def test_trace_result_model_success():

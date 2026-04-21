@@ -7,8 +7,8 @@ from typing import Any
 
 import pytest
 
-from oneiric.adapters.nosql.nosql_types import NoSQLDocument, NoSQLQuery
 from oneiric.adapters.nosql.mongodb import MongoDBAdapter, MongoDBSettings
+from oneiric.adapters.nosql.nosql_types import NoSQLDocument, NoSQLQuery
 
 
 class FakeCursor:

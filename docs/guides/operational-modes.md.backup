@@ -557,7 +557,7 @@ ______________________________________________________________________
 - [Service Dependencies](../reference/service-dependencies.md) - External service integration
 - Configuration Reference - Complete configuration options
 - Production Deployment - Production best practices
-- Cloud Run Guide - Serverless deployment
+- [Cloud Run Guide](../deployment/CLOUD_RUN.md) - Serverless deployment
 - [Troubleshooting](../runbooks/TROUBLESHOOTING.md) - Common issues and solutions
 
 ______________________________________________________________________

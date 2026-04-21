@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-import pytest
-
 from oneiric.core.resolution import (
     Candidate,
     CandidateRank,
@@ -13,7 +11,6 @@ from oneiric.core.resolution import (
     ResolutionExplanation,
     ResolverSettings,
 )
-
 
 # ---------------------------------------------------------------------------
 # CandidateSource enum

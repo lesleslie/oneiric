@@ -122,8 +122,9 @@ async def otel_db_session():
     Skip if database is not available.
     """
     import asyncio
-    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
     import asyncpg
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
     # Try to connect first, skip if not available
     try:

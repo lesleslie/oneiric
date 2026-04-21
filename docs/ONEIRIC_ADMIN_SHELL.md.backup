@@ -359,4 +359,4 @@ async def _my_helper(self) -> None:
 
 - Mahavishnu Admin Shell - Workflow orchestration shell
 - Session-Buddy MCP - Session tracking service
-- Oneiric Configuration - Configuration guide
+- [Oneiric Configuration](/Users/les/Projects/oneiric/docs/CONFIG.md) - Configuration guide

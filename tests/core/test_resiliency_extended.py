@@ -5,16 +5,15 @@ Tests for circuit breaker, retry logic, and adaptive backoff.
 
 from __future__ import annotations
 
-import asyncio
 from unittest.mock import AsyncMock
 
 import pytest
 
 from oneiric.core.resiliency import (
+    _ADAPTIVE_RETRY_STATE,
     AdaptiveRetryState,
     CircuitBreaker,
     CircuitBreakerOpen,
-    _ADAPTIVE_RETRY_STATE,
     _tune_backoff,
     _update_retry_state,
 )
