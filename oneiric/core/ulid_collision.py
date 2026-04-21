@@ -6,8 +6,6 @@ providing retry strategies and resolution tracking.
 
 import logging
 
-from oneiric.core.ulid import generate
-
 logger = logging.getLogger(__name__)
 
 # Track collisions for monitoring
@@ -79,7 +77,10 @@ def generate_with_retry(
     Raises:
         CollisionError: If all attempts result in collisions
     """
-    _gen = _generate_fn or generate
+    if _generate_fn is None:
+        from oneiric.core.ulid import generate as _generate_fn
+
+    _gen = _generate_fn
     existing_ulids = _existing_ulids if _existing_ulids is not None else set()
 
     for attempt in range(max_attempts):

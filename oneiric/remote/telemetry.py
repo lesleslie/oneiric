@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from oneiric.core.config import resolve_cache_dir_path
 from oneiric.core.logging import get_logger
 
 TELEMETRY_FILENAME = "remote_status.json"
@@ -100,7 +101,7 @@ def _write(cache_dir: str, telemetry: RemoteSyncTelemetry) -> None:
 
 
 def _telemetry_path(cache_dir: str) -> Path:
-    return Path(cache_dir) / TELEMETRY_FILENAME
+    return resolve_cache_dir_path(cache_dir) / TELEMETRY_FILENAME
 
 
 def _timestamp() -> str:

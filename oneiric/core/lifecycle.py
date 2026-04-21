@@ -62,8 +62,12 @@ def resolve_factory(factory: str | FactoryCallable) -> FactoryCallable:
         raise LifecycleError(f"Security validation failed: {error}")
 
     module_path, _, attr = factory.partition(":")
+    module_path = module_path.strip()
+    attr = attr.strip()
     if not attr:
         module_path, _, attr = factory.rpartition(".")
+        module_path = module_path.strip()
+        attr = attr.strip()
     if not module_path:
         raise LifecycleError(f"Cannot import factory from '{factory}'")
 

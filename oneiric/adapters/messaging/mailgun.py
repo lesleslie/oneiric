@@ -169,7 +169,7 @@ class MailgunAdapter(HTTPXClientMixin):
         self, payload: list[tuple[str, str]], message: OutboundEmailMessage
     ) -> None:
         if message.reply_to:
-            payload.append(("h: Reply-To", self._format_recipient(message.reply_to)))
+            payload.append(("h:Reply-To", self._format_recipient(message.reply_to)))
 
     def _add_mailgun_options(
         self, payload: list[tuple[str, str]], message: OutboundEmailMessage
@@ -178,19 +178,19 @@ class MailgunAdapter(HTTPXClientMixin):
         if sandbox is None:
             sandbox = self._settings.test_mode
         if sandbox:
-            payload.append(("o: testmode", "yes"))
+            payload.append(("o:testmode", "yes"))
 
         tags = message.categories or self._settings.tags
         for tag in tags:
-            payload.append(("o: tag", tag))
+            payload.append(("o:tag", tag))
 
         if self._settings.click_tracking:
-            payload.append(("o: tracking", self._settings.click_tracking))
+            payload.append(("o:tracking", self._settings.click_tracking))
         payload.extend(
             (
-                ("o: require-tls", "true" if self._settings.require_tls else "false"),
+                ("o:require-tls", "true" if self._settings.require_tls else "false"),
                 (
-                    "o: skip-verification",
+                    "o:skip-verification",
                     "true" if self._settings.skip_verification else "false",
                 ),
             )

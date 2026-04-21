@@ -6,7 +6,7 @@ import re
 from typing import Any
 
 FACTORY_PATTERN = re.compile(
-    r"^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)*:[a-zA-Z_][a-zA-Z0-9_]*$"
+    r"^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)*\s*:\s*[a-zA-Z_][a-zA-Z0-9_]*$"
 )
 
 
@@ -39,6 +39,8 @@ def validate_factory_string(
         )
 
     module_path, _, attr = factory.partition(":")
+    module_path = module_path.strip()
+    attr = attr.strip()
 
     for blocked in BLOCKED_MODULES:
         if module_path == blocked or module_path.startswith(f"{blocked}."):

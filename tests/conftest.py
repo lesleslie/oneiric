@@ -123,7 +123,7 @@ async def otel_db_session():
     """
     import asyncio
 
-    import asyncpg
+    asyncpg = pytest.importorskip("asyncpg")
     from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
     # Try to connect first, skip if not available

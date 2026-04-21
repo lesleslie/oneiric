@@ -50,7 +50,7 @@ async def otel_adapter(otel_settings):
     """Create initialized OTel adapter with database schema for integration tests."""
     import asyncio
 
-    import asyncpg
+    asyncpg = pytest.importorskip("asyncpg")
 
     # Try to connect first, skip if not available
     try:
@@ -182,7 +182,7 @@ async def test_store_trace_auto_flush_on_batch_size(otel_adapter):
     """Test that buffer auto-flushes when reaching batch_size."""
     import asyncio
 
-    import asyncpg
+    asyncpg = pytest.importorskip("asyncpg")
 
     # Try to connect first, skip if not available
     try:

@@ -21,8 +21,7 @@ Setup Time: ~ 5 minutes
 
 from __future__ import annotations
 
-from pathlib import Path
-
+from oneiric.core.config import resolve_cache_dir_path
 from oneiric.modes.base import ModeConfig, OperationMode
 
 
@@ -110,7 +109,7 @@ class StandardMode(OperationMode):
         errors = []
 
         # Check cache directory is writable
-        cache_dir = Path(".oneiric_cache")
+        cache_dir = resolve_cache_dir_path(".oneiric_cache")
         try:
             cache_dir.mkdir(parents=True, exist_ok=True)
             # Test write access

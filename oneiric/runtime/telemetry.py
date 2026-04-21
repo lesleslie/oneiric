@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from oneiric.core.config import resolve_cache_dir_path
 from oneiric.core.logging import get_logger
 
 RUNTIME_TELEMETRY_FILENAME = "runtime_telemetry.json"
@@ -155,7 +156,7 @@ class RuntimeTelemetryRecorder:
 
 
 def runtime_telemetry_path(cache_dir: str | Path) -> Path:
-    return Path(cache_dir) / RUNTIME_TELEMETRY_FILENAME
+    return resolve_cache_dir_path(cache_dir) / RUNTIME_TELEMETRY_FILENAME
 
 
 def _timestamp() -> str:

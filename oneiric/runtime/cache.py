@@ -3,9 +3,9 @@ from __future__ import annotations
 import json
 import time
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
+from oneiric.core.config import resolve_cache_dir_path
 from oneiric.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -49,7 +49,7 @@ class RuntimeCacheManager:
         max_entries: int = 1000,
         default_ttl: float | None = 3600,
     ):
-        self.cache_dir = Path(cache_dir)
+        self.cache_dir = resolve_cache_dir_path(cache_dir)
         self.server_name = server_name
         self.max_entries = max_entries
         self.default_ttl = default_ttl

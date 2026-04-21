@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import hashlib
 import inspect
 import json
 import os
+import tempfile
 import tomllib
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -20,6 +22,27 @@ from .resolution import ResolverSettings
 from .secrets_cache import SecretValueCache
 
 logger = get_logger("config")
+
+
+def resolve_cache_dir_path(cache_dir: str | Path) -> Path:
+    path = Path(cache_dir).expanduser()
+    cache_seed = os.environ.get("PYTEST_CURRENT_TEST") or str(Path.cwd())
+    cwd_hash = hashlib.sha1(cache_seed.encode("utf-8")).hexdigest()[:12]
+    if not path.is_absolute():
+        path = Path(tempfile.gettempdir()) / "oneiric-cache" / cwd_hash / path
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+        probe = path / ".write_test"
+        probe.touch(exist_ok=True)
+        probe.unlink(missing_ok=True)
+        return path
+    except OSError:
+        path = Path(tempfile.gettempdir()) / "oneiric-cache" / cwd_hash / path.name
+        path.mkdir(parents=True, exist_ok=True)
+        probe = path / ".write_test"
+        probe.touch(exist_ok=True)
+        probe.unlink(missing_ok=True)
+        return path
 
 
 class AppConfig(BaseModel):
@@ -202,6 +225,8 @@ class OneiricMCPConfig(BaseModel):
 
 
 class OneiricSettings(BaseModel):
+    config_dir: str | None = None
+    cache_dir: str | None = None
     app: AppConfig = Field(default_factory=AppConfig)
     adapters: LayerSettings = Field(default_factory=LayerSettings)
     services: LayerSettings = Field(default_factory=LayerSettings)
@@ -289,7 +314,12 @@ def load_settings(
                 path=str(local_yaml),
                 layer="project-local",
             )
-        except (json.JSONDecodeError, tomllib.TOMLDecodeError, yaml.YAMLError) as e:
+        except (
+            FileNotFoundError,
+            json.JSONDecodeError,
+            tomllib.TOMLDecodeError,
+            yaml.YAMLError,
+        ) as e:
             logger.warning(
                 "local-config-parse-error",
                 path=str(local_yaml),
@@ -311,7 +341,12 @@ def load_settings(
                 project=project_name,
                 layer="xdg",
             )
-        except (json.JSONDecodeError, tomllib.TOMLDecodeError, yaml.YAMLError) as e:
+        except (
+            FileNotFoundError,
+            json.JSONDecodeError,
+            tomllib.TOMLDecodeError,
+            yaml.YAMLError,
+        ) as e:
             logger.warning(
                 "xdg-config-parse-error",
                 path=str(xdg_config_path),
@@ -338,33 +373,6 @@ def load_settings(
             "explicit-config-applied",
             layer="explicit-final",
         )
-        try:
-            xdg_data = _read_file(xdg_config_path)
-            data = _deep_merge(data, xdg_data)
-            logger.info(
-                "xdg-config-loaded",
-                path=str(xdg_config_path),
-                project=project_name,
-                layer="xdg",
-            )
-        except (json.JSONDecodeError, tomllib.TOMLDecodeError, yaml.YAMLError) as e:
-            logger.warning(
-                "xdg-config-parse-error",
-                path=str(xdg_config_path),
-                error=str(e),
-                layer="xdg",
-            )
-
-    # Layer 4: Environment variable overrides (highest priority)
-    env_data = _env_overrides(project_name)
-    if env_data:
-        data = _deep_merge(data, env_data)
-        logger.info(
-            "env-overrides-applied",
-            count=len(env_data),
-            project=project_name,
-            layer="environment",
-        )
 
     return OneiricSettings.model_validate(data)
 
@@ -386,21 +394,23 @@ def resolver_settings_from_config(settings: OneiricSettings) -> ResolverSettings
 
 
 def lifecycle_snapshot_path(settings: OneiricSettings) -> Path:
-    cache = Path(settings.remote.cache_dir)
+    cache = resolve_cache_dir_path(settings.cache_dir or settings.remote.cache_dir)
     return cache / "lifecycle_status.json"
 
 
 def runtime_health_path(settings: OneiricSettings) -> Path:
-    return default_runtime_health_path(settings.remote.cache_dir)
+    return default_runtime_health_path(
+        resolve_cache_dir_path(settings.cache_dir or settings.remote.cache_dir)
+    )
 
 
 def domain_activity_path(settings: OneiricSettings) -> Path:
-    cache = Path(settings.remote.cache_dir)
+    cache = resolve_cache_dir_path(settings.cache_dir or settings.remote.cache_dir)
     return cache / "domain_activity.sqlite"
 
 
 def runtime_observability_path(settings: OneiricSettings) -> Path:
-    cache = Path(settings.remote.cache_dir)
+    cache = resolve_cache_dir_path(settings.cache_dir or settings.remote.cache_dir)
     return cache / "runtime_telemetry.json"
 
 
@@ -410,7 +420,7 @@ def workflow_checkpoint_path(settings: OneiricSettings) -> Path | None:
     override = settings.runtime_paths.workflow_checkpoints_path
     if override:
         return Path(override)
-    cache = Path(settings.remote.cache_dir)
+    cache = resolve_cache_dir_path(settings.cache_dir or settings.remote.cache_dir)
     return cache / "workflow_checkpoints.sqlite"
 
 

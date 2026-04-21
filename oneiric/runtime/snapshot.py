@@ -4,9 +4,9 @@ import json
 import sys
 import time
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
+from oneiric.core.config import resolve_cache_dir_path
 from oneiric.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -57,7 +57,7 @@ class RuntimeSnapshotManager:
         server_name: str = "mcp-server",
         max_snapshots: int = 5,
     ):
-        self.cache_dir = Path(cache_dir)
+        self.cache_dir = resolve_cache_dir_path(cache_dir)
         self.server_name = server_name
         self.max_snapshots = max_snapshots
         self.snapshots_dir = self.cache_dir / "snapshots"

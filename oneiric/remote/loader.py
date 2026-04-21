@@ -15,7 +15,7 @@ from urllib.parse import urlparse
 import httpx
 import yaml
 
-from oneiric.core.config import RemoteSourceConfig, SecretsHook
+from oneiric.core.config import RemoteSourceConfig, SecretsHook, resolve_cache_dir_path
 from oneiric.core.logging import get_logger
 from oneiric.core.resiliency import CircuitBreaker, CircuitBreakerOpen, run_with_retry
 from oneiric.core.resolution import Candidate, CandidateSource, Resolver
@@ -102,7 +102,7 @@ class ArtifactManager:
         allow_file_uris: bool = False,
         allowed_file_uri_roots: Sequence[str] | None = None,
     ) -> None:
-        self.cache_dir = Path(cache_dir)
+        self.cache_dir = resolve_cache_dir_path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.verify_tls = verify_tls
         self.timeout = timeout
