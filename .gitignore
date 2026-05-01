@@ -12,6 +12,8 @@ wheels/
 
 # Runtime cache
 .oneiric_cache/
+.hypothesis/
+.idea/
 .skylos/
 /NOTES.md
 /.obsidian/

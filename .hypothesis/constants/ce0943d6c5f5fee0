@@ -1,4 +1,0 @@
-# file: /Users/les/Projects/oneiric/oneiric/shell/adapter.py
-# hypothesis_version: 6.151.11
-
-['1. Defaults', '2. YAML', '3. Local', '4. Environment', 'Always active', 'Committed to git', 'Gitignored', 'Layer', 'ONEIRIC_* variables', 'OneiricSettings', 'Runtime overrides', 'Settings reloaded', 'Source', 'Status', 'adapters', 'component_type', 'config', 'cyan', 'foundation', 'green', 'oneiric', 'reload_settings', 'settings/local.yaml', 'show_layers', 'unknown', 'validate_config', 'version', 'yellow']

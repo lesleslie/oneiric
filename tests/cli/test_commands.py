@@ -731,7 +731,7 @@ class TestActivityCommand:
         config_file = tmp_path / "settings.toml"
         cache_dir = tmp_path / "cache"
         config_file.write_text(
-            f'[remote]\ncache_dir = "{cache_dir}"\nallow_file_uris = true\n'
+            f'cache_dir = "{cache_dir}"\n[remote]\ncache_dir = "{cache_dir}"\nallow_file_uris = true\n'
         )
         result = runner.invoke(app, [f"--config={config_file}", "--demo", "activity"])
 

@@ -1,4 +1,0 @@
-# file: /Users/les/Projects/oneiric/oneiric/adapters/database/__init__.py
-# hypothesis_version: 6.151.4
-
-['MySQLDatabaseAdapter']

@@ -5,6 +5,79 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.8] - 2026-04-30
+
+### Added
+
+- otel: Add IVFFlat vector index migration
+- otel: Add performance monitoring
+- otel: Add Pydantic result models for QueryService
+- otel: Create QueryService with ORM conversion
+- otel: Implement circuit breaker for resilience
+- otel: Implement concrete store_log and store_metrics
+- otel: Implement QueryService with error search, trace context, and SQL escape hatch
+- otel: Implement retry with exponential backoff
+- otel: Implement vector similarity search
+
+### Changed
+
+- **BREAKING:** Rename 8 generic files to descriptive names
+- Oneiric (quality: 80/100) - 2026-02-03 16:26:19
+- Update config, core, deps, docs, tests
+- Update config, core, deps, docs, tests
+- Update core, deps, docs, tests
+- Update core, deps, docs, tests
+- Update core, docs, tests
+- Update dependencies
+- Update deps, docs
+
+### Fixed
+
+- Correct typo in coverage import (coverage -> coverage)
+- otel: Fix mutable defaults and add Field descriptions
+- otel: Remove unused imports and improve QueryService code quality
+
+### Performance
+
+- otel: Add query optimization indexes
+
+### Documentation
+
+- otel: Add performance and index management runbooks
+- otel: Add Phase 3 QueryService complete summary
+- otel: Add Phase 3 QueryService design
+- otel: Add Phase 3 QueryService implementation plan
+- otel: Add Phase 4 Mahavishnu integration design
+- otel: Add Phase 4 Mahavishnu integration implementation plan
+- otel: Add Phase 5 performance implementation plan
+
+### Testing
+
+- otel: Add Mahavishnu integration tests
+- otel: Add performance benchmark suite
+
+### Internal
+
+- Add archive/backup directories to gitignore
+- Bump version to 0.5.0
+- Bump version to 0.5.1
+- Bump version to 0.6.0
+- Bump version to 0.7.0
+- Bump version to 0.7.1
+- Bump version to 0.8.0
+- Bump version to 0.8.1
+- Bump version to 0.8.2
+- Bump version to 0.8.3
+- Bump version to 0.9.0
+- Bump version to 0.9.1
+- Bump version to 0.9.2
+- Bump version to 0.9.3
+- Bump version to 0.9.4
+- Bump version to 0.9.5
+- Bump version to 0.9.6
+- ci: Remove github actions release workflow
+- Update LICENSE copyright to 2026
+
 ## [0.9.0] - 2026-04-07
 
 ### Internal

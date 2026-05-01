@@ -1,4 +1,0 @@
-# file: /Users/les/Projects/oneiric/oneiric/adapters/storage/local.py
-# hypothesis_version: 6.151.4
-
-[200, '*', './.oneiric_storage', '/', 'Data Platform', 'adapter', 'adapter-init', 'blob', 'delete', 'local', 'local-storage', 'storage', 'stream']

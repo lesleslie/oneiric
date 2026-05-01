@@ -1,4 +1,0 @@
-# file: /Users/les/Projects/oneiric/oneiric/domains/watchers.py
-# hypothesis_version: 6.151.4
-
-[5.0, 'event', 'service', 'task', 'workflow']

@@ -1,4 +1,0 @@
-# file: /Users/les/Projects/oneiric/oneiric/domains/base.py
-# hypothesis_version: 6.151.4
-
-[' & ', 'domain-drain-cleared', 'domain-draining', 'domain-paused', 'domain-ready', 'domain-resumed', 'draining', 'paused', 'unavailable']

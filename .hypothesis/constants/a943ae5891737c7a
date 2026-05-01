@@ -1,4 +1,0 @@
-# file: /Users/les/Projects/oneiric/oneiric/modes/base.py
-# hypothesis_version: 6.151.11
-
-[', ', '-', 'ONEIRIC_MODE', '_', 'cloud_backup_enabled', 'inline_manifest_only', 'lite', 'mode', 'remote_enabled', 'setup_time_minutes', 'signature_required', 'standard', 'supervisor_enabled', 'watchers_enabled']

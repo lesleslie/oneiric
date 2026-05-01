@@ -1,4 +1,0 @@
-# file: /Users/les/Projects/oneiric/oneiric/core/ulid_resolution.py
-# hypothesis_version: 6.151.11
-
-[60000, 'SystemReference', 'by_reference_type', 'by_system', 'error', 'export_registry', 'find_related_ulids', 'get_registry_stats', 'metadata', 'reference_type', 'register_reference', 'registered_at', 'related_count', 'related_ulids', 'resolve_ulid', 'source_system', 'system', 'timestamp_ms', 'total_registrations', 'ulid']

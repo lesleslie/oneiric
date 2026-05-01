@@ -1,4 +1,0 @@
-# file: /Users/les/Projects/oneiric/oneiric/adapters/messaging/common.py
-# hypothesis_version: 6.151.4
-
-['^\\+[1-9]\\d{7,14}$', 'after']

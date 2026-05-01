@@ -1,4 +1,0 @@
-# file: /Users/les/Projects/oneiric/oneiric/adapters/observability/migrations.py
-# hypothesis_version: 6.151.11
-
-[100, 1000, 'ivfflat', 'start_time_status']

@@ -1,4 +1,0 @@
-# file: /Users/les/Projects/oneiric/oneiric/runtime/load_testing.py
-# hypothesis_version: 6.151.4
-
-[b'x', 0.0, 100, 1000, 'load-test', 'loadtest-warmup-end', 'oneiric.loadtest']
