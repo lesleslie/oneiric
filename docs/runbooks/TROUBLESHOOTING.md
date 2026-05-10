@@ -734,12 +734,12 @@ vim settings/app.yml
 **C. Wrong config path**
 
 ```bash
-# Check config directory
+# Check config file
 echo $ONEIRIC_CONFIG
-# Should point to: /app/settings or ./settings
+# Should point to something like: /app/settings/serverless.yaml or ./settings/oneiric.yaml
 
 # If wrong, set correctly
-export ONEIRIC_CONFIG=/app/settings
+export ONEIRIC_CONFIG=/app/settings/serverless.yaml
 ```
 
 ______________________________________________________________________

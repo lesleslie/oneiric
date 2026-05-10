@@ -14,7 +14,8 @@ graph TB
     subgraph "Development"
         Code["Oneiric Source Code"]
         Procfile["Procfile<br/>(web process)"]
-        Config["config/serverless.toml"]
+        Deploy["deploy.yaml"]
+        Config["config/serverless.yaml"]
     end
 
     subgraph "Build Pipeline"
@@ -37,6 +38,7 @@ graph TB
 
     Code --> Pack
     Procfile --> Pack
+    Deploy --> Pack
     Config --> Pack
 
     Pack --> Buildpack
@@ -62,7 +64,7 @@ graph TB
 | Runtime | Google Cloud Run (container revisions, 0 → N scale) |
 | Build | Cloud Native Buildpacks via `pack` or `gcloud run deploy --source` |
 | Entry point | `uv run python -m oneiric.cli orchestrate --profile serverless` (Procfile `web` process) |
-| Config | Inline manifests baked into the image + Secret Manager adapters (env fallback for local dev) |
+| Config | Generated `config/serverless.yaml` from `deploy.yaml` + `config/standard.yaml` |
 | Remote polling | Disabled by default; enable explicitly per deployment if needed |
 
 The serverless profile disables file watchers and remote refresh loops, keeps runtime secrets stateless, and assumes cold starts should do the minimal amount of work before activating adapters/actions.
@@ -99,6 +101,34 @@ Notes:
 - When customizing the Procfile for a specific service, update both files (or keep a symlink) so future roadmap updates land consistently across local + Cloud Run profiles.
 - Override or extend the command via `--` in `gcloud run deploy` if you need per-service variations.
 
+### Deployment Overlay Config
+
+Use `deploy.yaml` as the deployment overlay and generate `config/serverless.yaml` as the runtime artifact:
+
+```bash
+uv run python scripts/render_deploy_config.py \
+  --base config/standard.yaml \
+  --overlay deploy.yaml \
+  --output config/serverless.yaml
+```
+
+Or, if you prefer the repository shortcut:
+
+```bash
+make deploy-config
+```
+
+Recommended pattern:
+
+1. Keep `config/standard.yaml` as the committed deployment baseline.
+1. Keep `deploy.yaml` for environment-specific overrides.
+1. Keep local user overrides in `~/.config/<project>/config.yaml` or `local.yaml`.
+1. Point `ONEIRIC_CONFIG` at the generated `config/serverless.yaml` in Cloud Run.
+
+Do not copy raw secret values into the overlay. Use secret IDs, Secret Manager references, or a secrets adapter so the runtime resolves sensitive values at launch time.
+
+This keeps deployment changes auditable without turning the overlay into a secret store.
+
 ______________________________________________________________________
 
 ## 4. Building with `pack`
@@ -123,13 +153,13 @@ gcloud run deploy oneiric-runtime \
   --port 8080 \
   --max-instances 5 \
   --min-instances 0 \
-  --set-env-vars "ONEIRIC_CONFIG=/workspace/config/serverless.toml"
+  --set-env-vars "ONEIRIC_CONFIG=/workspace/config/serverless.yaml"
 ```
 
 Recommendations:
 
 - Keep the `.oneiric_cache` directory on disk so cached manifests/activity snapshots survive across revisions. Use `BP_KEEP_FILES` to ensure buildpacks do not prune the cache.
-- Store your serverless-specific settings file under `config/serverless.toml` (checked into the repo or injected at build time); it should pin adapter selections and secret providers for Cloud Run.
+- Store your serverless-specific settings file as a generated runtime artifact such as `config/serverless.yaml`; it should pin adapter selections and secret-provider IDs for Cloud Run, not raw secret material.
 
 ______________________________________________________________________
 
@@ -143,13 +173,13 @@ gcloud run deploy oneiric-runtime \
   --region us-central1 \
   --allow-unauthenticated \
   --set-env-vars "ONEIRIC_PROFILE=serverless" \
-  --set-env-vars "ONEIRIC_CONFIG=/workspace/config/serverless.toml"
+  --set-env-vars "ONEIRIC_CONFIG=/workspace/config/serverless.yaml"
 ```
 
 Tips:
 
 - `gcloud run deploy --source` detects the Procfile automatically. Ensure the file lives at repo root.
-- Set `ONEIRIC_PROFILE=serverless` to mirror the CLI flag when running under `gcloud run deploy --source` (the CLI flag is still useful for local runs and custom Procfiles). The CLI and `main.py` automatically honor that env var now—no need to duplicate it inside your settings file unless you want to bake the profile permanently.
+- Set `ONEIRIC_PROFILE=serverless` to mirror the CLI flag when running under `gcloud run deploy --source` (the CLI flag is still useful for local runs and custom Procfiles). The CLI and `main.py` automatically honor that env var now.
 
 ______________________________________________________________________
 
@@ -188,32 +218,34 @@ graph TD
 **Configuration Strategy:**
 
 1. **Secret Manager adapter** – configure `settings.secrets.provider = "gcp.secret_manager"` and grant the Cloud Run service account `roles/secretmanager.secretAccessor`.
-1. **Inline manifests** – package critical manifest entries into your TOML (or embed as JSON inside the repo); the serverless profile assumes no remote polling unless you opt in.
+1. **Inline manifests** – package critical manifest entries into your YAML artifact (or embed as JSON inside the repo); the serverless profile assumes no remote polling unless you opt in.
 1. **Env fallbacks** – keep `.env`-style config limited to local dev. Production deployments should prefer Secret Manager + build-time manifest packaging.
 1. **Precedence & verification** – Secret Manager overrides env vars, which override manifest defaults; run `uv run python -m oneiric.cli health --probe --json` (or `--demo health --probe --json`) before deploys to capture the `secrets` block and confirm the expected provider is `status=ready`. Pair it with `uv run python -m oneiric.cli supervisor-info` so release notes show both the runtime profile and the current supervisor toggle.
 
-Sample snippet (`config/serverless.toml`):
+Sample snippet (`config/serverless.yaml`):
 
-```toml
-[profile]
-name = "serverless"
+```yaml
+profile:
+  name: serverless
 
-[secrets]
-provider = "gcp.secret_manager"
+secrets:
+  provider: gcp.secret_manager
 
-[adapters.selections]
-vector = "pgvector"
-secrets = "gcp"
-queue = "cloudtasks"
+adapters:
+  selections:
+    vector: pgvector
+    secrets: gcp
+    queue: cloudtasks
+  provider_settings:
+    pgvector:
+      dsn: "postgresql://..."
 
-[workflows.options]
-queue_category = "queue.scheduler"
+workflows:
+  options:
+    queue_category: queue.scheduler
 
-[adapters.provider_settings.pgvector]
-dsn = "postgresql://..."
-
-[remote]
-enabled = false
+remote:
+  enabled: false
 ```
 
 Setting `[workflows.options] queue_category = "queue.scheduler"` keeps workflow enqueue operations pointed at the Cloud Tasks adapter without needing CLI flags. Combine that with `[adapters.selections] queue = "cloudtasks"` (and the corresponding provider settings) so `RuntimeOrchestrator` can resolve the adapter when Cloud Tasks delivers HTTP callbacks.
@@ -247,13 +279,14 @@ uv run python -m oneiric.cli manifest pack \
   --output build/serverless_manifest.json
 ```
 
-3. Point `[remote] manifest_url = "file:///workspace/build/serverless_manifest.json"` in `config/serverless.toml`, and allow the local path explicitly:
+3. Point `remote.manifest_url: file:///workspace/build/serverless_manifest.json` in `config/serverless.yaml`, and allow the local path explicitly:
 
-```toml
-[remote]
-manifest_url = "file:///workspace/build/serverless_manifest.json"
-allow_file_uris = true
-allowed_file_uri_roots = ["/workspace/build"]
+```yaml
+remote:
+  manifest_url: file:///workspace/build/serverless_manifest.json
+  allow_file_uris: true
+  allowed_file_uri_roots:
+    - /workspace/build
 ```
 
 Because remote sync is disabled in the serverless profile, the orchestrator sticks to the packaged manifest until you redeploy.
@@ -284,7 +317,7 @@ ______________________________________________________________________
 | Symptom | Likely Cause | Fix |
 |---------|--------------|-----|
 | Service fails to start with watcher errors | Profile defaulted to `watchers_enabled=True` | Ensure `--profile serverless` (CLI) or `ONEIRIC_PROFILE=serverless` env is set. |
-| Remote sync attempts despite `--no-remote` | `remote.enabled` true in config | Set `[remote] enabled = false` in `serverless.toml` or pass `--no-remote`. |
+| Remote sync attempts despite `--no-remote` | `remote.enabled` true in config | Set `remote.enabled: false` in `serverless.yaml` or pass `--no-remote`. |
 | Secret lookup fails | Cloud Run service account missing Secret Manager role | Grant `roles/secretmanager.secretAccessor` and redeploy. |
 | Buildpack purge removes `.oneiric_cache` | `BP_KEEP_FILES` not set | Add `--env BP_KEEP_FILES=/workspace/.oneiric_cache` during pack build. |
 
@@ -310,7 +343,7 @@ Successfully built image gcr.io/demo-project/oneiric-runtime:9f36c2a
 $ gcloud run deploy oneiric-runtime --image "$IMAGE" --region us-central1 \
     --allow-unauthenticated \
     --set-env-vars "ONEIRIC_PROFILE=serverless" \
-    --set-env-vars "ONEIRIC_CONFIG=/workspace/config/serverless.toml"
+    --set-env-vars "ONEIRIC_CONFIG=/workspace/config/serverless.yaml"
 Deploying container...done.
 Service [oneiric-runtime] revision [oneiric-runtime-00004-zol] has been deployed.
 URLs:

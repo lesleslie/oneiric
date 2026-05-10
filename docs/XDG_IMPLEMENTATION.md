@@ -37,8 +37,10 @@ def load_settings(
 1. Explicit path argument (applied LAST as final override)
 1. `{PROJECT}_CONFIG` environment variable
 1. Environment variable overrides (`{PROJECT}_{SECTION}__{FIELD}`)
+1. **XDG user local override**: `~/.config/{project_name}/local.yaml`
 1. **XDG user config**: `~/.config/{project_name}/config.yaml` ⭐ NEW
 1. **Project local override**: `settings/local.yaml` (development)
+1. **Project committed config**: `settings/{project_name}.yaml`
 1. Code defaults
 
 **Key Design Decision**: XDG config overrides project local config because user preferences should take precedence over repository defaults.
@@ -137,6 +139,7 @@ from oneiric.core.config import load_settings
 settings = load_settings(project_name="mahavishnu")
 
 # Config lookup:
+# - ~/.config/mahavishnu/local.yaml (XDG local)
 # - ~/.config/mahavishnu/config.yaml (XDG)
 # - settings/local.yaml (development)
 # - Code defaults
@@ -166,6 +169,12 @@ remote:
   enabled: true
 logging:
   level: INFO
+EOF
+
+# Optional machine-specific override
+cat > ~/.config/my-project/local.yaml <<EOF
+remote:
+  cache_dir: ~/.cache/my-project-dev
 EOF
 
 # Project automatically picks up config!

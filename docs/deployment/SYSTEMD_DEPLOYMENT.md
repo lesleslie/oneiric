@@ -189,7 +189,7 @@ WorkingDirectory=/opt/oneiric
 
 # Environment
 Environment="PATH=/opt/oneiric/.local/bin:/usr/local/bin:/usr/bin"
-Environment="ONEIRIC_CONFIG=/opt/oneiric/settings"
+Environment="ONEIRIC_CONFIG=/opt/oneiric/settings/serverless.yaml"
 Environment="LOG_LEVEL=INFO"
 Environment="ONEIRIC_LOG_FORMAT=json"
 
@@ -259,7 +259,7 @@ WorkingDirectory=/opt/oneiric
 
 # Environment
 Environment="PATH=/opt/oneiric/.local/bin:/usr/local/bin:/usr/bin"
-Environment="ONEIRIC_CONFIG=/opt/oneiric/settings"
+Environment="ONEIRIC_CONFIG=/opt/oneiric/settings/serverless.yaml"
 Environment="LOG_LEVEL=INFO"
 Environment="ONEIRIC_LOG_FORMAT=json"
 Environment="OTEL_SERVICE_NAME=oneiric"
@@ -488,7 +488,7 @@ ______________________________________________________________________
 # This file is sourced by systemd (not a shell script!)
 
 # Core configuration
-ONEIRIC_CONFIG=/opt/oneiric/settings
+ONEIRIC_CONFIG=/opt/oneiric/settings/serverless.yaml
 ONEIRIC_STACK_ORDER=production:100,staging:50,default:0
 
 # Logging

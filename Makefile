@@ -1,6 +1,6 @@
 # Makefile for Oneiric test execution patterns
 
-.PHONY: help test test-fast test-slow test-unit test-integration test-security test-all test-analyze
+.PHONY: help test test-fast test-slow test-unit test-integration test-security test-all test-analyze deploy-config
 
 help:  ## Show this help message
 	@echo "Oneiric Test Execution Targets:"
@@ -61,3 +61,9 @@ crackerjack-test:  ## Run crackerjack with tests
 
 crackerjack-verbose:  ## Run crackerjack with verbose output
 	python -m crackerjack -t -v
+
+deploy-config:  ## Render deploy.yaml into config/serverless.yaml
+	uv run python scripts/render_deploy_config.py \
+		--base config/standard.yaml \
+		--overlay deploy.yaml \
+		--output config/serverless.yaml

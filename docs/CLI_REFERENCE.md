@@ -45,9 +45,12 @@ source ~/.bashrc  # or ~/.zshrc
 export ONEIRIC_CONFIG=/path/to/config.toml
 
 # Default locations (checked in order):
-# 1. $ONEIRIC_CONFIG
-# 2. ~/.oneiric.toml
-# 3. ./settings/app.toml
+# 1. $ONEIRIC_CONFIG / --config
+# 2. env overrides (ONEIRIC_* / PROJECT_*)
+# 3. ./settings/<project>.yaml or .yml
+# 4. ./settings/local.yaml
+# 5. ~/.config/<project>/config.yaml
+# 6. ~/.config/<project>/local.yaml
 ```
 
 ### Demo Mode

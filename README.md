@@ -225,7 +225,7 @@ ONEIRIC_PROFILE=serverless \
 | Env Var | Purpose | Notes |
 |---------|---------|-------|
 | `ONEIRIC_PROFILE=serverless` | Applies watcher/remote/secrets toggles used for Cloud Run | CLI and `main.py` honor this env var automatically |
-| `ONEIRIC_CONFIG=/workspace/config/serverless.toml` | Points to per-service serverless settings | Use with Procfile or `gcloud run deploy --set-env-vars` |
+| `ONEIRIC_CONFIG=/workspace/config/serverless.yaml` | Points to per-service serverless settings | Use with Procfile or `gcloud run deploy --set-env-vars` |
 | `ONEIRIC_RUNTIME_SUPERVISOR__ENABLED` | Overrides the Service Supervisor flag | Leave unset (`true`) unless debugging |
 | `ONEIRIC_ACTIVITY_STORE=/workspace/.oneiric_cache/domain_activity.sqlite` | Pins the activity store location | Optional; default lives under `.oneiric_cache/` |
 

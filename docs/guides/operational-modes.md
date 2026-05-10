@@ -406,7 +406,7 @@ Oneiric includes a **serverless profile** optimized for Google Cloud Run and oth
 export ONEIRIC_PROFILE=serverless
 
 # Use serverless config
-export ONEIRIC_CONFIG=/workspace/config/serverless.toml
+export ONEIRIC_CONFIG=/workspace/config/serverless.yaml
 ```
 
 ### Build Process
@@ -430,7 +430,7 @@ gcloud run deploy oneiric \
 ### Serverless Config Example
 
 ```toml
-# serverless.toml
+# serverless.yaml
 [oneiric]
 profile = "serverless"
 mode = "lite"
@@ -621,7 +621,7 @@ services:
 ### Serverless Profile Template
 
 ```toml
-# serverless.toml
+# serverless.yaml
 [oneiric]
 profile = "serverless"
 mode = "lite"

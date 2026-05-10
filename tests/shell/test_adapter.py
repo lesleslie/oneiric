@@ -96,7 +96,7 @@ class TestShowConfigLayers:
 
             mock_console.print.assert_called_once_with(mock_table)
             mock_table.add_column.assert_called()
-            assert mock_table.add_row.call_count == 4
+            assert mock_table.add_row.call_count == 6
 
 
 class TestValidateConfig:

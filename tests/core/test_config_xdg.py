@@ -88,6 +88,20 @@ class TestXDGConfigLayer:
 class TestConfigPriorityOrder:
     """Test configuration layer priority ordering."""
 
+    def test_project_named_yaml_over_defaults(self, tmp_path, monkeypatch):
+        """Test settings/{project_name}.yaml overrides defaults."""
+        project_config = tmp_path / "settings" / "test_project.yaml"
+        project_config.parent.mkdir(parents=True, exist_ok=True)
+        project_config.write_text(
+            yaml.dump({"remote": {"cache_dir": "/tmp/project"}})
+        )
+
+        monkeypatch.chdir(tmp_path)
+
+        settings = load_settings(project_name="test_project")
+
+        assert settings.remote.cache_dir == "/tmp/project"
+
     def test_explicit_path_highest_priority(self, tmp_path, monkeypatch):
         """Test explicit path parameter has highest priority."""
         # Create XDG config
@@ -165,6 +179,36 @@ class TestConfigPriorityOrder:
 
         # XDG should override local
         assert settings.remote.cache_dir == "/tmp/xdg"
+
+    def test_xdg_local_over_xdg_and_project_local(self, tmp_path, monkeypatch):
+        """Test XDG local override wins over XDG config and repo-local config."""
+        project_config = tmp_path / "settings" / "test.yaml"
+        project_config.parent.mkdir(parents=True, exist_ok=True)
+        project_config.write_text(
+            yaml.dump({"remote": {"cache_dir": "/tmp/project"}})
+        )
+
+        local_config = tmp_path / "settings" / "local.yaml"
+        local_config.parent.mkdir(parents=True, exist_ok=True)
+        local_config.write_text(
+            yaml.dump({"remote": {"cache_dir": "/tmp/local"}})
+        )
+
+        xdg_config = tmp_path / ".config" / "test" / "config.yaml"
+        xdg_config.parent.mkdir(parents=True, exist_ok=True)
+        xdg_config.write_text(
+            yaml.dump({"remote": {"cache_dir": "/tmp/xdg"}})
+        )
+
+        xdg_local = tmp_path / ".config" / "test" / "local.yaml"
+        xdg_local.write_text(yaml.dump({"remote": {"cache_dir": "/tmp/xdg_local"}}))
+
+        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / ".config"))
+        monkeypatch.chdir(tmp_path)
+
+        settings = load_settings(project_name="test")
+
+        assert settings.remote.cache_dir == "/tmp/xdg_local"
 
     def test_project_local_over_defaults(self, tmp_path, monkeypatch):
         """Test project local config overrides defaults."""
@@ -413,6 +457,31 @@ class TestErrorHandling:
 
 class TestRealWorldScenarios:
     """Test real-world configuration scenarios."""
+
+    def test_committed_project_config_with_local_override(self, tmp_path, monkeypatch):
+        """Test repo-named committed config with local override."""
+        project_config = tmp_path / "settings" / "my_app.yaml"
+        project_config.parent.mkdir(parents=True, exist_ok=True)
+        project_config.write_text(
+            yaml.dump(
+                {
+                    "logging": {"level": "INFO"},
+                    "remote": {"cache_dir": "/tmp/project_cache"},
+                }
+            )
+        )
+
+        local_config = tmp_path / "settings" / "local.yaml"
+        local_config.parent.mkdir(parents=True, exist_ok=True)
+        local_config.write_text(yaml.dump({"remote": {"enabled": True}}))
+
+        monkeypatch.chdir(tmp_path)
+
+        settings = load_settings(project_name="my_app")
+
+        assert "INFO" in str(settings.logging.level)
+        assert settings.remote.cache_dir == "/tmp/project_cache"
+        assert settings.remote.enabled is True
 
     def test_development_mode_with_local_override(self, tmp_path, monkeypatch):
         """Test development mode using settings/local.yaml."""

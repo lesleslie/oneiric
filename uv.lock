@@ -2694,7 +2694,7 @@ wheels = [
 
 [[package]]
 name = "mcp-common"
-version = "0.13.0"
+version = "0.13.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cryptography" },
@@ -2708,9 +2708,9 @@ dependencies = [
     { name = "typer" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/60/ea/b3a434a34cdc224f9ee976733325f1b17fe2544b2a9e645be1069e70b2cc/mcp_common-0.13.0.tar.gz", hash = "sha256:c8242d330a2e4cdcd53f09444c78fdbf5f29f4fb540a1064e31d28f02fd56bf2", size = 866983, upload-time = "2026-05-01T06:06:23.608Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/10/8f/581e0b2fcd574451e2319a0ed82fa4b1537e60bd5df9028816d88c6013cc/mcp_common-0.13.1.tar.gz", hash = "sha256:2faa7911673946f0ee092bfcfd3a021c2485400ffc5348385c8f752678d737f2", size = 872412, upload-time = "2026-05-10T09:04:24.565Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/af/a2/d8f8ef93cc0d52bbf6aab7046968ca29e86ac257bdc654644cbb28e9f50f/mcp_common-0.13.0-py3-none-any.whl", hash = "sha256:7c3343253914547729a1de4984aa7e1591ef7116263277f6dd44b627b3abddd4", size = 378628, upload-time = "2026-05-01T06:06:21.211Z" },
+    { url = "https://files.pythonhosted.org/packages/98/49/73dcf86800d01a1adfb3ef1e8f0be648fe24193f35282587b9f949421275/mcp_common-0.13.1-py3-none-any.whl", hash = "sha256:0634abb79baf3f7f1b00f8793617e5990d62649bab464e1e1b91887293bffe6f", size = 378628, upload-time = "2026-05-10T09:04:22.603Z" },
 ]
 
 [package.optional-dependencies]
@@ -3296,7 +3296,7 @@ wheels = [
 
 [[package]]
 name = "oneiric"
-version = "0.9.8"
+version = "0.9.9"
 source = { editable = "." }
 dependencies = [
     { name = "aiobreaker" },
@@ -4647,11 +4647,11 @@ wheels = [
 
 [[package]]
 name = "python-multipart"
-version = "0.0.27"
+version = "0.0.28"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/69/9b/f23807317a113dc36e74e75eb265a02dd1a4d9082abc3c1064acd22997c4/python_multipart-0.0.27.tar.gz", hash = "sha256:9870a6a8c5a20a5bf4f07c017bd1489006ff8836cff097b6933355ee2b49b602", size = 44043, upload-time = "2026-04-27T10:51:26.649Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/82/54/a85eb421fbdd5007bc5af39d0f4ed9fa609e0fedbfdc2adcf0b34526870e/python_multipart-0.0.28.tar.gz", hash = "sha256:8550da197eac0f7ab748961fc9509b999fa2662ea25cef857f05249f6893c0f8", size = 45314, upload-time = "2026-05-10T11:05:16.596Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/99/78/4126abcbdbd3c559d43e0db7f7b9173fc6befe45d39a2856cc0b8ec2a5a6/python_multipart-0.0.27-py3-none-any.whl", hash = "sha256:6fccfad17a27334bd0193681b369f476eda3409f17381a2d65aa7df3f7275645", size = 29254, upload-time = "2026-04-27T10:51:24.997Z" },
+    { url = "https://files.pythonhosted.org/packages/f3/a2/43bbc5860b5034e2af4ef99a0e04d726ff329c43e192ef3abaa8d7ecfce5/python_multipart-0.0.28-py3-none-any.whl", hash = "sha256:10faac07eb966c3f48dc415f9dee46c04cb10d58d30a35677db8027c825ed9b6", size = 29438, upload-time = "2026-05-10T11:05:15.052Z" },
 ]
 
 [[package]]

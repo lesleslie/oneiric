@@ -177,9 +177,11 @@ Type 'help()' for Python help or %help_shell for shell commands
 
         layers = [
             ("1. Defaults", "Pydantic field defaults", "Always active"),
-            ("2. YAML", "settings/oneiric.yaml", "Committed to git"),
+            ("2. Project YAML", "settings/oneiric.yaml", "Committed to git"),
             ("3. Local", "settings/local.yaml", "Gitignored"),
-            ("4. Environment", "ONEIRIC_* variables", "Runtime overrides"),
+            ("4. XDG YAML", "~/.config/oneiric/config.yaml", "User defaults"),
+            ("5. XDG Local", "~/.config/oneiric/local.yaml", "User overrides"),
+            ("6. Environment", "ONEIRIC_* variables", "Runtime overrides"),
         ]
 
         for layer, source, status in layers:

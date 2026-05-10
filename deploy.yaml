@@ -1,0 +1,36 @@
+# Deployment overlay for serverless/buildpack builds.
+#
+# Merge this over `config/standard.yaml` to produce `config/serverless.yaml`
+# during image assembly:
+#
+#   uv run python scripts/render_deploy_config.py \
+#     --base config/standard.yaml \
+#     --overlay deploy.yaml \
+#     --output config/serverless.yaml
+#
+# Keep raw secret material out of this file. Use Secret Manager references or
+# secret IDs that the runtime can resolve through a secrets adapter.
+
+profile:
+  name: serverless
+  remote_enabled: false
+  inline_manifest_only: true
+  watchers_enabled: false
+  supervisor_enabled: true
+
+remote:
+  enabled: false
+  refresh_interval: null
+  manifest_url: null
+  allow_file_uris: true
+  allowed_file_uri_roots:
+    - /workspace/build
+
+secrets:
+  provider: gcp.secret_manager
+
+runtime_paths:
+  workflow_checkpoints_enabled: true
+
+runtime_supervisor:
+  enabled: true

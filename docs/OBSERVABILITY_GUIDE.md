@@ -101,6 +101,11 @@ Set `ONEIRIC_CONFIG=/path/to/settings.toml` (or pass `--config` to the CLI) to
 activate these knobs. Pair them with the CLI's `remote-status` command to watch
 retry outcomes and circuit-breaker events in real time.
 
+For deployments, prefer a committed baseline plus a generated overlay config
+artifact instead of baking secrets into the repo or image. The overlay can set
+adapter selection, secret-provider IDs, and environment-specific timeouts while
+the actual secret material stays in Secret Manager or a secrets adapter.
+
 ## Monitoring Adapters
 
 - **Sentry**: select `monitoring = "sentry"` and provide a DSN via config or

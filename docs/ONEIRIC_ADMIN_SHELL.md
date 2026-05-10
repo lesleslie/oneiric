@@ -64,9 +64,13 @@ OneiricSettings
 Oneiric uses a layered configuration system with the following precedence (highest to lowest):
 
 1. **Environment Variables** - Runtime overrides (`ONEIRIC_*`)
+1. **XDG Local** - `~/.config/oneiric/local.yaml`
+1. **XDG Config** - `~/.config/oneiric/config.yaml`
 1. **Local YAML** - `settings/local.yaml` (gitignored)
-1. **YAML Config** - `settings/oneiric.yaml` (committed)
+1. **Project YAML** - `settings/oneiric.yaml` (committed)
 1. **Defaults** - Pydantic field defaults
+
+If you pass `--config` or set `ONEIRIC_CONFIG`, that explicit file overrides all of the layers above.
 
 Example output from `show_layers()`:
 
@@ -75,9 +79,11 @@ Example output from `show_layers()`:
 ┃ Layer   ┃ Source                        ┃ Status             ┃
 ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩
 │ 1. Defaults │ Pydantic field defaults   │ Always active      │
-│ 2. YAML      │ settings/oneiric.yaml     │ Committed to git  │
-│ 3. Local     │ settings/local.yaml       │ Gitignored        │
-│ 4. Environment │ ONEIRIC_* variables     │ Runtime overrides │
+│ 2. Project YAML │ settings/oneiric.yaml   │ Committed to git  │
+│ 3. Local        │ settings/local.yaml      │ Gitignored        │
+│ 4. XDG YAML     │ ~/.config/oneiric/config.yaml │ User defaults │
+│ 5. XDG Local    │ ~/.config/oneiric/local.yaml  │ User overrides │
+│ 6. Environment  │ ONEIRIC_* variables      │ Runtime overrides │
 └───────────┴───────────────────────────────┴────────────────────┘
 ```
 
@@ -233,9 +239,11 @@ Oneiric> show_layers()
 ┃ Layer   ┃ Source                        ┃ Status             ┃
 ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩
 │ 1. Defaults │ Pydantic field defaults   │ Always active      │
-│ 2. YAML      │ settings/oneiric.yaml     │ Committed to git  │
-│ 3. Local     │ settings/local.yaml       │ Gitignored        │
-│ 4. Environment │ ONEIRIC_* variables     │ Runtime overrides │
+│ 2. Project YAML │ settings/oneiric.yaml  │ Committed to git  │
+│ 3. Local        │ settings/local.yaml     │ Gitignored        │
+│ 4. XDG YAML     │ ~/.config/oneiric/config.yaml │ User defaults │
+│ 5. XDG Local    │ ~/.config/oneiric/local.yaml  │ User overrides │
+│ 6. Environment  │ ONEIRIC_* variables     │ Runtime overrides │
 └───────────┴───────────────────────────────┴────────────────────┘
 ```
 

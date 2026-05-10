@@ -256,9 +256,11 @@ def load_settings(
     1. Explicit path argument
     2. {PROJECT_NAME}_CONFIG environment variable
     3. Environment variable overrides ({PROJECT_NAME}_{SETTING}__)
-    4. XDG user config: ~/.config/{project_name}/config.yaml
-    5. Project local override: settings/local.yaml (development)
-    6. Code defaults
+    4. XDG user local override: ~/.config/{project_name}/local.yaml
+    5. XDG user config: ~/.config/{project_name}/config.yaml
+    6. Project local override: settings/local.yaml (development)
+    7. Project committed config: settings/{project_name}.yaml
+    8. Code defaults
 
     Note: XDG config overrides project local config because user preferences
     should take precedence over repository defaults.
@@ -283,6 +285,31 @@ def load_settings(
     """
     data: dict[str, Any] = {}
 
+    def _load_layer_file(path: Path, *, layer: str) -> None:
+        nonlocal data
+        if not path.exists():
+            return
+        try:
+            layer_data = _read_file(path)
+            data = _deep_merge(data, layer_data)
+            logger.info(
+                f"{layer}-config-loaded",
+                path=str(path),
+                layer=layer,
+            )
+        except (
+            FileNotFoundError,
+            json.JSONDecodeError,
+            tomllib.TOMLDecodeError,
+            yaml.YAMLError,
+        ) as e:
+            logger.warning(
+                f"{layer}-config-parse-error",
+                path=str(path),
+                error=str(e),
+                layer=layer,
+            )
+
     # Track if we have an explicit config (to apply as final override)
     explicit_config_data: dict[str, Any] | None = None
     config_path = path or os.getenv(f"{project_name.upper()}_CONFIG")
@@ -302,59 +329,26 @@ def load_settings(
                 layer="explicit",
             )
 
-    # Layer 1: Project local override (settings/local.yaml)
-    # Lowest priority (development-specific, user config should override)
-    local_yaml = Path("settings") / "local.yaml"
-    if local_yaml.exists():
-        try:
-            local_data = _read_file(local_yaml)
-            data = _deep_merge(data, local_data)
-            logger.info(
-                "local-config-loaded",
-                path=str(local_yaml),
-                layer="project-local",
-            )
-        except (
-            FileNotFoundError,
-            json.JSONDecodeError,
-            tomllib.TOMLDecodeError,
-            yaml.YAMLError,
-        ) as e:
-            logger.warning(
-                "local-config-parse-error",
-                path=str(local_yaml),
-                error=str(e),
-                layer="project-local",
-            )
+    # Layer 1: Project committed config (settings/{project_name}.yaml)
+    # Base repository defaults for the current project.
+    _load_layer_file(Path("settings") / f"{project_name}.yaml", layer="project")
+    _load_layer_file(Path("settings") / f"{project_name}.yml", layer="project")
 
-    # Layer 2: XDG user config (~/.config/{project_name}/config.yaml)
-    # Higher priority than project local (user config > project defaults)
+    # Layer 2: Project local override (settings/local.yaml)
+    # Development-specific, repository-local overrides.
+    _load_layer_file(Path("settings") / "local.yaml", layer="project-local")
+
+    # Layer 3: XDG user config (~/.config/{project_name}/config.yaml)
+    # User-level config should override repository defaults.
     xdg_config_home = os.environ.get("XDG_CONFIG_HOME", "~/.config")
-    xdg_config_path = Path(xdg_config_home).expanduser() / project_name / "config.yaml"
-    if xdg_config_path.exists():
-        try:
-            xdg_data = _read_file(xdg_config_path)
-            data = _deep_merge(data, xdg_data)
-            logger.info(
-                "xdg-config-loaded",
-                path=str(xdg_config_path),
-                project=project_name,
-                layer="xdg",
-            )
-        except (
-            FileNotFoundError,
-            json.JSONDecodeError,
-            tomllib.TOMLDecodeError,
-            yaml.YAMLError,
-        ) as e:
-            logger.warning(
-                "xdg-config-parse-error",
-                path=str(xdg_config_path),
-                error=str(e),
-                layer="xdg",
-            )
+    xdg_config_dir = Path(xdg_config_home).expanduser() / project_name
+    _load_layer_file(xdg_config_dir / "config.yaml", layer="xdg")
 
-    # Layer 3: Environment variable overrides (highest priority)
+    # Layer 4: XDG user local override (~/.config/{project_name}/local.yaml)
+    # Highest priority file layer for machine/user-specific overrides.
+    _load_layer_file(xdg_config_dir / "local.yaml", layer="xdg-local")
+
+    # Layer 5: Environment variable overrides (highest priority among layered data)
     env_data = _env_overrides(project_name)
     if env_data:
         data = _deep_merge(data, env_data)
@@ -365,7 +359,7 @@ def load_settings(
             layer="environment",
         )
 
-    # Layer 4: Explicit config (absolute highest priority)
+    # Layer 6: Explicit config (absolute highest priority)
     # Applied LAST to override all other layers
     if explicit_config_data is not None:
         data = _deep_merge(data, explicit_config_data)
