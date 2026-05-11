@@ -130,7 +130,9 @@ class TestMultiTierCacheAdapter:
             l2_enabled=False,
             enable_metrics=True,
         )
-        cache = MultiTierCacheAdapter(settings=settings, l1_cache=l1_cache, l2_cache=None)
+        cache = MultiTierCacheAdapter(
+            settings=settings, l1_cache=l1_cache, l2_cache=None
+        )
         await cache.init()
         yield cache
         await cache.cleanup()
@@ -497,7 +499,11 @@ class TestMultiTierCacheIntegration:
 
         # Mock L2 with some data (10% miss rate)
         mock_l2 = AsyncMock()
-        mock_l2.get = AsyncMock(side_effect=lambda k: f"value_{k}" if int(k.split("_")[1]) % 10 != 0 else None)
+        mock_l2.get = AsyncMock(
+            side_effect=lambda k: (
+                f"value_{k}" if int(k.split("_")[1]) % 10 != 0 else None
+            )
+        )
         mock_l2.set = AsyncMock()
         mock_l2.health = AsyncMock(return_value=True)
 

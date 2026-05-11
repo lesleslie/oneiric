@@ -79,7 +79,9 @@ async def main() -> None:
     print("1. Activating initial cache (Redis)...")
     handle = await lifecycle.activate("adapter", "cache")
     print(f"   Active provider: {handle.provider}")
-    print(f"   Health check: {await lifecycle.probe_instance_health('adapter', 'cache')}")
+    print(
+        f"   Health check: {await lifecycle.probe_instance_health('adapter', 'cache')}"
+    )
     print(f"   Test operation: {await handle.instance.get('test-key')}")
     print()
 
@@ -87,7 +89,9 @@ async def main() -> None:
     print("2. Hot-swapping to Memcached...")
     handle = await lifecycle.swap("adapter", "cache", provider="memcached")
     print(f"   New provider: {handle.provider}")
-    print(f"   Health check: {await lifecycle.probe_instance_health('adapter', 'cache')}")
+    print(
+        f"   Health check: {await lifecycle.probe_instance_health('adapter', 'cache')}"
+    )
     print(f"   Test operation: {await handle.instance.get('test-key')}")
     print()
 
@@ -118,7 +122,9 @@ async def main() -> None:
         print("   ERROR: Swap should have failed!")
     except HealthCheckError as e:
         print(f"   ✓ Swap failed as expected: {e}")
-        print(f"   ✓ Rollback occurred - still using: {lifecycle.get_status('adapter', 'cache').provider}")
+        print(
+            f"   ✓ Rollback occurred - still using: {lifecycle.get_status('adapter', 'cache').provider}"
+        )
     print()
 
     # Force swap (skip health check - dangerous!)
@@ -133,7 +139,9 @@ async def main() -> None:
     await lifecycle.swap("adapter", "cache", provider="redis")
     status = lifecycle.get_status("adapter", "cache")
     print(f"   Current provider: {status.provider}")
-    print(f"   Health check: {await lifecycle.probe_instance_health('adapter', 'cache')}")
+    print(
+        f"   Health check: {await lifecycle.probe_instance_health('adapter', 'cache')}"
+    )
     print()
 
     print("=" * 60)

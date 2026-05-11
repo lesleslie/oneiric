@@ -16,6 +16,7 @@ from oneiric.core.lifecycle import (
 # LifecycleError
 # ---------------------------------------------------------------------------
 
+
 class TestLifecycleError:
     def test_is_runtime_error(self) -> None:
         exc = LifecycleError("swap failed")
@@ -26,6 +27,7 @@ class TestLifecycleError:
 # ---------------------------------------------------------------------------
 # LifecycleSafetyOptions
 # ---------------------------------------------------------------------------
+
 
 class TestLifecycleSafetyOptions:
     def test_defaults(self) -> None:
@@ -47,6 +49,7 @@ class TestLifecycleSafetyOptions:
 # LifecycleHooks
 # ---------------------------------------------------------------------------
 
+
 class TestLifecycleHooks:
     def test_defaults_empty(self) -> None:
         h = LifecycleHooks()
@@ -56,9 +59,11 @@ class TestLifecycleHooks:
 
     def test_add_hooks(self) -> None:
         h = LifecycleHooks()
+
         async def dummy_pre(): ...
         async def dummy_post(): ...
         async def dummy_cleanup(): ...
+
         h.add_pre_swap(dummy_pre)
         h.add_post_swap(dummy_post)
         h.add_cleanup(dummy_cleanup)
@@ -70,6 +75,7 @@ class TestLifecycleHooks:
 # ---------------------------------------------------------------------------
 # LifecycleStatus
 # ---------------------------------------------------------------------------
+
 
 class TestLifecycleStatus:
     def test_defaults(self) -> None:
@@ -83,7 +89,9 @@ class TestLifecycleStatus:
 
     def test_as_dict(self) -> None:
         s = LifecycleStatus(
-            domain="adapter", key="cache", state="active",
+            domain="adapter",
+            key="cache",
+            state="active",
             current_provider="redis",
         )
         d = s.as_dict()
@@ -96,6 +104,7 @@ class TestLifecycleStatus:
 # ---------------------------------------------------------------------------
 # _parse_timestamp
 # ---------------------------------------------------------------------------
+
 
 class TestParseTimestamp:
     def test_none(self) -> None:
@@ -120,6 +129,7 @@ class TestParseTimestamp:
 # ---------------------------------------------------------------------------
 # _is_number
 # ---------------------------------------------------------------------------
+
 
 class TestIsNumber:
     def test_int(self) -> None:
@@ -154,6 +164,7 @@ class TestIsNumber:
 # _status_from_dict
 # ---------------------------------------------------------------------------
 
+
 class TestStatusFromDict:
     def test_none_input(self) -> None:
         assert _status_from_dict(None) is None
@@ -176,17 +187,19 @@ class TestStatusFromDict:
         assert status.state == "unknown"
 
     def test_full_dict(self) -> None:
-        status = _status_from_dict({
-            "domain": "service",
-            "key": "auth",
-            "state": "active",
-            "current_provider": "google",
-            "pending_provider": "okta",
-            "last_error": "timeout",
-            "last_swap_duration_ms": 42.5,
-            "successful_swaps": 10,
-            "failed_swaps": 2,
-        })
+        status = _status_from_dict(
+            {
+                "domain": "service",
+                "key": "auth",
+                "state": "active",
+                "current_provider": "google",
+                "pending_provider": "okta",
+                "last_error": "timeout",
+                "last_swap_duration_ms": 42.5,
+                "successful_swaps": 10,
+                "failed_swaps": 2,
+            }
+        )
         assert status.state == "active"
         assert status.current_provider == "google"
         assert status.pending_provider == "okta"
@@ -196,31 +209,43 @@ class TestStatusFromDict:
         assert status.failed_swaps == 2
 
     def test_recent_swap_durations(self) -> None:
-        status = _status_from_dict({
-            "domain": "adapter", "key": "cache",
-            "recent_swap_durations_ms": [10.0, 20.0, "bad", 30.0],
-        })
+        status = _status_from_dict(
+            {
+                "domain": "adapter",
+                "key": "cache",
+                "recent_swap_durations_ms": [10.0, 20.0, "bad", 30.0],
+            }
+        )
         assert status.recent_swap_durations_ms == [10.0, 20.0, 30.0]
 
     def test_timestamps_parsed(self) -> None:
-        status = _status_from_dict({
-            "domain": "adapter", "key": "cache",
-            "last_state_change_at": "2025-01-01T00:00:00+00:00",
-            "last_activated_at": "2025-06-01T00:00:00+00:00",
-        })
+        status = _status_from_dict(
+            {
+                "domain": "adapter",
+                "key": "cache",
+                "last_state_change_at": "2025-01-01T00:00:00+00:00",
+                "last_activated_at": "2025-06-01T00:00:00+00:00",
+            }
+        )
         assert status.last_state_change_at is not None
         assert status.last_activated_at is not None
 
     def test_invalid_timestamp_ignored(self) -> None:
-        status = _status_from_dict({
-            "domain": "adapter", "key": "cache",
-            "last_state_change_at": "not-a-date",
-        })
+        status = _status_from_dict(
+            {
+                "domain": "adapter",
+                "key": "cache",
+                "last_state_change_at": "not-a-date",
+            }
+        )
         assert status.last_state_change_at is None
 
     def test_non_number_duration_ignored(self) -> None:
-        status = _status_from_dict({
-            "domain": "adapter", "key": "cache",
-            "last_swap_duration_ms": "not-a-number",
-        })
+        status = _status_from_dict(
+            {
+                "domain": "adapter",
+                "key": "cache",
+                "last_swap_duration_ms": "not-a-number",
+            }
+        )
         assert status.last_swap_duration_ms is None

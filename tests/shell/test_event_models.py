@@ -55,7 +55,7 @@ class TestEnvironmentInfo:
         env = EnvironmentInfo(
             python_version="3.13.0",
             platform="Linux-6.5.0-x86_64",
-            cwd="/home/john/projects"
+            cwd="/home/john/projects",
         )
         assert env.python_version == "3.13.0"
         assert env.platform == "Linux-6.5.0-x86_64"
@@ -64,9 +64,7 @@ class TestEnvironmentInfo:
     def test_cwd_whitespace_stripping(self):
         """Test that whitespace is stripped from cwd."""
         env = EnvironmentInfo(
-            python_version="3.13.0",
-            platform="Linux",
-            cwd="  /home/john/projects  "
+            python_version="3.13.0", platform="Linux", cwd="  /home/john/projects  "
         )
         assert env.cwd == "/home/john/projects"
 
@@ -74,11 +72,7 @@ class TestEnvironmentInfo:
         """Test cwd max length validation (500 chars)."""
         long_cwd = "/a" * 251  # 502 characters
         with pytest.raises(ValidationError) as exc_info:
-            EnvironmentInfo(
-                python_version="3.13.0",
-                platform="Linux",
-                cwd=long_cwd
-            )
+            EnvironmentInfo(python_version="3.13.0", platform="Linux", cwd=long_cwd)
         assert "at most 500 characters" in str(exc_info.value)
 
 
@@ -96,12 +90,10 @@ class TestSessionStartEvent:
         return EnvironmentInfo(
             python_version="3.13.0",
             platform="Linux-6.5.0-x86_64",
-            cwd="/home/john/projects"
+            cwd="/home/john/projects",
         )
 
-    def test_valid_session_start_event(
-        self, valid_user, valid_environment
-    ):
+    def test_valid_session_start_event(self, valid_user, valid_environment):
         """Test creating valid SessionStartEvent."""
         event = SessionStartEvent(
             event_version="1.0",
@@ -112,7 +104,7 @@ class TestSessionStartEvent:
             pid=12345,
             user=valid_user,
             hostname="server01",
-            environment=valid_environment
+            environment=valid_environment,
         )
         assert event.event_version == "1.0"
         assert event.event_type == "session_start"
@@ -132,7 +124,7 @@ class TestSessionStartEvent:
                 pid=12345,
                 user=valid_user,
                 hostname="server01",
-                environment=valid_environment
+                environment=valid_environment,
             )
         assert "Invalid UUID v4 format" in str(exc_info.value)
 
@@ -148,7 +140,7 @@ class TestSessionStartEvent:
                 pid=12345,
                 user=valid_user,
                 hostname="server01",
-                environment=valid_environment
+                environment=valid_environment,
             )
         assert "Unsupported event version" in str(exc_info.value)
 
@@ -172,7 +164,7 @@ class TestSessionStartEvent:
                     pid=12345,
                     user=valid_user,
                     hostname="server01",
-                    environment=valid_environment
+                    environment=valid_environment,
                 )
             assert "Invalid component_name" in str(exc_info.value)
 
@@ -196,7 +188,7 @@ class TestSessionStartEvent:
                 pid=12345,
                 user=valid_user,
                 hostname="server01",
-                environment=valid_environment
+                environment=valid_environment,
             )
             assert event.component_name == valid_name
 
@@ -219,7 +211,7 @@ class TestSessionStartEvent:
                     pid=12345,
                     user=valid_user,
                     hostname="server01",
-                    environment=valid_environment
+                    environment=valid_environment,
                 )
             assert "Invalid ISO 8601 timestamp" in str(exc_info.value)
 
@@ -236,7 +228,7 @@ class TestSessionStartEvent:
                 pid=0,
                 user=valid_user,
                 hostname="server01",
-                environment=valid_environment
+                environment=valid_environment,
             )
         assert "greater than or equal to 1" in str(exc_info.value)
 
@@ -251,7 +243,7 @@ class TestSessionStartEvent:
                 pid=4194305,
                 user=valid_user,
                 hostname="server01",
-                environment=valid_environment
+                environment=valid_environment,
             )
         assert "less than or equal to 4194304" in str(exc_info.value)
 
@@ -266,7 +258,7 @@ class TestSessionStartEvent:
             pid=12345,
             user=valid_user,
             hostname="server01",
-            environment=valid_environment
+            environment=valid_environment,
         )
         assert event.metadata == {}
 
@@ -281,7 +273,7 @@ class TestSessionStartEvent:
             pid=12345,
             user=valid_user,
             hostname="server01",
-            environment=valid_environment
+            environment=valid_environment,
         )
         data = event.model_dump()
         assert data["component_name"] == "mahavishnu"
@@ -295,8 +287,7 @@ class TestSessionEndEvent:
     def test_valid_session_end_event(self):
         """Test creating valid SessionEndEvent."""
         event = SessionEndEvent(
-            session_id="sess_abc123",
-            timestamp="2026-02-06T13:45:00.000Z"
+            session_id="sess_abc123", timestamp="2026-02-06T13:45:00.000Z"
         )
         assert event.session_id == "sess_abc123"
         assert event.event_type == "session_end"
@@ -304,17 +295,13 @@ class TestSessionEndEvent:
     def test_timestamp_validation(self):
         """Test that invalid timestamps are rejected."""
         with pytest.raises(ValidationError) as exc_info:
-            SessionEndEvent(
-                session_id="sess_abc123",
-                timestamp="not-a-timestamp"
-            )
+            SessionEndEvent(session_id="sess_abc123", timestamp="not-a-timestamp")
         assert "Invalid ISO 8601 timestamp" in str(exc_info.value)
 
     def test_metadata_default(self):
         """Test that metadata defaults to empty dict."""
         event = SessionEndEvent(
-            session_id="sess_abc123",
-            timestamp="2026-02-06T13:45:00.000Z"
+            session_id="sess_abc123", timestamp="2026-02-06T13:45:00.000Z"
         )
         assert event.metadata == {}
 
@@ -323,7 +310,7 @@ class TestSessionEndEvent:
         event = SessionEndEvent(
             session_id="sess_abc123",
             timestamp="2026-02-06T13:45:00.000Z",
-            metadata={"exit_reason": "user_exit"}
+            metadata={"exit_reason": "user_exit"},
         )
         assert event.metadata == {"exit_reason": "user_exit"}
 

@@ -7,16 +7,15 @@ import time
 import pytest
 
 from oneiric.core.ulid import (
-    ConfigTraceability,
-    DHURUVA_AVAILABLE,
     ULID,
+    ConfigTraceability,
     detect_ulid_in_config,
     extract_timestamp,
     generate,
     generate_config_id,
     get_timestamp,
-    is_ulid,
     is_config_ulid,
+    is_ulid,
     parse_config_ulid,
 )
 
@@ -171,10 +170,10 @@ class TestConfigTraceability:
         assert trace.metadata == {}
 
     def test_correlates_with(self):
-        before = int(time.time() * 1000)
+        int(time.time() * 1000)
         cid1 = generate_config_id()
         cid2 = generate_config_id()
-        after = int(time.time() * 1000)
+        int(time.time() * 1000)
 
         trace = ConfigTraceability(config_id=cid1)
         # Generated within same second, should correlate
@@ -192,7 +191,9 @@ class TestConfigTraceability:
         assert "create" in r
 
     def test_to_dict(self):
-        trace = ConfigTraceability(source="oneiric", change_type="update", metadata={"env": "dev"})
+        trace = ConfigTraceability(
+            source="oneiric", change_type="update", metadata={"env": "dev"}
+        )
         d = trace.to_dict()
         assert d["source"] == "oneiric"
         assert d["change_type"] == "update"

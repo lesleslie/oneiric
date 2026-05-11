@@ -37,11 +37,9 @@ def upload_to_s3(
 
     s3 = boto3.client("s3", region_name=region)
 
-
     extra_args = {}
     if public_read:
         extra_args["ACL"] = "public-read"
-
 
     with artifact_path.open("rb") as f:
         s3.upload_fileobj(f, bucket, key, ExtraArgs=extra_args or None)
@@ -70,9 +68,7 @@ def upload_to_gcs(
 
     blob = storage.Client().bucket(bucket).blob(blob_name)
 
-
     blob.upload_from_filename(str(artifact_path))
-
 
     if public_read:
         blob.make_public()
@@ -148,7 +144,6 @@ Installation:
     )
 
     args = parser.parse_args()
-
 
     if not args.artifact.exists():
         print(f"✗ Error: Artifact not found: {args.artifact}", file=sys.stderr)

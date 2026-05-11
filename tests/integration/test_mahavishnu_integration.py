@@ -26,9 +26,9 @@ async def test_mahavishnu_can_store_traces():
                 port=5432,
                 user="postgres",
                 password="postgres",
-                database="otel_test"
+                database="otel_test",
             ),
-            timeout=2.0
+            timeout=2.0,
         )
         await conn.close()
     except Exception:
@@ -43,10 +43,14 @@ async def test_mahavishnu_can_store_traces():
     )
 
     class TestAdapter(OTelStorageAdapter):
-        async def find_similar_traces(self, embedding: list[float], limit: int = 10) -> list[dict]:
+        async def find_similar_traces(
+            self, embedding: list[float], limit: int = 10
+        ) -> list[dict]:
             return []
 
-        async def get_traces_by_error(self, error_type: str, limit: int = 100) -> list[dict]:
+        async def get_traces_by_error(
+            self, error_type: str, limit: int = 100
+        ) -> list[dict]:
             return []
 
         async def search_logs(self, query: str, limit: int = 100) -> list[dict]:
@@ -73,7 +77,7 @@ async def test_mahavishnu_can_store_traces():
             "status": "OK",
             "service": "mahavishnu",
             "operation": "test_workflow",
-            "attributes": {"workflow_id": "wf-001"}
+            "attributes": {"workflow_id": "wf-001"},
         }
 
         # Store trace
@@ -84,8 +88,10 @@ async def test_mahavishnu_can_store_traces():
 
         # Verify stored
         from sqlalchemy import select
+
         async with adapter._session_factory() as session:
             from oneiric.adapters.observability.models import TraceModel
+
             result = await session.execute(
                 select(TraceModel).filter_by(trace_id="mahavishnu-test-001")
             )

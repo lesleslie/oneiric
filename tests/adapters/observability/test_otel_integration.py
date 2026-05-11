@@ -30,8 +30,7 @@ class ConcreteOTelStorageAdapter(OTelStorageAdapter):
         if not self._query_service:
             return []
         results = await self._query_service.find_similar_traces(
-            embedding=np.array(embedding),
-            threshold=threshold
+            embedding=np.array(embedding), threshold=threshold
         )
         return [r.model_dump() for r in results]
 
@@ -42,14 +41,11 @@ class ConcreteOTelStorageAdapter(OTelStorageAdapter):
         if not self._query_service:
             return []
         results = await self._query_service.get_traces_by_error(
-            error_pattern=error_type,
-            service=service
+            error_pattern=error_type, service=service
         )
         return [r.model_dump() for r in results]
 
-    async def search_logs(
-        self, trace_id: str, level: str | None = None
-    ) -> list[dict]:
+    async def search_logs(self, trace_id: str, level: str | None = None) -> list[dict]:
         """Search logs - stub for testing."""
         return []
 

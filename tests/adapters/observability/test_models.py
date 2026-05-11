@@ -56,7 +56,11 @@ def test_trace_model_creation(in_memory_db: Session) -> None:
     in_memory_db.commit()
 
     # Query the trace
-    queried = in_memory_db.query(TraceModel).filter_by(trace_id="4bf92f3577b34da6a3ce929d0e0e4736").first()
+    queried = (
+        in_memory_db.query(TraceModel)
+        .filter_by(trace_id="4bf92f3577b34da6a3ce929d0e0e4736")
+        .first()
+    )
 
     assert queried is not None
     assert queried.trace_id == "4bf92f3577b34da6a3ce929d0e0e4736"
@@ -174,4 +178,6 @@ def test_log_model_trace_correlation(in_memory_db: Session) -> None:
     assert queried[2].level == "INFO"
     assert queried[2].message == "Order created successfully"
     assert all(log.trace_id == "4bf92f3577b34da6a3ce929d0e0e4736" for log in queried)
-    assert all(log.resource_attributes["service.name"] == "order-service" for log in queried)
+    assert all(
+        log.resource_attributes["service.name"] == "order-service" for log in queried
+    )

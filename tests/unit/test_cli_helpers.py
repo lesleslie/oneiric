@@ -42,6 +42,7 @@ from oneiric.runtime.events import HandlerResult
 # _percentile
 # ---------------------------------------------------------------------------
 
+
 class TestPercentile:
     def test_empty_list_returns_none(self) -> None:
         assert _percentile([], 0.5) is None
@@ -78,6 +79,7 @@ class TestPercentile:
 # ---------------------------------------------------------------------------
 # _swap_latency_summary
 # ---------------------------------------------------------------------------
+
 
 class TestSwapLatencySummary:
     def _make_status(
@@ -122,9 +124,13 @@ class TestSwapLatencySummary:
 # _format_swap_summary
 # ---------------------------------------------------------------------------
 
+
 class TestFormatSwapSummary:
     def test_no_samples(self) -> None:
-        assert _format_swap_summary({"samples": 0}) == "Swap latency: no samples recorded yet."
+        assert (
+            _format_swap_summary({"samples": 0})
+            == "Swap latency: no samples recorded yet."
+        )
 
     def test_empty_summary(self) -> None:
         assert _format_swap_summary({}) == "Swap latency: no samples recorded yet."
@@ -155,6 +161,7 @@ class TestFormatSwapSummary:
 # _build_lifecycle_options
 # ---------------------------------------------------------------------------
 
+
 class TestBuildLifecycleOptions:
     def test_none_returns_defaults(self) -> None:
         opts = _build_lifecycle_options(None)
@@ -164,8 +171,11 @@ class TestBuildLifecycleOptions:
 
     def test_extracts_from_object(self) -> None:
         config = SimpleNamespace(
-            activation_timeout=60, health_timeout=10, cleanup_timeout=20,
-            hook_timeout=8, shield_tasks=False,
+            activation_timeout=60,
+            health_timeout=10,
+            cleanup_timeout=20,
+            hook_timeout=8,
+            shield_tasks=False,
         )
         opts = _build_lifecycle_options(config)
         assert opts.activation_timeout == 60
@@ -186,6 +196,7 @@ class TestBuildLifecycleOptions:
 # ---------------------------------------------------------------------------
 # _normalize_domain / _coerce_domain
 # ---------------------------------------------------------------------------
+
 
 class TestDomainHelpers:
     def test_normalize_valid(self) -> None:
@@ -211,6 +222,7 @@ class TestDomainHelpers:
 # _parse_csv
 # ---------------------------------------------------------------------------
 
+
 class TestParseCsv:
     def test_none(self) -> None:
         assert _parse_csv(None) == []
@@ -234,6 +246,7 @@ class TestParseCsv:
 # ---------------------------------------------------------------------------
 # _parse_dependency_list
 # ---------------------------------------------------------------------------
+
 
 class TestParseDependencyList:
     def test_none(self) -> None:
@@ -261,6 +274,7 @@ class TestParseDependencyList:
 # _build_workflow_node
 # ---------------------------------------------------------------------------
 
+
 class TestBuildWorkflowNode:
     def test_basic_node(self) -> None:
         node = _build_workflow_node({"id": "t1", "task": "my_task"})
@@ -282,10 +296,14 @@ class TestBuildWorkflowNode:
         assert _build_workflow_node({"task": "orphan"}) is None
 
     def test_node_with_optional_fields(self) -> None:
-        node = _build_workflow_node({
-            "id": "t3", "payload": {"k": "v"}, "checkpoint": "cp1",
-            "retry_policy": {"max": 3},
-        })
+        node = _build_workflow_node(
+            {
+                "id": "t3",
+                "payload": {"k": "v"},
+                "checkpoint": "cp1",
+                "retry_policy": {"max": 3},
+            }
+        )
         assert node["payload"] == {"k": "v"}
         assert node["checkpoint"] == "cp1"
         assert node["retry_policy"] == {"max": 3}
@@ -302,6 +320,7 @@ class TestBuildWorkflowNode:
 # ---------------------------------------------------------------------------
 # _build_workflow_summary
 # ---------------------------------------------------------------------------
+
 
 class TestBuildWorkflowSummary:
     def test_empty_dag(self) -> None:
@@ -359,6 +378,7 @@ class TestBuildWorkflowSummary:
 # _format_workflow_node
 # ---------------------------------------------------------------------------
 
+
 class TestFormatWorkflowNode:
     def test_root_node(self) -> None:
         text = _format_workflow_node({"id": "a", "task": "t1"})
@@ -370,7 +390,9 @@ class TestFormatWorkflowNode:
         assert "depends_on=a" in text
 
     def test_node_with_retry(self) -> None:
-        text = _format_workflow_node({"id": "c", "task": "t3", "retry_policy": "exponential"})
+        text = _format_workflow_node(
+            {"id": "c", "task": "t3", "retry_policy": "exponential"}
+        )
         assert "retry=exponential" in text
 
     def test_node_with_payload(self) -> None:
@@ -386,17 +408,22 @@ class TestFormatWorkflowNode:
 # _format_activity_summary
 # ---------------------------------------------------------------------------
 
+
 class TestFormatActivitySummary:
     def test_zero_counts(self) -> None:
         assert _format_activity_summary({}) == "Activity state: paused=0 draining=0"
 
     def test_with_counts(self) -> None:
-        assert _format_activity_summary({"paused": 3, "draining": 1}) == "Activity state: paused=3 draining=1"
+        assert (
+            _format_activity_summary({"paused": 3, "draining": 1})
+            == "Activity state: paused=3 draining=1"
+        )
 
 
 # ---------------------------------------------------------------------------
 # _activity_counts_from_mapping
 # ---------------------------------------------------------------------------
+
 
 class TestActivityCountsFromMapping:
     def test_empty(self) -> None:
@@ -424,6 +451,7 @@ class TestActivityCountsFromMapping:
 # _lifecycle_counts_from_mapping
 # ---------------------------------------------------------------------------
 
+
 class TestLifecycleCountsFromMapping:
     def test_empty(self) -> None:
         assert _lifecycle_counts_from_mapping({}) == {}
@@ -448,6 +476,7 @@ class TestLifecycleCountsFromMapping:
 # ---------------------------------------------------------------------------
 # _format_remote_budget_line
 # ---------------------------------------------------------------------------
+
 
 class TestFormatRemoteBudgetLine:
     def _make_config(self, budget_ms: float | None = None) -> SimpleNamespace:
@@ -485,6 +514,7 @@ class TestFormatRemoteBudgetLine:
 # _resolve_http_port
 # ---------------------------------------------------------------------------
 
+
 class TestResolveHttpPort:
     def test_explicit_port(self) -> None:
         assert _resolve_http_port(9090) == 9090
@@ -509,6 +539,7 @@ class TestResolveHttpPort:
 # ---------------------------------------------------------------------------
 # _scrub_sensitive_data
 # ---------------------------------------------------------------------------
+
 
 class TestScrubSensitiveData:
     def test_clean_value(self) -> None:
@@ -537,14 +568,20 @@ class TestScrubSensitiveData:
 # _event_results_payload
 # ---------------------------------------------------------------------------
 
+
 class TestEventResultsPayload:
     def test_empty(self) -> None:
         assert _event_results_payload([]) == []
 
     def test_single_success(self) -> None:
-        results = [HandlerResult(
-            handler="h1", success=True, duration=0.5, value="ok",
-        )]
+        results = [
+            HandlerResult(
+                handler="h1",
+                success=True,
+                duration=0.5,
+                value="ok",
+            )
+        ]
         payload = _event_results_payload(results)
         assert payload[0]["handler"] == "h1"
         assert payload[0]["success"] is True
@@ -552,9 +589,15 @@ class TestEventResultsPayload:
         assert payload[0]["value"] == "ok"
 
     def test_single_failure(self) -> None:
-        results = [HandlerResult(
-            handler="h2", success=False, duration=1.0, error="boom", attempts=3,
-        )]
+        results = [
+            HandlerResult(
+                handler="h2",
+                success=False,
+                duration=1.0,
+                error="boom",
+                attempts=3,
+            )
+        ]
         payload = _event_results_payload(results)
         assert payload[0]["error"] == "boom"
         assert payload[0]["attempts"] == 3
@@ -571,6 +614,7 @@ class TestEventResultsPayload:
 # ---------------------------------------------------------------------------
 # _set_timestamps
 # ---------------------------------------------------------------------------
+
 
 class TestSetTimestamps:
     def test_sets_issued_at(self) -> None:
@@ -616,6 +660,7 @@ class TestSetTimestamps:
 # _candidate_summary
 # ---------------------------------------------------------------------------
 
+
 class TestCandidateSummary:
     def test_basic_summary(self) -> None:
         candidate = Candidate(
@@ -650,8 +695,11 @@ class TestCandidateSummary:
 # _http_server_enabled
 # ---------------------------------------------------------------------------
 
+
 class TestHttpServerEnabled:
-    def _make_settings(self, profile_name: str | None = "production") -> SimpleNamespace:
+    def _make_settings(
+        self, profile_name: str | None = "production"
+    ) -> SimpleNamespace:
         profile = SimpleNamespace(name=profile_name)
         return SimpleNamespace(profile=profile)
 
@@ -672,32 +720,39 @@ class TestHttpServerEnabled:
 
     def test_serverless_profile(self) -> None:
         with patch.dict("os.environ", {}, clear=True):
-            assert _http_server_enabled(
-                self._make_settings("serverless"), None, False
-            ) is True
+            assert (
+                _http_server_enabled(self._make_settings("serverless"), None, False)
+                is True
+            )
 
     def test_non_serverless_no_port(self) -> None:
         with patch.dict("os.environ", {}, clear=True):
-            assert _http_server_enabled(
-                self._make_settings("production"), None, False
-            ) is False
+            assert (
+                _http_server_enabled(self._make_settings("production"), None, False)
+                is False
+            )
 
 
 # ---------------------------------------------------------------------------
 # _extract_notification_metadata
 # ---------------------------------------------------------------------------
 
+
 class TestExtractNotificationMetadata:
     def test_no_notification_key(self) -> None:
         candidate = Candidate(
-            domain="adapter", key="x", factory=lambda: None,
+            domain="adapter",
+            key="x",
+            factory=lambda: None,
             metadata={},
         )
         assert _extract_notification_metadata(candidate) is None
 
     def test_with_notification_config(self) -> None:
         candidate = Candidate(
-            domain="adapter", key="x", factory=lambda: None,
+            domain="adapter",
+            key="x",
+            factory=lambda: None,
             metadata={"notifications": {"channel": "slack", "target": "#ops"}},
         )
         result = _extract_notification_metadata(candidate)
@@ -707,14 +762,18 @@ class TestExtractNotificationMetadata:
 
     def test_notification_is_string_skipped(self) -> None:
         candidate = Candidate(
-            domain="adapter", key="x", factory=lambda: None,
+            domain="adapter",
+            key="x",
+            factory=lambda: None,
             metadata={"notifications": "yes"},
         )
         assert _extract_notification_metadata(candidate) is None
 
     def test_default_include_context(self) -> None:
         candidate = Candidate(
-            domain="adapter", key="x", factory=lambda: None,
+            domain="adapter",
+            key="x",
+            factory=lambda: None,
             metadata={"notifications": {"channel": "email"}},
         )
         result = _extract_notification_metadata(candidate)
@@ -722,7 +781,9 @@ class TestExtractNotificationMetadata:
 
     def test_extra_payload_non_dict(self) -> None:
         candidate = Candidate(
-            domain="adapter", key="x", factory=lambda: None,
+            domain="adapter",
+            key="x",
+            factory=lambda: None,
             metadata={"notifications": {"extra_payload": "not_a_dict"}},
         )
         result = _extract_notification_metadata(candidate)

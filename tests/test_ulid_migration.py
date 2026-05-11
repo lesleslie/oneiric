@@ -17,7 +17,9 @@ def test_detect_ulid_type():
     # Valid Crockford Base32 ULIDs (from Druva)
     assert detect_id_type("01kh85b0x6000a9vb7cgn42ed8") == "ulid"
     assert detect_id_type("01kh85b0x70004j6njsda15ffh") == "ulid"
-    assert detect_id_type("550e8400-e29b-41d4-a716-446655440000") == "uuid"  # UUID format
+    assert (
+        detect_id_type("550e8400-e29b-41d4-a716-446655440000") == "uuid"
+    )  # UUID format
     assert detect_id_type("abc-123") == "custom"
 
 
@@ -48,7 +50,10 @@ def test_create_expand_contract_migration():
     assert sql[0] == "-- EXPAND phase: Add new ULID column alongside legacy ID"
     assert sql[3] == "-- MIGRATION phase: Backfill ULIDs for existing records"
     assert sql[6] == "-- SWITCH phase: Update foreign keys to use ULID"
-    assert sql[9] == "-- CONTRACT phase: Remove legacy ID column (after verification period)"
+    assert (
+        sql[9]
+        == "-- CONTRACT phase: Remove legacy ID column (after verification period)"
+    )
     assert sql[10].startswith("ALTER TABLE")  # Should use ALTER TABLE
     assert "DROP COLUMN" in sql[10]  # Verify DROP in contract phase
 
@@ -83,7 +88,7 @@ def test_migration_plan_creation():
         system_name="test_system",
         current_id_type="oid",
         estimated_records=50000,
-        migration_strategy="expand-contract"
+        migration_strategy="expand-contract",
     )
 
     assert plan.system_name == "test_system"

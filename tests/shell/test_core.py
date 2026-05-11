@@ -19,7 +19,9 @@ def mock_app():
 @pytest.fixture
 def shell(mock_app):
     with patch("oneiric.shell.core.load_default_config", return_value=MagicMock()):
-        with patch("oneiric.shell.core.InteractiveShellEmbed", return_value=MagicMock()):
+        with patch(
+            "oneiric.shell.core.InteractiveShellEmbed", return_value=MagicMock()
+        ):
             yield AdminShell(mock_app)
 
 
@@ -58,6 +60,7 @@ class TestTryImport:
         shell = AdminShell(mock_app)
         result = shell._try_import("os.path", "join")
         from os.path import join
+
         assert result is join
 
     def test_invalid_import(self, mock_app):
@@ -74,8 +77,10 @@ class TestTryImport:
 class TestAddHelper:
     def test_add_helper(self, mock_app):
         shell = AdminShell(mock_app)
+
         def my_helper():
             pass
+
         shell.add_helper("my_helper", my_helper)
         assert shell.namespace["my_helper"] is my_helper
 
@@ -214,6 +219,7 @@ class TestSyncSessionEnd:
         shell._sync_session_end()
         # Thread runs in background - give it a moment
         import time
+
         time.sleep(0.1)
 
 

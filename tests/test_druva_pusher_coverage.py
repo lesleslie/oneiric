@@ -13,7 +13,6 @@ from oneiric.adapters.druva_pusher import (
     push_adapters_on_startup,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -130,9 +129,7 @@ class TestPushSingleAdapter:
         p = DruvaAdapterPusher()
         m = _fake_metadata()
 
-        with patch.object(
-            p.client, "post", side_effect=ValueError("bad data")
-        ):
+        with patch.object(p.client, "post", side_effect=ValueError("bad data")):
             result = p._push_single_adapter(m)
 
         assert result["success"] is False
@@ -166,7 +163,10 @@ class TestPushSingleAdapter:
 class TestPushBuiltinAdapters:
     def test_all_success(self):
         p = DruvaAdapterPusher()
-        adapters = [_fake_metadata("cache", "redis"), _fake_metadata("cache", "memcached")]
+        adapters = [
+            _fake_metadata("cache", "redis"),
+            _fake_metadata("cache", "memcached"),
+        ]
 
         with patch.object(p, "_push_single_adapter", return_value={"success": True}):
             results = p.push_builtin_adapters(adapters)
@@ -178,7 +178,10 @@ class TestPushBuiltinAdapters:
 
     def test_mixed_success_and_failure(self):
         p = DruvaAdapterPusher()
-        adapters = [_fake_metadata("cache", "redis"), _fake_metadata("cache", "memcached")]
+        adapters = [
+            _fake_metadata("cache", "redis"),
+            _fake_metadata("cache", "memcached"),
+        ]
 
         call_count = 0
 
@@ -197,9 +200,7 @@ class TestPushBuiltinAdapters:
         p = DruvaAdapterPusher()
         adapters = [_fake_metadata("cache", "redis")]
 
-        with patch.object(
-            p, "_push_single_adapter", side_effect=RuntimeError("boom")
-        ):
+        with patch.object(p, "_push_single_adapter", side_effect=RuntimeError("boom")):
             results = p.push_builtin_adapters(adapters)
 
         assert results["errors"] == 1
@@ -219,13 +220,16 @@ class TestPushBuiltinAdapters:
 
 class TestPushAdaptersOnStartup:
     def test_calls_builtin_and_closes(self):
-        with patch(
-            "oneiric.adapters.bootstrap.builtin_adapter_metadata",
-            return_value=lambda: [_fake_metadata()],
-        ), patch.object(
-            DruvaAdapterPusher,
-            "push_builtin_adapters",
-            return_value={"total": 1, "success": 1, "errors": 0, "details": []},
+        with (
+            patch(
+                "oneiric.adapters.bootstrap.builtin_adapter_metadata",
+                return_value=lambda: [_fake_metadata()],
+            ),
+            patch.object(
+                DruvaAdapterPusher,
+                "push_builtin_adapters",
+                return_value={"total": 1, "success": 1, "errors": 0, "details": []},
+            ),
         ):
             results = push_adapters_on_startup()
 
@@ -250,7 +254,7 @@ class TestMain:
         with patch(
             "oneiric.adapters.druva_pusher.push_adapters_on_startup",
             return_value={"total": 2, "success": 2, "errors": 0, "details": []},
-        ) as mock_push:
+        ):
             with patch("sys.argv", ["druva_pusher"]):
                 result = main()
         assert result == 0
@@ -277,7 +281,9 @@ class TestMain:
             "oneiric.adapters.druva_pusher.push_adapters_on_startup",
             return_value={"total": 0, "success": 0, "errors": 0, "details": []},
         ) as mock_push:
-            with patch("sys.argv", ["druva_pusher", "--druva-url", "http://custom:9999"]):
+            with patch(
+                "sys.argv", ["druva_pusher", "--druva-url", "http://custom:9999"]
+            ):
                 main()
         mock_push.assert_called_once_with(druva_url="http://custom:9999")
 

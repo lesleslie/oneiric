@@ -363,9 +363,7 @@ class TestDomainBridgeCoverageGaps:
         bridge._activity["cache"] = DomainActivity(paused=True)
 
         # Default state should clear the entry
-        bridge._handle_supervisor_update(
-            "adapter", "cache", DomainActivity()
-        )
+        bridge._handle_supervisor_update("adapter", "cache", DomainActivity())
         assert "cache" not in bridge._activity
 
     def test_activity_block_reason_unavailable(self):
@@ -408,13 +406,13 @@ class TestULIDCollisionStatsAfterCollision:
     """Line 81: get_collision_stats returns non-zero after collision."""
 
     def test_collision_stats_after_collision(self):
+        # Reset state
+        import oneiric.core.ulid_collision as m
         from oneiric.core.ulid_collision import (
             get_collision_stats,
             register_collision,
         )
 
-        # Reset state
-        import oneiric.core.ulid_collision as m
         m._collision_count = 0
         m._collision_registry.clear()
 
@@ -632,10 +630,11 @@ class TestMultiTierCacheL2WithUrl:
             def __init__(self, settings):
                 captured_settings.append(settings)
 
-        with patch(
-            "oneiric.adapters.cache.multitier._COREDIS_AVAILABLE", True
-        ), patch(
-            "oneiric.adapters.cache.multitier.RedisCacheAdapter", FakeRedisAdapter
+        with (
+            patch("oneiric.adapters.cache.multitier._COREDIS_AVAILABLE", True),
+            patch(
+                "oneiric.adapters.cache.multitier.RedisCacheAdapter", FakeRedisAdapter
+            ),
         ):
             from oneiric.adapters.cache.multitier import MultiTierCacheAdapter
 

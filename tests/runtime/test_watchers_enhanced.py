@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import os
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -139,7 +138,9 @@ class TestSelectionWatcherResolveWatchPath:
         lifecycle = LifecycleManager(resolver)
         bridge = MockBridge(resolver, lifecycle)
 
-        with patch.dict(os.environ, {"ONEIRIC_CONFIG": str(tmp_path / "nonexistent.yaml")}):
+        with patch.dict(
+            os.environ, {"ONEIRIC_CONFIG": str(tmp_path / "nonexistent.yaml")}
+        ):
             watcher = SelectionWatcher(
                 name="test",
                 bridge=bridge,
@@ -172,6 +173,7 @@ class TestSelectionWatcherTick:
         bridge.lifecycle.swap = AsyncMock()
 
         call_count = 0
+
         def layer_selector(settings):
             nonlocal call_count
             call_count += 1
@@ -199,6 +201,7 @@ class TestSelectionWatcherTick:
         bridge.lifecycle.swap = AsyncMock()
 
         call_count = 0
+
         def layer_selector(settings):
             nonlocal call_count
             call_count += 1
@@ -243,6 +246,7 @@ class TestSelectionWatcherTick:
         bridge.lifecycle.swap = AsyncMock(side_effect=RuntimeError("swap fail"))
 
         call_count = 0
+
         def layer_selector(settings):
             nonlocal call_count
             call_count += 1
@@ -274,6 +278,7 @@ class TestSelectionWatcherDrainingAllowsRemoval:
         bridge.lifecycle.swap = AsyncMock()
 
         call_count = 0
+
         def layer_selector(settings):
             nonlocal call_count
             call_count += 1
@@ -302,6 +307,7 @@ class TestSelectionWatcherDomain:
         bridge.lifecycle.swap = AsyncMock()
 
         call_count = 0
+
         def layer_selector(settings):
             nonlocal call_count
             call_count += 1

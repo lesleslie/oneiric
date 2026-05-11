@@ -154,19 +154,19 @@ def test_export_and_stats():
         ulid="01ARZ3NDEKTS6PQRYF",
         system="akosha",
         reference_type="entity",
-        metadata={"entity_type": "test_entity"}
+        metadata={"entity_type": "test_entity"},
     )
     register_reference(
         ulid="01KH85B0X6000A9VB7CGN42ED8",
         system="crackerjack",
         reference_type="test",
-        metadata={"test_file": "test.py"}
+        metadata={"test_file": "test.py"},
     )
     register_reference(
         ulid="01XKD6RF5Y2K1VQH9",
         system="mahavishnu",
         reference_type="workflow",
-        metadata={"workflow_name": "test_workflow"}
+        metadata={"workflow_name": "test_workflow"},
     )
 
     # Export

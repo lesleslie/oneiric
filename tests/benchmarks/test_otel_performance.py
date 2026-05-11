@@ -20,9 +20,7 @@ async def bench_vector_similarity_1k(benchmark, otel_adapter_with_1k_traces):
 
     async def search():
         return await otel_adapter_with_1k_traces._query_service.find_similar_traces(
-            embedding=query_embedding,
-            threshold=0.75,
-            limit=10
+            embedding=query_embedding, threshold=0.75, limit=10
         )
 
     result = await benchmark(search)
@@ -34,10 +32,10 @@ async def bench_vector_similarity_1k(benchmark, otel_adapter_with_1k_traces):
 @pytest.mark.integration
 async def bench_error_search_1k(benchmark, otel_adapter_with_1k_traces):
     """Benchmark error pattern search with 1K traces."""
+
     async def search():
         return await otel_adapter_with_1k_traces._query_service.get_traces_by_error(
-            error_pattern="%timeout%",
-            limit=100
+            error_pattern="%timeout%", limit=100
         )
 
     result = await benchmark(search)
@@ -68,10 +66,10 @@ async def otel_adapter_with_1k_traces(otel_db_session):
                 "status": "ERROR" if i % 10 == 0 else "OK",  # 10% error rate
                 "attributes": {
                     "service": f"service-{i % 20}",
-                    "error.message": "Connection timeout" if i % 10 == 0 else None
+                    "error.message": "Connection timeout" if i % 10 == 0 else None,
                 },
-                "embedding": embedding
-            }
+                "embedding": embedding,
+            },
         )
     await otel_db_session.commit()
 

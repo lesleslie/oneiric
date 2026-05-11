@@ -81,7 +81,9 @@ async def main() -> None:
             provider="custom-redis",
             priority=100,  # High priority
             stack_level=0,
-            factory=lambda: type("CustomRedisCache", (), {"name": "CustomRedisCache"})(),
+            factory=lambda: type(
+                "CustomRedisCache", (), {"name": "CustomRedisCache"}
+            )(),
             description="Custom Redis cache",
         )
     )
@@ -103,7 +105,9 @@ async def main() -> None:
     # Show all registered candidates
     print("All registered candidates:")
     for candidate in resolver.get_all_candidates("adapter", "cache"):
-        print(f"  - {candidate.provider} (stack_level={candidate.metadata.get('stack_level', 0)})")
+        print(
+            f"  - {candidate.provider} (stack_level={candidate.metadata.get('stack_level', 0)})"
+        )
     print()
 
 

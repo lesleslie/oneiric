@@ -33,9 +33,9 @@ async def sample_traces_with_embeddings():
             duration_ms=100.0 + i * 50,
             attributes={
                 "service": f"test-service-{i % 2}",  # Alternate between services
-                "operation": f"test_op_{i}"
+                "operation": f"test_op_{i}",
             },
-            embedding=np.random.rand(384).tolist()  # Random 384-dim embedding
+            embedding=np.random.rand(384).tolist(),  # Random 384-dim embedding
         )
         sample_traces.append(trace)
 

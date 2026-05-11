@@ -1,0 +1,57 @@
+# LavinMQ Adapter Configuration
+# Supports both AMQP and MQTT protocols
+#
+# Configuration Loading (Oneiric layered config):
+#     1. Defaults in LavinMQSettings fields
+#     2. settings/lavinmq.yaml (committed)
+#     3. settings/local.yaml (gitignored)
+#     4. Environment variables LAVINMQ_*
+
+# === Connection Settings ===
+
+# AMQP connection URL
+# Default: guest:guest@localhost:5672 (LavinMQ default)
+amqp_url: "amqp://guest:guest@localhost:5672/"
+
+# MQTT broker settings
+mqtt_host: "localhost"
+mqtt_port: 1883
+mqtt_username: null
+mqtt_password: null
+
+# === Protocol Selection ===
+
+# Preferred protocol: "amqp" or "mqtt"
+# Set enable_both_protocols: true to use both simultaneously
+preferred_protocol: "amqp"
+enable_both_protocols: false
+
+# === AMQP Queue Settings ===
+
+queue: "oneiric-queue"
+exchange: ""
+routing_key: null
+prefetch_count: 10
+durable: true
+passive: false
+consume_timeout: 1.0
+
+# === MQTT Settings ===
+
+mqtt_topic: "oneiric/messages"
+mqtt_qos: 1
+mqtt_retain: false
+mqtt_client_id: null
+
+# === Connection Settings ===
+
+reconnect_interval: 5.0
+heartbeat: 60.0
+ssl: false
+ssl_options: null
+credentials_secret: null
+
+# === Metrics ===
+
+# Prometheus metrics are exposed at localhost:15692 by LavinMQ
+metrics_port: 15692

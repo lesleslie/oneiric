@@ -21,10 +21,8 @@ def load_private_key(key_path: Path) -> Ed25519PrivateKey:
         with key_path.open("rb") as f:
             key_bytes = f.read()
 
-
         if len(key_bytes) == 32:
             return Ed25519PrivateKey.from_private_bytes(key_bytes)
-
 
         from cryptography.hazmat.primitives import serialization
 
@@ -56,25 +54,20 @@ def sign_manifest(
     print(f"  Source: {manifest.source}")
     print(f"  Entries: {len(manifest.entries)}")
 
-
     print(f"\nLoading private key: {private_key_path}")
     private_key = load_private_key(private_key_path)
     print("  Algorithm: ED25519")
-
 
     print("\nGenerating canonical representation...")
     canonical = get_canonical_manifest_for_signing(manifest)
     print(f"  Canonical bytes: {len(canonical)} chars")
 
-
     print("\nSigning manifest...")
     signature_bytes = private_key.sign(canonical.encode())
     signature_b64 = base64.b64encode(signature_bytes).decode()
 
-
     manifest.signature = signature_b64
     manifest.signature_algorithm = "ed25519"
-
 
     output = output_path or manifest_path
     with output.open("w") as f:
@@ -148,7 +141,6 @@ Key Format:
     )
 
     args = parser.parse_args()
-
 
     if not args.manifest.exists():
         print(f"✗ Error: Manifest not found: {args.manifest}", file=sys.stderr)

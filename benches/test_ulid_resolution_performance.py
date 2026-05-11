@@ -28,6 +28,7 @@ def bench_registration(count: int = 100) -> dict:
         Dictionary with benchmark results
     """
     from oneiric.core.ulid_resolution import _ulid_registry
+
     _ulid_registry.clear()
 
     start = time.time()
@@ -61,6 +62,7 @@ def bench_resolution(count: int = 100) -> dict:
     """
     # Register test ULIDs first
     from oneiric.core.ulid_resolution import _ulid_registry
+
     _ulid_registry.clear()
 
     test_ulids = [generate() for _ in range(count)]
@@ -93,6 +95,7 @@ def bench_find_related(count: int = 100) -> dict:
     """
     # Register test ULIDs
     from oneiric.core.ulid_resolution import _ulid_registry
+
     _ulid_registry.clear()
 
     test_ulids = [generate() for _ in range(count)]
@@ -129,6 +132,7 @@ def bench_export_stats(count: int = 100) -> dict:
     """
     # Register test ULIDs
     from oneiric.core.ulid_resolution import _ulid_registry
+
     _ulid_registry.clear()
 
     test_ulids = [generate() for _ in range(count)]

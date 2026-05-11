@@ -36,7 +36,7 @@ def test_trace_result_model_success():
         start_time=datetime.now(UTC),
         end_time=datetime.now(UTC),
         attributes={"key": "value"},
-        similarity=0.95
+        similarity=0.95,
     )
 
     assert trace.trace_id == "trace-001"
@@ -53,7 +53,7 @@ def test_log_entry_model_success():
         message="Test message",
         trace_id="trace-001",
         resource_attributes={"service": "test"},
-        span_attributes={"key": "value"}
+        span_attributes={"key": "value"},
     )
 
     assert log.id == "log-001"
@@ -69,7 +69,7 @@ def test_metric_point_model_success():
         value=75.5,
         unit="percent",
         labels={"host": "server1"},
-        timestamp=datetime.now(UTC)
+        timestamp=datetime.now(UTC),
     )
 
     assert metric.name == "cpu_usage"
@@ -95,24 +95,11 @@ def test_trace_context_model_success():
         service="test",
         operation="test_op",
     )
-    log = LogEntry(
-        id="log-001",
-        timestamp=now,
-        level="INFO",
-        message="Test"
-    )
-    metric = MetricPoint(
-        name="metric",
-        type="COUNTER",
-        value=1.0,
-        timestamp=now
-    )
+    log = LogEntry(id="log-001", timestamp=now, level="INFO", message="Test")
+    metric = MetricPoint(name="metric", type="COUNTER", value=1.0, timestamp=now)
 
     context = TraceContext(
-        trace_id="trace-001",
-        spans=[trace],
-        logs=[log],
-        metrics=[metric]
+        trace_id="trace-001", spans=[trace], logs=[log], metrics=[metric]
     )
 
     assert context.trace_id == "trace-001"

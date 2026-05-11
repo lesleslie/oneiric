@@ -33,7 +33,6 @@ def adapter_to_manifest_entry(
     else:
         raise ValueError(f"Unsupported factory type: {type(adapter.factory)}")
 
-
     settings_model_str: str | None = None
     if adapter.settings_model:
         if isinstance(adapter.settings_model, str):
@@ -56,12 +55,10 @@ def adapter_to_manifest_entry(
         stack_level=adapter.stack_level or 0,
         priority=adapter.priority,
         version=adapter.version or version,
-
         capabilities=capability_descriptors,
         owner=adapter.owner,
         requires_secrets=adapter.requires_secrets,
         settings_model=settings_model_str,
-
         metadata={
             "description": adapter.description or "",
             "source": str(adapter.source),
@@ -89,10 +86,8 @@ def action_to_manifest_entry(
         stack_level=action.stack_level or 0,
         priority=action.priority,
         version=action.version or version,
-
         side_effect_free=action.extras.get("side_effect_free", False),
         timeout_seconds=action.extras.get("timeout_seconds"),
-
         metadata={
             "description": action.description or "",
             "source": str(action.source),
@@ -110,7 +105,6 @@ def generate_manifest(
 ) -> RemoteManifest:
     entries: list[RemoteManifestEntry] = []
 
-
     if include_adapters:
         print("Scanning builtin adapters...")
         for adapter_meta in builtin_adapter_metadata():
@@ -122,7 +116,6 @@ def generate_manifest(
                 print(
                     f"  ✗ adapter/{adapter_meta.category} ({adapter_meta.provider}): {exc}"
                 )
-
 
     if include_actions:
         print("Scanning builtin actions...")
@@ -137,7 +130,6 @@ def generate_manifest(
                 )
 
     manifest = RemoteManifest(source=source, entries=entries)
-
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w") as f:

@@ -24,6 +24,7 @@ from oneiric.core.config import (
 # OneiricSettings defaults
 # ---------------------------------------------------------------------------
 
+
 class TestOneiricSettingsDefaults:
     def test_default_instance(self) -> None:
         s = OneiricSettings()
@@ -33,13 +34,21 @@ class TestOneiricSettingsDefaults:
 
     def test_domain_layers_exist(self) -> None:
         s = OneiricSettings()
-        for domain in ("adapters", "services", "tasks", "events", "workflows", "actions"):
+        for domain in (
+            "adapters",
+            "services",
+            "tasks",
+            "events",
+            "workflows",
+            "actions",
+        ):
             assert hasattr(s, domain)
 
 
 # ---------------------------------------------------------------------------
 # RemoteSourceConfig
 # ---------------------------------------------------------------------------
+
 
 class TestRemoteSourceConfig:
     def test_defaults(self) -> None:
@@ -78,6 +87,7 @@ class TestRemoteSourceConfig:
 # RemoteAuthConfig
 # ---------------------------------------------------------------------------
 
+
 class TestRemoteAuthConfig:
     def test_defaults(self) -> None:
         a = RemoteAuthConfig()
@@ -94,6 +104,7 @@ class TestRemoteAuthConfig:
 # ---------------------------------------------------------------------------
 # SecretsConfig
 # ---------------------------------------------------------------------------
+
 
 class TestSecretsConfig:
     def test_defaults(self) -> None:
@@ -117,6 +128,7 @@ class TestSecretsConfig:
 # ---------------------------------------------------------------------------
 # Path helpers
 # ---------------------------------------------------------------------------
+
 
 class TestPathHelpers:
     def _make_settings(self, **overrides) -> OneiricSettings:
@@ -168,6 +180,7 @@ class TestPathHelpers:
 # ---------------------------------------------------------------------------
 # resolver_settings_from_config
 # ---------------------------------------------------------------------------
+
 
 class TestResolverSettingsFromConfig:
     def test_returns_settings(self) -> None:

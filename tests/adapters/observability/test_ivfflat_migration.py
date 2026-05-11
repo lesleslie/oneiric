@@ -34,8 +34,8 @@ async def test_ivfflat_index_not_created_below_threshold(otel_db_session):
                 "start_time": datetime.now(UTC),
                 "status": "OK",
                 "attributes": {},
-                "embedding": None
-            }
+                "embedding": None,
+            },
         )
     await otel_db_session.commit()
 
@@ -43,10 +43,12 @@ async def test_ivfflat_index_not_created_below_threshold(otel_db_session):
     await create_ivfflat_index_if_ready(otel_db_session)
 
     # Verify index does NOT exist
-    result = await otel_db_session.execute(text("""
+    result = await otel_db_session.execute(
+        text("""
         SELECT indexname FROM pg_indexes
         WHERE tablename = 'otel_traces' AND indexname LIKE '%ivfflat%'
-    """))
+    """)
+    )
     index_exists = result.fetchone()
 
     assert index_exists is None, "IVFFlat index should not exist below threshold"
@@ -78,8 +80,8 @@ async def test_ivfflat_index_created_above_threshold(otel_db_session):
                 "start_time": datetime.now(UTC),
                 "status": "OK",
                 "attributes": {},
-                "embedding": embedding
-            }
+                "embedding": embedding,
+            },
         )
     await otel_db_session.commit()
 
@@ -87,10 +89,12 @@ async def test_ivfflat_index_created_above_threshold(otel_db_session):
     await create_ivfflat_index_if_ready(otel_db_session)
 
     # Verify index exists
-    result = await otel_db_session.execute(text("""
+    result = await otel_db_session.execute(
+        text("""
         SELECT indexname FROM pg_indexes
         WHERE tablename = 'otel_traces' AND indexname LIKE '%ivfflat%'
-    """))
+    """)
+    )
     index_exists = result.fetchone()
 
     assert index_exists is not None, "IVFFlat index should exist above threshold"

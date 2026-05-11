@@ -3,6 +3,7 @@
 These tests focus on execution paths, error handling, edge cases,
 configuration validation, and state management that are under-covered.
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -27,7 +28,6 @@ from oneiric.actions.task import (
     _ScheduleRule,
 )
 from oneiric.core.lifecycle import LifecycleError
-
 
 # ---------------------------------------------------------------------------
 # _CronExpression tests
@@ -337,7 +337,9 @@ class TestTaskScheduleActionExecute:
     @pytest.mark.asyncio
     async def test_basic_cron_schedule(self) -> None:
         action = TaskScheduleAction()
-        result = await action.execute({"task_type": "email", "cron_expression": "0 8 * * *"})
+        result = await action.execute(
+            {"task_type": "email", "cron_expression": "0 8 * * *"}
+        )
         assert result["status"] == "scheduled"
         assert result["next_run"] is not None
         assert len(result["upcoming_runs"]) == 5  # default max_preview_runs
@@ -383,85 +385,95 @@ class TestTaskScheduleActionExecute:
     async def test_invalid_timezone_raises(self) -> None:
         action = TaskScheduleAction()
         with pytest.raises(LifecycleError, match="timezone-invalid"):
-            await action.execute({
-                "task_type": "email",
-                "cron_expression": "0 8 * * *",
-                "timezone": "Nonexistent/Zone",
-            })
+            await action.execute(
+                {
+                    "task_type": "email",
+                    "cron_expression": "0 8 * * *",
+                    "timezone": "Nonexistent/Zone",
+                }
+            )
 
     @pytest.mark.asyncio
     async def test_task_type_whitespace_only_raises(self) -> None:
         action = TaskScheduleAction()
         with pytest.raises(LifecycleError, match="task-type-invalid"):
-            await action.execute({
-                "task_type": "   ",
-                "cron_expression": "0 8 * * *",
-            })
+            await action.execute(
+                {
+                    "task_type": "   ",
+                    "cron_expression": "0 8 * * *",
+                }
+            )
 
     @pytest.mark.asyncio
     async def test_queue_whitespace_only_raises(self) -> None:
-        action = TaskScheduleAction(
-            settings=TaskScheduleSettings(default_queue="   ")
-        )
+        action = TaskScheduleAction(settings=TaskScheduleSettings(default_queue="   "))
         with pytest.raises(LifecycleError, match="queue-invalid"):
-            await action.execute({
-                "task_type": "email",
-                "cron_expression": "0 8 * * *",
-            })
+            await action.execute(
+                {
+                    "task_type": "email",
+                    "cron_expression": "0 8 * * *",
+                }
+            )
 
     @pytest.mark.asyncio
     async def test_end_before_start_raises(self) -> None:
         action = TaskScheduleAction()
         with pytest.raises(LifecycleError, match="window-invalid"):
-            await action.execute({
-                "task_type": "email",
-                "cron_expression": "0 8 * * *",
-                "start_time": "2026-12-01T00:00:00+00:00",
-                "end_time": "2026-01-01T00:00:00+00:00",
-            })
+            await action.execute(
+                {
+                    "task_type": "email",
+                    "cron_expression": "0 8 * * *",
+                    "start_time": "2026-12-01T00:00:00+00:00",
+                    "end_time": "2026-01-01T00:00:00+00:00",
+                }
+            )
 
     @pytest.mark.asyncio
     async def test_custom_timezone(self) -> None:
         action = TaskScheduleAction()
-        result = await action.execute({
-            "task_type": "email",
-            "cron_expression": "0 8 * * *",
-            "timezone": "America/New_York",
-        })
+        result = await action.execute(
+            {
+                "task_type": "email",
+                "cron_expression": "0 8 * * *",
+                "timezone": "America/New_York",
+            }
+        )
         assert result["status"] == "scheduled"
 
     @pytest.mark.asyncio
     async def test_custom_preview_count(self) -> None:
-        action = TaskScheduleAction(
-            settings=TaskScheduleSettings(max_preview_runs=20)
+        action = TaskScheduleAction(settings=TaskScheduleSettings(max_preview_runs=20))
+        result = await action.execute(
+            {
+                "task_type": "email",
+                "cron_expression": "0 8 * * *",
+                "preview_runs": 3,
+            }
         )
-        result = await action.execute({
-            "task_type": "email",
-            "cron_expression": "0 8 * * *",
-            "preview_runs": 3,
-        })
         assert len(result["upcoming_runs"]) == 3
 
     @pytest.mark.asyncio
     async def test_preview_count_exceeds_max_capped(self) -> None:
-        action = TaskScheduleAction(
-            settings=TaskScheduleSettings(max_preview_runs=5)
+        action = TaskScheduleAction(settings=TaskScheduleSettings(max_preview_runs=5))
+        result = await action.execute(
+            {
+                "task_type": "email",
+                "cron_expression": "0 8 * * *",
+                "preview_runs": 100,
+            }
         )
-        result = await action.execute({
-            "task_type": "email",
-            "cron_expression": "0 8 * * *",
-            "preview_runs": 100,
-        })
         assert len(result["upcoming_runs"]) == 5
 
     @pytest.mark.asyncio
     async def test_preview_count_zero(self) -> None:
         action = TaskScheduleAction()
-        result = await action.execute({
-            "task_type": "email",
-            "cron_expression": "0 8 * * *",
-            "preview_runs": 0,
-        })
+        result = await action.execute(
+            {
+                "task_type": "email",
+                "cron_expression": "0 8 * * *",
+                "preview_runs": 0,
+            }
+        )
         assert result["status"] == "scheduled"
         assert len(result["upcoming_runs"]) == 0
         assert result["next_run"] is not None
@@ -469,14 +481,16 @@ class TestTaskScheduleActionExecute:
     @pytest.mark.asyncio
     async def test_all_aliases_in_execute(self) -> None:
         action = TaskScheduleAction()
-        result = await action.execute({
-            "task_type": "report",
-            "queue_name": "reports",
-            "rule_name": "daily-report",
-            "id": "my-rule-id",
-            "cron": "0 6 * * 1-5",
-            "interval": 86400,
-        })
+        result = await action.execute(
+            {
+                "task_type": "report",
+                "queue_name": "reports",
+                "rule_name": "daily-report",
+                "id": "my-rule-id",
+                "cron": "0 6 * * 1-5",
+                "interval": 86400,
+            }
+        )
         rule = result["rule"]
         assert rule["queue"] == "reports"
         assert rule["name"] == "daily-report"
@@ -485,32 +499,36 @@ class TestTaskScheduleActionExecute:
     @pytest.mark.asyncio
     async def test_custom_priority(self) -> None:
         action = TaskScheduleAction()
-        result = await action.execute({
-            "task_type": "email",
-            "cron_expression": "0 8 * * *",
-            "priority": 999,
-        })
+        result = await action.execute(
+            {
+                "task_type": "email",
+                "cron_expression": "0 8 * * *",
+                "priority": 999,
+            }
+        )
         assert result["rule"]["priority"] == 999
 
     @pytest.mark.asyncio
     async def test_default_priority_used(self) -> None:
-        action = TaskScheduleAction(
-            settings=TaskScheduleSettings(default_priority=42)
+        action = TaskScheduleAction(settings=TaskScheduleSettings(default_priority=42))
+        result = await action.execute(
+            {
+                "task_type": "email",
+                "cron_expression": "0 8 * * *",
+            }
         )
-        result = await action.execute({
-            "task_type": "email",
-            "cron_expression": "0 8 * * *",
-        })
         assert result["rule"]["priority"] == 42
 
     @pytest.mark.asyncio
     async def test_max_runs_limits_schedule(self) -> None:
         action = TaskScheduleAction()
-        result = await action.execute({
-            "task_type": "email",
-            "interval_seconds": 60,
-            "max_runs": 2,
-        })
+        result = await action.execute(
+            {
+                "task_type": "email",
+                "interval_seconds": 60,
+                "max_runs": 2,
+            }
+        )
         assert len(result["upcoming_runs"]) == 2
 
     @pytest.mark.asyncio
@@ -518,11 +536,13 @@ class TestTaskScheduleActionExecute:
         action = TaskScheduleAction()
         now = datetime.now(tz=ZoneInfo("UTC"))
         end = now + timedelta(minutes=5)
-        result = await action.execute({
-            "task_type": "email",
-            "interval_seconds": 60,
-            "end_time": end.isoformat(),
-        })
+        result = await action.execute(
+            {
+                "task_type": "email",
+                "interval_seconds": 60,
+                "end_time": end.isoformat(),
+            }
+        )
         # Should have a limited number of runs within 5 minutes
         assert len(result["upcoming_runs"]) <= 6
 
@@ -530,11 +550,13 @@ class TestTaskScheduleActionExecute:
     async def test_start_time_in_future(self) -> None:
         action = TaskScheduleAction()
         future_start = datetime(2030, 1, 1, tzinfo=ZoneInfo("UTC"))
-        result = await action.execute({
-            "task_type": "email",
-            "cron_expression": "0 8 * * *",
-            "start_time": future_start.isoformat(),
-        })
+        result = await action.execute(
+            {
+                "task_type": "email",
+                "cron_expression": "0 8 * * *",
+                "start_time": future_start.isoformat(),
+            }
+        )
         assert result["status"] == "scheduled"
         # next_run should be at or after start_time
         next_run = datetime.fromisoformat(result["next_run"])
@@ -543,10 +565,12 @@ class TestTaskScheduleActionExecute:
     @pytest.mark.asyncio
     async def test_tags_include_defaults(self) -> None:
         action = TaskScheduleAction()
-        result = await action.execute({
-            "task_type": "email",
-            "cron_expression": "0 8 * * *",
-        })
+        result = await action.execute(
+            {
+                "task_type": "email",
+                "cron_expression": "0 8 * * *",
+            }
+        )
         tags = result["rule"]["tags"]
         assert tags["scheduled"] == "true"
         assert "rule_name" in tags
@@ -555,11 +579,13 @@ class TestTaskScheduleActionExecute:
     @pytest.mark.asyncio
     async def test_custom_tags(self) -> None:
         action = TaskScheduleAction()
-        result = await action.execute({
-            "task_type": "email",
-            "cron_expression": "0 8 * * *",
-            "tags": {"team": "backend", "env": "prod"},
-        })
+        result = await action.execute(
+            {
+                "task_type": "email",
+                "cron_expression": "0 8 * * *",
+                "tags": {"team": "backend", "env": "prod"},
+            }
+        )
         tags = result["rule"]["tags"]
         assert tags["team"] == "backend"
         assert tags["env"] == "prod"
@@ -568,23 +594,27 @@ class TestTaskScheduleActionExecute:
     @pytest.mark.asyncio
     async def test_payload_forwarded(self) -> None:
         action = TaskScheduleAction()
-        result = await action.execute({
-            "task_type": "email",
-            "cron_expression": "0 8 * * *",
-            "payload": {"to": "user@example.com", "subject": "Hello"},
-        })
+        result = await action.execute(
+            {
+                "task_type": "email",
+                "cron_expression": "0 8 * * *",
+                "payload": {"to": "user@example.com", "subject": "Hello"},
+            }
+        )
         assert result["payload"]["to"] == "user@example.com"
         assert result["payload"]["subject"] == "Hello"
 
     @pytest.mark.asyncio
     async def test_rule_dict_structure(self) -> None:
         action = TaskScheduleAction()
-        result = await action.execute({
-            "task_type": "email",
-            "cron_expression": "0 8 * * *",
-            "name": "test-rule",
-            "rule_id": "test-id",
-        })
+        result = await action.execute(
+            {
+                "task_type": "email",
+                "cron_expression": "0 8 * * *",
+                "name": "test-rule",
+                "rule_id": "test-id",
+            }
+        )
         rule = result["rule"]
         assert rule["rule_id"] == "test-id"
         assert rule["name"] == "test-rule"
@@ -598,24 +628,30 @@ class TestTaskScheduleActionExecute:
     @pytest.mark.asyncio
     async def test_auto_generated_rule_id(self) -> None:
         action = TaskScheduleAction()
-        result1 = await action.execute({
-            "task_type": "email",
-            "cron_expression": "0 8 * * *",
-        })
-        result2 = await action.execute({
-            "task_type": "email",
-            "cron_expression": "0 8 * * *",
-        })
+        result1 = await action.execute(
+            {
+                "task_type": "email",
+                "cron_expression": "0 8 * * *",
+            }
+        )
+        result2 = await action.execute(
+            {
+                "task_type": "email",
+                "cron_expression": "0 8 * * *",
+            }
+        )
         # Each invocation should generate a unique ID
         assert result1["rule"]["rule_id"] != result2["rule"]["rule_id"]
 
     @pytest.mark.asyncio
     async def test_auto_generated_name(self) -> None:
         action = TaskScheduleAction()
-        result = await action.execute({
-            "task_type": "report",
-            "cron_expression": "0 8 * * *",
-        })
+        result = await action.execute(
+            {
+                "task_type": "report",
+                "cron_expression": "0 8 * * *",
+            }
+        )
         assert result["rule"]["name"] == "report-schedule"
 
     @pytest.mark.asyncio
@@ -624,11 +660,13 @@ class TestTaskScheduleActionExecute:
         action = TaskScheduleAction(
             settings=TaskScheduleSettings(timezone="America/New_York")
         )
-        result = await action.execute({
-            "task_type": "email",
-            "cron_expression": "0 8 * * *",
-            "start_time": "2030-01-01T08:00:00",  # naive
-        })
+        result = await action.execute(
+            {
+                "task_type": "email",
+                "cron_expression": "0 8 * * *",
+                "start_time": "2030-01-01T08:00:00",  # naive
+            }
+        )
         rule = result["rule"]
         assert rule["start_time"] is not None
         start = datetime.fromisoformat(rule["start_time"])
@@ -652,21 +690,15 @@ class TestTaskScheduleActionInternals:
             action._resolve_timezone("Bad/Zone")
 
     def test_resolve_preview_count_none_uses_default(self) -> None:
-        action = TaskScheduleAction(
-            settings=TaskScheduleSettings(max_preview_runs=7)
-        )
+        action = TaskScheduleAction(settings=TaskScheduleSettings(max_preview_runs=7))
         assert action._resolve_preview_count(None) == 7
 
     def test_resolve_preview_count_custom_capped(self) -> None:
-        action = TaskScheduleAction(
-            settings=TaskScheduleSettings(max_preview_runs=5)
-        )
+        action = TaskScheduleAction(settings=TaskScheduleSettings(max_preview_runs=5))
         assert action._resolve_preview_count(3) == 3
 
     def test_resolve_preview_count_exceeds_max(self) -> None:
-        action = TaskScheduleAction(
-            settings=TaskScheduleSettings(max_preview_runs=5)
-        )
+        action = TaskScheduleAction(settings=TaskScheduleSettings(max_preview_runs=5))
         assert action._resolve_preview_count(100) == 5
 
     def test_coerce_datetime_none(self) -> None:
@@ -760,10 +792,18 @@ class TestTaskScheduleActionInternals:
         end = datetime(2026, 12, 31, tzinfo=ZoneInfo("UTC"))
         candidate = datetime(2026, 6, 1, tzinfo=ZoneInfo("UTC"))
         rule = _ScheduleRule(
-            rule_id="t", name="t", task_type="t", queue="q",
-            payload={}, priority=100, cron_expression=None,
-            interval_seconds=60, start_time=None, end_time=end,
-            max_runs=None, tags={},
+            rule_id="t",
+            name="t",
+            task_type="t",
+            queue="q",
+            payload={},
+            priority=100,
+            cron_expression=None,
+            interval_seconds=60,
+            start_time=None,
+            end_time=end,
+            max_runs=None,
+            tags={},
         )
         assert action._is_valid_candidate(candidate, rule) is True
 
@@ -772,10 +812,18 @@ class TestTaskScheduleActionInternals:
         end = datetime(2026, 6, 1, tzinfo=ZoneInfo("UTC"))
         candidate = datetime(2026, 12, 31, tzinfo=ZoneInfo("UTC"))
         rule = _ScheduleRule(
-            rule_id="t", name="t", task_type="t", queue="q",
-            payload={}, priority=100, cron_expression=None,
-            interval_seconds=60, start_time=None, end_time=end,
-            max_runs=None, tags={},
+            rule_id="t",
+            name="t",
+            task_type="t",
+            queue="q",
+            payload={},
+            priority=100,
+            cron_expression=None,
+            interval_seconds=60,
+            start_time=None,
+            end_time=end,
+            max_runs=None,
+            tags={},
         )
         assert action._is_valid_candidate(candidate, rule) is False
 
@@ -783,20 +831,36 @@ class TestTaskScheduleActionInternals:
         action = TaskScheduleAction()
         candidate = datetime(2026, 6, 1, tzinfo=ZoneInfo("UTC"))
         rule = _ScheduleRule(
-            rule_id="t", name="t", task_type="t", queue="q",
-            payload={}, priority=100, cron_expression=None,
-            interval_seconds=60, start_time=None, end_time=None,
-            max_runs=None, tags={},
+            rule_id="t",
+            name="t",
+            task_type="t",
+            queue="q",
+            payload={},
+            priority=100,
+            cron_expression=None,
+            interval_seconds=60,
+            start_time=None,
+            end_time=None,
+            max_runs=None,
+            tags={},
         )
         assert action._is_valid_candidate(candidate, rule) is True
 
     def test_is_valid_candidate_none_candidate(self) -> None:
         action = TaskScheduleAction()
         rule = _ScheduleRule(
-            rule_id="t", name="t", task_type="t", queue="q",
-            payload={}, priority=100, cron_expression=None,
-            interval_seconds=60, start_time=None, end_time=None,
-            max_runs=None, tags={},
+            rule_id="t",
+            name="t",
+            task_type="t",
+            queue="q",
+            payload={},
+            priority=100,
+            cron_expression=None,
+            interval_seconds=60,
+            start_time=None,
+            end_time=None,
+            max_runs=None,
+            tags={},
         )
         assert action._is_valid_candidate(None, rule) is False
 
@@ -983,18 +1047,20 @@ class TestAutomationTriggerActionExecute:
     @pytest.mark.asyncio
     async def test_no_match_returns_noop(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"status": "ok"},
-            "rules": [
-                {
-                    "name": "r1",
-                    "action": "a",
-                    "conditions": [
-                        {"field": "status", "operator": "equals", "value": "fail"}
-                    ],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"status": "ok"},
+                "rules": [
+                    {
+                        "name": "r1",
+                        "action": "a",
+                        "conditions": [
+                            {"field": "status", "operator": "equals", "value": "fail"}
+                        ],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "noop"
         assert result["matched_rules"] == []
 
@@ -1028,68 +1094,78 @@ class TestAutomationTriggerActionExecute:
     @pytest.mark.asyncio
     async def test_context_returned(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"key": "value"},
-            "rules": [{"name": "r", "action": "a"}],
-        })
+        result = await action.execute(
+            {
+                "context": {"key": "value"},
+                "rules": [{"name": "r", "action": "a"}],
+            }
+        )
         assert result["context"] == {"key": "value"}
 
     @pytest.mark.asyncio
     async def test_evaluated_rules_count(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"status": "ok"},
-            "rules": [
-                {"name": "r1", "action": "a1"},
-                {"name": "r2", "action": "a2"},
-                {"name": "r3", "action": "a3"},
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"status": "ok"},
+                "rules": [
+                    {"name": "r1", "action": "a1"},
+                    {"name": "r2", "action": "a2"},
+                    {"name": "r3", "action": "a3"},
+                ],
+            }
+        )
         assert result["evaluated_rules"] == 3
 
     @pytest.mark.asyncio
     async def test_multiple_matches(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"status": "ok"},
-            "rules": [
-                {"name": "r1", "action": "a1"},
-                {"name": "r2", "action": "a2"},
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"status": "ok"},
+                "rules": [
+                    {"name": "r1", "action": "a1"},
+                    {"name": "r2", "action": "a2"},
+                ],
+            }
+        )
         assert result["status"] == "triggered"
         assert len(result["matched_rules"]) == 2
 
     @pytest.mark.asyncio
     async def test_stop_on_match_per_rule(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"status": "ok"},
-            "rules": [
-                {"name": "r1", "action": "a1", "stop_on_match": True},
-                {"name": "r2", "action": "a2"},
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"status": "ok"},
+                "rules": [
+                    {"name": "r1", "action": "a1", "stop_on_match": True},
+                    {"name": "r2", "action": "a2"},
+                ],
+            }
+        )
         assert len(result["matched_rules"]) == 1
         assert result["evaluated_rules"] == 1
 
     @pytest.mark.asyncio
     async def test_matched_rule_structure(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"x": 1},
-            "rules": [
-                {
-                    "name": "test-rule",
-                    "action": "test.action",
-                    "payload": {"data": True},
-                    "conditions": [
-                        {"field": "x", "operator": "equals", "value": 1},
-                        {"field": "y", "operator": "absent"},
-                    ],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"x": 1},
+                "rules": [
+                    {
+                        "name": "test-rule",
+                        "action": "test.action",
+                        "payload": {"data": True},
+                        "conditions": [
+                            {"field": "x", "operator": "equals", "value": 1},
+                            {"field": "y", "operator": "absent"},
+                        ],
+                    }
+                ],
+            }
+        )
         matched = result["matched_rules"][0]
         assert matched["name"] == "test-rule"
         assert matched["action"] == "test.action"
@@ -1106,398 +1182,492 @@ class TestAutomationConditionOperators:
     @pytest.mark.asyncio
     async def test_operator_equals(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"val": "hello"},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "val", "operator": "equals", "value": "hello"}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"val": "hello"},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [
+                            {"field": "val", "operator": "equals", "value": "hello"}
+                        ],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "triggered"
 
     @pytest.mark.asyncio
     async def test_operator_not_equals(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"val": "hello"},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "val", "operator": "not_equals", "value": "world"}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"val": "hello"},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [
+                            {"field": "val", "operator": "not_equals", "value": "world"}
+                        ],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "triggered"
 
     @pytest.mark.asyncio
     async def test_operator_not_equals_fails(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"val": "hello"},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "val", "operator": "not_equals", "value": "hello"}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"val": "hello"},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [
+                            {"field": "val", "operator": "not_equals", "value": "hello"}
+                        ],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "noop"
 
     @pytest.mark.asyncio
     async def test_operator_contains_string(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"msg": "hello world"},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "msg", "operator": "contains", "value": "world"}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"msg": "hello world"},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [
+                            {"field": "msg", "operator": "contains", "value": "world"}
+                        ],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "triggered"
 
     @pytest.mark.asyncio
     async def test_operator_contains_none_returns_false(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"msg": None},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "msg", "operator": "contains", "value": "x"}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"msg": None},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [
+                            {"field": "msg", "operator": "contains", "value": "x"}
+                        ],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "noop"
 
     @pytest.mark.asyncio
     async def test_operator_contains_in_mapping(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"data": {"key1": "val1", "key2": "val2"}},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "data", "operator": "contains", "value": "key1"}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"data": {"key1": "val1", "key2": "val2"}},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [
+                            {"field": "data", "operator": "contains", "value": "key1"}
+                        ],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "triggered"
 
     @pytest.mark.asyncio
     async def test_operator_contains_in_sequence(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"items": [10, 20, 30]},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "items", "operator": "contains", "value": 20}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"items": [10, 20, 30]},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [
+                            {"field": "items", "operator": "contains", "value": 20}
+                        ],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "triggered"
 
     @pytest.mark.asyncio
     async def test_operator_contains_unsupported_type(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"num": 42},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "num", "operator": "contains", "value": "4"}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"num": 42},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [
+                            {"field": "num", "operator": "contains", "value": "4"}
+                        ],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "noop"
 
     @pytest.mark.asyncio
     async def test_operator_in(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"role": "admin"},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [
-                        {"field": "role", "operator": "in", "value": ["admin", "superadmin"]}
-                    ],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"role": "admin"},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [
+                            {
+                                "field": "role",
+                                "operator": "in",
+                                "value": ["admin", "superadmin"],
+                            }
+                        ],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "triggered"
 
     @pytest.mark.asyncio
     async def test_operator_in_not_in_list(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"role": "user"},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [
-                        {"field": "role", "operator": "in", "value": ["admin", "superadmin"]}
-                    ],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"role": "user"},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [
+                            {
+                                "field": "role",
+                                "operator": "in",
+                                "value": ["admin", "superadmin"],
+                            }
+                        ],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "noop"
 
     @pytest.mark.asyncio
     async def test_operator_in_non_sequence(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"role": "admin"},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [
-                        {"field": "role", "operator": "in", "value": "admin-superadmin"}
-                    ],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"role": "admin"},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [
+                            {
+                                "field": "role",
+                                "operator": "in",
+                                "value": "admin-superadmin",
+                            }
+                        ],
+                    }
+                ],
+            }
+        )
         # String is excluded from sequence check
         assert result["status"] == "noop"
 
     @pytest.mark.asyncio
     async def test_operator_greater_than(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"count": 10},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "count", "operator": "greater_than", "value": 5}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"count": 10},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [
+                            {"field": "count", "operator": "greater_than", "value": 5}
+                        ],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "triggered"
 
     @pytest.mark.asyncio
     async def test_operator_greater_or_equal(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"count": 10},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "count", "operator": "greater_or_equal", "value": 10}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"count": 10},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [
+                            {
+                                "field": "count",
+                                "operator": "greater_or_equal",
+                                "value": 10,
+                            }
+                        ],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "triggered"
 
     @pytest.mark.asyncio
     async def test_operator_less_than(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"count": 3},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "count", "operator": "less_than", "value": 5}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"count": 3},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [
+                            {"field": "count", "operator": "less_than", "value": 5}
+                        ],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "triggered"
 
     @pytest.mark.asyncio
     async def test_operator_less_or_equal(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"count": 5},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "count", "operator": "less_or_equal", "value": 5}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"count": 5},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [
+                            {"field": "count", "operator": "less_or_equal", "value": 5}
+                        ],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "triggered"
 
     @pytest.mark.asyncio
     async def test_operator_numeric_non_numeric_returns_false(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"val": "not-a-number"},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "val", "operator": "greater_than", "value": 5}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"val": "not-a-number"},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [
+                            {"field": "val", "operator": "greater_than", "value": 5}
+                        ],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "noop"
 
     @pytest.mark.asyncio
     async def test_operator_exists_field_present(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"data": {"nested": "value"}},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "data.nested", "operator": "exists"}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"data": {"nested": "value"}},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [{"field": "data.nested", "operator": "exists"}],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "triggered"
 
     @pytest.mark.asyncio
     async def test_operator_exists_field_absent(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"data": {}},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "data.missing", "operator": "exists"}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"data": {}},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [{"field": "data.missing", "operator": "exists"}],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "noop"
 
     @pytest.mark.asyncio
     async def test_operator_absent_field_missing(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"data": {}},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "data.missing", "operator": "absent"}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"data": {}},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [{"field": "data.missing", "operator": "absent"}],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "triggered"
 
     @pytest.mark.asyncio
     async def test_operator_absent_field_present(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"data": {"key": "val"}},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "data.key", "operator": "absent"}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"data": {"key": "val"}},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [{"field": "data.key", "operator": "absent"}],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "noop"
 
     @pytest.mark.asyncio
     async def test_operator_truthy_true(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"flag": "non-empty"},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "flag", "operator": "truthy"}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"flag": "non-empty"},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [{"field": "flag", "operator": "truthy"}],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "triggered"
 
     @pytest.mark.asyncio
     async def test_operator_truthy_false(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"flag": ""},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "flag", "operator": "truthy"}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"flag": ""},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [{"field": "flag", "operator": "truthy"}],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "noop"
 
     @pytest.mark.asyncio
     async def test_operator_truthy_none(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"flag": None},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "flag", "operator": "truthy"}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"flag": None},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [{"field": "flag", "operator": "truthy"}],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "noop"
 
     @pytest.mark.asyncio
     async def test_operator_falsy_empty(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"flag": ""},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "flag", "operator": "falsy"}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"flag": ""},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [{"field": "flag", "operator": "falsy"}],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "triggered"
 
     @pytest.mark.asyncio
     async def test_operator_falsy_non_empty(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"flag": "value"},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "flag", "operator": "falsy"}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"flag": "value"},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [{"field": "flag", "operator": "falsy"}],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "noop"
 
     @pytest.mark.asyncio
     async def test_operator_falsy_zero(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"count": 0},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "count", "operator": "falsy"}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"count": 0},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [{"field": "count", "operator": "falsy"}],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "triggered"
 
 
@@ -1510,91 +1680,115 @@ class TestAutomationFieldResolution:
     @pytest.mark.asyncio
     async def test_nested_field_resolution(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"a": {"b": {"c": 42}}},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "a.b.c", "operator": "equals", "value": 42}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"a": {"b": {"c": 42}}},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [
+                            {"field": "a.b.c", "operator": "equals", "value": 42}
+                        ],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "triggered"
 
     @pytest.mark.asyncio
     async def test_array_index_resolution(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"items": [10, 20, 30]},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "items.1", "operator": "equals", "value": 20}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"items": [10, 20, 30]},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [
+                            {"field": "items.1", "operator": "equals", "value": 20}
+                        ],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "triggered"
 
     @pytest.mark.asyncio
     async def test_array_out_of_bounds_returns_none(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"items": [10]},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "items.99", "operator": "absent"}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"items": [10]},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [{"field": "items.99", "operator": "absent"}],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "triggered"
 
     @pytest.mark.asyncio
     async def test_empty_field_path_returns_none(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"val": "x"},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "", "operator": "absent"}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"val": "x"},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [{"field": "", "operator": "absent"}],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "triggered"
 
     @pytest.mark.asyncio
     async def test_bracket_notation_in_path(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"items": [10, 20, 30]},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "items[0]", "operator": "equals", "value": 10}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"items": [10, 20, 30]},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [
+                            {"field": "items[0]", "operator": "equals", "value": 10}
+                        ],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "triggered"
 
     @pytest.mark.asyncio
     async def test_mixed_dot_bracket_notation(self) -> None:
         action = AutomationTriggerAction()
-        result = await action.execute({
-            "context": {"data": {"items": [100, 200]}},
-            "rules": [
-                {
-                    "name": "r",
-                    "action": "a",
-                    "conditions": [{"field": "data.items[1]", "operator": "equals", "value": 200}],
-                }
-            ],
-        })
+        result = await action.execute(
+            {
+                "context": {"data": {"items": [100, 200]}},
+                "rules": [
+                    {
+                        "name": "r",
+                        "action": "a",
+                        "conditions": [
+                            {
+                                "field": "data.items[1]",
+                                "operator": "equals",
+                                "value": 200,
+                            }
+                        ],
+                    }
+                ],
+            }
+        )
         assert result["status"] == "triggered"
 
 

@@ -34,7 +34,9 @@ def concrete_adapter(otel_settings):
             """Find similar traces - stub implementation."""
             return []
 
-        async def get_traces_by_error(self, error_type: str, limit: int = 100) -> list[dict]:
+        async def get_traces_by_error(
+            self, error_type: str, limit: int = 100
+        ) -> list[dict]:
             """Get traces by error type - stub implementation."""
             return []
 
@@ -60,9 +62,9 @@ async def otel_adapter(otel_settings):
                 port=5432,
                 user="postgres",
                 password="postgres",
-                database="otel_test"
+                database="otel_test",
             ),
-            timeout=2.0
+            timeout=2.0,
         )
         await conn.close()
     except Exception:
@@ -73,10 +75,14 @@ async def otel_adapter(otel_settings):
     class TestOTelAdapter(OTelStorageAdapter):
         """Concrete implementation using actual store_log and store_metrics methods from base class."""
 
-        async def find_similar_traces(self, embedding: list[float], limit: int = 10) -> list[dict]:
+        async def find_similar_traces(
+            self, embedding: list[float], limit: int = 10
+        ) -> list[dict]:
             return []
 
-        async def get_traces_by_error(self, error_type: str, limit: int = 100) -> list[dict]:
+        async def get_traces_by_error(
+            self, error_type: str, limit: int = 100
+        ) -> list[dict]:
             return []
 
         async def search_logs(self, query: str, limit: int = 100) -> list[dict]:
@@ -154,13 +160,15 @@ async def test_store_trace_buffers_writes(otel_adapter):
     """Test that traces are buffered and flushed in batches."""
     traces = []
     for i in range(10):
-        traces.append({
-            "trace_id": f"test-trace-{i:03d}",
-            "name": f"span_{i}",
-            "start_time": datetime.now().isoformat(),
-            "status": "OK",
-            "attributes": {"index": i},
-        })
+        traces.append(
+            {
+                "trace_id": f"test-trace-{i:03d}",
+                "name": f"span_{i}",
+                "start_time": datetime.now().isoformat(),
+                "status": "OK",
+                "attributes": {"index": i},
+            }
+        )
 
     # Store all traces
     for trace in traces:
@@ -192,9 +200,9 @@ async def test_store_trace_auto_flush_on_batch_size(otel_adapter):
                 port=5432,
                 user="postgres",
                 password="postgres",
-                database="otel_test"
+                database="otel_test",
             ),
-            timeout=2.0
+            timeout=2.0,
         )
         await conn.close()
     except Exception:
@@ -202,16 +210,21 @@ async def test_store_trace_auto_flush_on_batch_size(otel_adapter):
 
     # Create adapter with small batch size
     from oneiric.adapters.observability.settings import OTelStorageSettings
+
     small_batch_settings = OTelStorageSettings(
         connection_string="postgresql://postgres:postgres@localhost:5432/otel_test",
         batch_size=5,  # Small batch size for testing
     )
 
     class TestOTelAdapter(OTelStorageAdapter):
-        async def find_similar_traces(self, embedding: list[float], limit: int = 10) -> list[dict]:
+        async def find_similar_traces(
+            self, embedding: list[float], limit: int = 10
+        ) -> list[dict]:
             return []
 
-        async def get_traces_by_error(self, error_type: str, limit: int = 100) -> list[dict]:
+        async def get_traces_by_error(
+            self, error_type: str, limit: int = 100
+        ) -> list[dict]:
             return []
 
         async def search_logs(self, query: str, limit: int = 100) -> list[dict]:
@@ -226,13 +239,15 @@ async def test_store_trace_auto_flush_on_batch_size(otel_adapter):
 
         # Store 5 traces (should trigger auto-flush)
         for i in range(5):
-            await adapter.store_trace({
-                "trace_id": f"auto-trace-{i}",
-                "name": "auto_flush_test",
-                "start_time": datetime.now().isoformat(),
-                "status": "OK",
-                "attributes": {},
-            })
+            await adapter.store_trace(
+                {
+                    "trace_id": f"auto-trace-{i}",
+                    "name": "auto_flush_test",
+                    "start_time": datetime.now().isoformat(),
+                    "status": "OK",
+                    "attributes": {},
+                }
+            )
 
         # Buffer should be empty after auto-flush
         assert len(adapter._write_buffer) == 0
@@ -304,10 +319,7 @@ async def test_store_log_concrete_implementation(otel_adapter):
         "service": "test",
         "operation": "log_info",
         "duration_ms": 0,
-        "attributes": {
-            "log.level": "INFO",
-            "log.message": "Test log message"
-        }
+        "attributes": {"log.level": "INFO", "log.message": "Test log message"},
     }
 
     # Should not raise
@@ -315,6 +327,7 @@ async def test_store_log_concrete_implementation(otel_adapter):
 
     # Verify log was stored
     from sqlalchemy import select
+
     async with otel_adapter._session_factory() as session:
         result = await session.execute(
             select(LogModel).filter_by(trace_id="trace-log-001")
@@ -342,7 +355,7 @@ async def test_store_metrics_concrete_implementation(otel_adapter):
             "value": 1.0,
             "unit": "count",
             "labels": {"env": "test"},
-            "timestamp": datetime.now(UTC)
+            "timestamp": datetime.now(UTC),
         }
     ]
 
@@ -351,6 +364,7 @@ async def test_store_metrics_concrete_implementation(otel_adapter):
 
     # Verify metric was stored
     from sqlalchemy import select
+
     async with otel_adapter._session_factory() as session:
         result = await session.execute(
             select(MetricModel).filter_by(name="test_metric")

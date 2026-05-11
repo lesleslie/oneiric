@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -31,6 +30,7 @@ class TestOneiricShellInit:
     def test_namespace_has_oneiric_objects(self, settings):
         shell = OneiricShell(settings)
         from oneiric.core.config import OneiricSettings as SettingsCls
+
         assert shell.namespace["OneiricSettings"] is SettingsCls
         assert shell.namespace["config"] is settings
 
@@ -85,8 +85,10 @@ class TestReloadSettings:
 class TestShowConfigLayers:
     @pytest.mark.asyncio
     async def test_show_config_layers(self, shell):
-        with patch("rich.console.Console") as mock_console_cls, \
-             patch("rich.table.Table") as mock_table_cls:
+        with (
+            patch("rich.console.Console") as mock_console_cls,
+            patch("rich.table.Table") as mock_table_cls,
+        ):
             mock_console = MagicMock()
             mock_console_cls.return_value = mock_console
             mock_table = MagicMock()
@@ -113,8 +115,12 @@ class TestValidateConfig:
 
     @pytest.mark.asyncio
     async def test_validate_config_failure(self, shell):
-        with patch("rich.console.Console") as mock_console_cls, \
-             patch.object(OneiricSettings, "model_validate", side_effect=ValueError("bad")):
+        with (
+            patch("rich.console.Console") as mock_console_cls,
+            patch.object(
+                OneiricSettings, "model_validate", side_effect=ValueError("bad")
+            ),
+        ):
             mock_console = MagicMock()
             mock_console_cls.return_value = mock_console
 
@@ -153,7 +159,9 @@ class TestEmitSessionStart:
     @pytest.mark.asyncio
     async def test_emit_session_start_error(self, shell):
         shell.session_tracker = MagicMock()
-        shell.session_tracker.emit_session_start = AsyncMock(side_effect=RuntimeError("fail"))
+        shell.session_tracker.emit_session_start = AsyncMock(
+            side_effect=RuntimeError("fail")
+        )
 
         await shell._emit_session_start()
 
@@ -188,7 +196,9 @@ class TestEmitSessionEnd:
     async def test_emit_session_end_clears_id_on_error(self, shell):
         shell._session_id = "sess-abc"
         shell.session_tracker = MagicMock()
-        shell.session_tracker.emit_session_end = AsyncMock(side_effect=RuntimeError("fail"))
+        shell.session_tracker.emit_session_end = AsyncMock(
+            side_effect=RuntimeError("fail")
+        )
 
         await shell._emit_session_end()
 

@@ -16,6 +16,7 @@ from oneiric.remote.models import (
 # CapabilitySecurityProfile
 # ---------------------------------------------------------------------------
 
+
 class TestCapabilitySecurityProfile:
     def test_defaults(self) -> None:
         p = CapabilitySecurityProfile()
@@ -38,6 +39,7 @@ class TestCapabilitySecurityProfile:
 # ---------------------------------------------------------------------------
 # CapabilityDescriptor
 # ---------------------------------------------------------------------------
+
 
 class TestCapabilityDescriptor:
     def test_minimal(self) -> None:
@@ -72,10 +74,14 @@ class TestCapabilityDescriptor:
 # RemoteManifestEntry
 # ---------------------------------------------------------------------------
 
+
 class TestRemoteManifestEntry:
     def test_minimal(self) -> None:
         e = RemoteManifestEntry(
-            domain="adapter", key="cache", provider="redis", factory="oneiric.adapters:RedisAdapter",
+            domain="adapter",
+            key="cache",
+            provider="redis",
+            factory="oneiric.adapters:RedisAdapter",
         )
         assert e.domain == "adapter"
         assert e.key == "cache"
@@ -84,11 +90,16 @@ class TestRemoteManifestEntry:
 
     def test_full(self) -> None:
         e = RemoteManifestEntry(
-            domain="service", key="auth", provider="google",
+            domain="service",
+            key="auth",
+            provider="google",
             factory="oneiric.services:AuthService",
-            version="2.0.0", priority=10, stack_level=1,
+            version="2.0.0",
+            priority=10,
+            stack_level=1,
             capabilities=[CapabilityDescriptor(name="oauth")],
-            requires=["cache"], conflicts_with=["legacy"],
+            requires=["cache"],
+            conflicts_with=["legacy"],
             python_version=">=3.11",
         )
         assert e.capability_names == ["oauth"]
@@ -97,7 +108,10 @@ class TestRemoteManifestEntry:
 
     def test_capability_normalization_from_string(self) -> None:
         e = RemoteManifestEntry(
-            domain="adapter", key="x", provider="p", factory="f:f",
+            domain="adapter",
+            key="x",
+            provider="p",
+            factory="f:f",
             capabilities=["cap_a", "cap_b"],
         )
         assert e.capability_names == ["cap_a", "cap_b"]
@@ -105,7 +119,10 @@ class TestRemoteManifestEntry:
 
     def test_capability_normalization_from_dict(self) -> None:
         e = RemoteManifestEntry(
-            domain="adapter", key="x", provider="p", factory="f:f",
+            domain="adapter",
+            key="x",
+            provider="p",
+            factory="f:f",
             capabilities=[{"name": "a", "description": "b"}],
         )
         assert e.capability_names == ["a"]
@@ -113,13 +130,19 @@ class TestRemoteManifestEntry:
     def test_capability_missing_name_raises(self) -> None:
         with pytest.raises(ValueError, match="missing 'name'"):
             RemoteManifestEntry(
-                domain="adapter", key="x", provider="p", factory="f:f",
+                domain="adapter",
+                key="x",
+                provider="p",
+                factory="f:f",
                 capabilities=[{"description": "no name"}],
             )
 
     def test_capability_none(self) -> None:
         e = RemoteManifestEntry(
-            domain="adapter", key="x", provider="p", factory="f:f",
+            domain="adapter",
+            key="x",
+            provider="p",
+            factory="f:f",
             capabilities=None,
         )
         assert e.capabilities == []
@@ -127,13 +150,19 @@ class TestRemoteManifestEntry:
     def test_capability_invalid_type_raises(self) -> None:
         with pytest.raises(TypeError, match="capabilities must be"):
             RemoteManifestEntry(
-                domain="adapter", key="x", provider="p", factory="f:f",
+                domain="adapter",
+                key="x",
+                provider="p",
+                factory="f:f",
                 capabilities=[42],
             )
 
     def test_capability_payloads(self) -> None:
         e = RemoteManifestEntry(
-            domain="adapter", key="x", provider="p", factory="f:f",
+            domain="adapter",
+            key="x",
+            provider="p",
+            factory="f:f",
             capabilities=[
                 CapabilityDescriptor(name="a", description="desc"),
                 "bare_string",
@@ -149,6 +178,7 @@ class TestRemoteManifestEntry:
 # ---------------------------------------------------------------------------
 # ManifestSignature
 # ---------------------------------------------------------------------------
+
 
 class TestManifestSignature:
     def test_defaults(self) -> None:
@@ -167,6 +197,7 @@ class TestManifestSignature:
 # RemoteManifest
 # ---------------------------------------------------------------------------
 
+
 class TestRemoteManifest:
     def test_defaults(self) -> None:
         m = RemoteManifest()
@@ -176,7 +207,10 @@ class TestRemoteManifest:
 
     def test_with_entries(self) -> None:
         entry = RemoteManifestEntry(
-            domain="adapter", key="cache", provider="redis", factory="f:f",
+            domain="adapter",
+            key="cache",
+            provider="redis",
+            factory="f:f",
         )
         m = RemoteManifest(entries=[entry])
         assert len(m.entries) == 1

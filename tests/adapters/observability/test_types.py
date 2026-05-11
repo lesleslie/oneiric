@@ -65,7 +65,10 @@ class TestTraceData:
             )
 
         errors = exc_info.value.errors()
-        assert any(error["loc"] == ("span_id",) and error["type"] == "missing" for error in errors)
+        assert any(
+            error["loc"] == ("span_id",) and error["type"] == "missing"
+            for error in errors
+        )
 
     def test_trace_data_optional_parent_span_id(self):
         """Test TraceData with missing optional parent_span_id."""

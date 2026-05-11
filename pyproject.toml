@@ -1,6 +1,6 @@
 [project]
 name = "oneiric"
-version = "0.10.0"
+version = "0.11.0"
 description = "Universal resolution layer for pluggable components with hot-swapping and remote manifest delivery"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -169,12 +169,22 @@ nosql = [
 "queue-kafka" = [
     "aiokafka>=0.10.0",
 ]
+"queue-lavinmq" = [
+    "aiomqtt>=2.1.0",
+    "aio-pika>=9.4.0",
+]
 "queue-rabbitmq" = [
     "aio-pika>=9.4.0",
 ]
 "queue-streaming" = [
     "aiokafka>=0.10.0",
     "aio-pika>=9.4.0",
+]
+"queue-lavinmq-full" = [
+    "aiomqtt>=2.1.0",
+    "aio-pika>=9.4.0",
+    # Optional: for MQTT discovery and monitoring
+    "httpx>=0.27.0",
 ]
 "scheduler-gcp" = [
     "google-cloud-pubsub>=2.27.1",

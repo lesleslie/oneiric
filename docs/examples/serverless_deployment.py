@@ -53,7 +53,9 @@ async def main() -> None:
     print("3. Setting up resolver with built-in adapters...")
     resolver = Resolver()
     register_builtin_adapters(resolver)
-    print(f"   Registered {len(list(resolver.get_all_candidates('adapter', '*')))} adapters")
+    print(
+        f"   Registered {len(list(resolver.get_all_candidates('adapter', '*')))} adapters"
+    )
     print()
 
     # 4. Create lifecycle manager
@@ -94,7 +96,7 @@ async def main() -> None:
     print('     "healthy": true,')
     print('     "components": {')
     print('       "adapter:cache": {"healthy": true}')
-    print('     }')
+    print("     }")
     print("   }")
     print()
 

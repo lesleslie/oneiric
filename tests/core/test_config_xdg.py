@@ -70,16 +70,12 @@ class TestXDGConfigLayer:
         # This test verifies TOML parsing works when using .toml extension
         xdg_config = tmp_path / ".config" / "test_project" / "config.toml"
         xdg_config.parent.mkdir(parents=True, exist_ok=True)
-        xdg_config.write_text(
-            '[remote]\ncache_dir = "/tmp/toml_cache"\nenabled = true'
-        )
+        xdg_config.write_text('[remote]\ncache_dir = "/tmp/toml_cache"\nenabled = true')
 
         monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / ".config"))
 
         # Load with explicit path to .toml file
-        settings = load_settings(
-            path=str(xdg_config), project_name="test_project"
-        )
+        settings = load_settings(path=str(xdg_config), project_name="test_project")
 
         assert settings.remote.cache_dir == "/tmp/toml_cache"
         assert settings.remote.enabled is True
@@ -92,9 +88,7 @@ class TestConfigPriorityOrder:
         """Test settings/{project_name}.yaml overrides defaults."""
         project_config = tmp_path / "settings" / "test_project.yaml"
         project_config.parent.mkdir(parents=True, exist_ok=True)
-        project_config.write_text(
-            yaml.dump({"remote": {"cache_dir": "/tmp/project"}})
-        )
+        project_config.write_text(yaml.dump({"remote": {"cache_dir": "/tmp/project"}}))
 
         monkeypatch.chdir(tmp_path)
 
@@ -111,7 +105,9 @@ class TestConfigPriorityOrder:
 
         # Create explicit config
         explicit_config = tmp_path / "explicit.yaml"
-        explicit_config.write_text(yaml.dump({"remote": {"cache_dir": "/tmp/explicit"}}))
+        explicit_config.write_text(
+            yaml.dump({"remote": {"cache_dir": "/tmp/explicit"}})
+        )
 
         # Create local config
         local_config = tmp_path / "settings" / "local.yaml"
@@ -184,21 +180,15 @@ class TestConfigPriorityOrder:
         """Test XDG local override wins over XDG config and repo-local config."""
         project_config = tmp_path / "settings" / "test.yaml"
         project_config.parent.mkdir(parents=True, exist_ok=True)
-        project_config.write_text(
-            yaml.dump({"remote": {"cache_dir": "/tmp/project"}})
-        )
+        project_config.write_text(yaml.dump({"remote": {"cache_dir": "/tmp/project"}}))
 
         local_config = tmp_path / "settings" / "local.yaml"
         local_config.parent.mkdir(parents=True, exist_ok=True)
-        local_config.write_text(
-            yaml.dump({"remote": {"cache_dir": "/tmp/local"}})
-        )
+        local_config.write_text(yaml.dump({"remote": {"cache_dir": "/tmp/local"}}))
 
         xdg_config = tmp_path / ".config" / "test" / "config.yaml"
         xdg_config.parent.mkdir(parents=True, exist_ok=True)
-        xdg_config.write_text(
-            yaml.dump({"remote": {"cache_dir": "/tmp/xdg"}})
-        )
+        xdg_config.write_text(yaml.dump({"remote": {"cache_dir": "/tmp/xdg"}}))
 
         xdg_local = tmp_path / ".config" / "test" / "local.yaml"
         xdg_local.write_text(yaml.dump({"remote": {"cache_dir": "/tmp/xdg_local"}}))
@@ -352,9 +342,7 @@ class TestBackwardsCompatibility:
     def test_load_settings_with_path_only(self, tmp_path):
         """Test load_settings works with just path parameter (old API)."""
         config_file = tmp_path / "config.yaml"
-        config_file.write_text(
-            yaml.dump({"remote": {"cache_dir": "/tmp/legacy"}})
-        )
+        config_file.write_text(yaml.dump({"remote": {"cache_dir": "/tmp/legacy"}}))
 
         settings = load_settings(path=str(config_file))
 
@@ -377,9 +365,7 @@ class TestConfigMerging:
         # XDG config sets cache_dir
         xdg_config = tmp_path / ".config" / "test" / "config.yaml"
         xdg_config.parent.mkdir(parents=True, exist_ok=True)
-        xdg_config.write_text(
-            yaml.dump({"remote": {"cache_dir": "/tmp/xdg_cache"}})
-        )
+        xdg_config.write_text(yaml.dump({"remote": {"cache_dir": "/tmp/xdg_cache"}}))
 
         # Env var sets enabled
         monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / ".config"))

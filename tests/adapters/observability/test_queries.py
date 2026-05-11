@@ -33,7 +33,7 @@ def test_orm_to_trace_result_conversion(query_service):
         start_time=datetime.now(UTC),
         status="OK",
         duration_ms=100.0,
-        attributes={"service": "test-service", "operation": "test_op"}
+        attributes={"service": "test-service", "operation": "test_op"},
     )
 
     result = query_service._orm_to_result(orm_model)
@@ -56,7 +56,7 @@ def test_orm_to_result_missing_service_attribute(query_service):
         start_time=datetime.now(UTC),
         status="OK",
         duration_ms=50.0,
-        attributes={"operation": "some_op"}
+        attributes={"operation": "some_op"},
     )
 
     result = query_service._orm_to_result(orm_model)
@@ -74,7 +74,7 @@ def test_orm_to_result_missing_operation_attribute(query_service):
         start_time=datetime.now(UTC),
         status="ERROR",
         duration_ms=200.0,
-        attributes={"service": "my-service"}
+        attributes={"service": "my-service"},
     )
 
     result = query_service._orm_to_result(orm_model)
@@ -92,7 +92,7 @@ def test_orm_to_result_empty_attributes(query_service):
         start_time=datetime.now(UTC),
         status="OK",
         duration_ms=75.0,
-        attributes={}
+        attributes={},
     )
 
     result = query_service._orm_to_result(orm_model)
@@ -119,7 +119,7 @@ async def test_find_similar_traces_returns_results(sample_traces_with_embeddings
     results = await query_service.find_similar_traces(
         embedding=query_embedding,
         threshold=0.0,  # Low threshold to get results
-        limit=5
+        limit=5,
     )
 
     assert len(results) <= 5
@@ -142,9 +142,7 @@ async def test_find_similar_traces_invalid_dimension(query_service):
 
     with pytest.raises(InvalidEmbeddingError):
         await query_service.find_similar_traces(
-            embedding=bad_embedding,
-            threshold=0.85,
-            limit=10
+            embedding=bad_embedding, threshold=0.85, limit=10
         )
 
 
@@ -168,8 +166,8 @@ async def test_get_traces_by_error_basic():
             duration_ms=100.0,
             attributes={
                 "error.message": f"Connection timeout error {i}",
-                "service": f"service-{i % 2}"
-            }
+                "service": f"service-{i % 2}",
+            },
         )
         for i in range(3)
     ]
@@ -186,8 +184,7 @@ async def test_get_traces_by_error_basic():
     query_service = QueryService(session_factory=session_factory)
 
     results = await query_service.get_traces_by_error(
-        error_pattern="%timeout%",
-        service="service-0"
+        error_pattern="%timeout%", service="service-0"
     )
 
     assert len(results) == 3
@@ -210,7 +207,7 @@ async def test_get_traces_by_error_with_time_filters():
             start_time=datetime(2025, 1, 1, 12, 0, 0, tzinfo=UTC),
             status="ERROR",
             duration_ms=100.0,
-            attributes={"error.message": "Timeout error"}
+            attributes={"error.message": "Timeout error"},
         )
     ]
 
@@ -226,7 +223,7 @@ async def test_get_traces_by_error_with_time_filters():
     results = await query_service.get_traces_by_error(
         error_pattern="%Timeout%",
         start_time=datetime(2024, 1, 1, tzinfo=UTC),
-        end_time=datetime(2026, 1, 1, tzinfo=UTC)
+        end_time=datetime(2026, 1, 1, tzinfo=UTC),
     )
 
     assert len(results) == 1
@@ -248,7 +245,7 @@ async def test_get_trace_context_success():
         start_time=datetime.now(UTC),
         status="OK",
         duration_ms=150.0,
-        attributes={"service": "context-service"}
+        attributes={"service": "context-service"},
     )
 
     # Mock logs
@@ -260,7 +257,7 @@ async def test_get_trace_context_success():
             message=f"Log message {i}",
             trace_id="context-trace-1",
             resource_attributes={"service": "context-service"},
-            span_attributes={"key": "value"}
+            span_attributes={"key": "value"},
         )
         for i in range(2)
     ]
@@ -274,7 +271,7 @@ async def test_get_trace_context_success():
             value=float(i * 10),
             unit="ms",
             labels={"trace_id": "context-trace-1"},
-            timestamp=datetime.now(UTC)
+            timestamp=datetime.now(UTC),
         )
         for i in range(2)
     ]
@@ -351,8 +348,7 @@ async def test_custom_query_select():
     query_service = QueryService(session_factory=session_factory)
 
     results = await query_service.custom_query(
-        "SELECT trace_id, status FROM traces WHERE status = :status",
-        {"status": "OK"}
+        "SELECT trace_id, status FROM traces WHERE status = :status", {"status": "OK"}
     )
 
     assert len(results) == 1

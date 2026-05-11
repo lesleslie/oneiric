@@ -28,6 +28,7 @@ async def test_with_retry_succeeds_on_third_attempt():
 @pytest.mark.asyncio
 async def test_with_retry_fails_after_max_attempts():
     """Test retry decorator gives up after max attempts."""
+
     @with_retry(max_attempts=2)
     async def always_failing_function():
         raise ConnectionError("Always fails")

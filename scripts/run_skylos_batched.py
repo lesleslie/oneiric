@@ -40,7 +40,6 @@ def main():
         "tests",
     ]
 
-
     directories = [
         "core",
         "adapters/cache",

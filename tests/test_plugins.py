@@ -111,13 +111,15 @@ def test_register_entrypoint_plugins_handles_adapter_metadata(monkeypatch):
     monkeypatch.setattr(
         plugins,
         "_load_entry_point_factories",
-        lambda group: [
-            plugins._FactoryLoadResult(
-                group=group, entry_point="adapter_meta", factory=lambda: metadata
-            )
-        ]
-        if group == plugins.DEFAULT_ENTRY_POINT_GROUPS[0]
-        else [],
+        lambda group: (
+            [
+                plugins._FactoryLoadResult(
+                    group=group, entry_point="adapter_meta", factory=lambda: metadata
+                )
+            ]
+            if group == plugins.DEFAULT_ENTRY_POINT_GROUPS[0]
+            else []
+        ),
     )
 
     report = plugins.register_entrypoint_plugins(resolver, config)

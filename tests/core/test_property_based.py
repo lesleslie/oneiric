@@ -22,8 +22,12 @@ class TestCandidateProperties:
 
     @given(
         domain=st.text(min_size=1, max_size=50, alphabet="abcdefghijklmnopqrstuvwxyz"),
-        key=st.text(min_size=1, max_size=50, alphabet="abcdefghijklmnopqrstuvwxyz0123456789_-"),
-        provider=st.text(min_size=1, max_size=50, alphabet="abcdefghijklmnopqrstuvwxyz"),
+        key=st.text(
+            min_size=1, max_size=50, alphabet="abcdefghijklmnopqrstuvwxyz0123456789_-"
+        ),
+        provider=st.text(
+            min_size=1, max_size=50, alphabet="abcdefghijklmnopqrstuvwxyz"
+        ),
         priority=st.integers(min_value=0, max_value=1000),
     )
     @settings(
@@ -180,8 +184,14 @@ class TestPriorityInferenceProperties:
     """Property-based tests for priority inference."""
 
     @given(
-        package_name=st.text(min_size=1, max_size=30, alphabet="abcdefghijklmnopqrstuvwxyz"),
-        path=st.text(min_size=1, max_size=100, alphabet="abcdefghijklmnopqrstuvwxyz/0123456789_-."),
+        package_name=st.text(
+            min_size=1, max_size=30, alphabet="abcdefghijklmnopqrstuvwxyz"
+        ),
+        path=st.text(
+            min_size=1,
+            max_size=100,
+            alphabet="abcdefghijklmnopqrstuvwxyz/0123456789_-.",
+        ),
     )
     @settings(max_examples=20)
     def test_infer_priority_returns_int(self, package_name, path):
@@ -243,7 +253,9 @@ class TestRegistrationProperties:
                 Candidate,
                 domain=st.just("adapter"),
                 key=st.just("cache"),
-                provider=st.text(min_size=1, max_size=20, alphabet="abcdefghijklmnopqrstuvwxyz"),
+                provider=st.text(
+                    min_size=1, max_size=20, alphabet="abcdefghijklmnopqrstuvwxyz"
+                ),
                 factory=st.just(lambda: None),
                 priority=st.integers(min_value=0, max_value=100),
                 source=st.sampled_from(list(CandidateSource)),
@@ -339,7 +351,9 @@ class TestPackageRegistrationProperties:
         num_candidates=st.integers(min_value=1, max_value=30),
         package_priority=st.integers(min_value=0, max_value=100),
     )
-    def test_register_pkg_applies_priority_to_all(self, num_candidates, package_priority):
+    def test_register_pkg_applies_priority_to_all(
+        self, num_candidates, package_priority
+    ):
         """register_pkg applies priority to all candidates."""
         registry = CandidateRegistry()
 

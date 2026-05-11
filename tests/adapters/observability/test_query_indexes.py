@@ -22,11 +22,13 @@ async def test_query_indexes_created(otel_db_session):
     await create_query_optimization_indexes(otel_db_session)
 
     # Verify indexes exist
-    result = await otel_db_session.execute(text("""
+    result = await otel_db_session.execute(
+        text("""
         SELECT indexname FROM pg_indexes
         WHERE tablename = 'otel_traces'
         AND indexname IN ('ix_traces_start_time_status', 'ix_traces_attributes_gin')
-    """))
+    """)
+    )
     indexes = {row[0] for row in result.fetchall()}
 
     assert "ix_traces_start_time_status" in indexes

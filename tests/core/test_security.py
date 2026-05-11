@@ -1,5 +1,3 @@
-
-
 # Timing Attack Mitigation Tests
 
 

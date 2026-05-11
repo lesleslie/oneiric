@@ -25,7 +25,6 @@ from oneiric.adapters.llm.llm_interface import (
 )
 from oneiric.core.lifecycle import LifecycleError
 
-
 # ---------------------------------------------------------------------------
 # OpenAI LLM Adapter
 # ---------------------------------------------------------------------------
@@ -53,8 +52,9 @@ class TestOpenAILLMSettings:
         assert s.top_logprobs == 3
 
     def test_top_logprobs_out_of_range(self) -> None:
-        from oneiric.adapters.llm.openai import OpenAILLMSettings
         from pydantic import ValidationError
+
+        from oneiric.adapters.llm.openai import OpenAILLMSettings
 
         with pytest.raises(ValidationError):
             OpenAILLMSettings(top_logprobs=10)
@@ -752,7 +752,9 @@ class TestOpenAIStreaming:
             yield chunk3
 
         chunks = []
-        async for chunk in adapter._process_stream_chunks(_mock_stream(), "gpt-3.5-turbo"):
+        async for chunk in adapter._process_stream_chunks(
+            _mock_stream(), "gpt-3.5-turbo"
+        ):
             chunks.append(chunk)
 
         assert len(chunks) == 2
@@ -1261,9 +1263,7 @@ class TestAnthropicChat:
 
         adapter = AnthropicLLM(anthropic_api_key=SecretStr("sk-ant-test"))
         mock_client = AsyncMock()
-        mock_client.messages.create = AsyncMock(
-            return_value=self._make_mock_response()
-        )
+        mock_client.messages.create = AsyncMock(return_value=self._make_mock_response())
         adapter._client = mock_client
 
         result = await adapter._chat(
@@ -1284,9 +1284,7 @@ class TestAnthropicChat:
 
         adapter = AnthropicLLM(anthropic_api_key=SecretStr("sk-ant-test"))
         mock_client = AsyncMock()
-        mock_client.messages.create = AsyncMock(
-            return_value=self._make_mock_response()
-        )
+        mock_client.messages.create = AsyncMock(return_value=self._make_mock_response())
         adapter._client = mock_client
 
         await adapter._chat(
@@ -1308,9 +1306,7 @@ class TestAnthropicChat:
 
         adapter = AnthropicLLM(anthropic_api_key=SecretStr("sk-ant-test"))
         mock_client = AsyncMock()
-        mock_client.messages.create = AsyncMock(
-            side_effect=Exception("API Error")
-        )
+        mock_client.messages.create = AsyncMock(side_effect=Exception("API Error"))
         adapter._client = mock_client
 
         with pytest.raises(LifecycleError, match="Failed to generate chat completion"):
@@ -1412,9 +1408,7 @@ class TestAnthropicChat:
             thinking_budget_tokens=15000,
         )
         mock_client = AsyncMock()
-        mock_client.messages.create = AsyncMock(
-            return_value=self._make_mock_response()
-        )
+        mock_client.messages.create = AsyncMock(return_value=self._make_mock_response())
         adapter._client = mock_client
 
         await adapter._chat(
@@ -1439,9 +1433,7 @@ class TestAnthropicChat:
             top_k=50,
         )
         mock_client = AsyncMock()
-        mock_client.messages.create = AsyncMock(
-            return_value=self._make_mock_response()
-        )
+        mock_client.messages.create = AsyncMock(return_value=self._make_mock_response())
         adapter._client = mock_client
 
         await adapter._chat(
@@ -1463,10 +1455,12 @@ class TestAnthropicExtractMethods:
         from oneiric.adapters.llm.anthropic import AnthropicLLM
 
         adapter = AnthropicLLM(anthropic_api_key=SecretStr("sk-ant-test"))
-        system, msgs = adapter._extract_system_message([
-            {"role": "system", "content": "Be helpful"},
-            {"role": "user", "content": "Hi"},
-        ])
+        system, msgs = adapter._extract_system_message(
+            [
+                {"role": "system", "content": "Be helpful"},
+                {"role": "user", "content": "Hi"},
+            ]
+        )
         assert system == "Be helpful"
         assert len(msgs) == 1
         assert msgs[0]["role"] == "user"
@@ -1475,9 +1469,11 @@ class TestAnthropicExtractMethods:
         from oneiric.adapters.llm.anthropic import AnthropicLLM
 
         adapter = AnthropicLLM(anthropic_api_key=SecretStr("sk-ant-test"))
-        system, msgs = adapter._extract_system_message([
-            {"role": "user", "content": "Hi"},
-        ])
+        system, msgs = adapter._extract_system_message(
+            [
+                {"role": "user", "content": "Hi"},
+            ]
+        )
         assert system is None
         assert len(msgs) == 1
 
@@ -1549,7 +1545,11 @@ class TestAnthropicFormatTools:
 
         adapter = AnthropicLLM(anthropic_api_key=SecretStr("sk-ant-test"))
         tools = [
-            {"name": "calc", "description": "Calculate", "parameters": {"type": "object"}}
+            {
+                "name": "calc",
+                "description": "Calculate",
+                "parameters": {"type": "object"},
+            }
         ]
         result = adapter._format_anthropic_tools(tools)
         assert result[0]["name"] == "calc"
@@ -1678,7 +1678,9 @@ class TestAnthropicStreaming:
         ) -> Any:
             yield LLMStreamChunk(content="Hello", model=model, delta=True)
             yield LLMStreamChunk(content=" world", model=model, delta=True)
-            yield LLMStreamChunk(content="", model=model, finish_reason="end_turn", delta=False)
+            yield LLMStreamChunk(
+                content="", model=model, finish_reason="end_turn", delta=False
+            )
 
         with patch.object(adapter, "_chat_stream", _mock_chat_stream):
             result = await adapter._chat(
@@ -1882,8 +1884,9 @@ class TestOTelStorageSettings:
         assert s.batch_interval_seconds == 5
 
     def test_invalid_connection_string(self) -> None:
-        from oneiric.adapters.observability.settings import OTelStorageSettings
         from pydantic import ValidationError
+
+        from oneiric.adapters.observability.settings import OTelStorageSettings
 
         with pytest.raises(ValidationError):
             OTelStorageSettings(connection_string="sqlite:///test.db")
@@ -1991,6 +1994,7 @@ class TestOTelStorageCleanup:
         adapter._write_buffer.append({"test": "data"})
 
         loop = asyncio.get_running_loop()
+
         async def _noop() -> None:
             await asyncio.sleep(1000)
 
@@ -2013,6 +2017,7 @@ class TestOTelStorageCleanup:
         adapter._engine = mock_engine
 
         loop = asyncio.get_running_loop()
+
         async def _noop() -> None:
             await asyncio.sleep(1000)
 
@@ -2054,14 +2059,18 @@ class TestOTelStoreTrace:
         adapter = OTelStorageAdapter(settings)
 
         for i in range(9):
-            adapter._write_buffer.append({
-                "trace_id": f"trace-{i}",
-                "name": f"span-{i}",
-                "start_time": "2026-01-01T00:00:00",
-                "status": "OK",
-            })
+            adapter._write_buffer.append(
+                {
+                    "trace_id": f"trace-{i}",
+                    "name": f"span-{i}",
+                    "start_time": "2026-01-01T00:00:00",
+                    "status": "OK",
+                }
+            )
 
-        with patch.object(adapter, "_flush_buffer", new_callable=AsyncMock) as mock_flush:
+        with patch.object(
+            adapter, "_flush_buffer", new_callable=AsyncMock
+        ) as mock_flush:
             trace = {
                 "trace_id": "trace-final",
                 "name": "test-span",
@@ -2085,13 +2094,15 @@ class TestOTelStoreTrace:
         from oneiric.adapters.observability.settings import OTelStorageSettings
 
         adapter = OTelStorageAdapter(OTelStorageSettings())
-        adapter._write_buffer.append({
-            "trace_id": "trace-1",
-            "name": "span-1",
-            "start_time": "2026-01-01T00:00:00",
-            "end_time": "2026-01-01T00:00:01",
-            "status": "OK",
-        })
+        adapter._write_buffer.append(
+            {
+                "trace_id": "trace-1",
+                "name": "span-1",
+                "start_time": "2026-01-01T00:00:00",
+                "end_time": "2026-01-01T00:00:01",
+                "status": "OK",
+            }
+        )
 
         mock_session = AsyncMock()
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
@@ -2103,7 +2114,9 @@ class TestOTelStoreTrace:
         mock_embedding = MagicMock()
         mock_embedding.tolist.return_value = [0.1] * 384
         with patch.object(
-            adapter._embedding_service, "embed_trace", new_callable=AsyncMock,
+            adapter._embedding_service,
+            "embed_trace",
+            new_callable=AsyncMock,
             return_value=mock_embedding,
         ):
             await adapter._flush_buffer()
@@ -2118,12 +2131,14 @@ class TestOTelStoreTrace:
         from oneiric.adapters.observability.settings import OTelStorageSettings
 
         adapter = OTelStorageAdapter(OTelStorageSettings())
-        adapter._write_buffer.append({
-            "trace_id": "trace-1",
-            "name": "span-1",
-            "start_time": "2026-01-01T00:00:00",
-            "status": "OK",
-        })
+        adapter._write_buffer.append(
+            {
+                "trace_id": "trace-1",
+                "name": "span-1",
+                "start_time": "2026-01-01T00:00:00",
+                "status": "OK",
+            }
+        )
 
         mock_session = AsyncMock()
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
@@ -2132,10 +2147,15 @@ class TestOTelStoreTrace:
         adapter._session_factory = MagicMock(return_value=mock_session)
 
         mock_embedding = MagicMock()
-        with patch.object(
-            adapter._embedding_service, "embed_trace", new_callable=AsyncMock,
-            return_value=mock_embedding,
-        ), patch.object(adapter, "_send_to_dlq", new_callable=AsyncMock) as mock_dlq:
+        with (
+            patch.object(
+                adapter._embedding_service,
+                "embed_trace",
+                new_callable=AsyncMock,
+                return_value=mock_embedding,
+            ),
+            patch.object(adapter, "_send_to_dlq", new_callable=AsyncMock) as mock_dlq,
+        ):
             await adapter._flush_buffer()
             mock_dlq.assert_awaited_once()
 
@@ -2145,13 +2165,15 @@ class TestOTelStoreTrace:
         from oneiric.adapters.observability.settings import OTelStorageSettings
 
         adapter = OTelStorageAdapter(OTelStorageSettings())
-        adapter._write_buffer.append({
-            "trace_id": "trace-1",
-            "name": "span-1",
-            "start_time": datetime(2026, 1, 1, tzinfo=UTC),
-            "end_time": datetime(2026, 1, 1, 0, 0, 1, tzinfo=UTC),
-            "status": "OK",
-        })
+        adapter._write_buffer.append(
+            {
+                "trace_id": "trace-1",
+                "name": "span-1",
+                "start_time": datetime(2026, 1, 1, tzinfo=UTC),
+                "end_time": datetime(2026, 1, 1, 0, 0, 1, tzinfo=UTC),
+                "status": "OK",
+            }
+        )
 
         mock_session = AsyncMock()
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
@@ -2163,7 +2185,9 @@ class TestOTelStoreTrace:
         mock_embedding = MagicMock()
         mock_embedding.tolist.return_value = [0.1] * 384
         with patch.object(
-            adapter._embedding_service, "embed_trace", new_callable=AsyncMock,
+            adapter._embedding_service,
+            "embed_trace",
+            new_callable=AsyncMock,
             return_value=mock_embedding,
         ):
             await adapter._flush_buffer()
@@ -2175,12 +2199,14 @@ class TestOTelStoreTrace:
         from oneiric.adapters.observability.settings import OTelStorageSettings
 
         adapter = OTelStorageAdapter(OTelStorageSettings())
-        adapter._write_buffer.append({
-            "trace_id": "trace-1",
-            "name": "span-1",
-            "start_time": "2026-01-01T00:00:00",
-            "status": "OK",
-        })
+        adapter._write_buffer.append(
+            {
+                "trace_id": "trace-1",
+                "name": "span-1",
+                "start_time": "2026-01-01T00:00:00",
+                "status": "OK",
+            }
+        )
 
         mock_session = AsyncMock()
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
@@ -2190,7 +2216,9 @@ class TestOTelStoreTrace:
         adapter._session_factory = MagicMock(return_value=mock_session)
 
         with patch.object(
-            adapter._embedding_service, "embed_trace", new_callable=AsyncMock,
+            adapter._embedding_service,
+            "embed_trace",
+            new_callable=AsyncMock,
             return_value=None,
         ):
             await adapter._flush_buffer()
@@ -2325,9 +2353,7 @@ class TestOTelStoreMetrics:
         mock_session.commit = AsyncMock(side_effect=Exception("Insert failed"))
         adapter._session_factory = MagicMock(return_value=mock_session)
 
-        metrics = [
-            {"name": "cpu", "value": 0.5, "timestamp": "2026-01-01T00:00:00"}
-        ]
+        metrics = [{"name": "cpu", "value": 0.5, "timestamp": "2026-01-01T00:00:00"}]
         with pytest.raises(Exception, match="Insert failed"):
             await adapter.store_metrics(metrics)
 
@@ -2541,7 +2567,9 @@ class TestOTelFlushBufferPeriodically:
 
         with patch("asyncio.sleep", side_effect=_mock_sleep):
             with patch.object(
-                adapter, "_flush_buffer", new_callable=AsyncMock,
+                adapter,
+                "_flush_buffer",
+                new_callable=AsyncMock,
                 side_effect=Exception("Flush error"),
             ):
                 await adapter._flush_buffer_periodically()
@@ -2584,8 +2612,9 @@ class TestSentryMonitoringSettings:
         assert s.release == "v1.0.0"
 
     def test_sample_rate_validation(self) -> None:
-        from oneiric.adapters.monitoring.sentry import SentryMonitoringSettings
         from pydantic import ValidationError
+
+        from oneiric.adapters.monitoring.sentry import SentryMonitoringSettings
 
         with pytest.raises(ValidationError):
             SentryMonitoringSettings(traces_sample_rate=1.5)
@@ -3020,13 +3049,15 @@ class TestSentryApplyFingerprint:
                 "oneiric.key": "test",
                 "oneiric.provider": "custom",
             },
-            "exception": {
-                "values": [{"type": "ValueError"}]
-            },
+            "exception": {"values": [{"type": "ValueError"}]},
         }
         adapter._apply_fingerprint(event)
         assert event["fingerprint"] == [
-            "oneiric", "adapter", "test", "custom", "ValueError",
+            "oneiric",
+            "adapter",
+            "test",
+            "custom",
+            "ValueError",
         ]
 
     def test_fingerprint_no_context(self) -> None:

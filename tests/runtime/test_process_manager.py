@@ -160,9 +160,11 @@ class TestStartProcess:
         mock_proc = MagicMock()
         mock_proc.pid = 12345
 
-        with patch.object(ProcessManager, "is_running", return_value=False), \
-             patch("subprocess.Popen", return_value=mock_proc) as mock_popen, \
-             patch("builtins.open", MagicMock()):
+        with (
+            patch.object(ProcessManager, "is_running", return_value=False),
+            patch("subprocess.Popen", return_value=mock_proc) as mock_popen,
+            patch("builtins.open", MagicMock()),
+        ):
             result = pm.start_process()
 
         assert result is True
@@ -176,8 +178,10 @@ class TestStartProcess:
         mock_proc = MagicMock()
         mock_proc.pid = 99999
 
-        with patch.object(ProcessManager, "is_running", return_value=False), \
-             patch("subprocess.Popen", return_value=mock_proc):
+        with (
+            patch.object(ProcessManager, "is_running", return_value=False),
+            patch("subprocess.Popen", return_value=mock_proc),
+        ):
             pm.start_process()
 
         assert tmp_pid.read_text() == "99999"
@@ -203,10 +207,13 @@ class TestStopProcess:
         pm.pid = 42
 
         import oneiric.runtime.process_manager as pm_mod
-        with patch.object(ProcessManager, "is_running", return_value=True), \
-             patch("os.kill") as mock_kill, \
-             patch.object(pm_mod.asyncio, "run"), \
-             patch.object(Path, "unlink"):
+
+        with (
+            patch.object(ProcessManager, "is_running", return_value=True),
+            patch("os.kill") as mock_kill,
+            patch.object(pm_mod.asyncio, "run"),
+            patch.object(Path, "unlink"),
+        ):
             # SIGTERM succeeds, process dies on first poll, SIGKILL also dead
             mock_kill.side_effect = [None, OSError("dead"), OSError("already dead")]
             result = pm.stop_process()
@@ -234,10 +241,13 @@ class TestStopProcess:
                 raise OSError("already dead")
 
         import oneiric.runtime.process_manager as pm_mod
-        with patch.object(ProcessManager, "is_running", return_value=True), \
-             patch("os.kill", side_effect=kill_side_effect), \
-             patch.object(pm_mod.asyncio, "run"), \
-             patch.object(Path, "unlink"):
+
+        with (
+            patch.object(ProcessManager, "is_running", return_value=True),
+            patch("os.kill", side_effect=kill_side_effect),
+            patch.object(pm_mod.asyncio, "run"),
+            patch.object(Path, "unlink"),
+        ):
             result = pm.stop_process()
 
         assert result is True
@@ -246,8 +256,10 @@ class TestStopProcess:
         tmp_pid.write_text("42")
         pm = ProcessManager(pid_file=tmp_pid)
 
-        with patch("os.kill", side_effect=OSError("perm")), \
-             patch.object(Path, "unlink"):
+        with (
+            patch("os.kill", side_effect=OSError("perm")),
+            patch.object(Path, "unlink"),
+        ):
             result = pm.stop_process()
 
         assert result is False

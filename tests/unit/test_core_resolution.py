@@ -16,6 +16,7 @@ from oneiric.core.resolution import (
 # CandidateSource enum
 # ---------------------------------------------------------------------------
 
+
 class TestCandidateSource:
     def test_values(self) -> None:
         assert CandidateSource.LOCAL_PKG == "local_pkg"
@@ -27,6 +28,7 @@ class TestCandidateSource:
 # ---------------------------------------------------------------------------
 # Candidate
 # ---------------------------------------------------------------------------
+
 
 class TestCandidate:
     def test_minimal(self) -> None:
@@ -40,8 +42,12 @@ class TestCandidate:
 
     def test_full(self) -> None:
         c = Candidate(
-            domain="service", key="auth", provider="google",
-            priority=10, stack_level=2, factory=lambda: None,
+            domain="service",
+            key="auth",
+            provider="google",
+            priority=10,
+            stack_level=2,
+            factory=lambda: None,
             source=CandidateSource.REMOTE_MANIFEST,
             metadata={"version": "1.0"},
         )
@@ -63,7 +69,9 @@ class TestCandidate:
 
     def test_model_copy_deep(self) -> None:
         c = Candidate(
-            domain="adapter", key="cache", factory=lambda: None,
+            domain="adapter",
+            key="cache",
+            factory=lambda: None,
             metadata={"a": 1},
         )
         c2 = c.model_copy(deep=True)
@@ -74,6 +82,7 @@ class TestCandidate:
 # ---------------------------------------------------------------------------
 # ResolverSettings
 # ---------------------------------------------------------------------------
+
 
 class TestResolverSettings:
     def test_defaults(self) -> None:
@@ -100,10 +109,13 @@ class TestResolverSettings:
 # CandidateRank
 # ---------------------------------------------------------------------------
 
+
 class TestCandidateRank:
     def test_defaults(self) -> None:
         c = Candidate(domain="adapter", key="cache", factory=lambda: None)
-        rank = CandidateRank(candidate=c, score=(10, 5, 2, 1), reasons=["high priority"])
+        rank = CandidateRank(
+            candidate=c, score=(10, 5, 2, 1), reasons=["high priority"]
+        )
         assert rank.candidate is c
         assert rank.score == (10, 5, 2, 1)
         assert rank.reasons == ["high priority"]
@@ -114,18 +126,26 @@ class TestCandidateRank:
 # ResolutionExplanation
 # ---------------------------------------------------------------------------
 
+
 class TestResolutionExplanation:
     def _make_candidate(self, provider: str) -> Candidate:
         return Candidate(
-            domain="adapter", key="cache", provider=provider, factory=lambda: None,
+            domain="adapter",
+            key="cache",
+            provider=provider,
+            factory=lambda: None,
         )
 
     def test_winner_none_when_no_selections(self) -> None:
         c1 = self._make_candidate("redis")
         c2 = self._make_candidate("memcached")
-        r1 = CandidateRank(candidate=c1, score=(10, 0, 0, 0), reasons=[], selected=False)
+        r1 = CandidateRank(
+            candidate=c1, score=(10, 0, 0, 0), reasons=[], selected=False
+        )
         r2 = CandidateRank(candidate=c2, score=(5, 0, 0, 0), reasons=[], selected=False)
-        explanation = ResolutionExplanation(domain="adapter", key="cache", ordered=[r1, r2])
+        explanation = ResolutionExplanation(
+            domain="adapter", key="cache", ordered=[r1, r2]
+        )
         assert explanation.winner is None
 
     def test_winner_returns_selected(self) -> None:
@@ -133,13 +153,19 @@ class TestResolutionExplanation:
         c2 = self._make_candidate("memcached")
         r1 = CandidateRank(candidate=c1, score=(10, 0, 0, 0), reasons=[], selected=True)
         r2 = CandidateRank(candidate=c2, score=(5, 0, 0, 0), reasons=[], selected=False)
-        explanation = ResolutionExplanation(domain="adapter", key="cache", ordered=[r1, r2])
+        explanation = ResolutionExplanation(
+            domain="adapter", key="cache", ordered=[r1, r2]
+        )
         assert explanation.winner is c1
 
     def test_as_dict(self) -> None:
         c = self._make_candidate("redis")
-        rank = CandidateRank(candidate=c, score=(10, 5, 0, 0), reasons=["best"], selected=True)
-        explanation = ResolutionExplanation(domain="adapter", key="cache", ordered=[rank])
+        rank = CandidateRank(
+            candidate=c, score=(10, 5, 0, 0), reasons=["best"], selected=True
+        )
+        explanation = ResolutionExplanation(
+            domain="adapter", key="cache", ordered=[rank]
+        )
         d = explanation.as_dict()
         assert d["domain"] == "adapter"
         assert d["key"] == "cache"

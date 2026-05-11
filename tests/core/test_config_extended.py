@@ -199,7 +199,7 @@ class TestEnvCoercion:
     def test_coerce_json_list(self):
         """Comma-separated strings are coerced to lists."""
         # Note: JSON parsing is not implemented - comma-separated values are split
-        result = _coerce_env_value('a,b,c')
+        result = _coerce_env_value("a,b,c")
         assert result == ["a", "b", "c"]
         assert isinstance(result, list)
 

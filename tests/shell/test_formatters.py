@@ -2,12 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from io import StringIO
-from typing import Any
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 from oneiric.shell.formatters import (
     BaseLogFormatter,
@@ -50,7 +45,9 @@ class TestBaseTableFormatter:
             fmt2.console = None
             fmt2._format_table_fallback = fmt._format_table_fallback
             with patch("builtins.print") as mock_print:
-                fmt2._format_table_fallback("Title", [TableColumn(name="c")], [{"c": "x"}])
+                fmt2._format_table_fallback(
+                    "Title", [TableColumn(name="c")], [{"c": "x"}]
+                )
                 mock_print.assert_called()
 
     def test_format_table_fallback_empty_rows(self):
@@ -71,7 +68,7 @@ class TestBaseTableFormatter:
 
     def test_max_width_passed_to_console(self):
         with patch("oneiric.shell.formatters.Console") as mock_console_cls:
-            fmt = BaseTableFormatter(max_width=80)
+            BaseTableFormatter(max_width=80)
             mock_console_cls.assert_called_once_with(width=80)
 
 
@@ -87,8 +84,16 @@ class TestBaseLogFormatter:
 
     def test_format_logs_level_filter(self, capsys):
         logs = [
-            {"level": "INFO", "timestamp": "2026-01-01T00:00:00", "message": "info msg"},
-            {"level": "ERROR", "timestamp": "2026-01-01T00:00:01", "message": "err msg"},
+            {
+                "level": "INFO",
+                "timestamp": "2026-01-01T00:00:00",
+                "message": "info msg",
+            },
+            {
+                "level": "ERROR",
+                "timestamp": "2026-01-01T00:00:01",
+                "message": "err msg",
+            },
         ]
         fmt = BaseLogFormatter.__new__(BaseLogFormatter)
         fmt.console = None
@@ -98,7 +103,14 @@ class TestBaseLogFormatter:
         assert "info msg" not in output
 
     def test_format_logs_tail(self, capsys):
-        logs = [{"level": "INFO", "timestamp": f"2026-01-01T00:0{i}:00", "message": f"msg{i}"} for i in range(10)]
+        logs = [
+            {
+                "level": "INFO",
+                "timestamp": f"2026-01-01T00:0{i}:00",
+                "message": f"msg{i}",
+            }
+            for i in range(10)
+        ]
         fmt = BaseLogFormatter.__new__(BaseLogFormatter)
         fmt.console = None
         fmt.format_logs(logs, tail=3)
@@ -108,8 +120,16 @@ class TestBaseLogFormatter:
 
     def test_format_logs_fallback(self, capsys):
         logs = [
-            {"level": "WARNING", "timestamp": "2026-01-01T00:00:00.123456", "message": "warn msg"},
-            {"level": "DEBUG", "timestamp": "2026-01-01T00:00:01", "message": "debug msg"},
+            {
+                "level": "WARNING",
+                "timestamp": "2026-01-01T00:00:00.123456",
+                "message": "warn msg",
+            },
+            {
+                "level": "DEBUG",
+                "timestamp": "2026-01-01T00:00:01",
+                "message": "debug msg",
+            },
         ]
         fmt = BaseLogFormatter.__new__(BaseLogFormatter)
         fmt.console = None
@@ -131,7 +151,11 @@ class TestBaseLogFormatter:
         mock_console = MagicMock()
         fmt = BaseLogFormatter(console=mock_console)
         logs = [
-            {"level": "CUSTOM", "timestamp": "2026-01-01T00:00:00", "message": "custom"},
+            {
+                "level": "CUSTOM",
+                "timestamp": "2026-01-01T00:00:00",
+                "message": "custom",
+            },
         ]
         fmt._format_logs_rich(logs)
         mock_console.print.assert_called_once()
@@ -140,7 +164,11 @@ class TestBaseLogFormatter:
         mock_console = MagicMock()
         fmt = BaseLogFormatter(console=mock_console)
         logs = [
-            {"level": "INFO", "timestamp": "2026-01-01T00:00:00.123456789", "message": "test"},
+            {
+                "level": "INFO",
+                "timestamp": "2026-01-01T00:00:00.123456789",
+                "message": "test",
+            },
         ]
         fmt._format_logs_rich(logs)
         call_args = mock_console.print.call_args[0][0]
@@ -174,8 +202,10 @@ class TestBaseProgressFormatter:
 
     def test_create_progress_with_console(self):
         mock_console = MagicMock()
-        with patch("oneiric.shell.formatters.RICH_AVAILABLE", True), \
-             patch("oneiric.shell.formatters.Progress") as mock_progress:
+        with (
+            patch("oneiric.shell.formatters.RICH_AVAILABLE", True),
+            patch("oneiric.shell.formatters.Progress") as mock_progress,
+        ):
             fmt = BaseProgressFormatter(console=mock_console)
             result = fmt.create_progress()
             assert result is not None

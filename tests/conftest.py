@@ -134,9 +134,9 @@ async def otel_db_session():
                 port=5432,
                 user="postgres",
                 password="postgres",
-                database="otel_test"
+                database="otel_test",
             ),
-            timeout=2.0
+            timeout=2.0,
         )
         await conn.close()
     except Exception:

@@ -1,6 +1,6 @@
 from .cloudtasks import CloudTasksQueueAdapter, CloudTasksQueueSettings
 from .kafka import KafkaQueueAdapter, KafkaQueueSettings
-from .lavinmq import LavinMQQueueAdapter, LavinMQSettings, Protocol  # noqa: F401
+from .lavinmq import LavinMQQueueAdapter, LavinMQSettings, Protocol
 from .nats import NATSQueueAdapter, NATSQueueSettings
 from .pubsub import PubSubQueueAdapter, PubSubQueueSettings
 from .rabbitmq import RabbitMQQueueAdapter, RabbitMQQueueSettings

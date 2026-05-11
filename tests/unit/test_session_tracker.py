@@ -47,7 +47,9 @@ class TestSessionEventEmitter:
     @pytest.mark.asyncio
     async def test_get_session_creates_new_session(self, emitter, mock_session):
         """Test _get_session creates new session when none exists."""
-        with patch("oneiric.shell.session_tracker.ClientSession", return_value=mock_session):
+        with patch(
+            "oneiric.shell.session_tracker.ClientSession", return_value=mock_session
+        ):
             session = await emitter._get_session()
             assert session is not None
             mock_session.__aenter__.assert_called_once()
@@ -67,7 +69,9 @@ class TestSessionEventEmitter:
         mock_session.call_tool = AsyncMock()
         emitter._session = mock_session
 
-        with patch("oneiric.shell.session_tracker.ClientSession", return_value=mock_session):
+        with patch(
+            "oneiric.shell.session_tracker.ClientSession", return_value=mock_session
+        ):
             available = await emitter._check_availability()
             assert available is True
             assert emitter.available is True
@@ -79,18 +83,24 @@ class TestSessionEventEmitter:
         mock_session.call_tool = AsyncMock(side_effect=Exception("Connection failed"))
         emitter._session = mock_session
 
-        with patch("oneiric.shell.session_tracker.ClientSession", return_value=mock_session):
+        with patch(
+            "oneiric.shell.session_tracker.ClientSession", return_value=mock_session
+        ):
             available = await emitter._check_availability()
             assert available is False
             assert emitter._consecutive_failures == 1
 
     @pytest.mark.asyncio
-    async def test_check_availability_circuit_breaker_opens(self, emitter, mock_session):
+    async def test_check_availability_circuit_breaker_opens(
+        self, emitter, mock_session
+    ):
         """Test circuit breaker opens after 3 consecutive failures."""
         mock_session.call_tool = AsyncMock(side_effect=Exception("Connection failed"))
         emitter._session = mock_session
 
-        with patch("oneiric.shell.session_tracker.ClientSession", return_value=mock_session):
+        with patch(
+            "oneiric.shell.session_tracker.ClientSession", return_value=mock_session
+        ):
             # Fail 3 times
             for _ in range(3):
                 await emitter._check_availability()
@@ -104,7 +114,9 @@ class TestSessionEventEmitter:
             assert available is False
 
     @pytest.mark.asyncio
-    async def test_check_availability_circuit_breaker_resets(self, emitter, mock_session):
+    async def test_check_availability_circuit_breaker_resets(
+        self, emitter, mock_session
+    ):
         """Test circuit breaker resets after timeout."""
         # Set circuit breaker to past
         emitter._circuit_open_until = datetime.now(UTC) - timedelta(seconds=10)
@@ -113,7 +125,9 @@ class TestSessionEventEmitter:
         mock_session.call_tool = AsyncMock()
         emitter._session = mock_session
 
-        with patch("oneiric.shell.session_tracker.ClientSession", return_value=mock_session):
+        with patch(
+            "oneiric.shell.session_tracker.ClientSession", return_value=mock_session
+        ):
             available = await emitter._check_availability()
             assert available is True
             assert emitter._circuit_open_until is None
@@ -167,7 +181,9 @@ class TestSessionEventEmitter:
         metadata = {"test_key": "test_value", "version": "1.0.0"}
 
         with patch.object(emitter, "_check_availability", return_value=True):
-            session_id = await emitter.emit_session_start("TestShell", metadata=metadata)
+            session_id = await emitter.emit_session_start(
+                "TestShell", metadata=metadata
+            )
 
             assert session_id == "test-session-123"
 
@@ -180,7 +196,7 @@ class TestSessionEventEmitter:
     async def test_emit_session_start_retry_logic(self, emitter, mock_session):
         """Test emit_session_start has retry decorator."""
         # Verify the method has retry decorator by checking it's callable
-        assert hasattr(emitter.emit_session_start, '__wrapped__')
+        assert hasattr(emitter.emit_session_start, "__wrapped__")
         # The retry decorator should be present
         # Test that it handles transient failures gracefully
         mock_session.call_tool = AsyncMock(side_effect=Exception("Transient error"))
@@ -339,7 +355,9 @@ class TestInputSanitization:
 
         with patch.object(emitter, "_check_availability", return_value=True):
             # Should not raise exception
-            session_id = await emitter.emit_session_start("TestShell", metadata=dangerous_metadata)
+            session_id = await emitter.emit_session_start(
+                "TestShell", metadata=dangerous_metadata
+            )
             # Actual sanitization happens at Session-Buddy
             assert session_id == "test-session-123"
 
@@ -353,7 +371,9 @@ class TestCircuitBreakerBehavior:
         mock_session.call_tool = AsyncMock(side_effect=Exception("Fail"))
         emitter._session = mock_session
 
-        with patch("oneiric.shell.session_tracker.ClientSession", return_value=mock_session):
+        with patch(
+            "oneiric.shell.session_tracker.ClientSession", return_value=mock_session
+        ):
             # 2 failures - circuit should remain closed
             await emitter._check_availability()
             await emitter._check_availability()
@@ -384,7 +404,9 @@ class TestCircuitBreakerBehavior:
         mock_session.call_tool = AsyncMock()
         emitter._session = mock_session
 
-        with patch("oneiric.shell.session_tracker.ClientSession", return_value=mock_session):
+        with patch(
+            "oneiric.shell.session_tracker.ClientSession", return_value=mock_session
+        ):
             # Should reset and succeed
             available = await emitter._check_availability()
             assert available is True
@@ -411,8 +433,12 @@ class TestRetryLogic:
         """Test that emit methods have retry decorators."""
         # Check that retry decorator is present (method should have __wrapped__ attribute)
         # This verifies tenacity is configured
-        assert hasattr(emitter.emit_session_start, '__wrapped__') or callable(emitter.emit_session_start)
-        assert hasattr(emitter.emit_session_end, '__wrapped__') or callable(emitter.emit_session_end)
+        assert hasattr(emitter.emit_session_start, "__wrapped__") or callable(
+            emitter.emit_session_start
+        )
+        assert hasattr(emitter.emit_session_end, "__wrapped__") or callable(
+            emitter.emit_session_end
+        )
 
     @pytest.mark.asyncio
     async def test_persistent_error_returns_none(self, emitter, mock_session):
@@ -446,7 +472,9 @@ class TestMCPClientSessionManagement:
     async def test_session_lifecycle(self, emitter, mock_session):
         """Test complete session lifecycle."""
         # Create session
-        with patch("oneiric.shell.session_tracker.ClientSession", return_value=mock_session):
+        with patch(
+            "oneiric.shell.session_tracker.ClientSession", return_value=mock_session
+        ):
             session = await emitter._get_session()
             assert session is not None
 
@@ -469,7 +497,9 @@ class TestMCPClientSessionManagement:
     @pytest.mark.asyncio
     async def test_session_reuse_across_calls(self, emitter, mock_session):
         """Test session is reused across multiple calls."""
-        with patch("oneiric.shell.session_tracker.ClientSession", return_value=mock_session):
+        with patch(
+            "oneiric.shell.session_tracker.ClientSession", return_value=mock_session
+        ):
             # First call creates session
             session1 = await emitter._get_session()
             # Second call reuses session
@@ -482,7 +512,9 @@ class TestMCPClientSessionManagement:
     @pytest.mark.asyncio
     async def test_session_recreation_after_close(self, emitter, mock_session):
         """Test new session created after close."""
-        with patch("oneiric.shell.session_tracker.ClientSession", return_value=mock_session):
+        with patch(
+            "oneiric.shell.session_tracker.ClientSession", return_value=mock_session
+        ):
             # Create and close session
             await emitter._get_session()
             await emitter.close()
@@ -520,7 +552,9 @@ class TestGracefulDegradation:
         mock_session.call_tool = AsyncMock(side_effect=RuntimeError("Unexpected error"))
         emitter._session = mock_session
 
-        with patch("oneiric.shell.session_tracker.ClientSession", return_value=mock_session):
+        with patch(
+            "oneiric.shell.session_tracker.ClientSession", return_value=mock_session
+        ):
             # Should not raise, should return False
             available = await emitter._check_availability()
             assert available is False
@@ -571,10 +605,14 @@ class TestIntegrationScenarios:
         mock_session.call_tool = AsyncMock(side_effect=mock_call_tool)
         mock_session.initialize = AsyncMock()
 
-        with patch("oneiric.shell.session_tracker.ClientSession", return_value=mock_session):
+        with patch(
+            "oneiric.shell.session_tracker.ClientSession", return_value=mock_session
+        ):
             # Session start
             with patch.object(emitter, "_check_availability", return_value=True):
-                session_id = await emitter.emit_session_start("TestShell", metadata={"test": "data"})
+                session_id = await emitter.emit_session_start(
+                    "TestShell", metadata={"test": "data"}
+                )
                 assert session_id == "test-session-123"
 
             # Session end

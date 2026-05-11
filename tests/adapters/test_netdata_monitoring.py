@@ -27,9 +27,7 @@ async def test_netdata_adapter_initializes_with_defaults() -> None:
 
         assert await adapter.health() is True
         mock_httpx.AsyncClient.assert_called_once_with(
-            base_url="http://test.netdata:19999",
-            headers={},
-            timeout=10.0
+            base_url="http://test.netdata:19999", headers={}, timeout=10.0
         )
 
         await adapter.cleanup()
@@ -42,8 +40,7 @@ async def test_netdata_adapter_initializes_with_api_key() -> None:
     with patch("oneiric.adapters.monitoring.netdata.httpx") as mock_httpx:
         mock_httpx.AsyncClient.return_value = fake_async_client
         settings = NetdataMonitoringSettings(
-            base_url="http://test.netdata:19999",
-            api_key="test-api-key"
+            base_url="http://test.netdata:19999", api_key="test-api-key"
         )
         adapter = NetdataMonitoringAdapter(settings)
 
@@ -52,7 +49,7 @@ async def test_netdata_adapter_initializes_with_api_key() -> None:
         mock_httpx.AsyncClient.assert_called_once_with(
             base_url="http://test.netdata:19999",
             headers={"X-API-Key": "test-api-key"},
-            timeout=10.0
+            timeout=10.0,
         )
 
         await adapter.cleanup()
@@ -123,7 +120,7 @@ async def test_netdata_adapter_cleanup_stops_metrics_task() -> None:
         settings = NetdataMonitoringSettings(
             base_url="http://test.netdata:19999",
             enable_metrics_collection=True,
-            metrics_refresh_interval=1.0  # Short interval for faster testing
+            metrics_refresh_interval=1.0,  # Short interval for faster testing
         )
         adapter = NetdataMonitoringAdapter(settings)
 
@@ -159,16 +156,17 @@ async def test_netdata_adapter_send_custom_metric() -> None:
             chart_name="oneiric.components",
             dimension="active",
             value=42.0,
-            units="count"
+            units="count",
         )
 
         assert result is True
-        fake_async_client.post.assert_called_once_with("/api/v1/data", json={
-            "chart": "oneiric.components",
-            "dimensions": {
-                "active": 42.0
+        fake_async_client.post.assert_called_once_with(
+            "/api/v1/data",
+            json={
+                "chart": "oneiric.components",
+                "dimensions": {"active": 42.0},
+                "units": "count",
             },
-            "units": "count"
-        })
+        )
 
         await adapter.cleanup()

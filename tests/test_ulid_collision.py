@@ -14,6 +14,7 @@ from oneiric.core.ulid_collision import (
 def reset_collision_state():
     """Reset global collision tracking state between tests."""
     import oneiric.core.ulid_collision as m
+
     m._collision_count = 0
     m._collision_registry.clear()
     yield

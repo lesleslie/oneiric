@@ -15,15 +15,13 @@ from oneiric.adapters.observability.circuit_breaker import (
 @pytest.fixture
 def circuit_breaker():
     """Create CircuitBreaker with default thresholds."""
-    return CircuitBreaker(
-        failure_threshold=5,
-        timeout_seconds=60
-    )
+    return CircuitBreaker(failure_threshold=5, timeout_seconds=60)
 
 
 @pytest.mark.asyncio
 async def test_circuit_closed_passes_requests(circuit_breaker):
     """Test circuit in CLOSED state passes requests."""
+
     async def dummy_func():
         return "success"
 
@@ -35,6 +33,7 @@ async def test_circuit_closed_passes_requests(circuit_breaker):
 @pytest.mark.asyncio
 async def test_circuit_opens_after_threshold(circuit_breaker):
     """Test circuit opens after threshold failures."""
+
     async def failing_func():
         raise ConnectionError("Failed")
 
@@ -52,6 +51,7 @@ async def test_circuit_opens_after_threshold(circuit_breaker):
 @pytest.mark.asyncio
 async def test_circuit_half_opens_after_timeout(circuit_breaker):
     """Test circuit transitions to HALF_OPEN after timeout."""
+
     async def failing_func():
         raise ConnectionError("Failed")
 

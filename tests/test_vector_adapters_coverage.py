@@ -20,9 +20,8 @@ from pydantic import SecretStr
 from oneiric.adapters.vector.agentdb import AgentDBAdapter, AgentDBSettings
 from oneiric.adapters.vector.pinecone import PineconeAdapter, PineconeSettings
 from oneiric.adapters.vector.qdrant import QdrantAdapter, QdrantSettings
-from oneiric.adapters.vector.vector_types import VectorDocument, VectorSearchResult
+from oneiric.adapters.vector.vector_types import VectorDocument
 from oneiric.core.lifecycle import LifecycleError
-
 
 # ---------------------------------------------------------------------------
 # Shared fakes / helpers
@@ -115,7 +114,9 @@ def _inject_qdrant_models(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     monkeypatch.setitem(sys.modules, "qdrant_client.models", models)
     monkeypatch.setitem(
-        sys.modules, "qdrant_client", SimpleNamespace(AsyncQdrantClient=object, models=models)
+        sys.modules,
+        "qdrant_client",
+        SimpleNamespace(AsyncQdrantClient=object, models=models),
     )
 
 
@@ -313,7 +314,9 @@ class TestQdrantCreateClient:
         assert "api_key" not in init_calls[0]
 
     @pytest.mark.asyncio
-    async def test_create_client_with_api_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_create_client_with_api_key(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _inject_qdrant_models(monkeypatch)
 
         fake_client = FakeQdrantClient()
@@ -339,7 +342,9 @@ class TestQdrantCreateClient:
         assert init_calls[0]["https"] is True
 
     @pytest.mark.asyncio
-    async def test_create_client_import_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_create_client_import_error(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """ImportError from missing qdrant_client should raise LifecycleError."""
 
         def _raise_import(*args: Any, **kwargs: Any) -> Any:
@@ -356,7 +361,9 @@ class TestQdrantCreateClient:
             await adapter._create_client()
 
     @pytest.mark.asyncio
-    async def test_create_client_runtime_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_create_client_runtime_error(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Generic exception during client creation should raise LifecycleError."""
 
         def _raise_runtime(*args: Any, **kwargs: Any) -> Any:
@@ -377,7 +384,9 @@ class TestQdrantEnsureClient:
     """Cover _ensure_client caching behaviour."""
 
     @pytest.mark.asyncio
-    async def test_ensure_client_creates_once(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_ensure_client_creates_once(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _inject_qdrant_models(monkeypatch)
 
         fake_client = FakeQdrantClient()
@@ -521,12 +530,12 @@ class TestQdrantSearch:
         assert results[0].vector == [1.0, 2.0]
 
     @pytest.mark.asyncio
-    async def test_search_without_vectors(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_search_without_vectors(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _inject_qdrant_models(monkeypatch)
 
-        point = SimpleNamespace(
-            id="p1", score=0.85, payload={}, vector=[1.0]
-        )
+        point = SimpleNamespace(id="p1", score=0.85, payload={}, vector=[1.0])
         adapter = QdrantAdapter(QdrantSettings())
         adapter._client = FakeQdrantClient(search_results=[point])
 
@@ -534,7 +543,9 @@ class TestQdrantSearch:
         assert results[0].vector is None
 
     @pytest.mark.asyncio
-    async def test_search_uses_default_collection(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_search_uses_default_collection(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _inject_qdrant_models(monkeypatch)
         adapter = QdrantAdapter(QdrantSettings(default_collection="my_default"))
         adapter._client = FakeQdrantClient(search_results=[])
@@ -543,7 +554,9 @@ class TestQdrantSearch:
         assert results == []
 
     @pytest.mark.asyncio
-    async def test_search_error_returns_empty(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_search_error_returns_empty(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _inject_qdrant_models(monkeypatch)
 
         class FailingClient:
@@ -589,7 +602,9 @@ class TestQdrantBuildFilter:
         adapter = QdrantAdapter(QdrantSettings())
         assert adapter._build_qdrant_filter({}) is None
 
-    def test_filter_exception_returns_none(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_filter_exception_returns_none(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         # Don't inject models -- the import inside _build_qdrant_filter will fail
         adapter = QdrantAdapter(QdrantSettings())
         result = adapter._build_qdrant_filter({"key": "val"})
@@ -605,7 +620,10 @@ class TestQdrantUpsert:
         adapter = QdrantAdapter(QdrantSettings())
         adapter._client = FakeQdrantClient(existing_collections=["col"])
 
-        docs = [VectorDocument(id="d1", vector=[0.1]), VectorDocument(id="d2", vector=[0.2])]
+        docs = [
+            VectorDocument(id="d1", vector=[0.1]),
+            VectorDocument(id="d2", vector=[0.2]),
+        ]
         ids = await adapter.upsert("col", docs)
         assert ids == ["d1", "d2"]
 
@@ -632,20 +650,21 @@ class TestQdrantUpsert:
         assert ids == []
 
     @pytest.mark.asyncio
-    async def test_upsert_batch_splitting(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_upsert_batch_splitting(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _inject_qdrant_models(monkeypatch)
         adapter = QdrantAdapter(QdrantSettings(batch_size=2))
         adapter._client = FakeQdrantClient(existing_collections=["col"])
 
-        docs = [
-            VectorDocument(id=f"d{i}", vector=[0.1])
-            for i in range(5)
-        ]
+        docs = [VectorDocument(id=f"d{i}", vector=[0.1]) for i in range(5)]
         ids = await adapter.upsert("col", docs)
         assert len(ids) == 5
 
     @pytest.mark.asyncio
-    async def test_upsert_error_returns_empty(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_upsert_error_returns_empty(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _inject_qdrant_models(monkeypatch)
 
         class FailClient:
@@ -658,7 +677,9 @@ class TestQdrantUpsert:
         assert ids == []
 
     @pytest.mark.asyncio
-    async def test_insert_delegates_to_upsert(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_insert_delegates_to_upsert(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _inject_qdrant_models(monkeypatch)
         adapter = QdrantAdapter(QdrantSettings())
         adapter._client = FakeQdrantClient(existing_collections=["col"])
@@ -730,7 +751,9 @@ class TestQdrantGet:
         assert docs[0].vector == []
 
     @pytest.mark.asyncio
-    async def test_get_error_returns_empty(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_get_error_returns_empty(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _inject_qdrant_models(monkeypatch)
 
         class FailClient:
@@ -760,7 +783,9 @@ class TestQdrantCount:
         assert await adapter.count("col", {"status": "active"}) == 0
 
     @pytest.mark.asyncio
-    async def test_count_error_returns_zero(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_count_error_returns_zero(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _inject_qdrant_models(monkeypatch)
 
         class FailClient:
@@ -776,7 +801,9 @@ class TestQdrantEnsureCollectionExists:
     """Cover _ensure_collection_exists including creation and quantization."""
 
     @pytest.mark.asyncio
-    async def test_collection_already_exists(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_collection_already_exists(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _inject_qdrant_models(monkeypatch)
         adapter = QdrantAdapter(QdrantSettings())
         adapter._client = FakeQdrantClient(existing_collections=["mycol"])
@@ -851,7 +878,9 @@ class TestQdrantDistanceMetrics:
         adapter = QdrantAdapter(QdrantSettings())
         adapter._client = FakeQdrantClient(existing_collections=[])
 
-        await adapter._ensure_collection_exists("col", dimension=64, distance_metric="cosine")
+        await adapter._ensure_collection_exists(
+            "col", dimension=64, distance_metric="cosine"
+        )
         call = adapter._client.created[0]
         assert call["vectors_config"].distance == "cosine"
 
@@ -910,7 +939,9 @@ class TestQdrantCreateDeleteListCollections:
     """Cover create_collection, delete_collection, list_collections."""
 
     @pytest.mark.asyncio
-    async def test_create_collection_delegates(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_create_collection_delegates(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _inject_qdrant_models(monkeypatch)
         adapter = QdrantAdapter(QdrantSettings())
         adapter._client = FakeQdrantClient(existing_collections=[])
@@ -919,7 +950,9 @@ class TestQdrantCreateDeleteListCollections:
         assert result is True
 
     @pytest.mark.asyncio
-    async def test_delete_collection_success(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_delete_collection_success(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _inject_qdrant_models(monkeypatch)
         adapter = QdrantAdapter(QdrantSettings())
         adapter._client = FakeQdrantClient()
@@ -927,7 +960,9 @@ class TestQdrantCreateDeleteListCollections:
         assert "col" in adapter._client.deleted_collections
 
     @pytest.mark.asyncio
-    async def test_delete_collection_failure(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_delete_collection_failure(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _inject_qdrant_models(monkeypatch)
 
         class FailClient:
@@ -939,14 +974,18 @@ class TestQdrantCreateDeleteListCollections:
         assert await adapter.delete_collection("col") is False
 
     @pytest.mark.asyncio
-    async def test_list_collections_success(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_list_collections_success(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _inject_qdrant_models(monkeypatch)
         adapter = QdrantAdapter(QdrantSettings())
         adapter._client = FakeQdrantClient(existing_collections=["c1", "c2"])
         assert await adapter.list_collections() == ["c1", "c2"]
 
     @pytest.mark.asyncio
-    async def test_list_collections_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_list_collections_error(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _inject_qdrant_models(monkeypatch)
 
         class FailClient:
@@ -967,9 +1006,7 @@ class TestQdrantScroll:
 
         point = SimpleNamespace(id="s1", vector=[0.3], payload={})
         adapter = QdrantAdapter(QdrantSettings())
-        adapter._client = FakeQdrantClient(
-            scroll_results=([point], "next_offset")
-        )
+        adapter._client = FakeQdrantClient(scroll_results=([point], "next_offset"))
 
         docs, offset = await adapter.scroll("col", include_vectors=True)
         assert len(docs) == 1
@@ -978,7 +1015,9 @@ class TestQdrantScroll:
         assert offset == "next_offset"
 
     @pytest.mark.asyncio
-    async def test_scroll_no_more_results(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_scroll_no_more_results(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _inject_qdrant_models(monkeypatch)
         adapter = QdrantAdapter(QdrantSettings())
         adapter._client = FakeQdrantClient(scroll_results=([], None))
@@ -1006,7 +1045,9 @@ class TestQdrantOnDiskVectors:
     """Cover on_disk_vectors setting in collection creation."""
 
     @pytest.mark.asyncio
-    async def test_on_disk_vectors_enabled(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_on_disk_vectors_enabled(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _inject_qdrant_models(monkeypatch)
         adapter = QdrantAdapter(QdrantSettings(on_disk_vectors=True))
         adapter._client = FakeQdrantClient(existing_collections=[])
@@ -1088,7 +1129,9 @@ class TestAgentDBCreateClient:
         )
 
         adapter = AgentDBAdapter(AgentDBSettings())
-        with pytest.raises(LifecycleError, match="Failed to initialize AgentDB adapter"):
+        with pytest.raises(
+            LifecycleError, match="Failed to initialize AgentDB adapter"
+        ):
             await adapter._create_client()
 
     @pytest.mark.asyncio
@@ -1138,7 +1181,9 @@ class TestAgentDBInit:
         await adapter.init()  # should not raise
 
     @pytest.mark.asyncio
-    async def test_init_health_check_failure(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_init_health_check_failure(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         fake_mcp = FakeAgentDBMCPClient(healthy=False)
 
         class FakeMCPClient:
@@ -1283,15 +1328,17 @@ class TestAgentDBSearch:
         assert call[1]["collection"] == "agent_docs"
 
     @pytest.mark.asyncio
-    async def test_search_with_include_vectors(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        fake_mcp = FakeAgentDBMCPClient()
+    async def test_search_with_include_vectors(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        FakeAgentDBMCPClient()
 
         class FakeMCPClient:
             def __init__(self, **kwargs: Any) -> None:
                 pass
 
             async def call_tool(self, name: str, args: dict) -> dict:
-                args_copy = dict(args)
+                dict(args)
                 if name == "agentdb_search":
                     return {
                         "results": [
@@ -1445,7 +1492,7 @@ class TestAgentDBGet:
 
     @pytest.mark.asyncio
     async def test_get_with_vectors(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        fake_mcp = FakeAgentDBMCPClient()
+        FakeAgentDBMCPClient()
 
         class FakeMCPClient:
             def __init__(self, **kwargs: Any) -> None:
@@ -1475,7 +1522,7 @@ class TestAgentDBGet:
 
     @pytest.mark.asyncio
     async def test_get_without_vectors(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        fake_mcp = FakeAgentDBMCPClient()
+        FakeAgentDBMCPClient()
 
         class FakeMCPClient:
             def __init__(self, **kwargs: Any) -> None:
@@ -1484,9 +1531,7 @@ class TestAgentDBGet:
             async def call_tool(self, name: str, args: dict) -> dict:
                 if name == "agentdb_get":
                     return {
-                        "documents": [
-                            {"id": "g1", "vector": [1.0], "metadata": {}}
-                        ]
+                        "documents": [{"id": "g1", "vector": [1.0], "metadata": {}}]
                     }
                 return {}
 
@@ -1700,7 +1745,9 @@ class TestPineconeCreateClient:
         assert client is fake_pc
 
     @pytest.mark.asyncio
-    async def test_create_client_import_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_create_client_import_error(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.setitem(sys.modules, "pinecone", None)
 
         adapter = PineconeAdapter(PineconeSettings(api_key=SecretStr("key")))
@@ -1708,7 +1755,9 @@ class TestPineconeCreateClient:
             await adapter._create_client()
 
     @pytest.mark.asyncio
-    async def test_create_client_runtime_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_create_client_runtime_error(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         def fake_pinecone_init(*args: Any, **kwargs: Any) -> Any:
             raise RuntimeError("bad api key")
 
@@ -1840,7 +1889,9 @@ class TestPineconeCreateDefaultIndex:
     """Cover serverless and pod-based index creation."""
 
     @pytest.mark.asyncio
-    async def test_create_serverless_index(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_create_serverless_index(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         created: list[dict] = []
 
         fake_pc = SimpleNamespace(create_index=lambda **kw: created.append(kw))
@@ -1983,7 +2034,9 @@ class TestPineconeSearch:
     """Cover search with namespaces, filters, and error handling."""
 
     @pytest.mark.asyncio
-    async def test_search_default_no_namespace(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_search_default_no_namespace(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test that 'default' collection does not add namespace to query."""
         index = FakePineconeIndex()
         adapter = PineconeAdapter(PineconeSettings(api_key=SecretStr("key")))
@@ -2027,8 +2080,11 @@ class TestPineconeSearch:
         assert index.queries[0]["filter"] == {"type": "doc"}
 
     @pytest.mark.asyncio
-    async def test_search_error_returns_empty(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_search_error_returns_empty(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test that search exceptions return empty list."""
+
         class BrokenIndex:
             def query(self, **kw: Any) -> Any:
                 raise RuntimeError("query failed")
@@ -2111,7 +2167,9 @@ class TestPineconeUpsertBatch:
 
         adapter = PineconeAdapter(PineconeSettings(api_key=SecretStr("key")))
         # Should not raise, just log a warning
-        await adapter._upsert_batch(ZeroIndex(), [{"id": "a", "values": [0.1]}], "ns", 1)
+        await adapter._upsert_batch(
+            ZeroIndex(), [{"id": "a", "values": [0.1]}], "ns", 1
+        )
 
 
 class TestPineconeUpsert:
@@ -2154,9 +2212,7 @@ class TestPineconeUpsert:
         adapter = PineconeAdapter(PineconeSettings(api_key=SecretStr("key")))
         adapter._index = BrokenIndex()
 
-        ids = await adapter.upsert(
-            "ns", [VectorDocument(id="a", vector=[0.1])]
-        )
+        ids = await adapter.upsert("ns", [VectorDocument(id="a", vector=[0.1])])
         assert ids == []
 
     @pytest.mark.asyncio
@@ -2210,9 +2266,7 @@ class TestPineconeGet:
     async def test_get_with_vectors(self) -> None:
         index = FakePineconeIndex()
         index.fetch = lambda **kw: {
-            "vectors": {
-                "g1": {"values": [1.0, 2.0], "metadata": {"k": "v"}}
-            }
+            "vectors": {"g1": {"values": [1.0, 2.0], "metadata": {"k": "v"}}}
         }
 
         adapter = PineconeAdapter(PineconeSettings(api_key=SecretStr("key")))
@@ -2228,9 +2282,7 @@ class TestPineconeGet:
     async def test_get_without_vectors(self) -> None:
         index = FakePineconeIndex()
         index.fetch = lambda **kw: {
-            "vectors": {
-                "g1": {"values": [1.0], "metadata": {}}
-            }
+            "vectors": {"g1": {"values": [1.0], "metadata": {}}}
         }
 
         adapter = PineconeAdapter(PineconeSettings(api_key=SecretStr("key")))
