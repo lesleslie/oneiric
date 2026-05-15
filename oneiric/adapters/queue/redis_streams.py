@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover - optional dependency typing
@@ -44,6 +44,10 @@ class RedisStreamsQueueSettings(BaseModel):
     )
     auto_create_group: bool = Field(
         default=True, description="Whether to create the consumer group if missing."
+    )
+    pubsub_channel_prefix: str = Field(
+        default="bodai:events:",
+        description="Prefix for pub/sub channel names. Channels are prefix + topic.",
     )
     consumer_buffer_size: int = Field(
         default=1, ge=1, description="Default XREADGROUP count value."
@@ -150,6 +154,47 @@ class RedisStreamsQueueAdapter(EnsureClientMixin):
             "queue-enqueue", stream=self._settings.stream, message_id=message_id
         )
         return message_id
+
+    async def pubsub_publish(self, channel: str, message: str | bytes) -> int:
+        client = self._ensure_client("redis-streams-client-not-initialized")
+        payload = message.encode("utf-8") if isinstance(message, str) else message
+        return await client.publish(channel, payload)
+
+    async def pubsub_subscribe(
+        self,
+        *,
+        channel: str | None = None,
+        pattern: str | None = None,
+        callback: Callable[[str, bytes], Awaitable[None] | None],
+    ) -> asyncio.Task[None]:
+        client = self._ensure_client("redis-streams-client-not-initialized")
+        pubsub_factory = getattr(client, "pubsub", None)
+        if not callable(pubsub_factory):
+            raise LifecycleError("redis-streams-pubsub-not-available")
+
+        subscriber = pubsub_factory()
+        if channel:
+            await subscriber.subscribe(channel)
+        if pattern:
+            await subscriber.psubscribe(pattern)
+
+        async def listener() -> None:
+            async for message in subscriber.listen():
+                if not isinstance(message, Mapping):
+                    continue
+                channel_name = message.get("channel")
+                data = message.get("data")
+                if isinstance(channel_name, bytes):
+                    channel_name = channel_name.decode("utf-8")
+                if isinstance(data, str):
+                    data = data.encode("utf-8")
+                if not isinstance(channel_name, str) or not isinstance(data, bytes):
+                    continue
+                result = callback(channel_name, data)
+                if inspect.isawaitable(result):
+                    await result
+
+        return asyncio.create_task(listener())
 
     async def read(
         self, *, count: int | None = None, block_ms: int | None = None

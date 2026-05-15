@@ -103,6 +103,37 @@ class InMemoryRedisStreamsClient:
         return None
 
 
+class InMemoryPubSub:
+    def __init__(self, messages: list[dict[str, Any]] | None = None) -> None:
+        self.channels: list[str] = []
+        self.patterns: list[str] = []
+        self.messages = messages or []
+
+    async def subscribe(self, channel: str) -> None:
+        self.channels.append(channel)
+
+    async def psubscribe(self, pattern: str) -> None:
+        self.patterns.append(pattern)
+
+    async def listen(self):
+        for message in self.messages:
+            yield message
+
+
+class InMemoryPubSubRedisClient(InMemoryRedisStreamsClient):
+    def __init__(self, messages: list[dict[str, Any]] | None = None) -> None:
+        super().__init__()
+        self._pubsub = InMemoryPubSub(messages=messages)
+        self.published: list[tuple[str, bytes]] = []
+
+    def pubsub(self) -> InMemoryPubSub:
+        return self._pubsub
+
+    async def publish(self, channel: str, payload: bytes) -> int:
+        self.published.append((channel, payload))
+        return len(self.published)
+
+
 @pytest.mark.asyncio
 async def test_enqueue_read_and_ack_cycle() -> None:
     client = InMemoryRedisStreamsClient()
@@ -144,4 +175,41 @@ async def test_health_returns_true() -> None:
     adapter = RedisStreamsQueueAdapter(RedisStreamsQueueSettings(), redis_client=client)
     await adapter.init()
     assert await adapter.health() is True
+    await adapter.cleanup()
+
+
+@pytest.mark.asyncio
+async def test_pubsub_publish_and_subscribe_flow() -> None:
+    client = InMemoryPubSubRedisClient(
+        messages=[
+            {"channel": b"bodai:events:workflow.started", "data": b'{"ok":true}'},
+            {"channel": "bodai:events:workflow.completed", "data": '{"done":true}'},
+        ]
+    )
+    adapter = RedisStreamsQueueAdapter(
+        RedisStreamsQueueSettings(stream="jobs", group="workers", consumer="c1"),
+        redis_client=client,
+    )
+    await adapter.init()
+
+    published = await adapter.pubsub_publish("bodai:events:workflow.started", "hello")
+    assert published == 1
+    assert client.published == [("bodai:events:workflow.started", b"hello")]
+
+    seen: list[tuple[str, bytes]] = []
+
+    async def callback(channel: str, payload: bytes) -> None:
+        seen.append((channel, payload))
+
+    task = await adapter.pubsub_subscribe(
+        pattern="bodai:events:*",
+        callback=callback,
+    )
+    await task
+
+    assert client._pubsub.patterns == ["bodai:events:*"]
+    assert seen == [
+        ("bodai:events:workflow.started", b'{"ok":true}'),
+        ("bodai:events:workflow.completed", b'{"done":true}'),
+    ]
     await adapter.cleanup()

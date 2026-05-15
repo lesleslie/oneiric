@@ -17,6 +17,7 @@ from oneiric.domains.tasks import TaskBridge
 from oneiric.domains.workflows import WorkflowBridge
 from oneiric.runtime.activity import DomainActivityStore
 from oneiric.runtime.checkpoints import WorkflowCheckpointStore
+from oneiric.runtime.events import EventEnvelope
 
 # Test helpers
 
@@ -31,8 +32,10 @@ class MockComponent:
 class DemoEventHandler:
     def __init__(self, recorder: list[str]):
         self.recorder = recorder
+        self.last_envelope: Any | None = None
 
     async def handle(self, envelope):
+        self.last_envelope = envelope
         self.recorder.append(envelope.topic)
         return {"topic": envelope.topic}
 
@@ -371,13 +374,14 @@ class TestEventBridge:
         settings = LayerSettings()
         bridge = EventBridge(resolver, lifecycle, settings)
         recorder: list[str] = []
+        handler = DemoEventHandler(recorder)
 
         resolver.register(
             Candidate(
                 domain="event",
                 key="user-handler",
                 provider="remote",
-                factory=lambda: DemoEventHandler(recorder),
+                factory=lambda: handler,
                 metadata={"topics": ["user.created"]},
                 source=CandidateSource.MANUAL,
             )
@@ -388,6 +392,8 @@ class TestEventBridge:
         results = await bridge.emit("user.created", {"user_id": 123})
         assert len(results) == 1
         assert recorder == ["user.created"]
+        assert isinstance(handler.last_envelope, EventEnvelope)
+        assert handler.last_envelope.headers["source"] == "oneiric.domains.events.EventBridge"
 
         recorder.clear()
         results = await bridge.emit("order.created", {"order_id": 42})

@@ -15,7 +15,12 @@ from oneiric.runtime.dag import (
     execute_dag,
     plan_levels,
 )
-from oneiric.runtime.events import EventDispatcher, EventEnvelope, EventHandler
+from oneiric.runtime.events import (
+    EventDispatcher,
+    EventEnvelope,
+    EventHandler,
+    create_event_envelope,
+)
 
 
 @pytest.mark.anyio
@@ -43,6 +48,27 @@ async def test_event_dispatcher_runs_handlers_concurrently():
     assert {result.handler for result in results} == {"handler-a", "handler-b"}
     assert all(result.success for result in results)
     assert call_order[0].startswith("b:")  # handler-b returns immediately
+
+
+def test_create_event_envelope_populates_headers():
+    envelope = create_event_envelope(
+        "demo.probe",
+        {"value": 1},
+        source="oneiric.tests",
+        correlation_id="corr-123",
+        causation_id="cause-456",
+        headers={"tenant": "alpha"},
+    )
+
+    assert envelope.topic == "demo.probe"
+    assert envelope.payload == {"value": 1}
+    assert envelope.headers["source"] == "oneiric.tests"
+    assert envelope.headers["correlation_id"] == "corr-123"
+    assert envelope.headers["causation_id"] == "cause-456"
+    assert envelope.headers["tenant"] == "alpha"
+    assert envelope.headers["event_id"]
+    assert envelope.headers["version"] == "1.0.0"
+    assert envelope.headers["timestamp"]
 
 
 def test_dag_builder_detects_cycles():

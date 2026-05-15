@@ -12,6 +12,7 @@ from oneiric.runtime.events import (
     EventEnvelope,
     EventHandler,
     HandlerResult,
+    create_event_envelope,
     parse_event_filters,
 )
 from oneiric.runtime.supervisor import ServiceSupervisor
@@ -61,7 +62,12 @@ class EventBridge(DomainBridge):
         payload: dict[str, Any],
         headers: dict[str, Any] | None = None,
     ) -> list[HandlerResult]:
-        envelope = EventEnvelope(topic=topic, payload=payload, headers=headers or {})
+        envelope = create_event_envelope(
+            topic,
+            payload,
+            source="oneiric.domains.events.EventBridge",
+            headers=headers,
+        )
         results = await self._dispatcher.dispatch(envelope)
         if self._telemetry:
             self._telemetry.record_event_dispatch(topic, results)

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import time
+import uuid
 from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Any
 
 import anyio
@@ -18,6 +20,31 @@ class EventEnvelope(msgspec.Struct):
     topic: str
     payload: dict[str, Any]
     headers: dict[str, Any] = {}
+
+
+def create_event_envelope(
+    topic: str,
+    payload: dict[str, Any],
+    *,
+    source: str,
+    correlation_id: str | None = None,
+    causation_id: str | None = None,
+    version: str = "1.0.0",
+    headers: dict[str, Any] | None = None,
+) -> EventEnvelope:
+    envelope_headers: dict[str, Any] = {
+        "event_id": str(uuid.uuid4()),
+        "source": source,
+        "version": version,
+        "timestamp": datetime.now(UTC).isoformat(),
+    }
+    if correlation_id:
+        envelope_headers["correlation_id"] = correlation_id
+    if causation_id:
+        envelope_headers["causation_id"] = causation_id
+    if headers:
+        envelope_headers.update(headers)
+    return EventEnvelope(topic=topic, payload=payload, headers=envelope_headers)
 
 
 EventHandlerCallable = Callable[[EventEnvelope], Awaitable[Any]]
