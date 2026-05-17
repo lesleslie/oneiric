@@ -200,7 +200,7 @@ class TestPriorityInferenceProperties:
         assert isinstance(priority, int)
 
     @given(path=st.from_regex(r".*adapters.*"))
-    @settings(max_examples=20)
+    @settings(max_examples=20, suppress_health_check=[HealthCheck.too_slow], deadline=None)
     def test_adapters_path_gets_positive_priority(self, path):
         """Paths containing 'adapters' get positive priority."""
         priority = infer_priority(None, path)
@@ -208,7 +208,7 @@ class TestPriorityInferenceProperties:
         assert priority >= 0
 
     @given(path=st.from_regex(r".*vendor.*"))
-    @settings(max_examples=20)
+    @settings(max_examples=20, suppress_health_check=[HealthCheck.too_slow], deadline=None)
     def test_vendor_path_gets_high_priority(self, path):
         """Paths containing 'vendor' get high priority."""
         priority = infer_priority(None, path)

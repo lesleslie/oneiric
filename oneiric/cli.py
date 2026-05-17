@@ -396,13 +396,16 @@ def _manifest_entry_from_action(
 
     return RemoteManifestEntry(
         domain="action",
-        key=action.action_type,
+        key=action.key,
         provider=action.provider,
         factory=factory_str,
         stack_level=action.stack_level or 0,
         priority=action.priority,
-        version=action.version or version,
-        side_effect_free=action.extras.get("side_effect_free", False),
+        version=getattr(action, "version", None) or version,
+        side_effect_free=bool(
+            getattr(action, "side_effect_free", False)
+            or action.extras.get("side_effect_free", False)
+        ),
         timeout_seconds=action.extras.get("timeout_seconds"),
         metadata={
             "description": action.description or "",
