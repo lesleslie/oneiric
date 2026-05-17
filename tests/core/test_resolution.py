@@ -14,6 +14,8 @@ from oneiric.core.resolution import (
     CandidateSource,
     Resolver,
     ResolverSettings,
+    _candidate_capabilities,
+    _candidate_supports_capabilities,
     infer_priority,
     register_pkg,
 )
@@ -181,6 +183,24 @@ class TestCandidateRegistry:
 
         assert resolved is not None
         assert resolved.metadata["capabilities"] == ["advanced"]
+
+    def test_resolve_by_provider_returns_none_on_capability_mismatch(self):
+        registry = CandidateRegistry()
+        registry.register_candidate(
+            Candidate(
+                domain="adapter",
+                key="cache",
+                provider="redis",
+                factory=lambda: None,
+                metadata={"capabilities": ["read"]},
+                source=CandidateSource.MANUAL,
+            )
+        )
+
+        assert (
+            registry.resolve("adapter", "cache", provider="redis", capabilities=["write"])
+            is None
+        )
 
     def test_list_active_returns_only_active_candidates(self):
         """list_active returns only active candidates for domain."""
@@ -444,6 +464,35 @@ class TestResolutionPrecedence:
         resolved = registry.resolve("adapter", "cache")
         assert resolved.priority == 42
 
+    def test_candidate_supports_capabilities_without_requirements(self):
+        candidate = Candidate(
+            domain="adapter",
+            key="cache",
+            provider="redis",
+            factory=lambda: None,
+            metadata={"capabilities": ["read"]},
+            source=CandidateSource.MANUAL,
+        )
+
+        assert _candidate_supports_capabilities(
+            candidate, None, require_all=True
+        ) is True
+
+    def test_candidate_capabilities_extract_strings_and_descriptors(self):
+        candidate = Candidate(
+            domain="adapter",
+            key="cache",
+            provider="redis",
+            factory=lambda: None,
+            metadata={
+                "capabilities": "read",
+                "capability_descriptors": [{"name": "write"}, {"other": "skip"}],
+            },
+            source=CandidateSource.MANUAL,
+        )
+
+        assert _candidate_capabilities(candidate) == {"read", "write"}
+
 
 class TestExplainAPI:
     """Test resolution explanation API."""
@@ -636,6 +685,15 @@ class TestPriorityInference:
         assert priority == 20
 
         # Cleanup
+        del os.environ["ONEIRIC_STACK_ORDER"]
+
+    def test_infer_priority_ignores_blank_tokens(self):
+        """Blank tokens in ONEIRIC_STACK_ORDER are skipped."""
+        os.environ["ONEIRIC_STACK_ORDER"] = "first,,third:30"
+
+        assert infer_priority("first", None) == 0
+        assert infer_priority("third", None) == 30
+
         del os.environ["ONEIRIC_STACK_ORDER"]
 
     def test_infer_priority_from_path_hints(self):

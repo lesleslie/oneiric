@@ -8,6 +8,7 @@ from oneiric.core.runtime import (
     run_sync,
     run_with_anyio_taskgroup,
     run_with_taskgroup,
+    task_nursery,
 )
 
 
@@ -83,3 +84,85 @@ def test_run_sync_wraps_non_coroutine_awaitable() -> None:
         return DummyAwaitable()
 
     assert run_sync(_main) == "ok"
+
+
+@pytest.mark.asyncio
+async def test_runtime_taskgroup_accepts_coroutine_factory() -> None:
+    results: list[str] = []
+
+    async def _make(value: str) -> str:
+        await anyio.sleep(0)
+        results.append(value)
+        return value
+
+    async with RuntimeTaskGroup(name="test.group") as group:
+        task = group.start_soon(lambda: _make("ok"), name="task.factory")
+        await task
+
+    assert results == ["ok"]
+    assert group.results() == ["ok"]
+
+
+@pytest.mark.anyio
+async def test_anyio_nursery_timeout_and_cancel_branch() -> None:
+    started: list[str] = []
+
+    async def _task(label: str) -> None:
+        started.append(label)
+        await anyio.sleep(0)
+
+    async with anyio_nursery(name="test.nursery", limit=1, timeout=0.01) as nursery:
+        nursery.start_soon(_task, "one", task_name="task.one")
+        await anyio.sleep(0)
+        nursery.cancel()
+
+    assert started == ["one"]
+
+
+@pytest.mark.anyio
+async def test_anyio_nursery_without_limit_uses_direct_execution() -> None:
+    results: list[int] = []
+
+    async def _task(value: int) -> None:
+        results.append(value)
+
+    async with anyio_nursery(name="test.nursery") as nursery:
+        nursery.start_soon(_task, 1, task_name="task.one")
+
+    assert results == [1]
+
+
+@pytest.mark.asyncio
+async def test_task_nursery_context_manager() -> None:
+    async with task_nursery(name="test.nursery") as group:
+        assert isinstance(group, RuntimeTaskGroup)
+        assert group.name == "test.nursery"
+
+
+def test_run_sync_accepts_coroutine_result() -> None:
+    async def _main() -> str:
+        return "ok"
+
+    assert run_sync(_main) == "ok"
+
+
+@pytest.mark.asyncio
+async def test_runtime_taskgroup_wraps_custom_awaitable() -> None:
+    class DummyAwaitable:
+        def __await__(self):
+            async def _inner() -> str:
+                return "wrapped"
+
+            return _inner().__await__()
+
+    async with RuntimeTaskGroup(name="test.group") as group:
+        task = group.start_soon(lambda: DummyAwaitable(), name="task.awaitable")
+        await task
+
+    assert group.results() == ["wrapped"]
+
+
+@pytest.mark.asyncio
+async def test_runtime_taskgroup_aexit_without_group_returns_none() -> None:
+    group = RuntimeTaskGroup(name="test.group")
+    assert await group.__aexit__(None, None, None) is None

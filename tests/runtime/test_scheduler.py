@@ -118,3 +118,73 @@ async def test_scheduler_http_server_validates_payload(unused_tcp_port: int):
             assert resp.status == 400
     finally:
         await server.stop()
+
+
+@pytest.mark.asyncio
+async def test_scheduler_http_server_rejects_invalid_json():
+    bridge = FakeWorkflowBridge()
+    processor = WorkflowTaskProcessor(bridge)  # type: ignore[arg-type]
+    server = SchedulerHTTPServer(processor)
+
+    class BadRequest:
+        async def json(self):
+            raise ValueError("bad json")
+
+    response = await server._handle_workflow_task(BadRequest())  # type: ignore[arg-type]
+
+    assert response.status == 400
+
+
+@pytest.mark.asyncio
+async def test_scheduler_http_server_rejects_non_object_payload():
+    bridge = FakeWorkflowBridge()
+    processor = WorkflowTaskProcessor(bridge)  # type: ignore[arg-type]
+    server = SchedulerHTTPServer(processor)
+
+    class ListRequest:
+        async def json(self):
+            return []
+
+    response = await server._handle_workflow_task(ListRequest())  # type: ignore[arg-type]
+
+    assert response.status == 400
+
+
+@pytest.mark.asyncio
+async def test_scheduler_http_health_endpoint():
+    bridge = FakeWorkflowBridge()
+    processor = WorkflowTaskProcessor(bridge)  # type: ignore[arg-type]
+    server = SchedulerHTTPServer(processor)
+
+    class DummyRequest:
+        pass
+
+    response = await server._handle_health(DummyRequest())  # type: ignore[arg-type]
+
+    assert response.status == 200
+
+
+@pytest.mark.asyncio
+async def test_scheduler_http_server_returns_processor_error():
+    class BrokenWorkflowBridge(FakeWorkflowBridge):
+        async def execute_dag(
+            self,
+            workflow_key: str,
+            *,
+            context: dict[str, Any] | None,
+            checkpoint: dict[str, Any] | None,
+            run_id: str | None = None,
+        ) -> dict[str, Any]:
+            raise RuntimeError("broken")
+
+    bridge = BrokenWorkflowBridge()
+    processor = WorkflowTaskProcessor(bridge)  # type: ignore[arg-type]
+    server = SchedulerHTTPServer(processor)
+
+    class Request:
+        async def json(self):
+            return {"workflow": "demo"}
+
+    response = await server._handle_workflow_task(Request())  # type: ignore[arg-type]
+
+    assert response.status == 500

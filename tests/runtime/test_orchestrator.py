@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from unittest.mock import AsyncMock, patch
 
@@ -12,11 +13,12 @@ from oneiric.core.config import (
     RemoteSourceConfig,
     RuntimeProfileConfig,
     RuntimeSupervisorConfig,
+    SecretsConfig,
 )
 from oneiric.core.lifecycle import LifecycleManager, LifecycleStatus
 from oneiric.core.resolution import Resolver
 from oneiric.runtime.activity import DomainActivity
-from oneiric.runtime.orchestrator import RuntimeOrchestrator
+from oneiric.runtime.orchestrator import RuntimeOrchestrator, orchestrated_runtime
 
 # Test helpers
 
@@ -26,6 +28,18 @@ class MockSecrets:
 
     async def get_secret(self, key: str) -> str:
         return f"mock-secret-{key}"
+
+    async def prefetch(self) -> None:
+        return None
+
+
+class MockRefreshingSecrets(MockSecrets):
+    def __init__(self) -> None:
+        self.rotate_calls = 0
+
+    async def rotate(self, include_provider_cache: bool = False) -> None:
+        self.rotate_calls += 1
+        return None
 
 
 # RuntimeOrchestrator Tests
@@ -267,6 +281,29 @@ class TestRuntimeOrchestratorStartStop:
         await orchestrator.stop()
 
     @pytest.mark.asyncio
+    async def test_start_creates_secrets_refresh_task(self, tmp_path):
+        settings = OneiricSettings(
+            config_dir=str(tmp_path / "settings"),
+            cache_dir=str(tmp_path / "cache"),
+            secrets=SecretsConfig(refresh_interval=1.0),
+        )
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        secrets = MockSecrets()
+
+        orchestrator = RuntimeOrchestrator(settings, resolver, lifecycle, secrets)
+
+        for watcher in orchestrator._watchers:
+            watcher.start = AsyncMock()
+            watcher.stop = AsyncMock()
+
+        await orchestrator.start(enable_remote=False)
+
+        assert orchestrator._secrets_task is not None
+
+        await orchestrator.stop()
+
+    @pytest.mark.asyncio
     async def test_stop_cancels_watchers(self, tmp_path):
         """RuntimeOrchestrator.stop() cancels all watchers."""
         settings = OneiricSettings(
@@ -328,6 +365,92 @@ class TestRuntimeOrchestratorStartStop:
             orchestrator._remote_task is None or orchestrator._remote_task.cancelled()
         )
 
+    @pytest.mark.asyncio
+    async def test_stop_cancels_secrets_task(self, tmp_path):
+        """RuntimeOrchestrator.stop() cancels secrets refresh task."""
+        settings = OneiricSettings(
+            config_dir=str(tmp_path / "settings"),
+            cache_dir=str(tmp_path / "cache"),
+        )
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        secrets = MockSecrets()
+
+        orchestrator = RuntimeOrchestrator(settings, resolver, lifecycle, secrets)
+
+        for watcher in orchestrator._watchers:
+            watcher.start = AsyncMock()
+            watcher.stop = AsyncMock()
+
+        await orchestrator.start(enable_remote=False)
+        orchestrator._secrets_task = asyncio.create_task(asyncio.sleep(60))
+
+        await orchestrator.stop()
+
+        assert orchestrator._secrets_task is None or orchestrator._secrets_task.cancelled()
+
+    @pytest.mark.asyncio
+    async def test_remote_loop_skips_without_manifest_url(self, tmp_path):
+        settings = OneiricSettings(
+            config_dir=str(tmp_path / "settings"),
+            cache_dir=str(tmp_path / "cache"),
+        )
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        secrets = MockSecrets()
+
+        orchestrator = RuntimeOrchestrator(settings, resolver, lifecycle, secrets)
+
+        with patch("oneiric.runtime.orchestrator.logger.info") as mock_info:
+            await orchestrator._remote_loop(None, interval=0.01)
+
+        mock_info.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_remote_loop_syncs_once_before_cancellation(self, tmp_path):
+        settings = OneiricSettings(
+            config_dir=str(tmp_path / "settings"),
+            cache_dir=str(tmp_path / "cache"),
+        )
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        secrets = MockSecrets()
+
+        orchestrator = RuntimeOrchestrator(settings, resolver, lifecycle, secrets)
+        orchestrator.sync_remote = AsyncMock()
+
+        task = asyncio.create_task(
+            orchestrator._remote_loop("https://example.com/manifest.yaml", 0.01)
+        )
+        await asyncio.sleep(0.02)
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+        orchestrator.sync_remote.assert_awaited()
+
+    @pytest.mark.asyncio
+    async def test_secrets_loop_rotates_and_logs(self, tmp_path):
+        settings = OneiricSettings(
+            config_dir=str(tmp_path / "settings"),
+            cache_dir=str(tmp_path / "cache"),
+        )
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        secrets = MockRefreshingSecrets()
+
+        orchestrator = RuntimeOrchestrator(settings, resolver, lifecycle, secrets)
+
+        with patch("oneiric.runtime.orchestrator.logger.info") as mock_info:
+            task = asyncio.create_task(orchestrator._secrets_loop(0.01))
+            await asyncio.sleep(0.02)
+            task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await task
+
+        assert secrets.rotate_calls >= 1
+        mock_info.assert_called()
+
 
 class TestRuntimeOrchestratorContext:
     """Test RuntimeOrchestrator async context manager."""
@@ -358,6 +481,28 @@ class TestRuntimeOrchestratorContext:
         # Watchers stopped
         for watcher in orchestrator._watchers:
             watcher.stop.assert_called_once()
+
+
+class TestRuntimeOrchestratorHelperFunctions:
+    @pytest.mark.asyncio
+    async def test_orchestrated_runtime_context_manager(self, tmp_path):
+        settings = OneiricSettings(
+            config_dir=str(tmp_path / "settings"),
+            cache_dir=str(tmp_path / "cache"),
+        )
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        secrets = MockSecrets()
+
+        with (
+            patch.object(RuntimeOrchestrator, "start", AsyncMock()) as mock_start,
+            patch.object(RuntimeOrchestrator, "stop", AsyncMock()) as mock_stop,
+        ):
+            async with orchestrated_runtime(settings, resolver, lifecycle, secrets) as runtime:
+                assert isinstance(runtime, RuntimeOrchestrator)
+
+        mock_start.assert_awaited_once()
+        mock_stop.assert_awaited_once()
 
 
 class TestRuntimeOrchestratorSyncRemote:
@@ -585,3 +730,26 @@ class TestRuntimeOrchestratorHealthSnapshot:
         activity_state = health_data.get("activity_state") or {}
         assert activity_state["service"]["api"]["paused"] is True
         assert activity_state["service"]["api"]["note"] == "maint"
+
+    def test_health_snapshot_handles_empty_activity_and_lifecycle(self, tmp_path):
+        settings = OneiricSettings(
+            config_dir=str(tmp_path / "settings"),
+            cache_dir=str(tmp_path / "cache"),
+        )
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        lifecycle.all_statuses = lambda: []  # type: ignore[assignment]
+        secrets = MockSecrets()
+        health_path = tmp_path / "health.json"
+
+        orchestrator = RuntimeOrchestrator(
+            settings, resolver, lifecycle, secrets, health_path=str(health_path)
+        )
+        orchestrator._supervisor = None
+        orchestrator._activity_store.snapshot = lambda: None  # type: ignore[assignment]
+
+        orchestrator._update_health(watchers_running=False, remote_enabled=False)
+
+        health_data = json.loads(health_path.read_text())
+        assert health_data.get("activity_state", {}) == {}
+        assert health_data.get("lifecycle_state", {}) == {}

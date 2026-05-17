@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import signal
+import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -56,7 +57,7 @@ class TestBuildOrchestrateCommand:
     def test_minimal_command(self):
         pm = ProcessManager()
         cmd = pm._build_orchestrate_command()
-        assert cmd[0].endswith("python")
+        assert Path(cmd[0]) == Path(sys.executable)
         assert cmd[1:3] == ["-m", "oneiric.cli"]
         assert "orchestrate" in cmd
 

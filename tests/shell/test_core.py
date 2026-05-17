@@ -245,3 +245,49 @@ class TestNotifySessionStartAsync:
         shell.session_tracker = None
 
         shell._notify_session_start_async()
+
+
+class TestStartAndMagics:
+    def test_start_registers_magics_and_invokes_shell(self, mock_app):
+        shell = AdminShell(mock_app)
+        mock_config = MagicMock()
+        mock_shell = MagicMock()
+        mock_magics = MagicMock()
+
+        with (
+            patch("oneiric.shell.core.load_default_config", return_value=mock_config),
+            patch("oneiric.shell.core.InteractiveShellEmbed", return_value=mock_shell),
+            patch("oneiric.shell.core.BaseMagics", return_value=mock_magics),
+            patch.object(shell, "_notify_session_start_async") as mock_notify,
+            patch("oneiric.shell.core.atexit.register") as mock_atexit,
+            patch("oneiric.shell.core.logger.info") as mock_info,
+        ):
+            shell.start()
+
+        assert shell.shell is mock_shell
+        mock_notify.assert_called_once()
+        mock_atexit.assert_called_once_with(shell._sync_session_end)
+        mock_shell.register_magics.assert_called_once_with(mock_magics)
+        mock_shell.assert_called_once()
+        mock_info.assert_called_once_with("Starting admin shell...")
+
+    def test_sync_session_end_logs_thread_errors(self, mock_app):
+        shell = AdminShell(mock_app)
+        shell.session_id = "sess-123"
+        shell.session_tracker = MagicMock()
+        shell._notify_session_end = AsyncMock(side_effect=RuntimeError("boom"))
+
+        class FakeThread:
+            def __init__(self, target, daemon):
+                self._target = target
+
+            def start(self):
+                self._target()
+
+        with (
+            patch("oneiric.shell.core.threading.Thread", FakeThread),
+            patch("oneiric.shell.core.logger.error") as mock_error,
+        ):
+            shell._sync_session_end()
+
+        mock_error.assert_called_once()
