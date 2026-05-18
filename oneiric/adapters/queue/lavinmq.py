@@ -602,7 +602,7 @@ class LavinMQQueueAdapter:
 
         publish_topic = topic or self._settings.mqtt_topic
         publish_qos = qos if qos is not None else self._settings.mqtt_qos
-        publish_retain = retain if retain is not None else self._settings.retain
+        publish_retain = retain if retain is not None else self._settings.mqtt_retain
 
         try:
             await self._mqtt_client.publish(
