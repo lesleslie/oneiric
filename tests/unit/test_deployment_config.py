@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 import yaml
 
 from oneiric.deployment.config import deep_merge, render_deployment_config
@@ -74,3 +75,32 @@ class TestRenderDeploymentConfig:
         assert rendered["remote"]["enabled"] is False
         assert rendered["secrets"]["provider"] == "gcp.secret_manager"
         assert yaml.safe_load(output.read_text()) == rendered
+
+
+# ---------------------------------------------------------------------------
+# Gap-fill: error paths in deployment/config.py
+# ---------------------------------------------------------------------------
+
+
+class TestLoadYamlConfig:
+    def test_missing_file_raises(self) -> None:
+        from oneiric.deployment.config import DeploymentConfigError, load_yaml_config
+
+        with pytest.raises(DeploymentConfigError, match="Missing config file"):
+            load_yaml_config(Path("/nonexistent/path/config.yaml"))
+
+    def test_invalid_yaml_raises(self, tmp_path: Path) -> None:
+        from oneiric.deployment.config import DeploymentConfigError, load_yaml_config
+
+        bad = tmp_path / "bad.yaml"
+        bad.write_text("key: [\nunterminated bracket")
+        with pytest.raises(DeploymentConfigError, match="Invalid YAML"):
+            load_yaml_config(bad)
+
+    def test_non_mapping_yaml_raises(self, tmp_path: Path) -> None:
+        from oneiric.deployment.config import DeploymentConfigError, load_yaml_config
+
+        bad = tmp_path / "list.yaml"
+        bad.write_text("- item1\n- item2\n")
+        with pytest.raises(DeploymentConfigError, match="must contain a mapping"):
+            load_yaml_config(bad)

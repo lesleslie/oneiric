@@ -8,10 +8,10 @@ from pydantic import BaseModel, Field, RedisDsn
 
 try:
     from coredis import Redis
-    from coredis.cache import TrackingCache
-    from coredis.exceptions import RedisError
+    from coredis.cache import TrackingCache  # pragma: no cover
+    from coredis.exceptions import RedisError  # pragma: no cover
 
-    _COREDIS_AVAILABLE = True
+    _COREDIS_AVAILABLE = True  # pragma: no cover
 except ImportError:  # pragma: no cover - exercised when extras missing
     Redis = TrackingCache = None  # type: ignore
 

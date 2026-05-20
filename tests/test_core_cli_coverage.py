@@ -281,3 +281,135 @@ class TestStopRestart:
             name="test",
         )
         factory._show_config()  # Should not raise
+
+    def test_check_status(self):
+        factory = MCPServerCLIFactory(
+            server_class=MCPServerBase,
+            config_class=MagicMock,
+            name="test",
+        )
+        factory._check_status()  # Should not raise
+
+    def test_restart_server_delegates(self):
+        from unittest.mock import patch
+
+        factory = MCPServerCLIFactory(
+            server_class=MCPServerBase,
+            config_class=MagicMock,
+            name="test",
+        )
+        with patch.object(factory, "_start_server") as mock_start:
+            factory._restart_server()
+        mock_start.assert_called_once()
+
+    def test_start_server_keyboard_interrupt_triggers_shutdown(self):
+        import asyncio as stdlib_asyncio
+        from unittest.mock import patch
+
+        class AppServer(MCPServerBase):
+            def get_app(self):
+                return MagicMock()
+
+        factory = MCPServerCLIFactory(
+            server_class=AppServer,
+            config_class=MagicMock,
+            name="test",
+        )
+        sync_sleep = MagicMock(side_effect=KeyboardInterrupt)
+        with patch.object(stdlib_asyncio, "run", return_value=None):
+            with patch.object(stdlib_asyncio, "sleep", new=sync_sleep):
+                factory._start_server()  # Should catch KeyboardInterrupt, not raise
+
+
+# ---------------------------------------------------------------------------
+# CLI command closures — invoked via typer CliRunner (lines 53, 57, 61, 65, 69, 75)
+# ---------------------------------------------------------------------------
+
+
+class TestCLICommandClosures:
+    def _make_factory(self):
+        return MCPServerCLIFactory(
+            server_class=MCPServerBase,
+            config_class=MagicMock,
+            name="test",
+        )
+
+    def test_stop_command_invokes_stop_server(self):
+        from typer.testing import CliRunner
+        from unittest.mock import patch
+
+        factory = self._make_factory()
+        runner = CliRunner()
+
+        with patch.object(factory, "_stop_server") as mock_stop:
+            result = runner.invoke(factory.app, ["stop"])
+        assert result.exit_code == 0
+        mock_stop.assert_called_once()
+
+    def test_restart_command_invokes_restart_server(self):
+        from typer.testing import CliRunner
+        from unittest.mock import patch
+
+        factory = self._make_factory()
+        runner = CliRunner()
+
+        with patch.object(factory, "_restart_server") as mock_restart:
+            result = runner.invoke(factory.app, ["restart"])
+        assert result.exit_code == 0
+        mock_restart.assert_called_once()
+
+    def test_status_command_invokes_check_status(self):
+        from typer.testing import CliRunner
+        from unittest.mock import patch
+
+        factory = self._make_factory()
+        runner = CliRunner()
+
+        with patch.object(factory, "_check_status") as mock_status:
+            result = runner.invoke(factory.app, ["status"])
+        assert result.exit_code == 0
+        mock_status.assert_called_once()
+
+    def test_health_command_invokes_check_health(self):
+        from typer.testing import CliRunner
+        from unittest.mock import patch
+
+        factory = self._make_factory()
+        runner = CliRunner()
+
+        with patch.object(factory, "_check_health") as mock_health:
+            result = runner.invoke(factory.app, ["health"])
+        assert result.exit_code == 0
+        mock_health.assert_called_once()
+
+    def test_config_command_invokes_show_config(self):
+        from typer.testing import CliRunner
+        from unittest.mock import patch
+
+        factory = self._make_factory()
+        runner = CliRunner()
+
+        with patch.object(factory, "_show_config") as mock_config:
+            result = runner.invoke(factory.app, ["config"])
+        assert result.exit_code == 0
+        mock_config.assert_called_once()
+
+    def test_start_command_invokes_start_server(self):
+        from typer.testing import CliRunner
+        from unittest.mock import patch
+
+        factory = self._make_factory()
+        runner = CliRunner()
+
+        with patch.object(factory, "_start_server") as mock_start:
+            result = runner.invoke(factory.app, ["start"])
+        assert result.exit_code == 0
+        mock_start.assert_called_once()
+
+    def test_run_invokes_app(self):
+        from unittest.mock import patch
+
+        factory = self._make_factory()
+        with patch.object(factory, "app") as mock_app:
+            factory.run()
+        mock_app.assert_called_once()

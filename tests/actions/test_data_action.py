@@ -135,3 +135,125 @@ async def test_validation_schema_action_valid_payload() -> None:
 
     assert result["status"] == "valid"
     assert result["validated"]["id"] == 10
+
+
+# --- DataTransform uncovered branches ---
+
+
+@pytest.mark.asyncio
+async def test_data_transform_include_fields_as_string() -> None:
+    action = DataTransformAction()
+    result = await action.execute({"data": {"x": 1, "y": 2}, "include_fields": "x"})
+    assert result["data"] == {"x": 1}
+
+
+@pytest.mark.asyncio
+async def test_data_transform_include_fields_invalid_raises() -> None:
+    action = DataTransformAction()
+    with pytest.raises(LifecycleError, match="data-transform-list-invalid"):
+        await action.execute({"data": {"x": 1}, "include_fields": 42})
+
+
+@pytest.mark.asyncio
+async def test_data_transform_rename_fields_non_mapping_raises() -> None:
+    action = DataTransformAction()
+    with pytest.raises(LifecycleError, match="data-transform-mapping-invalid"):
+        await action.execute({"data": {"x": 1}, "rename_fields": "invalid"})
+
+
+# --- DataSanitize uncovered branches ---
+
+
+@pytest.mark.asyncio
+async def test_data_sanitize_record_not_mapping_raises() -> None:
+    action = DataSanitizeAction()
+    with pytest.raises(LifecycleError, match="data-sanitize-record-required"):
+        await action.execute({"data": "not-a-dict"})
+
+
+@pytest.mark.asyncio
+async def test_data_sanitize_allow_fields_as_string_in_payload() -> None:
+    action = DataSanitizeAction()
+    result = await action.execute({"data": {"id": 1, "secret": "x"}, "allow_fields": "id"})
+    assert "id" in result["data"]
+    assert "secret" not in result["data"]
+
+
+@pytest.mark.asyncio
+async def test_data_sanitize_drop_fields_as_iterable_in_payload() -> None:
+    action = DataSanitizeAction()
+    result = await action.execute(
+        {"data": {"id": 1, "secret": "x"}, "drop_fields": ["secret"]}
+    )
+    assert "secret" not in result["data"]
+
+
+@pytest.mark.asyncio
+async def test_data_sanitize_allow_fields_invalid_type_raises() -> None:
+    action = DataSanitizeAction()
+    with pytest.raises(LifecycleError, match="data-sanitize-list-invalid"):
+        await action.execute({"data": {"id": 1}, "allow_fields": 42})
+
+
+# --- ValidationSchema uncovered branches ---
+
+
+@pytest.mark.asyncio
+async def test_validation_schema_record_not_mapping_raises() -> None:
+    action = ValidationSchemaAction(
+        ValidationSchemaSettings(fields=[ValidationFieldRule(name="id", type="int")])
+    )
+    with pytest.raises(LifecycleError, match="validation-schema-record-required"):
+        await action.execute({"data": "string"})
+
+
+@pytest.mark.asyncio
+async def test_validation_schema_missing_required_field_recorded_as_none() -> None:
+    action = ValidationSchemaAction(
+        ValidationSchemaSettings(
+            fields=[
+                ValidationFieldRule(name="id", type="int"),
+                ValidationFieldRule(name="name", type="str"),
+            ]
+        )
+    )
+    # "name" absent → value=None → error "name missing" → validated["name"] = None
+    result = await action.execute({"data": {"id": 1}})
+    assert result["status"] == "invalid"
+    assert "name" in result["validated"]
+    assert result["validated"]["name"] is None
+
+
+@pytest.mark.asyncio
+async def test_validation_schema_fail_fast_stops_at_first_error() -> None:
+    action = ValidationSchemaAction(
+        ValidationSchemaSettings(
+            fields=[
+                ValidationFieldRule(name="id", type="int"),
+                ValidationFieldRule(name="name", type="str"),
+            ]
+        )
+    )
+    # Non-empty record so the data lookup doesn't fail; both fields are absent
+    result = await action.execute({"data": {"other": 1}, "fail_fast": True})
+    assert result["status"] == "invalid"
+    assert len(result["errors"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_validation_schema_fields_from_payload_as_list() -> None:
+    action = ValidationSchemaAction()
+    result = await action.execute(
+        {
+            "data": {"score": 10},
+            "fields": [{"name": "score", "type": "int"}],
+        }
+    )
+    assert result["status"] == "valid"
+
+
+@pytest.mark.asyncio
+async def test_validation_schema_fields_invalid_type_raises() -> None:
+    action = ValidationSchemaAction()
+    with pytest.raises(LifecycleError, match="validation-schema-fields-invalid"):
+        await action.execute({"data": {"id": 1}, "fields": 42})

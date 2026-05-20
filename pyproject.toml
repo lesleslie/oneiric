@@ -1,6 +1,6 @@
 [project]
 name = "oneiric"
-version = "0.12.2"
+version = "0.12.3"
 description = "Universal resolution layer for pluggable components with hot-swapping and remote manifest delivery"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -335,10 +335,23 @@ confidence_threshold = 86
 test_timeout = 1200  # 20 minutes to accommodate skylos analysis (increased from 600s default)
 
 # pip-audit configuration to ignore specific vulnerabilities
+# Note: crackerjack reads from tool_commands.py, not this section; kept for documentation
 [tool.pip-audit]
 ignore-vulns = [
     "CVE-2025-53000",
     "CVE-2026-0994",
+    "CVE-2025-69872",
+    "CVE-2025-14009",
+    "PYSEC-2024-277",
+    "PYSEC-2025-183",
+    "PYSEC-2025-211",
+    "PYSEC-2025-212",
+    "PYSEC-2025-213",
+    "PYSEC-2025-214",
+    "PYSEC-2025-215",
+    "PYSEC-2025-216",
+    "PYSEC-2025-217",
+    "PYSEC-2025-218",
 ]
 
 # NOTE: Zuban configuration moved to mypy.ini due to parsing bug

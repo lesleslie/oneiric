@@ -527,3 +527,60 @@ class TestMultiTierCacheIntegration:
 
         await l1_cache.cleanup()
         await cache.cleanup()
+
+
+# ---------------------------------------------------------------------------
+# Tests — coverage gaps
+# ---------------------------------------------------------------------------
+
+
+def test_multitier_auto_creates_l2_when_coredis_available(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """__init__ auto-creates RedisCacheAdapter for L2 when _COREDIS_AVAILABLE (lines 253-264)."""
+    created_settings: list[object] = []
+
+    class _FakeRedisAdapter:
+        def __init__(self, settings: object) -> None:
+            created_settings.append(settings)
+
+    monkeypatch.setattr(
+        "oneiric.adapters.cache.multitier._COREDIS_AVAILABLE", True
+    )
+    monkeypatch.setattr(
+        "oneiric.adapters.cache.multitier.RedisCacheAdapter", _FakeRedisAdapter
+    )
+
+    settings = MultiTierCacheSettings(l2_enabled=True)
+    cache = MultiTierCacheAdapter(settings=settings)
+
+    assert len(created_settings) == 1
+    assert cache._l2 is not None
+
+
+def test_multitier_auto_creates_l2_with_url(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """__init__ uses RedisCacheSettings(url=...) when l2_url is set (lines 262-263)."""
+    from oneiric.adapters.cache.redis import RedisCacheSettings
+
+    captured: list[RedisCacheSettings] = []
+
+    class _FakeRedisAdapter:
+        def __init__(self, settings: RedisCacheSettings) -> None:
+            captured.append(settings)
+
+    monkeypatch.setattr(
+        "oneiric.adapters.cache.multitier._COREDIS_AVAILABLE", True
+    )
+    monkeypatch.setattr(
+        "oneiric.adapters.cache.multitier.RedisCacheAdapter", _FakeRedisAdapter
+    )
+
+    settings = MultiTierCacheSettings(
+        l2_enabled=True, l2_url="redis://redis.example.com:6379/0"
+    )
+    MultiTierCacheAdapter(settings=settings)
+
+    assert len(captured) == 1
+    assert captured[0].url is not None

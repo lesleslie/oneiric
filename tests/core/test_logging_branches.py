@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -12,7 +13,9 @@ from oneiric.core.logging import (
     _create_handler_for_target,
     _filter_event_logs,
     _load_extra_processors,
+    _otel_context_processor,
     configure_early_logging,
+    configure_logging,
 )
 
 
@@ -69,3 +72,47 @@ def test_filter_event_logs_respects_suppression() -> None:
         configure_early_logging(False)
 
     assert _filter_event_logs(None, None, {"event": "demo"}) == {"event": "demo"}
+
+
+def test_http_sink_requires_http_scheme() -> None:
+    with pytest.raises(ValueError, match="http"):
+        _create_handler_for_target(
+            LoggingSinkConfig(target="http", endpoint="ftp://example.com/ingest")
+        )
+
+
+def test_configure_logging_console_renderer_when_emit_json_false() -> None:
+    import structlog
+
+    captured: list = []
+    original_configure = structlog.configure
+
+    def spy_configure(**kwargs) -> None:
+        captured.extend(kwargs.get("processors", []))
+        original_configure(**kwargs)
+
+    with patch("structlog.configure", side_effect=spy_configure):
+        configure_logging(LoggingConfig(emit_json=False))
+
+    assert any(
+        isinstance(p, structlog.dev.ConsoleRenderer) for p in captured
+    ), "ConsoleRenderer not found in processor chain"
+
+
+def test_otel_context_processor_injects_ids_when_span_valid() -> None:
+    mock_context = MagicMock()
+    mock_context.is_valid = True
+    mock_context.trace_id = 0xABCD1234
+    mock_context.span_id = 0x1234
+
+    mock_span = MagicMock()
+    mock_span.get_span_context.return_value = mock_context
+
+    event_dict: dict = {}
+    with patch(
+        "oneiric.core.logging.trace.get_current_span", return_value=mock_span
+    ):
+        result = _otel_context_processor(None, "info", event_dict)
+
+    assert "trace_id" in result
+    assert "span_id" in result

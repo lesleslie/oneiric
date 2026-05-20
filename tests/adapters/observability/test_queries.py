@@ -9,6 +9,7 @@ import pytest
 
 from oneiric.adapters.observability.errors import (
     InvalidSQLError,
+    QueryError,
     TraceNotFoundError,
 )
 from oneiric.adapters.observability.models import LogModel, MetricModel, TraceModel
@@ -459,3 +460,12 @@ async def test_custom_query_empty_params():
 
     assert len(results) == 1
     assert results[0]["count"] == 10
+
+
+def test_query_error_to_dict() -> None:
+    """QueryError.to_dict() returns structured error representation."""
+    err = QueryError("something went wrong", details={"field": "x"})
+    d = err.to_dict()
+    assert d["error"] == "QueryError"
+    assert d["message"] == "something went wrong"
+    assert d["details"] == {"field": "x"}

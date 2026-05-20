@@ -131,3 +131,108 @@ async def test_cleanup(adapter: ArangoDBGraphAdapter, fake_client: FakeClient) -
     await adapter.init()
     await adapter.cleanup()
     assert fake_client.closed is True
+
+
+# ---------------------------------------------------------------------------
+# Tests — coverage gaps
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio()
+async def test_cleanup_awaitable_close(fake_db: FakeDB) -> None:
+    """cleanup() awaits close() when it returns a coroutine (line 93)."""
+    closed: list[bool] = []
+
+    class AsyncCloseClient:
+        def db(self, name: str, *, username: str, password: str | None) -> FakeDB:
+            return fake_db
+
+        async def close(self) -> None:
+            closed.append(True)
+
+    adapter = ArangoDBGraphAdapter(
+        ArangoDBGraphSettings(database="test"),
+        client_factory=lambda: AsyncCloseClient(),
+    )
+    await adapter.init()
+    await adapter.cleanup()
+    assert closed == [True]
+
+
+@pytest.mark.asyncio()
+async def test_ensure_client_awaitable_factory(fake_db: FakeDB) -> None:
+    """_ensure_client awaits factory result when it is a coroutine (line 144)."""
+
+    class AsyncClient:
+        def db(self, name: str, *, username: str, password: str | None) -> FakeDB:
+            return fake_db
+
+    async def async_factory() -> AsyncClient:
+        return AsyncClient()
+
+    adapter = ArangoDBGraphAdapter(
+        ArangoDBGraphSettings(database="test"), client_factory=async_factory
+    )
+    await adapter.init()
+    assert adapter._db is fake_db
+
+
+@pytest.mark.asyncio()
+async def test_vertex_and_edge_collection_no_graph(fake_client: FakeClient) -> None:
+    """_vertex_collection and _edge_collection fall back to db.collection when no graph (lines 171, 176)."""
+    settings = ArangoDBGraphSettings(database="test")  # no graph
+    adapter = ArangoDBGraphAdapter(settings, client_factory=lambda: fake_client)
+    await adapter.init()
+    vertex = await adapter.create_vertex("nodes", {"name": "test"})
+    assert vertex["name"] == "test"
+    edge = await adapter.create_edge("links", "nodes/1", "nodes/2")
+    assert edge["_from"] == "nodes/1"
+
+
+@pytest.mark.asyncio()
+async def test_run_sync_with_custom_executor(fake_db: FakeDB) -> None:
+    """_run_sync uses sync_executor when provided (line 182)."""
+    called_with: list[tuple] = []
+
+    async def my_executor(func, args, kwargs):
+        called_with.append((func.__name__, args, kwargs))
+        return func(*args, **kwargs)
+
+    class MyClient:
+        def db(self, name: str, *, username: str, password: str | None) -> FakeDB:
+            return fake_db
+
+    adapter = ArangoDBGraphAdapter(
+        ArangoDBGraphSettings(database="test"),
+        client_factory=lambda: MyClient(),
+        sync_executor=my_executor,
+    )
+    await adapter.init()
+    await adapter.create_vertex("nodes", {"x": 1})
+    assert len(called_with) > 0
+
+
+@pytest.mark.asyncio()
+async def test_default_client_factory(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """_default_client_factory creates ArangoClient when arango is importable (lines 186-193)."""
+    import sys
+    import types
+
+    created: list[dict] = []
+
+    class FakeArangoClient:
+        def __init__(self, hosts: str, verify: bool, request_timeout: float) -> None:
+            created.append({"hosts": hosts, "verify": verify})
+
+        def db(self, name: str, *, username: str, password: str | None) -> FakeDB:
+            return FakeDB()
+
+    fake_arango = types.ModuleType("arango")
+    fake_arango.ArangoClient = FakeArangoClient  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "arango", fake_arango)
+
+    adapter = ArangoDBGraphAdapter(ArangoDBGraphSettings(database="test"))
+    await adapter.init()
+    assert len(created) == 1

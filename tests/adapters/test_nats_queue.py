@@ -66,6 +66,20 @@ async def test_publish_and_subscribe(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.asyncio
+async def test_load_nats_success(monkeypatch: pytest.MonkeyPatch) -> None:
+    """_load_nats() returns the nats module when nats is importable (lines 23, 29)."""
+    import sys
+    import types
+
+    from oneiric.adapters.queue.nats import _load_nats
+
+    fake_nats = types.ModuleType("nats")
+    monkeypatch.setitem(sys.modules, "nats", fake_nats)
+    result = _load_nats()
+    assert result is fake_nats
+
+
+@pytest.mark.asyncio
 async def test_health_reflects_connection() -> None:
     dummy = DummyNATS()
     adapter = NATSQueueAdapter(NATSQueueSettings(), client=dummy)

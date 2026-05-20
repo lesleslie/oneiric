@@ -116,3 +116,138 @@ async def test_cleanup(
     await adapter.init()
     await adapter.cleanup()
     assert fake_connection.closed is True
+
+
+# ---------------------------------------------------------------------------
+# Tests — coverage gaps
+# ---------------------------------------------------------------------------
+
+
+def test_ensure_database_dir_real_path(tmp_path) -> None:
+    """ensure_database_dir() creates parent dirs for non-memory databases (lines 42-44)."""
+    from oneiric.adapters.graph.duckdb_pgq import DuckDBPGQSettings
+
+    db_path = tmp_path / "sub" / "graph.db"
+    settings = DuckDBPGQSettings(database=str(db_path))
+    settings.ensure_database_dir()
+    assert db_path.parent.exists()
+
+
+@pytest.mark.asyncio()
+async def test_cleanup_awaitable_close() -> None:
+    """cleanup() awaits close() when it returns a coroutine (line 101)."""
+    closed: list[bool] = []
+
+    class AsyncCloseConn(FakeConnection):
+        async def close(self) -> None:
+            closed.append(True)
+
+    conn = AsyncCloseConn()
+    conn.queue_result([], [])
+    conn.queue_result([], [])
+    conn.queue_result([], [])
+    adapter = DuckDBPGQAdapter(
+        DuckDBPGQSettings(database=":memory:"),
+        connection_factory=lambda: conn,
+        sync_executor=immediate_executor,
+    )
+    await adapter.init()
+    await adapter.cleanup()
+    assert closed == [True]
+
+
+@pytest.mark.asyncio()
+async def test_ingest_edges_empty(adapter: DuckDBPGQAdapter, fake_connection: FakeConnection) -> None:
+    """ingest_edges() returns early when edges is empty (line 106)."""
+    fake_connection.queue_result([], [])
+    fake_connection.queue_result([], [])
+    fake_connection.queue_result([], [])
+    await adapter.init()
+    before = len(fake_connection.executed_many)
+    await adapter.ingest_edges([])
+    assert len(fake_connection.executed_many) == before  # no executemany call
+
+
+@pytest.mark.asyncio()
+async def test_query_no_columns_returns_enumerated_dict(
+    adapter: DuckDBPGQAdapter, fake_connection: FakeConnection
+) -> None:
+    """query() returns dict(enumerate(row)) when no column names (line 136)."""
+    fake_connection.queue_result([], [])
+    fake_connection.queue_result([], [])
+    fake_connection.queue_result([], [])
+    await adapter.init()
+    # Queue result with no columns (empty description)
+    fake_connection.queue_result([(42, "hello")], columns=None)
+    # Force description to None so columns list will be empty
+    fake_connection.description = None
+    rows = await adapter.query("PRAGMA database_list")
+    assert rows == [{0: 42, 1: "hello"}]
+
+
+@pytest.mark.asyncio()
+async def test_ensure_connection_awaitable_factory() -> None:
+    """_ensure_connection awaits factory result when it returns a coroutine (line 146)."""
+    conn = FakeConnection()
+    conn.queue_result([], [])
+    conn.queue_result([], [])
+    conn.queue_result([], [])
+
+    async def async_factory() -> FakeConnection:
+        return conn
+
+    adapter = DuckDBPGQAdapter(
+        DuckDBPGQSettings(),
+        connection_factory=async_factory,
+        sync_executor=immediate_executor,
+    )
+    await adapter.init()
+    assert adapter._conn is conn
+
+
+@pytest.mark.asyncio()
+async def test_bootstrap_early_return_when_no_conn() -> None:
+    """_bootstrap() returns immediately when _conn is None (line 155)."""
+    adapter = DuckDBPGQAdapter(DuckDBPGQSettings(), sync_executor=immediate_executor)
+    # _conn is None — should return without error
+    await adapter._bootstrap()
+
+
+@pytest.mark.asyncio()
+async def test_run_sync_uses_asyncio_to_thread(
+    fake_connection: FakeConnection,
+) -> None:
+    """_run_sync uses asyncio.to_thread when no sync_executor provided (line 194)."""
+    fake_connection.queue_result([], [])
+    fake_connection.queue_result([], [])
+    fake_connection.queue_result([], [])
+    adapter = DuckDBPGQAdapter(
+        DuckDBPGQSettings(database=":memory:"),
+        connection_factory=lambda: fake_connection,
+        # no sync_executor → falls through to asyncio.to_thread
+    )
+    await adapter.init()
+    fake_connection.queue_result([(1,)], ["v"])
+    rows = await adapter.query("SELECT 1")
+    assert rows == [{"v": 1}]
+
+
+def test_default_connection_factory(monkeypatch) -> None:
+    """_default_connection_factory creates duckdb.connect() when duckdb is importable (lines 197-204)."""
+    import sys
+    import types
+
+    created: list[dict] = []
+
+    def fake_connect(database: str, read_only: bool = False) -> FakeConnection:
+        created.append({"database": database, "read_only": read_only})
+        return FakeConnection()
+
+    fake_duckdb = types.ModuleType("duckdb")
+    fake_duckdb.connect = fake_connect  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "duckdb", fake_duckdb)
+
+    adapter = DuckDBPGQAdapter(DuckDBPGQSettings(database=":memory:"))
+    conn = adapter._default_connection_factory()
+    assert isinstance(conn, FakeConnection)
+    assert created[0]["database"] == ":memory:"

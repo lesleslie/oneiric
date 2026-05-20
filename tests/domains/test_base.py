@@ -736,3 +736,48 @@ class TestDomainBridgeActivity:
         cached = bridge._activity["api"]  # type: ignore[attr-defined]
         assert cached.paused is True
         assert cached.note == "maint"
+
+
+class TestDomainBridgeUncoveredBranches:
+    """Cover lines 96 and 140 of domains/base.py."""
+
+    @pytest.mark.asyncio
+    async def test_use_raises_when_candidate_has_no_provider(self) -> None:
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        settings = LayerSettings()
+        bridge = DomainBridge("service", resolver, lifecycle, settings)
+
+        # Register a candidate with provider=None so target_provider is empty
+        resolver.register(
+            Candidate(
+                domain="service",
+                key="api",
+                provider=None,
+                factory=lambda: MockComponent("api"),
+                source=CandidateSource.MANUAL,
+            )
+        )
+
+        with pytest.raises(LifecycleError, match="Candidate missing provider"):
+            await bridge.use("api")
+
+    def test_should_accept_work_delegates_to_supervisor(self, tmp_path: Path) -> None:
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        settings = LayerSettings()
+        store = DomainActivityStore(tmp_path / "activity.sqlite")
+        supervisor = ServiceSupervisor(store)
+        bridge = DomainBridge(
+            "service",
+            resolver,
+            lifecycle,
+            settings,
+            activity_store=store,
+            supervisor=supervisor,
+        )
+
+        store.set("service", "api", DomainActivity(paused=False, draining=False))
+        result = bridge.should_accept_work("api")
+
+        assert result is True

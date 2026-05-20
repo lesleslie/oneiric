@@ -3126,3 +3126,68 @@ class TestSentryApplyFingerprint:
         event = {"tags": None}
         adapter._apply_fingerprint(event)
         assert "fingerprint" not in event
+
+
+# ---------------------------------------------------------------------------
+# Gap-fill: openai.py:367 and anthropic.py:536,538
+# ---------------------------------------------------------------------------
+
+
+class TestOpenAIStreamChunkWithEmptyContent:
+    """openai.py:367 — continue when choices are present but delta.content is falsy."""
+
+    @pytest.mark.asyncio
+    async def test_process_stream_chunks_skips_empty_delta_content(self) -> None:
+        from oneiric.adapters.llm.openai import OpenAILLMAdapter
+
+        adapter = OpenAILLMAdapter(openai_api_key="sk-test")
+
+        async def _mock_stream() -> Any:
+            # chunk with choices but delta.content is None — hits line 367
+            chunk_no_content = MagicMock()
+            chunk_no_content.choices = [MagicMock()]
+            chunk_no_content.choices[0].delta = MagicMock()
+            chunk_no_content.choices[0].delta.content = None
+            chunk_no_content.model = "gpt-3.5-turbo"
+            yield chunk_no_content
+
+            # chunk with real content — should yield
+            chunk_with_content = MagicMock()
+            chunk_with_content.choices = [MagicMock()]
+            chunk_with_content.choices[0].delta = MagicMock()
+            chunk_with_content.choices[0].delta.content = "hi"
+            chunk_with_content.choices[0].finish_reason = "stop"
+            chunk_with_content.model = "gpt-3.5-turbo"
+            yield chunk_with_content
+
+        chunks = []
+        async for chunk in adapter._process_stream_chunks(_mock_stream(), "gpt-3.5-turbo"):
+            chunks.append(chunk)
+
+        assert len(chunks) == 1
+        assert chunks[0].content == "hi"
+
+
+class TestAnthropicAddSamplingParams:
+    """anthropic.py:536,538 — _add_sampling_params with non-default top_p and top_k."""
+
+    def test_build_stream_request_params_with_top_p_and_top_k(self) -> None:
+        from pydantic import SecretStr
+
+        from oneiric.adapters.llm.anthropic import AnthropicLLM
+
+        adapter = AnthropicLLM(
+            anthropic_api_key=SecretStr("sk-ant-test"),
+            top_p=0.85,
+            top_k=40,
+        )
+        params = adapter._build_stream_request_params(
+            "claude-sonnet-4-20250514",
+            4096,
+            0.7,
+            [{"role": "user", "content": "Hello"}],
+            None,
+            {},
+        )
+        assert params["top_p"] == 0.85
+        assert params["top_k"] == 40

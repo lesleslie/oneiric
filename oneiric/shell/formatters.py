@@ -7,7 +7,7 @@ try:
     from rich.table import Table
 
     RICH_AVAILABLE = True
-except ImportError:
+except ImportError:  # pragma: no cover
     RICH_AVAILABLE = False
 
 

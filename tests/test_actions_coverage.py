@@ -2024,3 +2024,23 @@ class TestActionMetadata:
         settings = AutomationTriggerSettings(max_rules=3)
         action = AutomationTriggerAction(settings=settings)
         assert action._settings.max_rules == 3
+
+
+class TestCronExpressionUncoveredPaths:
+    def test_next_after_exhausts_search_window_raises(self) -> None:
+        """next_after raises LifecycleError when search window exhausted — lines 141-142."""
+        expr = _CronExpression("* * * * *")
+        # Patch _MAX_SEARCH_MINUTES to 0 so the loop never runs
+        original = _CronExpression._MAX_SEARCH_MINUTES
+        _CronExpression._MAX_SEARCH_MINUTES = 0
+        try:
+            with pytest.raises(LifecycleError, match="Unable to compute next cron"):
+                expr.next_after(datetime(2026, 1, 1, 12, 0))
+        finally:
+            _CronExpression._MAX_SEARCH_MINUTES = original
+
+    def test_validate_range_wrap_sunday_negative_start_raises(self) -> None:
+        """_validate_range raises ValueError when start<minimum with wrap_sunday=True — line 230."""
+        expr = _CronExpression("* * * * *")
+        with pytest.raises(ValueError, match="Day-of-week values must be between 0 and 7"):
+            expr._validate_range(-1, 6, 0, 7, "-1-6", wrap_sunday=True)

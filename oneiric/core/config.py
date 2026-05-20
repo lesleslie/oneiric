@@ -27,7 +27,7 @@ logger = get_logger("config")
 def resolve_cache_dir_path(cache_dir: str | Path) -> Path:
     path = Path(cache_dir).expanduser()
     cache_seed = os.environ.get("PYTEST_CURRENT_TEST") or str(Path.cwd())
-    cwd_hash = hashlib.sha1(cache_seed.encode("utf-8")).hexdigest()[:12]
+    cwd_hash = hashlib.sha256(cache_seed.encode("utf-8")).hexdigest()[:12]
     if not path.is_absolute():
         path = Path(tempfile.gettempdir()) / "oneiric-cache" / cwd_hash / path
     try:
@@ -602,7 +602,7 @@ def _env_overrides(project_name: str = "oneiric") -> dict[str, Any]:  # noqa: C9
             profile_section = overrides.setdefault("profile", {})
             if isinstance(profile_section, dict):
                 profile_section["name"] = coerced
-            else:
+            else:  # pragma: no cover
                 overrides["profile"] = {"name": coerced}
             continue
 

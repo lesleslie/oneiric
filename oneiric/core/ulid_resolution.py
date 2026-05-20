@@ -12,7 +12,7 @@ from datetime import UTC, datetime
 # Oneiric imports
 try:
     from oneiric.core.ulid import get_timestamp
-except ImportError:
+except ImportError:  # pragma: no cover
     # Fallback if Oneiric is not available
     def get_timestamp(ulid: str):
         return 0

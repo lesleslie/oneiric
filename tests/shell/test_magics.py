@@ -52,3 +52,10 @@ class TestBaseMagics:
         ipython_shell.status("")
         output = capsys.readouterr().out
         assert "unknown" in output
+
+    def test_init_calls_super_and_sets_app_none(self):
+        """__init__ body is covered: super().__init__ + self.app = None — lines 9-10."""
+        mock_shell = MagicMock()
+        with patch("oneiric.shell.magics.Magics.__init__", lambda self, shell: None):
+            magics = BaseMagics(mock_shell)
+        assert magics.app is None

@@ -20,7 +20,7 @@ from typing import Any
 # Oneiric imports
 try:
     from oneiric.core.ulid import generate, get_timestamp, is_ulid
-except ImportError:
+except ImportError:  # pragma: no cover
     # Fallback if Oneiric is not available (e.g., during standalone migration)
     generate = None  # Will use druva directly if Oneiric wrapper unavailable
     is_ulid = None

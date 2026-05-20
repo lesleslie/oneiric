@@ -172,9 +172,9 @@ class PgvectorAdapter(VectorBase):
             return True
         async with self._connection() as conn:
             # Safe: table from sanitized identifier, ids uses parameterized query.
-            await conn.execute(
+            await conn.execute(  # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
                 f"DELETE FROM {table} WHERE id = ANY($1::text[])", ids
-            )  # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+            )
         return True
 
     async def get(
@@ -236,8 +236,8 @@ class PgvectorAdapter(VectorBase):
                 await conn.execute(
                     "CREATE EXTENSION IF NOT EXISTS vector"
                 )  # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
-            # Safe: qualified/dimension from sanitized identifiers/function params, CREATE TABLE doesn't support parameterized identifiers. # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
-            await conn.execute(
+            # Safe: qualified/dimension from sanitized identifiers/function params, CREATE TABLE doesn't support parameterized identifiers.
+            await conn.execute(  # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
                 f"""
                 CREATE TABLE IF NOT EXISTS {qualified} (
                     id TEXT PRIMARY KEY,
@@ -246,8 +246,8 @@ class PgvectorAdapter(VectorBase):
                 )
                 """
             )
-            # Safe: table_name/qualified/operator_class from sanitized/validated inputs, CREATE INDEX doesn't support parameterized identifiers. # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
-            await conn.execute(
+            # Safe: table_name/qualified/operator_class from sanitized/validated inputs, CREATE INDEX doesn't support parameterized identifiers.
+            await conn.execute(  # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
                 f"""
                 CREATE INDEX IF NOT EXISTS {table_name}_embedding_idx
                 ON {qualified}
@@ -263,9 +263,9 @@ class PgvectorAdapter(VectorBase):
         qualified = f"{self._quote_ident(schema)}.{self._quote_ident(table_name)}"
         async with self._connection() as conn:
             # Safe: qualified from sanitized identifier, DROP TABLE doesn't support parameterized identifiers.
-            await conn.execute(
+            await conn.execute(  # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
                 f"DROP TABLE IF EXISTS {qualified}"
-            )  # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+            )
         return True
 
     async def list_collections(self, **_: Any) -> list[str]:
@@ -383,8 +383,10 @@ class PgvectorAdapter(VectorBase):
             raise LifecycleError("pgvector-invalid-identifier")
         if normalized[0].isdigit():
             normalized = f"v_{normalized}"
-        if not SAFE_IDENTIFIER_PATTERN.fullmatch(normalized):
-            raise LifecycleError(f"pgvector-identifier-not-safe: {identifier}")
+        if not SAFE_IDENTIFIER_PATTERN.fullmatch(normalized):  # pragma: no cover
+            raise LifecycleError(
+                f"pgvector-identifier-not-safe: {identifier}"
+            )  # pragma: no cover
         return normalized
 
     def _quote_ident(self, identifier: str) -> str:

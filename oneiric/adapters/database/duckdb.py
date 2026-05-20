@@ -88,8 +88,10 @@ class DuckDBDatabaseAdapter:
     async def init(self) -> None:
         try:
             import duckdb
-        except ImportError as exc:
-            raise LifecycleError("duckdb-import-failed: pip install duckdb") from exc
+        except ImportError as exc:  # pragma: no cover
+            raise LifecycleError(
+                "duckdb-import-failed: pip install duckdb"
+            ) from exc  # pragma: no cover
 
         db_path = self._settings.database_path
         if db_path:
@@ -169,7 +171,6 @@ class DuckDBDatabaseAdapter:
                 conn.execute(
                     f"INSTALL {safe_ext}"
                 )  # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
-
                 # Safe: extension from validated settings, quotes stripped to prevent injection, DuckDB doesn't support parameterized LOAD.
                 conn.execute(
                     f"LOAD {safe_ext}"

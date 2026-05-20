@@ -626,3 +626,46 @@ class TestIntegrationScenarios:
             assert call_log[0][1] == "session_start"
             assert call_log[1][0] == "track_session_end"
             assert call_log[1][1] == "session_end"
+
+
+# ---------------------------------------------------------------------------
+# Gap-fill: uncovered result-parsing branches in emit_session_start (lines 151-160)
+# ---------------------------------------------------------------------------
+
+
+class TestEmitSessionStartResultBranches:
+    @pytest.mark.asyncio
+    async def test_list_item_without_text_attr_falls_back_to_str(
+        self, emitter, mock_session
+    ):
+        """List item without .text uses str(item) — lines 151-153."""
+        item_without_text = object()  # no .text attribute
+        mock_session.call_tool = AsyncMock(return_value=[item_without_text])
+        emitter._session = mock_session
+
+        with patch.object(emitter, "_check_availability", return_value=True):
+            session_id = await emitter.emit_session_start("TestShell")
+
+        assert session_id == str(item_without_text)
+
+    @pytest.mark.asyncio
+    async def test_direct_string_result_returned(self, emitter, mock_session):
+        """Direct string result is returned as session_id — lines 154-157."""
+        mock_session.call_tool = AsyncMock(return_value="direct-session-id")
+        emitter._session = mock_session
+
+        with patch.object(emitter, "_check_availability", return_value=True):
+            session_id = await emitter.emit_session_start("TestShell")
+
+        assert session_id == "direct-session-id"
+
+    @pytest.mark.asyncio
+    async def test_unexpected_result_type_returns_none(self, emitter, mock_session):
+        """Unexpected result type logs error and returns None — lines 158-160."""
+        mock_session.call_tool = AsyncMock(return_value=42)  # neither list nor str
+        emitter._session = mock_session
+
+        with patch.object(emitter, "_check_availability", return_value=True):
+            session_id = await emitter.emit_session_start("TestShell")
+
+        assert session_id is None

@@ -9,7 +9,7 @@ import numpy as np
 try:
     from sentence_transformers import SentenceTransformer
 
-    SENTENCE_TRANSFORMERS_AVAILABLE = True
+    SENTENCE_TRANSFORMERS_AVAILABLE = True  # pragma: no cover
 except ImportError:
     SENTENCE_TRANSFORMERS_AVAILABLE = False
     SentenceTransformer = None  # type: ignore

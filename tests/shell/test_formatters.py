@@ -222,3 +222,50 @@ class TestBaseProgressFormatter:
         fmt.console = None
         fmt.format_progress("loading...")
         assert "loading..." in capsys.readouterr().out
+
+
+# ---------------------------------------------------------------------------
+# Gap-fill: uncovered branches in formatters.py
+# ---------------------------------------------------------------------------
+
+
+class TestFormatterNoRichInit:
+    def test_table_formatter_no_rich_sets_console_none(self):
+        with patch("oneiric.shell.formatters.RICH_AVAILABLE", False):
+            fmt = BaseTableFormatter()
+            assert fmt.console is None
+
+    def test_log_formatter_no_rich_sets_console_none(self):
+        with patch("oneiric.shell.formatters.RICH_AVAILABLE", False):
+            fmt = BaseLogFormatter()
+            assert fmt.console is None
+
+    def test_progress_formatter_no_rich_sets_console_none(self):
+        with patch("oneiric.shell.formatters.RICH_AVAILABLE", False):
+            fmt = BaseProgressFormatter()
+            assert fmt.console is None
+
+
+class TestFormatterFallbackPaths:
+    def test_format_table_routes_to_fallback_when_no_console(self, capsys):
+        """format_table calls _format_table_fallback when console is None — lines 38-39."""
+        fmt = BaseTableFormatter.__new__(BaseTableFormatter)
+        fmt.console = None
+        fmt.format_table("Title", [TableColumn(name="x")], [{"x": "val"}])
+        output = capsys.readouterr().out
+        assert "Title" in output
+
+    def test_format_logs_routes_to_rich_when_console_set(self):
+        """format_logs calls _format_logs_rich when RICH_AVAILABLE and console present — line 95."""
+        mock_console = MagicMock()
+        fmt = BaseLogFormatter(console=mock_console)
+        logs = [{"level": "INFO", "timestamp": "2026-01-01T00:00:00", "message": "msg"}]
+        fmt.format_logs(logs)
+        mock_console.print.assert_called()
+
+    def test_progress_formatter_default_console_creation(self):
+        """BaseProgressFormatter() with no args creates Console() — line 130."""
+        with patch("oneiric.shell.formatters.Console") as mock_cls:
+            fmt = BaseProgressFormatter()
+            mock_cls.assert_called_once()
+            assert fmt.console is mock_cls.return_value

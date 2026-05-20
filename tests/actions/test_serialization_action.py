@@ -70,3 +70,92 @@ async def test_serialization_action_invalid_format() -> None:
 
     with pytest.raises(LifecycleError):
         await action.execute({"value": {}, "format": "msgpack"})
+
+
+@pytest.mark.asyncio
+async def test_serialization_action_invalid_mode_raises() -> None:
+    action = SerializationAction()
+    with pytest.raises(LifecycleError, match="serialization-invalid-mode"):
+        await action.execute({"value": {}, "mode": "validate"})
+
+
+@pytest.mark.asyncio
+async def test_serialization_encode_uses_data_key_fallback() -> None:
+    action = SerializationAction()
+    result = await action.execute({"data": {"x": 1}, "format": "json"})
+    assert result["status"] == "encoded"
+    assert json.loads(result["text"]) == {"x": 1}
+
+
+@pytest.mark.asyncio
+async def test_serialization_encode_no_value_raises() -> None:
+    action = SerializationAction()
+    with pytest.raises(LifecycleError, match="serialization-value-required"):
+        await action.execute({"format": "json"})
+
+
+@pytest.mark.asyncio
+async def test_serialization_decode_no_source_raises() -> None:
+    action = SerializationAction()
+    with pytest.raises(LifecycleError, match="serialization-source-required"):
+        await action.execute({"mode": "decode", "format": "json"})
+
+
+@pytest.mark.asyncio
+async def test_serialization_decode_uses_value_key_fallback() -> None:
+    action = SerializationAction()
+    result = await action.execute(
+        {"mode": "decode", "format": "json", "value": '{"x": 1}'}
+    )
+    assert result["data"] == {"x": 1}
+
+
+@pytest.mark.asyncio
+async def test_serialization_decode_text_format_bytes_input() -> None:
+    action = SerializationAction()
+    result = await action.execute(
+        {"mode": "decode", "format": "json", "data": b'{"y": 2}'}
+    )
+    assert result["data"] == {"y": 2}
+
+
+@pytest.mark.asyncio
+async def test_serialization_decode_text_format_non_str_raises() -> None:
+    action = SerializationAction()
+    with pytest.raises(LifecycleError, match="serialization-text-required"):
+        await action.execute({"mode": "decode", "format": "json", "data": 99})
+
+
+@pytest.mark.asyncio
+async def test_serialization_decode_binary_format_non_bytes_raises() -> None:
+    action = SerializationAction()
+    with pytest.raises(LifecycleError, match="serialization-binary-required"):
+        await action.execute({"mode": "decode", "format": "pickle", "data": 42})
+
+
+@pytest.mark.asyncio
+async def test_serialization_pickle_path_roundtrip(tmp_path) -> None:
+    action = SerializationAction()
+    path = tmp_path / "payload.pkl"
+
+    encoded = await action.execute(
+        {"format": "pickle", "value": {"k": "v"}, "path": str(path)}
+    )
+    assert encoded["format"] == "pickle"
+    assert path.exists()
+
+    decoded = await action.execute(
+        {"mode": "decode", "format": "pickle", "path": str(path)}
+    )
+    assert decoded["data"] == {"k": "v"}
+
+
+@pytest.mark.asyncio
+async def test_serialization_decode_binary_bytes_input() -> None:
+    action = SerializationAction()
+    # Encode via the action to get valid raw bytes without importing pickle
+    encoded = await action.execute({"format": "pickle", "value": {"z": 3}})
+    raw_bytes = base64.b64decode(encoded["data"])
+    # Pass raw bytes directly to exercise the `isinstance(value, bytes) -> return value` branch
+    result = await action.execute({"mode": "decode", "format": "pickle", "data": raw_bytes})
+    assert result["data"] == {"z": 3}

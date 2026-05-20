@@ -91,3 +91,103 @@ async def test_security_secure_action_hash_and_verify_password() -> None:
     )
 
     assert verified["valid"] is True
+
+
+# ---------------------------------------------------------------------------
+# Gap-fill: uncovered branches in security.py
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_security_signature_invalid_algorithm_raises() -> None:
+    action = SecuritySignatureAction(SecuritySignatureSettings(secret="test"))
+    with pytest.raises(LifecycleError):
+        await action.execute({"message": "x", "algorithm": "md5"})
+
+
+@pytest.mark.asyncio
+async def test_security_signature_invalid_encoding_raises() -> None:
+    action = SecuritySignatureAction(SecuritySignatureSettings(secret="test"))
+    with pytest.raises(LifecycleError):
+        await action.execute({"message": "x", "encoding": "binary"})
+
+
+@pytest.mark.asyncio
+async def test_security_signature_include_timestamp() -> None:
+    action = SecuritySignatureAction(
+        SecuritySignatureSettings(secret="s", include_timestamp=True)
+    )
+    result = await action.execute({"message": "x"})
+    assert "timestamp" in result
+
+
+@pytest.mark.asyncio
+async def test_security_signature_uses_body_key() -> None:
+    action = SecuritySignatureAction(
+        SecuritySignatureSettings(secret="s", include_timestamp=False)
+    )
+    result = await action.execute({"body": "body-content"})
+    expected = hmac.new(b"s", b"body-content", hashlib.sha256).hexdigest()
+    assert result["signature"] == expected
+
+
+@pytest.mark.asyncio
+async def test_security_signature_message_required_raises() -> None:
+    action = SecuritySignatureAction(SecuritySignatureSettings(secret="s"))
+    with pytest.raises(LifecycleError):
+        await action.execute({})
+
+
+@pytest.mark.asyncio
+async def test_security_signature_bytes_message() -> None:
+    action = SecuritySignatureAction(
+        SecuritySignatureSettings(secret="s", include_timestamp=False)
+    )
+    result = await action.execute({"message": b"raw-bytes"})
+    expected = hmac.new(b"s", b"raw-bytes", hashlib.sha256).hexdigest()
+    assert result["signature"] == expected
+
+
+@pytest.mark.asyncio
+async def test_security_secure_compare_mode_equal() -> None:
+    action = SecuritySecureAction()
+    result = await action.execute({"mode": "compare", "a": "same", "b": "same"})
+    assert result["status"] == "compare"
+    assert result["equal"] is True
+
+
+@pytest.mark.asyncio
+async def test_security_secure_compare_mode_not_equal() -> None:
+    action = SecuritySecureAction()
+    result = await action.execute({"mode": "compare", "a": "aaa", "b": "bbb"})
+    assert result["equal"] is False
+
+
+@pytest.mark.asyncio
+async def test_security_secure_compare_invalid_raises() -> None:
+    action = SecuritySecureAction()
+    with pytest.raises(LifecycleError):
+        await action.execute({"mode": "compare", "a": 1, "b": "ok"})
+
+
+@pytest.mark.asyncio
+async def test_security_secure_invalid_mode_raises() -> None:
+    action = SecuritySecureAction()
+    with pytest.raises(LifecycleError):
+        await action.execute({"mode": "unknown-mode"})
+
+
+@pytest.mark.asyncio
+async def test_security_hash_password_missing_raises() -> None:
+    action = SecuritySecureAction()
+    with pytest.raises(LifecycleError):
+        await action.execute({"mode": "password-hash"})
+
+
+@pytest.mark.asyncio
+async def test_security_verify_password_invalid_inputs_raises() -> None:
+    action = SecuritySecureAction()
+    with pytest.raises(LifecycleError):
+        await action.execute(
+            {"mode": "password-verify", "password": None, "hash": "h", "salt": "s"}
+        )

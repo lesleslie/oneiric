@@ -396,3 +396,66 @@ def test_settings_defaults() -> None:
     assert s.group == "oneiric"
     assert s.auto_create_group is True
     assert s.block_ms == 1000
+
+
+# ---------------------------------------------------------------------------
+# Tests — coverage gaps (lines 98, 138, 144)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_init_from_url_when_no_client_injected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """init() calls Redis.from_url when no client is injected (line 98)."""
+    client = MockRedisClient()
+
+    class FakeRedis:
+        @classmethod
+        def from_url(cls, url: str, **kw: Any) -> MockRedisClient:
+            return client
+
+    monkeypatch.setattr("oneiric.adapters.queue.redis_streams.Redis", FakeRedis)
+
+    adapter = RedisStreamsQueueAdapter(
+        RedisStreamsQueueSettings(url="redis://localhost:6379/0")
+    )
+    await adapter.init()
+    assert adapter._client is client
+    adapter._owns_client = False
+    await adapter.cleanup()
+
+
+@pytest.mark.asyncio
+async def test_close_client_connection_awaitable_close(monkeypatch: pytest.MonkeyPatch) -> None:
+    """_close_client_connection awaits close() when it returns a coroutine (line 138)."""
+    closed: list[bool] = []
+
+    class AsyncCloseClient(MockRedisClient):
+        async def close(self) -> None:
+            closed.append(True)
+
+    client = AsyncCloseClient()
+    adapter = RedisStreamsQueueAdapter(RedisStreamsQueueSettings(), redis_client=client)
+    adapter._owns_client = True
+    await adapter.init()
+    await adapter._close_client_connection()
+    assert closed == [True]
+
+
+@pytest.mark.asyncio
+async def test_disconnect_pool_awaitable_disconnect(monkeypatch: pytest.MonkeyPatch) -> None:
+    """_disconnect_connection_pool awaits disconnect() when it returns a coroutine (line 144)."""
+    disconnected: list[bool] = []
+
+    class AsyncPool:
+        async def disconnect(self) -> None:
+            disconnected.append(True)
+
+    client = MockRedisClient()
+    client.connection_pool = AsyncPool()  # type: ignore[assignment]
+    adapter = RedisStreamsQueueAdapter(RedisStreamsQueueSettings(), redis_client=client)
+    adapter._owns_client = True
+    await adapter.init()
+    await adapter._disconnect_connection_pool()
+    assert disconnected == [True]

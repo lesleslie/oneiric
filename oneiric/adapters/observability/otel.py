@@ -371,6 +371,8 @@ class OTelStorageAdapter(ABC):
         try:
             from sqlalchemy import select
 
+            from oneiric.adapters.observability.models import LogModel
+
             async with self._session_factory() as session:
                 query = select(LogModel).where(LogModel.trace_id == trace_id)
 

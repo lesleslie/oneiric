@@ -334,3 +334,74 @@ class TestJsonSchema:
         assert "properties" in schema
         assert "session_id" in schema["properties"]
         assert "timestamp" in schema["properties"]
+
+
+# ---------------------------------------------------------------------------
+# Gap-fill: uncovered validator raise paths in event_models.py
+# ---------------------------------------------------------------------------
+
+
+class TestSessionStartEventValidatorRaisePaths:
+    @pytest.fixture
+    def base_kwargs(self):
+        return {
+            "event_version": "1.0",
+            "event_id": "550e8400-e29b-41d4-a716-446655440000",
+            "component_name": "mahavishnu",
+            "shell_type": "MahavishnuShell",
+            "timestamp": "2026-02-06T12:34:56.789Z",
+            "pid": 12345,
+            "user": {"username": "john", "home": "/home/john"},
+            "hostname": "server01",
+            "environment": {
+                "python_version": "3.13.0",
+                "platform": "linux",
+                "cwd": "/home/john/projects",
+            },
+        }
+
+    def test_wrong_event_type_raises(self, base_kwargs):
+        """validate_event_type raises for non-'session_start' value — lines 259-260."""
+        base_kwargs["event_type"] = "session_end"
+        with pytest.raises(Exception, match="Invalid event_type"):
+            SessionStartEvent(**base_kwargs)
+
+    def test_explicit_correct_event_type_passes(self, base_kwargs):
+        """validate_event_type return path covered when event_type passed explicitly — line 261."""
+        base_kwargs["event_type"] = "session_start"
+        event = SessionStartEvent(**base_kwargs)
+        assert event.event_type == "session_start"
+
+    def test_malformed_iso_timestamp_raises(self, base_kwargs):
+        """validate_timestamp except-branch raises for parseable-but-invalid ISO — lines 307-308."""
+        base_kwargs["timestamp"] = "2026-02-06T99:99:99"
+        with pytest.raises(Exception, match="Invalid ISO 8601 timestamp"):
+            SessionStartEvent(**base_kwargs)
+
+
+class TestSessionEndEventValidatorRaisePaths:
+    def test_wrong_event_type_raises(self):
+        """validate_event_type raises for non-'session_end' value — lines 382-383."""
+        with pytest.raises(Exception, match="Invalid event_type"):
+            SessionEndEvent(
+                event_type="session_start",
+                session_id="sess_abc123",
+                timestamp="2026-02-06T12:34:56.789Z",
+            )
+
+    def test_explicit_correct_event_type_passes(self):
+        """validate_event_type return path covered when event_type passed explicitly — line 384."""
+        event = SessionEndEvent(
+            event_type="session_end",
+            session_id="sess_abc123",
+            timestamp="2026-02-06T12:34:56.789Z",
+        )
+        assert event.event_type == "session_end"
+
+    def test_malformed_iso_timestamp_raises(self):
+        """validate_timestamp except-branch raises for T-present-but-invalid timestamp — lines 409-410."""
+        with pytest.raises(Exception, match="Invalid ISO 8601 timestamp"):
+            SessionEndEvent(
+                session_id="sess_abc123",
+                timestamp="2026-02-06T99:99:99",
+            )

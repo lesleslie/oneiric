@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import datetime
 import json
-from unittest.mock import AsyncMock, Mock, PropertyMock
+from contextlib import asynccontextmanager
+from unittest.mock import AsyncMock, MagicMock, Mock, PropertyMock, patch
 
 import pytest
 
@@ -109,3 +110,106 @@ async def test_http_fetch_action_requires_url() -> None:
 
     with pytest.raises(LifecycleError):
         await action.execute({})
+
+
+# ---------------------------------------------------------------------------
+# Gap-fill: uncovered branches in http.py
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_http_invalid_method_raises() -> None:
+    action = HttpFetchAction(HttpActionSettings(base_url="https://api.local"), client=MagicMock())
+    with pytest.raises(LifecycleError):
+        await action.execute({"url": "https://api.local/x", "method": "CONNECT"})
+
+
+@pytest.mark.asyncio
+async def test_http_non_json_response() -> None:
+    mock_response = _mock_response(status_code=200, text="plain text")
+    mock_response.json.side_effect = ValueError("not json")
+    mock_client = AsyncMock()
+    mock_client.request.return_value = mock_response
+
+    action = HttpFetchAction(HttpActionSettings(base_url="https://api.local"), client=mock_client)
+    result = await action.execute({"url": "https://api.local/text"})
+
+    assert result["json"] is None
+    assert result["text"] == "plain text"
+
+
+@pytest.mark.asyncio
+async def test_http_build_url_direct() -> None:
+    """_build_url returns str(url) when url key is provided directly (line 163)."""
+    mock_response = _mock_response({"ok": True})
+    mock_client = AsyncMock()
+    mock_client.request.return_value = mock_response
+
+    action = HttpFetchAction(HttpActionSettings(base_url=None), client=mock_client)
+    result = await action.execute({"url": "https://direct.example.com/path"})
+    assert result["status_code"] == 200
+
+
+@pytest.mark.asyncio
+async def test_http_build_url_base_url_no_path() -> None:
+    """_build_url returns base_url when base_url set but no path (line 167)."""
+    mock_response = _mock_response({"ok": True})
+    mock_client = AsyncMock()
+    mock_client.request.return_value = mock_response
+
+    action = HttpFetchAction(HttpActionSettings(base_url="https://api.local"), client=mock_client)
+    result = await action.execute({})  # no url, no path
+    assert result["status_code"] == 200
+
+
+@pytest.mark.asyncio
+async def test_http_headers_not_mapping_raises() -> None:
+    action = HttpFetchAction(HttpActionSettings(base_url="https://api.local"), client=MagicMock())
+    with pytest.raises(LifecycleError):
+        await action.execute({"url": "https://api.local/x", "headers": "not-a-mapping"})
+
+
+@pytest.mark.asyncio
+async def test_http_params_not_mapping_raises() -> None:
+    action = HttpFetchAction(HttpActionSettings(base_url="https://api.local"), client=MagicMock())
+    with pytest.raises(LifecycleError):
+        await action.execute({"url": "https://api.local/x", "params": "not-a-mapping"})
+
+
+@pytest.mark.asyncio
+async def test_http_no_client_uses_internal_client() -> None:
+    """When client=None, HttpFetchAction uses an internal httpx.AsyncClient (lines 217-222)."""
+    mock_response = _mock_response({"result": "ok"})
+    mock_inner_client = AsyncMock()
+    mock_inner_client.request = AsyncMock(return_value=mock_response)
+
+    with patch("oneiric.actions.http.httpx.AsyncClient") as MockAsyncClient:
+        MockAsyncClient.return_value.__aenter__ = AsyncMock(return_value=mock_inner_client)
+        MockAsyncClient.return_value.__aexit__ = AsyncMock(return_value=None)
+
+        action = HttpFetchAction(HttpActionSettings(base_url="https://api.local"), client=None)
+        result = await action.execute({"url": "https://api.local/x"})
+        assert result["status_code"] == 200
+
+
+@pytest.mark.asyncio
+async def test_elapsed_ms_runtime_error_then_returns_none() -> None:
+    """_elapsed_ms returns None when both elapsed accesses raise RuntimeError (lines 227-232)."""
+    response = MagicMock()
+    type(response).elapsed = PropertyMock(side_effect=RuntimeError("not read"))
+    response.aread = AsyncMock(return_value=None)
+
+    action = HttpFetchAction(HttpActionSettings(base_url="https://api.local"))
+    result = await action._elapsed_ms(response)
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_elapsed_ms_none_elapsed_returns_none() -> None:
+    """_elapsed_ms returns None when elapsed is None (line 234)."""
+    response = MagicMock()
+    type(response).elapsed = PropertyMock(return_value=None)
+
+    action = HttpFetchAction(HttpActionSettings(base_url="https://api.local"))
+    result = await action._elapsed_ms(response)
+    assert result is None

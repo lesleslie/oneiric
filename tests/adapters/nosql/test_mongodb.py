@@ -221,3 +221,129 @@ async def test_aggregate_normalizes_results(
 
     assert results == [{"_id": "1", "count": 5}]
     assert collection.last_pipeline == [{"$match": {}}]
+
+
+# ---------------------------------------------------------------------------
+# Tests — coverage gaps
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio()
+async def test_health_pings_server(
+    adapter: MongoDBAdapter, fake_client: FakeClient
+) -> None:
+    """health() calls admin.command('ping') and returns True (lines 101-104)."""
+    await adapter.init()
+    fake_client.admin.pings = 0
+    result = await adapter.health()
+    assert result is True
+    assert fake_client.admin.pings == 1
+
+
+@pytest.mark.asyncio()
+async def test_cleanup_clears_client(
+    adapter: MongoDBAdapter, fake_client: FakeClient
+) -> None:
+    """cleanup() closes client and nils _client/_db (lines 110-114)."""
+    await adapter.init()
+    await adapter.cleanup()
+    assert fake_client.closed is True
+    assert adapter._client is None
+    assert adapter._db is None
+
+
+def test_collection_raises_when_db_none() -> None:
+    """_collection() raises LifecycleError when _db is None (line 212)."""
+    from oneiric.core.lifecycle import LifecycleError
+
+    settings = MongoDBSettings(database="test_db")
+    adapter = MongoDBAdapter(settings)
+    assert adapter._db is None
+    with pytest.raises(LifecycleError, match="mongodb-database-not-initialized"):
+        adapter._collection(None)
+
+
+def test_client_params_uri_branch() -> None:
+    """_client_params() sets host=uri when uri is provided (line 222)."""
+    settings = MongoDBSettings(database="test", uri="mongodb://mongo.example.com/test")
+    adapter = MongoDBAdapter(settings)
+    params = adapter._client_params()
+    assert params["host"] == "mongodb://mongo.example.com/test"
+    assert "port" not in params
+
+
+def test_client_params_username_password() -> None:
+    """_client_params() sets username/password fields (lines 227, 229)."""
+    from pydantic import SecretStr
+
+    settings = MongoDBSettings(
+        database="test", username="user", password=SecretStr("s3cr3t")
+    )
+    adapter = MongoDBAdapter(settings)
+    params = adapter._client_params()
+    assert params["username"] == "user"
+    assert params["password"] == "s3cr3t"
+
+
+def test_client_params_auth_source_explicit() -> None:
+    """_client_params() sets authSource when auth_source is given (line 231)."""
+    settings = MongoDBSettings(database="test", auth_source="admin")
+    adapter = MongoDBAdapter(settings)
+    params = adapter._client_params()
+    assert params["authSource"] == "admin"
+
+
+def test_client_params_auth_source_fallback() -> None:
+    """_client_params() defaults authSource to database when username but no auth_source (line 233)."""
+    settings = MongoDBSettings(database="mydb", username="user")
+    adapter = MongoDBAdapter(settings)
+    params = adapter._client_params()
+    assert params["authSource"] == "mydb"
+
+
+def test_client_params_replica_set() -> None:
+    """_client_params() sets replicaSet when replica_set is configured (line 235)."""
+    settings = MongoDBSettings(database="test", replica_set="rs0")
+    adapter = MongoDBAdapter(settings)
+    params = adapter._client_params()
+    assert params["replicaSet"] == "rs0"
+
+
+def test_default_client_factory(monkeypatch: pytest.MonkeyPatch) -> None:
+    """_default_client_factory creates MotorClient when motor is importable (lines 239-245)."""
+    import sys
+    import types
+
+    created: list[dict] = []
+
+    class FakeMotorClient:
+        def __init__(self, **kwargs: Any) -> None:
+            created.append(kwargs)
+
+    fake_motor = types.ModuleType("motor")
+    fake_motor_asyncio = types.ModuleType("motor.motor_asyncio")
+    fake_motor_asyncio.AsyncIOMotorClient = FakeMotorClient  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "motor", fake_motor)
+    monkeypatch.setitem(sys.modules, "motor.motor_asyncio", fake_motor_asyncio)
+
+    settings = MongoDBSettings(database="test")
+    adapter = MongoDBAdapter(settings)
+    client = adapter._default_client_factory(host="localhost", port=27017)
+    assert isinstance(client, FakeMotorClient)
+    assert len(created) == 1
+
+
+def test_serialize_document_none_returns_none() -> None:
+    """_serialize_document returns None for falsy document (line 251)."""
+    settings = MongoDBSettings(database="test")
+    adapter = MongoDBAdapter(settings)
+    assert adapter._serialize_document(None) is None
+    assert adapter._serialize_document({}) is None
+
+
+def test_projection_dict_no_fields_returns_none() -> None:
+    """_projection_dict returns None when fields is None or empty (line 267)."""
+    settings = MongoDBSettings(database="test")
+    adapter = MongoDBAdapter(settings)
+    assert adapter._projection_dict(None) is None
+    assert adapter._projection_dict([]) is None

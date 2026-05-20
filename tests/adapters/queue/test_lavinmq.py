@@ -558,3 +558,404 @@ async def test_reject_awaitable_method() -> None:
     await adapter.init()
     await adapter.reject(AsyncRejectMessage(), requeue=False)
     assert rejected == [False]
+
+
+# ---------------------------------------------------------------------------
+# Tests — coverage gaps
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_health_mqtt_isinstance_true() -> None:
+    """health() returns True when mqtt_client is an aiomqtt.Client instance (line 260)."""
+    adapter, _ = _mqtt_adapter()
+    await adapter.init()
+    # Replace client with actual aiomqtt.Client instance (mocked by fixture)
+    adapter._mqtt_client = sys.modules["aiomqtt"].Client()
+    assert await adapter.health() is True
+
+
+@pytest.mark.asyncio
+async def test_cleanup_with_channel_and_connection_set() -> None:
+    """cleanup() closes channel and connection when they are set (lines 270-271, 273-274)."""
+    channel = MockChannel()
+    connection = MockConnection(channel)
+
+    # Use only connection factory (no channel/queue factories) to force full chain
+    adapter = LavinMQQueueAdapter(
+        LavinMQSettings(preferred_protocol=Protocol.AMQP),
+        amqp_connection_factory=lambda kwargs: connection,
+        # no channel/queue factories → _ensure_amqp_queue calls _ensure_amqp_channel
+        # which calls _ensure_amqp_connection
+    )
+    await adapter.init()
+    # After init, both channel and connection are set
+    assert adapter._amqp_channel is channel
+    assert adapter._amqp_connection is connection
+    await adapter.cleanup()
+    assert adapter._amqp_channel is None
+    assert adapter._amqp_connection is None
+
+
+@pytest.mark.asyncio
+async def test_cleanup_mqtt_disconnect_raises() -> None:
+    """cleanup() swallows exceptions from mqtt_client.disconnect() (lines 281-282)."""
+
+    class FailingMqttClient(MockMqttClient):
+        async def disconnect(self) -> None:
+            raise OSError("connection lost")
+
+    adapter = LavinMQQueueAdapter(
+        LavinMQSettings(preferred_protocol=Protocol.MQTT),
+        mqtt_factory=lambda **kw: FailingMqttClient(),
+    )
+    await adapter.init()
+    # Should not raise even though disconnect() raises
+    await adapter.cleanup()
+    assert adapter._mqtt_client is None
+
+
+@pytest.mark.asyncio
+async def test_ensure_amqp_connection_returns_cached() -> None:
+    """_ensure_amqp_connection returns cached connection on second call (line 421)."""
+    channel = MockChannel()
+    connection = MockConnection(channel)
+
+    adapter = LavinMQQueueAdapter(
+        LavinMQSettings(preferred_protocol=Protocol.AMQP),
+        amqp_connection_factory=lambda kwargs: connection,
+    )
+    await adapter.init()
+    c1 = await adapter._ensure_amqp_connection()
+    c2 = await adapter._ensure_amqp_connection()
+    assert c1 is c2 is connection
+
+
+@pytest.mark.asyncio
+async def test_ensure_amqp_connection_via_aio_pika(monkeypatch: Any) -> None:
+    """_ensure_amqp_connection imports aio_pika when no factory (lines 426-433)."""
+    channel = MockChannel()
+    connection = MockConnection(channel)
+
+    class FakeAioPika:
+        @staticmethod
+        async def connect_robust(**kwargs: Any) -> MockConnection:
+            return connection
+
+    fake_aio_pika = types.ModuleType("aio_pika")
+    fake_aio_pika.connect_robust = FakeAioPika.connect_robust  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "aio_pika", fake_aio_pika)
+
+    adapter = LavinMQQueueAdapter(
+        LavinMQSettings(preferred_protocol=Protocol.AMQP),
+        # no connection/channel/queue factories → full aio_pika path
+    )
+    await adapter.init()
+    assert adapter._amqp_connection is connection
+
+
+@pytest.mark.asyncio
+async def test_ensure_amqp_channel_returns_cached() -> None:
+    """_ensure_amqp_channel returns cached channel on second call (line 442)."""
+    channel = MockChannel()
+    connection = MockConnection(channel)
+
+    adapter = LavinMQQueueAdapter(
+        LavinMQSettings(preferred_protocol=Protocol.AMQP),
+        amqp_connection_factory=lambda kwargs: connection,
+    )
+    await adapter.init()
+    ch1 = await adapter._ensure_amqp_channel()
+    ch2 = await adapter._ensure_amqp_channel()
+    assert ch1 is ch2 is channel
+
+
+@pytest.mark.asyncio
+async def test_build_amqp_message_via_aio_pika(monkeypatch: Any) -> None:
+    """_build_amqp_message imports aio_pika.Message when no channel factory (lines 486-492)."""
+    messages_built: list[tuple[bytes, dict]] = []
+
+    class FakeMessage:
+        def __init__(self, body: bytes, headers: dict[str, Any]) -> None:
+            messages_built.append((body, headers))
+
+    fake_aio_pika = types.ModuleType("aio_pika")
+    fake_aio_pika.Message = FakeMessage  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "aio_pika", fake_aio_pika)
+
+    channel = MockChannel()
+    connection = MockConnection(channel)
+
+    adapter = LavinMQQueueAdapter(
+        LavinMQSettings(preferred_protocol=Protocol.AMQP),
+        amqp_connection_factory=lambda kwargs: connection,
+        # no channel_factory → _build_amqp_message uses aio_pika.Message
+    )
+    await adapter.init()
+    msg = await adapter._build_amqp_message(b"data", {"h": "v"})
+    assert isinstance(msg, FakeMessage)
+    assert messages_built[0] == (b"data", {"h": "v"})
+
+
+def test_amqp_connection_kwargs_with_ssl_options() -> None:
+    """_amqp_connection_kwargs includes ssl_options when ssl=True (lines 507-509)."""
+    adapter = LavinMQQueueAdapter(
+        LavinMQSettings(ssl=True, ssl_options={"certfile": "/cert.pem"})
+    )
+    kwargs = adapter._amqp_connection_kwargs()
+    assert kwargs["ssl"] is True
+    assert kwargs["ssl_options"] == {"certfile": "/cert.pem"}
+
+
+@pytest.mark.asyncio
+async def test_init_mqtt_with_all_optional_settings() -> None:
+    """_init_mqtt sets client_id, username, and password when configured (lines 520-521, 531, 534, 536)."""
+    client_kwargs_captured: list[dict] = []
+
+    def capturing_factory(**kwargs: Any) -> MockMqttClient:
+        client_kwargs_captured.append(kwargs)
+        return MockMqttClient()
+
+    adapter = LavinMQQueueAdapter(
+        LavinMQSettings(
+            preferred_protocol=Protocol.MQTT,
+            mqtt_client_id="my-client",
+            mqtt_username="user",
+            mqtt_password="pass",
+        ),
+        mqtt_factory=capturing_factory,
+    )
+    await adapter.init()
+    assert client_kwargs_captured[0]["client_id"] == "my-client"
+    assert client_kwargs_captured[0]["username"] == "user"
+    assert client_kwargs_captured[0]["password"] == "pass"
+
+
+@pytest.mark.asyncio
+async def test_init_mqtt_without_factory_uses_aiomqtt() -> None:
+    """_init_mqtt uses aiomqtt.Client directly when no mqtt_factory (line 541)."""
+    adapter = LavinMQQueueAdapter(
+        LavinMQSettings(preferred_protocol=Protocol.MQTT),
+        # no mqtt_factory → uses sys.modules["aiomqtt"].Client
+    )
+    await adapter.init()
+    # The autouse fixture mocks aiomqtt.Client = _FakeClient
+    assert adapter._mqtt_client is not None
+    assert isinstance(adapter._mqtt_client, sys.modules["aiomqtt"].Client)
+
+
+@pytest.mark.asyncio
+async def test_mqtt_publish_when_client_none() -> None:
+    """_mqtt_publish logs warning and returns when mqtt_client is None (lines 600-601)."""
+    adapter, _ = _mqtt_adapter()
+    await adapter.init()
+    adapter._mqtt_client = None
+    # Should not raise — just logs warning and returns
+    await adapter._mqtt_publish(b"data")
+
+
+@pytest.mark.asyncio
+async def test_mqtt_publish_exception_propagates() -> None:
+    """_mqtt_publish re-raises exceptions from client.publish() (lines 617-619)."""
+
+    class FailPublishClient(MockMqttClient):
+        async def publish(self, *args: Any, **kwargs: Any) -> None:
+            raise OSError("network error")
+
+    adapter = LavinMQQueueAdapter(
+        LavinMQSettings(preferred_protocol=Protocol.MQTT),
+        mqtt_factory=lambda **kw: FailPublishClient(),
+    )
+    await adapter.init()
+    with pytest.raises(OSError, match="network error"):
+        await adapter._mqtt_publish(b"data")
+
+
+@pytest.mark.asyncio
+async def test_close_component_with_callable_close() -> None:
+    """_close_component calls close() when it exists and is callable (lines 627-632)."""
+    closed: list[bool] = []
+
+    class CloseableComponent:
+        def close(self) -> None:
+            closed.append(True)
+
+    adapter = LavinMQQueueAdapter(LavinMQSettings())
+    await adapter._close_component(CloseableComponent())
+    assert closed == [True]
+
+
+@pytest.mark.asyncio
+async def test_close_component_with_async_close() -> None:
+    """_close_component awaits close() when it's a coroutine (lines 631-632)."""
+    closed: list[bool] = []
+
+    class AsyncCloseableComponent:
+        async def close(self) -> None:
+            closed.append(True)
+
+    adapter = LavinMQQueueAdapter(LavinMQSettings())
+    await adapter._close_component(AsyncCloseableComponent())
+    assert closed == [True]
+
+
+def test_get_metrics_url() -> None:
+    """get_metrics_url() returns correct Prometheus endpoint (line 636)."""
+    adapter = LavinMQQueueAdapter(LavinMQSettings(metrics_port=15692))
+    assert adapter.get_metrics_url() == "http://localhost:15692/metrics"
+
+
+@pytest.mark.asyncio
+async def test_close_component_no_close_method() -> None:
+    """_close_component returns early when component has no callable close (line 629)."""
+
+    class NoCloseComponent:
+        pass
+
+    adapter = LavinMQQueueAdapter(LavinMQSettings())
+    # Should not raise — just returns
+    await adapter._close_component(NoCloseComponent())
+
+
+@pytest.mark.asyncio
+async def test_health_aiomqtt_import_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    """health() swallows ImportError when aiomqtt is not importable (lines 261-262)."""
+    adapter, _ = _mqtt_adapter()
+    await adapter.init()
+    # Replace client with non-aiomqtt object, then make aiomqtt unimportable
+    adapter._mqtt_client = MockMqttClient()
+    monkeypatch.setitem(sys.modules, "aiomqtt", None)  # type: ignore[arg-type]
+    # health() except ImportError → pass → falls through to len(active_protocols)
+    result = await adapter.health()
+    assert result is True
+
+
+@pytest.mark.asyncio
+async def test_ensure_amqp_connection_aio_pika_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+    """_ensure_amqp_connection raises LifecycleError when aio_pika not installed (lines 428-429)."""
+    from oneiric.core.lifecycle import LifecycleError
+
+    monkeypatch.setitem(sys.modules, "aio_pika", None)  # type: ignore[arg-type]
+
+    adapter = LavinMQQueueAdapter(
+        LavinMQSettings(preferred_protocol=Protocol.AMQP),
+        # no factory → tries to import aio_pika
+    )
+    with pytest.raises(LifecycleError, match="aio-pika-not-installed"):
+        await adapter._ensure_amqp_connection()
+
+
+@pytest.mark.asyncio
+async def test_build_amqp_message_aio_pika_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+    """_build_amqp_message raises LifecycleError when aio_pika not installed (lines 488-489)."""
+    from oneiric.core.lifecycle import LifecycleError
+
+    monkeypatch.setitem(sys.modules, "aio_pika", None)  # type: ignore[arg-type]
+
+    adapter = LavinMQQueueAdapter(
+        LavinMQSettings(preferred_protocol=Protocol.AMQP),
+        # no channel_factory → _build_amqp_message tries from aio_pika import Message
+    )
+    with pytest.raises(LifecycleError, match="aio-pika-not-installed"):
+        await adapter._build_amqp_message(b"data", {})
+
+
+@pytest.mark.asyncio
+async def test_init_mqtt_aiomqtt_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+    """_init_mqtt raises LifecycleError when aiomqtt is not installed (lines 520-521)."""
+    from oneiric.core.lifecycle import LifecycleError
+
+    monkeypatch.setitem(sys.modules, "aiomqtt", None)  # type: ignore[arg-type]
+
+    adapter = LavinMQQueueAdapter(
+        LavinMQSettings(preferred_protocol=Protocol.MQTT),
+        # no mqtt_factory → tries import aiomqtt
+    )
+    with pytest.raises(LifecycleError, match="aiomqtt-not-installed"):
+        await adapter.init()
+
+
+@pytest.mark.asyncio
+async def test_mqtt_subscriber_processes_message() -> None:
+    """_mqtt_subscriber processes MQTT messages into the internal queue (lines 558-573)."""
+    from types import SimpleNamespace
+
+    class _FakeCtxMessages:
+        def __init__(self) -> None:
+            self._pending: list[Any] = [
+                SimpleNamespace(
+                    topic=SimpleNamespace(value="test/topic"),
+                    qos=1,
+                    payload=b"hello",
+                    retain=False,
+                )
+            ]
+
+        async def __aenter__(self) -> "_FakeCtxMessages":
+            return self
+
+        async def __aexit__(self, *a: Any) -> None:
+            pass
+
+        async def subscribe(self, topic: str, qos: int) -> None:
+            pass
+
+        def __aiter__(self) -> "_FakeCtxMessages":
+            return self
+
+        async def __anext__(self) -> Any:
+            if self._pending:
+                return self._pending.pop(0)
+            raise StopAsyncIteration
+
+    class _FullMqttClient(MockMqttClient):
+        async def connect(self) -> None:
+            pass
+
+        def messages(self) -> _FakeCtxMessages:
+            return _FakeCtxMessages()
+
+    adapter = LavinMQQueueAdapter(
+        LavinMQSettings(preferred_protocol=Protocol.MQTT),
+        mqtt_factory=lambda **kw: _FullMqttClient(),
+    )
+    adapter._mqtt_client = _FullMqttClient()
+    adapter._active_protocols.add(Protocol.MQTT)
+    # Call directly to get coverage (background tasks bypass coverage tracking)
+    await adapter._mqtt_subscriber()
+    msg = adapter._mqtt_messages.get_nowait()
+    assert msg.body == b"hello"
+    assert msg.source_protocol == Protocol.MQTT
+
+
+@pytest.mark.asyncio
+async def test_mqtt_subscriber_reconnects_on_exception(monkeypatch: pytest.MonkeyPatch) -> None:
+    """_mqtt_subscriber creates reconnect task after connection failure (lines 587-588)."""
+    tasks_created: list[asyncio.Task] = []
+    real_create_task = asyncio.create_task
+
+    def capturing_create_task(coro: Any, **kw: Any) -> asyncio.Task:
+        task = real_create_task(coro, **kw)
+        tasks_created.append(task)
+        task.cancel()  # prevent infinite retry loop
+        return task
+
+    monkeypatch.setattr(asyncio, "create_task", capturing_create_task)
+
+    async def instant_sleep(_: float) -> None:
+        pass
+
+    monkeypatch.setattr(asyncio, "sleep", instant_sleep)
+
+    class _FailConnectClient(MockMqttClient):
+        async def connect(self) -> None:
+            raise OSError("connection refused")
+
+    adapter = LavinMQQueueAdapter(
+        LavinMQSettings(preferred_protocol=Protocol.MQTT, reconnect_interval=0),
+    )
+    adapter._mqtt_client = _FailConnectClient()
+    adapter._active_protocols.add(Protocol.MQTT)
+    await adapter._mqtt_subscriber()
+    # Reconnect task must have been created
+    assert len(tasks_created) >= 1

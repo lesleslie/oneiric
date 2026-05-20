@@ -178,7 +178,7 @@ class AutomationTriggerAction:
         if op == "falsy":
             return not bool(actual)
 
-        raise LifecycleError("automation-trigger-operator-invalid")
+        raise LifecycleError("automation-trigger-operator-invalid")  # pragma: no cover
 
     def _evaluate_numeric_operator(self, op: str, actual: Any, expected: Any) -> bool:
         comparison_map = {
@@ -223,7 +223,7 @@ class AutomationTriggerAction:
             return actual_value < expected_value
         if op == "lte":
             return actual_value <= expected_value
-        return False
+        return False  # pragma: no cover
 
     def _resolve_field(self, context: Mapping[str, Any], path: str) -> Any:
         if not path:

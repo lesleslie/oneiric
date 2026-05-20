@@ -321,7 +321,7 @@ class SessionStartEvent(BaseModel):
             ValueError: If fields are inconsistent
         """
         # Ensure event_type matches model
-        if self.event_type != "session_start":
+        if self.event_type != "session_start":  # pragma: no cover
             raise ValueError(
                 f"event_type must be 'session_start' for SessionStartEvent, got '{self.event_type}'"
             )

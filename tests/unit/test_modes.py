@@ -342,3 +342,134 @@ class TestModeIntegration:
             assert isinstance(config.signature_required, bool)
             assert isinstance(config.setup_time_minutes, int)
             assert config.setup_time_minutes > 0
+
+
+# ---------------------------------------------------------------------------
+# Gap-fill: uncovered branches in modes/base.py, modes/standard.py, modes/utils.py
+# ---------------------------------------------------------------------------
+
+
+class TestBaseModeUncoveredPaths:
+    def test_base_validate_environment_returns_empty(self) -> None:
+        """Base OperationMode.validate_environment() returns [] — line 118."""
+        from oneiric.modes.base import ModeConfig, OperationMode
+
+        class _MinimalMode(OperationMode):
+            @property
+            def name(self) -> str:
+                return "minimal"
+
+            def get_config(self) -> ModeConfig:
+                return ModeConfig(
+                    name="minimal",
+                    remote_enabled=False,
+                    signature_required=False,
+                    manifest_sync_enabled=False,
+                    cloud_backup_enabled=False,
+                    watchers_enabled=False,
+                    supervisor_enabled=False,
+                    inline_manifest_only=True,
+                    setup_time_minutes=1,
+                )
+
+        mode = _MinimalMode()
+        assert mode.validate_environment() == []
+        assert mode.get_startup_message() == "Starting Oneiric in minimal mode..."
+
+    def test_register_mode_adds_to_registry(self) -> None:
+        """register_mode stores class by lowercased name — line 149."""
+        from oneiric.modes.base import ModeConfig, OperationMode, _MODE_REGISTRY, register_mode
+
+        class RegisteredTestMode2(OperationMode):
+            @property
+            def name(self) -> str:
+                return "registeredtest2"
+
+            def get_config(self) -> ModeConfig:
+                return ModeConfig(
+                    name="registeredtest2",
+                    remote_enabled=False,
+                    signature_required=False,
+                    manifest_sync_enabled=False,
+                    cloud_backup_enabled=False,
+                    watchers_enabled=False,
+                    supervisor_enabled=False,
+                    inline_manifest_only=True,
+                    setup_time_minutes=1,
+                )
+
+        register_mode(RegisteredTestMode2)
+        assert "registeredtestmode2" in _MODE_REGISTRY
+
+    def test_get_mode_invalid_name_raises(self) -> None:
+        """get_mode raises ValueError for unknown mode — lines 190-192."""
+        from oneiric.modes.base import get_mode
+
+        with pytest.raises(ValueError, match="Invalid mode"):
+            get_mode("completelyunknownxyz")
+
+
+class TestStandardModeValidateEnvErrorPaths:
+    def test_permission_error_appended(self) -> None:
+        """PermissionError during cache dir setup yields a validation error — lines 119-122."""
+        from unittest.mock import MagicMock, patch
+
+        mode = StandardMode()
+        mock_cache_dir = MagicMock()
+        write_test_mock = MagicMock()
+        write_test_mock.touch.side_effect = PermissionError("no write")
+        mock_cache_dir.__truediv__ = MagicMock(return_value=write_test_mock)
+        with patch("oneiric.modes.standard.resolve_cache_dir_path", return_value=mock_cache_dir):
+            errors = mode.validate_environment()
+        assert any("not writable" in e for e in errors)
+
+    def test_generic_exception_appended(self) -> None:
+        """Generic exception during cache dir setup yields a validation error — lines 123-124."""
+        from unittest.mock import MagicMock, patch
+
+        mode = StandardMode()
+        mock_cache_dir = MagicMock()
+        write_test_mock = MagicMock()
+        write_test_mock.touch.side_effect = OSError("disk full")
+        mock_cache_dir.__truediv__ = MagicMock(return_value=write_test_mock)
+        with patch("oneiric.modes.standard.resolve_cache_dir_path", return_value=mock_cache_dir):
+            errors = mode.validate_environment()
+        assert any("Failed to access" in e for e in errors)
+
+
+class TestModeUtilsUncoveredPaths:
+    def test_load_mode_config_file_nonexistent_mode_returns_none(self) -> None:
+        """load_mode_config_file traverses to package root and returns None — lines 94-103."""
+        config_path = load_mode_config_file("nonexistent-mode-xyz-2026")
+        assert config_path is None
+
+    def test_validate_mode_requirements_cache_dir_created(self, tmp_path) -> None:
+        """validate_mode_requirements creates missing cache dir — lines 159-160."""
+        from oneiric.core.config import OneiricSettings
+
+        settings = OneiricSettings()
+        settings = settings.model_copy(
+            update={"remote": settings.remote.model_copy(
+                update={"cache_dir": str(tmp_path / "new_cache_dir_xyz")}
+            )}
+        )
+        mode = create_mode("lite")
+        errors = validate_mode_requirements(mode, settings)
+        assert isinstance(errors, list)
+
+    def test_validate_mode_requirements_cache_mkdir_fails(self, tmp_path) -> None:
+        """validate_mode_requirements appends error if mkdir raises — lines 161-162."""
+        from unittest.mock import patch
+
+        from oneiric.core.config import OneiricSettings
+
+        settings = OneiricSettings()
+        settings = settings.model_copy(
+            update={"remote": settings.remote.model_copy(
+                update={"cache_dir": str(tmp_path / "blocked_cache")}
+            )}
+        )
+        mode = create_mode("lite")
+        with patch("pathlib.Path.mkdir", side_effect=OSError("no space")):
+            errors = validate_mode_requirements(mode, settings)
+        assert any("Cannot create cache directory" in e for e in errors)

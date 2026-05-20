@@ -49,3 +49,44 @@ def test_register_builtin_adapters_registers_memory_adapter() -> None:
     shadowed = resolver.list_shadowed("adapter")
     combined = itertools.chain(active, shadowed)
     assert any(c.provider == "memory" and c.key == "cache" for c in combined)
+
+
+# ---------------------------------------------------------------------------
+# Tests — coverage gaps
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_memory_cache_health() -> None:
+    cache = MemoryCacheAdapter()
+    assert await cache.health() is True
+
+
+@pytest.mark.asyncio
+async def test_memory_cache_delete() -> None:
+    cache = MemoryCacheAdapter()
+    await cache.init()
+    await cache.set("k", "v")
+    await cache.delete("k")
+    assert await cache.get("k") is None
+
+
+@pytest.mark.asyncio
+async def test_memory_cache_clear() -> None:
+    cache = MemoryCacheAdapter()
+    await cache.init()
+    await cache.set("a", 1)
+    await cache.set("b", 2)
+    await cache.clear()
+    assert await cache.get("a") is None
+    assert await cache.get("b") is None
+
+
+@pytest.mark.asyncio
+async def test_memory_cache_negative_ttl_raises() -> None:
+    from oneiric.core.lifecycle import LifecycleError
+
+    cache = MemoryCacheAdapter()
+    await cache.init()
+    with pytest.raises(LifecycleError, match="negative-ttl-not-allowed"):
+        await cache.set("k", "v", ttl=-1.0)

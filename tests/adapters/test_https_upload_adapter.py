@@ -83,3 +83,64 @@ async def test_https_upload_adapter_upload_file_and_error() -> None:
     tmp_path.unlink()
     await adapter.cleanup()
     await client.aclose()
+
+
+# ---------------------------------------------------------------------------
+# Tests — coverage gaps
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_https_upload_init_creates_client() -> None:
+    """init() creates httpx.AsyncClient when none provided (lines 72-82)."""
+    adapter = HTTPSUploadAdapter(
+        HTTPSUploadSettings(base_url="https://example.com", timeout=10.0, verify_tls=False)
+    )
+    await adapter.init()
+    assert adapter._client is not None
+    assert adapter._owns_client is True
+    await adapter.cleanup()
+    assert adapter._client is None
+
+
+@pytest.mark.asyncio
+async def test_https_upload_cleanup_owned_client() -> None:
+    """cleanup() closes client when _owns_client=True (line 87)."""
+    adapter = HTTPSUploadAdapter(HTTPSUploadSettings())
+    await adapter.init()
+    assert adapter._owns_client is True
+    await adapter.cleanup()
+    assert adapter._client is None
+
+
+@pytest.mark.asyncio
+async def test_https_upload_health_with_base_url() -> None:
+    """health() GETs base_url and returns True on sub-500 status (lines 92-96)."""
+    transport = httpx.MockTransport(lambda r: httpx.Response(200))
+    client = httpx.AsyncClient(transport=transport, base_url="https://example.com")
+    adapter = HTTPSUploadAdapter(
+        HTTPSUploadSettings(base_url="https://example.com"),
+        client=client,
+    )
+    await adapter.init()
+    assert await adapter.health() is True
+    await adapter.cleanup()
+
+
+@pytest.mark.asyncio
+async def test_https_upload_health_no_base_url() -> None:
+    """health() returns True immediately when base_url is None (line 92)."""
+    adapter = HTTPSUploadAdapter(
+        HTTPSUploadSettings(),
+        client=httpx.AsyncClient(),
+    )
+    await adapter.init()
+    assert await adapter.health() is True
+    await adapter.cleanup()
+
+
+def test_https_upload_ensure_client_raises_when_not_initialized() -> None:
+    """_ensure_client raises LifecycleError when client is not set (line 159)."""
+    adapter = HTTPSUploadAdapter(HTTPSUploadSettings())
+    with pytest.raises(LifecycleError, match="https-upload-client-not-initialized"):
+        adapter._ensure_client()

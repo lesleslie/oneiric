@@ -997,3 +997,259 @@ class TestCrossDomainIntegration:
         assert "task" in snapshot
         assert snapshot["service"]["api"].paused is True
         assert snapshot["task"]["email"].draining is True
+
+
+# ---------------------------------------------------------------------------
+# Gap-fill: uncovered branches in domains/events.py
+# ---------------------------------------------------------------------------
+
+
+class TestEventBridgeUncoveredPaths:
+    def test_update_settings_refreshes_dispatcher(self) -> None:
+        """update_settings calls super() then refresh_dispatcher — lines 48-49."""
+        from unittest.mock import MagicMock, patch
+
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        settings = LayerSettings()
+        bridge = EventBridge(resolver, lifecycle, settings)
+
+        new_settings = LayerSettings()
+        with patch.object(bridge, "refresh_dispatcher") as mock_refresh:
+            bridge.update_settings(new_settings)
+
+        assert bridge.settings is new_settings
+        mock_refresh.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_emit_with_telemetry_calls_record(self) -> None:
+        """emit calls telemetry.record_event_dispatch when telemetry is set — line 73."""
+        from unittest.mock import AsyncMock, MagicMock
+
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        settings = LayerSettings()
+        telemetry = MagicMock()
+
+        bridge = EventBridge(resolver, lifecycle, settings, telemetry=telemetry)
+        bridge._dispatcher.dispatch = AsyncMock(return_value=[])
+
+        await bridge.emit("test.topic", {"key": "val"})
+
+        telemetry.record_event_dispatch.assert_called_once_with("test.topic", [])
+
+    def test_dispatcher_method_returns_dispatcher(self) -> None:
+        """dispatcher() returns the internal EventDispatcher instance — line 108."""
+        from oneiric.runtime.events import EventDispatcher
+
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        settings = LayerSettings()
+        bridge = EventBridge(resolver, lifecycle, settings)
+
+        result = bridge.dispatcher()
+        assert isinstance(result, EventDispatcher)
+
+
+# ---------------------------------------------------------------------------
+# Gap-fill: uncovered branches in domains/workflows.py
+# ---------------------------------------------------------------------------
+
+
+class TestWorkflowBridgeUncoveredPaths:
+    def _make_bridge(self, **kwargs):
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        settings = LayerSettings()
+        return resolver, lifecycle, settings, WorkflowBridge(
+            resolver, lifecycle, settings, **kwargs
+        )
+
+    def test_dag_specs_returns_copy(self) -> None:
+        resolver, lifecycle, settings, bridge = self._make_bridge()
+        resolver.register(
+            Candidate(
+                domain="workflow",
+                key="wf",
+                provider="demo",
+                factory=lambda: MockComponent("wf"),
+                metadata={"dag": {"nodes": []}},
+                source=CandidateSource.MANUAL,
+            )
+        )
+        bridge.refresh_dags()
+        specs = bridge.dag_specs()
+        assert "wf" in specs
+
+    def test_update_settings_refreshes_queue_category_when_no_override(self) -> None:
+        resolver, lifecycle, settings, bridge = self._make_bridge(queue_category=None)
+        new_settings = LayerSettings(options={"queue_category": "queue.new"})
+        bridge.update_settings(new_settings)
+        assert bridge._queue_category == "queue.new"
+
+    def test_update_settings_preserves_override_queue_category(self) -> None:
+        resolver, lifecycle, settings, bridge = self._make_bridge(queue_category="queue.fixed")
+        new_settings = LayerSettings(options={"queue_category": "queue.new"})
+        bridge.update_settings(new_settings)
+        assert bridge._queue_category == "queue.fixed"
+
+    @pytest.mark.asyncio
+    async def test_execute_dag_raises_without_task_bridge(self) -> None:
+        resolver, lifecycle, settings, bridge = self._make_bridge()
+        resolver.register(
+            Candidate(
+                domain="workflow",
+                key="dag-wf",
+                provider="demo",
+                factory=lambda: MockComponent("wf"),
+                metadata={"dag": {"nodes": []}},
+                source=CandidateSource.MANUAL,
+            )
+        )
+        bridge.refresh_dags()
+        with pytest.raises(Exception, match="workflow-dag-missing-task-bridge"):
+            await bridge.execute_dag("dag-wf")
+
+    @pytest.mark.asyncio
+    async def test_execute_dag_records_telemetry(self) -> None:
+        from unittest.mock import MagicMock
+
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        settings = LayerSettings()
+        telemetry = MagicMock()
+        task_bridge = TaskBridge(resolver, lifecycle, settings)
+        bridge = WorkflowBridge(
+            resolver, lifecycle, settings, task_bridge=task_bridge, telemetry=telemetry
+        )
+        recorder: list[str] = []
+
+        resolver.register(
+            Candidate(
+                domain="task",
+                key="t1",
+                provider="w",
+                factory=lambda: DemoTaskRunner("t1", recorder),
+                source=CandidateSource.MANUAL,
+            )
+        )
+        resolver.register(
+            Candidate(
+                domain="workflow",
+                key="telem-wf",
+                provider="demo",
+                factory=lambda: MockComponent("wf"),
+                metadata={"dag": {"nodes": [{"id": "step1", "task": "t1"}]}},
+                source=CandidateSource.MANUAL,
+            )
+        )
+        bridge.refresh_dags()
+        await bridge.execute_dag("telem-wf")
+        telemetry.record_workflow_execution.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_enqueue_workflow_raises_without_queue_bridge(self) -> None:
+        resolver, lifecycle, settings, bridge = self._make_bridge()
+        resolver.register(
+            Candidate(
+                domain="workflow",
+                key="wf",
+                provider="demo",
+                factory=lambda: MockComponent("wf"),
+                source=CandidateSource.MANUAL,
+            )
+        )
+        with pytest.raises(Exception, match="workflow-queue-bridge-missing"):
+            await bridge.enqueue_workflow("wf")
+
+    @pytest.mark.asyncio
+    async def test_enqueue_workflow_raises_for_missing_workflow(self) -> None:
+        queue_bridge = FakeQueueBridge()
+        resolver, lifecycle, settings, bridge = self._make_bridge(queue_bridge=queue_bridge)
+        with pytest.raises(Exception, match="workflow-missing"):
+            await bridge.enqueue_workflow("nonexistent")
+
+    @pytest.mark.asyncio
+    async def test_enqueue_workflow_raises_when_adapter_lacks_enqueue(self) -> None:
+        class NoEnqueueAdapter:
+            pass
+
+        class BrokenQueueBridge:
+            async def use(self, category, *, provider=None, force_reload=False):
+                return FakeQueueHandle(
+                    category=category,
+                    provider=provider or "p",
+                    instance=NoEnqueueAdapter(),
+                    settings={},
+                    metadata={},
+                )
+
+        resolver = Resolver()
+        lifecycle = LifecycleManager(resolver)
+        settings = LayerSettings()
+        bridge = WorkflowBridge(
+            resolver, lifecycle, settings, queue_bridge=BrokenQueueBridge()
+        )
+        resolver.register(
+            Candidate(
+                domain="workflow",
+                key="broken-wf",
+                provider="demo",
+                factory=lambda: MockComponent("wf"),
+                source=CandidateSource.MANUAL,
+            )
+        )
+        with pytest.raises(Exception, match="workflow-queue-adapter-missing-enqueue"):
+            await bridge.enqueue_workflow("broken-wf")
+
+    def test_get_dag_spec_raises_for_missing_key(self) -> None:
+        resolver, lifecycle, settings, bridge = self._make_bridge()
+        with pytest.raises(Exception, match="workflow-dag-missing"):
+            bridge._get_dag_spec("nonexistent")
+
+    def test_build_task_definitions_raises_for_missing_fields(self) -> None:
+        resolver, lifecycle, settings, bridge = self._make_bridge()
+        with pytest.raises(Exception, match="workflow-dag-node-missing-fields"):
+            bridge._build_task_definitions({"nodes": [{"task": "t1"}]}, None)
+
+    def test_load_checkpoint_data_returns_passed_checkpoint(self) -> None:
+        resolver, lifecycle, settings, bridge = self._make_bridge()
+        data = {"step1": "done"}
+        result = bridge._load_checkpoint_data(
+            "wf", data, use_checkpoint_store=True, resume_from_checkpoint=True
+        )
+        assert result == {"step1": "done"}
+
+    def test_load_checkpoint_data_returns_empty_when_store_disabled(self) -> None:
+        resolver, lifecycle, settings, bridge = self._make_bridge()
+        result = bridge._load_checkpoint_data(
+            "wf", None, use_checkpoint_store=False, resume_from_checkpoint=True
+        )
+        assert result == {}
+
+    def test_load_checkpoint_data_loads_from_store(self, tmp_path) -> None:
+        from oneiric.runtime.checkpoints import WorkflowCheckpointStore
+
+        store = WorkflowCheckpointStore(tmp_path / "ckpt.sqlite")
+        store.save("wf", {"step1": "ok"})
+        resolver, lifecycle, settings, bridge = self._make_bridge(checkpoint_store=store)
+        result = bridge._load_checkpoint_data(
+            "wf", None, use_checkpoint_store=True, resume_from_checkpoint=True
+        )
+        assert result == {"step1": "ok"}
+
+    def test_resolve_scheduler_details_handles_non_dict_metadata(self) -> None:
+        resolver, lifecycle, settings, bridge = self._make_bridge()
+        candidate = Candidate(
+            domain="workflow",
+            key="wf",
+            provider="demo",
+            factory=lambda: MockComponent("wf"),
+            metadata={"scheduler": "not-a-dict"},
+            source=CandidateSource.MANUAL,
+        )
+        category, provider = bridge._resolve_scheduler_details(
+            candidate, override_category="queue.test", override_provider=None
+        )
+        assert category == "queue.test"
+        assert provider is None

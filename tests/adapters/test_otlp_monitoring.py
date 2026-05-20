@@ -166,3 +166,52 @@ async def test_otlp_adapter_requires_enabled_pipeline(monkeypatch) -> None:
     )
     with pytest.raises(LifecycleError):
         await adapter.init()
+
+
+# ---------------------------------------------------------------------------
+# Tests — coverage gaps
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_otlp_adapter_includes_release_in_resource(monkeypatch: pytest.MonkeyPatch) -> None:
+    """init() adds service.version to resource_attrs when release is set (line 86)."""
+    resource_attrs_captured: list[dict] = []
+    base = _fake_components()
+
+    class CapturingResource:
+        def __init__(self, attributes: dict) -> None:
+            resource_attrs_captured.append(dict(attributes))
+
+    components = _OTLPComponents(
+        metrics_api=base.metrics_api,
+        trace_api=base.trace_api,
+        Resource=CapturingResource,
+        TracerProvider=base.TracerProvider,
+        BatchSpanProcessor=base.BatchSpanProcessor,
+        MeterProvider=base.MeterProvider,
+        MetricReader=base.MetricReader,
+        grpc_span_exporter_cls=base.grpc_span_exporter_cls,
+        grpc_metric_exporter_cls=base.grpc_metric_exporter_cls,
+        http_span_exporter_cls=base.http_span_exporter_cls,
+        http_metric_exporter_cls=base.http_metric_exporter_cls,
+    )
+
+    adapter = OTLPObservabilityAdapter(OTLPObservabilitySettings(release="v1.2.3"))
+    monkeypatch.setattr(
+        OTLPObservabilityAdapter,
+        "_import_components",
+        lambda self: components,
+    )
+    await adapter.init()
+
+    assert resource_attrs_captured
+    assert resource_attrs_captured[0].get("service.version") == "v1.2.3"
+
+
+@pytest.mark.asyncio
+async def test_otlp_import_components_returns_otlp_components() -> None:
+    """_import_components() returns _OTLPComponents when all deps available (line 183)."""
+    adapter = OTLPObservabilityAdapter(OTLPObservabilitySettings())
+    components = adapter._import_components()
+    assert isinstance(components, _OTLPComponents)

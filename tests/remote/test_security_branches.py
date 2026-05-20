@@ -85,3 +85,38 @@ def test_sign_manifest_for_publishing_and_canonical_form() -> None:
 def test_sanitize_filename_removes_traversal_and_nul() -> None:
     assert sanitize_filename("../bad\x00name.txt") == "badname.txt"
     assert sanitize_filename("..") == "sanitized_file"
+
+
+def test_verify_manifest_signature_uses_env_keys_when_none_passed(monkeypatch) -> None:
+    monkeypatch.setenv(ENV_TRUSTED_PUBLIC_KEYS, "")
+    ok, error = verify_manifest_signature("{}", "aGVsbG8=")
+    assert ok is False
+    assert "No trusted public keys" in error
+
+
+def test_verify_manifest_signatures_no_keys_returns_false(monkeypatch) -> None:
+    monkeypatch.setenv(ENV_TRUSTED_PUBLIC_KEYS, "")
+    ok, error, count = verify_manifest_signatures("{}", ["aGVsbG8="])
+    assert ok is False
+    assert "No trusted public keys" in error
+    assert count == 0
+
+
+def test_verify_manifest_signatures_threshold_not_met_returns_error() -> None:
+    private_key = Ed25519PrivateKey.generate()
+    public_key = private_key.public_key()
+    canonical = '{"source":"test"}'
+    valid_sig = base64.b64encode(
+        private_key.sign(canonical.encode("utf-8"))
+    ).decode("ascii")
+    bad_sig = base64.b64encode(b"invalidsig").decode("ascii")
+
+    ok, error, count = verify_manifest_signatures(
+        canonical,
+        [bad_sig, valid_sig],
+        threshold=2,
+        trusted_keys=[public_key],
+    )
+    assert ok is False
+    assert "threshold not met" in error
+    assert count == 1

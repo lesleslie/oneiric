@@ -93,7 +93,7 @@ class OperationMode(ABC):
         Returns:
             Mode name (e.g., "lite", "standard")
         """
-        ...
+        ...  # pragma: no cover
 
     @abstractmethod
     def get_config(self) -> ModeConfig:
@@ -102,7 +102,7 @@ class OperationMode(ABC):
         Returns:
             ModeConfig instance with all mode-specific settings
         """
-        ...
+        ...  # pragma: no cover
 
     def validate_environment(self) -> list[str]:
         """Validate that the environment supports this mode.

@@ -222,7 +222,10 @@ class EventDispatchAction:  # noqa: C901
                 headers.setdefault("x-hook-secret", hook.secret)
             try:
                 body = json.dumps(event, default=self._json_default).encode("utf-8")
-            except (TypeError, ValueError) as exc:
+            except (
+                TypeError,
+                ValueError,
+            ) as exc:  # pragma: no cover - _json_default handles all types
                 raise LifecycleError("event-dispatch-json-invalid") from exc
             try:
                 response = await client.request(

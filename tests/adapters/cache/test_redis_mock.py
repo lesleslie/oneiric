@@ -415,3 +415,123 @@ async def test_cleanup_uses_sync_close_fallback() -> None:
     await adapter.cleanup()
     assert closed == [True]
     assert adapter._client is None
+
+
+# ---------------------------------------------------------------------------
+# Tests — _close_client / _disconnect_pool direct-call guard paths
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_close_client_no_client() -> None:
+    adapter = _make()
+    adapter._client = None
+    await adapter._close_client()  # must not raise
+
+
+@pytest.mark.asyncio
+async def test_close_client_awaitable_sync_close() -> None:
+    """_close_client awaits the result when close() returns a coroutine."""
+    closed: list[bool] = []
+
+    class AsyncCloseViaSyncMethod:
+        def __init__(self) -> None:
+            self.connection_pool = _MockPool()
+
+        async def ping(self) -> bool:
+            return True
+
+        async def close(self) -> None:
+            closed.append(True)
+
+    client = AsyncCloseViaSyncMethod()
+    adapter = RedisCacheAdapter(
+        RedisCacheSettings(), redis_client=client  # type: ignore[arg-type]
+    )
+    adapter._owns_client = True
+    await adapter.init()
+    await adapter._close_client()
+    assert closed == [True]
+
+
+@pytest.mark.asyncio
+async def test_disconnect_pool_no_client() -> None:
+    adapter = _make()
+    adapter._client = None
+    await adapter._disconnect_pool()  # must not raise
+
+
+@pytest.mark.asyncio
+async def test_disconnect_pool_no_pool() -> None:
+    """_disconnect_pool returns early when client has no connection_pool."""
+
+    class NopoolClient:
+        async def ping(self) -> bool:
+            return True
+
+        async def aclose(self) -> None:
+            pass
+
+    client = NopoolClient()
+    adapter = RedisCacheAdapter(
+        RedisCacheSettings(), redis_client=client  # type: ignore[arg-type]
+    )
+    await adapter.init()
+    await adapter._disconnect_pool()  # must not raise
+
+
+@pytest.mark.asyncio
+async def test_disconnect_pool_no_disconnect_method() -> None:
+    """_disconnect_pool returns early when pool has no disconnect attribute."""
+    from types import SimpleNamespace
+
+    client = MockRedisClient()
+    client.connection_pool = SimpleNamespace()  # type: ignore[assignment]
+    adapter = _make(client=client)
+    await adapter.init()
+    await adapter._disconnect_pool()  # must not raise
+
+
+# ---------------------------------------------------------------------------
+# Tests — _create_client with TrackingCache kwargs
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_create_client_with_tracking_cache_kwargs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """_create_client passes all optional TrackingCache kwargs when set."""
+    cache_kwargs_received: list[dict[str, Any]] = []
+
+    class FakeTrackingCache:
+        def __init__(self, **kw: Any) -> None:
+            cache_kwargs_received.append(kw)
+
+    class FakeRedis:
+        def __init__(self, **kw: Any) -> None:
+            self.connection_pool = _MockPool()
+
+        async def ping(self) -> bool:
+            return True
+
+        async def aclose(self) -> None:
+            pass
+
+    monkeypatch.setattr("oneiric.adapters.cache.redis.Redis", FakeRedis)
+    monkeypatch.setattr("oneiric.adapters.cache.redis.TrackingCache", FakeTrackingCache)
+
+    adapter = RedisCacheAdapter(
+        RedisCacheSettings(
+            enable_client_cache=True,
+            client_cache_max_keys=500,
+            client_cache_max_size_bytes=2048,
+            client_cache_max_idle_seconds=30,
+        )
+    )
+    await adapter.init()
+    assert cache_kwargs_received == [
+        {"max_keys": 500, "max_size_bytes": 2048, "max_idle_seconds": 30}
+    ]
+    adapter._owns_client = False
+    await adapter.cleanup()
