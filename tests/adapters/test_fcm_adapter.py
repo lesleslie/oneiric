@@ -66,11 +66,9 @@ async def test_fcm_requires_token() -> None:
 async def test_httpx_adapter_performs_requests() -> None:
     import httpx
 
-    from oneiric.adapters.http.httpx import HTTPClientAdapter, HTTPClientSettings
+    from oneiric.adapters.http.httpx import HTTPClientAdapter
 
-    transport = httpx.MockTransport(
-        lambda req: httpx.Response(200, json={"ok": True})
-    )
+    transport = httpx.MockTransport(lambda req: httpx.Response(200, json={"ok": True}))
     adapter = HTTPClientAdapter(transport=transport)
     await adapter.init()
 
@@ -246,7 +244,9 @@ def test_default_sender_success() -> None:
 def test_build_message_payload_no_firebase_admin() -> None:
     adapter = FCMPushAdapter(FCMPushSettings())
     with pytest.raises(LifecycleError, match="fcm-firebase-admin-not-initialized"):
-        adapter._build_message_payload(NotificationMessage(text="hi", target="tok"), "tok")
+        adapter._build_message_payload(
+            NotificationMessage(text="hi", target="tok"), "tok"
+        )
 
 
 def test_build_message_payload_basic() -> None:
@@ -326,7 +326,9 @@ async def test_fcm_send_notification_default_token() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_fcm_default_app_factory_via_sys_modules(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_fcm_default_app_factory_via_sys_modules(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_default_app_factory imports firebase_admin from sys.modules (lines 101-121)."""
     import sys
     import types
@@ -360,6 +362,7 @@ def test_fcm_default_app_factory_via_sys_modules(monkeypatch: pytest.MonkeyPatch
 
     # Test with credentials_file and project_id (lines 115, 120)
     import pathlib
+
     adapter = FCMPushAdapter(
         FCMPushSettings(
             credentials_file=pathlib.Path("/fake/creds.json"),
@@ -386,7 +389,9 @@ def test_build_message_payload_with_platform_config() -> None:
     assert payload.kwargs["apns"] == {"headers": {}}
 
 
-def test_fcm_default_app_factory_application_default(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_fcm_default_app_factory_application_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_default_app_factory uses ApplicationDefault when no credentials_file (line 117)."""
     import sys
     import types

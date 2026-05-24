@@ -2042,5 +2042,7 @@ class TestCronExpressionUncoveredPaths:
     def test_validate_range_wrap_sunday_negative_start_raises(self) -> None:
         """_validate_range raises ValueError when start<minimum with wrap_sunday=True — line 230."""
         expr = _CronExpression("* * * * *")
-        with pytest.raises(ValueError, match="Day-of-week values must be between 0 and 7"):
+        with pytest.raises(
+            ValueError, match="Day-of-week values must be between 0 and 7"
+        ):
             expr._validate_range(-1, 6, 0, 7, "-1-6", wrap_sunday=True)

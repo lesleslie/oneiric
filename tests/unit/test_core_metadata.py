@@ -21,7 +21,10 @@ class _CandidateLike:
 
 
 def test_settings_model_path_handles_type_and_none() -> None:
-    assert settings_model_path(ExampleSettings) == f"{ExampleSettings.__module__}.ExampleSettings"
+    assert (
+        settings_model_path(ExampleSettings)
+        == f"{ExampleSettings.__module__}.ExampleSettings"
+    )
     assert settings_model_path(None) is None
 
 
@@ -39,7 +42,9 @@ def test_register_metadata_registers_candidates_and_logs() -> None:
         def __init__(self) -> None:
             self.calls: list[tuple[str, str, list[dict[str, Any]], dict[str, Any]]] = []
 
-        def register_from_pkg(self, package_name, package_path, candidates, *, priority=None):
+        def register_from_pkg(
+            self, package_name, package_path, candidates, *, priority=None
+        ):
             self.calls.append(
                 (
                     package_name,
@@ -76,4 +81,6 @@ def test_register_metadata_registers_candidates_and_logs() -> None:
     assert resolver.calls == [
         ("pkg.name", "pkg/path", [{"name": "alpha"}, {"name": "beta"}], {"priority": 7})
     ]
-    assert logger.calls == [("metadata-registered", {"package": "pkg.name", "count": 2})]
+    assert logger.calls == [
+        ("metadata-registered", {"package": "pkg.name", "count": 2})
+    ]

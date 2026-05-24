@@ -33,9 +33,7 @@ def test_event_filter_path_resolution_and_matching():
     assert EventFilter(path="payload.status", any_of=("ok", "pending")).matches(
         envelope
     )
-    assert not EventFilter(path="payload.status", any_of=("missing",)).matches(
-        envelope
-    )
+    assert not EventFilter(path="payload.status", any_of=("missing",)).matches(envelope)
 
 
 def test_parse_event_filters_handles_aliases_and_scalar_membership():

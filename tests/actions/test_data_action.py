@@ -174,7 +174,9 @@ async def test_data_sanitize_record_not_mapping_raises() -> None:
 @pytest.mark.asyncio
 async def test_data_sanitize_allow_fields_as_string_in_payload() -> None:
     action = DataSanitizeAction()
-    result = await action.execute({"data": {"id": 1, "secret": "x"}, "allow_fields": "id"})
+    result = await action.execute(
+        {"data": {"id": 1, "secret": "x"}, "allow_fields": "id"}
+    )
     assert "id" in result["data"]
     assert "secret" not in result["data"]
 

@@ -196,8 +196,7 @@ def get_mode_startup_info(mode: OperationMode) -> dict[str, Any]:
         "setup_time_minutes": config.setup_time_minutes,
         "external_dependencies": config.external_dependencies,
         "startup_message": mode.get_startup_message(),
-        **config.additional_settings,
-    }
+    } | config.additional_settings
 
 
 def print_mode_startup_info(mode: OperationMode) -> None:

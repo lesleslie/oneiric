@@ -74,14 +74,18 @@ async def test_debug_message_not_string_raises() -> None:
 
 @pytest.mark.asyncio
 async def test_debug_details_none_defaults_to_empty() -> None:
-    action = DebugConsoleAction(DebugConsoleSettings(echo=False, include_timestamp=False))
+    action = DebugConsoleAction(
+        DebugConsoleSettings(echo=False, include_timestamp=False)
+    )
     result = await action.execute({"message": "hi", "details": None})
     assert result["details"] == {}
 
 
 @pytest.mark.asyncio
 async def test_debug_invalid_level_falls_back_to_info() -> None:
-    action = DebugConsoleAction(DebugConsoleSettings(echo=False, include_timestamp=False))
+    action = DebugConsoleAction(
+        DebugConsoleSettings(echo=False, include_timestamp=False)
+    )
     result = await action.execute({"message": "hi", "level": "notarealevel"})
     assert result["level"] == "info"
 
@@ -100,7 +104,9 @@ async def test_debug_include_timestamp_and_echo(monkeypatch) -> None:
 
 @pytest.mark.asyncio
 async def test_debug_emit_log_actual_body() -> None:
-    action = DebugConsoleAction(DebugConsoleSettings(echo=False, include_timestamp=False))
+    action = DebugConsoleAction(
+        DebugConsoleSettings(echo=False, include_timestamp=False)
+    )
     result = await action.execute({"message": "real-log"})
     assert result["status"] == "emitted"
 

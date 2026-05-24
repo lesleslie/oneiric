@@ -174,7 +174,9 @@ async def test_otlp_adapter_requires_enabled_pipeline(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_otlp_adapter_includes_release_in_resource(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_otlp_adapter_includes_release_in_resource(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """init() adds service.version to resource_attrs when release is set (line 86)."""
     resource_attrs_captured: list[dict] = []
     base = _fake_components()

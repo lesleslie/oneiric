@@ -5,7 +5,6 @@ import pytest
 
 from oneiric.adapters.observability.embeddings import EmbeddingService
 
-
 # ---------------------------------------------------------------------------
 # Tests — _build_text_from_trace
 # ---------------------------------------------------------------------------
@@ -13,13 +12,15 @@ from oneiric.adapters.observability.embeddings import EmbeddingService
 
 def test_build_text_from_trace_full() -> None:
     svc = EmbeddingService()
-    text = svc._build_text_from_trace({
-        "service": "auth",
-        "operation": "login",
-        "status": "OK",
-        "duration_ms": 42,
-        "attributes": {"user": "abc", "method": "POST"},
-    })
+    text = svc._build_text_from_trace(
+        {
+            "service": "auth",
+            "operation": "login",
+            "status": "OK",
+            "duration_ms": 42,
+            "attributes": {"user": "abc", "method": "POST"},
+        }
+    )
     assert "auth" in text
     assert "login" in text
     assert "42ms" in text
@@ -198,7 +199,9 @@ async def test_embed_trace_fallback_on_error(monkeypatch: pytest.MonkeyPatch) ->
 
 
 @pytest.mark.asyncio
-async def test_embed_trace_fallback_no_trace_id(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_embed_trace_fallback_no_trace_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(
         "oneiric.adapters.observability.embeddings.SENTENCE_TRANSFORMERS_AVAILABLE",
         False,
@@ -215,9 +218,9 @@ async def test_embed_trace_fallback_no_trace_id(monkeypatch: pytest.MonkeyPatch)
 
 def test_otel_storage_settings_rejects_non_postgresql_scheme() -> None:
     """validate_connection_string raises for non-postgresql:// scheme (line 51 of settings.py)."""
-    from oneiric.adapters.observability.settings import OTelStorageSettings
-
     import pytest
+
+    from oneiric.adapters.observability.settings import OTelStorageSettings
 
     with pytest.raises(ValueError, match="postgresql://"):
         OTelStorageSettings(connection_string="mysql://user:pass@host/db")

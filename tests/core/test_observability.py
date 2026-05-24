@@ -72,7 +72,9 @@ def test_inject_trace_context_returns_headers_when_import_fails():
         assert inject_trace_context(headers) is headers
 
 
-def test_observed_span_sets_attributes_and_uses_log_context(monkeypatch: pytest.MonkeyPatch):
+def test_observed_span_sets_attributes_and_uses_log_context(
+    monkeypatch: pytest.MonkeyPatch,
+):
     span = _DummySpan()
     tracer = _DummyTracer(span)
     log_contexts: list[dict[str, object]] = []

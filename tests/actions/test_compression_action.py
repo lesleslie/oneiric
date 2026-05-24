@@ -6,7 +6,6 @@ import hashlib
 # ---------------------------------------------------------------------------
 # Gap-fill: uncovered branches in compression.py and HashAction
 # ---------------------------------------------------------------------------
-
 import pytest
 
 from oneiric.actions.bootstrap import register_builtin_actions
@@ -116,7 +115,9 @@ async def test_compression_bz2_roundtrip() -> None:
     action = CompressionAction(CompressionActionSettings(algorithm="bz2"))
     compressed = await action.execute({"text": "bz2 payload"})
     assert compressed["algorithm"] == "bz2"
-    restored = await action.execute({"mode": "decompress", "data": compressed["data"], "algorithm": "bz2"})
+    restored = await action.execute(
+        {"mode": "decompress", "data": compressed["data"], "algorithm": "bz2"}
+    )
     assert restored["text"] == "bz2 payload"
 
 
@@ -127,7 +128,9 @@ async def test_compression_lzma_roundtrip() -> None:
     action = CompressionAction(CompressionActionSettings(algorithm="lzma"))
     compressed = await action.execute({"text": "lzma payload"})
     assert compressed["algorithm"] == "lzma"
-    restored = await action.execute({"mode": "decompress", "data": compressed["data"], "algorithm": "lzma"})
+    restored = await action.execute(
+        {"mode": "decompress", "data": compressed["data"], "algorithm": "lzma"}
+    )
     assert restored["text"] == "lzma payload"
 
 

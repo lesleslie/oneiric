@@ -81,9 +81,7 @@ async def test_run_tasks_reraises_cancellation() -> None:
         with pytest.raises(BaseExceptionGroup) as excinfo:
             await run_load_test(profile, workload=workload)  # type: ignore[arg-type]
 
-    assert any(
-        isinstance(exc, SentinelCancelled) for exc in excinfo.value.exceptions
-    )
+    assert any(isinstance(exc, SentinelCancelled) for exc in excinfo.value.exceptions)
 
 
 @pytest.mark.anyio

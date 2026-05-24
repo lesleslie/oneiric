@@ -61,7 +61,9 @@ async def test_aws_secret_manager_adapter_requires_init(monkeypatch) -> None:
 async def test_aws_health_with_healthcheck_secret_found() -> None:
     """health() fetches healthcheck_secret and returns True when found (lines 100-105)."""
     client = _FakeAWSSecretsClient({"probe-secret": "alive"})
-    settings = AWSSecretManagerSettings(region="us-east-1", healthcheck_secret="probe-secret")
+    settings = AWSSecretManagerSettings(
+        region="us-east-1", healthcheck_secret="probe-secret"
+    )
     adapter = AWSSecretManagerAdapter(settings, client=client)
     await adapter.init()
     assert await adapter.health() is True
@@ -71,7 +73,9 @@ async def test_aws_health_with_healthcheck_secret_found() -> None:
 async def test_aws_health_with_missing_healthcheck_secret() -> None:
     """health() returns False when healthcheck_secret is not found."""
     client = _FakeAWSSecretsClient({})
-    settings = AWSSecretManagerSettings(region="us-east-1", healthcheck_secret="probe-secret")
+    settings = AWSSecretManagerSettings(
+        region="us-east-1", healthcheck_secret="probe-secret"
+    )
     adapter = AWSSecretManagerAdapter(settings, client=client)
     await adapter.init()
     assert await adapter.health() is False
@@ -163,7 +167,9 @@ def test_aws_is_not_found_via_message_string() -> None:
 def test_aws_is_not_found_returns_false_for_other_exceptions() -> None:
     """_is_not_found returns False when args[0] is non-string (line 171)."""
     adapter = AWSSecretManagerAdapter(AWSSecretManagerSettings(region="us-east-1"))
-    assert adapter._is_not_found(Exception(404)) is False  # int arg → not a string → line 171
+    assert (
+        adapter._is_not_found(Exception(404)) is False
+    )  # int arg → not a string → line 171
 
 
 @pytest.mark.asyncio
@@ -230,7 +236,6 @@ async def test_aws_set_cached_skips_when_ttl_zero() -> None:
 async def test_aws_init_via_aioboto3(monkeypatch) -> None:
     """init() creates client via aioboto3.Session when no factory/client (lines 73-97)."""
     import sys
-    import types
 
     client = _FakeAWSSecretsClient({"K": "v"})
     created_kwargs: list[dict] = []

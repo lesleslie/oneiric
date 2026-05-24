@@ -94,7 +94,9 @@ async def test_https_upload_adapter_upload_file_and_error() -> None:
 async def test_https_upload_init_creates_client() -> None:
     """init() creates httpx.AsyncClient when none provided (lines 72-82)."""
     adapter = HTTPSUploadAdapter(
-        HTTPSUploadSettings(base_url="https://example.com", timeout=10.0, verify_tls=False)
+        HTTPSUploadSettings(
+            base_url="https://example.com", timeout=10.0, verify_tls=False
+        )
     )
     await adapter.init()
     assert adapter._client is not None

@@ -1,10 +1,6 @@
 from __future__ import annotations
 
-import json
-from datetime import UTC, datetime
-from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
 
 import pytest
 import typer
@@ -17,15 +13,15 @@ from oneiric.cli import (
     _activity_counts_from_mapping,
     _activity_summary_for_bridge,
     _add_probe_results,
-    _default_notification_adapter_key,
     _apply_signature_to_manifest,
-    _derive_notification_route,
     _build_remote_metrics,
     _build_workflow_node,
     _candidate_summary,
+    _default_notification_adapter_key,
+    _derive_notification_route,
     _event_emit_runner,
-    _event_results_payload,
     _extract_notification_metadata,
+    _filter_health_statuses,
     _format_activity_note,
     _format_activity_status,
     _format_event_result,
@@ -33,10 +29,10 @@ from oneiric.cli import (
     _format_remote_budget_line,
     _http_server_enabled,
     _invoke_action,
-    _manifest_entry_from_action,
-    _manifest_entry_from_adapter,
     _lifecycle_counts_from_mapping,
     _load_signing_key,
+    _manifest_entry_from_action,
+    _manifest_entry_from_adapter,
     _parse_csv,
     _parse_dependency_list,
     _parse_payload,
@@ -47,7 +43,6 @@ from oneiric.cli import (
     _workflow_enqueue_runner,
     _workflow_run_runner,
     _workflow_target_keys,
-    _filter_health_statuses,
 )
 from oneiric.core.config import OneiricSettings
 from oneiric.core.lifecycle import LifecycleError
@@ -63,7 +58,9 @@ def _demo_factory() -> None:
 def test_parsers_and_counts_cover_branches() -> None:
     assert _parse_payload(None) == {}
     assert _parse_csv("a, b,, c") == ["a", "b", "c"]
-    assert _activity_counts_from_mapping({"d": {"k": {"paused": True, "draining": False}}}) == {
+    assert _activity_counts_from_mapping(
+        {"d": {"k": {"paused": True, "draining": False}}}
+    ) == {
         "paused": 1,
         "draining": 0,
     }
@@ -97,8 +94,14 @@ def test_workflow_helpers_and_filters() -> None:
     assert node["depends_on"] == ["prev"]
     assert _build_workflow_node({"task": "x"}) is None
 
-    assert _format_filter_clause({"path": "payload.region", "exists": True}) == "payload.region exists"
-    assert _format_filter_clause({"path": "payload.region", "exists": False}) == "payload.region missing"
+    assert (
+        _format_filter_clause({"path": "payload.region", "exists": True})
+        == "payload.region exists"
+    )
+    assert (
+        _format_filter_clause({"path": "payload.region", "exists": False})
+        == "payload.region missing"
+    )
 
 
 def test_health_probe_and_activity_formatting() -> None:
@@ -116,7 +119,10 @@ def test_health_probe_and_activity_formatting() -> None:
             self.calls = []
 
         def all_statuses(self):
-            return [Status("adapter", "cache", "ready"), Status("task", "job", "paused")]
+            return [
+                Status("adapter", "cache", "ready"),
+                Status("task", "job", "paused"),
+            ]
 
         async def probe_instance_health(self, domain, key):
             self.calls.append((domain, key))
@@ -142,8 +148,18 @@ def test_remote_and_event_helpers() -> None:
     assert "EXCEEDED" in _format_remote_budget_line(RemoteConfig(), 60.0)
     assert _resolve_http_port(9090) == 9090
     assert _resolve_http_port(None) == 8080
-    assert _http_server_enabled(SimpleNamespace(profile=SimpleNamespace(name="serverless")), None, False) is True
-    assert _http_server_enabled(SimpleNamespace(profile=SimpleNamespace(name="standard")), None, True) is False
+    assert (
+        _http_server_enabled(
+            SimpleNamespace(profile=SimpleNamespace(name="serverless")), None, False
+        )
+        is True
+    )
+    assert (
+        _http_server_enabled(
+            SimpleNamespace(profile=SimpleNamespace(name="standard")), None, True
+        )
+        is False
+    )
     assert _scrub_sensitive_data("normal") == "normal"
     assert _scrub_sensitive_data("api-token") == "***"
 
@@ -168,7 +184,12 @@ def test_signature_and_runtime_helpers(tmp_path, monkeypatch) -> None:
     assert loaded.sign(b"x")
 
     manifest = {}
-    _set_timestamps(manifest, issued_at=None, expires_at="2026-01-01T00:00:00+00:00", expires_in=None)
+    _set_timestamps(
+        manifest,
+        issued_at=None,
+        expires_at="2026-01-01T00:00:00+00:00",
+        expires_in=None,
+    )
     assert "signed_at" in manifest
     assert manifest["expires_at"] == "2026-01-01T00:00:00+00:00"
 
@@ -179,8 +200,13 @@ def test_signature_and_runtime_helpers(tmp_path, monkeypatch) -> None:
     rendered = _render_manifest(manifest, tmp_path / "manifest.json")
     assert rendered.startswith("{")
 
-    telemetry = SimpleNamespace(last_registered=3, last_duration_ms=1.5, last_digest_checks=2)
-    assert _build_remote_metrics(telemetry) == "registered=3 duration_ms=1.50 digest_checks=2"
+    telemetry = SimpleNamespace(
+        last_registered=3, last_duration_ms=1.5, last_digest_checks=2
+    )
+    assert (
+        _build_remote_metrics(telemetry)
+        == "registered=3 duration_ms=1.50 digest_checks=2"
+    )
 
     candidate = Candidate(
         domain="adapter",
@@ -196,7 +222,10 @@ def test_signature_and_runtime_helpers(tmp_path, monkeypatch) -> None:
 
 
 def test_cli_notification_and_manifest_helpers() -> None:
-    assert _activity_summary_for_bridge(SimpleNamespace()) == {"paused": 0, "draining": 0}
+    assert _activity_summary_for_bridge(SimpleNamespace()) == {
+        "paused": 0,
+        "draining": 0,
+    }
 
     bridge = SimpleNamespace(
         activity_snapshot=lambda: {
@@ -207,7 +236,9 @@ def test_cli_notification_and_manifest_helpers() -> None:
     assert _activity_summary_for_bridge(bridge) == {"paused": 1, "draining": 1}
 
     settings = SimpleNamespace(
-        adapters=SimpleNamespace(selections={"cache": {"provider": "redis"}, "notifications.email": {}})
+        adapters=SimpleNamespace(
+            selections={"cache": {"provider": "redis"}, "notifications.email": {}}
+        )
     )
     assert _default_notification_adapter_key(settings) == "notifications.email"
 
@@ -255,13 +286,16 @@ def test_cli_notification_and_manifest_helpers() -> None:
             return self.resolved if key == "known" else None
 
     state = SimpleNamespace(resolver=Resolver(candidate))
-    assert _derive_notification_route(
-        state,
-        workflow_key=None,
-        notify_adapter=None,
-        notify_target=None,
-        force_send=False,
-    ) is None
+    assert (
+        _derive_notification_route(
+            state,
+            workflow_key=None,
+            notify_adapter=None,
+            notify_target=None,
+            force_send=False,
+        )
+        is None
+    )
     with pytest.raises(typer.BadParameter):
         _derive_notification_route(
             SimpleNamespace(resolver=Resolver(None)),

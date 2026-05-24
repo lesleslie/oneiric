@@ -376,7 +376,9 @@ def test_mysql_ensure_pool_raises() -> None:
 
 
 @pytest.mark.asyncio
-async def test_mysql_init_uses_aiomysql_when_no_factory(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_mysql_init_uses_aiomysql_when_no_factory(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """init() falls through to aiomysql.create_pool when no pool_factory provided (lines 61-65)."""
     import sys
     import types

@@ -311,6 +311,7 @@ async def test_stop_component_sync_callable() -> None:
 @pytest.mark.asyncio()
 async def test_health_partitions_for_returns_none_raises() -> None:
     """health() raises RuntimeError when partitions_for returns None (line 104)."""
+
     class NonePartitionsProducer(FakeProducer):
         async def partitions_for(self, topic: str) -> None:  # type: ignore[override]
             return None
@@ -341,6 +342,7 @@ async def test_start_component_raises_when_no_start_method() -> None:
 @pytest.mark.asyncio()
 async def test_stop_component_returns_when_no_stop_method() -> None:
     """_stop_component returns silently when component has no stop (line 271)."""
+
     class NoStopComponent:
         pass
 

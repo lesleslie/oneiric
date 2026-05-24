@@ -3,10 +3,10 @@
 No aio_pika or aiomqtt installation required. All protocol factories are
 injected via the constructor's factory parameters.
 """
+
 from __future__ import annotations
 
 import asyncio
-import inspect
 import sys
 import types
 from typing import Any
@@ -35,13 +35,13 @@ def _mock_aiomqtt(monkeypatch: pytest.MonkeyPatch) -> None:
     fake.Client = _FakeClient  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, "aiomqtt", fake)
 
+
 from oneiric.adapters.queue.lavinmq import (
     LavinMQQueueAdapter,
     LavinMQSettings,
     Protocol,
     QueueMessage,
 )
-
 
 # ---------------------------------------------------------------------------
 # Mock AMQP components
@@ -80,7 +80,9 @@ class MockChannel:
     async def set_qos(self, *, prefetch_count: int) -> None:
         self._qos_set = True
 
-    async def declare_queue(self, name: str, *, durable: bool, passive: bool) -> "MockQueue":
+    async def declare_queue(
+        self, name: str, *, durable: bool, passive: bool
+    ) -> MockQueue:
         return MockQueue(name, self._messages)
 
     async def declare_exchange(
@@ -200,7 +202,7 @@ async def test_amqp_health_via_passive_declare() -> None:
 
 @pytest.mark.asyncio
 async def test_amqp_health_on_error() -> None:
-    channel = MockChannel()
+    MockChannel()
 
     class BrokenQueue:
         async def declare(self, *, passive: bool = False) -> None:
@@ -831,7 +833,9 @@ async def test_health_aiomqtt_import_error(monkeypatch: pytest.MonkeyPatch) -> N
 
 
 @pytest.mark.asyncio
-async def test_ensure_amqp_connection_aio_pika_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_ensure_amqp_connection_aio_pika_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_ensure_amqp_connection raises LifecycleError when aio_pika not installed (lines 428-429)."""
     from oneiric.core.lifecycle import LifecycleError
 
@@ -846,7 +850,9 @@ async def test_ensure_amqp_connection_aio_pika_missing(monkeypatch: pytest.Monke
 
 
 @pytest.mark.asyncio
-async def test_build_amqp_message_aio_pika_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_build_amqp_message_aio_pika_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_build_amqp_message raises LifecycleError when aio_pika not installed (lines 488-489)."""
     from oneiric.core.lifecycle import LifecycleError
 
@@ -891,7 +897,7 @@ async def test_mqtt_subscriber_processes_message() -> None:
                 )
             ]
 
-        async def __aenter__(self) -> "_FakeCtxMessages":
+        async def __aenter__(self) -> _FakeCtxMessages:
             return self
 
         async def __aexit__(self, *a: Any) -> None:
@@ -900,7 +906,7 @@ async def test_mqtt_subscriber_processes_message() -> None:
         async def subscribe(self, topic: str, qos: int) -> None:
             pass
 
-        def __aiter__(self) -> "_FakeCtxMessages":
+        def __aiter__(self) -> _FakeCtxMessages:
             return self
 
         async def __anext__(self) -> Any:
@@ -929,7 +935,9 @@ async def test_mqtt_subscriber_processes_message() -> None:
 
 
 @pytest.mark.asyncio
-async def test_mqtt_subscriber_reconnects_on_exception(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_mqtt_subscriber_reconnects_on_exception(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_mqtt_subscriber creates reconnect task after connection failure (lines 587-588)."""
     tasks_created: list[asyncio.Task] = []
     real_create_task = asyncio.create_task

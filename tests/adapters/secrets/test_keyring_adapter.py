@@ -2,16 +2,14 @@
 
 Covers both the keyring-available and keyring-unavailable paths via monkeypatching.
 """
+
 from __future__ import annotations
 
-import importlib
-from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from oneiric.adapters.secrets.keyring import KeyringSecretAdapter, KeyringSecretSettings
-
 
 # ---------------------------------------------------------------------------
 # Tests — Settings
@@ -37,9 +35,7 @@ def test_settings_custom() -> None:
 
 @pytest.fixture
 def adapter_no_keyring(monkeypatch: pytest.MonkeyPatch) -> KeyringSecretAdapter:
-    monkeypatch.setattr(
-        "oneiric.adapters.secrets.keyring.KEYRING_AVAILABLE", False
-    )
+    monkeypatch.setattr("oneiric.adapters.secrets.keyring.KEYRING_AVAILABLE", False)
     adapter = KeyringSecretAdapter(KeyringSecretSettings())
     adapter._available = False
     return adapter
@@ -77,9 +73,7 @@ async def test_cleanup_no_keyring(adapter_no_keyring: KeyringSecretAdapter) -> N
 
 @pytest.fixture
 def adapter_with_keyring(monkeypatch: pytest.MonkeyPatch) -> KeyringSecretAdapter:
-    monkeypatch.setattr(
-        "oneiric.adapters.secrets.keyring.KEYRING_AVAILABLE", True
-    )
+    monkeypatch.setattr("oneiric.adapters.secrets.keyring.KEYRING_AVAILABLE", True)
     adapter = KeyringSecretAdapter(KeyringSecretSettings(service_name="svc"))
     adapter._available = True
     return adapter
@@ -106,7 +100,9 @@ async def test_get_secret_returns_value(
     fake_keyring.errors = MagicMock()
     fake_keyring.errors.KeyringError = Exception
 
-    with patch.dict("sys.modules", {"keyring": fake_keyring, "keyring.errors": fake_keyring.errors}):
+    with patch.dict(
+        "sys.modules", {"keyring": fake_keyring, "keyring.errors": fake_keyring.errors}
+    ):
         result = await adapter_with_keyring.get_secret("api-key")
 
     assert result == "super-secret"
@@ -128,7 +124,9 @@ async def test_get_secret_with_prefix(
     fake_keyring.errors = MagicMock()
     fake_keyring.errors.KeyringError = Exception
 
-    with patch.dict("sys.modules", {"keyring": fake_keyring, "keyring.errors": fake_keyring.errors}):
+    with patch.dict(
+        "sys.modules", {"keyring": fake_keyring, "keyring.errors": fake_keyring.errors}
+    ):
         result = await adapter.get_secret("mykey")
 
     assert result == "prefixed-value"
@@ -147,7 +145,9 @@ async def test_get_secret_returns_none_on_keyring_error(
     fake_keyring.errors = MagicMock()
     fake_keyring.errors.KeyringError = FakeKeyringError
 
-    with patch.dict("sys.modules", {"keyring": fake_keyring, "keyring.errors": fake_keyring.errors}):
+    with patch.dict(
+        "sys.modules", {"keyring": fake_keyring, "keyring.errors": fake_keyring.errors}
+    ):
         result = await adapter_with_keyring.get_secret("fail-key")
 
     assert result is None
@@ -165,7 +165,9 @@ async def test_get_secret_returns_none_on_generic_exception(
     fake_keyring.errors = MagicMock()
     fake_keyring.errors.KeyringError = FakeKeyringError
 
-    with patch.dict("sys.modules", {"keyring": fake_keyring, "keyring.errors": fake_keyring.errors}):
+    with patch.dict(
+        "sys.modules", {"keyring": fake_keyring, "keyring.errors": fake_keyring.errors}
+    ):
         result = await adapter_with_keyring.get_secret("weird-error")
 
     assert result is None
@@ -181,7 +183,9 @@ async def test_get_secret_none_value_not_logged_as_resolved(
     fake_keyring.errors = MagicMock()
     fake_keyring.errors.KeyringError = Exception
 
-    with patch.dict("sys.modules", {"keyring": fake_keyring, "keyring.errors": fake_keyring.errors}):
+    with patch.dict(
+        "sys.modules", {"keyring": fake_keyring, "keyring.errors": fake_keyring.errors}
+    ):
         result = await adapter_with_keyring.get_secret("missing")
 
     assert result is None

@@ -285,9 +285,7 @@ async def test_workflow_audit_redacts_list_with_nested_dicts() -> None:
     result = await action.execute(
         {
             "event": "batch",
-            "details": {
-                "items": [{"token": "abc", "id": 1}, "plain-string"]
-            },
+            "details": {"items": [{"token": "abc", "id": 1}, "plain-string"]},
         }
     )
     assert result["details"]["items"][0]["token"] == "***"
@@ -341,7 +339,9 @@ async def test_workflow_notify_recipients_as_empty_list() -> None:
 @pytest.mark.asyncio
 async def test_workflow_notify_recipients_as_iterable() -> None:
     action = WorkflowNotifyAction()
-    result = await action.execute({"message": "hi", "recipients": ("a@x.com", "b@x.com")})
+    result = await action.execute(
+        {"message": "hi", "recipients": ("a@x.com", "b@x.com")}
+    )
     assert result["recipients"] == ["a@x.com", "b@x.com"]
 
 

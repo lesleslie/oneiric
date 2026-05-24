@@ -76,7 +76,13 @@ def test_before_send_with_context_tags() -> None:
     """_before_send applies context tags and fingerprint (lines 126-129)."""
     settings = SentryMonitoringSettings(include_context_tags=True)
     adapter = SentryMonitoringAdapter(settings)
-    event: dict = {"tags": {"oneiric.domain": "adapter", "oneiric.key": "nosql", "oneiric.provider": "mongo"}}
+    event: dict = {
+        "tags": {
+            "oneiric.domain": "adapter",
+            "oneiric.key": "nosql",
+            "oneiric.provider": "mongo",
+        }
+    }
     result = adapter._before_send(event, {})
     assert result is event
     assert "fingerprint" in result
@@ -141,7 +147,13 @@ def test_apply_fingerprint_with_all_fields() -> None:
         "exception": {"values": [{"type": "ValueError"}]},
     }
     adapter._apply_fingerprint(event)
-    assert event["fingerprint"] == ["oneiric", "adapter", "nosql", "mongo", "ValueError"]
+    assert event["fingerprint"] == [
+        "oneiric",
+        "adapter",
+        "nosql",
+        "mongo",
+        "ValueError",
+    ]
 
 
 def test_apply_fingerprint_already_set() -> None:

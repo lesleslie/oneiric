@@ -172,7 +172,11 @@ async def test_event_dispatch_hook_with_secret_header() -> None:
         {
             "topic": "test",
             "hooks": [
-                {"name": "secret-hook", "url": "https://example.com/h", "secret": "my-secret"}
+                {
+                    "name": "secret-hook",
+                    "url": "https://example.com/h",
+                    "secret": "my-secret",
+                }
             ],
         }
     )

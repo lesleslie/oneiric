@@ -3,7 +3,6 @@ from __future__ import annotations
 import sys
 import types
 from typing import Any
-from unittest.mock import AsyncMock
 
 import pytest
 
@@ -31,7 +30,9 @@ def _default_response(tool: str) -> dict[str, Any]:
         "agentdb_init": {"status": "ok"},
         "agentdb_health": {"status": "healthy"},
         "agentdb_search": {
-            "results": [{"id": "doc-1", "score": 0.9, "metadata": {"k": "v"}, "vector": [0.1]}]
+            "results": [
+                {"id": "doc-1", "score": 0.9, "metadata": {"k": "v"}, "vector": [0.1]}
+            ]
         },
         "agentdb_insert": {"ids": ["doc-1"]},
         "agentdb_upsert": {"ids": ["doc-1"]},
@@ -79,7 +80,9 @@ async def test_agentdb_create_client(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_agentdb_create_client_raises_on_import_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_agentdb_create_client_raises_on_import_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_create_client() wraps import errors in LifecycleError (lines 97-103)."""
     from oneiric.core.lifecycle import LifecycleError
 
@@ -109,7 +112,9 @@ async def test_agentdb_init_success(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_agentdb_init_raises_when_health_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_agentdb_init_raises_when_health_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """init() raises LifecycleError when health() returns False (lines 116-117)."""
     from oneiric.core.lifecycle import LifecycleError
 
@@ -140,7 +145,9 @@ async def test_agentdb_health_returns_true(monkeypatch: pytest.MonkeyPatch) -> N
 
 
 @pytest.mark.asyncio
-async def test_agentdb_health_returns_false_on_error(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_agentdb_health_returns_false_on_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """health() returns False when call_tool raises (lines 134-136)."""
     adapter = _make_adapter(monkeypatch)
 
@@ -182,7 +189,9 @@ async def test_agentdb_cleanup_error_is_logged(monkeypatch: pytest.MonkeyPatch) 
             raise RuntimeError("close failed")
 
     adapter._mcp_client = BrokenClose("", 30.0)
-    await adapter.cleanup()  # must not raise — _mcp_client stays set since None assignment was skipped
+    await (
+        adapter.cleanup()
+    )  # must not raise — _mcp_client stays set since None assignment was skipped
 
 
 # ---------------------------------------------------------------------------
@@ -374,7 +383,9 @@ async def test_agentdb_create_collection(monkeypatch: pytest.MonkeyPatch) -> Non
 
 
 @pytest.mark.asyncio
-async def test_agentdb_create_collection_raises_on_error(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_agentdb_create_collection_raises_on_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """create_collection() re-raises when call_tool fails (lines 359-361)."""
     adapter = _make_adapter(monkeypatch)
 
@@ -396,7 +407,9 @@ async def test_agentdb_delete_collection(monkeypatch: pytest.MonkeyPatch) -> Non
 
 
 @pytest.mark.asyncio
-async def test_agentdb_delete_collection_raises_on_error(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_agentdb_delete_collection_raises_on_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """delete_collection() re-raises when call_tool fails (lines 381-383)."""
     adapter = _make_adapter(monkeypatch)
 
@@ -420,7 +433,9 @@ async def test_agentdb_list_collections(monkeypatch: pytest.MonkeyPatch) -> None
 
 
 @pytest.mark.asyncio
-async def test_agentdb_list_collections_raises_on_error(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_agentdb_list_collections_raises_on_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """list_collections() re-raises when call_tool fails (lines 399-401)."""
     adapter = _make_adapter(monkeypatch)
 

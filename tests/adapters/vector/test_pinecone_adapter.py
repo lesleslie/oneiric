@@ -142,7 +142,9 @@ async def test_pinecone_create_client(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_pinecone_create_client_import_error(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_pinecone_create_client_import_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_create_client() raises LifecycleError when pinecone is missing (lines 79-82)."""
     from oneiric.core.lifecycle import LifecycleError
 
@@ -154,7 +156,9 @@ async def test_pinecone_create_client_import_error(monkeypatch: pytest.MonkeyPat
 
 
 @pytest.mark.asyncio
-async def test_pinecone_create_client_construction_error(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_pinecone_create_client_construction_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_create_client() raises LifecycleError when Pinecone() raises non-ImportError (lines 83-84)."""
     from oneiric.core.lifecycle import LifecycleError
 
@@ -172,7 +176,9 @@ async def test_pinecone_create_client_construction_error(monkeypatch: pytest.Mon
 
 
 @pytest.mark.asyncio
-async def test_pinecone_ensure_client_when_none(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_pinecone_ensure_client_when_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_ensure_client() calls _create_client when _client is None (lines 87-89)."""
     monkeypatch.setitem(sys.modules, "pinecone", _make_fake_pinecone_module())
     settings = PineconeSettings(api_key=SecretStr("key"))
@@ -206,7 +212,9 @@ async def test_pinecone_init_index_exists(monkeypatch: pytest.MonkeyPatch) -> No
 
 
 @pytest.mark.asyncio
-async def test_pinecone_init_creates_index_when_not_found(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_pinecone_init_creates_index_when_not_found(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """init() calls _create_default_index when describe_index raises (lines 110-114)."""
     index = FakeIndex()
 
@@ -233,7 +241,9 @@ async def test_pinecone_init_creates_index_when_not_found(monkeypatch: pytest.Mo
 
 
 @pytest.mark.asyncio
-async def test_pinecone_init_raises_on_client_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_pinecone_init_raises_on_client_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """init() wraps unexpected errors in LifecycleError (lines 119-121)."""
     from oneiric.core.lifecycle import LifecycleError
 
@@ -245,7 +255,9 @@ async def test_pinecone_init_raises_on_client_failure(monkeypatch: pytest.Monkey
 
 
 @pytest.mark.asyncio
-async def test_pinecone_create_default_index_pod_spec(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_pinecone_create_default_index_pod_spec(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_create_default_index() uses pod spec when serverless=False (lines 134-143)."""
     created: list[dict[str, Any]] = []
 
@@ -270,7 +282,9 @@ async def test_pinecone_create_default_index_pod_spec(monkeypatch: pytest.Monkey
 
 
 @pytest.mark.asyncio
-async def test_pinecone_create_default_index_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_pinecone_create_default_index_raises(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_create_default_index() wraps errors in LifecycleError (lines 153-154)."""
     from oneiric.core.lifecycle import LifecycleError
 
@@ -295,7 +309,9 @@ async def test_pinecone_create_default_index_raises(monkeypatch: pytest.MonkeyPa
 
 
 @pytest.mark.asyncio
-async def test_pinecone_health_no_client_or_index(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_pinecone_health_no_client_or_index(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """health() returns False when _client or _index is None (line 157-158)."""
     settings = PineconeSettings(api_key=SecretStr("key"))
     adapter = PineconeAdapter(settings)
@@ -315,6 +331,7 @@ async def test_pinecone_health_success(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.mark.asyncio
 async def test_pinecone_health_exception(monkeypatch: pytest.MonkeyPatch) -> None:
     """health() returns False when describe_index_stats raises (lines 163-165)."""
+
     class BrokenIndex(FakeIndex):
         def describe_index_stats(self, **kwargs: Any) -> None:  # type: ignore[override]
             raise RuntimeError("timeout")
@@ -341,6 +358,7 @@ async def test_pinecone_cleanup(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.mark.asyncio
 async def test_pinecone_search_exception(monkeypatch: pytest.MonkeyPatch) -> None:
     """search() returns [] when query raises (lines 211-213)."""
+
     class BrokenIndex(FakeIndex):
         def query(self, **kwargs: Any) -> None:  # type: ignore[override]
             raise RuntimeError("query failed")
@@ -357,7 +375,9 @@ async def test_pinecone_search_exception(monkeypatch: pytest.MonkeyPatch) -> Non
 
 
 @pytest.mark.asyncio
-async def test_pinecone_insert_delegates_to_upsert(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_pinecone_insert_delegates_to_upsert(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """insert() delegates to upsert() (line 221)."""
     settings = PineconeSettings(api_key=SecretStr("key"))
     adapter = PineconeAdapter(settings)
@@ -371,8 +391,11 @@ async def test_pinecone_insert_delegates_to_upsert(monkeypatch: pytest.MonkeyPat
 
 
 @pytest.mark.asyncio
-async def test_pinecone_upsert_batch_zero_count_logs_warning(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_pinecone_upsert_batch_zero_count_logs_warning(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_upsert_batch() logs warning when upserted_count is 0 (line 265)."""
+
     class ZeroCountIndex(FakeIndex):
         def upsert(self, **kwargs: Any) -> dict[str, Any]:  # type: ignore[override]
             return {"upserted_count": 0}
@@ -392,6 +415,7 @@ async def test_pinecone_upsert_batch_zero_count_logs_warning(monkeypatch: pytest
 @pytest.mark.asyncio
 async def test_pinecone_upsert_exception(monkeypatch: pytest.MonkeyPatch) -> None:
     """upsert() returns [] when an error occurs (lines 287-289)."""
+
     class BrokenUpsert(FakeIndex):
         def upsert(self, **kwargs: Any) -> None:  # type: ignore[override]
             raise RuntimeError("upsert failed")
@@ -424,7 +448,9 @@ async def test_pinecone_delete(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_pinecone_delete_default_namespace(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_pinecone_delete_default_namespace(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """delete() omits namespace when collection is 'default' (line 301)."""
     index = FakeIndex()
     settings = PineconeSettings(api_key=SecretStr("key"))
@@ -442,6 +468,7 @@ async def test_pinecone_delete_default_namespace(monkeypatch: pytest.MonkeyPatch
 @pytest.mark.asyncio
 async def test_pinecone_delete_exception(monkeypatch: pytest.MonkeyPatch) -> None:
     """delete() returns False when index.delete raises (lines 307-309)."""
+
     class BrokenDelete(FakeIndex):
         def delete(self, **kwargs: Any) -> None:  # type: ignore[override]
             raise RuntimeError("delete failed")
@@ -484,13 +511,14 @@ async def test_pinecone_get_default_namespace(monkeypatch: pytest.MonkeyPatch) -
         return index
 
     monkeypatch.setattr(adapter, "_get_index", _get_index)
-    docs = await adapter.get("default", ["doc-1"])
+    await adapter.get("default", ["doc-1"])
     assert "namespace" not in index.fetches[0]
 
 
 @pytest.mark.asyncio
 async def test_pinecone_get_exception(monkeypatch: pytest.MonkeyPatch) -> None:
     """get() returns [] when index.fetch raises (lines 343-345)."""
+
     class BrokenFetch(FakeIndex):
         def fetch(self, **kwargs: Any) -> None:  # type: ignore[override]
             raise RuntimeError("fetch failed")
@@ -524,6 +552,7 @@ async def test_pinecone_count_with_filter(monkeypatch: pytest.MonkeyPatch) -> No
 @pytest.mark.asyncio
 async def test_pinecone_count_exception(monkeypatch: pytest.MonkeyPatch) -> None:
     """count() returns 0 when describe_index_stats raises (lines 367-369)."""
+
     class BrokenStats(FakeIndex):
         def describe_index_stats(self, **kwargs: Any) -> None:  # type: ignore[override]
             raise RuntimeError("stats failed")
@@ -549,7 +578,9 @@ async def test_pinecone_create_collection(monkeypatch: pytest.MonkeyPatch) -> No
 
 
 @pytest.mark.asyncio
-async def test_pinecone_delete_collection_default(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_pinecone_delete_collection_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """delete_collection() deletes all when collection is 'default' (line 394-395)."""
     index = FakeIndex()
     settings = PineconeSettings(api_key=SecretStr("key"))
@@ -566,7 +597,9 @@ async def test_pinecone_delete_collection_default(monkeypatch: pytest.MonkeyPatc
 
 
 @pytest.mark.asyncio
-async def test_pinecone_delete_collection_namespace(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_pinecone_delete_collection_namespace(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """delete_collection() deletes namespace when name is not 'default' (lines 392-393)."""
     index = FakeIndex()
     settings = PineconeSettings(api_key=SecretStr("key"))
@@ -582,8 +615,11 @@ async def test_pinecone_delete_collection_namespace(monkeypatch: pytest.MonkeyPa
 
 
 @pytest.mark.asyncio
-async def test_pinecone_delete_collection_exception(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_pinecone_delete_collection_exception(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """delete_collection() returns False when index.delete raises (lines 399-401)."""
+
     class BrokenDelete(FakeIndex):
         def delete(self, **kwargs: Any) -> None:  # type: ignore[override]
             raise RuntimeError("delete failed")
@@ -600,8 +636,11 @@ async def test_pinecone_delete_collection_exception(monkeypatch: pytest.MonkeyPa
 
 
 @pytest.mark.asyncio
-async def test_pinecone_list_collections_exception(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_pinecone_list_collections_exception(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """list_collections() returns [] when describe_index_stats raises (lines 417-419)."""
+
     class BrokenStats(FakeIndex):
         def describe_index_stats(self, **kwargs: Any) -> None:  # type: ignore[override]
             raise RuntimeError("stats failed")

@@ -132,6 +132,7 @@ async def test_sftp_health_returns_true() -> None:
 @pytest.mark.asyncio
 async def test_sftp_upload_exception_raises_lifecycle_error() -> None:
     """upload() wraps exceptions in LifecycleError (lines 119-121)."""
+
     class FailingClient(_FakeSFTPClient):
         async def put(self, buffer: io.BytesIO, remote_path: str) -> None:
             raise OSError("disk full")
@@ -149,6 +150,7 @@ async def test_sftp_upload_exception_raises_lifecycle_error() -> None:
 @pytest.mark.asyncio
 async def test_sftp_download_exception_raises_lifecycle_error() -> None:
     """download() wraps exceptions in LifecycleError (lines 129-131)."""
+
     class FailingClient(_FakeSFTPClient):
         async def get(self, remote_path: str, buffer: io.BytesIO) -> None:
             raise OSError("read error")
@@ -166,6 +168,7 @@ async def test_sftp_download_exception_raises_lifecycle_error() -> None:
 @pytest.mark.asyncio
 async def test_sftp_delete_general_exception_raises_lifecycle_error() -> None:
     """delete() wraps non-FileNotFoundError exceptions in LifecycleError (lines 140-142)."""
+
     class FailingClient(_FakeSFTPClient):
         async def remove(self, remote_path: str) -> None:
             raise PermissionError("access denied")
@@ -183,6 +186,7 @@ async def test_sftp_delete_general_exception_raises_lifecycle_error() -> None:
 @pytest.mark.asyncio
 async def test_sftp_list_exception_raises_lifecycle_error() -> None:
     """list() wraps exceptions in LifecycleError (lines 150-152)."""
+
     class FailingClient(_FakeSFTPClient):
         async def listdir(self, path: str) -> list:
             raise OSError("permission denied")
@@ -201,7 +205,7 @@ async def test_sftp_list_exception_raises_lifecycle_error() -> None:
 async def test_sftp_init_asyncssh_path_with_password(monkeypatch) -> None:
     """init() uses asyncssh.connect with password when no factory provided (lines 71-94)."""
     import sys
-    import types
+
     from pydantic import SecretStr
 
     client = _FakeSFTPClient()
@@ -231,7 +235,6 @@ async def test_sftp_init_asyncssh_path_with_password(monkeypatch) -> None:
 async def test_sftp_init_asyncssh_path_with_private_key_and_root(monkeypatch) -> None:
     """init() uses client_keys when private_key set and chdirs to root_path (lines 86-92)."""
     import sys
-    from pydantic import SecretStr
 
     chdirs: list[str] = []
 

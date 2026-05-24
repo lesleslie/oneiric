@@ -68,7 +68,9 @@ async def test_notification_router_sends_via_adapter(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_notification_router_uses_default_adapter_key_and_explicit_title(tmp_path):
+async def test_notification_router_uses_default_adapter_key_and_explicit_title(
+    tmp_path,
+):
     resolver = Resolver()
     resolver.register(
         Candidate(

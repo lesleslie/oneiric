@@ -21,7 +21,7 @@ class TestServiceBridgeInit:
             activity_store = MagicMock()
             supervisor = MagicMock()
 
-            bridge = ServiceBridge(
+            ServiceBridge(
                 resolver,
                 lifecycle,
                 settings,

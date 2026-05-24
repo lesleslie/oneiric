@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import pytest
 import httpx
+import pytest
 
 from oneiric.adapters.http.httpx import HTTPClientAdapter, HTTPClientSettings
 from oneiric.core.lifecycle import LifecycleError
-
 
 # ---------------------------------------------------------------------------
 # Tests — init
@@ -278,5 +277,3 @@ def test_httpx_mixin_ensure_client_raises_when_no_client() -> None:
     mixin = HTTPXClientMixin()
     with pytest.raises(LifecycleError, match="no-client"):
         mixin._ensure_client("no-client")
-
-

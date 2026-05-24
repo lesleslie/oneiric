@@ -303,7 +303,7 @@ class SessionStartEvent(BaseModel):
 
         try:
             # Try parsing with timezone
-            datetime.fromisoformat(v.replace("Z", "+00:00"))
+            datetime.fromisoformat(v)
         except ValueError as e:
             raise ValueError(
                 f"Invalid ISO 8601 timestamp: {v} (expected format: 2026-02-06T12:34:56.789Z)"
@@ -405,7 +405,7 @@ class SessionEndEvent(BaseModel):
 
         try:
             # Try parsing with timezone
-            datetime.fromisoformat(v.replace("Z", "+00:00"))
+            datetime.fromisoformat(v)
         except ValueError as e:
             raise ValueError(
                 f"Invalid ISO 8601 timestamp: {v} (expected format: 2026-02-06T12:34:56.789Z)"

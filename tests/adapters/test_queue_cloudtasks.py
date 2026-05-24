@@ -82,7 +82,9 @@ async def test_cloudtasks_cleanup() -> None:
     client = _FakeTasksClient()
     adapter = CloudTasksQueueAdapter(
         settings=CloudTasksQueueSettings(
-            project_id="p", location="us-central1", queue="q",
+            project_id="p",
+            location="us-central1",
+            queue="q",
             http_target_url="https://example.com/run",
         ),
         client=client,
@@ -99,7 +101,9 @@ async def test_cloudtasks_pending() -> None:
     client = _FakeTasksClient()
     adapter = CloudTasksQueueAdapter(
         settings=CloudTasksQueueSettings(
-            project_id="p", location="us-central1", queue="q",
+            project_id="p",
+            location="us-central1",
+            queue="q",
             http_target_url="https://example.com/run",
         ),
         client=client,
@@ -116,7 +120,9 @@ async def test_cloudtasks_ensure_queue_path_raises() -> None:
 
     adapter = CloudTasksQueueAdapter(
         settings=CloudTasksQueueSettings(
-            project_id="p", location="l", queue="q",
+            project_id="p",
+            location="l",
+            queue="q",
             http_target_url="https://example.com/run",
         ),
         client=_FakeTasksClient(),
@@ -131,7 +137,9 @@ async def test_cloudtasks_task_payload_with_service_account() -> None:
     client = _FakeTasksClient()
     adapter = CloudTasksQueueAdapter(
         settings=CloudTasksQueueSettings(
-            project_id="p", location="l", queue="q",
+            project_id="p",
+            location="l",
+            queue="q",
             http_target_url="https://example.com/run",
             service_account_email="sa@proj.iam.gserviceaccount.com",
         ),
@@ -139,7 +147,10 @@ async def test_cloudtasks_task_payload_with_service_account() -> None:
     )
     payload = adapter._build_task_payload({"k": "v"})
     assert "oidc_token" in payload["http_request"]
-    assert payload["http_request"]["oidc_token"]["service_account_email"] == "sa@proj.iam.gserviceaccount.com"
+    assert (
+        payload["http_request"]["oidc_token"]["service_account_email"]
+        == "sa@proj.iam.gserviceaccount.com"
+    )
 
 
 @pytest.mark.asyncio
@@ -147,7 +158,9 @@ async def test_cloudtasks_task_payload_with_dispatch_deadline() -> None:
     """_build_task_payload includes dispatch_deadline when set (line 140)."""
     adapter = CloudTasksQueueAdapter(
         settings=CloudTasksQueueSettings(
-            project_id="p", location="l", queue="q",
+            project_id="p",
+            location="l",
+            queue="q",
             http_target_url="https://example.com/run",
             dispatch_deadline_seconds=30,
         ),
@@ -162,7 +175,9 @@ async def test_cloudtasks_task_payload_with_schedule_offset() -> None:
     """_build_task_payload includes schedule_time when schedule_offset_seconds > 0 (lines 146-147)."""
     adapter = CloudTasksQueueAdapter(
         settings=CloudTasksQueueSettings(
-            project_id="p", location="l", queue="q",
+            project_id="p",
+            location="l",
+            queue="q",
             http_target_url="https://example.com/run",
             schedule_offset_seconds=60,
         ),
@@ -184,7 +199,7 @@ async def test_cloudtasks_init_creates_client_from_sdk(monkeypatch) -> None:
     class FakeClient(_FakeTasksClient):
         pass
 
-    fake_client_instance = FakeClient()
+    FakeClient()
 
     class FakeCloudTasksAsyncClient:
         def __init__(self) -> None:
@@ -211,7 +226,9 @@ async def test_cloudtasks_init_creates_client_from_sdk(monkeypatch) -> None:
 
     adapter = CloudTasksQueueAdapter(
         settings=CloudTasksQueueSettings(
-            project_id="p", location="l", queue="q",
+            project_id="p",
+            location="l",
+            queue="q",
             http_target_url="https://example.com/run",
         ),
         # No client — triggers SDK import

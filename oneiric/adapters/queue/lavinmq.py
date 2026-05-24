@@ -15,6 +15,7 @@ from __future__ import annotations
 import asyncio
 import inspect
 from collections.abc import Callable
+from contextlib import suppress
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
@@ -261,7 +262,7 @@ class LavinMQQueueAdapter:
             except ImportError:
                 pass
 
-        return len(self._active_protocols) > 0
+        return self._active_protocols
 
     async def cleanup(self) -> None:
         """Clean up all connections."""
@@ -276,10 +277,8 @@ class LavinMQQueueAdapter:
 
         # MQTT cleanup
         if self._mqtt_client:
-            try:
+            with suppress(Exception):
                 await self._mqtt_client.disconnect()
-            except Exception:
-                pass
             self._mqtt_client = None
 
         self._logger.info("lavinmq-adapter-cleanup", provider="lavinmq")

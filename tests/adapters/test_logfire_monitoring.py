@@ -74,13 +74,16 @@ def test_maybe_call_skips_when_disabled() -> None:
 def test_build_config_kwargs_includes_environment_and_release() -> None:
     """_build_config_kwargs adds deployment.environment and service.version tags (lines 117, 119, 125)."""
     fake_configure = MagicMock()
-    import inspect
 
     fake_logfire = MagicMock()
     fake_logfire.configure = fake_configure
     with patch("oneiric.adapters.monitoring.logfire.logfire", fake_logfire):
         with patch("inspect.signature") as mock_sig:
-            mock_sig.return_value.parameters = {"token": None, "service_name": None, "tags": None}
+            mock_sig.return_value.parameters = {
+                "token": None,
+                "service_name": None,
+                "tags": None,
+            }
             settings = LogfireMonitoringSettings(
                 token=None,
                 environment="production",
@@ -109,7 +112,6 @@ def test_build_config_kwargs_returns_early_when_configure_not_callable() -> None
 
 def test_build_config_kwargs_handles_signature_error() -> None:
     """_build_config_kwargs returns kwargs when inspect.signature raises (lines 131-132)."""
-    import inspect
 
     fake_logfire = MagicMock()
     with patch("oneiric.adapters.monitoring.logfire.logfire", fake_logfire):

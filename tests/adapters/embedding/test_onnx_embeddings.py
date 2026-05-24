@@ -243,7 +243,10 @@ async def test_onnx_health_false_on_error(monkeypatch: pytest.MonkeyPatch) -> No
 @pytest.mark.asyncio
 async def test_onnx_cleanup_session_del_raises() -> None:
     """cleanup() catches exception when del self._session raises (lines 253-254)."""
-    from oneiric.adapters.embedding.onnx import ONNXEmbeddingAdapter, ONNXEmbeddingSettings
+    from oneiric.adapters.embedding.onnx import (
+        ONNXEmbeddingAdapter,
+        ONNXEmbeddingSettings,
+    )
 
     class FailDelSessionAdapter(ONNXEmbeddingAdapter):
         def __delattr__(self, name: str) -> None:
@@ -261,7 +264,10 @@ async def test_onnx_cleanup_session_del_raises() -> None:
 @pytest.mark.asyncio
 async def test_onnx_cleanup_tokenizer_del_raises() -> None:
     """cleanup() catches exception when del self._tokenizer raises (lines 260-261)."""
-    from oneiric.adapters.embedding.onnx import ONNXEmbeddingAdapter, ONNXEmbeddingSettings
+    from oneiric.adapters.embedding.onnx import (
+        ONNXEmbeddingAdapter,
+        ONNXEmbeddingSettings,
+    )
 
     class FailDelTokenizerAdapter(ONNXEmbeddingAdapter):
         def __delattr__(self, name: str) -> None:
@@ -299,7 +305,9 @@ async def test_onnx_cleanup() -> None:
 
 @pytest.mark.asyncio
 async def test_onnx_embed_texts_with_mocks(monkeypatch: pytest.MonkeyPatch) -> None:
-    from oneiric.adapters.embedding.embedding_interface import EmbeddingBatch, EmbeddingResult
+    from oneiric.adapters.embedding.embedding_interface import (
+        EmbeddingResult,
+    )
 
     adapter = _make_adapter()
     session = MockSession()
@@ -327,7 +335,10 @@ async def test_onnx_embed_texts_with_mocks(monkeypatch: pytest.MonkeyPatch) -> N
 
 @pytest.mark.asyncio
 async def test_onnx_embed_documents(monkeypatch: pytest.MonkeyPatch) -> None:
-    from oneiric.adapters.embedding.embedding_interface import EmbeddingBatch, EmbeddingResult
+    from oneiric.adapters.embedding.embedding_interface import (
+        EmbeddingBatch,
+        EmbeddingResult,
+    )
 
     adapter = _make_adapter()
 
@@ -368,8 +379,12 @@ async def test_onnx_process_all_batches_error(monkeypatch: pytest.MonkeyPatch) -
 
     with pytest.raises(LifecycleError, match="onnx-batch-failed"):
         await adapter._process_all_batches(
-            ["text"], batch_size=1, session=session, tokenizer=tokenizer,
-            model="m", normalize=False
+            ["text"],
+            batch_size=1,
+            session=session,
+            tokenizer=tokenizer,
+            model="m",
+            normalize=False,
         )
 
 
@@ -380,7 +395,6 @@ async def test_onnx_process_all_batches_error(monkeypatch: pytest.MonkeyPatch) -
 
 @pytest.mark.asyncio
 async def test_onnx_apply_pooling_unsupported() -> None:
-    from oneiric.adapters.embedding.embedding_interface import PoolingStrategy
 
     adapter = _make_adapter()
     token_embeddings = np.array([[[1.0, 2.0]]])
@@ -496,7 +510,9 @@ async def test_onnx_get_performance_metrics_with_profiling() -> None:
 def test_onnx_create_embedding_result() -> None:
     adapter = _make_adapter()
     embedding = np.array([0.1, 0.2, 0.3])
-    result = adapter._create_embedding_result("hello", embedding, "model", token_count=5)
+    result = adapter._create_embedding_result(
+        "hello", embedding, "model", token_count=5
+    )
     assert result.text == "hello"
     assert result.tokens == 5
     assert "pooling_strategy" in result.metadata
@@ -547,7 +563,9 @@ async def test_onnx_process_single_batch() -> None:
 
 
 @pytest.mark.asyncio
-async def test_onnx_process_all_batches_success(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_onnx_process_all_batches_success(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from oneiric.adapters.embedding.embedding_interface import EmbeddingResult
 
     adapter = _make_adapter()
@@ -665,6 +683,7 @@ async def test_onnx_load_model_with_thread_settings(
 async def test_onnx_load_model_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     import sys
     import types
+
     from oneiric.core.lifecycle import LifecycleError
 
     fake_ort = types.SimpleNamespace(
@@ -677,7 +696,9 @@ async def test_onnx_load_model_failure(monkeypatch: pytest.MonkeyPatch) -> None:
             graph_optimization_level=None,
         ),
         GraphOptimizationLevel=types.SimpleNamespace(ORT_ENABLE_ALL="all"),
-        InferenceSession=lambda *a, **kw: (_ for _ in ()).throw(RuntimeError("bad model")),
+        InferenceSession=lambda *a, **kw: (_ for _ in ()).throw(
+            RuntimeError("bad model")
+        ),
     )
     fake_transformers = types.SimpleNamespace(
         AutoTokenizer=types.SimpleNamespace(

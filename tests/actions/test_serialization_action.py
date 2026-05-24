@@ -157,5 +157,7 @@ async def test_serialization_decode_binary_bytes_input() -> None:
     encoded = await action.execute({"format": "pickle", "value": {"z": 3}})
     raw_bytes = base64.b64decode(encoded["data"])
     # Pass raw bytes directly to exercise the `isinstance(value, bytes) -> return value` branch
-    result = await action.execute({"mode": "decode", "format": "pickle", "data": raw_bytes})
+    result = await action.execute(
+        {"mode": "decode", "format": "pickle", "data": raw_bytes}
+    )
     assert result["data"] == {"z": 3}

@@ -162,7 +162,9 @@ async def test_health_checks_collection(adapter: FirestoreAdapter) -> None:
 
 
 @pytest.mark.asyncio()
-async def test_cleanup_closes_client(adapter: FirestoreAdapter, fake_client: FakeClient) -> None:
+async def test_cleanup_closes_client(
+    adapter: FirestoreAdapter, fake_client: FakeClient
+) -> None:
     """cleanup() closes client and nils _client (lines 80-88)."""
     await adapter.init()
     await adapter.cleanup()
@@ -201,7 +203,9 @@ async def test_ensure_client_awaitable_factory() -> None:
 
 
 @pytest.mark.asyncio()
-async def test_default_client_factory_uses_google_cloud(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_default_client_factory_uses_google_cloud(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_default_client_factory creates AsyncClient when google.cloud is importable (lines 148-172)."""
     import sys
     import types
@@ -230,7 +234,9 @@ async def test_default_client_factory_uses_google_cloud(monkeypatch: pytest.Monk
     monkeypatch.setitem(sys.modules, "google", fake_google)
     monkeypatch.setitem(sys.modules, "google.cloud", fake_cloud)
     monkeypatch.setitem(sys.modules, "google.cloud.firestore_v1", fake_firestore_v1)
-    monkeypatch.setitem(sys.modules, "google.cloud.firestore_v1.async_client", fake_fs_module)
+    monkeypatch.setitem(
+        sys.modules, "google.cloud.firestore_v1.async_client", fake_fs_module
+    )
 
     settings = FirestoreSettings(project_id="my-project", collection="items")
     adapter = FirestoreAdapter(settings)
@@ -246,9 +252,11 @@ async def test_cleanup_awaitable_close() -> None:
 
     class AsyncCloseClient:
         store: dict = {}
+
         def collection(self, name: str) -> FakeCollection:
             namespace = self.store.setdefault(name, {})
             return FakeCollection(namespace)
+
         async def close(self) -> None:
             closed.append(True)
 
@@ -261,11 +269,13 @@ async def test_cleanup_awaitable_close() -> None:
 
 
 @pytest.mark.asyncio()
-async def test_default_client_factory_with_emulator(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_default_client_factory_with_emulator(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_default_client_factory sets FIRESTORE_EMULATOR_HOST when emulator_host is set (line 167-170)."""
+    import os
     import sys
     import types
-    import os
 
     class FakeAsyncClient:
         def __init__(self, project: str, credentials: Any = None) -> None:
@@ -283,18 +293,28 @@ async def test_default_client_factory_with_emulator(monkeypatch: pytest.MonkeyPa
     fake_fs_module.AsyncClient = FakeAsyncClient  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, "google", types.ModuleType("google"))
     monkeypatch.setitem(sys.modules, "google.cloud", types.ModuleType("google.cloud"))
-    monkeypatch.setitem(sys.modules, "google.cloud.firestore_v1", types.ModuleType("google.cloud.firestore_v1"))
-    monkeypatch.setitem(sys.modules, "google.cloud.firestore_v1.async_client", fake_fs_module)
+    monkeypatch.setitem(
+        sys.modules,
+        "google.cloud.firestore_v1",
+        types.ModuleType("google.cloud.firestore_v1"),
+    )
+    monkeypatch.setitem(
+        sys.modules, "google.cloud.firestore_v1.async_client", fake_fs_module
+    )
     monkeypatch.delenv("FIRESTORE_EMULATOR_HOST", raising=False)
 
-    settings = FirestoreSettings(project_id="p", collection="items", emulator_host="localhost:8080")
+    settings = FirestoreSettings(
+        project_id="p", collection="items", emulator_host="localhost:8080"
+    )
     adapter = FirestoreAdapter(settings)
     await adapter.init()
     assert os.environ.get("FIRESTORE_EMULATOR_HOST") == "localhost:8080"
 
 
 @pytest.mark.asyncio()
-async def test_default_client_factory_with_credentials_file(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_default_client_factory_with_credentials_file(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_default_client_factory loads credentials when credentials_file is set (lines 157-163)."""
     import sys
     import types
@@ -303,15 +323,17 @@ async def test_default_client_factory_with_credentials_file(monkeypatch: pytest.
 
     class FakeCredentials:
         @staticmethod
-        def from_service_account_file(path: str) -> "FakeCredentials":
+        def from_service_account_file(path: str) -> FakeCredentials:
             loaded_files.append(path)
             return FakeCredentials()
 
     class FakeAsyncClient:
         def __init__(self, project: str, credentials: Any = None) -> None:
             self.store: dict[str, Any] = {}
+
         def collection(self, name: str) -> FakeCollection:
             return FakeCollection(self.store.setdefault(name, {}))
+
         def close(self) -> None:
             pass
 
@@ -323,8 +345,14 @@ async def test_default_client_factory_with_credentials_file(monkeypatch: pytest.
 
     monkeypatch.setitem(sys.modules, "google", types.ModuleType("google"))
     monkeypatch.setitem(sys.modules, "google.cloud", types.ModuleType("google.cloud"))
-    monkeypatch.setitem(sys.modules, "google.cloud.firestore_v1", types.ModuleType("google.cloud.firestore_v1"))
-    monkeypatch.setitem(sys.modules, "google.cloud.firestore_v1.async_client", fake_fs_module)
+    monkeypatch.setitem(
+        sys.modules,
+        "google.cloud.firestore_v1",
+        types.ModuleType("google.cloud.firestore_v1"),
+    )
+    monkeypatch.setitem(
+        sys.modules, "google.cloud.firestore_v1.async_client", fake_fs_module
+    )
     monkeypatch.setitem(sys.modules, "google.oauth2", fake_oauth2)
     monkeypatch.setitem(sys.modules, "google.oauth2.service_account", fake_sa_module)
 

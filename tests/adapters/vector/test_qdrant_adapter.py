@@ -272,7 +272,9 @@ async def test_qdrant_health_returns_true(monkeypatch: pytest.MonkeyPatch) -> No
 
 
 @pytest.mark.asyncio
-async def test_qdrant_health_returns_false_on_error(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_qdrant_health_returns_false_on_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """health() returns False when get_cluster_info raises (lines 232-234)."""
     _inject_qdrant_models(monkeypatch)
 
@@ -305,7 +307,9 @@ async def test_qdrant_cleanup_without_client(monkeypatch: pytest.MonkeyPatch) ->
 
 
 @pytest.mark.asyncio
-async def test_qdrant_ensure_collection_already_exists(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_qdrant_ensure_collection_already_exists(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_ensure_collection_exists returns True when collection already present (line 148)."""
     _inject_qdrant_models(monkeypatch)
     adapter = QdrantAdapter(QdrantSettings())
@@ -316,7 +320,9 @@ async def test_qdrant_ensure_collection_already_exists(monkeypatch: pytest.Monke
 
 
 @pytest.mark.asyncio
-async def test_qdrant_ensure_collection_dimension_from_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_qdrant_ensure_collection_dimension_from_settings(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_ensure_collection_exists uses default_dimension when dimension is None (line 151)."""
     _inject_qdrant_models(monkeypatch)
     settings = QdrantSettings(default_dimension=64)
@@ -328,7 +334,9 @@ async def test_qdrant_ensure_collection_dimension_from_settings(monkeypatch: pyt
 
 
 @pytest.mark.asyncio
-async def test_qdrant_ensure_collection_creation_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_qdrant_ensure_collection_creation_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_ensure_collection_exists returns False when creation raises (lines 217-223)."""
     _inject_qdrant_models(monkeypatch)
 
@@ -347,7 +355,9 @@ async def test_qdrant_ensure_collection_creation_fails(monkeypatch: pytest.Monke
 
 
 @pytest.mark.asyncio
-async def test_qdrant_build_filter_returns_none_for_empty_expr(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_qdrant_build_filter_returns_none_for_empty_expr(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_build_qdrant_filter returns None when filter_expr is empty dict (line 325)."""
     _inject_qdrant_models(monkeypatch)
     adapter = QdrantAdapter(QdrantSettings())
@@ -356,12 +366,14 @@ async def test_qdrant_build_filter_returns_none_for_empty_expr(monkeypatch: pyte
 
 
 @pytest.mark.asyncio
-async def test_qdrant_build_filter_exception_returns_none(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_qdrant_build_filter_exception_returns_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_build_qdrant_filter returns None when qdrant_client import fails (lines 313-317)."""
     import sys
     import types
 
-    bad_models = types.ModuleType("qdrant_client.models")
+    types.ModuleType("qdrant_client.models")
     # Make it raise when accessed
     monkeypatch.setitem(sys.modules, "qdrant_client.models", None)  # type: ignore[arg-type]
 
@@ -371,7 +383,9 @@ async def test_qdrant_build_filter_exception_returns_none(monkeypatch: pytest.Mo
 
 
 @pytest.mark.asyncio
-async def test_qdrant_search_returns_empty_on_exception(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_qdrant_search_returns_empty_on_exception(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """search() returns [] when client.search raises (lines 286-288)."""
     _inject_qdrant_models(monkeypatch)
 
@@ -396,7 +410,9 @@ async def test_qdrant_delete(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_qdrant_delete_returns_false_on_exception(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_qdrant_delete_returns_false_on_exception(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """delete() returns False when client.delete raises (lines 402-404)."""
     _inject_qdrant_models(monkeypatch)
 
@@ -423,7 +439,9 @@ async def test_qdrant_get(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_qdrant_get_returns_empty_on_exception(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_qdrant_get_returns_empty_on_exception(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """get() returns [] when client.retrieve raises (lines 435-437)."""
     _inject_qdrant_models(monkeypatch)
 
@@ -458,7 +476,9 @@ async def test_qdrant_count_with_filter(monkeypatch: pytest.MonkeyPatch) -> None
 
 
 @pytest.mark.asyncio
-async def test_qdrant_count_returns_zero_on_exception(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_qdrant_count_returns_zero_on_exception(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """count() returns 0 when client.count raises (lines 460-462)."""
     _inject_qdrant_models(monkeypatch)
 
@@ -494,7 +514,9 @@ async def test_qdrant_delete_collection(monkeypatch: pytest.MonkeyPatch) -> None
 
 
 @pytest.mark.asyncio
-async def test_qdrant_delete_collection_returns_false_on_exception(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_qdrant_delete_collection_returns_false_on_exception(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """delete_collection() returns False when client raises (lines 484-486)."""
     _inject_qdrant_models(monkeypatch)
 
@@ -519,7 +541,9 @@ async def test_qdrant_list_collections(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_qdrant_list_collections_returns_empty_on_exception(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_qdrant_list_collections_returns_empty_on_exception(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """list_collections() returns [] when client raises (lines 495-497)."""
     _inject_qdrant_models(monkeypatch)
 
@@ -534,7 +558,9 @@ async def test_qdrant_list_collections_returns_empty_on_exception(monkeypatch: p
 
 
 @pytest.mark.asyncio
-async def test_qdrant_scroll_returns_empty_on_exception(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_qdrant_scroll_returns_empty_on_exception(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """scroll() returns ([], None) when client.scroll raises (lines 537-539)."""
     _inject_qdrant_models(monkeypatch)
 
@@ -559,7 +585,9 @@ def test_qdrant_has_capability(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_qdrant_upsert_generates_id_for_none(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_qdrant_upsert_generates_id_for_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """upsert() generates uuid when doc.id is None (line 348)."""
     from oneiric.adapters.vector.vector_types import VectorDocument
 
@@ -573,7 +601,9 @@ async def test_qdrant_upsert_generates_id_for_none(monkeypatch: pytest.MonkeyPat
 
 
 @pytest.mark.asyncio
-async def test_qdrant_upsert_returns_empty_on_exception(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_qdrant_upsert_returns_empty_on_exception(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """upsert() returns [] when client.upsert raises (lines 378-380)."""
     _inject_qdrant_models(monkeypatch)
 
@@ -634,7 +664,9 @@ async def test_qdrant_create_client_basic(monkeypatch: pytest.MonkeyPatch) -> No
 
 
 @pytest.mark.asyncio
-async def test_qdrant_create_client_with_optional_params(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_qdrant_create_client_with_optional_params(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_create_client() includes api_key, grpc_port, https when set (lines 96-103)."""
     from pydantic import SecretStr
 
@@ -654,7 +686,9 @@ async def test_qdrant_create_client_with_optional_params(monkeypatch: pytest.Mon
 
 
 @pytest.mark.asyncio
-async def test_qdrant_create_client_construction_error(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_qdrant_create_client_construction_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_create_client() raises LifecycleError when AsyncQdrantClient() raises non-ImportError (lines 113-114)."""
     import sys
 
@@ -669,7 +703,9 @@ async def test_qdrant_create_client_construction_error(monkeypatch: pytest.Monke
         def __init__(self, **kwargs: Any) -> None:
             raise ValueError("bad connection params")
 
-    fake_qdrant_module = SimpleNamespace(AsyncQdrantClient=ExplodingClient, models=models)
+    fake_qdrant_module = SimpleNamespace(
+        AsyncQdrantClient=ExplodingClient, models=models
+    )
     monkeypatch.setitem(sys.modules, "qdrant_client", fake_qdrant_module)
     adapter = QdrantAdapter(QdrantSettings())
     with pytest.raises(LifecycleError, match="qdrant-client-creation-failed"):
@@ -677,7 +713,9 @@ async def test_qdrant_create_client_construction_error(monkeypatch: pytest.Monke
 
 
 @pytest.mark.asyncio
-async def test_qdrant_create_client_import_error(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_qdrant_create_client_import_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_create_client() raises LifecycleError when qdrant_client is missing (lines 109-112)."""
     import sys
 
@@ -708,7 +746,9 @@ async def test_qdrant_init_raises_on_failure(monkeypatch: pytest.MonkeyPatch) ->
 
 
 @pytest.mark.asyncio
-async def test_qdrant_health_returns_false_when_no_client(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_qdrant_health_returns_false_when_no_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """health() returns False immediately when _client is None (line 227)."""
     _inject_qdrant_models(monkeypatch)
     adapter = QdrantAdapter(QdrantSettings())
@@ -717,7 +757,9 @@ async def test_qdrant_health_returns_false_when_no_client(monkeypatch: pytest.Mo
 
 
 @pytest.mark.asyncio
-async def test_qdrant_cleanup_logs_warning_on_close_error(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_qdrant_cleanup_logs_warning_on_close_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """cleanup() logs a warning when client.close() raises (lines 240-241)."""
     _inject_qdrant_models(monkeypatch)
 
@@ -732,7 +774,9 @@ async def test_qdrant_cleanup_logs_warning_on_close_error(monkeypatch: pytest.Mo
 
 
 @pytest.mark.asyncio
-async def test_qdrant_insert_delegates_to_upsert(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_qdrant_insert_delegates_to_upsert(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """insert() delegates to upsert() (line 325)."""
     from oneiric.adapters.vector.vector_types import VectorDocument
 

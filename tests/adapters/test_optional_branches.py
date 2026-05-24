@@ -1,12 +1,16 @@
 from __future__ import annotations
 
-from types import SimpleNamespace
-from unittest.mock import AsyncMock
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
 
+from oneiric.adapters.dns.gcdns import GCDNSAdapter, GCDNSSettings
+from oneiric.adapters.file_transfer.http_artifact import (
+    HTTPArtifactAdapter,
+    HTTPArtifactSettings,
+)
 from oneiric.adapters.metrics import (
     _extract_numeric,
     _read_value,
@@ -16,11 +20,6 @@ from oneiric.adapters.metrics import (
 from oneiric.adapters.observability.embeddings import EmbeddingService
 from oneiric.adapters.queue.nats import NATSQueueAdapter, NATSQueueSettings
 from oneiric.adapters.storage.local import LocalStorageAdapter, LocalStorageSettings
-from oneiric.adapters.dns.gcdns import GCDNSAdapter, GCDNSSettings
-from oneiric.adapters.file_transfer.http_artifact import (
-    HTTPArtifactAdapter,
-    HTTPArtifactSettings,
-)
 
 
 class _Recorder:
@@ -67,7 +66,12 @@ def test_adapter_metrics_branches(monkeypatch) -> None:
     assert pool.calls[0][1] == 4.0
     assert queue.calls[0][1] == 2.0
     assert _extract_numeric(SimpleNamespace(), ("missing",)) is None
-    assert _read_value(SimpleNamespace(bad=lambda: (_ for _ in ()).throw(RuntimeError())), "bad") is None
+    assert (
+        _read_value(
+            SimpleNamespace(bad=lambda: (_ for _ in ()).throw(RuntimeError())), "bad"
+        )
+        is None
+    )
 
 
 @pytest.mark.asyncio
@@ -83,7 +87,12 @@ async def test_embedding_service_branches(monkeypatch) -> None:
     }
     text = service._build_text_from_trace(trace)
     assert "a=1 b=2" in text
-    assert isinstance(service._generate_cache_key({"trace_id": "abc", "service": "svc", "operation": "op"}), int)
+    assert isinstance(
+        service._generate_cache_key(
+            {"trace_id": "abc", "service": "svc", "operation": "op"}
+        ),
+        int,
+    )
     assert len(service._generate_fallback_embedding("x")) == 384
 
     monkeypatch.setattr(
@@ -106,7 +115,11 @@ async def test_embedding_service_branches(monkeypatch) -> None:
         "oneiric.adapters.observability.embeddings.SentenceTransformer",
         lambda model_name: FakeModel(),
     )
-    monkeypatch.setattr(service, "_embed_cached", lambda cache_key, text: (_ for _ in ()).throw(RuntimeError("boom")))
+    monkeypatch.setattr(
+        service,
+        "_embed_cached",
+        lambda cache_key, text: (_ for _ in ()).throw(RuntimeError("boom")),
+    )
     fallback = await service.embed_trace({"trace_id": "trace-1"})
     assert len(fallback) == 384
 
@@ -206,7 +219,9 @@ async def test_gcdns_branches(monkeypatch) -> None:
         def zone(self, name):
             return FakeZone()
 
-    adapter = GCDNSAdapter(GCDNSSettings(managed_zone="example.com"), client=FakeClient(), zone=FakeZone())
+    adapter = GCDNSAdapter(
+        GCDNSSettings(managed_zone="example.com"), client=FakeClient(), zone=FakeZone()
+    )
     assert await adapter.health() is True
     records = await adapter.list_records(record_type="A")
     assert records[0]["name"] == "a.example.com."
@@ -232,7 +247,9 @@ async def test_http_artifact_branches(monkeypatch) -> None:
         async def get(self, url, timeout=None):
             return FakeResponse()
 
-    adapter = HTTPArtifactAdapter(HTTPArtifactSettings(base_url=None), client=FakeClient())
+    adapter = HTTPArtifactAdapter(
+        HTTPArtifactSettings(base_url=None), client=FakeClient()
+    )
     assert await adapter.health() is True
     data = await adapter.download("artifact.bin")
     assert data == b"hello"

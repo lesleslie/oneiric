@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import datetime
 import json
-from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, MagicMock, Mock, PropertyMock, patch
 
 import pytest
@@ -119,7 +118,9 @@ async def test_http_fetch_action_requires_url() -> None:
 
 @pytest.mark.asyncio
 async def test_http_invalid_method_raises() -> None:
-    action = HttpFetchAction(HttpActionSettings(base_url="https://api.local"), client=MagicMock())
+    action = HttpFetchAction(
+        HttpActionSettings(base_url="https://api.local"), client=MagicMock()
+    )
     with pytest.raises(LifecycleError):
         await action.execute({"url": "https://api.local/x", "method": "CONNECT"})
 
@@ -131,7 +132,9 @@ async def test_http_non_json_response() -> None:
     mock_client = AsyncMock()
     mock_client.request.return_value = mock_response
 
-    action = HttpFetchAction(HttpActionSettings(base_url="https://api.local"), client=mock_client)
+    action = HttpFetchAction(
+        HttpActionSettings(base_url="https://api.local"), client=mock_client
+    )
     result = await action.execute({"url": "https://api.local/text"})
 
     assert result["json"] is None
@@ -157,21 +160,27 @@ async def test_http_build_url_base_url_no_path() -> None:
     mock_client = AsyncMock()
     mock_client.request.return_value = mock_response
 
-    action = HttpFetchAction(HttpActionSettings(base_url="https://api.local"), client=mock_client)
+    action = HttpFetchAction(
+        HttpActionSettings(base_url="https://api.local"), client=mock_client
+    )
     result = await action.execute({})  # no url, no path
     assert result["status_code"] == 200
 
 
 @pytest.mark.asyncio
 async def test_http_headers_not_mapping_raises() -> None:
-    action = HttpFetchAction(HttpActionSettings(base_url="https://api.local"), client=MagicMock())
+    action = HttpFetchAction(
+        HttpActionSettings(base_url="https://api.local"), client=MagicMock()
+    )
     with pytest.raises(LifecycleError):
         await action.execute({"url": "https://api.local/x", "headers": "not-a-mapping"})
 
 
 @pytest.mark.asyncio
 async def test_http_params_not_mapping_raises() -> None:
-    action = HttpFetchAction(HttpActionSettings(base_url="https://api.local"), client=MagicMock())
+    action = HttpFetchAction(
+        HttpActionSettings(base_url="https://api.local"), client=MagicMock()
+    )
     with pytest.raises(LifecycleError):
         await action.execute({"url": "https://api.local/x", "params": "not-a-mapping"})
 
@@ -184,10 +193,14 @@ async def test_http_no_client_uses_internal_client() -> None:
     mock_inner_client.request = AsyncMock(return_value=mock_response)
 
     with patch("oneiric.actions.http.httpx.AsyncClient") as MockAsyncClient:
-        MockAsyncClient.return_value.__aenter__ = AsyncMock(return_value=mock_inner_client)
+        MockAsyncClient.return_value.__aenter__ = AsyncMock(
+            return_value=mock_inner_client
+        )
         MockAsyncClient.return_value.__aexit__ = AsyncMock(return_value=None)
 
-        action = HttpFetchAction(HttpActionSettings(base_url="https://api.local"), client=None)
+        action = HttpFetchAction(
+            HttpActionSettings(base_url="https://api.local"), client=None
+        )
         result = await action.execute({"url": "https://api.local/x"})
         assert result["status_code"] == 200
 

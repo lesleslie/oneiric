@@ -168,6 +168,7 @@ async def test_default_driver_factory_with_auth(monkeypatch, fake_driver) -> Non
     """_default_driver_factory passes auth tuple when username+password set (line 154)."""
     import sys
     import types
+
     from pydantic import SecretStr
 
     auth_received: list[tuple] = []

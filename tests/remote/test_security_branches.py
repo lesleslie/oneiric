@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import base64
 
-import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from oneiric.remote.security import (
@@ -44,7 +43,7 @@ def test_verify_manifest_signature_handles_generic_key_error() -> None:
 def test_verify_manifest_signatures_threshold_and_error_paths() -> None:
     private_key = Ed25519PrivateKey.generate()
     public_key = private_key.public_key()
-    canonical = "{\"source\":\"test\"}"
+    canonical = '{"source":"test"}'
     signature = base64.b64encode(private_key.sign(canonical.encode("utf-8"))).decode(
         "ascii"
     )
@@ -106,9 +105,9 @@ def test_verify_manifest_signatures_threshold_not_met_returns_error() -> None:
     private_key = Ed25519PrivateKey.generate()
     public_key = private_key.public_key()
     canonical = '{"source":"test"}'
-    valid_sig = base64.b64encode(
-        private_key.sign(canonical.encode("utf-8"))
-    ).decode("ascii")
+    valid_sig = base64.b64encode(private_key.sign(canonical.encode("utf-8"))).decode(
+        "ascii"
+    )
     bad_sig = base64.b64encode(b"invalidsig").decode("ascii")
 
     ok, error, count = verify_manifest_signatures(

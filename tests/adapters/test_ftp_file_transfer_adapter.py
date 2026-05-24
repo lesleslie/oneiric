@@ -96,7 +96,9 @@ async def test_ftp_init_reuses_provided_client() -> None:
     """init() returns early when client is pre-provided (lines 56-58)."""
     client = _FakeFTPClient()
     adapter = FTPFileTransferAdapter(
-        FTPFileTransferSettings(host="localhost", username="u", password=SecretStr("p")),
+        FTPFileTransferSettings(
+            host="localhost", username="u", password=SecretStr("p")
+        ),
         client=client,
     )
     await adapter.init()
@@ -112,7 +114,9 @@ async def test_ftp_init_with_factory() -> None:
         return client
 
     adapter = FTPFileTransferAdapter(
-        FTPFileTransferSettings(host="localhost", username="u", password=SecretStr("p")),
+        FTPFileTransferSettings(
+            host="localhost", username="u", password=SecretStr("p")
+        ),
         client_factory=factory,
     )
     await adapter.init()
@@ -131,7 +135,9 @@ async def test_ftp_health_returns_true() -> None:
             return []
 
     adapter = FTPFileTransferAdapter(
-        FTPFileTransferSettings(host="localhost", username="u", password=SecretStr("p")),
+        FTPFileTransferSettings(
+            host="localhost", username="u", password=SecretStr("p")
+        ),
         client=AwaitableListClient(),
     )
     await adapter.init()
@@ -141,6 +147,7 @@ async def test_ftp_health_returns_true() -> None:
 @pytest.mark.asyncio
 async def test_ftp_download_exception_raises_lifecycle_error() -> None:
     """download() wraps exceptions in LifecycleError (lines 120-122)."""
+
     class BrokenDownload(_FakeFTPClient):
         @asynccontextmanager
         async def download_stream(self, remote_path: str):
@@ -148,7 +155,9 @@ async def test_ftp_download_exception_raises_lifecycle_error() -> None:
             yield  # pragma: no cover
 
     adapter = FTPFileTransferAdapter(
-        FTPFileTransferSettings(host="localhost", username="u", password=SecretStr("p")),
+        FTPFileTransferSettings(
+            host="localhost", username="u", password=SecretStr("p")
+        ),
         client=BrokenDownload(),
     )
     await adapter.init()
@@ -159,12 +168,15 @@ async def test_ftp_download_exception_raises_lifecycle_error() -> None:
 @pytest.mark.asyncio
 async def test_ftp_delete_general_exception_raises() -> None:
     """delete() wraps non-FileNotFoundError exceptions (lines 131-133)."""
+
     class PermDenied(_FakeFTPClient):
         async def remove_file(self, remote_path: str) -> None:
             raise PermissionError("access denied")
 
     adapter = FTPFileTransferAdapter(
-        FTPFileTransferSettings(host="localhost", username="u", password=SecretStr("p")),
+        FTPFileTransferSettings(
+            host="localhost", username="u", password=SecretStr("p")
+        ),
         client=PermDenied(),
     )
     await adapter.init()
@@ -175,13 +187,16 @@ async def test_ftp_delete_general_exception_raises() -> None:
 @pytest.mark.asyncio
 async def test_ftp_list_exception_raises_lifecycle_error() -> None:
     """list() wraps exceptions in LifecycleError (lines 143-145)."""
+
     class BrokenList(_FakeFTPClient):
         async def list(self, prefix: str):
             raise OSError("list failed")
             yield  # pragma: no cover - async generator stub
 
     adapter = FTPFileTransferAdapter(
-        FTPFileTransferSettings(host="localhost", username="u", password=SecretStr("p")),
+        FTPFileTransferSettings(
+            host="localhost", username="u", password=SecretStr("p")
+        ),
         client=BrokenList(),
     )
     await adapter.init()
@@ -202,7 +217,6 @@ def test_ftp_ensure_client_raises_when_not_initialized() -> None:
 async def test_ftp_init_aioftp_path(monkeypatch) -> None:
     """init() creates aioftp.ClientSession when no factory provided (lines 64-83)."""
     import sys
-    import types
 
     chdir_calls: list[str] = []
 

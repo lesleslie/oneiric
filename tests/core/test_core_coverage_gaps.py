@@ -1,8 +1,8 @@
 """Gap-fill tests for small core infrastructure modules."""
+
 from __future__ import annotations
 
 import pytest
-
 
 # ---------------------------------------------------------------------------
 # client_mixins.py:12 — raise path when _client is None

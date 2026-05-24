@@ -180,7 +180,9 @@ async def test_init_with_ensure_extension() -> None:
 
 
 @pytest.mark.asyncio
-async def test_health_returns_true(pool_adapter: tuple[PgvectorAdapter, FakeConnection]) -> None:
+async def test_health_returns_true(
+    pool_adapter: tuple[PgvectorAdapter, FakeConnection],
+) -> None:
     """health() executes SELECT 1 and returns True (lines 94-97)."""
     adapter, conn = pool_adapter
     result = await adapter.health()
@@ -189,7 +191,9 @@ async def test_health_returns_true(pool_adapter: tuple[PgvectorAdapter, FakeConn
 
 
 @pytest.mark.asyncio
-async def test_cleanup_closes_pool(pool_adapter: tuple[PgvectorAdapter, FakeConnection]) -> None:
+async def test_cleanup_closes_pool(
+    pool_adapter: tuple[PgvectorAdapter, FakeConnection],
+) -> None:
     """cleanup() closes the pool and nils _pool (lines 103-107)."""
     adapter, _conn = pool_adapter
     await adapter.init()
@@ -198,7 +202,9 @@ async def test_cleanup_closes_pool(pool_adapter: tuple[PgvectorAdapter, FakeConn
 
 
 @pytest.mark.asyncio
-async def test_search_no_filter(pool_adapter: tuple[PgvectorAdapter, FakeConnection]) -> None:
+async def test_search_no_filter(
+    pool_adapter: tuple[PgvectorAdapter, FakeConnection],
+) -> None:
     """search() uses $2 as limit param when no filter_expr (line 132)."""
     adapter, conn = pool_adapter
     await adapter.search("items", [0.1, 0.2], limit=5)
@@ -208,7 +214,9 @@ async def test_search_no_filter(pool_adapter: tuple[PgvectorAdapter, FakeConnect
 
 
 @pytest.mark.asyncio
-async def test_upsert_uses_on_conflict_update(pool_adapter: tuple[PgvectorAdapter, FakeConnection]) -> None:
+async def test_upsert_uses_on_conflict_update(
+    pool_adapter: tuple[PgvectorAdapter, FakeConnection],
+) -> None:
     """upsert() calls _write_documents with upsert=True (line 162, 406)."""
     adapter, conn = pool_adapter
     inserted = await adapter.upsert(
@@ -221,7 +229,9 @@ async def test_upsert_uses_on_conflict_update(pool_adapter: tuple[PgvectorAdapte
 
 
 @pytest.mark.asyncio
-async def test_delete_with_ids(pool_adapter: tuple[PgvectorAdapter, FakeConnection]) -> None:
+async def test_delete_with_ids(
+    pool_adapter: tuple[PgvectorAdapter, FakeConnection],
+) -> None:
     """delete() executes DELETE WHERE id = ANY (lines 170-178)."""
     adapter, conn = pool_adapter
     result = await adapter.delete("items", ["id1", "id2"])
@@ -230,7 +240,9 @@ async def test_delete_with_ids(pool_adapter: tuple[PgvectorAdapter, FakeConnecti
 
 
 @pytest.mark.asyncio
-async def test_get_with_ids(pool_adapter: tuple[PgvectorAdapter, FakeConnection]) -> None:
+async def test_get_with_ids(
+    pool_adapter: tuple[PgvectorAdapter, FakeConnection],
+) -> None:
     """get() fetches rows by id list (lines 187-196)."""
     adapter, conn = pool_adapter
     docs = await adapter.get("items", ["doc-1"])
@@ -240,7 +252,9 @@ async def test_get_with_ids(pool_adapter: tuple[PgvectorAdapter, FakeConnection]
 
 
 @pytest.mark.asyncio
-async def test_count_no_filter(pool_adapter: tuple[PgvectorAdapter, FakeConnection]) -> None:
+async def test_count_no_filter(
+    pool_adapter: tuple[PgvectorAdapter, FakeConnection],
+) -> None:
     """count() uses COUNT(*) without WHERE when filter_expr is None (lines 216-217)."""
     adapter, conn = pool_adapter
     result = await adapter.count("items")
@@ -250,10 +264,14 @@ async def test_count_no_filter(pool_adapter: tuple[PgvectorAdapter, FakeConnecti
 
 
 @pytest.mark.asyncio
-async def test_create_collection(pool_adapter: tuple[PgvectorAdapter, FakeConnection]) -> None:
+async def test_create_collection(
+    pool_adapter: tuple[PgvectorAdapter, FakeConnection],
+) -> None:
     """create_collection() issues CREATE TABLE and CREATE INDEX (lines 229-258)."""
     adapter, conn = pool_adapter
-    ok = await adapter.create_collection("things", dimension=128, distance_metric="cosine")
+    ok = await adapter.create_collection(
+        "things", dimension=128, distance_metric="cosine"
+    )
     assert ok is True
     all_sql = [sql for sql, _ in conn.executed]
     assert any("CREATE TABLE" in sql for sql in all_sql)
@@ -261,7 +279,9 @@ async def test_create_collection(pool_adapter: tuple[PgvectorAdapter, FakeConnec
 
 
 @pytest.mark.asyncio
-async def test_delete_collection(pool_adapter: tuple[PgvectorAdapter, FakeConnection]) -> None:
+async def test_delete_collection(
+    pool_adapter: tuple[PgvectorAdapter, FakeConnection],
+) -> None:
     """delete_collection() issues DROP TABLE (lines 261-269)."""
     adapter, conn = pool_adapter
     ok = await adapter.delete_collection("things")
@@ -281,7 +301,10 @@ async def test_list_collections() -> None:
     conn = TableNameConnection()
     pool = FakePool(conn)
     settings = PgvectorSettings(
-        database="app", db_schema="public", collection_prefix="vec_", ensure_extension=False
+        database="app",
+        db_schema="public",
+        collection_prefix="vec_",
+        ensure_extension=False,
     )
 
     async def _pool_factory(**_kwargs: object) -> FakePool:
@@ -354,7 +377,9 @@ def test_distance_operator_dot_product() -> None:
 
 
 @pytest.mark.asyncio
-async def test_cleanup_no_pool_is_noop(pool_adapter: tuple[PgvectorAdapter, FakeConnection]) -> None:
+async def test_cleanup_no_pool_is_noop(
+    pool_adapter: tuple[PgvectorAdapter, FakeConnection],
+) -> None:
     """cleanup() returns early when _pool is None (line 104)."""
     adapter, _conn = pool_adapter
     assert adapter._pool is None
@@ -363,7 +388,9 @@ async def test_cleanup_no_pool_is_noop(pool_adapter: tuple[PgvectorAdapter, Fake
 
 
 @pytest.mark.asyncio
-async def test_delete_empty_ids_returns_true(pool_adapter: tuple[PgvectorAdapter, FakeConnection]) -> None:
+async def test_delete_empty_ids_returns_true(
+    pool_adapter: tuple[PgvectorAdapter, FakeConnection],
+) -> None:
     """delete() returns True immediately when ids is empty (line 172)."""
     adapter, conn = pool_adapter
     result = await adapter.delete("items", [])
@@ -372,7 +399,9 @@ async def test_delete_empty_ids_returns_true(pool_adapter: tuple[PgvectorAdapter
 
 
 @pytest.mark.asyncio
-async def test_get_empty_ids_returns_empty(pool_adapter: tuple[PgvectorAdapter, FakeConnection]) -> None:
+async def test_get_empty_ids_returns_empty(
+    pool_adapter: tuple[PgvectorAdapter, FakeConnection],
+) -> None:
     """get() returns [] immediately when ids is empty (line 189)."""
     adapter, _conn = pool_adapter
     result = await adapter.get("items", [])

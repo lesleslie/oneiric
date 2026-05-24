@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import asyncio
-from pathlib import Path
-from types import SimpleNamespace
+from datetime import UTC
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from oneiric.core.config import RemoteAuthConfig, RemoteSourceConfig
-from oneiric.core.resolution import CandidateSource, Resolver
 from oneiric.core.resiliency import CircuitBreakerOpen
+from oneiric.core.resolution import Resolver
 from oneiric.remote.loader import (
     ArtifactManager,
     _auth_headers,
@@ -61,7 +60,9 @@ async def test_auth_headers_supports_token_and_secrets_hook() -> None:
 
 
 @pytest.mark.asyncio
-async def test_fetch_text_reads_local_file_and_rejects_unsupported_scheme(tmp_path) -> None:
+async def test_fetch_text_reads_local_file_and_rejects_unsupported_scheme(
+    tmp_path,
+) -> None:
     local_file = tmp_path / "manifest.yaml"
     local_file.write_text("source: local\nentries: []\n")
 
@@ -141,7 +142,9 @@ def test_candidate_from_entry_includes_retry_and_conflict_metadata() -> None:
 
 
 @pytest.mark.asyncio
-async def test_sync_remote_manifest_breaker_open_returns_none(tmp_path, monkeypatch) -> None:
+async def test_sync_remote_manifest_breaker_open_returns_none(
+    tmp_path, monkeypatch
+) -> None:
     resolver = Resolver()
     config = RemoteSourceConfig(
         enabled=True,
@@ -153,7 +156,9 @@ async def test_sync_remote_manifest_breaker_open_returns_none(tmp_path, monkeypa
         async def call(self, func):
             raise CircuitBreakerOpen("remote", 1.0)
 
-    monkeypatch.setattr("oneiric.remote.loader._breaker_for", lambda *args, **kwargs: FakeBreaker())
+    monkeypatch.setattr(
+        "oneiric.remote.loader._breaker_for", lambda *args, **kwargs: FakeBreaker()
+    )
 
     assert await sync_remote_manifest(resolver, config) is None
 
@@ -173,9 +178,13 @@ async def test_sync_remote_manifest_records_failure(tmp_path, monkeypatch) -> No
 
     record_failure = MagicMock()
     record_metric = MagicMock()
-    monkeypatch.setattr("oneiric.remote.loader._breaker_for", lambda *args, **kwargs: FakeBreaker())
+    monkeypatch.setattr(
+        "oneiric.remote.loader._breaker_for", lambda *args, **kwargs: FakeBreaker()
+    )
     monkeypatch.setattr("oneiric.remote.loader.record_remote_failure", record_failure)
-    monkeypatch.setattr("oneiric.remote.loader.record_remote_failure_metric", record_metric)
+    monkeypatch.setattr(
+        "oneiric.remote.loader.record_remote_failure_metric", record_metric
+    )
 
     with pytest.raises(RuntimeError, match="boom"):
         await sync_remote_manifest(resolver, config)
@@ -252,11 +261,15 @@ def test_artifact_manager_try_local_file_missing_returns_none(tmp_path) -> None:
 async def test_artifact_manager_fetch_remote_file_unsupported_scheme(tmp_path) -> None:
     mgr = ArtifactManager(str(tmp_path))
     with pytest.raises(ValueError, match="Unsupported URI scheme"):
-        await mgr._fetch_remote_file("ftp://example.com/file", tmp_path / "dest.bin", None, {})
+        await mgr._fetch_remote_file(
+            "ftp://example.com/file", tmp_path / "dest.bin", None, {}
+        )
 
 
 @pytest.mark.asyncio
-async def test_artifact_manager_fetch_remote_file_cleans_up_on_digest_error(tmp_path) -> None:
+async def test_artifact_manager_fetch_remote_file_cleans_up_on_digest_error(
+    tmp_path,
+) -> None:
     mgr = ArtifactManager(str(tmp_path))
     fake_tmp = tmp_path / "fake-dl.bin"
     fake_tmp.write_bytes(b"real content")
@@ -309,7 +322,9 @@ async def test_remote_sync_loop_circuit_breaker_logs_and_continues(monkeypatch) 
             call_count[0] += 1
             raise CircuitBreakerOpen("remote", 1.0)
 
-    monkeypatch.setattr("oneiric.remote.loader._breaker_for", lambda *a, **kw: FakeBreaker())
+    monkeypatch.setattr(
+        "oneiric.remote.loader._breaker_for", lambda *a, **kw: FakeBreaker()
+    )
 
     async def fake_sleep(t):
         if call_count[0] >= 1:
@@ -329,7 +344,9 @@ async def test_remote_sync_loop_circuit_breaker_logs_and_continues(monkeypatch) 
 
 
 @pytest.mark.asyncio
-async def test_download_to_temp_file_cleans_up_on_stream_error(tmp_path, monkeypatch) -> None:
+async def test_download_to_temp_file_cleans_up_on_stream_error(
+    tmp_path, monkeypatch
+) -> None:
     import httpx
 
     mgr = ArtifactManager(str(tmp_path))
@@ -364,7 +381,6 @@ async def test_download_to_temp_file_cleans_up_on_stream_error(tmp_path, monkeyp
 @pytest.mark.asyncio
 async def test_fetch_text_via_httpx_returns_response_text(monkeypatch) -> None:
     import httpx
-    from oneiric.remote import loader as _loader
 
     mock_response = MagicMock()
     mock_response.raise_for_status = MagicMock()
@@ -414,6 +430,7 @@ def test_parse_manifest_unsupported_algorithm_raises() -> None:
 
 def test_parse_manifest_signature_failure_raises() -> None:
     import base64
+
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
     private_key = Ed25519PrivateKey.generate()
@@ -457,7 +474,7 @@ def test_parse_timestamp_invalid_iso_string_raises() -> None:
 
 
 def test_parse_timestamp_naive_datetime_adds_utc() -> None:
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     naive = datetime(2024, 1, 1, 12, 0, 0)  # no tzinfo
     result = _parse_timestamp(naive.isoformat())
@@ -471,9 +488,9 @@ def test_parse_timestamp_aware_datetime_converts_to_utc() -> None:
 
 
 def test_parse_timestamp_datetime_object_directly() -> None:
-    from datetime import datetime, timezone
+    from datetime import datetime
 
-    aware_dt = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+    aware_dt = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
     result = _parse_timestamp(aware_dt)
     assert result is not None
 

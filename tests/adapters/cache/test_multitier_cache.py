@@ -544,9 +544,7 @@ def test_multitier_auto_creates_l2_when_coredis_available(
         def __init__(self, settings: object) -> None:
             created_settings.append(settings)
 
-    monkeypatch.setattr(
-        "oneiric.adapters.cache.multitier._COREDIS_AVAILABLE", True
-    )
+    monkeypatch.setattr("oneiric.adapters.cache.multitier._COREDIS_AVAILABLE", True)
     monkeypatch.setattr(
         "oneiric.adapters.cache.multitier.RedisCacheAdapter", _FakeRedisAdapter
     )
@@ -570,9 +568,7 @@ def test_multitier_auto_creates_l2_with_url(
         def __init__(self, settings: RedisCacheSettings) -> None:
             captured.append(settings)
 
-    monkeypatch.setattr(
-        "oneiric.adapters.cache.multitier._COREDIS_AVAILABLE", True
-    )
+    monkeypatch.setattr("oneiric.adapters.cache.multitier._COREDIS_AVAILABLE", True)
     monkeypatch.setattr(
         "oneiric.adapters.cache.multitier.RedisCacheAdapter", _FakeRedisAdapter
     )

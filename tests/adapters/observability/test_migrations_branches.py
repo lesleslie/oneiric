@@ -24,7 +24,9 @@ class _Result:
 
 
 class _Session:
-    def __init__(self, results: list[_Result] | None = None, fail_on: int | None = None):
+    def __init__(
+        self, results: list[_Result] | None = None, fail_on: int | None = None
+    ):
         self.results = list(results or [])
         self.fail_on = fail_on
         self.statements: list[str] = []
@@ -86,7 +88,10 @@ async def test_ivfflat_index_branch_paths() -> None:
     created = await create_ivfflat_index_if_ready(session)
     assert created is True
     assert session.commits == 1
-    assert "CREATE INDEX CONCURRENTLY ix_traces_embedding_ivfflat" in session.statements[-1]
+    assert (
+        "CREATE INDEX CONCURRENTLY ix_traces_embedding_ivfflat"
+        in session.statements[-1]
+    )
 
     session = _Session(fail_on=0)
     with pytest.raises(RuntimeError):

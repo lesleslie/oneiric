@@ -83,7 +83,9 @@ async def test_pubsub_enqueue_and_read_flow() -> None:
 # ---------------------------------------------------------------------------
 
 
-def _make_adapter(**settings_kwargs) -> tuple[PubSubQueueAdapter, _FakePublisher, _FakeSubscriber]:
+def _make_adapter(
+    **settings_kwargs,
+) -> tuple[PubSubQueueAdapter, _FakePublisher, _FakeSubscriber]:
     publisher = _FakePublisher()
     subscriber = _FakeSubscriber()
     adapter = PubSubQueueAdapter(
@@ -126,9 +128,7 @@ async def test_pubsub_cleanup_calls_close_on_owned_clients() -> None:
     publisher = ClosingPublisher()
     subscriber = ClosingSubscriber()
     adapter = PubSubQueueAdapter(
-        settings=PubSubQueueSettings(
-            project_id="demo", topic="t", subscription="s"
-        ),
+        settings=PubSubQueueSettings(project_id="demo", topic="t", subscription="s"),
         publisher_client=publisher,
         subscriber_client=subscriber,
     )
@@ -238,7 +238,6 @@ async def test_pubsub_init_creates_clients_from_sdk(monkeypatch) -> None:
     """init() creates PublisherClient and SubscriberClient from google.cloud.pubsub_v1 (lines 66-76)."""
     import sys
     import types
-    from types import SimpleNamespace
 
     publisher = _FakePublisher()
     subscriber = _FakeSubscriber()
@@ -255,9 +254,7 @@ async def test_pubsub_init_creates_clients_from_sdk(monkeypatch) -> None:
     monkeypatch.setitem(sys.modules, "google.cloud.pubsub_v1", fake_pubsub_v1)
 
     adapter = PubSubQueueAdapter(
-        settings=PubSubQueueSettings(
-            project_id="p", topic="t", subscription="s"
-        ),
+        settings=PubSubQueueSettings(project_id="p", topic="t", subscription="s"),
         # No pre-provided clients — triggers SDK import
     )
     await adapter.init()

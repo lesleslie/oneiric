@@ -113,11 +113,15 @@ async def test_mailgun_send_email_http_status_error_raises() -> None:
     """send_email raises LifecycleError on HTTPStatusError (lines 116-122)."""
     from oneiric.core.lifecycle import LifecycleError
 
-    transport = httpx.MockTransport(lambda r: httpx.Response(400, json={"message": "err"}))
+    transport = httpx.MockTransport(
+        lambda r: httpx.Response(400, json={"message": "err"})
+    )
     client = httpx.AsyncClient(transport=transport, base_url="https://api.mailgun.net")
     adapter = MailgunAdapter(
         settings=MailgunSettings(
-            api_key=SecretStr("key"), domain="example.com", from_email="noreply@example.com"
+            api_key=SecretStr("key"),
+            domain="example.com",
+            from_email="noreply@example.com",
         ),
         client=client,
     )
@@ -138,6 +142,7 @@ async def test_mailgun_send_email_with_cc_bcc_reply_to_sandbox() -> None:
 
     def handler(request: httpx.Request) -> httpx.Response:
         from urllib.parse import parse_qs
+
         parsed_body.append(parse_qs(request.content.decode()))
         return httpx.Response(200, json={"id": "msg-1"})
 
@@ -196,7 +201,10 @@ def test_mailgun_eu_region_base_url() -> None:
     """_default_base_url returns EU endpoint when region='eu' (line 229)."""
     adapter = MailgunAdapter(
         MailgunSettings(
-            api_key=SecretStr("key"), domain="x.com", from_email="noreply@x.com", region="eu"
+            api_key=SecretStr("key"),
+            domain="x.com",
+            from_email="noreply@x.com",
+            region="eu",
         )
     )
     assert adapter._default_base_url() == "https://api.eu.mailgun.net"
@@ -209,6 +217,7 @@ async def test_mailgun_send_email_with_click_tracking() -> None:
 
     def handler(request: httpx.Request) -> httpx.Response:
         from urllib.parse import parse_qs
+
         parsed_body.append(parse_qs(request.content.decode()))
         return httpx.Response(200, json={"id": "msg-ct"})
 

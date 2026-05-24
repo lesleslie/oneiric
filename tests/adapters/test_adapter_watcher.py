@@ -1,4 +1,5 @@
 """Tests for AdapterConfigWatcher and adapter_layer helper."""
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock

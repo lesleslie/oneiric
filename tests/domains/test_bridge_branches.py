@@ -10,7 +10,6 @@ from oneiric.core.lifecycle import LifecycleError, LifecycleManager
 from oneiric.core.resolution import Candidate, CandidateSource, Resolver
 from oneiric.domains.events import EventBridge
 from oneiric.domains.workflows import WorkflowBridge
-from oneiric.runtime.activity import DomainActivityStore
 from oneiric.runtime.events import create_event_envelope
 
 
@@ -97,7 +96,9 @@ def test_workflow_resolve_scheduler_details_missing_category_raises() -> None:
 
 
 @pytest.mark.asyncio
-async def test_workflow_runner_for_task_and_checkpoint_paths(tmp_path, monkeypatch) -> None:
+async def test_workflow_runner_for_task_and_checkpoint_paths(
+    tmp_path, monkeypatch
+) -> None:
     resolver = Resolver()
     lifecycle = LifecycleManager(resolver)
     store = SimpleNamespace(saved=[], cleared=[])

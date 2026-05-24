@@ -142,10 +142,12 @@ async def test_gcdns_init_with_sys_modules_google_cloud(monkeypatch) -> None:
 @pytest.mark.asyncio
 async def test_gcdns_list_records_filters_by_name() -> None:
     """list_records() skips records whose name doesn't match (line 89)."""
-    zone = _FakeZone(records=[
-        _FakeRecord("alpha.example.com.", "A", 300, ["1.1.1.1"]),
-        _FakeRecord("beta.example.com.", "A", 300, ["2.2.2.2"]),
-    ])
+    zone = _FakeZone(
+        records=[
+            _FakeRecord("alpha.example.com.", "A", 300, ["1.1.1.1"]),
+            _FakeRecord("beta.example.com.", "A", 300, ["2.2.2.2"]),
+        ]
+    )
     adapter = GCDNSAdapter(GCDNSSettings(managed_zone="zone"), zone=zone)
     await adapter.init()
     records = await adapter.list_records(name="alpha.example.com.")
@@ -156,10 +158,12 @@ async def test_gcdns_list_records_filters_by_name() -> None:
 @pytest.mark.asyncio
 async def test_gcdns_list_records_filters_by_type() -> None:
     """list_records() skips records whose type doesn't match (line 87)."""
-    zone = _FakeZone(records=[
-        _FakeRecord("a.example.com.", "A", 300, ["1.1.1.1"]),
-        _FakeRecord("txt.example.com.", "TXT", 300, ['"hello"']),
-    ])
+    zone = _FakeZone(
+        records=[
+            _FakeRecord("a.example.com.", "A", 300, ["1.1.1.1"]),
+            _FakeRecord("txt.example.com.", "TXT", 300, ['"hello"']),
+        ]
+    )
     adapter = GCDNSAdapter(GCDNSSettings(managed_zone="zone"), zone=zone)
     await adapter.init()
     records = await adapter.list_records(record_type="TXT")
@@ -180,7 +184,9 @@ async def test_gcdns_create_change_exception_raises_lifecycle_error() -> None:
         def changes(self) -> FailChange:
             return FailChange()
 
-    adapter = GCDNSAdapter(GCDNSSettings(managed_zone="zone"), zone=FailZone(records=[]))
+    adapter = GCDNSAdapter(
+        GCDNSSettings(managed_zone="zone"), zone=FailZone(records=[])
+    )
     await adapter.init()
     with pytest.raises(LifecycleError, match="gcdns-change-failed"):
         await adapter.create_record(name="demo.", content="1.1.1.1")
@@ -225,7 +231,6 @@ async def test_gcdns_create_client_with_credentials_file(monkeypatch, tmp_path) 
     """_create_client() loads service account credentials when credentials_file is set (lines 180-186)."""
     import sys
     import types
-    from pathlib import Path
 
     zone = _FakeZone(records=[])
     creds_file = tmp_path / "sa.json"
@@ -233,7 +238,7 @@ async def test_gcdns_create_client_with_credentials_file(monkeypatch, tmp_path) 
 
     class FakeCredentials:
         @staticmethod
-        def from_service_account_file(path: str) -> "FakeCredentials":
+        def from_service_account_file(path: str) -> FakeCredentials:
             return FakeCredentials()
 
     fake_sa = types.ModuleType("google.oauth2.service_account")

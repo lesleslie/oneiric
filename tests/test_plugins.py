@@ -227,7 +227,9 @@ def test_process_plugin_groups_deduplicates_groups(monkeypatch) -> None:
         seen_groups.append(group)
         return []
 
-    with patch.object(_plugins, "_load_entry_point_factories", side_effect=fake_factories):
+    with patch.object(
+        _plugins, "_load_entry_point_factories", side_effect=fake_factories
+    ):
         _plugins._process_plugin_groups(resolver, ["g1", "g1", "g2"])
 
     assert seen_groups == ["g1", "g2"]
@@ -236,7 +238,9 @@ def test_process_plugin_groups_deduplicates_groups(monkeypatch) -> None:
 def test_process_plugin_group_records_error_for_missing_factory(monkeypatch) -> None:
     resolver = Resolver()
     report = _plugins.PluginRegistrationReport()
-    result = _plugins._FactoryLoadResult(group="g", entry_point="ep", factory=None, error="load-error")
+    result = _plugins._FactoryLoadResult(
+        group="g", entry_point="ep", factory=None, error="load-error"
+    )
 
     with patch.object(_plugins, "_load_entry_point_factories", return_value=[result]):
         _plugins._process_plugin_group(resolver, "g", report)
@@ -248,7 +252,9 @@ def test_process_plugin_group_records_error_for_missing_factory(monkeypatch) -> 
 def test_process_plugin_group_continues_on_invoke_had_error(monkeypatch) -> None:
     resolver = Resolver()
     report = _plugins.PluginRegistrationReport()
-    result = _plugins._FactoryLoadResult(group="g", entry_point="ep", factory=lambda: "x")
+    result = _plugins._FactoryLoadResult(
+        group="g", entry_point="ep", factory=lambda: "x"
+    )
 
     with patch.object(_plugins, "_load_entry_point_factories", return_value=[result]):
         with patch.object(_plugins, "_invoke_factory", return_value=(None, True)):
@@ -259,18 +265,26 @@ def test_process_plugin_group_continues_on_invoke_had_error(monkeypatch) -> None
 
 def test_invoke_factory_returns_had_error_when_factory_is_none() -> None:
     result = _plugins._FactoryLoadResult(group="g", entry_point="ep", factory=None)
-    payload, had_error = _plugins._invoke_factory("g", result, _plugins.PluginRegistrationReport())
+    payload, had_error = _plugins._invoke_factory(
+        "g", result, _plugins.PluginRegistrationReport()
+    )
     assert had_error is True
     assert payload is None
 
 
 def test_normalize_candidates_handles_iterable_of_candidates() -> None:
     c1 = Candidate(
-        domain="adapter", key="c1", provider="p", factory=lambda: None,
+        domain="adapter",
+        key="c1",
+        provider="p",
+        factory=lambda: None,
         source=CandidateSource.MANUAL,
     )
     c2 = Candidate(
-        domain="adapter", key="c2", provider="p", factory=lambda: None,
+        domain="adapter",
+        key="c2",
+        provider="p",
+        factory=lambda: None,
         source=CandidateSource.MANUAL,
     )
     result = _plugins._normalize_candidates([c1, c2])

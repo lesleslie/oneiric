@@ -3,6 +3,7 @@
 Uses a minimal concrete subclass to exercise all delegation paths without
 requiring any external embedding backend.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -17,7 +18,6 @@ from oneiric.adapters.embedding.embedding_interface import (
     EmbeddingUtils,
     VectorNormalization,
 )
-
 
 # ---------------------------------------------------------------------------
 # Minimal concrete adapter

@@ -26,8 +26,11 @@ def _make_adapter() -> _ConcreteAdapter:
     return _ConcreteAdapter(settings=settings)
 
 
-def _fake_session_factory(execute_return: Any = None, raise_on_execute: Exception | None = None):
+def _fake_session_factory(
+    execute_return: Any = None, raise_on_execute: Exception | None = None
+):
     """Return a callable that yields a mock session as an async context manager."""
+
     @asynccontextmanager
     async def _factory():
         session = AsyncMock()
@@ -42,6 +45,7 @@ def _fake_session_factory(execute_return: Any = None, raise_on_execute: Exceptio
         session.add = MagicMock()
         session.add_all = MagicMock()
         yield session
+
     return _factory
 
 
@@ -59,18 +63,23 @@ async def test_init_success(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(sa_async, "create_async_engine", lambda *a, **kw: fake_engine)
 
     adapter = _make_adapter()
-    monkeypatch.setattr(sa_async, "async_sessionmaker", lambda **kw: adapter._session_factory)
+    monkeypatch.setattr(
+        sa_async, "async_sessionmaker", lambda **kw: adapter._session_factory
+    )
     adapter._session_factory = _fake_session_factory(
         execute_return=MagicMock(fetchone=MagicMock(return_value=("vector",)))
     )
 
     import sqlalchemy
+
     monkeypatch.setattr(sqlalchemy, "text", lambda s: s)
 
     from oneiric.adapters.observability import migrations
+
     monkeypatch.setattr(migrations, "create_ivfflat_index_if_ready", AsyncMock())
 
     import oneiric.adapters.observability.otel as otel_mod
+
     fake_qs = MagicMock()
     monkeypatch.setattr(otel_mod, "QueryService", lambda **kw: fake_qs)
 
@@ -86,7 +95,9 @@ async def test_init_success(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_init_raises_when_vector_extension_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_init_raises_when_vector_extension_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """init() raises RuntimeError when vector extension is not installed (lines 64-67)."""
     import sqlalchemy.ext.asyncio as sa_async
 
@@ -107,6 +118,7 @@ async def test_init_raises_when_vector_extension_missing(monkeypatch: pytest.Mon
     adapter._session_factory = no_vector_factory
 
     import sqlalchemy
+
     monkeypatch.setattr(sqlalchemy, "text", lambda s: s)
 
     with pytest.raises(RuntimeError, match="Pgvector extension not installed"):
@@ -142,29 +154,40 @@ async def test_health_returns_false_when_no_engine() -> None:
 
 
 @pytest.mark.asyncio
-async def test_health_returns_true_when_session_ok(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_health_returns_true_when_session_ok(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """health() returns True when SELECT 1 executes (lines 86-91)."""
     adapter = _make_adapter()
     adapter._engine = MagicMock()  # truthy
     adapter._session_factory = _fake_session_factory()
 
     # patch sqlalchemy.text to return a dummy
-    monkeypatch.setattr("oneiric.adapters.observability.otel.OTelStorageAdapter.health",
-                        _ConcreteAdapter.health, raising=False)
+    monkeypatch.setattr(
+        "oneiric.adapters.observability.otel.OTelStorageAdapter.health",
+        _ConcreteAdapter.health,
+        raising=False,
+    )
 
     import sqlalchemy
+
     monkeypatch.setattr(sqlalchemy, "text", lambda s: s)
     assert await adapter.health() is True
 
 
 @pytest.mark.asyncio
-async def test_health_returns_false_on_exception(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_health_returns_false_on_exception(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """health() returns False when session.execute raises (lines 92-94)."""
     import sqlalchemy
+
     monkeypatch.setattr(sqlalchemy, "text", lambda s: s)
     adapter = _make_adapter()
     adapter._engine = MagicMock()
-    adapter._session_factory = _fake_session_factory(raise_on_execute=RuntimeError("db down"))
+    adapter._session_factory = _fake_session_factory(
+        raise_on_execute=RuntimeError("db down")
+    )
     assert await adapter.health() is False
 
 
@@ -226,13 +249,20 @@ async def test_cleanup_without_flush_task() -> None:
 async def test_store_trace_appends_to_buffer() -> None:
     """store_trace() appends trace to write buffer (lines 115-116)."""
     adapter = _make_adapter()
-    trace = {"trace_id": "t1", "name": "span", "status": "OK", "start_time": "2026-01-01T00:00:00"}
+    trace = {
+        "trace_id": "t1",
+        "name": "span",
+        "status": "OK",
+        "start_time": "2026-01-01T00:00:00",
+    }
     await adapter.store_trace(trace)
     assert len(adapter._write_buffer) == 1
 
 
 @pytest.mark.asyncio
-async def test_store_trace_flushes_on_batch_size(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_store_trace_flushes_on_batch_size(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """store_trace() calls _flush_buffer when buffer reaches batch_size (lines 117-118)."""
     flushed: list[int] = []
 
@@ -244,7 +274,12 @@ async def test_store_trace_flushes_on_batch_size(monkeypatch: pytest.MonkeyPatch
         adapter._write_buffer.clear()
 
     monkeypatch.setattr(_ConcreteAdapter, "_flush_buffer", fake_flush)
-    trace = {"trace_id": "t1", "name": "span", "status": "OK", "start_time": "2026-01-01T00:00:00"}
+    trace = {
+        "trace_id": "t1",
+        "name": "span",
+        "status": "OK",
+        "start_time": "2026-01-01T00:00:00",
+    }
     await adapter.store_trace(trace)
     await adapter.store_trace(trace)
     assert len(flushed) == 1
@@ -268,7 +303,9 @@ async def test_flush_buffer_periodically_cancels() -> None:
 
 
 @pytest.mark.asyncio
-async def test_flush_buffer_periodically_logs_on_exception(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_flush_buffer_periodically_logs_on_exception(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_flush_buffer_periodically() logs and continues on non-cancel exceptions (lines 127-128)."""
     call_count = 0
     adapter = _make_adapter()
@@ -325,7 +362,9 @@ async def test_flush_buffer_stores_traces(monkeypatch: pytest.MonkeyPatch) -> No
 
 
 @pytest.mark.asyncio
-async def test_flush_buffer_sends_to_dlq_on_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_flush_buffer_sends_to_dlq_on_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_flush_buffer() sends to DLQ when commit raises (lines 172-178)."""
     dlq_calls: list[str] = []
 
@@ -369,6 +408,7 @@ async def test_flush_buffer_sends_to_dlq_on_failure(monkeypatch: pytest.MonkeyPa
 async def test_send_to_dlq_success(monkeypatch: pytest.MonkeyPatch) -> None:
     """_send_to_dlq() inserts into DLQ table (lines 180-194)."""
     import sqlalchemy
+
     monkeypatch.setattr(sqlalchemy, "text", lambda s: s)
     adapter = _make_adapter()
     adapter._session_factory = _fake_session_factory()
@@ -379,9 +419,12 @@ async def test_send_to_dlq_success(monkeypatch: pytest.MonkeyPatch) -> None:
 async def test_send_to_dlq_logs_on_exception(monkeypatch: pytest.MonkeyPatch) -> None:
     """_send_to_dlq() logs and swallows exceptions (lines 195-196)."""
     import sqlalchemy
+
     monkeypatch.setattr(sqlalchemy, "text", lambda s: s)
     adapter = _make_adapter()
-    adapter._session_factory = _fake_session_factory(raise_on_execute=RuntimeError("dlq down"))
+    adapter._session_factory = _fake_session_factory(
+        raise_on_execute=RuntimeError("dlq down")
+    )
     await adapter._send_to_dlq({"trace_id": "t1"}, "err")  # must not raise
 
 
@@ -406,6 +449,7 @@ async def test_store_log_success() -> None:
 @pytest.mark.asyncio
 async def test_store_log_raises_on_error() -> None:
     """store_log() re-raises when commit fails (lines 227-229)."""
+
     @asynccontextmanager
     async def bad_session():
         session = AsyncMock()
@@ -450,6 +494,7 @@ async def test_store_metrics_success() -> None:
 @pytest.mark.asyncio
 async def test_store_metrics_raises_on_error() -> None:
     """store_metrics() re-raises on commit failure (lines 256-258)."""
+
     @asynccontextmanager
     async def bad_session():
         session = AsyncMock()
@@ -460,9 +505,16 @@ async def test_store_metrics_raises_on_error() -> None:
     adapter = _make_adapter()
     adapter._session_factory = bad_session
     with pytest.raises(RuntimeError, match="commit failed"):
-        await adapter.store_metrics([
-            {"name": "m", "value": 1.0, "timestamp": datetime.now(UTC), "type": "gauge"}
-        ])
+        await adapter.store_metrics(
+            [
+                {
+                    "name": "m",
+                    "value": 1.0,
+                    "timestamp": datetime.now(UTC),
+                    "type": "gauge",
+                }
+            ]
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -561,8 +613,10 @@ async def test_search_logs_no_session_factory() -> None:
 @pytest.mark.asyncio
 async def test_search_logs_success(monkeypatch: pytest.MonkeyPatch) -> None:
     """search_logs() queries logs and returns dicts (lines 371-409)."""
-    from oneiric.adapters.observability.models import LogModel
     import sqlalchemy
+
+    from oneiric.adapters.observability.models import LogModel
+
     monkeypatch.setattr(sqlalchemy, "select", lambda *_: MagicMock())
 
     now = datetime.now(UTC)
@@ -596,8 +650,11 @@ async def test_search_logs_success(monkeypatch: pytest.MonkeyPatch) -> None:
 async def test_search_logs_raises_on_error(monkeypatch: pytest.MonkeyPatch) -> None:
     """search_logs() re-raises when session.execute raises (lines 411-418)."""
     import sqlalchemy
+
     monkeypatch.setattr(sqlalchemy, "select", lambda *_: MagicMock())
     adapter = _make_adapter()
-    adapter._session_factory = _fake_session_factory(raise_on_execute=RuntimeError("db error"))
+    adapter._session_factory = _fake_session_factory(
+        raise_on_execute=RuntimeError("db error")
+    )
     with pytest.raises(RuntimeError, match="db error"):
         await adapter.search_logs("trace-001")

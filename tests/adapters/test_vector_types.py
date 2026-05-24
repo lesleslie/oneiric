@@ -12,7 +12,6 @@ from oneiric.adapters.vector.vector_types import (
     VectorSearchResult,
 )
 
-
 # ---------------------------------------------------------------------------
 # Minimal concrete VectorBase implementation
 # ---------------------------------------------------------------------------
@@ -20,11 +19,20 @@ from oneiric.adapters.vector.vector_types import (
 
 class _Adapter(VectorBase):
     async def init(self) -> None: ...
-    async def health(self) -> bool: return True
+    async def health(self) -> bool:
+        return True
+
     async def cleanup(self) -> None: ...
 
-    async def search(self, collection, query_vector, limit=10, filter_expr=None,
-                     include_vectors=False, **kwargs) -> list[VectorSearchResult]:
+    async def search(
+        self,
+        collection,
+        query_vector,
+        limit=10,
+        filter_expr=None,
+        include_vectors=False,
+        **kwargs,
+    ) -> list[VectorSearchResult]:
         return [VectorSearchResult(id="r1", score=0.9)]
 
     async def insert(self, collection, documents, **kwargs) -> list[str]:
@@ -36,14 +44,17 @@ class _Adapter(VectorBase):
     async def delete(self, collection, ids, **kwargs) -> bool:
         return True
 
-    async def get(self, collection, ids, include_vectors=False, **kwargs) -> list[VectorDocument]:
+    async def get(
+        self, collection, ids, include_vectors=False, **kwargs
+    ) -> list[VectorDocument]:
         return [VectorDocument(id=i, vector=[0.1]) for i in ids]
 
     async def count(self, collection, filter_expr=None, **kwargs) -> int:
         return 42
 
-    async def create_collection(self, name, dimension, distance_metric="cosine",
-                                **kwargs) -> bool:
+    async def create_collection(
+        self, name, dimension, distance_metric="cosine", **kwargs
+    ) -> bool:
         return True
 
     async def delete_collection(self, name, **kwargs) -> bool:

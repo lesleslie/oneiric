@@ -60,9 +60,8 @@ async def test_gcp_init_via_secretmanager_v1(monkeypatch) -> None:
     """init() creates SecretManagerServiceAsyncClient when client is None (lines 66-76)."""
     import sys
     import types
-    from types import SimpleNamespace
 
-    client = _FakeSecretClient({})
+    _FakeSecretClient({})
     instances: list[Any] = []
 
     class FakeAsyncClient:
@@ -95,7 +94,6 @@ async def test_gcp_init_with_credentials_file(monkeypatch, tmp_path) -> None:
     """init() uses from_service_account_file when credentials_file is set (line 71)."""
     import sys
     import types
-    from pathlib import Path
 
     creds_file = tmp_path / "sa.json"
     creds_file.write_text("{}")
@@ -103,7 +101,7 @@ async def test_gcp_init_with_credentials_file(monkeypatch, tmp_path) -> None:
 
     class FakeAsyncClientFromFile:
         @classmethod
-        def from_service_account_file(cls, path: str) -> "FakeAsyncClientFromFile":
+        def from_service_account_file(cls, path: str) -> FakeAsyncClientFromFile:
             loaded_paths.append(path)
             return cls()
 

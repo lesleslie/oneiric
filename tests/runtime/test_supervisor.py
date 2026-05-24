@@ -83,9 +83,7 @@ async def test_supervisor_listener_filters_and_fire_immediately(tmp_path):
     def listener(domain: str, key: str, state: DomainActivity) -> None:
         events.append((domain, key, state))
 
-    remove = supervisor.add_listener(
-        listener, domain="service", fire_immediately=True
-    )
+    remove = supervisor.add_listener(listener, domain="service", fire_immediately=True)
 
     assert events == [("service", "api", DomainActivity(paused=True))]
     remove()
@@ -103,6 +101,7 @@ async def test_supervisor_async_listener_dispatch_and_error_logging(tmp_path):
     supervisor.add_listener(listener)
 
     with patch("oneiric.runtime.supervisor.logger.warning") as mock_warning:
+
         def _boom(domain: str, key: str, state: DomainActivity) -> None:
             raise RuntimeError("boom")
 

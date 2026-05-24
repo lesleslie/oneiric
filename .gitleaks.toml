@@ -1,0 +1,13 @@
+# Gitleaks configuration - suppress false positives
+
+[allowlist]
+description = "Allow test fixtures with fake RSA keys and latency metrics"
+paths = [
+    "oneiric/adapters/cache/multitier.py",
+    ".venv",
+    "__pycache__",
+]
+regexes = [
+    "-----BEGIN RSA PRIVATE KEY-----",
+    "latency_ms=f\"\\{[^}]+\\}\"",
+]

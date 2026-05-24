@@ -1,0 +1,11 @@
+file:///Users/les/Projects/oneiric/docs/archive/
+http://localhost:*
+http://127.0.0.1:*
+http://0.0.0.0:*
+http://grafana:*
+http://prometheus:*
+http://alertmanager:*
+api\.cloudflare\.com
+platform\.openai\.com
+api\.openai\.com
+pagerduty\.com

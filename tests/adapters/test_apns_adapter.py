@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import inspect
-
 import pytest
 
 from oneiric.adapters.messaging.apns import APNSPushAdapter, APNSPushSettings
@@ -258,9 +256,7 @@ async def test_try_send_notification_success() -> None:
             return "ok"
 
     adapter = APNSPushAdapter(APNSPushSettings(topic="com.example.app"))
-    result = await adapter._try_send_notification(
-        SendNotifClient(), "tok", {}, {}
-    )
+    result = await adapter._try_send_notification(SendNotifClient(), "tok", {}, {})
     assert result == "ok"
 
 
@@ -578,6 +574,7 @@ def test_apns_default_client_factory_client_cls_missing(
     """_default_client_factory raises LifecycleError when no APNs class found (line 141)."""
     import sys
     import types
+
     from oneiric.core.lifecycle import LifecycleError
 
     fake_aioapns = types.ModuleType("aioapns")  # no APNs, APNS, APNSClient attr
@@ -591,6 +588,7 @@ def test_apns_default_client_factory_client_cls_missing(
 def test_apns_client_kwargs_with_all_options(tmp_path: object) -> None:
     """_client_kwargs builds dict with all auth options (lines 150-168)."""
     import pathlib
+
     from pydantic import SecretStr
 
     cert_file = pathlib.Path(str(tmp_path)) / "cert.pem"  # type: ignore[arg-type]

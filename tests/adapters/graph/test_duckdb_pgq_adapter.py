@@ -157,7 +157,9 @@ async def test_cleanup_awaitable_close() -> None:
 
 
 @pytest.mark.asyncio()
-async def test_ingest_edges_empty(adapter: DuckDBPGQAdapter, fake_connection: FakeConnection) -> None:
+async def test_ingest_edges_empty(
+    adapter: DuckDBPGQAdapter, fake_connection: FakeConnection
+) -> None:
     """ingest_edges() returns early when edges is empty (line 106)."""
     fake_connection.queue_result([], [])
     fake_connection.queue_result([], [])

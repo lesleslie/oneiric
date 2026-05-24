@@ -17,7 +17,6 @@ from oneiric.adapters.llm.llm_interface import (
     MessageRole,
 )
 
-
 # ---------------------------------------------------------------------------
 # Minimal concrete stub for testing LLMBase
 # ---------------------------------------------------------------------------
@@ -189,7 +188,9 @@ async def test_complete_via_complete_impl(monkeypatch: pytest.MonkeyPatch) -> No
 
 
 @pytest.mark.asyncio
-async def test_complete_stream_via_complete_stream_impl(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_complete_stream_via_complete_stream_impl(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_complete_stream wraps _chat_stream (lines 332-342)."""
     llm = _StubLLM()
     chunks = [c async for c in llm._complete_stream("hi", "model", 0.5, 100)]

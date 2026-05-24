@@ -174,7 +174,7 @@ async def test_scp_init_imports_asyncssh_from_sys_modules(monkeypatch) -> None:
     import sys
 
     conn = _FakeSSHConnection()
-    fake_asyncssh = _FakeAsyncSSH(conn)
+    _FakeAsyncSSH(conn)
 
     class FakeAsyncSSHModule:
         async def connect(self, **kwargs: Any) -> _FakeSSHConnection:
@@ -222,7 +222,9 @@ async def test_scp_init_asyncssh_with_password_and_key() -> None:
     )
     await adapter.init()
     assert connect_kwargs_captured[0]["password"] == "secret"
-    assert "-----BEGIN RSA PRIVATE KEY-----" in connect_kwargs_captured[0]["client_keys"]
+    assert (
+        "-----BEGIN RSA PRIVATE KEY-----" in connect_kwargs_captured[0]["client_keys"]
+    )
 
 
 @pytest.mark.asyncio
@@ -258,6 +260,7 @@ async def test_scp_health_returns_true() -> None:
 @pytest.mark.asyncio
 async def test_scp_health_returns_false_on_lifecycle_error() -> None:
     """health() returns False when _run_command raises LifecycleError (lines 113-114)."""
+
     class FailConn(_FakeSSHConnection):
         async def run(self, command: str, *, check: bool = False) -> Any:
             raise OSError("connection lost")
@@ -276,6 +279,7 @@ async def test_scp_health_returns_false_on_lifecycle_error() -> None:
 @pytest.mark.asyncio
 async def test_scp_run_command_nonzero_exit_raises() -> None:
     """_run_command raises LifecycleError on non-zero exit status (lines 165-171)."""
+
     class NonZeroConn(_FakeSSHConnection):
         async def run(self, command: str, *, check: bool = False) -> _FakeSSHResult:
             return _FakeSSHResult(exit_status=1, stderr="permission denied")

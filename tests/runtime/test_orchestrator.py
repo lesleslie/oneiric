@@ -387,7 +387,9 @@ class TestRuntimeOrchestratorStartStop:
 
         await orchestrator.stop()
 
-        assert orchestrator._secrets_task is None or orchestrator._secrets_task.cancelled()
+        assert (
+            orchestrator._secrets_task is None or orchestrator._secrets_task.cancelled()
+        )
 
     @pytest.mark.asyncio
     async def test_remote_loop_skips_without_manifest_url(self, tmp_path):
@@ -498,7 +500,9 @@ class TestRuntimeOrchestratorHelperFunctions:
             patch.object(RuntimeOrchestrator, "start", AsyncMock()) as mock_start,
             patch.object(RuntimeOrchestrator, "stop", AsyncMock()) as mock_stop,
         ):
-            async with orchestrated_runtime(settings, resolver, lifecycle, secrets) as runtime:
+            async with orchestrated_runtime(
+                settings, resolver, lifecycle, secrets
+            ) as runtime:
                 assert isinstance(runtime, RuntimeOrchestrator)
 
         mock_start.assert_awaited_once()

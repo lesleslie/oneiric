@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from types import SimpleNamespace
-
 from oneiric.remote import metrics as m
 
 
@@ -28,10 +26,14 @@ def test_remote_metrics_cover_all_branches(monkeypatch) -> None:
     monkeypatch.setattr(m, "_duration_histogram", duration)
     monkeypatch.setattr(m, "_digest_counter", digest)
 
-    m.record_remote_success_metric(source="cdn", url="https://example.com", registered=2)
+    m.record_remote_success_metric(
+        source="cdn", url="https://example.com", registered=2
+    )
     m.record_remote_success_metric(source="", url="https://example.com", registered=0)
     m.record_remote_failure_metric(url="https://example.com", error="x" * 200)
-    m.record_remote_duration_metric(url="https://example.com", source="cdn", duration_ms=12.5)
+    m.record_remote_duration_metric(
+        url="https://example.com", source="cdn", duration_ms=12.5
+    )
     m.record_digest_checks_metric(url="https://example.com", count=0)
     m.record_digest_checks_metric(url="https://example.com", count=3)
 

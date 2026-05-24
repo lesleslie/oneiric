@@ -378,7 +378,12 @@ class TestBaseModeUncoveredPaths:
 
     def test_register_mode_adds_to_registry(self) -> None:
         """register_mode stores class by lowercased name — line 149."""
-        from oneiric.modes.base import ModeConfig, OperationMode, _MODE_REGISTRY, register_mode
+        from oneiric.modes.base import (
+            _MODE_REGISTRY,
+            ModeConfig,
+            OperationMode,
+            register_mode,
+        )
 
         class RegisteredTestMode2(OperationMode):
             @property
@@ -419,7 +424,9 @@ class TestStandardModeValidateEnvErrorPaths:
         write_test_mock = MagicMock()
         write_test_mock.touch.side_effect = PermissionError("no write")
         mock_cache_dir.__truediv__ = MagicMock(return_value=write_test_mock)
-        with patch("oneiric.modes.standard.resolve_cache_dir_path", return_value=mock_cache_dir):
+        with patch(
+            "oneiric.modes.standard.resolve_cache_dir_path", return_value=mock_cache_dir
+        ):
             errors = mode.validate_environment()
         assert any("not writable" in e for e in errors)
 
@@ -432,7 +439,9 @@ class TestStandardModeValidateEnvErrorPaths:
         write_test_mock = MagicMock()
         write_test_mock.touch.side_effect = OSError("disk full")
         mock_cache_dir.__truediv__ = MagicMock(return_value=write_test_mock)
-        with patch("oneiric.modes.standard.resolve_cache_dir_path", return_value=mock_cache_dir):
+        with patch(
+            "oneiric.modes.standard.resolve_cache_dir_path", return_value=mock_cache_dir
+        ):
             errors = mode.validate_environment()
         assert any("Failed to access" in e for e in errors)
 
@@ -449,9 +458,11 @@ class TestModeUtilsUncoveredPaths:
 
         settings = OneiricSettings()
         settings = settings.model_copy(
-            update={"remote": settings.remote.model_copy(
-                update={"cache_dir": str(tmp_path / "new_cache_dir_xyz")}
-            )}
+            update={
+                "remote": settings.remote.model_copy(
+                    update={"cache_dir": str(tmp_path / "new_cache_dir_xyz")}
+                )
+            }
         )
         mode = create_mode("lite")
         errors = validate_mode_requirements(mode, settings)
@@ -465,9 +476,11 @@ class TestModeUtilsUncoveredPaths:
 
         settings = OneiricSettings()
         settings = settings.model_copy(
-            update={"remote": settings.remote.model_copy(
-                update={"cache_dir": str(tmp_path / "blocked_cache")}
-            )}
+            update={
+                "remote": settings.remote.model_copy(
+                    update={"cache_dir": str(tmp_path / "blocked_cache")}
+                )
+            }
         )
         mode = create_mode("lite")
         with patch("pathlib.Path.mkdir", side_effect=OSError("no space")):

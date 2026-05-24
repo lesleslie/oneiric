@@ -164,7 +164,13 @@ async def test_create_record_with_proxied_and_priority() -> None:
         client=client,
     )
     await adapter.init()
-    await adapter.create_record(name="mx", content="mail.example.com", record_type="MX", proxied=False, priority=10)
+    await adapter.create_record(
+        name="mx",
+        content="mail.example.com",
+        record_type="MX",
+        proxied=False,
+        priority=10,
+    )
     body = json.loads(recorder.requests[-1].content)
     assert body["proxied"] is False
     assert body["priority"] == 10

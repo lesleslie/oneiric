@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -37,7 +36,9 @@ def test_create_handler_for_target_variants(tmp_path) -> None:
 
 def test_create_handler_for_target_invalid() -> None:
     with pytest.raises(ValueError, match="Unsupported logging target"):
-        _create_handler_for_target(LoggingSinkConfig(target="stdout").model_copy(update={"target": "bogus"}))
+        _create_handler_for_target(
+            LoggingSinkConfig(target="stdout").model_copy(update={"target": "bogus"})
+        )
 
 
 def test_load_extra_processors_and_service_metadata(tmp_path, monkeypatch) -> None:
@@ -94,9 +95,9 @@ def test_configure_logging_console_renderer_when_emit_json_false() -> None:
     with patch("structlog.configure", side_effect=spy_configure):
         configure_logging(LoggingConfig(emit_json=False))
 
-    assert any(
-        isinstance(p, structlog.dev.ConsoleRenderer) for p in captured
-    ), "ConsoleRenderer not found in processor chain"
+    assert any(isinstance(p, structlog.dev.ConsoleRenderer) for p in captured), (
+        "ConsoleRenderer not found in processor chain"
+    )
 
 
 def test_otel_context_processor_injects_ids_when_span_valid() -> None:
@@ -109,9 +110,7 @@ def test_otel_context_processor_injects_ids_when_span_valid() -> None:
     mock_span.get_span_context.return_value = mock_context
 
     event_dict: dict = {}
-    with patch(
-        "oneiric.core.logging.trace.get_current_span", return_value=mock_span
-    ):
+    with patch("oneiric.core.logging.trace.get_current_span", return_value=mock_span):
         result = _otel_context_processor(None, "info", event_dict)
 
     assert "trace_id" in result

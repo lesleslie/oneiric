@@ -479,7 +479,9 @@ class TestSelectionWatcherAdditionalBranches:
 
         watcher._tick = tick_once  # type: ignore[assignment]
 
-        with patch("oneiric.runtime.watchers.asyncio.wait_for", side_effect=TimeoutError):
+        with patch(
+            "oneiric.runtime.watchers.asyncio.wait_for", side_effect=TimeoutError
+        ):
             await watcher._run_poll_loop()
 
         assert tick_count == 1

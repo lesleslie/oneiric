@@ -58,7 +58,9 @@ async def test_http_artifact_checksum_failure() -> None:
 async def test_http_artifact_init_creates_client() -> None:
     """init() creates httpx.AsyncClient when none provided (lines 54-61)."""
     adapter = HTTPArtifactAdapter(
-        HTTPArtifactSettings(base_url="https://example.com", timeout=10.0, verify_tls=False)
+        HTTPArtifactSettings(
+            base_url="https://example.com", timeout=10.0, verify_tls=False
+        )
     )
     await adapter.init()
     assert adapter._client is not None

@@ -198,7 +198,9 @@ class TestCandidateRegistry:
         )
 
         assert (
-            registry.resolve("adapter", "cache", provider="redis", capabilities=["write"])
+            registry.resolve(
+                "adapter", "cache", provider="redis", capabilities=["write"]
+            )
             is None
         )
 
@@ -474,9 +476,9 @@ class TestResolutionPrecedence:
             source=CandidateSource.MANUAL,
         )
 
-        assert _candidate_supports_capabilities(
-            candidate, None, require_all=True
-        ) is True
+        assert (
+            _candidate_supports_capabilities(candidate, None, require_all=True) is True
+        )
 
     def test_candidate_capabilities_extract_strings_and_descriptors(self):
         candidate = Candidate(

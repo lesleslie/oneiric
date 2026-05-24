@@ -4,16 +4,15 @@ Uses monkeypatching to bypass the _COREDIS_AVAILABLE guard so no actual
 coredis installation is required. All Redis I/O is handled by a minimal
 in-memory mock client.
 """
+
 from __future__ import annotations
 
-import inspect
 from typing import Any
 
 import pytest
 
 from oneiric.adapters.cache.redis import RedisCacheAdapter, RedisCacheSettings
 from oneiric.core.lifecycle import LifecycleError
-
 
 # ---------------------------------------------------------------------------
 # Mock client helpers
@@ -293,7 +292,7 @@ async def test_create_client_with_url(monkeypatch: pytest.MonkeyPatch) -> None:
             self.connection_pool = _MockPool()
 
         @classmethod
-        def from_url(cls, url: str, **kw: Any) -> "FakeRedis":
+        def from_url(cls, url: str, **kw: Any) -> FakeRedis:
             calls.append({"type": "from_url", "url": url, **kw})
             inst = cls.__new__(cls)
             inst.connection_pool = _MockPool()
@@ -408,7 +407,8 @@ async def test_cleanup_uses_sync_close_fallback() -> None:
 
     client = SyncCloseOnly()
     adapter = RedisCacheAdapter(
-        RedisCacheSettings(), redis_client=client  # type: ignore[arg-type]
+        RedisCacheSettings(),
+        redis_client=client,  # type: ignore[arg-type]
     )
     adapter._owns_client = True
     await adapter.init()
@@ -446,7 +446,8 @@ async def test_close_client_awaitable_sync_close() -> None:
 
     client = AsyncCloseViaSyncMethod()
     adapter = RedisCacheAdapter(
-        RedisCacheSettings(), redis_client=client  # type: ignore[arg-type]
+        RedisCacheSettings(),
+        redis_client=client,  # type: ignore[arg-type]
     )
     adapter._owns_client = True
     await adapter.init()
@@ -474,7 +475,8 @@ async def test_disconnect_pool_no_pool() -> None:
 
     client = NopoolClient()
     adapter = RedisCacheAdapter(
-        RedisCacheSettings(), redis_client=client  # type: ignore[arg-type]
+        RedisCacheSettings(),
+        redis_client=client,  # type: ignore[arg-type]
     )
     await adapter.init()
     await adapter._disconnect_pool()  # must not raise

@@ -115,7 +115,9 @@ async def test_twilio_health_non_dry_run() -> None:
     client = httpx.AsyncClient(transport=transport, base_url="https://api.twilio.com")
     adapter = TwilioAdapter(
         settings=TwilioSettings(
-            account_sid="ACabc", auth_token=SecretStr("auth"), from_number="+15551234567"
+            account_sid="ACabc",
+            auth_token=SecretStr("auth"),
+            from_number="+15551234567",
         ),
         client=client,
     )
@@ -135,7 +137,9 @@ async def test_twilio_send_sms_http_status_error_raises() -> None:
     client = httpx.AsyncClient(transport=transport, base_url="https://api.twilio.com")
     adapter = TwilioAdapter(
         settings=TwilioSettings(
-            account_sid="ACabc", auth_token=SecretStr("auth"), from_number="+15551234567"
+            account_sid="ACabc",
+            auth_token=SecretStr("auth"),
+            from_number="+15551234567",
         ),
         client=client,
     )
@@ -173,7 +177,9 @@ def test_build_payload_with_status_callback() -> None:
 
     adapter = TwilioAdapter(
         settings=TwilioSettings(
-            account_sid="ACabc", auth_token=SecretStr("auth"), from_number="+15551234567"
+            account_sid="ACabc",
+            auth_token=SecretStr("auth"),
+            from_number="+15551234567",
         )
     )
     msg = OutboundSMSMessage(
@@ -192,7 +198,9 @@ def test_build_payload_with_media_urls() -> None:
 
     adapter = TwilioAdapter(
         settings=TwilioSettings(
-            account_sid="ACabc", auth_token=SecretStr("auth"), from_number="+15551234567"
+            account_sid="ACabc",
+            auth_token=SecretStr("auth"),
+            from_number="+15551234567",
         )
     )
     msg = OutboundSMSMessage(
@@ -211,7 +219,9 @@ def test_build_payload_skips_dry_run_metadata() -> None:
 
     adapter = TwilioAdapter(
         settings=TwilioSettings(
-            account_sid="ACabc", auth_token=SecretStr("auth"), from_number="+15551234567"
+            account_sid="ACabc",
+            auth_token=SecretStr("auth"),
+            from_number="+15551234567",
         )
     )
     msg = OutboundSMSMessage(

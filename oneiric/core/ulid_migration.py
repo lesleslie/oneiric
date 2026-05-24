@@ -14,7 +14,7 @@ Key functions:
 """
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 # Oneiric imports
@@ -43,7 +43,7 @@ class MigrationPlan:
         self.current_id_type = current_id_type
         self.estimated_records = estimated_records
         self.migration_strategy = migration_strategy
-        self.created_at = datetime.utcnow()
+        self.created_at = datetime.now(tz=UTC)
 
     def __repr__(self) -> str:
         return (
@@ -74,7 +74,7 @@ def detect_id_type(identifier: str) -> str:
         return "uuid"
 
     # Check for legacy OID format (26-char or 36-char alphanumeric/hex)
-    if len(identifier) in [26, 36] and identifier.isalnum():
+    if len(identifier) in (26, 36) and identifier.isalnum():
         return "oid"  # Heuristic: 26 or 36-char alphanumeric (legacy OID)
 
     return "custom"  # Default fallback

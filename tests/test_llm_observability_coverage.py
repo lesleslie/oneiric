@@ -3161,7 +3161,9 @@ class TestOpenAIStreamChunkWithEmptyContent:
             yield chunk_with_content
 
         chunks = []
-        async for chunk in adapter._process_stream_chunks(_mock_stream(), "gpt-3.5-turbo"):
+        async for chunk in adapter._process_stream_chunks(
+            _mock_stream(), "gpt-3.5-turbo"
+        ):
             chunks.append(chunk)
 
         assert len(chunks) == 1

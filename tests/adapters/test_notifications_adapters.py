@@ -79,8 +79,9 @@ async def test_slack_health_returns_true_on_200() -> None:
 @pytest.mark.asyncio
 async def test_slack_send_notification_missing_channel_raises() -> None:
     """send_notification raises LifecycleError when no channel set (line 95)."""
-    from oneiric.core.lifecycle import LifecycleError
     from pydantic import SecretStr
+
+    from oneiric.core.lifecycle import LifecycleError
 
     transport = httpx.MockTransport(lambda r: httpx.Response(200, json={"ok": True}))
     client = httpx.AsyncClient(transport=transport, base_url="https://slack.test")
@@ -90,9 +91,7 @@ async def test_slack_send_notification_missing_channel_raises() -> None:
     )
     await adapter.init()
     with pytest.raises(LifecycleError, match="slack-channel-missing"):
-        await adapter.send_notification(
-            NotificationMessage(text="hi")
-        )
+        await adapter.send_notification(NotificationMessage(text="hi"))
     await adapter.cleanup()
 
 
@@ -100,6 +99,7 @@ async def test_slack_send_notification_missing_channel_raises() -> None:
 async def test_slack_payload_with_attachments_and_title() -> None:
     """_build_slack_payload includes attachments and title when set (lines 120, 122)."""
     import json
+
     from pydantic import SecretStr
 
     captured: list[dict] = []
@@ -132,6 +132,7 @@ async def test_slack_payload_with_attachments_and_title() -> None:
 async def test_slack_payload_with_default_username_emoji_extra() -> None:
     """_build_slack_payload applies default_username, icon_emoji, extra_payload (lines 125, 127, 130)."""
     import json
+
     from pydantic import SecretStr
 
     captured: list[dict] = []
@@ -167,10 +168,13 @@ async def test_slack_payload_with_default_username_emoji_extra() -> None:
 @pytest.mark.asyncio
 async def test_slack_http_status_error_raises_lifecycle_error() -> None:
     """_send_slack_request converts HTTPStatusError to LifecycleError (lines 141-147)."""
-    from oneiric.core.lifecycle import LifecycleError
     from pydantic import SecretStr
 
-    transport = httpx.MockTransport(lambda r: httpx.Response(429, json={"error": "ratelimited"}))
+    from oneiric.core.lifecycle import LifecycleError
+
+    transport = httpx.MockTransport(
+        lambda r: httpx.Response(429, json={"error": "ratelimited"})
+    )
     client = httpx.AsyncClient(transport=transport, base_url="https://slack.test")
     adapter = SlackAdapter(
         settings=SlackSettings(token=SecretStr("xoxb-key"), default_channel="#c"),
@@ -185,8 +189,9 @@ async def test_slack_http_status_error_raises_lifecycle_error() -> None:
 @pytest.mark.asyncio
 async def test_slack_validate_response_ok_false_raises() -> None:
     """_validate_slack_response raises LifecycleError when ok=False (lines 155-157)."""
-    from oneiric.core.lifecycle import LifecycleError
     from pydantic import SecretStr
+
+    from oneiric.core.lifecycle import LifecycleError
 
     transport = httpx.MockTransport(
         lambda r: httpx.Response(200, json={"ok": False, "error": "channel_not_found"})
@@ -240,6 +245,7 @@ async def test_teams_send_notification_http_error_raises() -> None:
 async def test_teams_payload_with_attachments_and_extra() -> None:
     """_build_payload handles attachments and extra_payload (lines 100, 112)."""
     import json
+
     from oneiric.adapters.messaging.teams import TeamsAdapter, TeamsSettings
 
     captured: list[dict] = []
@@ -296,9 +302,7 @@ async def test_webhook_unsupported_method_raises() -> None:
     await adapter.init()
     with pytest.raises(LifecycleError, match="webhook-method-unsupported"):
         await adapter.send_notification(
-            NotificationMessage(
-                text="hi", extra_payload={"method": "BADMETHOD"}
-            )
+            NotificationMessage(text="hi", extra_payload={"method": "BADMETHOD"})
         )
     await adapter.cleanup()
 

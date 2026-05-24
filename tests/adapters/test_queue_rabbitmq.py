@@ -150,7 +150,9 @@ async def test_cleanup(adapter: RabbitMQQueueAdapter) -> None:
 
 
 @pytest.mark.asyncio()
-async def test_rabbitmq_health(adapter: RabbitMQQueueAdapter, fake_queue: FakeQueue) -> None:
+async def test_rabbitmq_health(
+    adapter: RabbitMQQueueAdapter, fake_queue: FakeQueue
+) -> None:
     """health() calls declare(passive=True) on queue (lines 93-98)."""
     await adapter.init()
     assert await adapter.health() is True
@@ -378,7 +380,6 @@ async def test_rabbitmq_ensure_channel_returns_cached_on_second_call() -> None:
 async def test_rabbitmq_ensure_connection_uses_aio_pika(monkeypatch) -> None:
     """_ensure_connection imports aio_pika when no factory (lines 163-169)."""
     import sys
-    import types
 
     fake_queue = FakeQueue()
     channel = FakeChannel(fake_queue)
@@ -405,7 +406,6 @@ async def test_rabbitmq_ensure_connection_uses_aio_pika(monkeypatch) -> None:
 async def test_rabbitmq_build_message_uses_aio_pika(monkeypatch) -> None:
     """_build_message imports aio_pika.Message when no channel_factory (lines 216-222)."""
     import sys
-    import types
 
     fake_queue = FakeQueue()
 

@@ -63,8 +63,7 @@ class ModeConfig:
             "inline_manifest_only": self.inline_manifest_only,
             "setup_time_minutes": self.setup_time_minutes,
             "external_dependencies": self.external_dependencies,
-            **self.additional_settings,
-        }
+        } | self.additional_settings
 
 
 class OperationMode(ABC):

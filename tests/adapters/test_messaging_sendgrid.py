@@ -158,7 +158,6 @@ async def test_sendgrid_send_email_fallback_message_id() -> None:
 @pytest.mark.asyncio
 async def test_sendgrid_health_http_error_returns_false() -> None:
     """health() returns False on HTTPError (lines 98-100)."""
-    from oneiric.core.lifecycle import LifecycleError
 
     def fail_handler(request: httpx.Request) -> httpx.Response:
         raise httpx.ConnectError("refused")
@@ -208,6 +207,7 @@ async def test_sendgrid_send_email_with_cc_bcc_headers_reply_to() -> None:
 
     def handler(request: httpx.Request) -> httpx.Response:
         import json as _json
+
         captured.append(_json.loads(request.content))
         return httpx.Response(202, headers={"X-Message-Id": "msg-x"})
 
@@ -244,6 +244,7 @@ async def test_sendgrid_send_email_sandbox_mode() -> None:
 
     def handler(request: httpx.Request) -> httpx.Response:
         import json as _json
+
         captured.append(_json.loads(request.content))
         return httpx.Response(202, headers={"X-Message-Id": "msg-s"})
 

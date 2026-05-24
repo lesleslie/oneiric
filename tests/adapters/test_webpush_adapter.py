@@ -123,9 +123,7 @@ def test_webpush_resolve_subscription_from_target_json() -> None:
 def test_webpush_resolve_subscription_from_default() -> None:
     """_resolve_subscription falls back to default_subscription_info (line 138)."""
     default_sub = {"endpoint": "https://default.example.com"}
-    adapter = WebPushAdapter(
-        WebPushSettings(default_subscription_info=default_sub)
-    )
+    adapter = WebPushAdapter(WebPushSettings(default_subscription_info=default_sub))
     message = NotificationMessage(text="Hi")
     result = adapter._resolve_subscription(message)
     assert result == default_sub
@@ -200,7 +198,5 @@ def test_webpush_resolve_private_key_from_path(tmp_path: object) -> None:
 
     key_file = pathlib.Path(str(tmp_path)) / "vapid.pem"  # type: ignore[arg-type]
     key_file.write_text("my-vapid-key")
-    adapter = WebPushAdapter(
-        WebPushSettings(vapid_private_key_path=key_file)
-    )
+    adapter = WebPushAdapter(WebPushSettings(vapid_private_key_path=key_file))
     assert adapter._resolve_private_key() == "my-vapid-key"

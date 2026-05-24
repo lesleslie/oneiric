@@ -236,6 +236,7 @@ async def test_load_model_explicit_device(monkeypatch: pytest.MonkeyPatch) -> No
 async def test_load_model_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     import sys
     import types
+
     from oneiric.core.lifecycle import LifecycleError
 
     fake_torch = types.ModuleType("torch")
@@ -391,7 +392,9 @@ async def test_embed_texts_numpy_tolist_branch() -> None:
     adapter._model = NumpyModel()  # type: ignore[assignment]
     adapter._device = "cpu"
 
-    batch = await adapter._embed_texts(["hi", "hello"], model="m", normalize=False, batch_size=2)
+    batch = await adapter._embed_texts(
+        ["hi", "hello"], model="m", normalize=False, batch_size=2
+    )
     assert len(batch.results) == 2
     assert batch.results[0].embedding == [2.0]
 
@@ -414,7 +417,9 @@ async def test_embed_texts_exception() -> None:
     adapter._device = "cpu"
 
     with pytest.raises(LifecycleError, match="sentence-transformers-embedding-failed"):
-        await adapter._embed_texts(["text"], model="model", normalize=False, batch_size=1)
+        await adapter._embed_texts(
+            ["text"], model="model", normalize=False, batch_size=1
+        )
 
 
 # ---------------------------------------------------------------------------

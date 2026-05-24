@@ -5,20 +5,18 @@ Tests adapter installation, updates, removal, activation, deactivation,
 and health monitoring for the Oneiric adapter system.
 """
 
-import pytest
-from unittest import mock
 from datetime import datetime
 
+import pytest
 from oneiric.adapter import (
-    AdapterManager,
     Adapter,
-    AdapterState,
-    AdapterHealthStatus,
     AdapterError,
+    AdapterHealthStatus,
+    AdapterManager,
     AdapterNotFoundError,
-    AdapterActivationError,
+    AdapterState,
 )
-from oneiric.lifecycle import LifecycleManager, LifecycleEvent
+from oneiric.lifecycle import LifecycleEvent, LifecycleManager
 
 
 class TestAdapterManager:
@@ -32,80 +30,68 @@ class TestAdapterManager:
     def test_install_adapter_success(self, manager):
         """Test successful adapter installation."""
         result = manager.install(
-            name='postgresql',
-            version='1.0.0',
-            module_path='oneiric.adapters.database.postgresql'
+            name="postgresql",
+            version="1.0.0",
+            module_path="oneiric.adapters.database.postgresql",
         )
         assert result.success is True
-        assert result.adapter_name == 'postgresql'
-        assert result.version == '1.0.0'
+        assert result.adapter_name == "postgresql"
+        assert result.version == "1.0.0"
 
     def test_install_adapter_already_exists(self, manager):
         """Test installing adapter that already exists."""
         manager.install(
-            name='redis',
-            version='1.0.0',
-            module_path='oneiric.adapters.cache.redis'
+            name="redis", version="1.0.0", module_path="oneiric.adapters.cache.redis"
         )
 
         with pytest.raises(AdapterError):
             manager.install(
-                name='redis',
-                version='2.0.0',
-                module_path='oneiric.adapters.cache.redis'
+                name="redis",
+                version="2.0.0",
+                module_path="oneiric.adapters.cache.redis",
             )
 
     def test_install_adapter_invalid_module(self, manager):
         """Test installing adapter with invalid module path."""
         with pytest.raises(ImportError):
             manager.install(
-                name='invalid',
-                version='1.0.0',
-                module_path='nonexistent.module.path'
+                name="invalid", version="1.0.0", module_path="nonexistent.module.path"
             )
 
     def test_update_adapter_success(self, manager):
         """Test successful adapter update."""
         manager.install(
-            name='mysql',
-            version='1.0.0',
-            module_path='oneiric.adapters.database.mysql'
+            name="mysql", version="1.0.0", module_path="oneiric.adapters.database.mysql"
         )
 
-        result = manager.update(
-            name='mysql',
-            version='2.0.0'
-        )
+        result = manager.update(name="mysql", version="2.0.0")
         assert result.success is True
-        assert result.version == '2.0.0'
+        assert result.version == "2.0.0"
 
     def test_update_adapter_not_found(self, manager):
         """Test updating non-existent adapter."""
         with pytest.raises(AdapterNotFoundError):
-            manager.update(
-                name='nonexistent',
-                version='1.0.0'
-            )
+            manager.update(name="nonexistent", version="1.0.0")
 
     def test_remove_adapter_success(self, manager):
         """Test successful adapter removal."""
         manager.install(
-            name='sqlite',
-            version='1.0.0',
-            module_path='oneiric.adapters.database.sqlite'
+            name="sqlite",
+            version="1.0.0",
+            module_path="oneiric.adapters.database.sqlite",
         )
 
-        result = manager.remove('sqlite')
+        result = manager.remove("sqlite")
         assert result.success is True
 
         # Verify it's removed
         with pytest.raises(AdapterNotFoundError):
-            manager.get_adapter('sqlite')
+            manager.get_adapter("sqlite")
 
     def test_remove_adapter_not_found(self, manager):
         """Test removing non-existent adapter."""
         with pytest.raises(AdapterNotFoundError):
-            manager.remove('nonexistent')
+            manager.remove("nonexistent")
 
     def test_list_adapters_empty(self, manager):
         """Test listing adapters when none installed."""
@@ -116,157 +102,148 @@ class TestAdapterManager:
     def test_list_adapters_multiple(self, manager):
         """Test listing multiple installed adapters."""
         manager.install(
-            name='redis',
-            version='1.0.0',
-            module_path='oneiric.adapters.cache.redis'
+            name="redis", version="1.0.0", module_path="oneiric.adapters.cache.redis"
         )
         manager.install(
-            name='postgresql',
-            version='1.0.0',
-            module_path='oneiric.adapters.database.postgresql'
+            name="postgresql",
+            version="1.0.0",
+            module_path="oneiric.adapters.database.postgresql",
         )
 
         adapters = manager.list()
         assert len(adapters) == 2
         adapter_names = [a.name for a in adapters]
-        assert 'redis' in adapter_names
-        assert 'postgresql' in adapter_names
+        assert "redis" in adapter_names
+        assert "postgresql" in adapter_names
 
     def test_list_adapters_by_domain(self, manager):
         """Test listing adapters filtered by domain."""
         manager.install(
-            name='redis',
-            version='1.0.0',
-            module_path='oneiric.adapters.cache.redis',
-            domain='cache'
+            name="redis",
+            version="1.0.0",
+            module_path="oneiric.adapters.cache.redis",
+            domain="cache",
         )
         manager.install(
-            name='postgresql',
-            version='1.0.0',
-            module_path='oneiric.adapters.database.postgresql',
-            domain='database'
+            name="postgresql",
+            version="1.0.0",
+            module_path="oneiric.adapters.database.postgresql",
+            domain="database",
         )
 
-        cache_adapters = manager.list(domain='cache')
+        cache_adapters = manager.list(domain="cache")
         assert len(cache_adapters) == 1
-        assert cache_adapters[0].name == 'redis'
+        assert cache_adapters[0].name == "redis"
 
     def test_get_adapter_success(self, manager):
         """Test getting installed adapter."""
         manager.install(
-            name='mongodb',
-            version='1.0.0',
-            module_path='oneiric.adapters.database.mongodb'
+            name="mongodb",
+            version="1.0.0",
+            module_path="oneiric.adapters.database.mongodb",
         )
 
-        adapter = manager.get_adapter('mongodb')
+        adapter = manager.get_adapter("mongodb")
         assert adapter is not None
-        assert adapter.name == 'mongodb'
-        assert adapter.version == '1.0.0'
+        assert adapter.name == "mongodb"
+        assert adapter.version == "1.0.0"
 
     def test_get_adapter_not_found(self, manager):
         """Test getting non-existent adapter."""
         with pytest.raises(AdapterNotFoundError):
-            manager.get_adapter('nonexistent')
+            manager.get_adapter("nonexistent")
 
     def test_activate_adapter_success(self, manager):
         """Test successful adapter activation."""
         manager.install(
-            name='logfire',
-            version='1.0.0',
-            module_path='oneiric.adapters.monitoring.logfire'
+            name="logfire",
+            version="1.0.0",
+            module_path="oneiric.adapters.monitoring.logfire",
         )
 
-        result = manager.activate('logfire')
+        result = manager.activate("logfire")
         assert result.success is True
         assert result.state == AdapterState.ACTIVE
 
     def test_activate_adapter_already_active(self, manager):
         """Test activating already active adapter."""
         manager.install(
-            name='sentry',
-            version='1.0.0',
-            module_path='oneiric.adapters.monitoring.sentry'
+            name="sentry",
+            version="1.0.0",
+            module_path="oneiric.adapters.monitoring.sentry",
         )
-        manager.activate('sentry')
+        manager.activate("sentry")
 
         # Second activation should be idempotent
-        result = manager.activate('sentry')
+        result = manager.activate("sentry")
         assert result.success is True
 
     def test_deactivate_adapter_success(self, manager):
         """Test successful adapter deactivation."""
         manager.install(
-            name='otlp',
-            version='1.0.0',
-            module_path='oneiric.adapters.monitoring.otlp'
+            name="otlp", version="1.0.0", module_path="oneiric.adapters.monitoring.otlp"
         )
-        manager.activate('otlp')
+        manager.activate("otlp")
 
-        result = manager.deactivate('otlp')
+        result = manager.deactivate("otlp")
         assert result.success is True
         assert result.state == AdapterState.INACTIVE
 
     def test_deactivate_adapter_not_active(self, manager):
         """Test deactivating adapter that's not active."""
         manager.install(
-            name='netdata',
-            version='1.0.0',
-            module_path='oneiric.adapters.monitoring.netdata'
+            name="netdata",
+            version="1.0.0",
+            module_path="oneiric.adapters.monitoring.netdata",
         )
 
         # Should succeed even if not active
-        result = manager.deactivate('netdata')
+        result = manager.deactivate("netdata")
         assert result.success is True
 
     def test_check_adapter_health_healthy(self, manager):
         """Test health check for healthy adapter."""
         manager.install(
-            name='redis',
-            version='1.0.0',
-            module_path='oneiric.adapters.cache.redis'
+            name="redis", version="1.0.0", module_path="oneiric.adapters.cache.redis"
         )
-        manager.activate('redis')
+        manager.activate("redis")
 
-        health = manager.check_health('redis')
+        health = manager.check_health("redis")
         assert health.status == AdapterHealthStatus.HEALTHY
 
     def test_check_adapter_health_unhealthy(self, manager):
         """Test health check for unhealthy adapter."""
         manager.install(
-            name='failing_adapter',
-            version='1.0.0',
-            module_path='oneiric.adapters.test.failing'
+            name="failing_adapter",
+            version="1.0.0",
+            module_path="oneiric.adapters.test.failing",
         )
 
-        health = manager.check_health('failing_adapter')
+        health = manager.check_health("failing_adapter")
         assert health.status == AdapterHealthStatus.UNHEALTHY
 
     def test_swap_adapter_success(self, manager):
         """Test swapping adapter provider."""
         manager.install(
-            name='cache',
-            version='1.0.0',
-            module_path='oneiric.adapters.cache.redis',
-            provider='redis'
+            name="cache",
+            version="1.0.0",
+            module_path="oneiric.adapters.cache.redis",
+            provider="redis",
         )
-        manager.activate('cache')
+        manager.activate("cache")
 
         result = manager.swap(
-            name='cache',
-            new_provider='memory',
-            new_module_path='oneiric.adapters.cache.memory'
+            name="cache",
+            new_provider="memory",
+            new_module_path="oneiric.adapters.cache.memory",
         )
         assert result.success is True
-        assert result.provider == 'memory'
+        assert result.provider == "memory"
 
     def test_swap_adapter_not_found(self, manager):
         """Test swapping non-existent adapter."""
         with pytest.raises(AdapterNotFoundError):
-            manager.swap(
-                name='nonexistent',
-                new_provider='other'
-            )
+            manager.swap(name="nonexistent", new_provider="other")
 
 
 class TestAdapter:
@@ -275,21 +252,19 @@ class TestAdapter:
     def test_adapter_creation(self):
         """Test creating an Adapter instance."""
         adapter = Adapter(
-            name='test_adapter',
-            version='1.0.0',
-            module_path='oneiric.adapters.test',
-            domain='test'
+            name="test_adapter",
+            version="1.0.0",
+            module_path="oneiric.adapters.test",
+            domain="test",
         )
-        assert adapter.name == 'test_adapter'
-        assert adapter.version == '1.0.0'
+        assert adapter.name == "test_adapter"
+        assert adapter.version == "1.0.0"
         assert adapter.state == AdapterState.REGISTERED
 
     def test_adapter_state_transitions(self):
         """Test adapter state transitions."""
         adapter = Adapter(
-            name='state_test',
-            version='1.0.0',
-            module_path='oneiric.adapters.test'
+            name="state_test", version="1.0.0", module_path="oneiric.adapters.test"
         )
 
         # Registered -> Active
@@ -303,33 +278,31 @@ class TestAdapter:
     def test_adapter_metadata(self):
         """Test adapter metadata handling."""
         adapter = Adapter(
-            name='metadata_test',
-            version='1.0.0',
-            module_path='oneiric.adapters.test',
-            metadata={'key': 'value', 'number': 42}
+            name="metadata_test",
+            version="1.0.0",
+            module_path="oneiric.adapters.test",
+            metadata={"key": "value", "number": 42},
         )
 
-        assert adapter.metadata['key'] == 'value'
-        assert adapter.metadata['number'] == 42
+        assert adapter.metadata["key"] == "value"
+        assert adapter.metadata["number"] == 42
 
     def test_adapter_dependencies(self):
         """Test adapter dependency tracking."""
         adapter = Adapter(
-            name='dep_test',
-            version='1.0.0',
-            module_path='oneiric.adapters.test',
-            dependencies=['base_adapter', 'utils_adapter']
+            name="dep_test",
+            version="1.0.0",
+            module_path="oneiric.adapters.test",
+            dependencies=["base_adapter", "utils_adapter"],
         )
 
         assert len(adapter.dependencies) == 2
-        assert 'base_adapter' in adapter.dependencies
+        assert "base_adapter" in adapter.dependencies
 
     def test_adapter_health_status(self):
         """Test adapter health status updates."""
         adapter = Adapter(
-            name='health_test',
-            version='1.0.0',
-            module_path='oneiric.adapters.test'
+            name="health_test", version="1.0.0", module_path="oneiric.adapters.test"
         )
 
         assert adapter.health_status == AdapterHealthStatus.UNKNOWN
@@ -340,9 +313,7 @@ class TestAdapter:
     def test_adapter_last_health_check(self):
         """Test last health check timestamp."""
         adapter = Adapter(
-            name='timestamp_test',
-            version='1.0.0',
-            module_path='oneiric.adapters.test'
+            name="timestamp_test", version="1.0.0", module_path="oneiric.adapters.test"
         )
 
         assert adapter.last_health_check is None
@@ -364,9 +335,7 @@ class TestLifecycleManager:
     def sample_adapter(self):
         """Create a sample adapter for testing."""
         return Adapter(
-            name='lifecycle_test',
-            version='1.0.0',
-            module_path='oneiric.adapters.test'
+            name="lifecycle_test", version="1.0.0", module_path="oneiric.adapters.test"
         )
 
     def test_lifecycle_initialization(self, lifecycle_mgr):
@@ -426,7 +395,7 @@ class TestLifecycleManager:
         assert health.status in [
             AdapterHealthStatus.HEALTHY,
             AdapterHealthStatus.UNHEALTHY,
-            AdapterHealthStatus.UNKNOWN
+            AdapterHealthStatus.UNKNOWN,
         ]
 
     def test_lifecycle_get_state_history(self, lifecycle_mgr, sample_adapter):
@@ -445,19 +414,19 @@ class TestLifecycleManager:
 
         metrics = lifecycle_mgr.get_metrics(sample_adapter.name)
         assert metrics is not None
-        assert 'activation_count' in metrics or 'state' in metrics
+        assert "activation_count" in metrics or "state" in metrics
 
     def test_lifecycle_concurrent_activation(self, lifecycle_mgr):
         """Test handling concurrent activation requests."""
         adapter1 = Adapter(
-            name='concurrent_test1',
-            version='1.0.0',
-            module_path='oneiric.adapters.test1'
+            name="concurrent_test1",
+            version="1.0.0",
+            module_path="oneiric.adapters.test1",
         )
         adapter2 = Adapter(
-            name='concurrent_test2',
-            version='1.0.0',
-            module_path='oneiric.adapters.test2'
+            name="concurrent_test2",
+            version="1.0.0",
+            module_path="oneiric.adapters.test2",
         )
 
         lifecycle_mgr.register(adapter1)
@@ -476,7 +445,7 @@ class TestLifecycleManager:
         """Test error handling in lifecycle operations."""
         # Try to activate non-existent adapter
         with pytest.raises(AdapterNotFoundError):
-            lifecycle_mgr.activate('nonexistent')
+            lifecycle_mgr.activate("nonexistent")
 
     def test_lifecycle_event_emission(self, lifecycle_mgr, sample_adapter):
         """Test lifecycle event emission."""

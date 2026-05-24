@@ -393,7 +393,10 @@ class TestEventBridge:
         assert len(results) == 1
         assert recorder == ["user.created"]
         assert isinstance(handler.last_envelope, EventEnvelope)
-        assert handler.last_envelope.headers["source"] == "oneiric.domains.events.EventBridge"
+        assert (
+            handler.last_envelope.headers["source"]
+            == "oneiric.domains.events.EventBridge"
+        )
 
         recorder.clear()
         results = await bridge.emit("order.created", {"order_id": 42})
@@ -1007,7 +1010,7 @@ class TestCrossDomainIntegration:
 class TestEventBridgeUncoveredPaths:
     def test_update_settings_refreshes_dispatcher(self) -> None:
         """update_settings calls super() then refresh_dispatcher — lines 48-49."""
-        from unittest.mock import MagicMock, patch
+        from unittest.mock import patch
 
         resolver = Resolver()
         lifecycle = LifecycleManager(resolver)
@@ -1061,8 +1064,11 @@ class TestWorkflowBridgeUncoveredPaths:
         resolver = Resolver()
         lifecycle = LifecycleManager(resolver)
         settings = LayerSettings()
-        return resolver, lifecycle, settings, WorkflowBridge(
-            resolver, lifecycle, settings, **kwargs
+        return (
+            resolver,
+            lifecycle,
+            settings,
+            WorkflowBridge(resolver, lifecycle, settings, **kwargs),
         )
 
     def test_dag_specs_returns_copy(self) -> None:
@@ -1088,7 +1094,9 @@ class TestWorkflowBridgeUncoveredPaths:
         assert bridge._queue_category == "queue.new"
 
     def test_update_settings_preserves_override_queue_category(self) -> None:
-        resolver, lifecycle, settings, bridge = self._make_bridge(queue_category="queue.fixed")
+        resolver, lifecycle, settings, bridge = self._make_bridge(
+            queue_category="queue.fixed"
+        )
         new_settings = LayerSettings(options={"queue_category": "queue.new"})
         bridge.update_settings(new_settings)
         assert bridge._queue_category == "queue.fixed"
@@ -1165,7 +1173,9 @@ class TestWorkflowBridgeUncoveredPaths:
     @pytest.mark.asyncio
     async def test_enqueue_workflow_raises_for_missing_workflow(self) -> None:
         queue_bridge = FakeQueueBridge()
-        resolver, lifecycle, settings, bridge = self._make_bridge(queue_bridge=queue_bridge)
+        resolver, lifecycle, settings, bridge = self._make_bridge(
+            queue_bridge=queue_bridge
+        )
         with pytest.raises(Exception, match="workflow-missing"):
             await bridge.enqueue_workflow("nonexistent")
 
@@ -1232,7 +1242,9 @@ class TestWorkflowBridgeUncoveredPaths:
 
         store = WorkflowCheckpointStore(tmp_path / "ckpt.sqlite")
         store.save("wf", {"step1": "ok"})
-        resolver, lifecycle, settings, bridge = self._make_bridge(checkpoint_store=store)
+        resolver, lifecycle, settings, bridge = self._make_bridge(
+            checkpoint_store=store
+        )
         result = bridge._load_checkpoint_data(
             "wf", None, use_checkpoint_store=True, resume_from_checkpoint=True
         )

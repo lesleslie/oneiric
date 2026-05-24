@@ -186,6 +186,7 @@ async def test_table_factory_awaitable() -> None:
 @pytest.mark.asyncio()
 async def test_ensure_session_with_custom_factory() -> None:
     """_ensure_session uses session_factory when provided (lines 167-186)."""
+
     class FakeSession:
         pass
 
@@ -235,7 +236,9 @@ async def test_ensure_session_with_profile(monkeypatch) -> None:
     fake_aioboto3.Session = FakeAioboto3Session  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, "aioboto3", fake_aioboto3)
 
-    settings = DynamoDBSettings(table_name="t", primary_key_field="id", profile_name="my-profile")
+    settings = DynamoDBSettings(
+        table_name="t", primary_key_field="id", profile_name="my-profile"
+    )
     adapter = DynamoDBAdapter(settings)
     adapter._ensure_session()
     assert created[0]["profile_name"] == "my-profile"

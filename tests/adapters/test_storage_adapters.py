@@ -289,7 +289,9 @@ async def test_gcs_init_without_client_uses_google_cloud_storage(monkeypatch) ->
     monkeypatch.setitem(sys.modules, "google.cloud", fake_google_cloud)
     monkeypatch.setitem(sys.modules, "google.cloud.storage", fake_storage)
     monkeypatch.setitem(sys.modules, "google.oauth2", fake_oauth2)
-    monkeypatch.setitem(sys.modules, "google.oauth2.service_account", fake_service_account)
+    monkeypatch.setitem(
+        sys.modules, "google.oauth2.service_account", fake_service_account
+    )
 
     adapter = GCSStorageAdapter(GCSStorageSettings(bucket="demo", project="my-project"))
     await adapter.init()
@@ -308,7 +310,7 @@ async def test_gcs_init_with_credentials_file(monkeypatch, tmp_path) -> None:
 
     class FakeCredentials:
         @staticmethod
-        def from_service_account_file(path: str) -> "FakeCredentials":
+        def from_service_account_file(path: str) -> FakeCredentials:
             loaded.append(path)
             return FakeCredentials()
 
@@ -459,12 +461,14 @@ async def test_local_storage_list_prefix_filters_mismatches(tmp_path) -> None:
 
 class _AzureErrorCodeNotFound(Exception):
     """Exception with error_code but no 404 status_code."""
+
     status_code = 200
     error_code = "BlobNotFound"
 
 
 class _AzureMessageNotFound(Exception):
     """Exception with a 404 in the message."""
+
     status_code = 200
     error_code = None
     message = "Request failed with status 404"
@@ -472,6 +476,7 @@ class _AzureMessageNotFound(Exception):
 
 class _AzureGenericError(Exception):
     """Non-not-found exception."""
+
     status_code = 500
 
 
@@ -525,6 +530,7 @@ def test_azure_ensure_container_raises_when_not_initialized() -> None:
 @pytest.mark.asyncio
 async def test_azure_download_reraises_non_notfound() -> None:
     """download() re-raises exceptions that are not not-found (line 130)."""
+
     class FailBlob:
         async def download_blob(self) -> None:
             raise _AzureGenericError("server error")
@@ -542,6 +548,7 @@ async def test_azure_download_reraises_non_notfound() -> None:
 @pytest.mark.asyncio
 async def test_azure_delete_reraises_non_notfound() -> None:
     """delete() re-raises non-not-found exceptions (lines 135-137)."""
+
     class FailBlob:
         async def delete_blob(self) -> None:
             raise _AzureGenericError("server error")
@@ -585,7 +592,7 @@ async def test_azure_init_with_connection_string(monkeypatch) -> None:
 
     class FakeBlobServiceClient:
         @classmethod
-        def from_connection_string(cls, cs: str) -> "FakeBlobServiceClient":
+        def from_connection_string(cls, cs: str) -> FakeBlobServiceClient:
             created_from_cs.append(cs)
             return cls()
 
@@ -600,11 +607,15 @@ async def test_azure_init_with_connection_string(monkeypatch) -> None:
 
     monkeypatch.setitem(sys.modules, "azure", types.ModuleType("azure"))
     monkeypatch.setitem(sys.modules, "azure.storage", types.ModuleType("azure.storage"))
-    monkeypatch.setitem(sys.modules, "azure.storage.blob", types.ModuleType("azure.storage.blob"))
+    monkeypatch.setitem(
+        sys.modules, "azure.storage.blob", types.ModuleType("azure.storage.blob")
+    )
     monkeypatch.setitem(sys.modules, "azure.storage.blob.aio", fake_blob)
 
     adapter = AzureBlobStorageAdapter(
-        AzureBlobStorageSettings(container="demo", connection_string="DefaultEndpointsProtocol=https;...")
+        AzureBlobStorageSettings(
+            container="demo", connection_string="DefaultEndpointsProtocol=https;..."
+        )
     )
     await adapter.init()
     assert created_from_cs == ["DefaultEndpointsProtocol=https;..."]
@@ -622,7 +633,9 @@ async def test_azure_init_with_account_url_and_credential(monkeypatch) -> None:
 
     class FakeBlobServiceClient:
         def __init__(self, *, account_url: str, credential: str) -> None:
-            created_with_url.append({"account_url": account_url, "credential": credential})
+            created_with_url.append(
+                {"account_url": account_url, "credential": credential}
+            )
 
         def get_container_client(self, name: str) -> _FakeAzureContainerClient:
             return container
@@ -635,11 +648,17 @@ async def test_azure_init_with_account_url_and_credential(monkeypatch) -> None:
 
     monkeypatch.setitem(sys.modules, "azure", types.ModuleType("azure"))
     monkeypatch.setitem(sys.modules, "azure.storage", types.ModuleType("azure.storage"))
-    monkeypatch.setitem(sys.modules, "azure.storage.blob", types.ModuleType("azure.storage.blob"))
+    monkeypatch.setitem(
+        sys.modules, "azure.storage.blob", types.ModuleType("azure.storage.blob")
+    )
     monkeypatch.setitem(sys.modules, "azure.storage.blob.aio", fake_blob)
 
     adapter = AzureBlobStorageAdapter(
-        AzureBlobStorageSettings(container="demo", account_url="https://acc.blob.core.windows.net", credential="key123")
+        AzureBlobStorageSettings(
+            container="demo",
+            account_url="https://acc.blob.core.windows.net",
+            credential="key123",
+        )
     )
     await adapter.init()
     assert created_with_url[0]["credential"] == "key123"
@@ -651,6 +670,7 @@ async def test_azure_init_missing_credential_raises(monkeypatch) -> None:
     """init() raises LifecycleError when account_url set but no credential (lines 78-79)."""
     import sys
     import types
+
     from oneiric.core.lifecycle import LifecycleError
 
     class FakeBlobServiceClient:
@@ -660,11 +680,15 @@ async def test_azure_init_missing_credential_raises(monkeypatch) -> None:
     fake_blob.BlobServiceClient = FakeBlobServiceClient  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, "azure", types.ModuleType("azure"))
     monkeypatch.setitem(sys.modules, "azure.storage", types.ModuleType("azure.storage"))
-    monkeypatch.setitem(sys.modules, "azure.storage.blob", types.ModuleType("azure.storage.blob"))
+    monkeypatch.setitem(
+        sys.modules, "azure.storage.blob", types.ModuleType("azure.storage.blob")
+    )
     monkeypatch.setitem(sys.modules, "azure.storage.blob.aio", fake_blob)
 
     adapter = AzureBlobStorageAdapter(
-        AzureBlobStorageSettings(container="demo", account_url="https://acc.blob.core.windows.net")
+        AzureBlobStorageSettings(
+            container="demo", account_url="https://acc.blob.core.windows.net"
+        )
     )
     with pytest.raises(LifecycleError, match="azure-storage-credential-required"):
         await adapter.init()
@@ -675,6 +699,7 @@ async def test_azure_init_no_client_config_raises(monkeypatch) -> None:
     """init() raises LifecycleError when neither connection_string nor account_url set (lines 83-84)."""
     import sys
     import types
+
     from oneiric.core.lifecycle import LifecycleError
 
     class FakeBlobServiceClient:
@@ -684,7 +709,9 @@ async def test_azure_init_no_client_config_raises(monkeypatch) -> None:
     fake_blob.BlobServiceClient = FakeBlobServiceClient  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, "azure", types.ModuleType("azure"))
     monkeypatch.setitem(sys.modules, "azure.storage", types.ModuleType("azure.storage"))
-    monkeypatch.setitem(sys.modules, "azure.storage.blob", types.ModuleType("azure.storage.blob"))
+    monkeypatch.setitem(
+        sys.modules, "azure.storage.blob", types.ModuleType("azure.storage.blob")
+    )
     monkeypatch.setitem(sys.modules, "azure.storage.blob.aio", fake_blob)
 
     adapter = AzureBlobStorageAdapter(AzureBlobStorageSettings(container="demo"))
@@ -732,6 +759,7 @@ async def test_s3_cleanup_with_client_cm() -> None:
 @pytest.mark.asyncio
 async def test_s3_download_reraises_non_nosuchkey() -> None:
     """download() re-raises when exception is not a NoSuchKey error (line 137)."""
+
     class FailClient(_FakeS3Client):
         async def get_object(self, Bucket: str, Key: str) -> Any:
             raise RuntimeError("connection lost")
@@ -749,7 +777,9 @@ async def test_s3_list_with_continuation_token() -> None:
     call_count = 0
 
     class PaginatedClient(_FakeS3Client):
-        async def list_objects_v2(self, Bucket: str, Prefix: str = "", **kwargs: Any) -> dict:
+        async def list_objects_v2(
+            self, Bucket: str, Prefix: str = "", **kwargs: Any
+        ) -> dict:
             nonlocal call_count
             call_count += 1
             if call_count == 1:
@@ -763,7 +793,9 @@ async def test_s3_list_with_continuation_token() -> None:
                 "IsTruncated": False,
             }
 
-    adapter = S3StorageAdapter(S3StorageSettings(bucket="demo"), client=PaginatedClient())
+    adapter = S3StorageAdapter(
+        S3StorageSettings(bucket="demo"), client=PaginatedClient()
+    )
     await adapter.init()
     result = await adapter.list()
     assert result == ["a.txt", "b.txt"]
@@ -776,12 +808,16 @@ async def test_s3_list_breaks_when_no_continuation_token() -> None:
     call_count = 0
 
     class TruncatedNoTokenClient(_FakeS3Client):
-        async def list_objects_v2(self, Bucket: str, Prefix: str = "", **kwargs: Any) -> dict:
+        async def list_objects_v2(
+            self, Bucket: str, Prefix: str = "", **kwargs: Any
+        ) -> dict:
             nonlocal call_count
             call_count += 1
             return {"Contents": [{"Key": "a.txt"}], "IsTruncated": True}
 
-    adapter = S3StorageAdapter(S3StorageSettings(bucket="demo"), client=TruncatedNoTokenClient())
+    adapter = S3StorageAdapter(
+        S3StorageSettings(bucket="demo"), client=TruncatedNoTokenClient()
+    )
     await adapter.init()
     result = await adapter.list()
     assert result == ["a.txt"]
@@ -806,7 +842,6 @@ async def test_s3_init_with_client_factory() -> None:
 async def test_s3_init_via_aioboto3(monkeypatch) -> None:
     """init() creates S3 client via aioboto3.Session when no factory/client (lines 73-96)."""
     import sys
-    import types
 
     client = _FakeS3Client()
     created_sessions: list[dict] = []

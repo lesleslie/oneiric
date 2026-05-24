@@ -295,7 +295,9 @@ async def test_openai_embed_texts_exception(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setattr(adapter, "_apply_rate_limit", noop_rate_limit)
 
     with pytest.raises(LifecycleError, match="openai-embedding-failed"):
-        await adapter._embed_texts(["text"], model="model", normalize=False, batch_size=10)
+        await adapter._embed_texts(
+            ["text"], model="model", normalize=False, batch_size=10
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -305,7 +307,10 @@ async def test_openai_embed_texts_exception(monkeypatch: pytest.MonkeyPatch) -> 
 
 @pytest.mark.asyncio
 async def test_openai_embed_documents(monkeypatch: pytest.MonkeyPatch) -> None:
-    from oneiric.adapters.embedding.embedding_interface import EmbeddingBatch, EmbeddingResult
+    from oneiric.adapters.embedding.embedding_interface import (
+        EmbeddingBatch,
+        EmbeddingResult,
+    )
 
     settings = OpenAIEmbeddingSettings(chunk_size=10, chunk_overlap=2)
     adapter = OpenAIEmbeddingAdapter(settings)

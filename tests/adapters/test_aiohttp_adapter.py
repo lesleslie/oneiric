@@ -72,7 +72,6 @@ async def test_aiohttp_adapter_health_success() -> None:
 
 @pytest.mark.asyncio
 async def test_init_creates_session() -> None:
-    import aiohttp
 
     settings = HTTPClientSettings(timeout=5.0)
     adapter = AioHTTPAdapter(settings)
@@ -84,7 +83,6 @@ async def test_init_creates_session() -> None:
 
 @pytest.mark.asyncio
 async def test_init_with_base_url_creates_session() -> None:
-    import aiohttp
 
     settings = HTTPClientSettings(
         base_url="http://localhost:9999",
@@ -138,7 +136,6 @@ async def test_health_server_error() -> None:
 
 @pytest.mark.asyncio
 async def test_cleanup_closes_owned_session() -> None:
-    import aiohttp
 
     settings = HTTPClientSettings()
     adapter = AioHTTPAdapter(settings)

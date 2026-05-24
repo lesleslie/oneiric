@@ -7,6 +7,7 @@ import os
 import platform
 import uuid
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 from mcp import ClientSession, StdioServerParameters
@@ -59,7 +60,7 @@ class SessionEventEmitter:
     async def _get_session(self) -> ClientSession:
         """Get or create MCP client session."""
         if self._session is None:
-            self._session = ClientSession(self._server_params)
+            self._session = ClientSession(self._server_params)  # type: ignore
             await self._session.__aenter__()
             await self._session.initialize()
             self._consecutive_failures = 0
@@ -131,7 +132,7 @@ class SessionEventEmitter:
                 "user": _get_user_info(),
                 "hostname": platform.node(),
                 "environment": _get_environment_info(),
-                "metadata": metadata or {},
+                "metadata": metadata,
             }
 
             session = await self._get_session()
@@ -139,7 +140,7 @@ class SessionEventEmitter:
 
             # MCP tools return list of TextContent items
             # Extract session_id from result
-            if isinstance(result, list) and len(result) > 0:
+            if isinstance(result, list) and result:
                 # First item is usually TextContent with text attribute
                 first_item = result[0]
                 if hasattr(first_item, "text"):
@@ -194,7 +195,7 @@ class SessionEventEmitter:
                 "event_type": "session_end",
                 "session_id": session_id,
                 "timestamp": _get_timestamp(),
-                "metadata": metadata or {},
+                "metadata": metadata,
             }
 
             session = await self._get_session()
@@ -235,5 +236,5 @@ def _get_environment_info() -> dict[str, str]:
     return {
         "python_version": platform.python_version(),
         "platform": platform.platform(),
-        "cwd": os.getcwd()[:500],  # Limit path length
+        "cwd": str(Path.cwd())[:500],  # Limit path length
     }

@@ -70,7 +70,6 @@ from oneiric.cli import (
 from oneiric.core.resolution import Candidate, CandidateSource
 from oneiric.runtime.load_testing import LoadTestResult
 
-
 # ---------------------------------------------------------------------------
 # Demo classes
 # ---------------------------------------------------------------------------
@@ -164,7 +163,9 @@ def test_derive_notification_route_returns_none_when_no_adapter_key() -> None:
     assert result is None
 
 
-def test_derive_notification_route_returns_none_should_send_but_no_adapter_key() -> None:
+def test_derive_notification_route_returns_none_should_send_but_no_adapter_key() -> (
+    None
+):
     # notify_target makes should_send=True, but adapter_key stays None and force_send=False
     # → hits line 244 return None
     state = MagicMock()
@@ -458,7 +459,12 @@ def test_print_workflow_plan_empty(capsys) -> None:
 def test_print_workflow_plan_no_missing(capsys) -> None:
     data = {
         "workflows": {
-            "wf1": {"queue_category": None, "node_count": 0, "edge_count": 0, "nodes": []}
+            "wf1": {
+                "queue_category": None,
+                "node_count": 0,
+                "edge_count": 0,
+                "nodes": [],
+            }
         },
         "missing": [],
     }
@@ -497,13 +503,16 @@ def test_print_workflow_inspector_empty(capsys) -> None:
 
 
 def test_print_workflow_inspector_with_missing(capsys) -> None:
-    _print_single_workflow_inspector("wf1", {
-        "queue_category": "q",
-        "entry_nodes": ["n1"],
-        "node_count": 1,
-        "edge_count": 0,
-        "nodes": [],
-    })
+    _print_single_workflow_inspector(
+        "wf1",
+        {
+            "queue_category": "q",
+            "entry_nodes": ["n1"],
+            "node_count": 1,
+            "edge_count": 0,
+            "nodes": [],
+        },
+    )
     data = {"summary": {"wf1": {}}, "missing": ["lost-wf"]}
     _print_workflow_inspector(data)
     captured = capsys.readouterr()
@@ -574,7 +583,15 @@ def test_print_event_handlers_empty(capsys) -> None:
 
 
 def test_print_event_handlers_with_handlers(capsys) -> None:
-    handlers = [{"name": "h1", "topics": ["t1"], "priority": 0, "max_concurrency": 1, "fanout_policy": "broadcast"}]
+    handlers = [
+        {
+            "name": "h1",
+            "topics": ["t1"],
+            "priority": 0,
+            "max_concurrency": 1,
+            "fanout_policy": "broadcast",
+        }
+    ]
     _print_event_handlers(handlers)
     captured = capsys.readouterr()
     assert "h1" in captured.out
@@ -586,13 +603,15 @@ def test_print_event_handlers_with_handlers(capsys) -> None:
 
 
 def test_print_last_event_with_data(capsys) -> None:
-    _print_last_event({
-        "topic": "user.created",
-        "matched_handlers": 2,
-        "failures": 0,
-        "total_duration_ms": 10.5,
-        "recorded_at": "2024-01-01",
-    })
+    _print_last_event(
+        {
+            "topic": "user.created",
+            "matched_handlers": 2,
+            "failures": 0,
+            "total_duration_ms": 10.5,
+            "recorded_at": "2024-01-01",
+        }
+    )
     captured = capsys.readouterr()
     assert "user.created" in captured.out
 
@@ -604,8 +623,22 @@ def test_print_last_event_empty(capsys) -> None:
 
 def test_print_event_inspector(capsys) -> None:
     data = {
-        "handlers": [{"name": "h1", "topics": ["t"], "priority": 0, "max_concurrency": 1, "fanout_policy": "broadcast"}],
-        "last_event": {"topic": "t1", "matched_handlers": 1, "failures": 0, "total_duration_ms": 5.0, "recorded_at": "now"},
+        "handlers": [
+            {
+                "name": "h1",
+                "topics": ["t"],
+                "priority": 0,
+                "max_concurrency": 1,
+                "fanout_policy": "broadcast",
+            }
+        ],
+        "last_event": {
+            "topic": "t1",
+            "matched_handlers": 1,
+            "failures": 0,
+            "total_duration_ms": 5.0,
+            "recorded_at": "now",
+        },
     }
     _print_event_inspector(data)
     captured = capsys.readouterr()
@@ -673,7 +706,9 @@ def test_build_status_record_unresolved_no_candidate() -> None:
     bridge.domain = "adapter"
     bridge.settings.selections.get.return_value = None
     bridge.resolver.resolve.return_value = None
-    bridge.activity_state.return_value = SimpleNamespace(paused=False, draining=False, note=None)
+    bridge.activity_state.return_value = SimpleNamespace(
+        paused=False, draining=False, note=None
+    )
 
     lifecycle = MagicMock()
     lifecycle.get_instance.return_value = None
@@ -690,7 +725,9 @@ def test_build_status_record_unresolved_with_lifecycle_status() -> None:
     bridge.domain = "adapter"
     bridge.settings.selections.get.return_value = None
     bridge.resolver.resolve.return_value = None
-    bridge.activity_state.return_value = SimpleNamespace(paused=False, draining=False, note=None)
+    bridge.activity_state.return_value = SimpleNamespace(
+        paused=False, draining=False, note=None
+    )
 
     lifecycle_status = MagicMock()
     lifecycle_status.as_dict.return_value = {"state": "activating"}
@@ -869,7 +906,9 @@ def test_format_entry_status_paused() -> None:
 
 def test_print_remote_summary_no_telemetry(capsys) -> None:
     remote_config = SimpleNamespace(latency_budget_ms=None)
-    _print_remote_summary({"last_success_at": None, "last_failure_at": None}, "/tmp", remote_config)
+    _print_remote_summary(
+        {"last_success_at": None, "last_failure_at": None}, "/tmp", remote_config
+    )
     captured = capsys.readouterr()
     assert "No remote" in captured.out
 
@@ -895,11 +934,13 @@ def test_print_remote_summary_with_success_and_failure(capsys) -> None:
 
 
 def test_print_remote_sync_info_all_fields(capsys) -> None:
-    _print_remote_sync_info({
-        "last_remote_sync_at": "2024-01-01",
-        "last_remote_error": "timeout",
-        "last_remote_registered": 3,
-    })
+    _print_remote_sync_info(
+        {
+            "last_remote_sync_at": "2024-01-01",
+            "last_remote_error": "timeout",
+            "last_remote_registered": 3,
+        }
+    )
     captured = capsys.readouterr()
     assert "last_remote_sync" in captured.out
     assert "last_remote_error" in captured.out
@@ -944,13 +985,13 @@ def test_print_remote_skipped_none(capsys) -> None:
 
 
 def test_print_activity_snapshot_with_data(capsys) -> None:
-    _print_activity_snapshot({
-        "activity_state": {
-            "adapter": {
-                "cache": {"paused": True, "draining": False, "note": None}
+    _print_activity_snapshot(
+        {
+            "activity_state": {
+                "adapter": {"cache": {"paused": True, "draining": False, "note": None}}
             }
         }
-    })
+    )
     captured = capsys.readouterr()
     assert "activity" in captured.out
 
@@ -961,19 +1002,21 @@ def test_print_activity_snapshot_empty(capsys) -> None:
 
 
 def test_print_lifecycle_snapshot_with_data(capsys) -> None:
-    _print_lifecycle_snapshot({
-        "lifecycle_state": {
-            "adapter": {
-                "cache": {
-                    "state": "active",
-                    "current_provider": "redis",
-                    "pending_provider": None,
-                    "last_health_at": "2024-01-01",
-                    "last_error": "err",
+    _print_lifecycle_snapshot(
+        {
+            "lifecycle_state": {
+                "adapter": {
+                    "cache": {
+                        "state": "active",
+                        "current_provider": "redis",
+                        "pending_provider": None,
+                        "last_health_at": "2024-01-01",
+                        "last_error": "err",
+                    }
                 }
             }
         }
-    })
+    )
     captured = capsys.readouterr()
     assert "adapter:cache" in captured.out
     assert "last_health" in captured.out
@@ -1006,13 +1049,15 @@ def test_print_profile_summary_empty(capsys) -> None:
 
 
 def test_print_profile_summary_full(capsys) -> None:
-    _print_profile_summary({
-        "name": "serverless",
-        "watchers_enabled": False,
-        "remote_enabled": True,
-        "inline_manifest_only": True,
-        "supervisor_enabled": False,
-    })
+    _print_profile_summary(
+        {
+            "name": "serverless",
+            "watchers_enabled": False,
+            "remote_enabled": True,
+            "inline_manifest_only": True,
+            "supervisor_enabled": False,
+        }
+    )
     captured = capsys.readouterr()
     assert "serverless" in captured.out
 
@@ -1028,13 +1073,15 @@ def test_print_secrets_summary_empty(capsys) -> None:
 
 
 def test_print_secrets_summary_full(capsys) -> None:
-    _print_secrets_summary({
-        "provider": "vault",
-        "cache_ttl_seconds": 300.0,
-        "refresh_interval": 60.0,
-        "inline_entries": 2,
-        "prefetched": True,
-    })
+    _print_secrets_summary(
+        {
+            "provider": "vault",
+            "cache_ttl_seconds": 300.0,
+            "refresh_interval": 60.0,
+            "inline_entries": 2,
+            "prefetched": True,
+        }
+    )
     captured = capsys.readouterr()
     assert "vault" in captured.out
 
@@ -1045,11 +1092,7 @@ def test_print_secrets_summary_full(capsys) -> None:
 
 
 def test_print_activity_summary_cli(capsys) -> None:
-    _print_activity_summary({
-        "adapter": {
-            "cache": {"paused": True, "draining": False}
-        }
-    })
+    _print_activity_summary({"adapter": {"cache": {"paused": True, "draining": False}}})
     captured = capsys.readouterr()
     assert "paused=1" in captured.out
 
@@ -1060,11 +1103,13 @@ def test_print_activity_summary_cli(capsys) -> None:
 
 
 def test_print_domain_activity_details(capsys) -> None:
-    _print_domain_activity_details({
-        "adapter": {
-            "cache": {"paused": True, "draining": False, "note": "warming"},
+    _print_domain_activity_details(
+        {
+            "adapter": {
+                "cache": {"paused": True, "draining": False, "note": "warming"},
+            }
         }
-    })
+    )
     captured = capsys.readouterr()
     assert "adapter:cache" in captured.out
     assert "note=warming" in captured.out
@@ -1137,14 +1182,13 @@ def _run_command(*args: str, state: CLIState | None = None) -> Any:
 
 # cli_root — suppress_events and debug flags (lines 1985-1991)
 def test_cli_root_suppress_events_flag() -> None:
-    with patch("oneiric.core.logging.configure_early_logging") as mock_log:
+    with patch("oneiric.core.logging.configure_early_logging"):
         result = _run_command("--suppress-events", "plugins")
     assert result.exit_code == 0
 
 
 def test_cli_root_debug_flag() -> None:
-    import os
-    result = _run_command("--debug", "plugins")
+    _run_command("--debug", "plugins")
     # Should not raise; debug sets ONEIRIC_APP__DEBUG env var
 
 
@@ -1253,6 +1297,7 @@ def test_workflow_plan_non_json_output() -> None:
 # supervisor-info (lines 2552-2567)
 def test_supervisor_info_command() -> None:
     import os
+
     state = _make_mock_state()
     with patch.dict(os.environ, {"ONEIRIC_RUNTIME_SUPERVISOR__ENABLED": "true"}):
         result = _run_command("supervisor-info", state=state)
@@ -1276,8 +1321,11 @@ def test_load_test_command_non_json() -> None:
     )
     with patch("oneiric.cli.run_load_test", AsyncMock(return_value=mock_result)):
         from typer.testing import CliRunner
+
         runner = CliRunner()
-        result = runner.invoke(app, ["load-test", "--total", "10", "--concurrency", "2"])
+        result = runner.invoke(
+            app, ["load-test", "--total", "10", "--concurrency", "2"]
+        )
     assert result.exit_code == 0
     assert "tasks=10" in result.output
 
@@ -1287,12 +1335,18 @@ def test_manifest_pack_stdout(tmp_path) -> None:
     manifest_file = tmp_path / "manifest.yaml"
     manifest_file.write_text('source: "test"\nentries: []\n')
     from typer.testing import CliRunner
+
     runner = CliRunner()
-    result = runner.invoke(app, [
-        "manifest", "pack",
-        "--input", str(manifest_file),
-        "--stdout",
-    ])
+    result = runner.invoke(
+        app,
+        [
+            "manifest",
+            "pack",
+            "--input",
+            str(manifest_file),
+            "--stdout",
+        ],
+    )
     assert result.exit_code == 0
     assert "source" in result.output
 
@@ -1367,7 +1421,9 @@ def test_process_status_running(capsys) -> None:
     state = _make_mock_state()
     process_mgr = MagicMock()
     process_mgr.get_status.return_value = {
-        "running": True, "pid": 99, "pid_file": "/tmp/test.pid"
+        "running": True,
+        "pid": 99,
+        "pid_file": "/tmp/test.pid",
     }
     with patch("oneiric.cli.ProcessManager", return_value=process_mgr):
         result = _run_command("process-status", state=state)
@@ -1379,7 +1435,10 @@ def test_process_status_not_running_stale_pid() -> None:
     state = _make_mock_state()
     process_mgr = MagicMock()
     process_mgr.get_status.return_value = {
-        "running": False, "pid": None, "pid_file": "/tmp/test.pid", "pid_file_exists": True
+        "running": False,
+        "pid": None,
+        "pid_file": "/tmp/test.pid",
+        "pid_file_exists": True,
     }
     with patch("oneiric.cli.ProcessManager", return_value=process_mgr):
         result = _run_command("process-status", state=state)
@@ -1392,7 +1451,10 @@ def test_process_status_json() -> None:
     state = _make_mock_state()
     process_mgr = MagicMock()
     process_mgr.get_status.return_value = {
-        "running": False, "pid": None, "pid_file": "/tmp/test.pid", "pid_file_exists": False
+        "running": False,
+        "pid": None,
+        "pid_file": "/tmp/test.pid",
+        "pid_file_exists": False,
     }
     with patch("oneiric.cli.ProcessManager", return_value=process_mgr):
         result = _run_command("process-status", "--json", state=state)
@@ -1407,42 +1469,67 @@ def test_process_status_json() -> None:
 
 def test_manifest_export_bad_format(tmp_path) -> None:
     from typer.testing import CliRunner
+
     runner = CliRunner()
-    result = runner.invoke(app, [
-        "manifest", "export",
-        "--version", "1.0.0",
-        "--format", "xml",
-        "--stdout",
-    ])
-    assert result.exit_code != 0 or "yaml" in result.output.lower() or "json" in result.output.lower()
+    result = runner.invoke(
+        app,
+        [
+            "manifest",
+            "export",
+            "--version",
+            "1.0.0",
+            "--format",
+            "xml",
+            "--stdout",
+        ],
+    )
+    assert (
+        result.exit_code != 0
+        or "yaml" in result.output.lower()
+        or "json" in result.output.lower()
+    )
 
 
 def test_manifest_export_stdout_yaml() -> None:
     from typer.testing import CliRunner
+
     runner = CliRunner()
-    result = runner.invoke(app, [
-        "manifest", "export",
-        "--version", "1.0.0",
-        "--format", "yaml",
-        "--stdout",
-        "--no-adapters",
-        "--no-actions",
-    ])
+    result = runner.invoke(
+        app,
+        [
+            "manifest",
+            "export",
+            "--version",
+            "1.0.0",
+            "--format",
+            "yaml",
+            "--stdout",
+            "--no-adapters",
+            "--no-actions",
+        ],
+    )
     assert result.exit_code == 0
     assert "source" in result.output
 
 
 def test_manifest_export_stdout_json() -> None:
     from typer.testing import CliRunner
+
     runner = CliRunner()
-    result = runner.invoke(app, [
-        "manifest", "export",
-        "--version", "1.0.0",
-        "--format", "json",
-        "--stdout",
-        "--no-adapters",
-        "--no-actions",
-    ])
+    result = runner.invoke(
+        app,
+        [
+            "manifest",
+            "export",
+            "--version",
+            "1.0.0",
+            "--format",
+            "json",
+            "--stdout",
+            "--no-adapters",
+            "--no-actions",
+        ],
+    )
     assert result.exit_code == 0
     assert '"source"' in result.output
 
@@ -1454,6 +1541,7 @@ def test_manifest_export_stdout_json() -> None:
 
 def test_apply_signature_to_manifest_append_mode() -> None:
     from oneiric.cli import _apply_signature_to_manifest
+
     manifest_dict: dict = {"source": "test"}
     entry = {"signature": "sig1", "algorithm": "ed25519"}
     _apply_signature_to_manifest(manifest_dict, entry, append=True)
@@ -1463,6 +1551,7 @@ def test_apply_signature_to_manifest_append_mode() -> None:
 
 def test_apply_signature_to_manifest_existing_signatures() -> None:
     from oneiric.cli import _apply_signature_to_manifest
+
     manifest_dict: dict = {
         "source": "test",
         "signatures": [{"signature": "old", "algorithm": "ed25519"}],
@@ -1503,10 +1592,11 @@ def test_secrets_rotate_with_all() -> None:
 
 def test_shell_command_invokes_asyncio_run() -> None:
     from typer.testing import CliRunner
+
     runner = CliRunner()
     with patch("oneiric.cli.asyncio.run") as mock_run:
         mock_run.return_value = None
-        result = runner.invoke(app, ["shell"])
+        runner.invoke(app, ["shell"])
     assert mock_run.called
 
 
@@ -1517,6 +1607,7 @@ def test_shell_command_invokes_asyncio_run() -> None:
 
 def test_create_signature_entry_with_key_id() -> None:
     from oneiric.cli import _create_signature_entry
+
     signing_key = MagicMock()
     signing_key.sign.return_value = b"fake-signature-bytes"
     entry = _create_signature_entry(signing_key, "canonical-content", key_id="my-key")
@@ -1526,6 +1617,7 @@ def test_create_signature_entry_with_key_id() -> None:
 
 def test_create_signature_entry_no_key_id() -> None:
     from oneiric.cli import _create_signature_entry
+
     signing_key = MagicMock()
     signing_key.sign.return_value = b"fake-signature-bytes"
     entry = _create_signature_entry(signing_key, "canonical-content", key_id=None)
@@ -1564,8 +1656,8 @@ def test_import_modules_skips_empty_strings() -> None:
 
 
 def test_build_status_record_with_shadowed_details() -> None:
+
     from oneiric.core.resolution import Candidate, CandidateSource
-    from datetime import datetime, UTC
 
     candidate = Candidate(
         domain="adapter",
@@ -1586,15 +1678,21 @@ def test_build_status_record_with_shadowed_details() -> None:
     bridge.domain = "adapter"
     bridge.settings.selections.get.return_value = "redis"
     bridge.resolver.resolve.return_value = candidate
-    bridge.activity_state.return_value = SimpleNamespace(paused=False, draining=False, note=None)
+    bridge.activity_state.return_value = SimpleNamespace(
+        paused=False, draining=False, note=None
+    )
 
     lifecycle = MagicMock()
     lifecycle.get_instance.return_value = None
     lifecycle.get_status.return_value = None
 
     record = _build_status_record(
-        bridge, lifecycle, key="cache", shadowed=1,
-        shadowed_details=[shadow], include_shadowed=True
+        bridge,
+        lifecycle,
+        key="cache",
+        shadowed=1,
+        shadowed_details=[shadow],
+        include_shadowed=True,
     )
     assert "shadowed_details" in record
     assert record["shadowed_details"][0]["provider"] == "memcache"
@@ -1662,7 +1760,9 @@ def test_handle_status_with_per_domain_and_empty_records(capsys) -> None:
     bridge.settings.selections = {}
     bridge.shadowed_candidates.return_value = []
     bridge.active_candidates.return_value = []
-    bridge.activity_state.return_value = SimpleNamespace(paused=False, draining=False, note=None)
+    bridge.activity_state.return_value = SimpleNamespace(
+        paused=False, draining=False, note=None
+    )
 
     lifecycle = MagicMock()
     lifecycle.all_statuses.return_value = []
@@ -1680,7 +1780,8 @@ def test_handle_status_with_per_domain_and_empty_records(capsys) -> None:
 
     with patch("oneiric.cli.load_remote_telemetry", return_value=remote_telemetry):
         _handle_status(
-            bridge, lifecycle,
+            bridge,
+            lifecycle,
             domain="adapter",
             key=None,
             as_json=False,
@@ -1704,7 +1805,9 @@ def test_action_invoke_non_json_output() -> None:
     async def fake_runner(*args, **kwargs):
         return "action-result"
 
-    with patch("oneiric.cli._action_invoke_runner", new=AsyncMock(return_value="action-result")):
+    with patch(
+        "oneiric.cli._action_invoke_runner", new=AsyncMock(return_value="action-result")
+    ):
         result = _run_command("action-invoke", "test.action", state=state)
     assert result.exit_code == 0
     assert "action-result" in result.output
@@ -1717,14 +1820,21 @@ def test_action_invoke_non_json_output() -> None:
 
 def test_manifest_export_includes_actions() -> None:
     from typer.testing import CliRunner
+
     runner = CliRunner()
-    result = runner.invoke(app, [
-        "manifest", "export",
-        "--version", "1.0.0",
-        "--format", "yaml",
-        "--stdout",
-        "--no-adapters",
-    ])
+    result = runner.invoke(
+        app,
+        [
+            "manifest",
+            "export",
+            "--version",
+            "1.0.0",
+            "--format",
+            "yaml",
+            "--stdout",
+            "--no-adapters",
+        ],
+    )
     assert result.exit_code == 0
 
 
@@ -1735,6 +1845,7 @@ def test_manifest_export_includes_actions() -> None:
 
 def test_main_calls_app() -> None:
     from oneiric.cli import main
+
     with patch("oneiric.cli.app") as mock_app:
         main()
     mock_app.assert_called_once()
@@ -1781,7 +1892,9 @@ def test_handle_status_with_shadowed_candidates_iterated(capsys) -> None:
     settings.remote.cache_dir = "/tmp"
     settings.remote.latency_budget_ms = None
 
-    with patch("oneiric.cli.load_remote_telemetry", return_value=MagicMock(as_dict=lambda: {})):
+    with patch(
+        "oneiric.cli.load_remote_telemetry", return_value=MagicMock(as_dict=lambda: {})
+    ):
         _handle_status(
             bridge,
             lifecycle,
@@ -1829,11 +1942,12 @@ async def test_handle_remote_sync_watch_true() -> None:
     settings = MagicMock()
     settings.remote.refresh_interval = None
 
-    with patch(
-        "oneiric.cli.sync_remote_manifest", new=AsyncMock(return_value=MagicMock())
-    ) as mock_sync, patch(
-        "oneiric.cli.remote_sync_loop", new=AsyncMock()
-    ) as mock_loop:
+    with (
+        patch(
+            "oneiric.cli.sync_remote_manifest", new=AsyncMock(return_value=MagicMock())
+        ) as mock_sync,
+        patch("oneiric.cli.remote_sync_loop", new=AsyncMock()) as mock_loop,
+    ):
         await _handle_remote_sync(
             MagicMock(),
             settings,
@@ -1900,10 +2014,11 @@ async def test_handle_orchestrate_try_block() -> None:
     mock_orchestrator.workflow_bridge = MagicMock()
     mock_orchestrator.event_bridge = MagicMock()
 
-    with patch(
-        "oneiric.cli.RuntimeOrchestrator", return_value=mock_orchestrator
-    ), patch(
-        "oneiric.cli._wait_forever", new=AsyncMock(side_effect=KeyboardInterrupt)
+    with (
+        patch("oneiric.cli.RuntimeOrchestrator", return_value=mock_orchestrator),
+        patch(
+            "oneiric.cli._wait_forever", new=AsyncMock(side_effect=KeyboardInterrupt)
+        ),
     ):
         await _handle_orchestrate(
             settings,
@@ -1933,8 +2048,9 @@ async def test_handle_orchestrate_try_block() -> None:
 
 
 def test_load_test_command_json_output() -> None:
-    from oneiric.runtime.load_testing import LoadTestResult
     from typer.testing import CliRunner
+
+    from oneiric.runtime.load_testing import LoadTestResult
 
     mock_result = LoadTestResult(
         total_tasks=10,
@@ -2052,9 +2168,11 @@ def test_shell_command_inner_body() -> None:
     # Patch asyncio.run to actually execute the inner _shell() coroutine.
     # Patch load_settings for the coroutine body, OneiricShell to avoid real shell start.
     # _run_command already patches _initialize_state so cli_root succeeds without real config.
-    with patch("oneiric.cli.asyncio.run", side_effect=run_coro), \
-         patch("oneiric.cli.load_settings", return_value=MagicMock()), \
-         patch("oneiric.shell.OneiricShell", return_value=mock_shell_instance):
+    with (
+        patch("oneiric.cli.asyncio.run", side_effect=run_coro),
+        patch("oneiric.cli.load_settings", return_value=MagicMock()),
+        patch("oneiric.shell.OneiricShell", return_value=mock_shell_instance),
+    ):
         _run_command("shell")
     mock_shell_instance.start.assert_called_once()
 
@@ -2080,16 +2198,14 @@ async def test_handle_orchestrate_with_http_server() -> None:
     mock_http_server.start = AsyncMock()
     mock_http_server.stop = AsyncMock()
 
-    with patch(
-        "oneiric.cli.RuntimeOrchestrator", return_value=mock_orchestrator
-    ), patch(
-        "oneiric.cli._wait_forever", new=AsyncMock(side_effect=KeyboardInterrupt)
-    ), patch(
-        "oneiric.cli._resolve_http_port", return_value=8080
-    ), patch(
-        "oneiric.cli.WorkflowTaskProcessor", return_value=MagicMock()
-    ), patch(
-        "oneiric.cli.SchedulerHTTPServer", return_value=mock_http_server
+    with (
+        patch("oneiric.cli.RuntimeOrchestrator", return_value=mock_orchestrator),
+        patch(
+            "oneiric.cli._wait_forever", new=AsyncMock(side_effect=KeyboardInterrupt)
+        ),
+        patch("oneiric.cli._resolve_http_port", return_value=8080),
+        patch("oneiric.cli.WorkflowTaskProcessor", return_value=MagicMock()),
+        patch("oneiric.cli.SchedulerHTTPServer", return_value=mock_http_server),
     ):
         await _handle_orchestrate(
             settings,

@@ -3,12 +3,10 @@
 These tests do NOT require coredis to be installed — they exercise all code
 paths by injecting a minimal in-memory client via the redis_client parameter.
 """
+
 from __future__ import annotations
 
-import asyncio
-import inspect
 from collections import defaultdict
-from collections.abc import Awaitable, Callable
 from typing import Any
 
 import pytest
@@ -18,7 +16,6 @@ from oneiric.adapters.queue.redis_streams import (
     RedisStreamsQueueSettings,
 )
 from oneiric.core.lifecycle import LifecycleError
-
 
 # ---------------------------------------------------------------------------
 # Minimal mock Redis client
@@ -427,7 +424,9 @@ async def test_init_from_url_when_no_client_injected(
 
 
 @pytest.mark.asyncio
-async def test_close_client_connection_awaitable_close(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_close_client_connection_awaitable_close(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_close_client_connection awaits close() when it returns a coroutine (line 138)."""
     closed: list[bool] = []
 
@@ -444,7 +443,9 @@ async def test_close_client_connection_awaitable_close(monkeypatch: pytest.Monke
 
 
 @pytest.mark.asyncio
-async def test_disconnect_pool_awaitable_disconnect(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_disconnect_pool_awaitable_disconnect(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """_disconnect_connection_pool awaits disconnect() when it returns a coroutine (line 144)."""
     disconnected: list[bool] = []
 

@@ -335,8 +335,9 @@ class TestCLICommandClosures:
         )
 
     def test_stop_command_invokes_stop_server(self):
-        from typer.testing import CliRunner
         from unittest.mock import patch
+
+        from typer.testing import CliRunner
 
         factory = self._make_factory()
         runner = CliRunner()
@@ -347,8 +348,9 @@ class TestCLICommandClosures:
         mock_stop.assert_called_once()
 
     def test_restart_command_invokes_restart_server(self):
-        from typer.testing import CliRunner
         from unittest.mock import patch
+
+        from typer.testing import CliRunner
 
         factory = self._make_factory()
         runner = CliRunner()
@@ -359,8 +361,9 @@ class TestCLICommandClosures:
         mock_restart.assert_called_once()
 
     def test_status_command_invokes_check_status(self):
-        from typer.testing import CliRunner
         from unittest.mock import patch
+
+        from typer.testing import CliRunner
 
         factory = self._make_factory()
         runner = CliRunner()
@@ -371,8 +374,9 @@ class TestCLICommandClosures:
         mock_status.assert_called_once()
 
     def test_health_command_invokes_check_health(self):
-        from typer.testing import CliRunner
         from unittest.mock import patch
+
+        from typer.testing import CliRunner
 
         factory = self._make_factory()
         runner = CliRunner()
@@ -383,8 +387,9 @@ class TestCLICommandClosures:
         mock_health.assert_called_once()
 
     def test_config_command_invokes_show_config(self):
-        from typer.testing import CliRunner
         from unittest.mock import patch
+
+        from typer.testing import CliRunner
 
         factory = self._make_factory()
         runner = CliRunner()
@@ -395,8 +400,9 @@ class TestCLICommandClosures:
         mock_config.assert_called_once()
 
     def test_start_command_invokes_start_server(self):
-        from typer.testing import CliRunner
         from unittest.mock import patch
+
+        from typer.testing import CliRunner
 
         factory = self._make_factory()
         runner = CliRunner()
