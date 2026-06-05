@@ -66,7 +66,6 @@ from oneiric.remote.models import (
     RemoteManifestEntry,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -444,7 +443,9 @@ class TestCircuitBreakerOpen:
             with pytest.raises(Exception):
                 await breaker.call(_failing)
 
-        assert breaker.is_open is True, "breaker should be open after threshold failures"
+        assert breaker.is_open is True, (
+            "breaker should be open after threshold failures"
+        )
 
         # Once open, ANY further call short-circuits with CircuitBreakerOpen.
         with pytest.raises(CircuitBreakerOpen):
@@ -498,10 +499,14 @@ class TestCircuitBreakerOpen:
             kwargs["transport"] = httpx.MockTransport(_would_succeed)
             return original_async_client(*args, **kwargs)
 
-        with patch.object(loader_module.httpx, "AsyncClient", side_effect=_mock_client_factory):
+        with patch.object(
+            loader_module.httpx, "AsyncClient", side_effect=_mock_client_factory
+        ):
             result = await sync_remote_manifest(resolver, config)
 
-        assert result is None, "open breaker must cause sync_remote_manifest to return None"
+        assert result is None, (
+            "open breaker must cause sync_remote_manifest to return None"
+        )
         assert transport_call_count == 0, (
             f"transport was called {transport_call_count} time(s) — breaker should have short-circuited"
         )
@@ -552,7 +557,9 @@ class TestCircuitBreakerOpen:
             kwargs["transport"] = httpx.MockTransport(_would_succeed)
             return original_async_client(*args, **kwargs)
 
-        with patch.object(loader_module.httpx, "AsyncClient", side_effect=_mock_client_factory):
+        with patch.object(
+            loader_module.httpx, "AsyncClient", side_effect=_mock_client_factory
+        ):
             result = await sync_remote_manifest(resolver, config)
 
         assert result is None
@@ -875,9 +882,7 @@ class TestArtifactManager:
         assert manager.allow_file_uris is False
         assert manager.allowed_file_uri_roots == []
 
-    def test_init_custom_values(
-        self, reset_remote_breakers, tmp_path: Path
-    ) -> None:
+    def test_init_custom_values(self, reset_remote_breakers, tmp_path: Path) -> None:
         cache = tmp_path / "cache"
         manager = ArtifactManager(
             str(cache),
@@ -910,9 +915,7 @@ class TestArtifactManager:
         source.write_text("hello world")
         digest = hashlib.sha256(b"hello world").hexdigest()
 
-        result = await manager.fetch(
-            uri=f"file://{source}", sha256=digest, headers={}
-        )
+        result = await manager.fetch(uri=f"file://{source}", sha256=digest, headers={})
         assert result.exists()
         assert result.read_text() == "hello world"
         assert result.name == digest
@@ -941,9 +944,7 @@ class TestArtifactManager:
         cache = tmp_path / "cache"
         manager = ArtifactManager(str(cache), allow_file_uris=False)
         with pytest.raises(ValueError, match="file URI access disabled"):
-            await manager.fetch(
-                uri="file:///tmp/anything.txt", sha256=None, headers={}
-            )
+            await manager.fetch(uri="file:///tmp/anything.txt", sha256=None, headers={})
 
     async def test_fetch_empty_uri_raises(
         self, reset_remote_breakers, tmp_path: Path
@@ -957,18 +958,14 @@ class TestArtifactManager:
     ) -> None:
         manager = ArtifactManager(str(tmp_path / "cache"))
         with pytest.raises(ValueError, match="Path traversal"):
-            await manager.fetch(
-                uri="../../etc/passwd", sha256=None, headers={}
-            )
+            await manager.fetch(uri="../../etc/passwd", sha256=None, headers={})
 
     async def test_fetch_absolute_path_raises(
         self, reset_remote_breakers, tmp_path: Path
     ) -> None:
         manager = ArtifactManager(str(tmp_path / "cache"))
         with pytest.raises(ValueError, match="Path traversal"):
-            await manager.fetch(
-                uri="/etc/passwd", sha256=None, headers={}
-            )
+            await manager.fetch(uri="/etc/passwd", sha256=None, headers={})
 
     async def test_fetch_remote_http_with_mock_transport(
         self,
@@ -1248,9 +1245,7 @@ class TestValidateEntry:
         assert result is not None
         assert "invalid factory" in result
 
-    def test_priority_out_of_bounds_returns_error(
-        self, reset_remote_breakers
-    ) -> None:
+    def test_priority_out_of_bounds_returns_error(self, reset_remote_breakers) -> None:
         e = _make_entry(priority=10000)
         result = _validate_entry(e)
         assert result is not None
@@ -1262,9 +1257,7 @@ class TestValidateEntry:
         result = _validate_entry(e)
         assert result is not None
 
-    def test_path_traversal_uri_returns_error(
-        self, reset_remote_breakers
-    ) -> None:
+    def test_path_traversal_uri_returns_error(self, reset_remote_breakers) -> None:
         e = _make_entry(uri="../evil/path")
         result = _validate_entry(e)
         assert result is not None
@@ -1300,17 +1293,13 @@ class TestParseManifest:
         with pytest.raises(ValueError, match="must be a mapping"):
             _parse_manifest("[1, 2, 3]", verify_signature=False)
 
-    def test_rejects_unsigned_when_required(
-        self, reset_remote_breakers
-    ) -> None:
+    def test_rejects_unsigned_when_required(self, reset_remote_breakers) -> None:
         cfg = RemoteSourceConfig(signature_required=True)
         text = json.dumps(_build_manifest_dict())
         with pytest.raises(ValueError, match="signature required"):
             _parse_manifest(text, signature_policy=cfg)
 
-    def test_unsigned_passes_when_not_required(
-        self, reset_remote_breakers
-    ) -> None:
+    def test_unsigned_passes_when_not_required(self, reset_remote_breakers) -> None:
         cfg = RemoteSourceConfig(signature_required=False)
         text = json.dumps(_build_manifest_dict())
         manifest = _parse_manifest(text, signature_policy=cfg)
@@ -1377,9 +1366,7 @@ class TestRemoteSourceConfigInteraction:
         assert cfg.signature_max_age_seconds is None
         assert cfg.signature_require_expiry is False
 
-    def test_circuit_breaker_settings_default(
-        self, reset_remote_breakers
-    ) -> None:
+    def test_circuit_breaker_settings_default(self, reset_remote_breakers) -> None:
         cfg = RemoteSourceConfig()
         assert cfg.circuit_breaker_threshold == 5
         assert cfg.circuit_breaker_reset == 60.0
@@ -1403,10 +1390,7 @@ class TestRemoteSourceConfigInteraction:
         )
         breaker = _breaker_for(cfg, "https://example.com/m.yaml")
         # Breaker exists with the cache_dir-derived key
-        assert (
-            f"{cache_dir}:https://example.com/m.yaml"
-            in rl._REMOTE_BREAKERS
-        )
+        assert f"{cache_dir}:https://example.com/m.yaml" in rl._REMOTE_BREAKERS
         assert breaker is not None
 
 

@@ -27,7 +27,8 @@ from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
-from hypothesis import HealthCheck, given, settings as hyp_settings
+from hypothesis import HealthCheck, given
+from hypothesis import settings as hyp_settings
 from hypothesis import strategies as st
 
 from oneiric.core.lifecycle import LifecycleError, LifecycleManager
@@ -37,7 +38,6 @@ from oneiric.domains.workflows import WorkflowBridge
 from oneiric.runtime.checkpoints import WorkflowCheckpointStore
 from oneiric.runtime.durable import WorkflowExecutionStore
 from oneiric.runtime.telemetry import RuntimeTelemetryRecorder
-
 
 # ---------------------------------------------------------------------------
 # Helpers / fakes
@@ -426,9 +426,7 @@ class TestUpdateSettings:
         first = LayerSettings(options={"queue_category": "queue.first"})
         second = LayerSettings(options={"queue_category": "queue.second"})
 
-        bridge = WorkflowBridge(
-            resolver, lifecycle_manager, first, queue_category=None
-        )
+        bridge = WorkflowBridge(resolver, lifecycle_manager, first, queue_category=None)
         bridge.update_settings(second)
         assert bridge.settings is second
 
@@ -442,9 +440,7 @@ class TestUpdateSettings:
         first = LayerSettings(options={"queue_category": "queue.first"})
         second = LayerSettings(options={"queue_category": "queue.second"})
 
-        bridge = WorkflowBridge(
-            resolver, lifecycle_manager, first, queue_category=None
-        )
+        bridge = WorkflowBridge(resolver, lifecycle_manager, first, queue_category=None)
         bridge.update_settings(second)
         assert bridge._queue_category == "queue.second"
 
@@ -671,9 +667,7 @@ class TestExecuteDag:
         lifecycle_manager: LifecycleManager,
         layer_settings,
     ) -> None:
-        _register_workflow_candidate(
-            resolver, key="no-bridge", dag={"nodes": []}
-        )
+        _register_workflow_candidate(resolver, key="no-bridge", dag={"nodes": []})
         bridge = WorkflowBridge(resolver, lifecycle_manager, layer_settings)
         # task_bridge is None
 
@@ -737,9 +731,7 @@ class TestCheckpointIntegration:
         store = WorkflowCheckpointStore(tmp_path / "ckpt.sqlite")
         store.save("ckpt-ok", {"first": "FROM_CHECKPOINT"})
 
-        _register_task_candidate(
-            resolver, key="t-second", runner=_TaskRunner("second")
-        )
+        _register_task_candidate(resolver, key="t-second", runner=_TaskRunner("second"))
         _register_workflow_candidate(
             resolver,
             key="ckpt-ok",
@@ -776,9 +768,7 @@ class TestCheckpointIntegration:
         tmp_path,
     ) -> None:
         store = WorkflowCheckpointStore(tmp_path / "ckpt.sqlite")
-        _register_task_candidate(
-            resolver, key="t-fail", runner=_AlwaysFailTaskRunner()
-        )
+        _register_task_candidate(resolver, key="t-fail", runner=_AlwaysFailTaskRunner())
         _register_workflow_candidate(
             resolver,
             key="ckpt-fail",
@@ -823,9 +813,7 @@ class TestCheckpointIntegration:
         tmp_path,
     ) -> None:
         store = WorkflowCheckpointStore(tmp_path / "ckpt.sqlite")
-        _register_task_candidate(
-            resolver, key="t-fail", runner=_AlwaysFailTaskRunner()
-        )
+        _register_task_candidate(resolver, key="t-fail", runner=_AlwaysFailTaskRunner())
         _register_workflow_candidate(
             resolver,
             key="ckpt-disabled",
@@ -1077,9 +1065,7 @@ class TestEnqueuePayload:
             queue_category=None,
         )
 
-        result = await bridge.enqueue_workflow(
-            "over-meta", queue_category="queue.arg"
-        )
+        result = await bridge.enqueue_workflow("over-meta", queue_category="queue.arg")
 
         assert result["queue_category"] == "queue.arg"
         assert queue_bridge.calls == [("queue.arg", "meta-p")]
@@ -1195,9 +1181,7 @@ class TestWorkflowBridgeIntegration:
             task_bridge=task_bridge,
         )
 
-        result = await bridge.execute_dag(
-            "full-wf", context={"tenant": "default"}
-        )
+        result = await bridge.execute_dag("full-wf", context={"tenant": "default"})
 
         results = result["results"]
         assert results["extract"] == "EXTRACT"
@@ -1227,9 +1211,7 @@ class TestWorkflowBridgeIntegration:
             queue_category=None,
         )
 
-        result = await bridge.enqueue_workflow(
-            "enqueue-wf", context={"id": 42}
-        )
+        result = await bridge.enqueue_workflow("enqueue-wf", context={"id": 42})
 
         assert result["queue_category"] == "queue.cloud"
         assert result["queue_provider"] == "pubsub"

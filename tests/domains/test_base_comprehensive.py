@@ -17,7 +17,8 @@ import asyncio
 import threading
 from typing import Any
 
-from hypothesis import HealthCheck, given, settings as hyp_settings
+from hypothesis import HealthCheck, given
+from hypothesis import settings as hyp_settings
 from hypothesis import strategies as st
 from pydantic import BaseModel
 
@@ -27,7 +28,6 @@ from oneiric.core.resolution import Candidate, CandidateSource, Resolver
 from oneiric.domains.base import DomainBridge, DomainHandle
 from oneiric.runtime.activity import DomainActivity, DomainActivityStore
 from oneiric.runtime.supervisor import ServiceSupervisor
-
 
 # ---------------------------------------------------------------------------
 # Helpers / fakes
@@ -97,7 +97,9 @@ def _register_factory(
             domain=domain,
             key=key,
             provider=provider,
-            factory=factory if factory is not None else (lambda: _StubInstance(provider)),
+            factory=factory
+            if factory is not None
+            else (lambda: _StubInstance(provider)),
             priority=priority,
             source=CandidateSource.MANUAL,
             metadata=metadata if metadata is not None else {"version": "1.0"},
@@ -154,10 +156,20 @@ class TestDomainHandle:
         model_settings = _ProviderSettings(host="h", port=1, timeout=2)
         raw_settings = {"host": "h"}
         m = DomainHandle(
-            domain="d", key="k", provider="p", instance=object(), metadata={}, settings=model_settings
+            domain="d",
+            key="k",
+            provider="p",
+            instance=object(),
+            metadata={},
+            settings=model_settings,
         )
         r = DomainHandle(
-            domain="d", key="k", provider="p", instance=object(), metadata={}, settings=raw_settings
+            domain="d",
+            key="k",
+            provider="p",
+            instance=object(),
+            metadata={},
+            settings=raw_settings,
         )
         assert m.settings is model_settings
         assert r.settings is raw_settings
@@ -229,9 +241,7 @@ class TestDomainBridgeInit:
         lifecycle_manager: LifecycleManager,
         layer_settings: LayerSettings,
     ) -> None:
-        bridge = _make_bridge(
-            resolver, lifecycle_manager, settings=layer_settings
-        )
+        bridge = _make_bridge(resolver, lifecycle_manager, settings=layer_settings)
         assert bridge._supervisor is None
         assert bridge._supervisor_unsubscribe is None
 
@@ -258,7 +268,9 @@ class TestDomainBridgeSettings:
         lifecycle_manager: LifecycleManager,
     ) -> None:
         layer = LayerSettings(
-            provider_settings={"fastapi": {"host": "api.example.com", "port": 443, "timeout": 60}}
+            provider_settings={
+                "fastapi": {"host": "api.example.com", "port": 443, "timeout": 60}
+            }
         )
         bridge = _make_bridge(
             resolver, lifecycle_manager, settings=layer, domain="service"
@@ -279,7 +291,9 @@ class TestDomainBridgeSettings:
         layer = LayerSettings(
             provider_settings={"redis": {"host": "cache", "port": 6379}}
         )
-        bridge = _make_bridge(resolver, lifecycle_manager, settings=layer, domain="adapter")
+        bridge = _make_bridge(
+            resolver, lifecycle_manager, settings=layer, domain="adapter"
+        )
         raw = bridge.get_settings("redis")
         assert raw == {"host": "cache", "port": 6379}
         assert isinstance(raw, dict)
@@ -333,9 +347,7 @@ class TestUse:
         bridge = _make_bridge(
             resolver, lifecycle_manager, settings=layer_settings, domain="service"
         )
-        _register_factory(
-            resolver, domain="service", key="api", provider="fastapi"
-        )
+        _register_factory(resolver, domain="service", key="api", provider="fastapi")
 
         handle = await bridge.use("api")
 
@@ -356,9 +368,7 @@ class TestUse:
         bridge = _make_bridge(
             resolver, lifecycle_manager, settings=layer_settings, domain="service"
         )
-        _register_factory(
-            resolver, domain="service", key="api", provider="fastapi"
-        )
+        _register_factory(resolver, domain="service", key="api", provider="fastapi")
 
         call_log: list[str] = []
         original_swap = lifecycle_manager.swap
@@ -404,7 +414,9 @@ class TestUse:
         bridge = _make_bridge(
             resolver, lifecycle_manager, settings=layer_settings, domain="service"
         )
-        with __import__("pytest").raises(LifecycleError, match="No candidate found for service:missing"):
+        with __import__("pytest").raises(
+            LifecycleError, match="No candidate found for service:missing"
+        ):
             await bridge.use("missing")
 
     async def test_missing_provider_raises(
@@ -521,12 +533,8 @@ class TestActiveAndShadowedCandidates:
         bridge = _make_bridge(
             resolver, lifecycle_manager, settings=layer_settings, domain="service"
         )
-        _register_factory(
-            resolver, domain="service", key="api", provider="alpha"
-        )
-        _register_factory(
-            resolver, domain="adapter", key="cache", provider="redis"
-        )
+        _register_factory(resolver, domain="service", key="api", provider="alpha")
+        _register_factory(resolver, domain="adapter", key="cache", provider="redis")
 
         active = bridge.active_candidates()
         domains = {candidate.domain for candidate in active}
@@ -542,7 +550,9 @@ class TestActiveAndShadowedCandidates:
         shadow_resolver = Resolver(
             ResolverSettings(selections={"service": {"api": "alpha"}})
         )
-        lifecycle = LifecycleManager(shadow_resolver, status_snapshot_path=str(temp_dir / "lifecycle.json"))
+        lifecycle = LifecycleManager(
+            shadow_resolver, status_snapshot_path=str(temp_dir / "lifecycle.json")
+        )
         bridge = _make_bridge(
             shadow_resolver, lifecycle, settings=LayerSettings(), domain="service"
         )
@@ -578,9 +588,7 @@ class TestExplain:
         bridge = _make_bridge(
             resolver, lifecycle_manager, settings=layer_settings, domain="service"
         )
-        _register_factory(
-            resolver, domain="service", key="api", provider="alpha"
-        )
+        _register_factory(resolver, domain="service", key="api", provider="alpha")
 
         result = bridge.explain("api")
         assert isinstance(result, dict)
@@ -600,9 +608,7 @@ class TestExplain:
         bridge = _make_bridge(
             resolver, lifecycle_manager, settings=layer_settings, domain="service"
         )
-        _register_factory(
-            resolver, domain="service", key="api", provider="alpha"
-        )
+        _register_factory(resolver, domain="service", key="api", provider="alpha")
         result = bridge.explain("api", capabilities=["x"], require_all=False)
         assert isinstance(result, dict)
         assert result["key"] == "api"
@@ -848,9 +854,7 @@ class TestActivitySnapshot:
     ) -> None:
         # Pre-populate the activity store with one key.
         store = _activity_store(tmp_path)
-        store.set(
-            "service", "persisted", DomainActivity(paused=True, note="persisted")
-        )
+        store.set("service", "persisted", DomainActivity(paused=True, note="persisted"))
         bridge = _make_bridge(
             resolver,
             lifecycle_manager,
@@ -892,9 +896,7 @@ class TestSupervisorListener:
             supervisor=supervisor,
         )
 
-        store.set(
-            "service", "api", DomainActivity(paused=True, note="maint")
-        )
+        store.set("service", "api", DomainActivity(paused=True, note="maint"))
         supervisor.refresh()
 
         cached = bridge._activity.get("api")
@@ -919,9 +921,7 @@ class TestSupervisorListener:
             supervisor=supervisor,
         )
 
-        store.set(
-            "other", "api", DomainActivity(paused=True, note="other")
-        )
+        store.set("other", "api", DomainActivity(paused=True, note="other"))
         supervisor.refresh()
 
         assert "api" not in bridge._activity
@@ -968,9 +968,7 @@ class TestEnsureActivityAllowed:
         bridge = _make_bridge(
             resolver, lifecycle_manager, settings=layer_settings, domain="service"
         )
-        _register_factory(
-            resolver, domain="service", key="api", provider="alpha"
-        )
+        _register_factory(resolver, domain="service", key="api", provider="alpha")
         bridge.set_paused("api", True, note="maint")
 
         with __import__("pytest").raises(LifecycleError, match="service:api is paused"):
@@ -985,12 +983,12 @@ class TestEnsureActivityAllowed:
         bridge = _make_bridge(
             resolver, lifecycle_manager, settings=layer_settings, domain="service"
         )
-        _register_factory(
-            resolver, domain="service", key="api", provider="alpha"
-        )
+        _register_factory(resolver, domain="service", key="api", provider="alpha")
         bridge.set_draining("api", True, note="drain")
 
-        with __import__("pytest").raises(LifecycleError, match="service:api is draining"):
+        with __import__("pytest").raises(
+            LifecycleError, match="service:api is draining"
+        ):
             await bridge.use("api")
 
     async def test_use_raises_when_both_paused_and_draining(
@@ -1002,9 +1000,7 @@ class TestEnsureActivityAllowed:
         bridge = _make_bridge(
             resolver, lifecycle_manager, settings=layer_settings, domain="service"
         )
-        _register_factory(
-            resolver, domain="service", key="api", provider="alpha"
-        )
+        _register_factory(resolver, domain="service", key="api", provider="alpha")
         bridge.set_paused("api", True, note="maint")
         bridge.set_draining("api", True, note="drain")
 
@@ -1022,9 +1018,7 @@ class TestEnsureActivityAllowed:
         bridge = _make_bridge(
             resolver, lifecycle_manager, settings=layer_settings, domain="service"
         )
-        _register_factory(
-            resolver, domain="service", key="api", provider="alpha"
-        )
+        _register_factory(resolver, domain="service", key="api", provider="alpha")
         handle = await bridge.use("api")
         assert handle.provider == "alpha"
 
@@ -1116,9 +1110,7 @@ class TestIntegration:
         bridge = _make_bridge(
             resolver, lifecycle_manager, settings=layer_settings, domain="adapter"
         )
-        _register_factory(
-            resolver, domain="adapter", key="cache", provider="redis"
-        )
+        _register_factory(resolver, domain="adapter", key="cache", provider="redis")
         bridge.set_paused("cache", True, note="freeze")
 
         with __import__("pytest").raises(
@@ -1158,9 +1150,7 @@ class TestIntegration:
         tmp_path: Any,
     ) -> None:
         store = _activity_store(tmp_path)
-        store.set(
-            "service", "api", DomainActivity(paused=True, note="from-store")
-        )
+        store.set("service", "api", DomainActivity(paused=True, note="from-store"))
         bridge = _make_bridge(
             resolver,
             lifecycle_manager,
@@ -1219,7 +1209,9 @@ class TestThreadSafety:
         lifecycle_manager: LifecycleManager,
         layer_settings: LayerSettings,
     ) -> None:
-        layer = LayerSettings(provider_settings={"fastapi": {"host": "h", "port": 1, "timeout": 1}})
+        layer = LayerSettings(
+            provider_settings={"fastapi": {"host": "h", "port": 1, "timeout": 1}}
+        )
         bridge = _make_bridge(resolver, lifecycle_manager, settings=layer)
         bridge.register_settings_model("fastapi", _ProviderSettings)
 

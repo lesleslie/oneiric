@@ -1,2 +1,6 @@
 [codespell]
-ignore-words-list = efine
+# Whitelist:
+#   - efine: domain term used in tests/docs.
+#   - Nd, Lu, Ll, Lt, Mn, Mc, Lo, Po, Pc, Pd, Ps, Pe, Pi, Pf, Sc, Sm, Sk, So, Zs, Zl, Zp:
+#     Unicode general-category codes used in hypothesis.strategies.characters().
+ignore-words-list = efine,Nd,Lu,Ll,Lt,Mn,Mc,Lo,Po,Pc,Pd,Ps,Pe,Pi,Pf,Sc,Sm,Sk,So,Zs,Zl,Zp

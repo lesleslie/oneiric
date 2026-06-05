@@ -6,7 +6,7 @@ import asyncio
 import re
 import uuid
 from collections.abc import Awaitable, Callable
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any
 
 from hypothesis import given, settings
@@ -61,15 +61,11 @@ class TestCreateEventEnvelope:
         assert parsed.utcoffset().total_seconds() == 0  # type: ignore[union-attr]
 
     def test_correlation_id_added_when_supplied(self) -> None:
-        envelope = create_event_envelope(
-            "t", {}, source="s", correlation_id="corr-1"
-        )
+        envelope = create_event_envelope("t", {}, source="s", correlation_id="corr-1")
         assert envelope.headers["correlation_id"] == "corr-1"
 
     def test_causation_id_added_when_supplied(self) -> None:
-        envelope = create_event_envelope(
-            "t", {}, source="s", causation_id="cause-1"
-        )
+        envelope = create_event_envelope("t", {}, source="s", causation_id="cause-1")
         assert envelope.headers["causation_id"] == "cause-1"
 
     def test_correlation_id_absent_by_default(self) -> None:
@@ -112,37 +108,27 @@ class TestCreateEventEnvelope:
 
 class TestEventFilter:
     def test_equals_matches_scalar(self) -> None:
-        envelope = EventEnvelope(
-            topic="t", payload={"status": "ok"}, headers={}
-        )
+        envelope = EventEnvelope(topic="t", payload={"status": "ok"}, headers={})
         f = EventFilter(path="payload.status", equals="ok")
         assert f.matches(envelope) is True
 
     def test_equals_does_not_match_different_value(self) -> None:
-        envelope = EventEnvelope(
-            topic="t", payload={"status": "ok"}, headers={}
-        )
+        envelope = EventEnvelope(topic="t", payload={"status": "ok"}, headers={})
         f = EventFilter(path="payload.status", equals="missing")
         assert f.matches(envelope) is False
 
     def test_any_of_matches_when_value_in_list(self) -> None:
-        envelope = EventEnvelope(
-            topic="t", payload={"status": "ok"}, headers={}
-        )
+        envelope = EventEnvelope(topic="t", payload={"status": "ok"}, headers={})
         f = EventFilter(path="payload.status", any_of=("ok", "pending"))
         assert f.matches(envelope) is True
 
     def test_any_of_does_not_match_when_value_absent(self) -> None:
-        envelope = EventEnvelope(
-            topic="t", payload={"status": "ok"}, headers={}
-        )
+        envelope = EventEnvelope(topic="t", payload={"status": "ok"}, headers={})
         f = EventFilter(path="payload.status", any_of=("missing",))
         assert f.matches(envelope) is False
 
     def test_exists_true_matches_when_path_present(self) -> None:
-        envelope = EventEnvelope(
-            topic="t", payload={"status": "ok"}, headers={}
-        )
+        envelope = EventEnvelope(topic="t", payload={"status": "ok"}, headers={})
         f = EventFilter(path="payload.status", exists=True)
         assert f.matches(envelope) is True
 
@@ -152,9 +138,7 @@ class TestEventFilter:
         assert f.matches(envelope) is False
 
     def test_exists_false_does_not_match_when_path_present(self) -> None:
-        envelope = EventEnvelope(
-            topic="t", payload={"status": "ok"}, headers={}
-        )
+        envelope = EventEnvelope(topic="t", payload={"status": "ok"}, headers={})
         f = EventFilter(path="payload.status", exists=False)
         assert f.matches(envelope) is False
 
@@ -164,16 +148,12 @@ class TestEventFilter:
         assert f.matches(envelope) is True
 
     def test_path_resolves_payload(self) -> None:
-        envelope = EventEnvelope(
-            topic="t", payload={"k": "v"}, headers={}
-        )
+        envelope = EventEnvelope(topic="t", payload={"k": "v"}, headers={})
         f = EventFilter(path="payload.k", equals="v")
         assert f.matches(envelope) is True
 
     def test_path_resolves_headers(self) -> None:
-        envelope = EventEnvelope(
-            topic="t", payload={}, headers={"tenant": "alpha"}
-        )
+        envelope = EventEnvelope(topic="t", payload={}, headers={"tenant": "alpha"})
         f = EventFilter(path="headers.tenant", equals="alpha")
         assert f.matches(envelope) is True
 
@@ -192,9 +172,7 @@ class TestEventFilter:
         assert f.matches(envelope) is False
 
     def test_matches_is_pure_idempotent(self) -> None:
-        envelope = EventEnvelope(
-            topic="t", payload={"status": "ok"}, headers={}
-        )
+        envelope = EventEnvelope(topic="t", payload={"status": "ok"}, headers={})
         f = EventFilter(path="payload.status", equals="ok")
         # Calling twice yields the same outcome
         assert f.matches(envelope) == f.matches(envelope)
@@ -255,9 +233,7 @@ class TestParseEventFilters:
 
     def test_one_of_alias_accepted(self) -> None:
         # 'one_of' is an alias for 'any_of'
-        filters = parse_event_filters(
-            [{"path": "payload.x", "one_of": ["a", "b"]}]
-        )
+        filters = parse_event_filters([{"path": "payload.x", "one_of": ["a", "b"]}])
         assert len(filters) == 1
         assert filters[0].any_of == ("a", "b")
 
@@ -269,9 +245,7 @@ class TestParseEventFilters:
 
     def test_scalar_any_of_wrapped_in_tuple(self) -> None:
         # A non-sequence value passed as any_of gets wrapped
-        filters = parse_event_filters(
-            [{"path": "payload.x", "any_of": "ok"}]
-        )
+        filters = parse_event_filters([{"path": "payload.x", "any_of": "ok"}])
         assert len(filters) == 1
         assert filters[0].any_of == ("ok",)
 
@@ -330,16 +304,9 @@ class TestEventHandler:
 
     def test_topics_set_only_matches_listed(self) -> None:
         h = EventHandler(name="h", callback=_noop, topics=("a", "b"))
-        assert (
-            h.accepts(EventEnvelope(topic="a", payload={}, headers={})) is True
-        )
-        assert (
-            h.accepts(EventEnvelope(topic="b", payload={}, headers={})) is True
-        )
-        assert (
-            h.accepts(EventEnvelope(topic="c", payload={}, headers={}))
-            is False
-        )
+        assert h.accepts(EventEnvelope(topic="a", payload={}, headers={})) is True
+        assert h.accepts(EventEnvelope(topic="b", payload={}, headers={})) is True
+        assert h.accepts(EventEnvelope(topic="c", payload={}, headers={})) is False
 
     def test_max_concurrency_default(self) -> None:
         h = EventHandler(name="h", callback=_noop)
@@ -355,12 +322,8 @@ class TestEventHandler:
 
     def test_accepts_true_when_topic_and_filters_match(self) -> None:
         f = EventFilter(path="payload.status", equals="ok")
-        h = EventHandler(
-            name="h", callback=_noop, topics=("a",), filters=(f,)
-        )
-        envelope = EventEnvelope(
-            topic="a", payload={"status": "ok"}, headers={}
-        )
+        h = EventHandler(name="h", callback=_noop, topics=("a",), filters=(f,))
+        envelope = EventEnvelope(topic="a", payload={"status": "ok"}, headers={})
         assert h.accepts(envelope) is True
 
     def test_accepts_false_when_topic_mismatches(self) -> None:
@@ -370,12 +333,8 @@ class TestEventHandler:
 
     def test_accepts_false_when_filter_mismatches(self) -> None:
         f = EventFilter(path="payload.status", equals="ok")
-        h = EventHandler(
-            name="h", callback=_noop, topics=("a",), filters=(f,)
-        )
-        envelope = EventEnvelope(
-            topic="a", payload={"status": "missing"}, headers={}
-        )
+        h = EventHandler(name="h", callback=_noop, topics=("a",), filters=(f,))
+        envelope = EventEnvelope(topic="a", payload={"status": "missing"}, headers={})
         assert h.accepts(envelope) is False
 
 
@@ -450,9 +409,7 @@ async def test_dispatcher_topic_filtering() -> None:
             EventHandler(
                 name="b-handler", callback=_async_cb(calls, "b"), topics=("b",)
             ),
-            EventHandler(
-                name="all", callback=_async_cb(calls, "all"), topics=None
-            ),
+            EventHandler(name="all", callback=_async_cb(calls, "all"), topics=None),
         ]
     )
     envelope = EventEnvelope(topic="a", payload={}, headers={})
@@ -471,24 +428,18 @@ async def test_dispatcher_filter_matching() -> None:
                 callback=_async_cb(calls, "only-ok"),
                 filters=(f,),
             ),
-            EventHandler(
-                name="no-filter", callback=_async_cb(calls, "no-filter")
-            ),
+            EventHandler(name="no-filter", callback=_async_cb(calls, "no-filter")),
         ]
     )
     # Matching envelope — both handlers run
-    matching = EventEnvelope(
-        topic="t", payload={"status": "ok"}, headers={}
-    )
+    matching = EventEnvelope(topic="t", payload={"status": "ok"}, headers={})
     results = await dispatcher.dispatch(matching)
     assert sorted(r.handler for r in results) == ["no-filter", "only-ok"]
 
     # Reset recorder
     calls.clear()
     # Non-matching envelope — only the unfiltered handler runs
-    non_matching = EventEnvelope(
-        topic="t", payload={"status": "missing"}, headers={}
-    )
+    non_matching = EventEnvelope(topic="t", payload={"status": "missing"}, headers={})
     results = await dispatcher.dispatch(non_matching)
     assert [r.handler for r in results] == ["no-filter"]
 
@@ -497,9 +448,7 @@ async def test_dispatcher_handler_raising_surfaces_failure() -> None:
     async def failing_cb(_envelope: EventEnvelope) -> None:
         raise ValueError("boom")
 
-    dispatcher = EventDispatcher(
-        [EventHandler(name="bad", callback=failing_cb)]
-    )
+    dispatcher = EventDispatcher([EventHandler(name="bad", callback=failing_cb)])
     envelope = EventEnvelope(topic="t", payload={}, headers={})
     results = await dispatcher.dispatch(envelope)
     assert len(results) == 1
@@ -579,9 +528,7 @@ async def test_dispatcher_handlers_sorted_by_priority_desc_after_init() -> None:
 
 
 async def test_dispatcher_handlers_sorted_after_register() -> None:
-    dispatcher = EventDispatcher(
-        [EventHandler(name="low", callback=_noop, priority=1)]
-    )
+    dispatcher = EventDispatcher([EventHandler(name="low", callback=_noop, priority=1)])
     dispatcher.register(EventHandler(name="highest", callback=_noop, priority=20))
     dispatcher.register(EventHandler(name="mid", callback=_noop, priority=5))
     ordered = dispatcher.handlers()
@@ -670,9 +617,7 @@ class TestHandlerResult:
 
 
 class TestDispatcherFromResolverIntegration:
-    async def test_dispatcher_handlers_built_from_resolver(
-        self, resolver
-    ) -> None:
+    async def test_dispatcher_handlers_built_from_resolver(self, resolver) -> None:
         """Register 2-3 event-handler-shaped candidates on the resolver, build
         an EventDispatcher from them, and confirm dispatch fans out and
         filters apply correctly."""
@@ -796,9 +741,7 @@ def test_filter_path_parser_idempotent(path: str) -> None:
 
 
 @given(
-    filter_path=st.sampled_from(
-        ["headers.h_a", "headers.h_b", "headers.h_c"]
-    ),
+    filter_path=st.sampled_from(["headers.h_a", "headers.h_b", "headers.h_c"]),
     value=st.text(
         alphabet=st.characters(
             whitelist_categories=("L", "N"),

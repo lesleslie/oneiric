@@ -14,7 +14,6 @@ Style template: ``tests/unit/test_core_resolution.py`` (class-based, typed).
 from __future__ import annotations
 
 import inspect
-from collections.abc import Awaitable, Callable
 from typing import Any
 
 import networkx as nx
@@ -22,19 +21,17 @@ import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
+from oneiric.runtime.checkpoints import WorkflowCheckpointStore
 from oneiric.runtime.dag import (
     DAGExecutionError,
     DAGExecutionHooks,
     DAGRunResult,
     DAGTask,
-    HookCallable,
     TaskCallable,
     build_graph,
     execute_dag,
     plan_levels,
 )
-from oneiric.runtime.checkpoints import WorkflowCheckpointStore
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -107,7 +104,9 @@ class TestDAGTask:
 
     def test_retry_policy_is_dict_or_none(self) -> None:
         assert DAGTask(key="a").retry_policy is None
-        assert isinstance(DAGTask(key="b", retry_policy={"attempts": 2}).retry_policy, dict)
+        assert isinstance(
+            DAGTask(key="b", retry_policy={"attempts": 2}).retry_policy, dict
+        )
 
     def test_runner_is_async_callable(self) -> None:
         runner = _async_value("v")
@@ -440,9 +439,15 @@ class TestExecuteDagHooks:
         assert events[-1][0] == "on_run_complete"
         # on_node_start fires before on_node_complete for the same key.
         for key in ("a", "b"):
-            starts = [i for i, (name, payload) in enumerate(events) if name == "on_node_start" and payload == key]
+            starts = [
+                i
+                for i, (name, payload) in enumerate(events)
+                if name == "on_node_start" and payload == key
+            ]
             completes = [
-                i for i, (name, payload) in enumerate(events) if name == "on_node_complete" and payload == key
+                i
+                for i, (name, payload) in enumerate(events)
+                if name == "on_node_complete" and payload == key
             ]
             assert starts and completes
             assert starts[0] < completes[0]
@@ -456,9 +461,7 @@ class TestExecuteDagHooks:
         async def _async_hook(**_kwargs: Any) -> None:
             events.append("async")
 
-        hooks = DAGExecutionHooks(
-            on_run_start=_async_hook, on_run_complete=_sync_hook
-        )
+        hooks = DAGExecutionHooks(on_run_start=_async_hook, on_run_complete=_sync_hook)
         graph = build_graph([DAGTask(key="a", runner=_async_value(1))])
         await execute_dag(graph, workflow_key="wf-mixed", hooks=hooks)
 
@@ -625,9 +628,7 @@ class TestCheckpointIntegration:
         checkpoint_store.save("wf-checkpoint", {"one": 10, "one__attempts": 1})
         checkpoint = checkpoint_store.load("wf-checkpoint")
 
-        await execute_dag(
-            graph, workflow_key="wf-checkpoint", checkpoint=checkpoint
-        )
+        await execute_dag(graph, workflow_key="wf-checkpoint", checkpoint=checkpoint)
         # execute_dag mutates the in-memory mapping; persist it back so we
         # can verify the store reflects every node's completion.
         checkpoint_store.save("wf-checkpoint", checkpoint)

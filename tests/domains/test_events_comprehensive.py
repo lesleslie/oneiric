@@ -50,9 +50,7 @@ def _make_bridge(
             lifecycle = _make_lifecycle(resolver, tmp_path)
     if settings is None:
         settings = LayerSettings()
-    return EventBridge(
-        resolver, lifecycle, settings, telemetry=telemetry
-    )
+    return EventBridge(resolver, lifecycle, settings, telemetry=telemetry)
 
 
 class _RecordingHandler:
@@ -794,9 +792,7 @@ class TestBuildHandlerMissingHandle:
             return_value=SimpleNamespace(instance=object())
         )
         with pytest.raises(LifecycleError, match="missing-handle-method"):
-            await handler.callback(
-                create_event_envelope("t.broken", {}, source="test")
-            )
+            await handler.callback(create_event_envelope("t.broken", {}, source="test"))
 
     async def test_emit_with_only_missing_handle_handler_returns_failure_result(
         self,
@@ -853,7 +849,7 @@ class TestIntegrationScenarios:
         assert results[0].success is True
 
     async def test_dummy_event_handler_fixture(self, dummy_event_handler) -> None:
-        bridge = _make_bridge()
+        _make_bridge()
         # Confirm fixture satisfies the EventHandlerProtocol surface
         assert hasattr(dummy_event_handler, "handle")
         assert callable(dummy_event_handler.handle)

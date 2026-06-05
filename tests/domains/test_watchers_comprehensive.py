@@ -22,7 +22,6 @@ from oneiric.domains.watchers import (
 )
 from oneiric.runtime.watchers import SelectionWatcher
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -332,9 +331,7 @@ class TestWatcherIntegration:
             loader_calls["n"] += 1
             return OneiricSettings()
 
-        watcher = EventConfigWatcher(
-            bridge, settings_loader=_loader, poll_interval=1.0
-        )
+        watcher = EventConfigWatcher(bridge, settings_loader=_loader, poll_interval=1.0)
         # Constructor calls the loader once for initial state, plus each tick.
         await watcher.run_once()
         assert loader_calls["n"] == 2

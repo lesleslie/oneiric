@@ -33,7 +33,6 @@ from oneiric.core.resolution import (
     register_pkg,
 )
 
-
 # ---------------------------------------------------------------------------
 # CandidateSource enum
 # ---------------------------------------------------------------------------
@@ -152,9 +151,7 @@ class TestCandidate:
             calls.append(True)
             return True
 
-        c = Candidate(
-            domain="adapter", key="cache", factory=lambda: None, health=hc
-        )
+        c = Candidate(domain="adapter", key="cache", factory=lambda: None, health=hc)
         # Invoke the stored health check directly
         assert c.health is not None
         result = c.health()
@@ -292,9 +289,7 @@ class TestResolutionExplanation:
         c1 = self._make_candidate("redis")
         c2 = self._make_candidate("memcached")
         r1 = CandidateRank(candidate=c1, score=(10, 0, 0, 0), reasons=[], selected=True)
-        r2 = CandidateRank(
-            candidate=c2, score=(5, 0, 0, 0), reasons=[], selected=False
-        )
+        r2 = CandidateRank(candidate=c2, score=(5, 0, 0, 0), reasons=[], selected=False)
         explanation = ResolutionExplanation(
             domain="adapter", key="cache", ordered=[r1, r2]
         )
@@ -306,18 +301,14 @@ class TestResolutionExplanation:
         r1 = CandidateRank(
             candidate=c1, score=(10, 0, 0, 0), reasons=[], selected=False
         )
-        r2 = CandidateRank(
-            candidate=c2, score=(5, 0, 0, 0), reasons=[], selected=False
-        )
+        r2 = CandidateRank(candidate=c2, score=(5, 0, 0, 0), reasons=[], selected=False)
         explanation = ResolutionExplanation(
             domain="adapter", key="cache", ordered=[r1, r2]
         )
         assert explanation.winner is None
 
     def test_winner_none_when_empty(self) -> None:
-        explanation = ResolutionExplanation(
-            domain="adapter", key="cache", ordered=[]
-        )
+        explanation = ResolutionExplanation(domain="adapter", key="cache", ordered=[])
         assert explanation.winner is None
 
     def test_as_dict_is_json_serialisable(self) -> None:
@@ -481,9 +472,7 @@ class TestCandidateRegistry:
         shadowed_providers = sorted(c.provider for c in shadowed)
         assert shadowed_providers == ["redis"]
         # Partition: every registered candidate is in exactly one bucket
-        all_keys = (
-            [("adapter", "cache"), ("adapter", "cache"), ("adapter", "queue")]
-        )
+        all_keys = [("adapter", "cache"), ("adapter", "cache"), ("adapter", "queue")]
         assert len(active) + len(shadowed) == len(all_keys)
 
     def test_resolve_returns_highest_priority(self) -> None:
@@ -555,9 +544,7 @@ class TestCandidateRegistry:
             )
         )
         # require_all=True: "full" is the only one matching both
-        resolved = registry.resolve(
-            "adapter", "cache", capabilities=["read", "write"]
-        )
+        resolved = registry.resolve("adapter", "cache", capabilities=["read", "write"])
         assert resolved is not None
         assert resolved.provider == "full"
 
@@ -662,9 +649,7 @@ class TestCandidateRegistry:
                     )
                 )
 
-        threads = [
-            threading.Thread(target=worker, args=(t,)) for t in range(n_threads)
-        ]
+        threads = [threading.Thread(target=worker, args=(t,)) for t in range(n_threads)]
         for t in threads:
             t.start()
         for t in threads:
@@ -818,9 +803,7 @@ class TestPriorityInference:
         assert infer_priority("unknown", None) == 0
         assert infer_priority(None, "/no/hints/here.py") == 0
 
-    def test_path_hints_yield_positive_priority(
-        self, monkeypatch: Any
-    ) -> None:
+    def test_path_hints_yield_positive_priority(self, monkeypatch: Any) -> None:
         monkeypatch.delenv(STACK_ORDER_ENV, raising=False)
         for marker, value in PATH_PRIORITY_HINTS:
             # Use a 2-part path so depth penalty is min(2, 10) = 2
@@ -916,9 +899,7 @@ class TestRegisterPkg:
         assert resolved.metadata["path"] == "/project/myapp"
         assert resolved.metadata["version"] == "1.0"
 
-    def test_explicit_priority_overrides_inferred(
-        self, monkeypatch: Any
-    ) -> None:
+    def test_explicit_priority_overrides_inferred(self, monkeypatch: Any) -> None:
         monkeypatch.setenv(STACK_ORDER_ENV, "myapp:99")
         registry = CandidateRegistry()
         register_pkg(
@@ -1040,9 +1021,7 @@ class TestIntegrationScenarios:
         assert resolved is not None
         assert resolved.provider == "memcached"
 
-    def test_no_re_register_means_shrinking_active(
-        self, resolver: Resolver
-    ) -> None:
+    def test_no_re_register_means_shrinking_active(self, resolver: Resolver) -> None:
         # Register two candidates for the same key — only the higher-priority
         # one is in list_active. Without an unregister method we can verify
         # the count semantics by registering on a fresh resolver.
@@ -1092,12 +1071,8 @@ class TestIntegrationScenarios:
 
 class TestPropertyInvariants:
     @given(
-        domain=st.text(
-            min_size=1, max_size=20, alphabet="abcdefghijklmnopqrstuvwxyz"
-        ),
-        key=st.text(
-            min_size=1, max_size=20, alphabet="abcdefghijklmnopqrstuvwxyz_-"
-        ),
+        domain=st.text(min_size=1, max_size=20, alphabet="abcdefghijklmnopqrstuvwxyz"),
+        key=st.text(min_size=1, max_size=20, alphabet="abcdefghijklmnopqrstuvwxyz_-"),
         provider=st.text(
             min_size=1, max_size=20, alphabet="abcdefghijklmnopqrstuvwxyz"
         ),

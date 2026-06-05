@@ -31,7 +31,6 @@ from oneiric.remote.models import (
     RemoteManifestEntry,
 )
 
-
 # ---------------------------------------------------------------------------
 # CapabilitySecurityProfile
 # ---------------------------------------------------------------------------
@@ -510,7 +509,9 @@ class TestRemoteManifest:
 
     def test_multi_entry(self) -> None:
         e1 = _make_entry(key="cache", provider="redis")
-        e2 = _make_entry(domain="service", key="auth", provider="google", factory="f:Auth")
+        e2 = _make_entry(
+            domain="service", key="auth", provider="google", factory="f:Auth"
+        )
         e3 = _make_entry(
             domain="adapter",
             key="queue",
@@ -554,7 +555,10 @@ class TestRemoteManifest:
     def test_json_round_trip(self) -> None:
         original = RemoteManifest(
             source="production",
-            entries=[_make_entry(), _make_entry(key="auth", provider="google", factory="f:Auth")],
+            entries=[
+                _make_entry(),
+                _make_entry(key="auth", provider="google", factory="f:Auth"),
+            ],
             signature="base64-sig",
             signature_algorithm="ed25519",
             signatures=[
@@ -609,7 +613,9 @@ class TestRemoteManifest:
 
 class TestManifestIntegration:
     def test_three_distinct_entries_preserved(self) -> None:
-        e1 = _make_entry(domain="adapter", key="cache", provider="redis", factory="f:Cache")
+        e1 = _make_entry(
+            domain="adapter", key="cache", provider="redis", factory="f:Cache"
+        )
         e2 = _make_entry(
             domain="service",
             key="auth",

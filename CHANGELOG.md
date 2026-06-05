@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.2] - 2026-06-05
+
+### Testing
+
+- Add hypothesis dep and shared fixtures for comprehensive suites
+- Comprehensive suites for cross-cutting modules (loader, logging)
+- Comprehensive suites for domain bridges (base, events, tasks, services, workflows, watchers)
+- Comprehensive suites for foundational modules (resolution, models, checkpoints, protocols, dag, events)
+- Fix 2 pre-existing failures + add 3 loader circuit-breaker integration tests
+
+### Internal
+
+- gitignore: Add backup file patterns to silence checkpoint tool artifacts
+- Untrack and delete 31 historical *.backup/*.bak files
+
 ## [0.13.1] - 2026-06-05
 
 ### Internal
