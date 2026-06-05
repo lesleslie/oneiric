@@ -171,11 +171,14 @@ def layer_settings():
 
 
 @pytest.fixture
-def bridge_activity_store():
-    """In-memory DomainActivityStore for domain-bridge activity tests."""
+def bridge_activity_store(tmp_path):
+    """In-memory DomainActivityStore for domain-bridge activity tests.
+
+    Backed by a per-test sqlite file under tmp_path so each test gets isolation.
+    """
     from oneiric.runtime.activity import DomainActivityStore
 
-    return DomainActivityStore()
+    return DomainActivityStore(tmp_path / "activity.db")
 
 
 @pytest.fixture
