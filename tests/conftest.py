@@ -151,3 +151,83 @@ async def otel_db_session():
         yield session
 
     await engine.dispose()
+
+
+# ---------------------------------------------------------------------------
+# Shared fixtures for the 14-module comprehensive test suite
+# (Added 2026-06-05; see /Users/les/.claude/plans/moonlit-fluttering-naur.md)
+#
+# These are reused by tests/{core,domains,remote,runtime}/test_*_comprehensive.py.
+# Subagents authoring new test files must NOT redefine any of these.
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def layer_settings():
+    """Fresh LayerSettings with empty selections — used by domain-bridge tests."""
+    from oneiric.core.config import LayerSettings
+
+    return LayerSettings(selections={}, provider_settings={})
+
+
+@pytest.fixture
+def bridge_activity_store():
+    """In-memory DomainActivityStore for domain-bridge activity tests."""
+    from oneiric.runtime.activity import DomainActivityStore
+
+    return DomainActivityStore()
+
+
+@pytest.fixture
+def checkpoint_store(tmp_path: Path):
+    """Fresh WorkflowCheckpointStore backed by a per-test sqlite db."""
+    from oneiric.runtime.checkpoints import WorkflowCheckpointStore
+
+    return WorkflowCheckpointStore(tmp_path / "checkpoints.db")
+
+
+@pytest.fixture
+def event_envelope_factory():
+    """The create_event_envelope factory — used to build deterministic envelopes."""
+    from oneiric.runtime.events import create_event_envelope
+
+    return create_event_envelope
+
+
+@pytest.fixture
+def dummy_task_handler():
+    """Async-callable satisfying TaskHandlerProtocol (run(payload) -> result)."""
+    from typing import Any
+
+    class _DummyTaskHandler:
+        async def run(self, payload: dict[str, Any] | None = None) -> str:
+            return f"task-ok:{payload}"
+
+    return _DummyTaskHandler()
+
+
+@pytest.fixture
+def dummy_event_handler():
+    """Async-callable satisfying EventHandlerProtocol (handle(envelope) -> None)."""
+    from oneiric.runtime.events import EventEnvelope
+
+    class _DummyEventHandler:
+        async def handle(self, envelope: EventEnvelope) -> None:
+            return None
+
+    return _DummyEventHandler()
+
+
+@pytest.fixture
+def reset_remote_breakers():
+    """Snap and restore the module-level _REMOTE_BREAKERS dict around a test.
+
+    Mandatory for any test that exercises oneiric.remote.loader's circuit breakers
+    — without this, breakers cache across tests and produce order-dependent results.
+    """
+    from oneiric.remote import loader as rl
+
+    saved = rl._REMOTE_BREAKERS.copy()
+    yield
+    rl._REMOTE_BREAKERS.clear()
+    rl._REMOTE_BREAKERS.update(saved)
