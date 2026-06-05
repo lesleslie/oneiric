@@ -61,3 +61,8 @@ crackerjack-debug-*.log
 .archives/
 .backup/
 .backups/
+
+# Backup Files (added by gitignore audit)
+# ============================================================================
+*.backup
+*.bak
