@@ -31,15 +31,6 @@ class EmbeddingModel(StrEnum):
     TEXT_EMBEDDING_3_LARGE = "text-embedding-3-large"
     TEXT_EMBEDDING_ADA_002 = "text-embedding-ada-002"
 
-    ALL_MINILM_L6_V2 = "all-MiniLM-L6-v2"
-    ALL_MPNET_BASE_V2 = "all-mpnet-base-v2"
-    MULTI_QA_MPNET_BASE_DOT_V1 = "multi-qa-mpnet-base-dot-v1"
-    ALL_DISTILROBERTA_V1 = "all-distilroberta-v1"
-    PARAPHRASE_MULTILINGUAL_MPNET_BASE_V2 = "paraphrase-multilingual-mpnet-base-v2"
-
-    ONNX_ALL_MINILM_L6_V2 = "onnx-all-MiniLM-L6-v2"
-    ONNX_ALL_MPNET_BASE_V2 = "onnx-all-mpnet-base-v2"
-
 
 class PoolingStrategy(StrEnum):
     MEAN = "mean"

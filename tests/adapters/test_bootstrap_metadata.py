@@ -14,8 +14,6 @@ def test_builtin_metadata_includes_ai_and_vector_adapters() -> None:
         ("nosql", "dynamodb"),
         ("nosql", "firestore"),
         ("embedding", "openai"),
-        ("embedding", "sentence_transformers"),
-        ("embedding", "onnx"),
         ("llm", "openai"),
         ("llm", "anthropic"),
     }

@@ -14,9 +14,7 @@ from .database import (
 from .dns import CloudflareDNSAdapter, GCDNSAdapter
 from .dns.route53 import Route53DNSAdapter
 from .embedding import (
-    ONNXEmbeddingAdapter,
     OpenAIEmbeddingAdapter,
-    SentenceTransformersAdapter,
 )
 from .file_transfer import (
     FTPFileTransferAdapter,
@@ -94,8 +92,6 @@ def builtin_adapter_metadata() -> list[AdapterMetadata]:
         PineconeAdapter.metadata,
         QdrantAdapter.metadata,
         OpenAIEmbeddingAdapter.metadata,
-        SentenceTransformersAdapter.metadata,
-        ONNXEmbeddingAdapter.metadata,
         OpenAILLMAdapter.metadata,
         AnthropicLLM.metadata,
         Auth0IdentityAdapter.metadata,
