@@ -214,6 +214,12 @@ async def test_otlp_adapter_includes_release_in_resource(
 @pytest.mark.asyncio
 async def test_otlp_import_components_returns_otlp_components() -> None:
     """_import_components() returns _OTLPComponents when all deps available (line 183)."""
+    # OTLP SDK + exporter subpackages are optional in slim CI; skip when absent
+    # rather than failing with LifecycleError("opentelemetry-sdk-missing").
+    pytest.importorskip("opentelemetry.sdk.trace")
+    pytest.importorskip("opentelemetry.sdk.metrics")
+    pytest.importorskip("opentelemetry.exporter.otlp.proto.grpc.trace_exporter")
+    pytest.importorskip("opentelemetry.exporter.otlp.proto.http.trace_exporter")
     adapter = OTLPObservabilityAdapter(OTLPObservabilitySettings())
     components = adapter._import_components()
     assert isinstance(components, _OTLPComponents)

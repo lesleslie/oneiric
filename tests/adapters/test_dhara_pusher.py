@@ -231,7 +231,7 @@ def test_main_with_errors(
         "oneiric.adapters.dhara_pusher.push_adapters_on_startup",
         lambda **_: {"success": 0, "total": 1, "errors": 1, "details": details},
     )
-    monkeypatch.setattr("sys.argv", ["dhara_pusher", "--druva-url", "http://test:8683"])
+    monkeypatch.setattr("sys.argv", ["dhara_pusher", "--dhara-url", "http://test:8683"])
     result = main()
     assert result == 1
     captured = capsys.readouterr()
