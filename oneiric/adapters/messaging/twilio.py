@@ -26,7 +26,7 @@ class TwilioSettings(TimeoutSettings):
         pattern=r"^\+[1-9]\d{7,14}$",
         description="Sender number or short code in E.164 format.",
     )
-    base_url: AnyHttpUrl = Field(default="https://api.twilio.com")
+    base_url: AnyHttpUrl = Field(default="https://api.twilio.com")  # ty: ignore[invalid-assignment]
     api_version: str = Field(default="2010-04-01")
     messaging_service_sid: str | None = Field(
         default=None,

@@ -158,7 +158,7 @@ def build_durable_execution_hooks(
     time_source = clock or (lambda: datetime.now(UTC))
 
     async def _run_in_thread(fn: Callable[..., None], *args: Any) -> None:
-        await anyio.to_thread.run_sync(fn, *args)
+        await anyio.to_thread.run_sync(fn, *args)  # ty: ignore[unresolved-attribute]  # noqa: ERA001
 
     async def on_run_start(*, run_id: str, workflow_key: str, **_: Any) -> None:
         await _run_in_thread(

@@ -123,6 +123,7 @@ class TestPushSingleAdapter:
             result = p._push_single_adapter(m)
 
         assert result["success"] is False
+        assert result["error"] is not None
         assert "HTTP error" in result["error"]
 
     def test_generic_exception(self):
@@ -133,6 +134,7 @@ class TestPushSingleAdapter:
             result = p._push_single_adapter(m)
 
         assert result["success"] is False
+        assert result["error"] is not None
         assert "bad data" in result["error"]
 
     def test_adapter_data_structure(self):
@@ -282,7 +284,7 @@ class TestMain:
             return_value={"total": 0, "success": 0, "errors": 0, "details": []},
         ) as mock_push:
             with patch(
-                "sys.argv", ["dhara_pusher", "--druva-url", "http://custom:9999"]
+                "sys.argv", ["dhara_pusher", "--dhara-url", "http://custom:9999"]
             ):
                 main()
         mock_push.assert_called_once_with(dhara_url="http://custom:9999")

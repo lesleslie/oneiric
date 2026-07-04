@@ -45,7 +45,7 @@ class RuntimeTaskGroup:
 
     def start_soon(
         self,
-        coro_or_factory: Awaitable[Any] | CoroutineFactory,
+        coro_or_factory: Awaitable[Any] | Callable[[], Awaitable[Any]],
         *,
         name: str | None = None,
     ) -> asyncio.Task[Any]:
@@ -53,19 +53,20 @@ class RuntimeTaskGroup:
             raise TaskGroupError(
                 "TaskGroup not initialized. Use 'async with RuntimeTaskGroup()'."
             )
-        if callable(coro_or_factory):
-            coro_awaitable = coro_or_factory()
+        if isinstance(coro_or_factory, Awaitable):
+            coro_awaitable: Awaitable[Any] = coro_or_factory
         else:
-            coro_awaitable = coro_or_factory
+            coro_awaitable = coro_or_factory()
 
-        if not isinstance(coro_awaitable, Coroutine):
+        if isinstance(coro_awaitable, Coroutine):
+            coro_coroutine: Coroutine[Any, Any, Any] = coro_awaitable
+        else:
+            inner_awaitable = coro_awaitable
 
             async def _wrap() -> Any:
-                return await coro_awaitable
+                return await inner_awaitable
 
             coro_coroutine = _wrap()
-        else:
-            coro_coroutine = coro_awaitable
 
         task: asyncio.Task[Any] = self._group.create_task(coro_coroutine, name=name)
         self._tasks.append(task)
@@ -90,7 +91,7 @@ class AnyioTaskGroup:
     def __init__(
         self,
         name: str,
-        task_group: anyio.abc.TaskGroup,
+        task_group: anyio.abc.TaskGroup,  # type: ignore
         cancel_scope: anyio.CancelScope,
         limiter: anyio.CapacityLimiter | None = None,
     ) -> None:
@@ -106,8 +107,10 @@ class AnyioTaskGroup:
         *args: Any,
         task_name: str | None = None,
     ) -> None:
+        func_label = getattr(func, "__name__", None) or repr(func)
+
         async def _runner() -> None:
-            label = task_name or func.__name__
+            label = task_name or func_label
             self._logger.debug("taskgroup-task-start", name=self.name, task=label)
             try:
                 if self._limiter is None:

@@ -87,7 +87,7 @@ class OpenAILLMAdapter(LLMBase):
 
     @property
     def settings(self) -> OpenAILLMSettings:
-        return self._settings  # type: ignore[return-value]
+        return self._settings  # ty: ignore[invalid-return-type]
 
     async def init(self) -> None:
         self._logger.info("Initializing OpenAI LLM adapter")
@@ -411,19 +411,17 @@ class OpenAILLMAdapter(LLMBase):
         if model in self._model_cache:
             return self._model_cache[model]
 
-        model_data = _OPENAI_MODEL_DATA.get(model)
-        if not model_data:
-            model_data = {
-                "context_length": 4096,
-                "max_output_tokens": 4096,
-                "capabilities": [LLMCapability.CHAT_COMPLETION],
-                "supports_functions": False,
-                "supports_tools": False,
-                "supports_vision": False,
-                "supports_json_mode": False,
-                "cost_per_1k_input_tokens": None,
-                "cost_per_1k_output_tokens": None,
-            }
+        model_data: dict[str, Any] = _OPENAI_MODEL_DATA.get(model) or {
+            "context_length": 4096,
+            "max_output_tokens": 4096,
+            "capabilities": [LLMCapability.CHAT_COMPLETION],
+            "supports_functions": False,
+            "supports_tools": False,
+            "supports_vision": False,
+            "supports_json_mode": False,
+            "cost_per_1k_input_tokens": None,
+            "cost_per_1k_output_tokens": None,
+        }
 
         model_info = LLMModelInfo(
             name=model,
@@ -452,7 +450,7 @@ class OpenAILLMAdapter(LLMBase):
 
     async def _count_tokens(self, text: str, model: str) -> int:
         try:
-            import tiktoken
+            import tiktoken  # ty: ignore[unresolved-import]
 
             encoding = tiktoken.encoding_for_model(model)
             return len(encoding.encode(text))

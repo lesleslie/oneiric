@@ -115,8 +115,8 @@ def register_entrypoint_plugins(
         return PluginRegistrationReport.empty()
 
     report = _process_plugin_groups(resolver, groups)
-    resolver._oneiric_plugins_loaded = True  # type: ignore[attr-defined]
-    resolver._oneiric_plugin_report = report  # type: ignore[attr-defined]
+    setattr(resolver, "_oneiric_plugins_loaded", True)
+    setattr(resolver, "_oneiric_plugin_report", report)
 
     if report.registered:
         logger.info(

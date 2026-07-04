@@ -16,7 +16,7 @@ class DeploymentConfigError(RuntimeError):
 def load_yaml_config(path: Path) -> dict[str, Any]:
     """Load a YAML configuration file."""
     try:
-        loaded = yaml.safe_load(path.read_text()) or {}  # type: ignore
+        loaded = yaml.safe_load(path.read_text()) or {}
     except FileNotFoundError as exc:
         raise DeploymentConfigError(f"Missing config file: {path}") from exc
     except yaml.YAMLError as exc:

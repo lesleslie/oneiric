@@ -19,7 +19,7 @@ class SendGridSettings(TimeoutSettings):
     api_key: SecretStr
     from_email: EmailStr
     from_name: str | None = None
-    base_url: AnyHttpUrl = Field(default="https://api.sendgrid.com/v3")
+    base_url: AnyHttpUrl = Field(default="https://api.sendgrid.com/v3")  # ty: ignore[invalid-assignment]
     sandbox_mode: bool = Field(
         default=False,
         description="Enable SendGrid sandbox mode (no-op sends) by default.",
@@ -131,7 +131,7 @@ class SendGridAdapter(HTTPXClientMixin):
         return MessagingSendResult(
             message_id=message_id,
             status_code=response.status_code,
-            response_headers=response.headers.copy(),
+            response_headers=response.headers.copy(),  # ty: ignore[invalid-argument-type]
         )
 
     def _build_payload(self, message: OutboundEmailMessage) -> dict[str, Any]:

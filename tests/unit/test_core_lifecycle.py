@@ -64,9 +64,9 @@ class TestLifecycleHooks:
         async def dummy_post(): ...
         async def dummy_cleanup(): ...
 
-        h.add_pre_swap(dummy_pre)
-        h.add_post_swap(dummy_post)
-        h.add_cleanup(dummy_cleanup)
+        h.add_pre_swap(dummy_pre)  # type: ignore
+        h.add_post_swap(dummy_post)  # type: ignore
+        h.add_cleanup(dummy_cleanup)  # type: ignore
         assert len(h.pre_swap) == 1
         assert len(h.post_swap) == 1
         assert len(h.on_cleanup) == 1
@@ -200,6 +200,7 @@ class TestStatusFromDict:
                 "failed_swaps": 2,
             }
         )
+        assert status is not None
         assert status.state == "active"
         assert status.current_provider == "google"
         assert status.pending_provider == "okta"
@@ -216,6 +217,7 @@ class TestStatusFromDict:
                 "recent_swap_durations_ms": [10.0, 20.0, "bad", 30.0],
             }
         )
+        assert status is not None
         assert status.recent_swap_durations_ms == [10.0, 20.0, 30.0]
 
     def test_timestamps_parsed(self) -> None:
@@ -227,6 +229,7 @@ class TestStatusFromDict:
                 "last_activated_at": "2025-06-01T00:00:00+00:00",
             }
         )
+        assert status is not None
         assert status.last_state_change_at is not None
         assert status.last_activated_at is not None
 
@@ -238,6 +241,7 @@ class TestStatusFromDict:
                 "last_state_change_at": "not-a-date",
             }
         )
+        assert status is not None
         assert status.last_state_change_at is None
 
     def test_non_number_duration_ignored(self) -> None:
@@ -248,4 +252,5 @@ class TestStatusFromDict:
                 "last_swap_duration_ms": "not-a-number",
             }
         )
+        assert status is not None
         assert status.last_swap_duration_ms is None

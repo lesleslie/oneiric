@@ -75,7 +75,7 @@ class SCPFileTransferAdapter:
 
         if self._asyncssh is None:
             try:
-                import asyncssh  # type: ignore
+                import asyncssh
             except ModuleNotFoundError as exc:  # pragma: no cover - optional dependency
                 raise LifecycleError(
                     "asyncssh-required: install asyncssh to use SCPFileTransferAdapter"
@@ -99,8 +99,9 @@ class SCPFileTransferAdapter:
         self._logger.info("scp-adapter-init")
 
     async def cleanup(self) -> None:
-        if self._conn and self._owns_conn:
-            await self._conn.close(wait_closed=True)
+        conn = self._conn
+        if conn is not None and self._owns_conn:
+            await conn.close()  # ty: ignore[invalid-await]
         self._conn = None
         self._logger.info("scp-adapter-cleanup")
 
@@ -147,7 +148,7 @@ class SCPFileTransferAdapter:
         await self._run_command(f"rm -f {shlex.quote(target)}")
         return True
 
-    async def list(self, prefix: str | None = None) -> list[str]:
+    async def list(self, prefix: str | None = None) -> list[str]:  # ty: ignore[invalid-type-form]
         base = prefix or self._settings.root_path or "."
         target = self._resolve_remote_path(base)
         output = await self._run_command(f"ls -1 {shlex.quote(target)}")

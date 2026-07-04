@@ -136,7 +136,7 @@ class AzureBlobStorageAdapter:
             if not self._is_not_found(exc):
                 raise
 
-    async def list(self, prefix: str = "") -> list[str]:
+    async def list(self, prefix: str = "") -> list[str]:  # ty: ignore[invalid-type-form] — ty resolves `list` to the method in scope
         container = self._ensure_container()
         items: list[str] = []
         async for blob in container.list_blobs(name_starts_with=prefix):

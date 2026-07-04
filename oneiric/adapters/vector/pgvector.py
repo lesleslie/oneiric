@@ -5,7 +5,7 @@ import re
 from collections.abc import AsyncGenerator, Awaitable, Callable, Sequence
 from contextlib import asynccontextmanager
 from typing import Any
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from pydantic import Field, SecretStr
 
@@ -46,7 +46,7 @@ class PgvectorSettings(VectorBaseSettings):
     )
 
 
-class PgvectorAdapter(VectorBase):
+class PgvectorAdapter(VectorBase[PgvectorSettings]):
     metadata = AdapterMetadata(
         category="vector",
         provider="pgvector",
@@ -164,7 +164,7 @@ class PgvectorAdapter(VectorBase):
     async def delete(
         self,
         collection: str,
-        ids: list[str],
+        ids: list[str | int | UUID],
         **_: Any,
     ) -> bool:
         table = self._qualified_collection(collection)

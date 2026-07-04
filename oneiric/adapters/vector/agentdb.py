@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+from uuid import UUID
 
 from pydantic import Field
 
@@ -69,14 +70,23 @@ class AgentDBAdapter(VectorBase):
         )
 
     async def _create_client(self) -> Any:
+        import importlib
+
         try:
-            from mcp_common.client import MCPClient
+            mcp_client_mod = importlib.import_module("mcp_common.client")
+            MCPClient = getattr(mcp_client_mod, "MCPClient", None)
 
             self._logger.info(
                 "Creating AgentDB MCP client",
                 server_url=self._settings.mcp_server_url,
                 in_memory=self._settings.in_memory,
             )
+
+            if MCPClient is None:
+                raise LifecycleError(
+                    "mcp_common.client.MCPClient is not implemented yet — "
+                    "AgentDB MCP integration pending"
+                )
 
             self._mcp_client = MCPClient(
                 server_url=self._settings.mcp_server_url,
@@ -256,7 +266,7 @@ class AgentDBAdapter(VectorBase):
     async def delete(
         self,
         collection: str,
-        ids: list[str],
+        ids: list[str | int | UUID],
         **kwargs: Any,
     ) -> bool:
         try:

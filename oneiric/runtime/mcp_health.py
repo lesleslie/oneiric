@@ -22,14 +22,14 @@ class HealthStatus(Enum):
 class ComponentHealth:
     name: str
     status: HealthStatus
-    details: dict[str, Any] = None
+    details: dict[str, Any] | None = None
     error: str | None = None
 
     def __init__(
         self,
         name: str,
         status: HealthStatus,
-        details: dict[str, Any] = None,
+        details: dict[str, Any] | None = None,
         error: str | None = None,
     ):
         self.name = name
@@ -54,7 +54,7 @@ class HealthCheckResponse:
     components: list[ComponentHealth]
     timestamp: str
     version: str = "1.0"
-    metadata: dict[str, Any] = None
+    metadata: dict[str, Any] | None = None
 
     def __init__(
         self, status: HealthStatus, components: list[ComponentHealth], timestamp: str
@@ -65,6 +65,8 @@ class HealthCheckResponse:
         self.metadata = {}
 
     def add_metadata(self, key: str, value: Any) -> None:
+        if self.metadata is None:
+            self.metadata = {}
         self.metadata[key] = value
 
     def to_dict(self) -> dict[str, Any]:
@@ -117,7 +119,7 @@ class HealthMonitor:
         self,
         name: str,
         status: HealthStatus,
-        details: dict[str, Any] = None,
+        details: dict[str, Any] | None = None,
         error: str | None = None,
     ) -> ComponentHealth:
         return ComponentHealth(name, status, details, error)

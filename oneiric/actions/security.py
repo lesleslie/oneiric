@@ -205,9 +205,13 @@ class SecuritySecureAction:
         iterations = int(
             payload.get("iterations") or self._settings.password_iterations
         )
-        if not all(
-            isinstance(value, str) and value
-            for value in (password, password_hash, salt)
+        if not (
+            isinstance(password, str)
+            and password
+            and isinstance(password_hash, str)
+            and password_hash
+            and isinstance(salt, str)
+            and salt
         ):
             raise LifecycleError("security-secure-verification-input-invalid")
         computed = hashlib.pbkdf2_hmac(

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+from uuid import UUID
 
 from pydantic import SecretStr
 
@@ -35,7 +36,7 @@ class PineconeSettings(VectorBaseSettings):
     upsert_timeout: float = 30.0
 
 
-class PineconeAdapter(VectorBase):
+class PineconeAdapter(VectorBase[PineconeSettings]):
     metadata = AdapterMetadata(
         category="vector",
         provider="pinecone",
@@ -68,9 +69,9 @@ class PineconeAdapter(VectorBase):
 
     async def _create_client(self) -> Any:
         try:
-            import pinecone
+            from pinecone import Pinecone  # ty: ignore[unresolved-import]
 
-            pc = pinecone.Pinecone(
+            pc = Pinecone(
                 api_key=self._settings.api_key.get_secret_value(),
             )
 
@@ -291,7 +292,7 @@ class PineconeAdapter(VectorBase):
     async def delete(
         self,
         collection: str,
-        ids: list[str],
+        ids: list[str | int | UUID],
         **kwargs: Any,
     ) -> bool:
         index = await self._get_index()

@@ -67,7 +67,7 @@ class AnthropicLLM(LLMBase):
 
     @property
     def settings(self) -> AnthropicLLMSettings:
-        return self._settings  # type: ignore[return-value]
+        return self._settings  # ty: ignore[invalid-return-type]
 
     async def init(self) -> None:
         try:

@@ -212,14 +212,14 @@ class HttpFetchAction:
                 url,
                 timeout=timeout,
                 follow_redirects=follow_redirects,
-                **request_kwargs,
+                **request_kwargs,  # ty: ignore[invalid-argument-type]
             )
         async with httpx.AsyncClient(
             timeout=timeout,
             verify=verify,
             follow_redirects=follow_redirects,
         ) as client:
-            return await client.request(method, url, **request_kwargs)
+            return await client.request(method, url, **request_kwargs)  # ty: ignore[invalid-argument-type]
 
     async def _elapsed_ms(self, response: httpx.Response) -> float | None:
         try:

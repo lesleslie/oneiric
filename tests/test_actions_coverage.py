@@ -7,7 +7,7 @@ configuration validation, and state management that are under-covered.
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, cast
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -101,8 +101,10 @@ class TestCronExpression:
     def test_weekday_wrap_sunday_seven_to_zero(self) -> None:
         """Day-of-week 7 should be normalized to 0."""
         expr = _CronExpression("* * * * 7")
-        assert 0 in expr._weekdays
-        assert 7 not in expr._weekdays
+        weekdays = expr._weekdays
+        assert weekdays is not None
+        assert 0 in weekdays
+        assert 7 not in weekdays
 
     def test_weekday_out_of_range_low(self) -> None:
         # Negative values are caught by int() parsing via the dash-as-range logic
@@ -280,27 +282,45 @@ class TestTaskSchedulePayload:
         assert p.interval_seconds is None
 
     def test_alias_queue_name(self) -> None:
-        p = TaskSchedulePayload(task_type="email", queue_name="urgent")
+        p = TaskSchedulePayload(
+            task_type="email",
+            queue_name="urgent",  # ty: ignore[unknown-argument]
+        )
         assert p.queue == "urgent"
 
     def test_alias_rule_name(self) -> None:
-        p = TaskSchedulePayload(task_type="email", rule_name="daily-email")
+        p = TaskSchedulePayload(
+            task_type="email",
+            rule_name="daily-email",  # ty: ignore[unknown-argument]
+        )
         assert p.name == "daily-email"
 
     def test_alias_id(self) -> None:
-        p = TaskSchedulePayload(task_type="email", id="abc-123")
+        p = TaskSchedulePayload(
+            task_type="email",
+            id="abc-123",  # ty: ignore[unknown-argument]
+        )
         assert p.rule_id == "abc-123"
 
     def test_alias_cron(self) -> None:
-        p = TaskSchedulePayload(task_type="email", cron="0 8 * * *")
+        p = TaskSchedulePayload(
+            task_type="email",
+            cron="0 8 * * *",  # ty: ignore[unknown-argument]
+        )
         assert p.cron_expression == "0 8 * * *"
 
     def test_alias_interval(self) -> None:
-        p = TaskSchedulePayload(task_type="email", interval=300.0)
+        p = TaskSchedulePayload(
+            task_type="email",
+            interval=300.0,  # ty: ignore[unknown-argument]
+        )
         assert p.interval_seconds == 300.0
 
     def test_alias_every_seconds(self) -> None:
-        p = TaskSchedulePayload(task_type="email", every_seconds=600.0)
+        p = TaskSchedulePayload(
+            task_type="email",
+            every_seconds=600.0,  # ty: ignore[unknown-argument]
+        )
         assert p.interval_seconds == 600.0
 
     def test_priority_negative_rejected(self) -> None:
@@ -325,7 +345,10 @@ class TestTaskSchedulePayload:
 
     def test_extra_fields_forbidden(self) -> None:
         with pytest.raises(ValidationError):
-            TaskSchedulePayload(task_type="email", unknown_field="bad")
+            TaskSchedulePayload(
+                task_type="email",
+                unknown_field="bad",  # ty: ignore[unknown-argument]
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -709,6 +732,7 @@ class TestTaskScheduleActionInternals:
         action = TaskScheduleAction()
         naive = datetime(2026, 1, 1, 12, 0)
         result = action._coerce_datetime(naive, ZoneInfo("America/New_York"))
+        assert result is not None
         assert result.tzinfo is not None
         assert result.hour == 12
 
@@ -716,7 +740,10 @@ class TestTaskScheduleActionInternals:
         action = TaskScheduleAction()
         aware = datetime(2026, 1, 1, 12, 0, tzinfo=ZoneInfo("UTC"))
         result = action._coerce_datetime(aware, ZoneInfo("America/New_York"))
-        assert result.tzinfo.key == "America/New_York"
+        assert result is not None
+        tz = result.tzinfo
+        assert tz is not None
+        assert cast("ZoneInfo", tz).key == "America/New_York"
 
     def test_build_rule_dict(self) -> None:
         action = TaskScheduleAction()
@@ -1005,7 +1032,9 @@ class TestAutomationTriggerSettings:
 
 class TestAutomationTriggerPayload:
     def test_minimal(self) -> None:
-        p = AutomationTriggerPayload(rules=[{"name": "r", "action": "a"}])
+        p = AutomationTriggerPayload(
+            rules=[{"name": "r", "action": "a"}],  # ty: ignore[invalid-argument-type]
+        )
         assert len(p.rules) == 1
 
     def test_empty_rules_rejected(self) -> None:
@@ -1014,7 +1043,10 @@ class TestAutomationTriggerPayload:
 
     def test_extra_fields_forbidden(self) -> None:
         with pytest.raises(ValidationError):
-            AutomationTriggerPayload(rules=[{"name": "r", "action": "a"}], bad="field")
+            AutomationTriggerPayload(
+                rules=[{"name": "r", "action": "a"}],  # ty: ignore[invalid-argument-type]
+                bad="field",  # ty: ignore[unknown-argument]
+            )
 
 
 class TestAutomationRule:

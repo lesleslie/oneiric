@@ -290,6 +290,7 @@ class TestBuildWorkflowNode:
 
     def test_node_with_dependencies(self) -> None:
         node = _build_workflow_node({"id": "t2", "depends_on": ["t1"]})
+        assert node is not None
         assert node["depends_on"] == ["t1"]
 
     def test_node_without_id_returns_none(self) -> None:
@@ -304,16 +305,19 @@ class TestBuildWorkflowNode:
                 "retry_policy": {"max": 3},
             }
         )
+        assert node is not None
         assert node["payload"] == {"k": "v"}
         assert node["checkpoint"] == "cp1"
         assert node["retry_policy"] == {"max": 3}
 
     def test_node_id_coerced_to_string(self) -> None:
         node = _build_workflow_node({"id": 42, "task": "x"})
+        assert node is not None
         assert node["id"] == "42"
 
     def test_depends_on_string_wrapped(self) -> None:
         node = _build_workflow_node({"id": "t4", "depends_on": "prev"})
+        assert node is not None
         assert node["depends_on"] == ["prev"]
 
 
@@ -697,38 +701,41 @@ class TestCandidateSummary:
 
 
 class TestHttpServerEnabled:
-    def _make_settings(
-        self, profile_name: str | None = "production"
-    ) -> SimpleNamespace:
-        profile = SimpleNamespace(name=profile_name)
-        return SimpleNamespace(profile=profile)
+    def _make_profile_name(self, profile_name: str | None = "production") -> str | None:
+        return profile_name
 
     def test_no_http_flag(self) -> None:
-        assert _http_server_enabled(self._make_settings(), None, True) is False
+        assert _http_server_enabled(self._make_profile_name(), None, True) is False
 
     def test_explicit_port(self) -> None:
-        assert _http_server_enabled(self._make_settings(), 3000, False) is True
+        assert _http_server_enabled(self._make_profile_name(), 3000, False) is True
 
     def test_port_overrides_no_http(self) -> None:
         # Even if --no-http is set, explicit port wins... actually no:
         # no_http_flag is checked first
-        assert _http_server_enabled(self._make_settings(), 3000, True) is False
+        assert _http_server_enabled(self._make_profile_name(), 3000, True) is False
 
     def test_env_port(self) -> None:
         with patch.dict("os.environ", {"PORT": "1"}):
-            assert _http_server_enabled(self._make_settings(), None, False) is True
+            assert (
+                _http_server_enabled(self._make_profile_name(), None, False) is True
+            )
 
     def test_serverless_profile(self) -> None:
         with patch.dict("os.environ", {}, clear=True):
             assert (
-                _http_server_enabled(self._make_settings("serverless"), None, False)
+                _http_server_enabled(
+                    self._make_profile_name("serverless"), None, False
+                )
                 is True
             )
 
     def test_non_serverless_no_port(self) -> None:
         with patch.dict("os.environ", {}, clear=True):
             assert (
-                _http_server_enabled(self._make_settings("production"), None, False)
+                _http_server_enabled(
+                    self._make_profile_name("production"), None, False
+                )
                 is False
             )
 
@@ -777,7 +784,7 @@ class TestExtractNotificationMetadata:
             metadata={"notifications": {"channel": "email"}},
         )
         result = _extract_notification_metadata(candidate)
-        assert result["include_context"] is True
+        assert result["include_context"] is True  # type: ignore
 
     def test_extra_payload_non_dict(self) -> None:
         candidate = Candidate(
@@ -787,4 +794,5 @@ class TestExtractNotificationMetadata:
             metadata={"notifications": {"extra_payload": "not_a_dict"}},
         )
         result = _extract_notification_metadata(candidate)
+        assert result is not None
         assert result["extra_payload"] is None

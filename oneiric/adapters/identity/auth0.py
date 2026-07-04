@@ -8,6 +8,7 @@ from typing import Any
 
 import httpx
 import jwt
+from jwt import algorithms
 from pydantic import BaseModel, Field
 
 from oneiric.adapters.httpx_base import HTTPXClientMixin
@@ -88,11 +89,11 @@ class Auth0IdentityAdapter(HTTPXClientMixin):
         key_data = self._match_key(jwks, kid)
         if not key_data:
             raise LifecycleError("token-key-not-found")
-        public_key = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(key_data))
+        public_key = algorithms.RSAAlgorithm.from_jwk(json.dumps(key_data))
         issuer = f"https://{self._settings.domain}/"
         return jwt.decode(
             token,
-            key=public_key,
+            key=public_key,  # ty: ignore[invalid-argument-type]
             audience=self._settings.audience,
             algorithms=list(self._settings.algorithms),
             issuer=issuer,

@@ -16,7 +16,7 @@ if TYPE_CHECKING:  # pragma: no cover
 try:  # pragma: no cover - optional dependency import
     import httpx
 except Exception:  # pragma: no cover - optional dependency import
-    httpx = None  # type: ignore[assignment]
+    httpx: Any = None
 
 
 class NetdataMonitoringSettings(BaseModel):

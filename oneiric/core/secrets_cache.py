@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import builtins
 import threading
 import time
 from collections.abc import Sequence
@@ -77,7 +78,7 @@ class SecretValueCache:
     def _should_invalidate_key(
         self,
         cache_key: tuple[str, str],
-        target_ids: set[str],
+        target_ids: builtins.set[str],
         provider: str | None,
     ) -> bool:
         provider_match = provider is None or cache_key[0] == provider

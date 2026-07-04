@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 import time
 from pathlib import Path
 from typing import Any
@@ -91,7 +92,11 @@ class GCPSecretManagerAdapter:
         self._client = None
         self._cache.clear()
         if client and hasattr(client, "close"):
-            await client.close()
+            close_method = getattr(client, "close", None)
+            if close_method is not None:
+                result = close_method()
+                if inspect.isawaitable(result):
+                    await result
         self._logger.info("adapter-cleanup-complete", adapter="gcp-secret-manager")
 
     async def invalidate_cache(self) -> None:

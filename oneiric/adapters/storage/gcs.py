@@ -114,7 +114,7 @@ class GCSStorageAdapter:
             if not is_not_found_error(exc, codes={404}, messages=("404", "Not Found")):
                 raise
 
-    async def list(self, prefix: str = "") -> list[str]:
+    async def list(self, prefix: str = "") -> list[str]:  # ty: ignore[invalid-type-form] — ty resolves `list` to the method in scope
         bucket = self._ensure_bucket()
         return await asyncio.to_thread(self._list_names, bucket, prefix)
 
@@ -123,7 +123,7 @@ class GCSStorageAdapter:
             raise LifecycleError("gcs-bucket-not-initialized")
         return self._bucket
 
-    def _list_names(self, bucket: Any, prefix: str) -> list[str]:  # type: ignore[valid-type]
+    def _list_names(self, bucket: Any, prefix: str) -> list[str]:  # ty: ignore[invalid-type-form]
         blobs: Any = bucket.list_blobs(prefix=prefix)
         result: list[str] = [blob.name for blob in blobs]
         return result

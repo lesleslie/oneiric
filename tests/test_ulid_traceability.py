@@ -59,8 +59,8 @@ class TestULIDFallback:
         assert is_ulid("iu!@#$%^&*()_+qrsjklm") is False
 
     def test_is_ulid_non_string(self):
-        assert is_ulid(123) is False
-        assert is_ulid(None) is False
+        assert is_ulid(123) is False  # ty: ignore[invalid-argument-type] — negative test
+        assert is_ulid(None) is False  # ty: ignore[invalid-argument-type] — negative test
 
     def test_ulid_from_string(self):
         original = generate()
@@ -122,7 +122,7 @@ class TestConfigFunctions:
     def test_parse_config_ulid_from_ulid(self):
         cid = generate_config_id()
         ulid = ULID(cid)
-        parsed = parse_config_ulid(ulid)
+        parsed = parse_config_ulid(ulid)  # ty: ignore[invalid-argument-type] — accepts ULID instance
         assert str(parsed) == cid
 
 

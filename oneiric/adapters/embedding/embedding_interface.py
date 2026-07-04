@@ -15,7 +15,7 @@ def _require_numpy() -> Any:
     global _NP_MODULE
     if _NP_MODULE is None:
         try:
-            import numpy as np  # type: ignore
+            import numpy as np
         except ImportError as exc:  # pragma: no cover - import guard
             msg = (
                 "numpy is required for embedding helpers. "

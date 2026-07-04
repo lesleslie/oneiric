@@ -105,9 +105,8 @@ class TestGetComponentVersion:
 
     def test_returns_unknown_on_import_error(self, mock_app):
         shell = AdminShell(mock_app)
-        # Make _get_component_name return something
-        shell._get_component_name = lambda: "fake"
-        with patch("importlib.metadata.version", side_effect=ImportError):
+        with patch.object(shell, "_get_component_name", return_value="fake"), \
+            patch("importlib.metadata.version", side_effect=ImportError):
             assert shell._get_component_version() == "unknown"
 
 
@@ -155,13 +154,13 @@ class TestNotifySessionStart:
         mock_tracker = MagicMock()
         mock_tracker.emit_session_start = AsyncMock(return_value="sess-123")
         shell.session_tracker = mock_tracker
-        shell._get_component_name = lambda: "test-comp"
-        shell._get_component_version = lambda: "1.0.0"
-        shell._get_adapters_info = lambda: ["adapter1"]
 
         loop = asyncio.new_event_loop()
         try:
-            loop.run_until_complete(shell._notify_session_start())
+            with patch.object(shell, "_get_component_name", return_value="test-comp"), \
+                patch.object(shell, "_get_component_version", return_value="1.0.0"), \
+                patch.object(shell, "_get_adapters_info", return_value=["adapter1"]):
+                loop.run_until_complete(shell._notify_session_start())
         finally:
             loop.close()
 

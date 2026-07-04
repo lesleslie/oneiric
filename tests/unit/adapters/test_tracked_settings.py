@@ -117,7 +117,7 @@ class TestSetattr:
     def test_setattr_to_internal_underscore_attribute_does_not_record(self) -> None:
         tracked = _make_tracked()
         tracked._private_attr = "internal"
-        assert tracked._private_attr == "internal"
+        assert tracked._private_attr == "internal"  # ty: ignore[unresolved-attribute]  # dynamic underscore attr
         assert tracked._pending_changes == []
 
     def test_setattr_to_unknown_field_raises_via_pydantic(self) -> None:

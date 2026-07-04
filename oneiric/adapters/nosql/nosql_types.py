@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -28,13 +28,18 @@ class NoSQLBaseSettings(BaseModel):
     health_timeout: float = 5.0
 
 
-class NoSQLAdapterBase(ABC):
-    def __init__(self, settings: NoSQLBaseSettings) -> None:
+_SettingsT = TypeVar("_SettingsT", bound=NoSQLBaseSettings)
+
+
+class NoSQLAdapterBase(ABC, Generic[_SettingsT]):
+    _settings: _SettingsT
+
+    def __init__(self, settings: _SettingsT) -> None:
         self._settings = settings
         self._logger = get_logger("adapter.nosql.base")
 
     @property
-    def settings(self) -> NoSQLBaseSettings:
+    def settings(self) -> _SettingsT:
         return self._settings
 
     @abstractmethod

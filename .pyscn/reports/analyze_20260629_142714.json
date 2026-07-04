@@ -1,0 +1,5398 @@
+{
+  "complexity": {
+    "Functions": [
+      {
+        "Name": "_parse_manifest",
+        "FilePath": "oneiric/remote/loader.py",
+        "StartLine": 479,
+        "StartColumn": 0,
+        "EndLine": 520,
+        "Metrics": {
+          "Complexity": 12,
+          "Nodes": 17,
+          "Edges": 25,
+          "NestingDepth": 3,
+          "IfStatements": 6,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 5,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "medium"
+      },
+      {
+        "Name": "WorkflowRetryAction.execute",
+        "FilePath": "oneiric/actions/workflow.py",
+        "StartLine": 537,
+        "StartColumn": 4,
+        "EndLine": 587,
+        "Metrics": {
+          "Complexity": 12,
+          "Nodes": 13,
+          "Edges": 20,
+          "NestingDepth": 1,
+          "IfStatements": 6,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 5,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "medium"
+      },
+      {
+        "Name": "DebugConsoleAction.execute",
+        "FilePath": "oneiric/actions/debug.py",
+        "StartLine": 63,
+        "StartColumn": 4,
+        "EndLine": 97,
+        "Metrics": {
+          "Complexity": 12,
+          "Nodes": 19,
+          "Edges": 29,
+          "NestingDepth": 1,
+          "IfStatements": 9,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "medium"
+      },
+      {
+        "Name": "ArtifactManager._validate_uri",
+        "FilePath": "oneiric/remote/loader.py",
+        "StartLine": 130,
+        "StartColumn": 4,
+        "EndLine": 144,
+        "Metrics": {
+          "Complexity": 12,
+          "Nodes": 13,
+          "Edges": 20,
+          "NestingDepth": 2,
+          "IfStatements": 6,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 5,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "medium"
+      },
+      {
+        "Name": "AutomationTriggerAction._condition_matches",
+        "FilePath": "oneiric/actions/automation.py",
+        "StartLine": 151,
+        "StartColumn": 4,
+        "EndLine": 181,
+        "Metrics": {
+          "Complexity": 11,
+          "Nodes": 19,
+          "Edges": 29,
+          "NestingDepth": 1,
+          "IfStatements": 9,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "medium"
+      },
+      {
+        "Name": "EventDispatchAction._process_hooks",
+        "FilePath": "oneiric/actions/event.py",
+        "StartLine": 172,
+        "StartColumn": 4,
+        "EndLine": 199,
+        "Metrics": {
+          "Complexity": 11,
+          "Nodes": 32,
+          "Edges": 43,
+          "NestingDepth": 2,
+          "IfStatements": 9,
+          "LoopStatements": 5,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "medium"
+      },
+      {
+        "Name": "TaskScheduleAction._build_rule",
+        "FilePath": "oneiric/actions/task.py",
+        "StartLine": 301,
+        "StartColumn": 4,
+        "EndLine": 346,
+        "Metrics": {
+          "Complexity": 11,
+          "Nodes": 17,
+          "Edges": 24,
+          "NestingDepth": 3,
+          "IfStatements": 5,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 5,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "medium"
+      },
+      {
+        "Name": "MultiTierCacheAdapter.get",
+        "FilePath": "oneiric/adapters/cache/multitier.py",
+        "StartLine": 298,
+        "StartColumn": 4,
+        "EndLine": 355,
+        "Metrics": {
+          "Complexity": 11,
+          "Nodes": 23,
+          "Edges": 34,
+          "NestingDepth": 3,
+          "IfStatements": 10,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "medium"
+      },
+      {
+        "Name": "_CronExpression._validate_range",
+        "FilePath": "oneiric/actions/task.py",
+        "StartLine": 219,
+        "StartColumn": 4,
+        "EndLine": 240,
+        "Metrics": {
+          "Complexity": 10,
+          "Nodes": 12,
+          "Edges": 18,
+          "NestingDepth": 2,
+          "IfStatements": 5,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 4,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "medium"
+      },
+      {
+        "Name": "WorkflowOrchestratorAction._build_schedule",
+        "FilePath": "oneiric/actions/workflow.py",
+        "StartLine": 470,
+        "StartColumn": 4,
+        "EndLine": 495,
+        "Metrics": {
+          "Complexity": 10,
+          "Nodes": 25,
+          "Edges": 34,
+          "NestingDepth": 3,
+          "IfStatements": 8,
+          "LoopStatements": 5,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "medium"
+      },
+      {
+        "Name": "WorkflowNotifyAction.execute",
+        "FilePath": "oneiric/actions/workflow.py",
+        "StartLine": 156,
+        "StartColumn": 4,
+        "EndLine": 188,
+        "Metrics": {
+          "Complexity": 10,
+          "Nodes": 11,
+          "Edges": 17,
+          "NestingDepth": 1,
+          "IfStatements": 5,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 4,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "medium"
+      },
+      {
+        "Name": "_validate_signature_timing",
+        "FilePath": "oneiric/remote/loader.py",
+        "StartLine": 548,
+        "StartColumn": 0,
+        "EndLine": 566,
+        "Metrics": {
+          "Complexity": 10,
+          "Nodes": 11,
+          "Edges": 17,
+          "NestingDepth": 2,
+          "IfStatements": 5,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 4,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "medium"
+      },
+      {
+        "Name": "ArangoDBGraphAdapter._ensure_client",
+        "FilePath": "oneiric/adapters/graph/arangodb.py",
+        "StartLine": 138,
+        "StartColumn": 4,
+        "EndLine": 166,
+        "Metrics": {
+          "Complexity": 10,
+          "Nodes": 13,
+          "Edges": 20,
+          "NestingDepth": 1,
+          "IfStatements": 6,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "medium"
+      },
+      {
+        "Name": "_handle_status",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 1343,
+        "StartColumn": 0,
+        "EndLine": 1401,
+        "Metrics": {
+          "Complexity": 10,
+          "Nodes": 26,
+          "Edges": 36,
+          "NestingDepth": 1,
+          "IfStatements": 9,
+          "LoopStatements": 4,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "medium"
+      },
+      {
+        "Name": "WebhookAdapter.send_notification",
+        "FilePath": "oneiric/adapters/messaging/webhook.py",
+        "StartLine": 67,
+        "StartColumn": 4,
+        "EndLine": 105,
+        "Metrics": {
+          "Complexity": 10,
+          "Nodes": 9,
+          "Edges": 16,
+          "NestingDepth": 2,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 7,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "medium"
+      },
+      {
+        "Name": "CompressionAction.execute",
+        "FilePath": "oneiric/actions/compression.py",
+        "StartLine": 54,
+        "StartColumn": 4,
+        "EndLine": 90,
+        "Metrics": {
+          "Complexity": 10,
+          "Nodes": 12,
+          "Edges": 18,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 5,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "medium"
+      },
+      {
+        "Name": "SecuritySignatureAction.execute",
+        "FilePath": "oneiric/actions/security.py",
+        "StartLine": 70,
+        "StartColumn": 4,
+        "EndLine": 102,
+        "Metrics": {
+          "Complexity": 10,
+          "Nodes": 14,
+          "Edges": 21,
+          "NestingDepth": 1,
+          "IfStatements": 6,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "medium"
+      },
+      {
+        "Name": "QdrantAdapter._create_client",
+        "FilePath": "oneiric/adapters/vector/qdrant.py",
+        "StartLine": 86,
+        "StartColumn": 4,
+        "EndLine": 114,
+        "Metrics": {
+          "Complexity": 10,
+          "Nodes": 10,
+          "Edges": 18,
+          "NestingDepth": 2,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 6,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "medium"
+      },
+      {
+        "Name": "LifecycleManager._apply_candidate",
+        "FilePath": "oneiric/core/lifecycle.py",
+        "StartLine": 215,
+        "StartColumn": 4,
+        "EndLine": 321,
+        "Metrics": {
+          "Complexity": 9,
+          "Nodes": 18,
+          "Edges": 26,
+          "NestingDepth": 6,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 5,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "RedisCacheAdapter._create_client",
+        "FilePath": "oneiric/adapters/cache/redis.py",
+        "StartLine": 216,
+        "StartColumn": 4,
+        "EndLine": 249,
+        "Metrics": {
+          "Complexity": 9,
+          "Nodes": 17,
+          "Edges": 26,
+          "NestingDepth": 2,
+          "IfStatements": 8,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "EventDispatchAction._parse_hooks",
+        "FilePath": "oneiric/actions/event.py",
+        "StartLine": 156,
+        "StartColumn": 4,
+        "EndLine": 170,
+        "Metrics": {
+          "Complexity": 9,
+          "Nodes": 13,
+          "Edges": 19,
+          "NestingDepth": 3,
+          "IfStatements": 4,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 4,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "AzureBlobStorageAdapter.init",
+        "FilePath": "oneiric/adapters/storage/azure.py",
+        "StartLine": 63,
+        "StartColumn": 4,
+        "EndLine": 90,
+        "Metrics": {
+          "Complexity": 9,
+          "Nodes": 13,
+          "Edges": 19,
+          "NestingDepth": 4,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 4,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "FileSecretAdapter._load",
+        "FilePath": "oneiric/adapters/secrets/file.py",
+        "StartLine": 80,
+        "StartColumn": 4,
+        "EndLine": 91,
+        "Metrics": {
+          "Complexity": 9,
+          "Nodes": 15,
+          "Edges": 21,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 4,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "manifest_export",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 2749,
+        "StartColumn": 0,
+        "EndLine": 2812,
+        "Metrics": {
+          "Complexity": 9,
+          "Nodes": 18,
+          "Edges": 26,
+          "NestingDepth": 2,
+          "IfStatements": 7,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "ServiceSupervisor._calculate_deltas",
+        "FilePath": "oneiric/runtime/supervisor.py",
+        "StartLine": 111,
+        "StartColumn": 4,
+        "EndLine": 129,
+        "Metrics": {
+          "Complexity": 9,
+          "Nodes": 26,
+          "Edges": 35,
+          "NestingDepth": 3,
+          "IfStatements": 7,
+          "LoopStatements": 5,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "DataTransformAction.execute",
+        "FilePath": "oneiric/actions/data.py",
+        "StartLine": 55,
+        "StartColumn": 4,
+        "EndLine": 102,
+        "Metrics": {
+          "Complexity": 9,
+          "Nodes": 18,
+          "Edges": 26,
+          "NestingDepth": 2,
+          "IfStatements": 7,
+          "LoopStatements": 3,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "HashAction.execute",
+        "FilePath": "oneiric/actions/compression.py",
+        "StartLine": 155,
+        "StartColumn": 4,
+        "EndLine": 184,
+        "Metrics": {
+          "Complexity": 9,
+          "Nodes": 12,
+          "Edges": 18,
+          "NestingDepth": 1,
+          "IfStatements": 5,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "S3StorageAdapter.init",
+        "FilePath": "oneiric/adapters/storage/s3.py",
+        "StartLine": 66,
+        "StartColumn": 4,
+        "EndLine": 96,
+        "Metrics": {
+          "Complexity": 9,
+          "Nodes": 18,
+          "Edges": 26,
+          "NestingDepth": 2,
+          "IfStatements": 6,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "resolve_factory",
+        "FilePath": "oneiric/core/lifecycle.py",
+        "StartLine": 55,
+        "StartColumn": 0,
+        "EndLine": 81,
+        "Metrics": {
+          "Complexity": 9,
+          "Nodes": 11,
+          "Edges": 17,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 4,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "run_with_retry",
+        "FilePath": "oneiric/core/resiliency.py",
+        "StartLine": 104,
+        "StartColumn": 0,
+        "EndLine": 155,
+        "Metrics": {
+          "Complexity": 9,
+          "Nodes": 16,
+          "Edges": 22,
+          "NestingDepth": 5,
+          "IfStatements": 2,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 6,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "SerializationAction._encode",
+        "FilePath": "oneiric/actions/serialization.py",
+        "StartLine": 78,
+        "StartColumn": 4,
+        "EndLine": 113,
+        "Metrics": {
+          "Complexity": 9,
+          "Nodes": 17,
+          "Edges": 25,
+          "NestingDepth": 2,
+          "IfStatements": 7,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "SelectionWatcher._tick",
+        "FilePath": "oneiric/runtime/watchers.py",
+        "StartLine": 120,
+        "StartColumn": 4,
+        "EndLine": 142,
+        "Metrics": {
+          "Complexity": 9,
+          "Nodes": 23,
+          "Edges": 32,
+          "NestingDepth": 2,
+          "IfStatements": 8,
+          "LoopStatements": 4,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "load_yaml_config",
+        "FilePath": "oneiric/deployment/config.py",
+        "StartLine": 16,
+        "StartColumn": 0,
+        "EndLine": 27,
+        "Metrics": {
+          "Complexity": 9,
+          "Nodes": 7,
+          "Edges": 13,
+          "NestingDepth": 2,
+          "IfStatements": 1,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 7,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "WorkflowAuditAction.execute",
+        "FilePath": "oneiric/actions/workflow.py",
+        "StartLine": 57,
+        "StartColumn": 4,
+        "EndLine": 90,
+        "Metrics": {
+          "Complexity": 9,
+          "Nodes": 13,
+          "Edges": 20,
+          "NestingDepth": 1,
+          "IfStatements": 6,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "EventDispatcher.dispatch",
+        "FilePath": "oneiric/runtime/events.py",
+        "StartLine": 169,
+        "StartColumn": 4,
+        "EndLine": 186,
+        "Metrics": {
+          "Complexity": 9,
+          "Nodes": 24,
+          "Edges": 33,
+          "NestingDepth": 2,
+          "IfStatements": 7,
+          "LoopStatements": 3,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "AWSSecretManagerAdapter.init",
+        "FilePath": "oneiric/adapters/secrets/aws.py",
+        "StartLine": 70,
+        "StartColumn": 4,
+        "EndLine": 97,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 16,
+          "Edges": 23,
+          "NestingDepth": 2,
+          "IfStatements": 5,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "AutomationTriggerAction.execute",
+        "FilePath": "oneiric/actions/automation.py",
+        "StartLine": 101,
+        "StartColumn": 4,
+        "EndLine": 138,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 13,
+          "Edges": 19,
+          "NestingDepth": 3,
+          "IfStatements": 4,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "workflow_run_command",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 2287,
+        "StartColumn": 0,
+        "EndLine": 2357,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 12,
+          "Edges": 18,
+          "NestingDepth": 1,
+          "IfStatements": 5,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_build_workflow_summary",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 1072,
+        "StartColumn": 0,
+        "EndLine": 1101,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 18,
+          "Edges": 26,
+          "NestingDepth": 3,
+          "IfStatements": 7,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_print_status_record",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 1539,
+        "StartColumn": 0,
+        "EndLine": 1580,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 16,
+          "Edges": 24,
+          "NestingDepth": 2,
+          "IfStatements": 7,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "is_not_found_error",
+        "FilePath": "oneiric/adapters/storage/error_detection.py",
+        "StartLine": 6,
+        "StartColumn": 0,
+        "EndLine": 27,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 16,
+          "Edges": 24,
+          "NestingDepth": 3,
+          "IfStatements": 7,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "RedisStreamsQueueAdapter.init",
+        "FilePath": "oneiric/adapters/queue/redis_streams.py",
+        "StartLine": 91,
+        "StartColumn": 4,
+        "EndLine": 116,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 12,
+          "Edges": 18,
+          "NestingDepth": 4,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "PubSubQueueAdapter.init",
+        "FilePath": "oneiric/adapters/queue/pubsub.py",
+        "StartLine": 64,
+        "StartColumn": 4,
+        "EndLine": 89,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 13,
+          "Edges": 19,
+          "NestingDepth": 3,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 4,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "LavinMQQueueAdapter.health",
+        "FilePath": "oneiric/adapters/queue/lavinmq.py",
+        "StartLine": 240,
+        "StartColumn": 4,
+        "EndLine": 265,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 17,
+          "Edges": 25,
+          "NestingDepth": 3,
+          "IfStatements": 5,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "ArtifactManager._download_to_temp_file",
+        "FilePath": "oneiric/remote/loader.py",
+        "StartLine": 206,
+        "StartColumn": 4,
+        "EndLine": 230,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 21,
+          "Edges": 28,
+          "NestingDepth": 5,
+          "IfStatements": 2,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 5,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "DynamoDBAdapter._table",
+        "FilePath": "oneiric/adapters/nosql/dynamodb.py",
+        "StartLine": 189,
+        "StartColumn": 4,
+        "EndLine": 219,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 20,
+          "Edges": 28,
+          "NestingDepth": 2,
+          "IfStatements": 6,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "SentryMonitoringAdapter._apply_fingerprint",
+        "FilePath": "oneiric/adapters/monitoring/sentry.py",
+        "StartLine": 163,
+        "StartColumn": 4,
+        "EndLine": 185,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 16,
+          "Edges": 24,
+          "NestingDepth": 2,
+          "IfStatements": 7,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "OTLPObservabilityAdapter.init",
+        "FilePath": "oneiric/adapters/monitoring/otlp.py",
+        "StartLine": 79,
+        "StartColumn": 4,
+        "EndLine": 119,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 13,
+          "Edges": 20,
+          "NestingDepth": 2,
+          "IfStatements": 6,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "TwilioAdapter.send_sms",
+        "FilePath": "oneiric/adapters/messaging/twilio.py",
+        "StartLine": 102,
+        "StartColumn": 4,
+        "EndLine": 137,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 7,
+          "Edges": 13,
+          "NestingDepth": 2,
+          "IfStatements": 1,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 6,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "SendGridAdapter._build_payload",
+        "FilePath": "oneiric/adapters/messaging/sendgrid.py",
+        "StartLine": 137,
+        "StartColumn": 4,
+        "EndLine": 181,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 15,
+          "Edges": 23,
+          "NestingDepth": 1,
+          "IfStatements": 7,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "ServiceSupervisor._poll_loop",
+        "FilePath": "oneiric/runtime/supervisor.py",
+        "StartLine": 163,
+        "StartColumn": 4,
+        "EndLine": 172,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 8,
+          "Edges": 14,
+          "NestingDepth": 2,
+          "IfStatements": 1,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 6,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "SendGridAdapter.send_email",
+        "FilePath": "oneiric/adapters/messaging/sendgrid.py",
+        "StartLine": 102,
+        "StartColumn": 4,
+        "EndLine": 135,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 7,
+          "Edges": 13,
+          "NestingDepth": 2,
+          "IfStatements": 1,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 6,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "DuckDBDatabaseAdapter.fetch_arrow",
+        "FilePath": "oneiric/adapters/database/duckdb.py",
+        "StartLine": 293,
+        "StartColumn": 4,
+        "EndLine": 310,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 7,
+          "Edges": 13,
+          "NestingDepth": 2,
+          "IfStatements": 1,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 6,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "DuckDBDatabaseAdapter.init",
+        "FilePath": "oneiric/adapters/database/duckdb.py",
+        "StartLine": 88,
+        "StartColumn": 4,
+        "EndLine": 126,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 13,
+          "Edges": 19,
+          "NestingDepth": 2,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 4,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "FCMPushAdapter._build_message_payload",
+        "FilePath": "oneiric/adapters/messaging/fcm.py",
+        "StartLine": 134,
+        "StartColumn": 4,
+        "EndLine": 158,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 12,
+          "Edges": 18,
+          "NestingDepth": 2,
+          "IfStatements": 5,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "DuckDBDatabaseAdapter.fetch_df",
+        "FilePath": "oneiric/adapters/database/duckdb.py",
+        "StartLine": 274,
+        "StartColumn": 4,
+        "EndLine": 291,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 7,
+          "Edges": 13,
+          "NestingDepth": 2,
+          "IfStatements": 1,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 6,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_parse_timestamp",
+        "FilePath": "oneiric/remote/loader.py",
+        "StartLine": 569,
+        "StartColumn": 0,
+        "EndLine": 582,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 12,
+          "Edges": 18,
+          "NestingDepth": 3,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "RemoteManifestEntry._normalize_capabilities",
+        "FilePath": "oneiric/remote/models.py",
+        "StartLine": 72,
+        "StartColumn": 4,
+        "EndLine": 92,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 13,
+          "Edges": 19,
+          "NestingDepth": 4,
+          "IfStatements": 5,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "RemoteManifestEntry.capability_payloads",
+        "FilePath": "oneiric/remote/models.py",
+        "StartLine": 98,
+        "StartColumn": 4,
+        "EndLine": 119,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 17,
+          "Edges": 25,
+          "NestingDepth": 2,
+          "IfStatements": 7,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "verify_manifest_signature",
+        "FilePath": "oneiric/remote/security.py",
+        "StartLine": 48,
+        "StartColumn": 0,
+        "EndLine": 90,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 16,
+          "Edges": 24,
+          "NestingDepth": 3,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "AnthropicLLM._build_chat_request_params",
+        "FilePath": "oneiric/adapters/llm/anthropic.py",
+        "StartLine": 226,
+        "StartColumn": 4,
+        "EndLine": 263,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 17,
+          "Edges": 25,
+          "NestingDepth": 1,
+          "IfStatements": 7,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "AioHTTPAdapter.request",
+        "FilePath": "oneiric/adapters/http/aiohttp.py",
+        "StartLine": 93,
+        "StartColumn": 4,
+        "EndLine": 151,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 14,
+          "Edges": 21,
+          "NestingDepth": 3,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 5,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "RuntimeOrchestrator.start",
+        "FilePath": "oneiric/runtime/orchestrator.py",
+        "StartLine": 191,
+        "StartColumn": 4,
+        "EndLine": 230,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 17,
+          "Edges": 25,
+          "NestingDepth": 2,
+          "IfStatements": 6,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "SFTPFileTransferAdapter.init",
+        "FilePath": "oneiric/adapters/file_transfer/sftp.py",
+        "StartLine": 60,
+        "StartColumn": 4,
+        "EndLine": 94,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 14,
+          "Edges": 21,
+          "NestingDepth": 2,
+          "IfStatements": 5,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "SCPFileTransferAdapter.init",
+        "FilePath": "oneiric/adapters/file_transfer/scp.py",
+        "StartLine": 65,
+        "StartColumn": 4,
+        "EndLine": 99,
+        "Metrics": {
+          "Complexity": 8,
+          "Nodes": 14,
+          "Edges": 21,
+          "NestingDepth": 3,
+          "IfStatements": 5,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "WebPushAdapter._resolve_subscription",
+        "FilePath": "oneiric/adapters/messaging/webpush.py",
+        "StartLine": 127,
+        "StartColumn": 4,
+        "EndLine": 139,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 12,
+          "Edges": 18,
+          "NestingDepth": 3,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "OTelStorageAdapter._flush_buffer",
+        "FilePath": "oneiric/adapters/observability/otel.py",
+        "StartLine": 130,
+        "StartColumn": 4,
+        "EndLine": 178,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 20,
+          "Edges": 27,
+          "NestingDepth": 4,
+          "IfStatements": 3,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_handle_orchestrate",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 828,
+        "StartColumn": 0,
+        "EndLine": 901,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 15,
+          "Edges": 23,
+          "NestingDepth": 2,
+          "IfStatements": 5,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "plugins_command",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 2014,
+        "StartColumn": 0,
+        "EndLine": 2040,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 15,
+          "Edges": 22,
+          "NestingDepth": 2,
+          "IfStatements": 6,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "HTTPArtifactAdapter.download",
+        "FilePath": "oneiric/adapters/file_transfer/http_artifact.py",
+        "StartLine": 79,
+        "StartColumn": 4,
+        "EndLine": 95,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 2,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "HTTPSUploadAdapter.upload",
+        "FilePath": "oneiric/adapters/file_transfer/http_upload.py",
+        "StartLine": 100,
+        "StartColumn": 4,
+        "EndLine": 139,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 12,
+          "Edges": 18,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_filter_health_statuses",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 1426,
+        "StartColumn": 0,
+        "EndLine": 1434,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 17,
+          "Edges": 24,
+          "NestingDepth": 1,
+          "IfStatements": 6,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_derive_notification_route",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 202,
+        "StartColumn": 0,
+        "EndLine": 254,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 11,
+          "Edges": 17,
+          "NestingDepth": 2,
+          "IfStatements": 5,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_print_lifecycle_snapshot",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 1801,
+        "StartColumn": 0,
+        "EndLine": 1824,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 15,
+          "Edges": 22,
+          "NestingDepth": 3,
+          "IfStatements": 6,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_manifest_entry_from_adapter",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 344,
+        "StartColumn": 0,
+        "EndLine": 384,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 16,
+          "Edges": 22,
+          "NestingDepth": 2,
+          "IfStatements": 5,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_CronExpression._matches",
+        "FilePath": "oneiric/actions/task.py",
+        "StartLine": 144,
+        "StartColumn": 4,
+        "EndLine": 160,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 13,
+          "Edges": 20,
+          "NestingDepth": 1,
+          "IfStatements": 6,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_execute_task_node",
+        "FilePath": "oneiric/runtime/dag.py",
+        "StartLine": 164,
+        "StartColumn": 0,
+        "EndLine": 259,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 12,
+          "Edges": 17,
+          "NestingDepth": 3,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 4,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "PineconeAdapter._create_client",
+        "FilePath": "oneiric/adapters/vector/pinecone.py",
+        "StartLine": 69,
+        "StartColumn": 4,
+        "EndLine": 84,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 4,
+          "Edges": 9,
+          "NestingDepth": 2,
+          "IfStatements": 0,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 6,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "PgvectorAdapter._create_client",
+        "FilePath": "oneiric/adapters/vector/pgvector.py",
+        "StartLine": 290,
+        "StartColumn": 4,
+        "EndLine": 315,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 11,
+          "Edges": 16,
+          "NestingDepth": 3,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 4,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_workflow_target_keys",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 1021,
+        "StartColumn": 0,
+        "EndLine": 1040,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 15,
+          "Edges": 22,
+          "NestingDepth": 3,
+          "IfStatements": 6,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "execute_dag",
+        "FilePath": "oneiric/runtime/dag.py",
+        "StartLine": 77,
+        "StartColumn": 0,
+        "EndLine": 161,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 20,
+          "Edges": 26,
+          "NestingDepth": 6,
+          "IfStatements": 2,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 4,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "Auth0IdentityAdapter._fetch_jwks",
+        "FilePath": "oneiric/adapters/identity/auth0.py",
+        "StartLine": 101,
+        "StartColumn": 4,
+        "EndLine": 124,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 14,
+          "Edges": 20,
+          "NestingDepth": 3,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "RuntimeCacheManager._load_cache",
+        "FilePath": "oneiric/runtime/cache.py",
+        "StartLine": 70,
+        "StartColumn": 4,
+        "EndLine": 90,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 18,
+          "Edges": 25,
+          "NestingDepth": 6,
+          "IfStatements": 3,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_read_file",
+        "FilePath": "oneiric/core/config.py",
+        "StartLine": 632,
+        "StartColumn": 0,
+        "EndLine": 674,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 11,
+          "Edges": 17,
+          "NestingDepth": 3,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "ProcessManager.stop_process",
+        "FilePath": "oneiric/runtime/process_manager.py",
+        "StartLine": 123,
+        "StartColumn": 4,
+        "EndLine": 152,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 16,
+          "Edges": 23,
+          "NestingDepth": 4,
+          "IfStatements": 3,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "verify_manifest_signatures",
+        "FilePath": "oneiric/remote/security.py",
+        "StartLine": 103,
+        "StartColumn": 0,
+        "EndLine": 141,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 15,
+          "Edges": 22,
+          "NestingDepth": 2,
+          "IfStatements": 6,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "PgvectorAdapter._sanitize_identifier",
+        "FilePath": "oneiric/adapters/vector/pgvector.py",
+        "StartLine": 379,
+        "StartColumn": 4,
+        "EndLine": 390,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 9,
+          "Edges": 14,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "OpenAILLMAdapter._add_stream_settings_params",
+        "FilePath": "oneiric/adapters/llm/openai.py",
+        "StartLine": 334,
+        "StartColumn": 4,
+        "EndLine": 346,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 13,
+          "Edges": 20,
+          "NestingDepth": 1,
+          "IfStatements": 6,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "S3StorageAdapter.list",
+        "FilePath": "oneiric/adapters/storage/s3.py",
+        "StartLine": 147,
+        "StartColumn": 4,
+        "EndLine": 168,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 15,
+          "Edges": 22,
+          "NestingDepth": 3,
+          "IfStatements": 6,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "EventDispatchAction.execute",
+        "FilePath": "oneiric/actions/event.py",
+        "StartLine": 107,
+        "StartColumn": 4,
+        "EndLine": 154,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 1,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "APNSPushAdapter._default_client_factory",
+        "FilePath": "oneiric/adapters/messaging/apns.py",
+        "StartLine": 126,
+        "StartColumn": 4,
+        "EndLine": 147,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 8,
+          "Edges": 12,
+          "NestingDepth": 2,
+          "IfStatements": 1,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 5,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "InfisicalSecretAdapter.get_secret",
+        "FilePath": "oneiric/adapters/secrets/infisical.py",
+        "StartLine": 90,
+        "StartColumn": 4,
+        "EndLine": 114,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 11,
+          "Edges": 17,
+          "NestingDepth": 1,
+          "IfStatements": 5,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_status_from_dict",
+        "FilePath": "oneiric/core/lifecycle.py",
+        "StartLine": 515,
+        "StartColumn": 0,
+        "EndLine": 541,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 15,
+          "Edges": 22,
+          "NestingDepth": 1,
+          "IfStatements": 6,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "FCMPushAdapter._default_sender",
+        "FilePath": "oneiric/adapters/messaging/fcm.py",
+        "StartLine": 123,
+        "StartColumn": 4,
+        "EndLine": 132,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 1,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "EventDispatchAction._dispatch_hook",
+        "FilePath": "oneiric/actions/event.py",
+        "StartLine": 210,
+        "StartColumn": 4,
+        "EndLine": 261,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 14,
+          "Edges": 20,
+          "NestingDepth": 3,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 4,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "LifecycleManager._update_status",
+        "FilePath": "oneiric/core/lifecycle.py",
+        "StartLine": 415,
+        "StartColumn": 4,
+        "EndLine": 440,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 13,
+          "Edges": 20,
+          "NestingDepth": 1,
+          "IfStatements": 6,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "MailgunAdapter.send_email",
+        "FilePath": "oneiric/adapters/messaging/mailgun.py",
+        "StartLine": 105,
+        "StartColumn": 4,
+        "EndLine": 131,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 5,
+          "Edges": 10,
+          "NestingDepth": 2,
+          "IfStatements": 0,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 6,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "RuntimeTelemetryRecorder._workflow_payload",
+        "FilePath": "oneiric/runtime/telemetry.py",
+        "StartLine": 109,
+        "StartColumn": 4,
+        "EndLine": 148,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 16,
+          "Edges": 23,
+          "NestingDepth": 2,
+          "IfStatements": 6,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "ServiceSupervisor._notify_listeners",
+        "FilePath": "oneiric/runtime/supervisor.py",
+        "StartLine": 131,
+        "StartColumn": 4,
+        "EndLine": 142,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 17,
+          "Edges": 24,
+          "NestingDepth": 3,
+          "IfStatements": 5,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "LavinMQQueueAdapter._init_mqtt",
+        "FilePath": "oneiric/adapters/queue/lavinmq.py",
+        "StartLine": 515,
+        "StartColumn": 4,
+        "EndLine": 548,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 13,
+          "Edges": 19,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "SlackAdapter._build_slack_payload",
+        "FilePath": "oneiric/adapters/messaging/slack.py",
+        "StartLine": 109,
+        "StartColumn": 4,
+        "EndLine": 132,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 13,
+          "Edges": 20,
+          "NestingDepth": 1,
+          "IfStatements": 6,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "SlackAdapter._send_slack_request",
+        "FilePath": "oneiric/adapters/messaging/slack.py",
+        "StartLine": 134,
+        "StartColumn": 4,
+        "EndLine": 150,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 4,
+          "Edges": 9,
+          "NestingDepth": 2,
+          "IfStatements": 0,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 6,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "TeamsAdapter.send_notification",
+        "FilePath": "oneiric/adapters/messaging/teams.py",
+        "StartLine": 66,
+        "StartColumn": 4,
+        "EndLine": 91,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 5,
+          "Edges": 10,
+          "NestingDepth": 2,
+          "IfStatements": 0,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 6,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "DomainBridge.use",
+        "FilePath": "oneiric/domains/base.py",
+        "StartLine": 74,
+        "StartColumn": 4,
+        "EndLine": 116,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "SerializationAction.execute",
+        "FilePath": "oneiric/actions/serialization.py",
+        "StartLine": 58,
+        "StartColumn": 4,
+        "EndLine": 76,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 9,
+          "Edges": 14,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "WorkflowBridge.enqueue_workflow",
+        "FilePath": "oneiric/domains/workflows.py",
+        "StartLine": 129,
+        "StartColumn": 4,
+        "EndLine": 171,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 1,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "QueryService.custom_query",
+        "FilePath": "oneiric/adapters/observability/queries.py",
+        "StartLine": 197,
+        "StartColumn": 4,
+        "EndLine": 213,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 12,
+          "Edges": 17,
+          "NestingDepth": 2,
+          "IfStatements": 3,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_extract_signatures",
+        "FilePath": "oneiric/remote/loader.py",
+        "StartLine": 523,
+        "StartColumn": 0,
+        "EndLine": 545,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 14,
+          "Edges": 21,
+          "NestingDepth": 3,
+          "IfStatements": 6,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "OTelStorageAdapter.init",
+        "FilePath": "oneiric/adapters/observability/otel.py",
+        "StartLine": 34,
+        "StartColumn": 4,
+        "EndLine": 80,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 14,
+          "Edges": 19,
+          "NestingDepth": 3,
+          "IfStatements": 1,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 5,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "OTelStorageAdapter.search_logs",
+        "FilePath": "oneiric/adapters/observability/otel.py",
+        "StartLine": 353,
+        "StartColumn": 4,
+        "EndLine": 420,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 17,
+          "Edges": 23,
+          "NestingDepth": 3,
+          "IfStatements": 3,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_validate_entry",
+        "FilePath": "oneiric/remote/loader.py",
+        "StartLine": 718,
+        "StartColumn": 0,
+        "EndLine": 743,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 13,
+          "Edges": 20,
+          "NestingDepth": 1,
+          "IfStatements": 6,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "NetdataMonitoringAdapter.init",
+        "FilePath": "oneiric/adapters/monitoring/netdata.py",
+        "StartLine": 80,
+        "StartColumn": 4,
+        "EndLine": 108,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 2,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "sync_remote_manifest",
+        "FilePath": "oneiric/remote/loader.py",
+        "StartLine": 233,
+        "StartColumn": 0,
+        "EndLine": 273,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 8,
+          "Edges": 14,
+          "NestingDepth": 2,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 4,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "WorkflowOrchestratorAction.execute",
+        "FilePath": "oneiric/actions/workflow.py",
+        "StartLine": 308,
+        "StartColumn": 4,
+        "EndLine": 386,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 24,
+          "Edges": 31,
+          "NestingDepth": 2,
+          "IfStatements": 6,
+          "LoopStatements": 5,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_local_path_from_url",
+        "FilePath": "oneiric/remote/loader.py",
+        "StartLine": 74,
+        "StartColumn": 0,
+        "EndLine": 92,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 9,
+          "Edges": 14,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "MongoDBAdapter._client_params",
+        "FilePath": "oneiric/adapters/nosql/mongodb.py",
+        "StartLine": 215,
+        "StartColumn": 4,
+        "EndLine": 236,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 14,
+          "Edges": 21,
+          "NestingDepth": 2,
+          "IfStatements": 6,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "WorkflowNotifyAction._normalize_recipients",
+        "FilePath": "oneiric/actions/workflow.py",
+        "StartLine": 190,
+        "StartColumn": 4,
+        "EndLine": 200,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 14,
+          "Edges": 20,
+          "NestingDepth": 2,
+          "IfStatements": 5,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "FirestoreAdapter._default_client_factory",
+        "FilePath": "oneiric/adapters/nosql/firestore.py",
+        "StartLine": 147,
+        "StartColumn": 4,
+        "EndLine": 172,
+        "Metrics": {
+          "Complexity": 7,
+          "Nodes": 11,
+          "Edges": 16,
+          "NestingDepth": 3,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 4,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "ProcessManager._build_orchestrate_command",
+        "FilePath": "oneiric/runtime/process_manager.py",
+        "StartLine": 33,
+        "StartColumn": 4,
+        "EndLine": 71,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 12,
+          "Edges": 18,
+          "NestingDepth": 2,
+          "IfStatements": 5,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "GCSStorageAdapter.init",
+        "FilePath": "oneiric/adapters/storage/gcs.py",
+        "StartLine": 56,
+        "StartColumn": 4,
+        "EndLine": 75,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 3,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "DynamoDBAdapter._ensure_session",
+        "FilePath": "oneiric/adapters/nosql/dynamodb.py",
+        "StartLine": 166,
+        "StartColumn": 4,
+        "EndLine": 186,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 11,
+          "Edges": 16,
+          "NestingDepth": 3,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "CircuitBreaker.call",
+        "FilePath": "oneiric/adapters/observability/circuit_breaker.py",
+        "StartLine": 24,
+        "StartColumn": 4,
+        "EndLine": 39,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 8,
+          "Edges": 12,
+          "NestingDepth": 2,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "ServiceSupervisor.add_listener",
+        "FilePath": "oneiric/runtime/supervisor.py",
+        "StartLine": 74,
+        "StartColumn": 4,
+        "EndLine": 97,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 15,
+          "Edges": 21,
+          "NestingDepth": 3,
+          "IfStatements": 4,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "RuntimeOrchestrator.stop",
+        "FilePath": "oneiric/runtime/orchestrator.py",
+        "StartLine": 232,
+        "StartColumn": 4,
+        "EndLine": 246,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 12,
+          "Edges": 18,
+          "NestingDepth": 2,
+          "IfStatements": 5,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_normalize_candidates",
+        "FilePath": "oneiric/plugins.py",
+        "StartLine": 237,
+        "StartColumn": 0,
+        "EndLine": 254,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 12,
+          "Edges": 18,
+          "NestingDepth": 2,
+          "IfStatements": 5,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "LogfireMonitoringAdapter._build_config_kwargs",
+        "FilePath": "oneiric/adapters/monitoring/logfire.py",
+        "StartLine": 114,
+        "StartColumn": 4,
+        "EndLine": 133,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 12,
+          "Edges": 18,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "start_command",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 3034,
+        "StartColumn": 0,
+        "EndLine": 3125,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 1,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "QueryService.get_traces_by_error",
+        "FilePath": "oneiric/adapters/observability/queries.py",
+        "StartLine": 97,
+        "StartColumn": 4,
+        "EndLine": 126,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 13,
+          "Edges": 19,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "QueryService.get_trace_context",
+        "FilePath": "oneiric/adapters/observability/queries.py",
+        "StartLine": 128,
+        "StartColumn": 4,
+        "EndLine": 195,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 17,
+          "Edges": 22,
+          "NestingDepth": 2,
+          "IfStatements": 3,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "SecuritySecureAction.execute",
+        "FilePath": "oneiric/actions/security.py",
+        "StartLine": 161,
+        "StartColumn": 4,
+        "EndLine": 175,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 9,
+          "Edges": 14,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "register_entrypoint_plugins",
+        "FilePath": "oneiric/plugins.py",
+        "StartLine": 98,
+        "StartColumn": 0,
+        "EndLine": 127,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 11,
+          "Edges": 17,
+          "NestingDepth": 2,
+          "IfStatements": 5,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "TwilioAdapter._build_payload",
+        "FilePath": "oneiric/adapters/messaging/twilio.py",
+        "StartLine": 139,
+        "StartColumn": 4,
+        "EndLine": 164,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 14,
+          "Edges": 20,
+          "NestingDepth": 2,
+          "IfStatements": 5,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "remote_sync_loop",
+        "FilePath": "oneiric/remote/loader.py",
+        "StartLine": 276,
+        "StartColumn": 0,
+        "EndLine": 326,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 12,
+          "Edges": 18,
+          "NestingDepth": 3,
+          "IfStatements": 3,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "validate_factory_string",
+        "FilePath": "oneiric/core/security.py",
+        "StartLine": 31,
+        "StartColumn": 0,
+        "EndLine": 68,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 12,
+          "Edges": 18,
+          "NestingDepth": 2,
+          "IfStatements": 5,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "WorkflowOrchestratorAction._select_steps",
+        "FilePath": "oneiric/actions/workflow.py",
+        "StartLine": 407,
+        "StartColumn": 4,
+        "EndLine": 427,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 12,
+          "Edges": 17,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "LavinMQQueueAdapter._ensure_amqp_connection",
+        "FilePath": "oneiric/adapters/queue/lavinmq.py",
+        "StartLine": 417,
+        "StartColumn": 4,
+        "EndLine": 436,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 11,
+          "Edges": 16,
+          "NestingDepth": 3,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "CandidateRegistry.resolve",
+        "FilePath": "oneiric/core/resolution.py",
+        "StartLine": 137,
+        "StartColumn": 4,
+        "EndLine": 165,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 14,
+          "Edges": 20,
+          "NestingDepth": 4,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "SerializationAction._process_binary_value",
+        "FilePath": "oneiric/actions/serialization.py",
+        "StartLine": 162,
+        "StartColumn": 4,
+        "EndLine": 170,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 3,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "LavinMQQueueAdapter._mqtt_subscriber",
+        "FilePath": "oneiric/adapters/queue/lavinmq.py",
+        "StartLine": 550,
+        "StartColumn": 4,
+        "EndLine": 587,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 15,
+          "Edges": 21,
+          "NestingDepth": 3,
+          "IfStatements": 3,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "load_runtime_telemetry",
+        "FilePath": "oneiric/runtime/telemetry.py",
+        "StartLine": 31,
+        "StartColumn": 0,
+        "EndLine": 47,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 12,
+          "Edges": 18,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "ValidationSchemaAction.execute",
+        "FilePath": "oneiric/actions/data.py",
+        "StartLine": 360,
+        "StartColumn": 4,
+        "EndLine": 391,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 11,
+          "Edges": 16,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "RabbitMQQueueAdapter._ensure_connection",
+        "FilePath": "oneiric/adapters/queue/rabbitmq.py",
+        "StartLine": 157,
+        "StartColumn": 4,
+        "EndLine": 173,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 11,
+          "Edges": 16,
+          "NestingDepth": 3,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "ArtifactManager._try_local_file",
+        "FilePath": "oneiric/remote/loader.py",
+        "StartLine": 167,
+        "StartColumn": 4,
+        "EndLine": 185,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 9,
+          "Edges": 14,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_create_handler_for_target",
+        "FilePath": "oneiric/core/logging.py",
+        "StartLine": 156,
+        "StartColumn": 0,
+        "EndLine": 171,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 9,
+          "Edges": 14,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "DataTransformAction._coerce_optional_list",
+        "FilePath": "oneiric/actions/data.py",
+        "StartLine": 111,
+        "StartColumn": 4,
+        "EndLine": 124,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 12,
+          "Edges": 17,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "LifecycleManager._load_status_snapshot",
+        "FilePath": "oneiric/core/lifecycle.py",
+        "StartLine": 442,
+        "StartColumn": 4,
+        "EndLine": 460,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 13,
+          "Edges": 19,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "AWSSecretManagerAdapter.get_secret",
+        "FilePath": "oneiric/adapters/secrets/aws.py",
+        "StartLine": 125,
+        "StartColumn": 4,
+        "EndLine": 148,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 3,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "FCMPushAdapter._default_app_factory",
+        "FilePath": "oneiric/adapters/messaging/fcm.py",
+        "StartLine": 100,
+        "StartColumn": 4,
+        "EndLine": 121,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 13,
+          "Edges": 18,
+          "NestingDepth": 2,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "AutomationTriggerAction._compare",
+        "FilePath": "oneiric/actions/automation.py",
+        "StartLine": 212,
+        "StartColumn": 4,
+        "EndLine": 226,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 12,
+          "Edges": 18,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "ArtifactManager._fetch_remote_file",
+        "FilePath": "oneiric/remote/loader.py",
+        "StartLine": 187,
+        "StartColumn": 4,
+        "EndLine": 204,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 2,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "OpenAIEmbeddingAdapter._compute_similarity",
+        "FilePath": "oneiric/adapters/embedding/openai.py",
+        "StartLine": 293,
+        "StartColumn": 4,
+        "EndLine": 308,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 9,
+          "Edges": 14,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_env_overrides",
+        "FilePath": "oneiric/core/config.py",
+        "StartLine": 570,
+        "StartColumn": 0,
+        "EndLine": 615,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 14,
+          "Edges": 20,
+          "NestingDepth": 3,
+          "IfStatements": 5,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "HttpFetchAction.execute",
+        "FilePath": "oneiric/actions/http.py",
+        "StartLine": 87,
+        "StartColumn": 4,
+        "EndLine": 156,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 8,
+          "Edges": 12,
+          "NestingDepth": 2,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "BaseLogFormatter.format_logs",
+        "FilePath": "oneiric/shell/formatters.py",
+        "StartLine": 79,
+        "StartColumn": 4,
+        "EndLine": 97,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 14,
+          "Edges": 20,
+          "NestingDepth": 1,
+          "IfStatements": 5,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "observed_http_request",
+        "FilePath": "oneiric/core/http_instrumentation.py",
+        "StartLine": 11,
+        "StartColumn": 0,
+        "EndLine": 74,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 11,
+          "Edges": 16,
+          "NestingDepth": 3,
+          "IfStatements": 0,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 5,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "PostgresDatabaseAdapter.init",
+        "FilePath": "oneiric/adapters/database/postgres.py",
+        "StartLine": 59,
+        "StartColumn": 4,
+        "EndLine": 75,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 3,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "OpenAILLMAdapter._ensure_client",
+        "FilePath": "oneiric/adapters/llm/openai.py",
+        "StartLine": 114,
+        "StartColumn": 4,
+        "EndLine": 146,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 8,
+          "Edges": 12,
+          "NestingDepth": 2,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "SecretsHook.get",
+        "FilePath": "oneiric/core/config.py",
+        "StartLine": 469,
+        "StartColumn": 4,
+        "EndLine": 490,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 9,
+          "Edges": 14,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "SQLiteDatabaseAdapter.init",
+        "FilePath": "oneiric/adapters/database/sqlite.py",
+        "StartLine": 51,
+        "StartColumn": 4,
+        "EndLine": 72,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 11,
+          "Edges": 16,
+          "NestingDepth": 3,
+          "IfStatements": 3,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "CloudflareDNSAdapter.update_record",
+        "FilePath": "oneiric/adapters/dns/cloudflare.py",
+        "StartLine": 130,
+        "StartColumn": 4,
+        "EndLine": 156,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 11,
+          "Edges": 17,
+          "NestingDepth": 1,
+          "IfStatements": 5,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "HTTPClientAdapter.cleanup",
+        "FilePath": "oneiric/adapters/http/httpx.py",
+        "StartLine": 137,
+        "StartColumn": 4,
+        "EndLine": 150,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 11,
+          "Edges": 17,
+          "NestingDepth": 3,
+          "IfStatements": 5,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "GCDNSAdapter._create_client",
+        "FilePath": "oneiric/adapters/dns/gcdns.py",
+        "StartLine": 170,
+        "StartColumn": 4,
+        "EndLine": 190,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 9,
+          "Edges": 13,
+          "NestingDepth": 3,
+          "IfStatements": 1,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 4,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "Neo4jGraphAdapter._ensure_driver",
+        "FilePath": "oneiric/adapters/graph/neo4j.py",
+        "StartLine": 130,
+        "StartColumn": 4,
+        "EndLine": 142,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "parse_event_filters",
+        "FilePath": "oneiric/runtime/events.py",
+        "StartLine": 95,
+        "StartColumn": 0,
+        "EndLine": 122,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 13,
+          "Edges": 19,
+          "NestingDepth": 3,
+          "IfStatements": 5,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "QdrantAdapter.upsert",
+        "FilePath": "oneiric/adapters/vector/qdrant.py",
+        "StartLine": 327,
+        "StartColumn": 4,
+        "EndLine": 380,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 13,
+          "Edges": 19,
+          "NestingDepth": 3,
+          "IfStatements": 4,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "EmbeddingBase._normalize_vector",
+        "FilePath": "oneiric/adapters/embedding/embedding_interface.py",
+        "StartLine": 208,
+        "StartColumn": 4,
+        "EndLine": 232,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 11,
+          "Edges": 17,
+          "NestingDepth": 2,
+          "IfStatements": 5,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "QdrantAdapter._ensure_collection_exists",
+        "FilePath": "oneiric/adapters/vector/qdrant.py",
+        "StartLine": 135,
+        "StartColumn": 4,
+        "EndLine": 223,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 14,
+          "Edges": 20,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "QdrantAdapter._build_qdrant_filter",
+        "FilePath": "oneiric/adapters/vector/qdrant.py",
+        "StartLine": 290,
+        "StartColumn": 4,
+        "EndLine": 317,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 12,
+          "Edges": 18,
+          "NestingDepth": 4,
+          "IfStatements": 4,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "stop_command",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 3129,
+        "StartColumn": 0,
+        "EndLine": 3153,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 1,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "WorkflowAuditAction._redact",
+        "FilePath": "oneiric/actions/workflow.py",
+        "StartLine": 92,
+        "StartColumn": 4,
+        "EndLine": 111,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 16,
+          "Edges": 22,
+          "NestingDepth": 3,
+          "IfStatements": 5,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_resolve_filter_path",
+        "FilePath": "oneiric/runtime/events.py",
+        "StartLine": 55,
+        "StartColumn": 0,
+        "EndLine": 72,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 14,
+          "Edges": 20,
+          "NestingDepth": 2,
+          "IfStatements": 5,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_build_status_record",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 1481,
+        "StartColumn": 0,
+        "EndLine": 1536,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 14,
+          "Edges": 20,
+          "NestingDepth": 2,
+          "IfStatements": 5,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_add_event_metadata",
+        "FilePath": "oneiric/remote/loader.py",
+        "StartLine": 681,
+        "StartColumn": 0,
+        "EndLine": 691,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 11,
+          "Edges": 17,
+          "NestingDepth": 1,
+          "IfStatements": 5,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "SessionEventEmitter.emit_session_start",
+        "FilePath": "oneiric/shell/session_tracker.py",
+        "StartLine": 104,
+        "StartColumn": 4,
+        "EndLine": 165,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 11,
+          "Edges": 17,
+          "NestingDepth": 3,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "event_emit_command",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 2133,
+        "StartColumn": 0,
+        "EndLine": 2179,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "OpenAIEmbeddingAdapter._ensure_client",
+        "FilePath": "oneiric/adapters/embedding/openai.py",
+        "StartLine": 88,
+        "StartColumn": 4,
+        "EndLine": 111,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 9,
+          "Edges": 13,
+          "NestingDepth": 3,
+          "IfStatements": 1,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 4,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_CronExpression._extract_step",
+        "FilePath": "oneiric/actions/task.py",
+        "StartLine": 191,
+        "StartColumn": 4,
+        "EndLine": 204,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 1,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "FTPFileTransferAdapter.init",
+        "FilePath": "oneiric/adapters/file_transfer/ftp.py",
+        "StartLine": 55,
+        "StartColumn": 4,
+        "EndLine": 83,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 2,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_parse_payload",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 301,
+        "StartColumn": 0,
+        "EndLine": 310,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 8,
+          "Edges": 12,
+          "NestingDepth": 2,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "RuntimeOrchestrator._update_activity_state",
+        "FilePath": "oneiric/runtime/orchestrator.py",
+        "StartLine": 338,
+        "StartColumn": 4,
+        "EndLine": 350,
+        "Metrics": {
+          "Complexity": 6,
+          "Nodes": 13,
+          "Edges": 19,
+          "NestingDepth": 2,
+          "IfStatements": 5,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "WorkflowOrchestratorAction._load_definition",
+        "FilePath": "oneiric/actions/workflow.py",
+        "StartLine": 388,
+        "StartColumn": 4,
+        "EndLine": 395,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 6,
+          "Edges": 9,
+          "NestingDepth": 2,
+          "IfStatements": 1,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_workflow_inspector_summary",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 989,
+        "StartColumn": 0,
+        "EndLine": 1018,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 11,
+          "Edges": 16,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_print_health_entry",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 1454,
+        "StartColumn": 0,
+        "EndLine": 1470,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 9,
+          "Edges": 14,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "process_status_command",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 3157,
+        "StartColumn": 0,
+        "EndLine": 3186,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_build_workflow_plans",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 1146,
+        "StartColumn": 0,
+        "EndLine": 1171,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 11,
+          "Edges": 16,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_handle_remote_status",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 912,
+        "StartColumn": 0,
+        "EndLine": 930,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 9,
+          "Edges": 14,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "cli_root",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 1946,
+        "StartColumn": 0,
+        "EndLine": 1995,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 8,
+          "Edges": 12,
+          "NestingDepth": 1,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "DebugConsoleAction._merge_scrub_fields",
+        "FilePath": "oneiric/actions/debug.py",
+        "StartLine": 122,
+        "StartColumn": 4,
+        "EndLine": 134,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 1,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_format_swap_summary",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 145,
+        "StartColumn": 0,
+        "EndLine": 160,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 9,
+          "Edges": 14,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "ValidationSchemaAction._validate_fields",
+        "FilePath": "oneiric/actions/data.py",
+        "StartLine": 401,
+        "StartColumn": 4,
+        "EndLine": 423,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 11,
+          "Edges": 16,
+          "NestingDepth": 3,
+          "IfStatements": 4,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_activity_counts_from_mapping",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 264,
+        "StartColumn": 0,
+        "EndLine": 275,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 11,
+          "Edges": 16,
+          "NestingDepth": 3,
+          "IfStatements": 4,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_set_timestamps",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 2841,
+        "StartColumn": 0,
+        "EndLine": 2857,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 9,
+          "Edges": 14,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "action_invoke",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 2044,
+        "StartColumn": 0,
+        "EndLine": 2106,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 8,
+          "Edges": 12,
+          "NestingDepth": 1,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "DuckDBDatabaseAdapter.execute",
+        "FilePath": "oneiric/adapters/database/duckdb.py",
+        "StartLine": 220,
+        "StartColumn": 4,
+        "EndLine": 238,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 9,
+          "Edges": 13,
+          "NestingDepth": 3,
+          "IfStatements": 1,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_format_filter_clause",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 1278,
+        "StartColumn": 0,
+        "EndLine": 1289,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 9,
+          "Edges": 14,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "PgvectorAdapter._connection_kwargs",
+        "FilePath": "oneiric/adapters/vector/pgvector.py",
+        "StartLine": 330,
+        "StartColumn": 4,
+        "EndLine": 347,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 9,
+          "Edges": 14,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_enrich_workflow_plan",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 1127,
+        "StartColumn": 0,
+        "EndLine": 1143,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 9,
+          "Edges": 14,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_emit_inspector_payload",
+        "FilePath": "oneiric/cli.py",
+        "StartLine": 1113,
+        "StartColumn": 0,
+        "EndLine": 1124,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 9,
+          "Edges": 14,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "PgvectorAdapter._write_documents",
+        "FilePath": "oneiric/adapters/vector/pgvector.py",
+        "StartLine": 395,
+        "StartColumn": 4,
+        "EndLine": 425,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 13,
+          "Edges": 18,
+          "NestingDepth": 3,
+          "IfStatements": 3,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "apply_runtime_profile",
+        "FilePath": "oneiric/core/config.py",
+        "StartLine": 421,
+        "StartColumn": 0,
+        "EndLine": 444,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 2,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_coerce_env_value",
+        "FilePath": "oneiric/core/config.py",
+        "StartLine": 618,
+        "StartColumn": 0,
+        "EndLine": 629,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 3,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "AgentDBAdapter.init",
+        "FilePath": "oneiric/adapters/vector/agentdb.py",
+        "StartLine": 110,
+        "StartColumn": 4,
+        "EndLine": 127,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 6,
+          "Edges": 9,
+          "NestingDepth": 2,
+          "IfStatements": 1,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "KeyringSecretAdapter.get_secret",
+        "FilePath": "oneiric/adapters/secrets/keyring.py",
+        "StartLine": 89,
+        "StartColumn": 4,
+        "EndLine": 121,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 9,
+          "Edges": 14,
+          "NestingDepth": 2,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "load_settings",
+        "FilePath": "oneiric/core/config.py",
+        "StartLine": 249,
+        "StartColumn": 0,
+        "EndLine": 371,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "GCPSecretManagerAdapter.get_secret",
+        "FilePath": "oneiric/adapters/secrets/gcp.py",
+        "StartLine": 102,
+        "StartColumn": 4,
+        "EndLine": 122,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 8,
+          "Edges": 12,
+          "NestingDepth": 3,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "LifecycleManager._run_health",
+        "FilePath": "oneiric/core/lifecycle.py",
+        "StartLine": 332,
+        "StartColumn": 4,
+        "EndLine": 350,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 8,
+          "Edges": 12,
+          "NestingDepth": 2,
+          "IfStatements": 3,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "GCPSecretManagerAdapter.init",
+        "FilePath": "oneiric/adapters/secrets/gcp.py",
+        "StartLine": 63,
+        "StartColumn": 4,
+        "EndLine": 76,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 9,
+          "Edges": 13,
+          "NestingDepth": 2,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "LifecycleManager._await_with_timeout",
+        "FilePath": "oneiric/core/lifecycle.py",
+        "StartLine": 501,
+        "StartColumn": 4,
+        "EndLine": 512,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 3,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "HttpFetchAction._build_url",
+        "FilePath": "oneiric/actions/http.py",
+        "StartLine": 158,
+        "StartColumn": 4,
+        "EndLine": 168,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 1,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "LifecycleManager._cleanup_instance",
+        "FilePath": "oneiric/core/lifecycle.py",
+        "StartLine": 365,
+        "StartColumn": 4,
+        "EndLine": 383,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 11,
+          "Edges": 16,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "LifecycleManager.probe_instance_health",
+        "FilePath": "oneiric/core/lifecycle.py",
+        "StartLine": 181,
+        "StartColumn": 4,
+        "EndLine": 205,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "SecuritySignatureAction._normalize_message",
+        "FilePath": "oneiric/actions/security.py",
+        "StartLine": 104,
+        "StartColumn": 4,
+        "EndLine": 111,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 1,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "DataSanitizeAction._coerce_optional_list",
+        "FilePath": "oneiric/actions/data.py",
+        "StartLine": 289,
+        "StartColumn": 4,
+        "EndLine": 301,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 1,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "AWSSecretManagerAdapter._extract_secret",
+        "FilePath": "oneiric/adapters/secrets/aws.py",
+        "StartLine": 155,
+        "StartColumn": 4,
+        "EndLine": 162,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 2,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "configure_logging",
+        "FilePath": "oneiric/core/logging.py",
+        "StartLine": 212,
+        "StartColumn": 0,
+        "EndLine": 266,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "RedisStreamsQueueAdapter.pubsub_subscribe",
+        "FilePath": "oneiric/adapters/queue/redis_streams.py",
+        "StartLine": 163,
+        "StartColumn": 4,
+        "EndLine": 197,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 2,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_create_http_handler",
+        "FilePath": "oneiric/core/logging.py",
+        "StartLine": 185,
+        "StartColumn": 0,
+        "EndLine": 198,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 5,
+          "Edges": 8,
+          "NestingDepth": 1,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "PubSubQueueAdapter.cleanup",
+        "FilePath": "oneiric/adapters/queue/pubsub.py",
+        "StartLine": 91,
+        "StartColumn": 4,
+        "EndLine": 101,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 9,
+          "Edges": 14,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "LavinMQQueueAdapter.consume",
+        "FilePath": "oneiric/adapters/queue/lavinmq.py",
+        "StartLine": 323,
+        "StartColumn": 4,
+        "EndLine": 359,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 11,
+          "Edges": 16,
+          "NestingDepth": 4,
+          "IfStatements": 3,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "infer_priority",
+        "FilePath": "oneiric/core/resolution.py",
+        "StartLine": 299,
+        "StartColumn": 0,
+        "EndLine": 309,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 3,
+          "IfStatements": 4,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_env_priority_map",
+        "FilePath": "oneiric/core/resolution.py",
+        "StartLine": 282,
+        "StartColumn": 0,
+        "EndLine": 296,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 11,
+          "Edges": 16,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_extract_capabilities_from_list",
+        "FilePath": "oneiric/core/resolution.py",
+        "StartLine": 408,
+        "StartColumn": 0,
+        "EndLine": 416,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 4,
+          "IfStatements": 4,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "RuntimeTaskGroup.start_soon",
+        "FilePath": "oneiric/core/runtime.py",
+        "StartLine": 46,
+        "StartColumn": 4,
+        "EndLine": 73,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 9,
+          "Edges": 13,
+          "NestingDepth": 1,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "SecretValueCache.get",
+        "FilePath": "oneiric/core/secrets_cache.py",
+        "StartLine": 22,
+        "StartColumn": 4,
+        "EndLine": 33,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 11,
+          "Edges": 16,
+          "NestingDepth": 2,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "LavinMQQueueAdapter.cleanup",
+        "FilePath": "oneiric/adapters/queue/lavinmq.py",
+        "StartLine": 267,
+        "StartColumn": 4,
+        "EndLine": 284,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 11,
+          "Edges": 16,
+          "NestingDepth": 2,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "load_factory_allowlist",
+        "FilePath": "oneiric/core/security.py",
+        "StartLine": 71,
+        "StartColumn": 0,
+        "EndLine": 82,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 3,
+          "IfStatements": 4,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "validate_key_format",
+        "FilePath": "oneiric/core/security.py",
+        "StartLine": 85,
+        "StartColumn": 0,
+        "EndLine": 101,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "ULID.__init__",
+        "FilePath": "oneiric/core/ulid.py",
+        "StartLine": 62,
+        "StartColumn": 8,
+        "EndLine": 75,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 3,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "ULID._decode",
+        "FilePath": "oneiric/core/ulid.py",
+        "StartLine": 96,
+        "StartColumn": 8,
+        "EndLine": 103,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 11,
+          "Edges": 15,
+          "NestingDepth": 1,
+          "IfStatements": 3,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "detect_ulid_in_config",
+        "FilePath": "oneiric/core/ulid.py",
+        "StartLine": 351,
+        "StartColumn": 0,
+        "EndLine": 383,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 3,
+          "IfStatements": 4,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "generate_with_retry",
+        "FilePath": "oneiric/core/ulid_collision.py",
+        "StartLine": 60,
+        "StartColumn": 0,
+        "EndLine": 102,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 8,
+          "Edges": 12,
+          "NestingDepth": 2,
+          "IfStatements": 3,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "ValidationSchemaAction._check_extra_fields",
+        "FilePath": "oneiric/actions/data.py",
+        "StartLine": 439,
+        "StartColumn": 4,
+        "EndLine": 448,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 14,
+          "Edges": 19,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "KafkaQueueAdapter.health",
+        "FilePath": "oneiric/adapters/queue/kafka.py",
+        "StartLine": 97,
+        "StartColumn": 4,
+        "EndLine": 108,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 3,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "WorkflowBridge._execute_with_checkpoint",
+        "FilePath": "oneiric/domains/workflows.py",
+        "StartLine": 221,
+        "StartColumn": 4,
+        "EndLine": 245,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 8,
+          "Edges": 12,
+          "NestingDepth": 3,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "KafkaQueueAdapter._security_kwargs",
+        "FilePath": "oneiric/adapters/queue/kafka.py",
+        "StartLine": 246,
+        "StartColumn": 4,
+        "EndLine": 258,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 9,
+          "Edges": 14,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "load_mode_config_file",
+        "FilePath": "oneiric/modes/utils.py",
+        "StartLine": 70,
+        "StartColumn": 0,
+        "EndLine": 103,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 9,
+          "Edges": 14,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "validate_mode_requirements",
+        "FilePath": "oneiric/modes/utils.py",
+        "StartLine": 125,
+        "StartColumn": 0,
+        "EndLine": 164,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 3,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "QueryService.find_similar_traces",
+        "FilePath": "oneiric/adapters/observability/queries.py",
+        "StartLine": 50,
+        "StartColumn": 4,
+        "EndLine": 95,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 10,
+          "Edges": 14,
+          "NestingDepth": 2,
+          "IfStatements": 2,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "OTelStorageAdapter.store_metrics",
+        "FilePath": "oneiric/adapters/observability/otel.py",
+        "StartLine": 231,
+        "StartColumn": 4,
+        "EndLine": 258,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 11,
+          "Edges": 15,
+          "NestingDepth": 2,
+          "IfStatements": 1,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "create_ivfflat_index_if_ready",
+        "FilePath": "oneiric/adapters/observability/migrations.py",
+        "StartLine": 146,
+        "StartColumn": 0,
+        "EndLine": 195,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 2,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "CompressionAction._decompress",
+        "FilePath": "oneiric/actions/compression.py",
+        "StartLine": 103,
+        "StartColumn": 4,
+        "EndLine": 110,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 1,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "FirestoreAdapter._ensure_client",
+        "FilePath": "oneiric/adapters/nosql/firestore.py",
+        "StartLine": 135,
+        "StartColumn": 4,
+        "EndLine": 145,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 1,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "FirestoreAdapter.query_documents",
+        "FilePath": "oneiric/adapters/nosql/firestore.py",
+        "StartLine": 111,
+        "StartColumn": 4,
+        "EndLine": 130,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 11,
+          "Edges": 16,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "SentryMonitoringAdapter.init",
+        "FilePath": "oneiric/adapters/monitoring/sentry.py",
+        "StartLine": 69,
+        "StartColumn": 4,
+        "EndLine": 92,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 10,
+          "Edges": 14,
+          "NestingDepth": 2,
+          "IfStatements": 2,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "LogfireMonitoringAdapter.init",
+        "FilePath": "oneiric/adapters/monitoring/logfire.py",
+        "StartLine": 68,
+        "StartColumn": 4,
+        "EndLine": 83,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 6,
+          "Edges": 9,
+          "NestingDepth": 2,
+          "IfStatements": 1,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_validate_bounds",
+        "FilePath": "oneiric/remote/loader.py",
+        "StartLine": 783,
+        "StartColumn": 0,
+        "EndLine": 796,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 9,
+          "Edges": 14,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_fetch_text",
+        "FilePath": "oneiric/remote/loader.py",
+        "StartLine": 442,
+        "StartColumn": 0,
+        "EndLine": 466,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 9,
+          "Edges": 13,
+          "NestingDepth": 1,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "CompressionAction._compress",
+        "FilePath": "oneiric/actions/compression.py",
+        "StartLine": 92,
+        "StartColumn": 4,
+        "EndLine": 101,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 1,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_run_sync",
+        "FilePath": "oneiric/remote/loader.py",
+        "StartLine": 329,
+        "StartColumn": 0,
+        "EndLine": 428,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "WebPushAdapter.send_notification",
+        "FilePath": "oneiric/adapters/messaging/webpush.py",
+        "StartLine": 74,
+        "StartColumn": 4,
+        "EndLine": 110,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 1,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "_assert_allowed_path",
+        "FilePath": "oneiric/remote/loader.py",
+        "StartLine": 707,
+        "StartColumn": 0,
+        "EndLine": 715,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 8,
+          "Edges": 12,
+          "NestingDepth": 2,
+          "IfStatements": 3,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "TeamsAdapter._build_payload",
+        "FilePath": "oneiric/adapters/messaging/teams.py",
+        "StartLine": 93,
+        "StartColumn": 4,
+        "EndLine": 113,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "MailgunAdapter._add_mailgun_options",
+        "FilePath": "oneiric/adapters/messaging/mailgun.py",
+        "StartLine": 174,
+        "StartColumn": 4,
+        "EndLine": 197,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "HashAction._to_bytes",
+        "FilePath": "oneiric/actions/compression.py",
+        "StartLine": 186,
+        "StartColumn": 4,
+        "EndLine": 196,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 2,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "APNSPushAdapter._dispatch",
+        "FilePath": "oneiric/adapters/messaging/apns.py",
+        "StartLine": 252,
+        "StartColumn": 4,
+        "EndLine": 273,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 1,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "APNSPushAdapter._maybe_disconnect",
+        "FilePath": "oneiric/adapters/messaging/apns.py",
+        "StartLine": 187,
+        "StartColumn": 4,
+        "EndLine": 197,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 3,
+          "IfStatements": 4,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "OpenAILLMAdapter._add_function_tool_params",
+        "FilePath": "oneiric/adapters/llm/openai.py",
+        "StartLine": 252,
+        "StartColumn": 4,
+        "EndLine": 262,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 9,
+          "Edges": 14,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "AnthropicLLM.cleanup",
+        "FilePath": "oneiric/adapters/llm/anthropic.py",
+        "StartLine": 102,
+        "StartColumn": 4,
+        "EndLine": 114,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 8,
+          "Edges": 12,
+          "NestingDepth": 3,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "AnthropicLLM._chat_stream",
+        "FilePath": "oneiric/adapters/llm/anthropic.py",
+        "StartLine": 318,
+        "StartColumn": 4,
+        "EndLine": 357,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 11,
+          "Edges": 15,
+          "NestingDepth": 3,
+          "IfStatements": 1,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "load_trusted_public_keys",
+        "FilePath": "oneiric/remote/security.py",
+        "StartLine": 22,
+        "StartColumn": 0,
+        "EndLine": 45,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 11,
+          "Edges": 16,
+          "NestingDepth": 3,
+          "IfStatements": 3,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "AnthropicLLM._extract_response_content",
+        "FilePath": "oneiric/adapters/llm/anthropic.py",
+        "StartLine": 277,
+        "StartColumn": 4,
+        "EndLine": 302,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 4,
+          "IfStatements": 4,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "AnthropicLLM._create_client",
+        "FilePath": "oneiric/adapters/llm/anthropic.py",
+        "StartLine": 116,
+        "StartColumn": 4,
+        "EndLine": 133,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 6,
+          "Edges": 9,
+          "NestingDepth": 2,
+          "IfStatements": 1,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "RuntimeCacheManager._save_cache",
+        "FilePath": "oneiric/runtime/cache.py",
+        "StartLine": 142,
+        "StartColumn": 4,
+        "EndLine": 154,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 11,
+          "Edges": 15,
+          "NestingDepth": 2,
+          "IfStatements": 1,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "RuntimeCacheManager._cleanup_expired_entries",
+        "FilePath": "oneiric/runtime/cache.py",
+        "StartLine": 156,
+        "StartColumn": 4,
+        "EndLine": 168,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 11,
+          "Edges": 16,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "build_graph",
+        "FilePath": "oneiric/runtime/dag.py",
+        "StartLine": 61,
+        "StartColumn": 0,
+        "EndLine": 70,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 9,
+          "Edges": 13,
+          "NestingDepth": 2,
+          "IfStatements": 3,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "Auth0IdentityAdapter.verify_token",
+        "FilePath": "oneiric/adapters/identity/auth0.py",
+        "StartLine": 83,
+        "StartColumn": 4,
+        "EndLine": 99,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 5,
+          "Edges": 8,
+          "NestingDepth": 1,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "DuckDBPGQAdapter._ensure_connection",
+        "FilePath": "oneiric/adapters/graph/duckdb_pgq.py",
+        "StartLine": 139,
+        "StartColumn": 4,
+        "EndLine": 151,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 1,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "EventFilter.matches",
+        "FilePath": "oneiric/runtime/events.py",
+        "StartLine": 82,
+        "StartColumn": 4,
+        "EndLine": 92,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 9,
+          "Edges": 14,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "SecuritySignatureAction._to_bytes",
+        "FilePath": "oneiric/actions/security.py",
+        "StartLine": 113,
+        "StartColumn": 4,
+        "EndLine": 123,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 2,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "SFTPFileTransferAdapter.delete",
+        "FilePath": "oneiric/adapters/file_transfer/sftp.py",
+        "StartLine": 133,
+        "StartColumn": 4,
+        "EndLine": 142,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 4,
+          "Edges": 8,
+          "NestingDepth": 2,
+          "IfStatements": 0,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 4,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "SCPFileTransferAdapter._run_command",
+        "FilePath": "oneiric/adapters/file_transfer/scp.py",
+        "StartLine": 156,
+        "StartColumn": 4,
+        "EndLine": 173,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 6,
+          "Edges": 9,
+          "NestingDepth": 2,
+          "IfStatements": 1,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "EventDispatcher._run_handler",
+        "FilePath": "oneiric/runtime/events.py",
+        "StartLine": 188,
+        "StartColumn": 4,
+        "EndLine": 316,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 14,
+          "Edges": 19,
+          "NestingDepth": 3,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "NotificationRouter.send",
+        "FilePath": "oneiric/runtime/notifications.py",
+        "StartLine": 44,
+        "StartColumn": 4,
+        "EndLine": 78,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 1,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "FTPFileTransferAdapter.download",
+        "FilePath": "oneiric/adapters/file_transfer/ftp.py",
+        "StartLine": 112,
+        "StartColumn": 4,
+        "EndLine": 122,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 10,
+          "Edges": 14,
+          "NestingDepth": 3,
+          "IfStatements": 1,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "FTPFileTransferAdapter.delete",
+        "FilePath": "oneiric/adapters/file_transfer/ftp.py",
+        "StartLine": 124,
+        "StartColumn": 4,
+        "EndLine": 133,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 4,
+          "Edges": 8,
+          "NestingDepth": 2,
+          "IfStatements": 0,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 4,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "Route53DNSAdapter.init",
+        "FilePath": "oneiric/adapters/dns/route53.py",
+        "StartLine": 54,
+        "StartColumn": 4,
+        "EndLine": 92,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 8,
+          "Edges": 12,
+          "NestingDepth": 2,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "CloudflareDNSAdapter._request",
+        "FilePath": "oneiric/adapters/dns/cloudflare.py",
+        "StartLine": 165,
+        "StartColumn": 4,
+        "EndLine": 204,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 6,
+          "Edges": 9,
+          "NestingDepth": 2,
+          "IfStatements": 1,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "ProcessManager.is_running",
+        "FilePath": "oneiric/runtime/process_manager.py",
+        "StartLine": 15,
+        "StartColumn": 4,
+        "EndLine": 31,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 12,
+          "Edges": 17,
+          "NestingDepth": 2,
+          "IfStatements": 1,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "MySQLDatabaseAdapter.init",
+        "FilePath": "oneiric/adapters/database/mysql.py",
+        "StartLine": 56,
+        "StartColumn": 4,
+        "EndLine": 78,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 8,
+          "Edges": 12,
+          "NestingDepth": 3,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "SchedulerHTTPServer._handle_workflow_task",
+        "FilePath": "oneiric/runtime/scheduler.py",
+        "StartLine": 107,
+        "StartColumn": 4,
+        "EndLine": 132,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 2,
+          "IfStatements": 1,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "RedisCacheAdapter._disconnect_pool",
+        "FilePath": "oneiric/adapters/cache/redis.py",
+        "StartLine": 173,
+        "StartColumn": 4,
+        "EndLine": 187,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 9,
+          "Edges": 14,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "RedisCacheAdapter._close_client",
+        "FilePath": "oneiric/adapters/cache/redis.py",
+        "StartLine": 158,
+        "StartColumn": 4,
+        "EndLine": 171,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 9,
+          "Edges": 14,
+          "NestingDepth": 2,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "MemoryCacheAdapter._purge_expired_locked",
+        "FilePath": "oneiric/adapters/cache/memory.py",
+        "StartLine": 94,
+        "StartColumn": 4,
+        "EndLine": 104,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 12,
+          "Edges": 17,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "WorkflowOrchestratorAction._validate_step",
+        "FilePath": "oneiric/actions/workflow.py",
+        "StartLine": 429,
+        "StartColumn": 4,
+        "EndLine": 436,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 5,
+          "Edges": 8,
+          "NestingDepth": 1,
+          "IfStatements": 2,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 2,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "SerializationAction._resolve_source",
+        "FilePath": "oneiric/actions/serialization.py",
+        "StartLine": 134,
+        "StartColumn": 4,
+        "EndLine": 145,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 7,
+          "Edges": 11,
+          "NestingDepth": 1,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "TaskScheduleAction.execute",
+        "FilePath": "oneiric/actions/task.py",
+        "StartLine": 269,
+        "StartColumn": 4,
+        "EndLine": 293,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 6,
+          "Edges": 9,
+          "NestingDepth": 2,
+          "IfStatements": 1,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "SelectionWatcher._trigger_swap",
+        "FilePath": "oneiric/runtime/watchers.py",
+        "StartLine": 144,
+        "StartColumn": 4,
+        "EndLine": 183,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 2,
+          "IfStatements": 3,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "AutomationTriggerAction._contains",
+        "FilePath": "oneiric/actions/automation.py",
+        "StartLine": 192,
+        "StartColumn": 4,
+        "EndLine": 203,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 9,
+          "Edges": 14,
+          "NestingDepth": 1,
+          "IfStatements": 4,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 0,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "SessionEndEvent.validate_timestamp",
+        "FilePath": "oneiric/shell/event_models.py",
+        "StartLine": 388,
+        "StartColumn": 4,
+        "EndLine": 413,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 6,
+          "Edges": 9,
+          "NestingDepth": 2,
+          "IfStatements": 1,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "SessionStartEvent.validate_timestamp",
+        "FilePath": "oneiric/shell/event_models.py",
+        "StartLine": 286,
+        "StartColumn": 4,
+        "EndLine": 311,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 6,
+          "Edges": 9,
+          "NestingDepth": 2,
+          "IfStatements": 1,
+          "LoopStatements": 0,
+          "ExceptionHandlers": 3,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "WorkflowOrchestratorAction._validate_dependencies",
+        "FilePath": "oneiric/actions/workflow.py",
+        "StartLine": 454,
+        "StartColumn": 4,
+        "EndLine": 458,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 9,
+          "Edges": 13,
+          "NestingDepth": 3,
+          "IfStatements": 3,
+          "LoopStatements": 2,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      },
+      {
+        "Name": "PineconeAdapter.search",
+        "FilePath": "oneiric/adapters/vector/pinecone.py",
+        "StartLine": 172,
+        "StartColumn": 4,
+        "EndLine": 213,
+        "Metrics": {
+          "Complexity": 5,
+          "Nodes": 10,
+          "Edges": 15,
+          "NestingDepth": 2,
+          "IfStatements": 3,
+          "LoopStatements": 1,
+          "ExceptionHandlers": 1,
+          "SwitchCases": 0
+        },
+        "RiskLevel": "low"
+      }
+    ],
+    "Summary": {
+      "TotalFunctions": 292,
+      "AverageComplexity": 6.465753424657534,
+      "MaxComplexity": 12,
+      "MinComplexity": 5,
+      "FilesAnalyzed": 195,
+      "LowRiskFunctions": 274,
+      "MediumRiskFunctions": 18,
+      "HighRiskFunctions": 0,
+      "ComplexityDistribution": {
+        "11-20": 8,
+        "2-5": 112,
+        "6-10": 172
+      }
+    },
+    "Warnings": null,
+    "Errors": null,
+    "GeneratedAt": "2026-06-29T14:27:14-07:00",
+    "Version": "1.5.0",
+    "Config": {
+      "exclude_patterns": [
+        "**/test_*.py",
+        "**/*_test.py",
+        "**/__pycache__/*",
+        "**/*.pyc",
+        "**/.pytest_cache/",
+        ".tox/",
+        "venv/",
+        "env/",
+        ".venv/",
+        ".env/",
+        "**/adapters/"
+      ],
+      "include_patterns": [
+        "**/*.py"
+      ],
+      "low_threshold": 9,
+      "max_complexity": 20,
+      "medium_threshold": 19,
+      "min_complexity": 5,
+      "output_format": "json",
+      "recursive": false,
+      "show_details": false,
+      "sort_by": "complexity"
+    }
+  },
+  "dead_code": {
+    "files": null,
+    "summary": {
+      "total_files": 195,
+      "total_functions": 0,
+      "total_findings": 0,
+      "files_with_dead_code": 0,
+      "functions_with_dead_code": 0,
+      "critical_findings": 0,
+      "warning_findings": 0,
+      "info_findings": 0,
+      "findings_by_reason": {},
+      "total_blocks": 0,
+      "dead_blocks": 0,
+      "overall_dead_ratio": 0
+    },
+    "warnings": null,
+    "errors": null,
+    "generated_at": "2026-06-29T14:27:14-07:00",
+    "version": "1.5.0",
+    "config": {
+      "context_lines": 3,
+      "detect_after_break": true,
+      "detect_after_continue": true,
+      "detect_after_raise": true,
+      "detect_after_return": true,
+      "detect_unreachable_branches": true,
+      "exclude_patterns": [
+        "**/test_*.py",
+        "**/*_test.py",
+        "**/__pycache__/*",
+        "**/*.pyc",
+        "**/.pytest_cache/",
+        ".tox/",
+        "venv/",
+        "env/",
+        ".venv/",
+        ".env/",
+        "**/adapters/"
+      ],
+      "ignore_patterns": [],
+      "include_patterns": [
+        "**/*.py"
+      ],
+      "min_severity": "warning",
+      "show_context": false,
+      "sort_by": "severity"
+    }
+  },
+  "summary": {
+    "total_files": 195,
+    "analyzed_files": 195,
+    "skipped_files": 0,
+    "complexity_enabled": true,
+    "dead_code_enabled": true,
+    "clone_enabled": false,
+    "cbo_enabled": false,
+    "deps_enabled": false,
+    "arch_enabled": false,
+    "deps_total_modules": 0,
+    "deps_modules_in_cycles": 0,
+    "deps_max_depth": 0,
+    "deps_main_sequence_deviation": 0,
+    "arch_compliance": 0,
+    "total_functions": 292,
+    "average_complexity": 6.465753424657534,
+    "high_complexity_count": 0,
+    "dead_code_count": 0,
+    "critical_dead_code": 0,
+    "warning_dead_code": 0,
+    "info_dead_code": 0,
+    "total_clones": 0,
+    "clone_pairs": 0,
+    "clone_groups": 0,
+    "code_duplication_percentage": 0,
+    "cbo_classes": 0,
+    "high_coupling_classes": 0,
+    "medium_coupling_classes": 0,
+    "average_coupling": 0,
+    "health_score": 93,
+    "grade": "A",
+    "complexity_score": 65,
+    "dead_code_score": 100,
+    "duplication_score": 100,
+    "coupling_score": 100,
+    "dependency_score": 100,
+    "architecture_score": 100
+  },
+  "generated_at": "2026-06-29T14:27:14.479637-07:00",
+  "duration_ms": 1000,
+  "version": "1.5.0"
+}

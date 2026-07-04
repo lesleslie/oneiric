@@ -63,6 +63,7 @@ class TestOpenAILLMSettings:
         from oneiric.adapters.llm.openai import OpenAILLMSettings
 
         s = OpenAILLMSettings(openai_api_key=SecretStr("sk-test"))
+        assert s.openai_api_key is not None
         assert s.openai_api_key.get_secret_value() == "sk-test"
 
 
@@ -73,12 +74,14 @@ class TestOpenAILLMAdapterInit:
         from oneiric.adapters.llm.openai import OpenAILLMAdapter
 
         adapter = OpenAILLMAdapter(openai_api_key="sk-test-123")
+        assert adapter.settings.openai_api_key is not None
         assert adapter.settings.openai_api_key.get_secret_value() == "sk-test-123"
 
     def test_init_with_secret_str_api_key(self) -> None:
         from oneiric.adapters.llm.openai import OpenAILLMAdapter
 
         adapter = OpenAILLMAdapter(openai_api_key=SecretStr("sk-test-456"))
+        assert adapter.settings.openai_api_key is not None
         assert adapter.settings.openai_api_key.get_secret_value() == "sk-test-456"
 
     def test_init_none_api_key(self) -> None:
@@ -394,7 +397,7 @@ class TestOpenAIChat:
         )
         adapter._client = mock_client
 
-        messages = [LLMMessage(role="user", content="Hello")]
+        messages: list = [LLMMessage(role="user", content="Hello")]
         result = await adapter._chat(
             messages=messages,
             model="gpt-3.5-turbo",
@@ -1025,6 +1028,7 @@ class TestAnthropicLLMSettings:
         from oneiric.adapters.llm.anthropic import AnthropicLLMSettings
 
         s = AnthropicLLMSettings(anthropic_api_key=SecretStr("sk-ant-test"))
+        assert s.anthropic_api_key is not None
         assert s.anthropic_api_key.get_secret_value() == "sk-ant-test"
 
     def test_thinking_enabled(self) -> None:
@@ -2473,7 +2477,7 @@ class TestOTelSearchLogs:
 
         # search_logs uses bare LogModel name without local import;
         # inject it into the otel module namespace so the reference resolves.
-        otel_module.LogModel = LogModel
+        otel_module.LogModel = LogModel  # ty: ignore[unresolved-attribute]
 
         adapter = OTelStorageAdapter(OTelStorageSettings())
 
@@ -2512,7 +2516,7 @@ class TestOTelSearchLogs:
 
         # search_logs uses bare LogModel name without local import;
         # inject it so the NameError does not fire before our side_effect.
-        otel_module.LogModel = LogModel
+        otel_module.LogModel = LogModel  # ty: ignore[unresolved-attribute]
 
         adapter = OTelStorageAdapter(OTelStorageSettings())
 
@@ -2607,6 +2611,7 @@ class TestSentryMonitoringSettings:
             traces_sample_rate=0.1,
             profiles_sample_rate=0.05,
         )
+        assert s.dsn is not None
         assert s.dsn.get_secret_value() == "https://key@sentry.io/123"
         assert s.environment == "production"
         assert s.release == "v1.0.0"
@@ -2710,6 +2715,21 @@ class TestSentryRequireSDK:
             assert sdk is sentry_mod.sentry_sdk
         finally:
             sentry_mod.sentry_sdk = original_sdk
+
+    def test_sdk_missing(self) -> None:
+        import oneiric.adapters.monitoring.sentry as sentry_mod
+
+        original_sdk = sentry_mod.sentry_sdk
+        try:
+            sentry_mod.sentry_sdk = None
+            from oneiric.adapters.monitoring.sentry import SentryMonitoringAdapter
+
+            adapter = SentryMonitoringAdapter()
+            with pytest.raises(LifecycleError, match="sentry-sdk-missing"):
+                adapter._require_sdk()
+        finally:
+            sentry_mod.sentry_sdk = original_sdk
+
 
     def test_sdk_missing(self) -> None:
         import oneiric.adapters.monitoring.sentry as sentry_mod
@@ -2901,6 +2921,7 @@ class TestSentryBeforeSend:
         ):
             event = {"tags": {}, "extra": {}}
             result = adapter._before_send(event, {})
+            assert result is not None
             assert "oneiric.domain" in result["tags"]
             assert "oneiric" in result["extra"]
 
@@ -2915,6 +2936,7 @@ class TestSentryBeforeSend:
         )
         event = {"tags": {}, "extra": {}}
         result = adapter._before_send(event, {})
+        assert result is not None
         assert "oneiric.domain" not in result.get("tags", {})
 
     def test_before_send_empty_context(self) -> None:
@@ -2933,6 +2955,7 @@ class TestSentryBeforeSend:
         ):
             event = {"tags": {}, "extra": {}}
             result = adapter._before_send(event, {})
+            assert result is not None
             assert "oneiric" not in result.get("extra", {})
 
     def test_before_send_transaction_with_context(self) -> None:
@@ -2951,6 +2974,7 @@ class TestSentryBeforeSend:
         ):
             event = {"tags": {}, "extra": {}}
             result = adapter._before_send_transaction(event, {})
+            assert result is not None
             assert "oneiric.domain" in result["tags"]
 
     def test_before_send_transaction_without_context(self) -> None:

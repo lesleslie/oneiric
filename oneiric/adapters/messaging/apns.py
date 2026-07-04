@@ -125,7 +125,7 @@ class APNSPushAdapter:
 
     def _default_client_factory(self) -> Any:
         try:
-            import aioapns  # type: ignore
+            import aioapns
         except ModuleNotFoundError as exc:  # pragma: no cover - optional dep
             raise LifecycleError(
                 "aioapns-not-installed: install 'oneiric[messaging-apns]' to use APNSPushAdapter"

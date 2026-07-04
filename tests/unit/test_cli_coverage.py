@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -68,6 +68,7 @@ from oneiric.cli import (
     app,
 )
 from oneiric.core.resolution import Candidate, CandidateSource
+from oneiric.domains import EventBridge, WorkflowBridge
 from oneiric.runtime.load_testing import LoadTestResult
 
 # ---------------------------------------------------------------------------
@@ -343,7 +344,7 @@ def test_enrich_workflow_plan_with_scheduler_and_notifications() -> None:
         "scheduler": {"cron": "*/5 * * * *"},
         "notifications": {"channel": "#alerts"},
     }
-    plan = {"queue_category": "urgent"}
+    plan: dict[str, Any] = {"queue_category": "urgent"}
     _enrich_workflow_plan(plan, candidate)
     assert "scheduler" in plan
     assert "notifications" in plan
@@ -355,7 +356,7 @@ def test_enrich_workflow_plan_queue_already_in_scheduler() -> None:
     candidate.metadata = {
         "scheduler": {"queue_category": "existing"},
     }
-    plan = {"queue_category": "new"}
+    plan: dict[str, Any] = {"queue_category": "new"}
     _enrich_workflow_plan(plan, candidate)
     assert plan["scheduler"]["queue_category"] == "existing"
 
@@ -1235,7 +1236,7 @@ def test_event_emit_no_bridge() -> None:
 # event emit — no results (lines 2173-2175)
 def test_event_emit_no_handlers_matched() -> None:
     state = _make_mock_state()
-    state.bridges["event"].emit = AsyncMock(return_value=[])
+    cast(EventBridge, state.bridges["event"]).emit = AsyncMock(return_value=[])
     result = _run_command("event", "emit", "test.topic", state=state)
     assert result.exit_code == 0
     assert "No event handlers matched" in result.output
@@ -1251,7 +1252,7 @@ def test_workflow_run_no_bridge() -> None:
 # workflow run — empty results (lines 2347-2348)
 def test_workflow_run_empty_results() -> None:
     state = _make_mock_state()
-    state.bridges["workflow"].execute_dag = AsyncMock(
+    cast(WorkflowBridge, state.bridges["workflow"]).execute_dag = AsyncMock(
         return_value={"run_id": "abc123", "results": {}}
     )
     result = _run_command("workflow", "run", "my-wf", state=state)
@@ -1269,7 +1270,7 @@ def test_workflow_enqueue_no_bridge() -> None:
 # workflow enqueue — non-json output (line 2411)
 def test_workflow_enqueue_non_json_output() -> None:
     state = _make_mock_state()
-    state.bridges["workflow"].enqueue_workflow = AsyncMock(
+    cast(WorkflowBridge, state.bridges["workflow"]).enqueue_workflow = AsyncMock(
         return_value={"workflow": "my-wf", "run_id": "abc", "queue_provider": "redis"}
     )
     result = _run_command("workflow", "enqueue", "my-wf", state=state)
@@ -1287,9 +1288,11 @@ def test_workflow_plan_no_bridge() -> None:
 # workflow plan — non-json output (line 2443)
 def test_workflow_plan_non_json_output() -> None:
     state = _make_mock_state()
-    state.bridges["workflow"].dag_specs.return_value = {}
-    state.bridges["workflow"]._queue_category = None
-    state.resolver.resolve.return_value = None
+    workflow_bridge: Any = state.bridges["workflow"]
+    workflow_bridge.dag_specs.return_value = {}
+    workflow_bridge._queue_category = None
+    resolver: Any = state.resolver
+    resolver.resolve.return_value = None
     result = _run_command("workflow", "plan", state=state)
     assert result.exit_code == 0
 

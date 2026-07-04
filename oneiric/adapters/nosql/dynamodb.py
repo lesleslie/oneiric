@@ -169,7 +169,7 @@ class DynamoDBAdapter(NoSQLAdapterBase):
         factory = self._session_factory
         if factory is None:
             try:
-                import aioboto3  # type: ignore
+                import aioboto3
             except ModuleNotFoundError as exc:  # pragma: no cover - optional dep
                 raise LifecycleError(
                     "aioboto3-not-installed: install optional extra 'oneiric[nosql-dynamo]' to use DynamoDBAdapter"

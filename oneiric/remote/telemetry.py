@@ -23,7 +23,7 @@ class RemoteSyncTelemetry:
     last_registered: int | None = None
     last_duration_ms: float | None = None
     last_digest_checks: int | None = None
-    last_per_domain: dict[str, int] = None  # type: ignore[assignment]
+    last_per_domain: dict[str, int] | None = None
     last_skipped: int | None = None
 
     def as_dict(self) -> dict[str, Any]:

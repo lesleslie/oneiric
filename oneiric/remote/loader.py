@@ -9,7 +9,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from urllib.parse import urlparse
 
 import httpx
@@ -246,19 +246,22 @@ async def sync_remote_manifest(
         return None
 
     breaker = _breaker_for(config, url)
-    try:
-        return await breaker.call(
-            lambda: _run_sync(
-                resolver,
-                config,
-                url,
-                secrets,
-                retry_attempts=config.max_retries,
-                retry_base_delay=config.retry_base_delay,
-                retry_max_delay=config.retry_max_delay,
-                retry_jitter=config.retry_jitter,
-            )
+
+    async def _do_sync() -> RemoteSyncResult | None:
+        return await _run_sync(
+            resolver,
+            config,
+            url,
+            secrets,
+            retry_attempts=config.max_retries,
+            retry_base_delay=config.retry_base_delay,
+            retry_max_delay=config.retry_max_delay,
+            retry_jitter=config.retry_jitter,
         )
+
+    try:
+        result = await breaker.call(_do_sync)
+        return cast("RemoteSyncResult | None", result)
     except CircuitBreakerOpen as exc:
         logger.warning(
             "remote-sync-circuit-open",
@@ -293,21 +296,23 @@ async def remote_sync_loop(
         return
 
     breaker = _breaker_for(config, url)
+
+    async def _do_sync() -> RemoteSyncResult | None:
+        return await _run_sync(
+            resolver,
+            config,
+            url,
+            secrets,
+            retry_attempts=config.max_retries,
+            retry_base_delay=config.retry_base_delay,
+            retry_max_delay=config.retry_max_delay,
+            retry_jitter=config.retry_jitter,
+        )
+
     while True:
         await asyncio.sleep(interval)
         try:
-            await breaker.call(
-                lambda: _run_sync(
-                    resolver,
-                    config,
-                    url,
-                    secrets,
-                    retry_attempts=config.max_retries,
-                    retry_base_delay=config.retry_base_delay,
-                    retry_max_delay=config.retry_max_delay,
-                    retry_jitter=config.retry_jitter,
-                )
-            )
+            await breaker.call(_do_sync)
         except CircuitBreakerOpen as exc:
             logger.warning(
                 "remote-refresh-circuit-open",
@@ -338,22 +343,29 @@ async def _run_sync(
     retry_jitter: float,
 ) -> RemoteSyncResult | None:
     headers = await _auth_headers(config, secrets)
-    manifest_data = await run_with_retry(
-        lambda: _fetch_text(
+
+    async def _fetch_manifest_text() -> str:
+        return await _fetch_text(
             url,
             headers,
             verify_tls=config.verify_tls,
             allow_file_uris=config.allow_file_uris,
             allowed_file_uri_roots=config.allowed_file_uri_roots,
+        )
+
+    manifest_data_str: str = cast(
+        str,
+        await run_with_retry(
+            _fetch_manifest_text,
+            attempts=retry_attempts,
+            base_delay=retry_base_delay,
+            max_delay=retry_max_delay,
+            jitter=retry_jitter,
+            adaptive_key=f"remote: manifest:{_remote_host(url)}",
+            attributes=_retry_attributes(url, "manifest.fetch"),
         ),
-        attempts=retry_attempts,
-        base_delay=retry_base_delay,
-        max_delay=retry_max_delay,
-        jitter=retry_jitter,
-        adaptive_key=f"remote: manifest:{_remote_host(url)}",
-        attributes=_retry_attributes(url, "manifest.fetch"),
     )
-    manifest = _parse_manifest(manifest_data, signature_policy=config)
+    manifest = _parse_manifest(manifest_data_str, signature_policy=config)
     artifact_manager = ArtifactManager(
         config.cache_dir,
         verify_tls=config.verify_tls,
@@ -378,16 +390,25 @@ async def _run_sync(
                 error=error,
             )
             continue
-        artifact_path = None
+        artifact_path: Path | None = None
         if entry.uri:
-            artifact_path = await run_with_retry(
-                lambda: artifact_manager.fetch(entry.uri, entry.sha256, headers),
-                attempts=retry_attempts,
-                base_delay=retry_base_delay,
-                max_delay=retry_max_delay,
-                jitter=retry_jitter,
-                adaptive_key=f"remote: artifact:{_remote_host(entry.uri)}",
-                attributes=_retry_attributes(entry.uri, "artifact.fetch"),
+            entry_uri = entry.uri
+            entry_sha = entry.sha256
+
+            async def _fetch_artifact() -> Path:
+                return await artifact_manager.fetch(entry_uri, entry_sha, headers)
+
+            artifact_path = cast(
+                "Path | None",
+                await run_with_retry(
+                    _fetch_artifact,
+                    attempts=retry_attempts,
+                    base_delay=retry_base_delay,
+                    max_delay=retry_max_delay,
+                    jitter=retry_jitter,
+                    adaptive_key=f"remote: artifact:{_remote_host(entry.uri)}",
+                    attributes=_retry_attributes(entry.uri, "artifact.fetch"),
+                ),
             )
         if entry.sha256:
             digest_checks += 1

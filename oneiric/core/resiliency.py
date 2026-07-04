@@ -70,7 +70,7 @@ class CircuitBreaker:
         async def _execute() -> T:
             result = func()
             if inspect.isawaitable(result):
-                return await result  # type: ignore[return-value]
+                return await result  # type: ignore[return-value]  # ty: ignore[invalid-return-type]
             return result  # type: ignore[return-value]
 
         try:
@@ -147,7 +147,7 @@ async def run_with_retry[T](  # noqa: C901
                 latency_ms = (time.perf_counter() - started) * 1000.0
                 _update_retry_state(adaptive_key, success=True, latency_ms=latency_ms)
                 record_retry_success(attrs, attempts_used)
-                return result
+                return result  # type: ignore[return-value]  # ty: ignore[invalid-return-type]
     except Exception:
         record_retry_exhausted(attrs)
         raise

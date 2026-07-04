@@ -405,7 +405,7 @@ class TaskScheduleAction:
             )
             if not self._is_valid_candidate(candidate, rule):
                 break
-
+            assert candidate is not None
             self._update_schedule_state(state, candidate)
 
             if self._schedule_complete(state):

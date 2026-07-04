@@ -8,6 +8,7 @@ and complete traceability.
 
 import logging
 from datetime import UTC, datetime
+from typing import Any
 
 # Oneiric imports
 try:
@@ -128,7 +129,7 @@ def find_related_ulids(
     return related
 
 
-def get_cross_system_trace(ulid: str) -> dict[str, any]:
+def get_cross_system_trace(ulid: str) -> dict[str, Any]:
     """Get complete cross-system trace for ULID.
 
     Args:
@@ -176,7 +177,7 @@ def export_registry() -> dict[str, dict]:
     }
 
 
-def get_registry_stats() -> dict[str, int]:
+def get_registry_stats() -> dict[str, Any]:
     """Get registry statistics for monitoring.
 
     Returns:

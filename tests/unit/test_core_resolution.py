@@ -114,10 +114,10 @@ class TestCandidateRank:
     def test_defaults(self) -> None:
         c = Candidate(domain="adapter", key="cache", factory=lambda: None)
         rank = CandidateRank(
-            candidate=c, score=(10, 5, 2, 1), reasons=["high priority"]
+            candidate=c, score=(10, 5, 2, 1, 0), reasons=["high priority"]
         )
         assert rank.candidate is c
-        assert rank.score == (10, 5, 2, 1)
+        assert rank.score == (10, 5, 2, 1, 0)
         assert rank.reasons == ["high priority"]
         assert rank.selected is False
 
@@ -140,9 +140,9 @@ class TestResolutionExplanation:
         c1 = self._make_candidate("redis")
         c2 = self._make_candidate("memcached")
         r1 = CandidateRank(
-            candidate=c1, score=(10, 0, 0, 0), reasons=[], selected=False
+            candidate=c1, score=(10, 0, 0, 0, 0), reasons=[], selected=False
         )
-        r2 = CandidateRank(candidate=c2, score=(5, 0, 0, 0), reasons=[], selected=False)
+        r2 = CandidateRank(candidate=c2, score=(5, 0, 0, 0, 0), reasons=[], selected=False)
         explanation = ResolutionExplanation(
             domain="adapter", key="cache", ordered=[r1, r2]
         )
@@ -151,8 +151,12 @@ class TestResolutionExplanation:
     def test_winner_returns_selected(self) -> None:
         c1 = self._make_candidate("redis")
         c2 = self._make_candidate("memcached")
-        r1 = CandidateRank(candidate=c1, score=(10, 0, 0, 0), reasons=[], selected=True)
-        r2 = CandidateRank(candidate=c2, score=(5, 0, 0, 0), reasons=[], selected=False)
+        r1 = CandidateRank(
+            candidate=c1, score=(10, 0, 0, 0, 0), reasons=[], selected=True
+        )
+        r2 = CandidateRank(
+            candidate=c2, score=(5, 0, 0, 0, 0), reasons=[], selected=False
+        )
         explanation = ResolutionExplanation(
             domain="adapter", key="cache", ordered=[r1, r2]
         )
@@ -161,7 +165,7 @@ class TestResolutionExplanation:
     def test_as_dict(self) -> None:
         c = self._make_candidate("redis")
         rank = CandidateRank(
-            candidate=c, score=(10, 5, 0, 0), reasons=["best"], selected=True
+            candidate=c, score=(10, 5, 0, 0, 0), reasons=["best"], selected=True
         )
         explanation = ResolutionExplanation(
             domain="adapter", key="cache", ordered=[rank]
@@ -171,7 +175,7 @@ class TestResolutionExplanation:
         assert d["key"] == "cache"
         assert len(d["ordered"]) == 1
         assert d["ordered"][0]["provider"] == "redis"
-        assert d["ordered"][0]["score"] == (10, 5, 0, 0)
+        assert d["ordered"][0]["score"] == (10, 5, 0, 0, 0)
         assert d["ordered"][0]["selected"] is True
 
     def test_winner_none_when_empty(self) -> None:

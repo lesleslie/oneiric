@@ -3,13 +3,14 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Callable
 from functools import wraps
+from typing import Any
 
 
 def with_retry(max_attempts: int = 3):
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(*args, **kwargs):
-            last_exception = None
+            last_exception: ConnectionError | TimeoutError | None = None
 
             for attempt in range(max_attempts):
                 try:
@@ -20,6 +21,8 @@ def with_retry(max_attempts: int = 3):
                         delay = min(0.1 * (2**attempt), 1.0)
                         await asyncio.sleep(delay)
 
+            if last_exception is None:
+                raise RuntimeError("with_retry: unexpected fallthrough")
             raise last_exception
 
         return wrapper

@@ -151,7 +151,7 @@ class ServiceSupervisor:
         try:
             result = callback(domain, key, state)
             if inspect.isawaitable(result):
-                asyncio.create_task(result)
+                asyncio.create_task(result)  # ty: ignore[invalid-argument-type]  # noqa: ERA001
         except Exception as exc:  # pragma: no cover - defensive log
             logger.warning(
                 "supervisor-listener-error",

@@ -58,7 +58,7 @@ class MongoDBSettings(NoSQLBaseSettings):
     )
 
 
-class MongoDBAdapter(NoSQLAdapterBase):
+class MongoDBAdapter(NoSQLAdapterBase[MongoDBSettings]):
     metadata = AdapterMetadata(
         category="nosql",
         provider="mongodb",
@@ -99,8 +99,8 @@ class MongoDBAdapter(NoSQLAdapterBase):
 
     async def health(self) -> bool:
         try:
-            await self._ensure_client()
-            await self._client.admin.command("ping")  # type: ignore[union-attr]
+            client = await self._ensure_client()
+            await client.admin.command("ping")
             return True
         except Exception as exc:  # pragma: no cover - network
             self._logger.warning("mongodb-health-failed", error=str(exc))
@@ -196,9 +196,9 @@ class MongoDBAdapter(NoSQLAdapterBase):
         results = await cursor.to_list(length=None)
         return [self._normalize_raw(document) for document in results]
 
-    async def _ensure_client(self) -> None:
-        if self._client and self._db:
-            return
+    async def _ensure_client(self) -> AsyncIOMotorClient:
+        if self._client is not None and self._db is not None:
+            return self._client
         params = self._client_params()
         factory = self._client_factory or self._default_client_factory
         self._client = factory(**params)
@@ -206,9 +206,10 @@ class MongoDBAdapter(NoSQLAdapterBase):
             raise LifecycleError("mongodb-client-factory-returned-none")
         self._db = self._client[self._settings.database]
         await self._client.admin.command("ping")  # type: ignore[union-attr]
+        return self._client
 
     def _collection(self, collection: str | None) -> AsyncIOMotorCollection:
-        if not self._db:
+        if self._db is None:
             raise LifecycleError("mongodb-database-not-initialized")
         return self._db[collection or self._settings.default_collection]
 

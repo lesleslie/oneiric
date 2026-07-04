@@ -161,7 +161,7 @@ class RabbitMQQueueAdapter:
             connection = self._connection_factory(self._connection_kwargs())
         else:
             try:
-                import aio_pika  # type: ignore
+                import aio_pika
             except ModuleNotFoundError as exc:  # pragma: no cover - optional dep
                 raise LifecycleError(
                     "aio-pika-not-installed: install optional extra 'oneiric[queue-rabbitmq]' to use RabbitMQQueueAdapter"
@@ -214,7 +214,7 @@ class RabbitMQQueueAdapter:
         if self._channel_factory:
             return type("Message", (), {"body": body, "headers": headers})()
         try:
-            from aio_pika import Message  # type: ignore
+            from aio_pika import Message
         except ModuleNotFoundError as exc:  # pragma: no cover - optional dep
             raise LifecycleError(
                 "aio-pika-not-installed: install optional extra 'oneiric[queue-rabbitmq]' to use RabbitMQQueueAdapter"

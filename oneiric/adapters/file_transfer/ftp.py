@@ -62,13 +62,13 @@ class FTPFileTransferAdapter:
             self._logger.info("ftp-adapter-init-factory")
             return
         try:
-            import aioftp  # type: ignore
+            import aioftp
         except ModuleNotFoundError as exc:  # pragma: no cover - optional path
             raise LifecycleError(
                 "aioftp-required: install aioftp to use FTPFileTransferAdapter"
             ) from exc
 
-        self._client = aioftp.ClientSession(
+        self._client = aioftp.ClientSession(  # ty: ignore[unresolved-attribute]
             self._settings.host,
             self._settings.port,
             user=self._settings.username,
@@ -132,7 +132,7 @@ class FTPFileTransferAdapter:
             self._logger.error("ftp-delete-failed", path=remote_path, error=str(exc))
             raise LifecycleError("ftp-delete-failed") from exc
 
-    async def list(self, prefix: str | None = None) -> list[str]:
+    async def list(self, prefix: str | None = None) -> list[str]:  # ty: ignore[invalid-type-form]
         client = self._ensure_client()
         try:
             entries: list[str] = []

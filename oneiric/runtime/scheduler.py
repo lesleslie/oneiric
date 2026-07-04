@@ -10,7 +10,7 @@ from oneiric.domains.workflows import WorkflowBridge
 try:  # pragma: no cover - optional dependency guard
     from aiohttp import web
 except ModuleNotFoundError:  # pragma: no cover - import deferred until runtime
-    web = None  # type: ignore[assignment]
+    web = None  # type: ignore[assignment]  # ty: ignore[invalid-assignment]
 
 
 class WorkflowTaskProcessor:

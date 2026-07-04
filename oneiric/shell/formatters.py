@@ -43,7 +43,7 @@ class BaseTableFormatter:
             table.add_column(
                 col.name,
                 width=col.width,
-                justify=col.justify,  # type: ignore[arg-type]
+                justify=col.justify,  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
                 style=col.style,
             )
 

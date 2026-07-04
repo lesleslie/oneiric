@@ -101,7 +101,7 @@ class RedisStreamsQueueAdapter(EnsureClientMixin):
                 await self._client.xgroup_create(
                     self._settings.stream,
                     self._settings.group,
-                    id="0",
+                    identifier="0",
                     mkstream=True,
                 )
                 self._logger.info(

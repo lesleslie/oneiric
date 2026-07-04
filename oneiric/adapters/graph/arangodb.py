@@ -184,7 +184,7 @@ class ArangoDBGraphAdapter:
 
     def _default_client_factory(self) -> Any:
         try:
-            from arango import ArangoClient  # type: ignore
+            from arango import ArangoClient
         except ModuleNotFoundError as exc:  # pragma: no cover - optional dependency
             raise LifecycleError(
                 "arangodb-driver-not-installed: install optional extra 'oneiric[graph-arangodb]' to use ArangoDBGraphAdapter"
@@ -192,6 +192,5 @@ class ArangoDBGraphAdapter:
 
         return ArangoClient(
             hosts=self._settings.hosts,
-            verify=self._settings.verify,
             request_timeout=self._settings.request_timeout,
         )

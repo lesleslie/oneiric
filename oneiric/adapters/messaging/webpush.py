@@ -117,7 +117,7 @@ class WebPushAdapter:
 
     def _load_sender(self) -> Callable[..., Any]:
         try:
-            from pywebpush import webpush  # type: ignore
+            from pywebpush import webpush
         except ModuleNotFoundError as exc:  # pragma: no cover - optional dep
             raise LifecycleError(
                 "pywebpush-not-installed: install 'oneiric[messaging-webpush]' to use WebPushAdapter"

@@ -42,7 +42,7 @@ from oneiric.core.ulid_resolution import (
 
 # Try to import from druva, fallback to local implementation
 try:
-    from druva import ULID, generate, get_timestamp, is_ulid
+    from dhara import ULID, generate, get_timestamp, is_ulid
 
     DHURUVA_AVAILABLE = True
 except ImportError:

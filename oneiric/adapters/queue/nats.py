@@ -75,10 +75,10 @@ class NATSQueueAdapter(EnsureClientMixin):
         self,
         settings: NATSQueueSettings | None = None,
         *,
-        client: nats.NATS | None = None,
+        client: Any | None = None,
     ) -> None:
         self._settings = settings or NATSQueueSettings()
-        self._client: nats.NATS | None = client
+        self._client: Any | None = client
         self._owns_client = client is None
         self._logger = get_logger("adapter.queue.nats").bind(
             domain="adapter",

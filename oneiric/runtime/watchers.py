@@ -12,7 +12,7 @@ try:  # pragma: no cover - optional dependency exercised in integration tests
     WATCHFILES_AVAILABLE = True
 except Exception:  # pragma: no cover - import guard for serverless bundles
     WATCHFILES_AVAILABLE = False
-    awatch = None  # type: ignore[assignment]
+    awatch = None  # type: ignore
 
 from oneiric.core.config import LayerSettings, OneiricSettings, load_settings
 from oneiric.core.logging import get_logger
@@ -57,7 +57,7 @@ class SelectionWatcher:
         self._task: asyncio.Task[None] | None = None
         self._stop_event = asyncio.Event()
         layer = layer_selector(settings_loader())
-        self._last: dict[str, str | None] = layer.selections.copy()  # type: ignore[assignment]
+        self._last: dict[str, str] = layer.selections.copy()
         self._logger.info(
             "watcher-init",
             strategy=self._strategy,
@@ -130,11 +130,11 @@ class SelectionWatcher:
         if not added_or_changed and not removed:
             if self._refresh_on_every_tick:
                 self.bridge.update_settings(layer)
-                self._last = selections.copy()  # type: ignore[assignment]
+                self._last = selections.copy()
             return
 
         self.bridge.update_settings(layer)
-        self._last = selections.copy()  # type: ignore[assignment]
+        self._last = selections.copy()
 
         for key, provider in added_or_changed.items():
             await self._trigger_swap(key, provider)

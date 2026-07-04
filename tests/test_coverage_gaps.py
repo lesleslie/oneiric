@@ -328,7 +328,7 @@ class TestDomainBridgeCoverageGaps:
 
         bridge = DomainBridge("adapter", resolver, lifecycle, settings)
         with pytest.raises(Exception):  # LifecycleError
-            await bridge.acquire("cache")
+            await bridge.use("cache")
 
     def test_handle_supervisor_update_wrong_domain(self):
         """Line 244: _handle_supervisor_update ignores other domains."""
@@ -492,7 +492,7 @@ class TestMessagingTypesValidation:
         recipient = SMSRecipient(phone_number="+15551234567")
         urls = [f"http://example.com/{i}.png" for i in range(11)]
         with pytest.raises(ValidationError, match="at most 10"):
-            OutboundSMSMessage(to=recipient, body="test", media_urls=urls)
+            OutboundSMSMessage(to=recipient, body="test", media_urls=urls)  # ty: ignore[invalid-argument-type]
 
     def test_notification_message_empty_text(self):
         from pydantic import ValidationError
@@ -523,8 +523,8 @@ class TestDurableExecutionHooksCoverage:
         hooks = build_durable_execution_hooks(store)
 
         # Start the run first so finish_run (UPDATE) has a row to update
-        await hooks.on_run_start(run_id="r1", workflow_key="test-wf")
-        await hooks.on_run_error(run_id="r1", error="boom")
+        await hooks.on_run_start(run_id="r1", workflow_key="test-wf")  # ty: ignore[call-non-callable, invalid-await]
+        await hooks.on_run_error(run_id="r1", error="boom")  # ty: ignore[call-non-callable, invalid-await]
 
         with store._connection() as conn:
             row = conn.execute(
@@ -547,9 +547,9 @@ class TestDurableExecutionHooksCoverage:
         hooks = build_durable_execution_hooks(store)
 
         # Start a run and node first (INSERT), then skip (UPDATE)
-        await hooks.on_run_start(run_id="r1", workflow_key="test-wf")
-        await hooks.on_node_start(run_id="r1", node="step1")
-        await hooks.on_node_skip(run_id="r1", node="step1")
+        await hooks.on_run_start(run_id="r1", workflow_key="test-wf")  # ty: ignore[call-non-callable, invalid-await]
+        await hooks.on_node_start(run_id="r1", node="step1")  # ty: ignore[call-non-callable, invalid-await]
+        await hooks.on_node_skip(run_id="r1", node="step1")  # ty: ignore[call-non-callable, invalid-await]
 
         with store._connection() as conn:
             row = conn.execute(
@@ -570,9 +570,9 @@ class TestDurableExecutionHooksCoverage:
         store = WorkflowExecutionStore(tmp_path / "durable.sqlite")
         hooks = build_durable_execution_hooks(store)
 
-        await hooks.on_run_start(run_id="r1", workflow_key="test-wf")
-        await hooks.on_node_start(run_id="r1", node="step1")
-        await hooks.on_node_error(
+        await hooks.on_run_start(run_id="r1", workflow_key="test-wf")  # ty: ignore[call-non-callable, invalid-await]
+        await hooks.on_node_start(run_id="r1", node="step1")  # ty: ignore[call-non-callable, invalid-await]
+        await hooks.on_node_error(  # ty: ignore[call-non-callable, invalid-await]
             run_id="r1", node="step1", attempts=3, error="timeout"
         )
 
@@ -621,7 +621,7 @@ class TestMultiTierCacheL2WithUrl:
         settings = MultiTierCacheSettings(
             l1_enabled=False,
             l2_enabled=True,
-            l2_url="redis://localhost:6380/2",
+            l2_url="redis://localhost:6380/2",  # ty: ignore[invalid-argument-type]
         )
 
         captured_settings: list[Any] = []
@@ -641,7 +641,7 @@ class TestMultiTierCacheL2WithUrl:
             MultiTierCacheAdapter(settings=settings)
 
         assert len(captured_settings) == 1
-        assert captured_settings[0].url == "redis://localhost:6380/2"
+        assert str(captured_settings[0].url) == "redis://localhost:6380/2"
 
 
 # ---------------------------------------------------------------------------
@@ -909,6 +909,7 @@ class TestLifecycleCoverageGaps:
             lm._record_swap_metrics(candidate, float(i + 1), success=True)
 
         status = lm.get_status("adapter", "cache")
+        assert status is not None
         assert len(status.recent_swap_durations_ms) == 3
 
     @pytest.mark.asyncio

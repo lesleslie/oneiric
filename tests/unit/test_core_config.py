@@ -162,13 +162,13 @@ class TestPathHelpers:
 
     def test_workflow_checkpoint_disabled(self) -> None:
         s = OneiricSettings(
-            runtime_paths={"workflow_checkpoints_enabled": False},
+            runtime_paths={"workflow_checkpoints_enabled": False},  # type: ignore
         )
         assert workflow_checkpoint_path(s) is None
 
     def test_workflow_checkpoint_custom_path(self) -> None:
         s = OneiricSettings(
-            runtime_paths={
+            runtime_paths={  # type: ignore
                 "workflow_checkpoints_enabled": True,
                 "workflow_checkpoints_path": "/tmp/my.db",
             },

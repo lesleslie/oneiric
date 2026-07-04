@@ -11,10 +11,12 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import typer
 import yaml
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from oneiric import plugins
 from oneiric.actions import ActionBridge, register_builtin_actions
@@ -129,14 +131,14 @@ def _swap_latency_summary(statuses: Iterable[LifecycleStatus]) -> dict[str, Any]
     }
 
 
-def _percentile(data: list[float], percentile: float) -> float | None:
+def _percentile(data: Sequence[int | float], percentile: float) -> float | None:
     if not data:
         return None
     k = (len(data) - 1) * percentile
     f = math.floor(k)
     c = math.ceil(k)
     if f == c:
-        return data[int(k)]
+        return float(data[int(k)])
     d0 = data[f] * (c - k)
     d1 = data[c] * (k - f)
     return d0 + d1
@@ -347,7 +349,10 @@ def _manifest_entry_from_adapter(
     if isinstance(adapter.factory, str):
         factory_str = adapter.factory
     elif callable(adapter.factory):
-        factory_str = f"{adapter.factory.__module__}:{adapter.factory.__qualname__}"
+        func = adapter.factory
+        module_name = getattr(func, "__module__", repr(func))
+        qualname = getattr(func, "__qualname__", module_name)
+        factory_str = f"{module_name}:{qualname}"
     else:
         raise ValueError(f"Unsupported factory type: {type(adapter.factory)}")
 
@@ -390,7 +395,10 @@ def _manifest_entry_from_action(
     if isinstance(action.factory, str):
         factory_str = action.factory
     elif callable(action.factory):
-        factory_str = f"{action.factory.__module__}:{action.factory.__qualname__}"
+        func = action.factory
+        module_name = getattr(func, "__module__", repr(func))
+        qualname = getattr(func, "__qualname__", module_name)
+        factory_str = f"{module_name}:{qualname}"
     else:
         raise ValueError(f"Unsupported factory type: {type(action.factory)}")
 
@@ -1042,7 +1050,7 @@ def _workflow_target_keys(  # noqa: C901
 
 def _parse_dependency_list(depends: Any) -> list[str]:
     if isinstance(depends, Sequence) and not isinstance(depends, (str, bytes)):
-        return list(depends)
+        return [str(item) for item in depends]
     elif depends:
         return [depends]
     return []
@@ -1582,7 +1590,13 @@ def _print_status_record(record: dict[str, Any]) -> None:  # noqa: C901
 
 def _activity_summary(
     bridges: dict[
-        str, AdapterBridge | ServiceBridge | TaskBridge | EventBridge | WorkflowBridge
+        str,
+        AdapterBridge
+        | ServiceBridge
+        | TaskBridge
+        | EventBridge
+        | WorkflowBridge
+        | ActionBridge,
     ],
 ) -> dict[str, Any]:
     report: dict[str, Any] = {
@@ -2080,6 +2094,7 @@ def action_invoke(
     bridge = state.bridges.get("action")
     if not bridge:
         raise typer.BadParameter("Actions domain is not initialized")
+    bridge = cast(ActionBridge, bridge)
     payload_map = _parse_payload(payload)
     notification_route = None
     if key == "workflow.notify":
@@ -2149,6 +2164,7 @@ def event_emit_command(  # noqa: C901
     bridge = state.bridges.get("event")
     if not bridge:
         raise typer.BadParameter("Event domain is not initialized")
+    bridge = cast(EventBridge, bridge)
 
     payload_map = _parse_payload(payload)
     headers_map = _parse_payload(headers)
@@ -2313,6 +2329,7 @@ def workflow_run_command(
     bridge = state.bridges.get("workflow")
     if not bridge:
         raise typer.BadParameter("Workflow domain is not initialized")
+    bridge = cast(WorkflowBridge, bridge)
     context = _parse_payload(context_payload) if context_payload is not None else None
     if resume_checkpoint and not workflow_checkpoints:
         raise typer.BadParameter("--resume-checkpoint requires --workflow-checkpoints")
@@ -2393,6 +2410,7 @@ def workflow_enqueue_command(
     bridge = state.bridges.get("workflow")
     if not bridge:
         raise typer.BadParameter("Workflow domain is not initialized")
+    bridge = cast(WorkflowBridge, bridge)
     context = _parse_payload(context_payload) if context_payload else None
     metadata = _parse_payload(metadata_payload) if metadata_payload else None
     result = asyncio.run(
@@ -2434,6 +2452,7 @@ def workflow_plan_command(
     bridge = state.bridges.get("workflow")
     if not bridge:
         raise typer.BadParameter("Workflow domain is not initialized")
+    bridge = cast(WorkflowBridge, bridge)
     payload = _workflow_plan_payload(
         state.resolver, bridge, tuple(workflow_filter or ())
     )
@@ -2524,7 +2543,9 @@ def orchestrate(
             disable_workflow_checkpoints=no_workflow_checkpoints,
             http_port=http_port,
             http_host=http_host,
-            enable_http=_http_server_enabled(state.settings, http_port, no_http),
+            enable_http=_http_server_enabled(
+                state.settings.profile.name, http_port, no_http
+            ),
             print_dag=print_dag,
             workflow_filters=tuple(workflow_filter or ()),
             inspect_events=events_inspector,
@@ -2534,7 +2555,7 @@ def orchestrate(
 
 
 def _http_server_enabled(
-    settings: OneiricSettings, http_port_option: int | None, no_http_flag: bool
+    profile_name: str | None, http_port_option: int | None, no_http_flag: bool
 ) -> bool:
     if no_http_flag:
         return False
@@ -2543,8 +2564,8 @@ def _http_server_enabled(
     env_port = os.getenv("PORT")
     if env_port:
         return True
-    profile_name = settings.profile.name.lower() if settings.profile.name else ""
-    return profile_name == "serverless"
+    normalized = profile_name.lower() if profile_name else ""
+    return normalized == "serverless"
 
 
 @app.command("supervisor-info")
@@ -2813,9 +2834,6 @@ def manifest_export(  # noqa: C901
 
 
 def _load_signing_key(private_key: Path) -> Ed25519PrivateKey:
-    from cryptography.hazmat.primitives import serialization
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-
     key_bytes = private_key.read_bytes()
     if len(key_bytes) == 32:
         return Ed25519PrivateKey.from_private_bytes(key_bytes)
@@ -3096,7 +3114,7 @@ def start_command(
 
     if pid_file is None:
         pid_file = str(
-            Path(state.settings.runtime_paths.cache_dir) / "orchestrator.pid"
+            Path(state.settings.cache_dir or ".oneiric_cache") / "orchestrator.pid"
         )
 
     process_manager = ProcessManager(pid_file=pid_file)
@@ -3138,7 +3156,7 @@ def stop_command(
 
     if pid_file is None:
         pid_file = str(
-            Path(state.settings.runtime_paths.cache_dir) / "orchestrator.pid"
+            Path(state.settings.cache_dir or ".oneiric_cache") / "orchestrator.pid"
         )
 
     process_manager = ProcessManager(pid_file=pid_file)
@@ -3167,7 +3185,7 @@ def process_status_command(
 
     if pid_file is None:
         pid_file = str(
-            Path(state.settings.runtime_paths.cache_dir) / "orchestrator.pid"
+            Path(state.settings.cache_dir or ".oneiric_cache") / "orchestrator.pid"
         )
 
     process_manager = ProcessManager(pid_file=pid_file)

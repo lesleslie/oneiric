@@ -171,7 +171,7 @@ class KafkaQueueAdapter:
             return self._topic_partition_factory(topic, partition)
         try:
             from aiokafka.structs import (
-                TopicPartition,  # type: ignore  # pragma: no cover - optional dep
+                TopicPartition,  # pragma: no cover - optional dep
             )
         except ModuleNotFoundError as exc:  # pragma: no cover - optional dep
             raise LifecycleError(
@@ -203,7 +203,7 @@ class KafkaQueueAdapter:
 
     def _create_aiokafka_producer(self) -> Any:
         try:
-            from aiokafka import AIOKafkaProducer  # type: ignore
+            from aiokafka import AIOKafkaProducer
         except ModuleNotFoundError as exc:  # pragma: no cover - optional dep
             raise LifecycleError(
                 "aiokafka-not-installed: install optional extra 'oneiric[queue-kafka]' to use KafkaQueueAdapter"
@@ -212,7 +212,7 @@ class KafkaQueueAdapter:
 
     def _create_aiokafka_consumer(self) -> Any:
         try:
-            from aiokafka import AIOKafkaConsumer  # type: ignore
+            from aiokafka import AIOKafkaConsumer
         except ModuleNotFoundError as exc:  # pragma: no cover - optional dep
             raise LifecycleError(
                 "aiokafka-not-installed: install optional extra 'oneiric[queue-kafka]' to use KafkaQueueAdapter"

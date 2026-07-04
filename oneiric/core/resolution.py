@@ -68,7 +68,7 @@ class ResolverSettings(BaseModel):
 @dataclass
 class CandidateRank:
     candidate: Candidate
-    score: tuple[int, int, int, int]
+    score: tuple[int, int, int, int, int]
     reasons: list[str]
     selected: bool = False
 
@@ -272,7 +272,7 @@ class CandidateRegistry:
         stack = cand.stack_level or 0
         reasons.append(f"stack_level={stack}")
 
-        sequence = cand.registry_sequence or 0
+        sequence: int = 0 if cand.registry_sequence is None else cand.registry_sequence
         reasons.append(f"registration_order={sequence}")
 
         score = (override_score, capability_score, priority, stack, sequence)

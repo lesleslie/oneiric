@@ -19,7 +19,7 @@ class SlackSettings(TimeoutSettings):
         default=None,
         description="Channel fallback when NotificationMessage.target is unset.",
     )
-    base_url: AnyHttpUrl = Field(default="https://slack.com/api")
+    base_url: AnyHttpUrl = Field(default="https://slack.com/api")  # ty: ignore[invalid-assignment]
     default_username: str | None = None
     default_icon_emoji: str | None = None
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from typing import TypeVar
 
 import typer
@@ -91,7 +92,7 @@ class MCPServerCLIFactory:
             logger.info("Server is running... Press Ctrl+C to stop")
 
             while True:
-                asyncio.sleep(1)
+                time.sleep(1)
         except KeyboardInterrupt:
             logger.info("Shutting down server...")
             asyncio.run(server.shutdown())

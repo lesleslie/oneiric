@@ -265,6 +265,7 @@ class TestQdrantAdapterInit:
 
     def test_settings_with_api_key(self) -> None:
         s = QdrantSettings(url="http://other:6333", api_key=SecretStr("secret"))
+        assert s.api_key is not None
         assert s.api_key.get_secret_value() == "secret"
 
     def test_adapter_metadata(self) -> None:
@@ -725,7 +726,7 @@ class TestQdrantGet:
         async def fake_retrieve(**kwargs: Any) -> list:
             return [point]
 
-        client.retrieve = fake_retrieve
+        client.retrieve = fake_retrieve  # ty: ignore[invalid-assignment] — free async fn to bound-method slot
         adapter = QdrantAdapter(QdrantSettings())
         adapter._client = client
 
@@ -743,7 +744,7 @@ class TestQdrantGet:
         async def fake_retrieve(**kwargs: Any) -> list:
             return [point]
 
-        client.retrieve = fake_retrieve
+        client.retrieve = fake_retrieve  # ty: ignore[invalid-assignment] — free async fn to bound-method slot
         adapter = QdrantAdapter(QdrantSettings())
         adapter._client = client
 
@@ -2265,7 +2266,7 @@ class TestPineconeGet:
     @pytest.mark.asyncio
     async def test_get_with_vectors(self) -> None:
         index = FakePineconeIndex()
-        index.fetch = lambda **kw: {
+        index.fetch = lambda **kw: {  # ty: ignore[invalid-assignment] — free lambda to bound-method slot
             "vectors": {"g1": {"values": [1.0, 2.0], "metadata": {"k": "v"}}}
         }
 
@@ -2281,7 +2282,7 @@ class TestPineconeGet:
     @pytest.mark.asyncio
     async def test_get_without_vectors(self) -> None:
         index = FakePineconeIndex()
-        index.fetch = lambda **kw: {
+        index.fetch = lambda **kw: {  # ty: ignore[invalid-assignment] — free lambda to bound-method slot
             "vectors": {"g1": {"values": [1.0], "metadata": {}}}
         }
 
@@ -2321,7 +2322,7 @@ class TestPineconeCount:
     @pytest.mark.asyncio
     async def test_count_namespace(self) -> None:
         index = FakePineconeIndex()
-        index.describe_index_stats = lambda **kw: {
+        index.describe_index_stats = lambda **kw: {  # ty: ignore[invalid-assignment] — free lambda to bound-method slot
             "total_vector_count": 10,
             "namespaces": {"ns": {"vector_count": 3}},
         }
@@ -2334,7 +2335,7 @@ class TestPineconeCount:
     @pytest.mark.asyncio
     async def test_count_default(self) -> None:
         index = FakePineconeIndex()
-        index.describe_index_stats = lambda **kw: {
+        index.describe_index_stats = lambda **kw: {  # ty: ignore[invalid-assignment] — free lambda to bound-method slot
             "total_vector_count": 10,
             "namespaces": {"ns": {"vector_count": 3}},
         }
@@ -2353,7 +2354,7 @@ class TestPineconeCount:
             filter_received.update(kw)
             return {"total_vector_count": 5, "namespaces": {}}
 
-        index.describe_index_stats = describe
+        index.describe_index_stats = describe  # ty: ignore[invalid-assignment] — free fn to bound-method slot
 
         adapter = PineconeAdapter(PineconeSettings(api_key=SecretStr("key")))
         adapter._index = index
@@ -2413,7 +2414,7 @@ class TestPineconeCreateDeleteListCollections:
     @pytest.mark.asyncio
     async def test_list_collections_with_default(self) -> None:
         index = FakePineconeIndex()
-        index.describe_index_stats = lambda **kw: {
+        index.describe_index_stats = lambda **kw: {  # ty: ignore[invalid-assignment] — free lambda to bound-method slot
             "total_vector_count": 10,
             "namespaces": {"ns1": {"vector_count": 3}},
         }
@@ -2428,7 +2429,7 @@ class TestPineconeCreateDeleteListCollections:
     @pytest.mark.asyncio
     async def test_list_collections_no_default(self) -> None:
         index = FakePineconeIndex()
-        index.describe_index_stats = lambda **kw: {
+        index.describe_index_stats = lambda **kw: {  # ty: ignore[invalid-assignment] — free lambda to bound-method slot
             "total_vector_count": 3,
             "namespaces": {"ns1": {"vector_count": 3}},
         }
@@ -2443,7 +2444,7 @@ class TestPineconeCreateDeleteListCollections:
     @pytest.mark.asyncio
     async def test_list_collections_empty(self) -> None:
         index = FakePineconeIndex()
-        index.describe_index_stats = lambda **kw: {
+        index.describe_index_stats = lambda **kw: {  # ty: ignore[invalid-assignment] — free lambda to bound-method slot
             "total_vector_count": 0,
             "namespaces": {},
         }

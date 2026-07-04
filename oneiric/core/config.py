@@ -11,7 +11,8 @@ from pathlib import Path
 from typing import Any, cast
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
+from pydantic_settings import SettingsConfigDict
 
 from oneiric.runtime.health import default_runtime_health_path
 
@@ -217,7 +218,7 @@ class OneiricMCPConfig(BaseModel):
     environment: str = "development"
     cache_dir: str = ".oneiric_cache"
 
-    model_config = ConfigDict(
+    model_config = SettingsConfigDict(
         env_prefix="ONEIRIC_MCP_",
         env_file=".env",
         extra="allow",

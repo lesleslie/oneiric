@@ -321,7 +321,7 @@ class TestModeIntegration:
     def test_mode_preserves_non_mode_settings(self) -> None:
         """Test that applying mode preserves non-mode settings."""
         settings = OneiricSettings(
-            app={"name": "test", "environment": "test", "debug": True}
+            app={"name": "test", "environment": "test", "debug": True}  # type: ignore
         )
         mode = create_mode("lite")
         updated = apply_mode_to_settings(settings, mode)

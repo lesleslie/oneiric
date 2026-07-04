@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid as uuid_module
 from typing import Any
+from uuid import UUID
 
 from pydantic import Field, SecretStr
 
@@ -52,7 +53,7 @@ class QdrantSettings(VectorBaseSettings):
     )
 
 
-class QdrantAdapter(VectorBase):
+class QdrantAdapter(VectorBase[QdrantSettings]):
     metadata = AdapterMetadata(
         category="vector",
         provider="qdrant",
@@ -382,7 +383,7 @@ class QdrantAdapter(VectorBase):
     async def delete(
         self,
         collection: str,
-        ids: list[str],
+        ids: list[str | int | UUID],
         **kwargs: Any,
     ) -> bool:
         client = await self._ensure_client()

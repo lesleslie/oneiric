@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 import os
+from typing import Any
 
 from pydantic import BaseModel, Field, SecretStr
 
@@ -13,7 +14,7 @@ from oneiric.core.resolution import CandidateSource
 try:  # pragma: no cover - optional dependency
     import logfire  # type: ignore[import-untyped]
 except Exception:  # pragma: no cover - optional dependency
-    logfire = None  # type: ignore[assignment]
+    logfire: Any = None
 
 
 class LogfireMonitoringSettings(BaseModel):
@@ -71,7 +72,7 @@ class LogfireMonitoringAdapter:
         token = self._resolve_token()
         try:
             kwargs = self._build_config_kwargs(token)
-            logfire.configure(**kwargs)  # type: ignore[arg-type]
+            logfire.configure(**kwargs)  # ty: ignore[invalid-argument-type]
             self._maybe_call(
                 "instrument_system_metrics", self._settings.enable_system_metrics
             )

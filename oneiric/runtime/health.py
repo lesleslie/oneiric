@@ -18,11 +18,11 @@ class RuntimeHealthSnapshot:
     orchestrator_pid: int | None = None
     updated_at: str | None = None
     last_remote_registered: int | None = None
-    last_remote_per_domain: dict[str, int] = None  # type: ignore[assignment]
+    last_remote_per_domain: dict[str, int] | None = None
     last_remote_skipped: int | None = None
     last_remote_duration_ms: float | None = None
-    activity_state: dict[str, dict[str, Any]] = None  # type: ignore[assignment]
-    lifecycle_state: dict[str, dict[str, Any]] = None  # type: ignore[assignment]
+    activity_state: dict[str, dict[str, Any]] | None = None
+    lifecycle_state: dict[str, dict[str, Any]] | None = None
 
     def as_dict(self) -> dict[str, Any]:
         data = asdict(self)

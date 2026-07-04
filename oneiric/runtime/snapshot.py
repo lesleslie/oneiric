@@ -17,8 +17,8 @@ class RuntimeSnapshot:
     server_name: str
     timestamp: str
     version: str = "1.0"
-    components: dict[str, Any] = None
-    metadata: dict[str, Any] = None
+    components: dict[str, Any] | None = None
+    metadata: dict[str, Any] | None = None
 
     def __init__(self, server_name: str, timestamp: str):
         self.server_name = server_name
@@ -27,9 +27,13 @@ class RuntimeSnapshot:
         self.metadata = {}
 
     def add_component(self, name: str, data: dict[str, Any]) -> None:
+        if self.components is None:
+            self.components = {}
         self.components[name] = data
 
     def add_metadata(self, key: str, value: Any) -> None:
+        if self.metadata is None:
+            self.metadata = {}
         self.metadata[key] = value
 
     def to_dict(self) -> dict[str, Any]:

@@ -3,11 +3,15 @@ from __future__ import annotations
 from abc import abstractmethod
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 from oneiric.core.logging import get_logger
+
+if TYPE_CHECKING:
+    pass
 
 
 class VectorSearchResult(BaseModel):
@@ -34,6 +38,9 @@ class VectorBaseSettings(BaseModel):
 
     batch_size: int = 100
     max_connections: int = 10
+
+
+_SettingsT = TypeVar("_SettingsT", bound=VectorBaseSettings)
 
 
 class VectorCollection:
@@ -112,8 +119,10 @@ class VectorCollection:
         )
 
 
-class VectorBase:
-    def __init__(self, settings: VectorBaseSettings) -> None:
+class VectorBase(Generic[_SettingsT]):
+    _settings: _SettingsT
+
+    def __init__(self, settings: _SettingsT) -> None:
         self._settings = settings
         self._collections: dict[str, VectorCollection] = {}
         self._client: Any | None = None
@@ -167,7 +176,7 @@ class VectorBase:
     async def delete(
         self,
         collection: str,
-        ids: list[str],
+        ids: list[str | int | UUID],
         **kwargs: Any,
     ) -> bool: ...
 

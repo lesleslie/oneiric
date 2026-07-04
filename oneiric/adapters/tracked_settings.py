@@ -23,6 +23,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Protocol
@@ -73,10 +74,8 @@ def _hash_value_if_secret(value: Any) -> str:
 
 def _ensure_cache_dir(cache_dir: Path) -> Path:
     cache_dir.mkdir(parents=True, exist_ok=True)
-    try:
+    with suppress(OSError):  # pragma: no cover - permission policy dependent
         os.chmod(cache_dir, 0o700)
-    except OSError:  # pragma: no cover - permission policy dependent
-        pass
     return cache_dir
 
 
@@ -131,6 +130,18 @@ class TrackedSettings:
         unreachable. Defaults to ``~/.cache/oneiric/pending_snapshots/``.
     """
 
+    # Internal state — populated in __init__ via ``object.__setattr__`` to
+    # bypass our interception. Declared here so type checkers see them.
+    _model: Any  # Pydantic BaseModel — typed as Any so field access narrows
+    _adapter_id: str
+    _dhara_url: str
+    _allowlist: set[str]
+    _debounce_seconds: float
+    _pending_changes: list[dict[str, Any]]
+    _flush_task: asyncio.Task[None] | None
+    _fallback_dir: Path
+    _client_factory: _HttpClientFactory
+
     def __init__(
         self,
         *,
@@ -151,9 +162,7 @@ class TrackedSettings:
         object.__setattr__(self, "_debounce_seconds", debounce_seconds)
         object.__setattr__(self, "_pending_changes", [])
         object.__setattr__(self, "_flush_task", None)
-        object.__setattr__(
-            self, "_fallback_dir", fallback_dir or _FALLBACK_DIR
-        )
+        object.__setattr__(self, "_fallback_dir", fallback_dir or _FALLBACK_DIR)
         object.__setattr__(self, "_client", None)
         factory: _HttpClientFactory = client_factory or (
             lambda: httpx.AsyncClient(
@@ -237,9 +246,7 @@ class TrackedSettings:
     async def _push_snapshot(self, event_type: str) -> None:
         """Push a full snapshot to Dhara. Never raises."""
         tracer = get_tracer(TRACKED_SETTINGS_INSTRUMENTATION_SCOPE)
-        with tracer.start_as_current_span(
-            f"tracked_settings.{event_type}"
-        ) as span:
+        with tracer.start_as_current_span(f"tracked_settings.{event_type}") as span:
             span.set_attribute("adapter_id", self._adapter_id)
             span.set_attribute("event_type", event_type)
             try:
@@ -249,9 +256,7 @@ class TrackedSettings:
                     "config_json": self._build_snapshot(),
                     "timestamp": datetime.now(UTC).isoformat(),
                 }
-                await self._post_json(
-                    "/tools/store_config_snapshot", payload
-                )
+                await self._post_json("/tools/store_config_snapshot", payload)
             except Exception as exc:  # pragma: no cover - defensive
                 logger.warning(
                     "tracked-settings-snapshot-push-failed",
@@ -276,9 +281,7 @@ class TrackedSettings:
                 error=str(exc),
             )
 
-    def _capture_fallback(
-        self, kind: str, payload: dict[str, Any]
-    ) -> None:
+    def _capture_fallback(self, kind: str, payload: dict[str, Any]) -> None:
         try:
             _write_fallback_payload(
                 cache_dir=self._fallback_dir,
@@ -296,10 +299,7 @@ class TrackedSettings:
     # -- debounced change batch ----------------------------------------------
 
     def _schedule_change_push(self) -> None:
-        if (
-            self._flush_task is None
-            or self._flush_task.done()
-        ):
+        if self._flush_task is None or self._flush_task.done():
             # If called from sync code without a running event loop (e.g.
             # outside an ``async`` context), skip scheduling. The change is
             # still recorded in ``_pending_changes`` and will be picked up by
@@ -321,7 +321,7 @@ class TrackedSettings:
         """Push any pending change events as a single batched POST."""
         if not self._pending_changes:
             return
-        events = list(self._pending_changes)
+        events = self._pending_changes.copy()
         self._pending_changes = []
 
         tracer = get_tracer(TRACKED_SETTINGS_INSTRUMENTATION_SCOPE)
@@ -336,9 +336,7 @@ class TrackedSettings:
                 "timestamp": datetime.now(UTC).isoformat(),
             }
             try:
-                await self._post_json(
-                    "/tools/store_config_events", payload
-                )
+                await self._post_json("/tools/store_config_events", payload)
             except Exception as exc:  # pragma: no cover - defensive
                 logger.warning(
                     "tracked-settings-change-batch-failed",

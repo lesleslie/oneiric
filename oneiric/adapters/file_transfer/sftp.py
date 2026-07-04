@@ -69,7 +69,7 @@ class SFTPFileTransferAdapter:
             return
 
         try:
-            import asyncssh  # type: ignore
+            import asyncssh
         except ModuleNotFoundError as exc:  # pragma: no cover - optional dependency
             raise LifecycleError(
                 "asyncssh-required: install asyncssh to use SFTPFileTransferAdapter"
@@ -94,10 +94,12 @@ class SFTPFileTransferAdapter:
         self._logger.info("sftp-adapter-init")
 
     async def cleanup(self) -> None:
-        if self._owns_conn and self._sftp:
-            await self._sftp.exit()
-        if self._owns_conn and self._conn:
-            await self._conn.close(wait_closed=True)
+        sftp = self._sftp
+        conn = self._conn
+        if self._owns_conn and sftp is not None:
+            await sftp.exit()  # ty: ignore[invalid-await]
+        if self._owns_conn and conn is not None:
+            await conn.close()  # ty: ignore[invalid-await]
         self._conn = None
         self._sftp = None
         self._logger.info("sftp-adapter-cleanup")
@@ -141,7 +143,7 @@ class SFTPFileTransferAdapter:
             self._logger.error("sftp-delete-failed", path=remote_path, error=str(exc))
             raise LifecycleError("sftp-delete-failed") from exc
 
-    async def list(self, prefix: str | None = None) -> list[str]:
+    async def list(self, prefix: str | None = None) -> list[str]:  # ty: ignore[invalid-type-form]
         client = self._ensure_client()
         base = prefix or "."
         try:

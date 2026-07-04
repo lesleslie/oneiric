@@ -59,7 +59,7 @@ class TestCapabilityDescriptor:
             schema_format="json-schema",
             security=security,
         )
-        assert d.security.classification == "public"
+        assert d.security.classification == "public"  # type: ignore  nosec
 
     def test_from_dict(self) -> None:
         d = CapabilityDescriptor(
@@ -112,7 +112,7 @@ class TestRemoteManifestEntry:
             key="x",
             provider="p",
             factory="f:f",
-            capabilities=["cap_a", "cap_b"],
+            capabilities=["cap_a", "cap_b"],  # type: ignore
         )
         assert e.capability_names == ["cap_a", "cap_b"]
         assert all(isinstance(c, CapabilityDescriptor) for c in e.capabilities)
@@ -123,7 +123,7 @@ class TestRemoteManifestEntry:
             key="x",
             provider="p",
             factory="f:f",
-            capabilities=[{"name": "a", "description": "b"}],
+            capabilities=[{"name": "a", "description": "b"}],  # ty: ignore[invalid-argument-type]
         )
         assert e.capability_names == ["a"]
 
@@ -134,7 +134,7 @@ class TestRemoteManifestEntry:
                 key="x",
                 provider="p",
                 factory="f:f",
-                capabilities=[{"description": "no name"}],
+                capabilities=[{"description": "no name"}],  # ty: ignore[invalid-argument-type]
             )
 
     def test_capability_none(self) -> None:
@@ -143,7 +143,7 @@ class TestRemoteManifestEntry:
             key="x",
             provider="p",
             factory="f:f",
-            capabilities=None,
+            capabilities=None,  # ty: ignore[invalid-argument-type]
         )
         assert e.capabilities == []
 
@@ -154,7 +154,7 @@ class TestRemoteManifestEntry:
                 key="x",
                 provider="p",
                 factory="f:f",
-                capabilities=[42],
+                capabilities=[42],  # ty: ignore[invalid-argument-type]
             )
 
     def test_capability_payloads(self) -> None:
@@ -163,7 +163,7 @@ class TestRemoteManifestEntry:
             key="x",
             provider="p",
             factory="f:f",
-            capabilities=[
+            capabilities=[  # type: ignore
                 CapabilityDescriptor(name="a", description="desc"),
                 "bare_string",
             ],

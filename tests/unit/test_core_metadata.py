@@ -69,7 +69,7 @@ def test_register_metadata_registers_candidates_and_logs() -> None:
     ]
 
     register_metadata(
-        resolver,  # type: ignore[arg-type]
+        resolver,  # type: ignore
         "pkg.name",
         "pkg/path",
         items,

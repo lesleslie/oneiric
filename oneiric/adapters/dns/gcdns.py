@@ -169,7 +169,7 @@ class GCDNSAdapter:
 
     def _create_client(self) -> Any:
         try:
-            from google.cloud import dns  # type: ignore
+            from google.cloud import dns
         except ModuleNotFoundError as exc:  # pragma: no cover - optional dep
             raise LifecycleError(
                 "google-cloud-dns-missing: install 'oneiric[dns-gcdns]' to use GCDNSAdapter"
@@ -178,7 +178,7 @@ class GCDNSAdapter:
         credentials = None
         if self._settings.credentials_file:
             try:
-                from google.oauth2 import service_account  # type: ignore
+                from google.oauth2 import service_account
             except ModuleNotFoundError as exc:  # pragma: no cover - optional dep
                 raise LifecycleError(
                     "google-auth-missing: install google-auth to load service account credentials"

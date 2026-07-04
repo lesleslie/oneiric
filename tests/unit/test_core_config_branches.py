@@ -64,7 +64,7 @@ def test_apply_runtime_profile_default_and_unknown() -> None:
 
 
 def test_apply_profile_with_fallback_uses_configured_profile() -> None:
-    settings = OneiricSettings(profile={"name": "serverless"})
+    settings = OneiricSettings(profile={"name": "serverless"})  # type: ignore
 
     updated = apply_profile_with_fallback(settings, None)
 

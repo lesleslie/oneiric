@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import inspect
 from collections.abc import Callable, Iterable
-from typing import Any
+from typing import Any, cast
 
 from pydantic import BaseModel, Field, SecretStr
 
@@ -88,7 +88,11 @@ class Neo4jGraphAdapter:
         self, labels: Iterable[str], properties: dict[str, Any]
     ) -> dict[str, Any]:
         query = "CREATE (n" + ":".join(["", *labels]) + ") SET n = $props RETURN n"
-        return (await self._run_query(query, props=properties)).get("n")
+        result = await self._run_query(query, props=properties)
+        record = result.get("n")
+        if record is None:
+            return {}
+        return cast("dict[str, Any]", record)
 
     async def create_relationship(
         self,
@@ -101,11 +105,13 @@ class Neo4jGraphAdapter:
             "MATCH (a),(b) WHERE id(a) = $from_id AND id(b) = $to_id "
             f"CREATE (a)-[r:{rel_type}]->(b) SET r = $props RETURN r"
         )
-        return (
-            await self._run_query(
-                query, from_id=from_id, to_id=to_id, props=properties or {}
-            )
-        ).get("r")
+        result = await self._run_query(
+            query, from_id=from_id, to_id=to_id, props=properties or {}
+        )
+        record = result.get("r")
+        if record is None:
+            return {}
+        return cast("dict[str, Any]", record)
 
     async def query(self, cypher: str, **parameters: Any) -> list[dict[str, Any]]:
         records = await self._run_query_many(cypher, **parameters)
@@ -143,7 +149,7 @@ class Neo4jGraphAdapter:
 
     def _default_driver_factory(self) -> Any:
         try:
-            from neo4j import AsyncGraphDatabase  # type: ignore
+            from neo4j import AsyncGraphDatabase
         except ModuleNotFoundError as exc:  # pragma: no cover - optional dep
             raise LifecycleError(
                 "neo4j-driver-not-installed: install optional extra 'oneiric[graph-neo4j]' to use Neo4jGraphAdapter"
