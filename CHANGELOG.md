@@ -5,6 +5,73 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.6] - 2026-07-04
+
+### Added
+
+- oneiric: Add TrackedSettings wrapper for adapter config telemetry
+
+### Changed
+
+- Oneiric (quality: 66/100) - 2026-07-04 01:29:08
+- Update dependencies
+
+### Fixed
+
+- Correct typo in coverage import (coverage -> coverage)
+- Update config, core, deps, docs, tests
+- Update config, core, deps, docs, tests
+- Update core, deps, docs, tests
+- Update core, docs, tests
+
+### Testing
+
+- Add hypothesis dep and shared fixtures for comprehensive suites
+- Add mock-based coverage for cache, queue, and secrets adapters
+- Comprehensive suites for cross-cutting modules (loader, logging)
+- Comprehensive suites for domain bridges (base, events, tasks, services, workflows, watchers)
+- Comprehensive suites for foundational modules (resolution, models, checkpoints, protocols, dag, events)
+- Fix 2 pre-existing failures + add 3 loader circuit-breaker integration tests
+
+### Internal
+
+- Add archive/backup directories to gitignore
+- Bump version to 0.10.0
+- Bump version to 0.11.0
+- Bump version to 0.12.0
+- Bump version to 0.12.1
+- Bump version to 0.12.2
+- Bump version to 0.12.3
+- Bump version to 0.13.0
+- Bump version to 0.13.1
+- Bump version to 0.13.2
+- Bump version to 0.13.3
+- Bump version to 0.13.4
+- Bump version to 0.6.0
+- Bump version to 0.7.0
+- Bump version to 0.7.1
+- Bump version to 0.8.0
+- Bump version to 0.8.1
+- Bump version to 0.8.2
+- Bump version to 0.8.3
+- Bump version to 0.9.0
+- Bump version to 0.9.1
+- Bump version to 0.9.2
+- Bump version to 0.9.3
+- Bump version to 0.9.4
+- Bump version to 0.9.5
+- Bump version to 0.9.6
+- Bump version to 0.9.8
+- Bump version to 0.9.9
+- ci: Remove github actions release workflow
+- gitignore: Add backup file patterns to silence checkpoint tool artifacts
+- gitignore: Consolidate 108-line drift into canonical structure
+- gitignore: Track *.backup.json + remove stray tracked artifact
+- gitignore: Track .worktrees/ to silence worktree add artifacts
+- Untrack .idea directory (already in .gitignore)
+- Untrack and delete 31 historical *.backup/*.bak files
+- Update LICENSE copyright to 2026
+
 ## [0.13.4] - 2026-07-04
 
 ### Added
@@ -17,7 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
-- gitignore: Track *.backup.json + remove stray tracked artifact
+- gitignore: Track \*.backup.json + remove stray tracked artifact
 - gitignore: Track .worktrees/ to silence worktree add artifacts
 
 ## [0.13.2] - 2026-06-05

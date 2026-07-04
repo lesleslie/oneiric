@@ -84,24 +84,28 @@ class TestKeyFormatValidation:
         """Keys with dots can be rejected via allow_dots=False."""
         is_valid, error = validate_key_format("my.component", allow_dots=False)
         assert not is_valid
+        assert error is not None
         assert "invalid characters" in error
 
     def test_path_traversal_key_rejected(self, path_traversal_key):
         """Keys with path traversal blocked."""
         is_valid, error = validate_key_format(path_traversal_key)
         assert not is_valid
+        assert error is not None
         assert "path traversal" in error
 
     def test_absolute_path_key_rejected(self):
         """Keys starting with / blocked."""
         is_valid, error = validate_key_format("/absolute/path")
         assert not is_valid
+        assert error is not None
         assert "path traversal" in error
 
     def test_backslash_in_key_rejected(self):
         """Keys with backslashes blocked."""
         is_valid, error = validate_key_format("windows\\path")
         assert not is_valid
+        assert error is not None
         assert "path traversal" in error
 
     def test_dotdot_anywhere_in_key_rejected(self):
@@ -110,12 +114,14 @@ class TestKeyFormatValidation:
         for key in invalid_keys:
             is_valid, error = validate_key_format(key)
             assert not is_valid, f"Should reject: {key}"
+            assert error is not None
             assert "path traversal" in error
 
     def test_empty_key_rejected(self):
         """Empty keys rejected."""
         is_valid, error = validate_key_format("")
         assert not is_valid
+        assert error is not None
         assert "cannot be empty" in error
 
     def test_special_characters_rejected(self):

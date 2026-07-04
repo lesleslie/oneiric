@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import abstractmethod
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -38,9 +38,6 @@ class VectorBaseSettings(BaseModel):
 
     batch_size: int = 100
     max_connections: int = 10
-
-
-_SettingsT = TypeVar("_SettingsT", bound=VectorBaseSettings)
 
 
 class VectorCollection:
@@ -119,10 +116,10 @@ class VectorCollection:
         )
 
 
-class VectorBase(Generic[_SettingsT]):
-    _settings: _SettingsT
+class VectorBase[SettingsT: VectorBaseSettings]:
+    _settings: SettingsT
 
-    def __init__(self, settings: _SettingsT) -> None:
+    def __init__(self, settings: SettingsT) -> None:
         self._settings = settings
         self._collections: dict[str, VectorCollection] = {}
         self._client: Any | None = None

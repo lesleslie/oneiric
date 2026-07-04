@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Callable
 from functools import wraps
-from typing import Any
 
 
 def with_retry(max_attempts: int = 3):

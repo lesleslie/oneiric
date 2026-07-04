@@ -220,18 +220,21 @@ class TestPriorityBoundsValidation:
         """Priority above maximum rejected."""
         is_valid, error = validate_priority_bounds(1001)
         assert not is_valid
+        assert error is not None
         assert "out of bounds" in error
 
     def test_priority_below_min_rejected(self):
         """Priority below minimum rejected."""
         is_valid, error = validate_priority_bounds(-1001)
         assert not is_valid
+        assert error is not None
         assert "out of bounds" in error
 
     def test_non_integer_priority_rejected(self):
         """Non-integer priority values rejected."""
-        is_valid, error = validate_priority_bounds("not-an-int")  # type: ignore
+        is_valid, error = validate_priority_bounds("not-an-int")  # type: ignore[arg-type]
         assert not is_valid
+        assert error is not None
         assert "must be integer" in error
 
 
@@ -260,18 +263,21 @@ class TestStackLevelBoundsValidation:
         """Stack level above maximum rejected."""
         is_valid, error = validate_stack_level_bounds(101)
         assert not is_valid
+        assert error is not None
         assert "out of bounds" in error
 
     def test_stack_level_below_min_rejected(self):
         """Stack level below minimum rejected."""
         is_valid, error = validate_stack_level_bounds(-101)
         assert not is_valid
+        assert error is not None
         assert "out of bounds" in error
 
     def test_non_integer_stack_level_rejected(self):
         """Non-integer stack level values rejected."""
-        is_valid, error = validate_stack_level_bounds(3.14)  # type: ignore
+        is_valid, error = validate_stack_level_bounds(3.14)  # type: ignore[arg-type]
         assert not is_valid
+        assert error is not None
         assert "must be integer" in error
 
 

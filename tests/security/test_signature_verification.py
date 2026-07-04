@@ -87,6 +87,7 @@ class TestSignatureVerification:
             tampered_canonical, signature_b64, trusted_keys=[public_key]
         )
         assert not is_valid
+        assert error is not None
         assert "signature mismatch" in error
 
     def test_wrong_public_key_fails_verification(self):
@@ -107,6 +108,7 @@ class TestSignatureVerification:
             canonical, signature_b64, trusted_keys=[public_key2]
         )
         assert not is_valid
+        assert error is not None
         assert "signature mismatch" in error
 
     def test_multiple_trusted_keys_first_succeeds(self):
@@ -172,6 +174,7 @@ class TestSignatureVerification:
             canonical, signature_b64, trusted_keys=[]
         )
         assert not is_valid
+        assert error is not None
         assert "No trusted public keys" in error
 
     def test_empty_signature_fails(self):
@@ -184,6 +187,7 @@ class TestSignatureVerification:
             canonical, "", trusted_keys=[public_key]
         )
         assert not is_valid
+        assert error is not None
         assert "empty" in error.lower()
 
     def test_invalid_base64_signature_fails(self):
@@ -196,6 +200,7 @@ class TestSignatureVerification:
             canonical, "not-valid-base64!@#", trusted_keys=[public_key]
         )
         assert not is_valid
+        assert error is not None
         assert "Invalid base64" in error
 
 

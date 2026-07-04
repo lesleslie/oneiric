@@ -1,11 +1,11 @@
 [project]
 name = "oneiric"
-version = "0.13.4"
+version = "0.13.6"
 description = "Universal resolution layer for pluggable components with hot-swapping and remote manifest delivery"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "pydantic>=2.14.0a1",
+    "pydantic>=2.12.5",
     "structlog>=26.1.0",
     "opentelemetry-api>=1.42.1",
     "pyyaml>=6.0.3",

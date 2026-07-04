@@ -7,7 +7,9 @@ from typing import Any
 import numpy as np
 
 try:
-    from sentence_transformers import SentenceTransformer  # ty: ignore[unresolved-import]
+    from sentence_transformers import (  # ty: ignore[unresolved-import]
+        SentenceTransformer,
+    )
 
     SENTENCE_TRANSFORMERS_AVAILABLE = True  # pragma: no cover
 except ImportError:

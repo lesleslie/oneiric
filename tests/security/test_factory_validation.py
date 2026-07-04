@@ -156,6 +156,7 @@ class TestFactorySecurityEdgeCases:
         factory = "oneiric.demo:DemoAdapter"
         is_valid, error = validate_factory_string(factory, allowlist)
         assert not is_valid
+        assert error is not None
         assert "not in allowlist" in error
 
 

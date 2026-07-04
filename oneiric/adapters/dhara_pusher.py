@@ -149,9 +149,7 @@ class DharaAdapterPusher:
         try:
             # Extract factory path
             if callable(metadata.factory):
-                factory_path = (
-                    f"{getattr(metadata.factory, '__module__', '<unknown>')}.{getattr(metadata.factory, '__name__', '<unknown>')}"
-                )
+                factory_path = f"{getattr(metadata.factory, '__module__', '<unknown>')}.{getattr(metadata.factory, '__name__', '<unknown>')}"
             else:
                 factory_path = str(metadata.factory)
 
