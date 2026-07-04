@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.4] - 2026-07-04
+
+### Added
+
+- oneiric: Add TrackedSettings wrapper for adapter config telemetry
+
+### Changed
+
+- Oneiric (quality: 66/100) - 2026-07-04 01:29:08
+
+### Internal
+
+- gitignore: Track *.backup.json + remove stray tracked artifact
+- gitignore: Track .worktrees/ to silence worktree add artifacts
+
 ## [0.13.2] - 2026-06-05
 
 ### Testing
