@@ -66,4 +66,5 @@ crackerjack-debug-*.log
 # ============================================================================
 *.backup
 *.bak
+*.backup.json
 .worktrees/
