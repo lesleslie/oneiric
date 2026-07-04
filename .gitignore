@@ -24,6 +24,7 @@ wheels/
 .oneiric_cache/
 .complexipy_cache/
 .cache/
+.lycheecache/
 
 # Coverage reports
 .coverage
