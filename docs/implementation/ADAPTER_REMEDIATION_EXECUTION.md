@@ -25,7 +25,7 @@ ______________________________________________________________________
 ### Track A – Registration & Metadata
 
 1. ✅ Extend `builtin_adapter_metadata()` with DuckDB + AI/vector entries (done in `oneiric/adapters/bootstrap.py`).
-1. ⏳ Add smoke coverage that instantiates each new adapter via `AdapterBridge` (unit test + CLI transcript).
+1. ✅ Add smoke coverage that instantiates each new adapter via `AdapterBridge` (shipped: `tests/adapters/test_bootstrap_metadata.py`, `tests/adapters/test_duckdb_adapter.py`, `tests/adapters/vector/test_{pinecone,qdrant}_adapter.py`, `tests/adapters/embedding/test_{openai_embeddings,embedding_interface}.py`, `tests/adapters/test_observability_embeddings.py`; CLI transcript captured).
 
 ### Track B – Dependencies & Packaging
 
@@ -37,7 +37,7 @@ ______________________________________________________________________
 
 1. ✅ Reintroduce async-friendly client path with shim fallback (`oneiric/adapters/http/httpx.py`).
 1. ✅ Cover regression with adapter/action tests (`tests/adapters/test_http_adapter.py`, `tests/actions/test_http_action.py`).
-1. ⏳ Run remote/action suites under `uv run pytest -k "http"` to capture evidence.
+1. ✅ Run remote/action suites under `uv run pytest -k "http"` to capture evidence.
 
 ### Track D – Remote Watcher Tests
 
