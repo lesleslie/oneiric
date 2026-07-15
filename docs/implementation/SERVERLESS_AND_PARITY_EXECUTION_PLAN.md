@@ -150,7 +150,7 @@ ______________________________________________________________________
 ## 6. Documentation & Cleanup (WS-D)
 
 1. ✅ **Archive historical completion reports** – `docs/implementation/BUILD_PROGRESS.md`, `UNIFIED_IMPLEMENTATION_PLAN.md`, and every `WEEK*`/`*_COMPLETION` file now live under `docs/archive/implementation/` with an updated index.
-1. **Refresh `docs/README.md`** to link to `STRATEGIC_ROADMAP.md`, this plan, and `ORCHESTRATION_PARITY_PLAN.md`.
+1. ✅ **Refresh `docs/README.md`** to link to `STRATEGIC_ROADMAP.md`, this plan, and `ORCHESTRATION_PARITY_PLAN.md`.
 1. **Update sample manifests** with serverless toggles + Procfile references.
 1. **Add decision log** in `docs/STRATEGIC_ROADMAP.md §6` summarizing the bullets from §1 here so newcomers understand the December decisions.
 
@@ -171,9 +171,9 @@ ______________________________________________________________________
 
 1. **Serverless profile skeleton (Runtime)**
    - ✅ Implemented profile toggles, env-var fallback, Procfile/guide updates. Next: capture screenshots/logs of a `pack build` + `gcloud run deploy` run to include in the deployment appendix.
-1. **Adapter gap audit (Adapter Team)**
-   - Diff `docs/analysis/ACB_ADAPTER_ACTION_IMPLEMENTATION.md` vs current adapters; capture the remaining NoSQL/feature-flag backlog now that Mailgun/Twilio/Slack/Teams/webhook + Cloud Tasks/Pub/Sub shipped.
-   - Update `ADAPTER_REMEDIATION_EXECUTION.md` with refreshed evidence + owners.
+1. ✅ **Adapter gap audit (Adapter Team)**
+   - ✅ Diff `docs/analysis/ACB_ADAPTER_ACTION_IMPLEMENTATION.md` vs current adapters; capture the remaining NoSQL/feature-flag backlog now that Mailgun/Twilio/Slack/Teams/webhook + Cloud Tasks/Pub/Sub shipped.
+   - ✅ Update `ADAPTER_REMEDIATION_EXECUTION.md` with refreshed evidence + owners.
 1. **Docs hygiene (Docs Team)**
    - Move week-by-week completion docs into `/docs/archive`, update links.
    - Cross-link roadmap ↔ parity plan ↔ this document.
