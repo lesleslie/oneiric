@@ -18,9 +18,11 @@ gantt
     Base Module Strategy                :done, b2, 2025-12-02, 1d
     Smoke Coverage                      :done, b3, 2025-12-02, 1d
     section Day 2
-    Documentation Refresh               :active, c1, 2025-12-03, 1d
-    Backlog Matrix                      :active, c2, 2025-12-03, 1d
-    Sign-off                             :crit, c3, 2025-12-03, 1d
+    Documentation Refresh               :done, c1, 2025-12-03, 1d
+    Backlog Matrix                      :done, c2, 2025-12-03, 1d
+    Sign-off                             :done, c3, 2025-12-03, 1d
+    section Open Backlog
+    Gemini LLM packaging                :active, d1, 2026-08-01, 30d
 ```
 
 ______________________________________________________________________
