@@ -133,12 +133,12 @@ ______________________________________________________________________
 
 ## 3. Milestones
 
-| Milestone | Target | Deliverables |
-|-----------|--------|--------------|
-| **M1 – Event routing beta** | Jan 2026 | Updated `oneiric.domains.events`, manifest schema, CLI inspect command, unit tests. |
-| **M2 – DAG runtime alpha** | Feb 2026 | `networkx`-backed DAG engine, sqlite checkpoint store, CLI `workflow plan` + `orchestrate --print-dag --inspect-json` output, integration tests. |
-| **M3 – Service supervisor GA** | Mar 2026 | Orchestrator refactor, serverless profile docs, health/watchers telemetry, Procfile examples. |
-| **M4 – Repo cut-over rehearsals** | Apr 2026 | Fastblocks + Crackerjack runbooks updated, parity test suites running in CI, MCP references swapped to Oneiric. |
+| Milestone | Target | Status | Deliverables |
+|-----------|--------|--------|--------------|
+| **M1 – Event routing beta** | Jan 2026 | ✅ Shipped | Updated `oneiric.domains.events`, manifest schema, CLI inspect command, unit tests. |
+| **M2 – DAG runtime alpha** | Feb 2026 | ✅ Shipped | `networkx`-backed DAG engine, sqlite checkpoint store, CLI `workflow plan` + `orchestrate --print-dag --inspect-json` output, integration tests. |
+| **M3 – Service supervisor GA** | Mar 2026 | ✅ Shipped | Orchestrator refactor, serverless profile docs, health/watchers telemetry, Procfile examples. |
+| **M4 – Repo cut-over rehearsals** | Apr 2026 | 🟡 Partial | Oneiric artifacts shipped (parity fixtures, runbooks, tests). Sibling-repo runbook edits still needed in Crackerjack + FastBlocks before cut-over. |
 
 ______________________________________________________________________
 
