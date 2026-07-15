@@ -304,10 +304,10 @@ ______________________________________________________________________
 ### Test Coverage Needed
 
 - ✅ Base classes implemented with full type hints
-- 📝 Unit tests for vector adapters (pending)
-- 📝 Unit tests for DuckDB adapter (pending)
-- 📝 Unit tests for embedding adapters (pending)
-- 📝 Integration tests (pending)
+- ✅ Unit tests for vector adapters (shipped: `tests/adapters/vector/test_{pinecone,qdrant}_adapter.py`)
+- ✅ Unit tests for DuckDB adapter (shipped: `tests/adapters/test_duckdb_adapter.py`)
+- ✅ Unit tests for embedding adapters (shipped: `tests/adapters/embedding/test_{openai_embeddings,embedding_interface}.py` + `tests/adapters/test_observability_embeddings.py`)
+- ✅ Integration tests (shipped: `tests/adapters/observability/test_otel_integration.py`)
 
 ### Test Requirements (from ACB)
 
@@ -472,7 +472,7 @@ ______________________________________________________________________
 - ✅ **Health checks** - All adapters
 - ✅ **Cleanup** - Proper resource management
 - ✅ **Hot-swapping** - Via LifecycleManager
-- 📝 **Tests** - Pending (next phase)
+- ✅ **Tests** - Shipped (see Testing Status)
 
 ______________________________________________________________________
 
