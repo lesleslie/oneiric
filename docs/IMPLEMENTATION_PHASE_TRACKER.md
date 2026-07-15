@@ -31,7 +31,7 @@ ______________________________________________________________________
 | M1: Event routing beta | Jan 2026 | ✅ Complete | Manifest schema + event metadata documented, CLI subscriber inspector/runbook published (`docs/examples/EVENT_ROUTING_OBSERVABILITY.md`, `docs/REMOTE_MANIFEST_SCHEMA.md`, README quick start) |
 | M2: DAG runtime alpha | Feb 2026 | ✅ Complete | DAG plan/workflow run/enqueue/telemetry/checkpoint docs live (`README.md`, `docs/examples/FASTBLOCKS_OBSERVABILITY.md`, `docs/examples/FASTBLOCKS_PARITY_FIXTURE.yaml`) |
 | M3: Service supervisor GA | Mar 2026 | ✅ Complete | Supervisor runbook + CLI proofs published (`docs/runbooks/SERVICE_SUPERVISOR.md`, `docs/examples/LOCAL_CLI_DEMO.md`, `docs/deployment/CLOUD_RUN_BUILD.md`); README/Procfile reference supervisor toggles |
-| M4: Repo cut-over rehearsals | Apr 2026 | ⏳ Not started | Update Crackerjack/FastBlocks runbooks, parity fixture CI, MCP references swapped to Oneiric |
+| M4: Repo cut-over rehearsals | Apr 2026 | 🟡 Partial | Oneiric artifacts shipped (parity fixtures, runbooks, tests). Sibling-repo runbook edits still needed in Crackerjack + FastBlocks before cut-over. |
 
 **Kickoff Checklist**
 
