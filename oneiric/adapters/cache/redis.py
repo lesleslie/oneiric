@@ -90,17 +90,17 @@ class RedisCacheSettings(BaseModel):
         default=3600,
         ge=0,
         description="Optional TTL in seconds applied at every set() call when no "
-                    "per-call ttl override is passed; 0 disables TTL.",
+        "per-call ttl override is passed; 0 disables TTL.",
     )
     stampede_jitter_ms: int = Field(
         default=0,
         ge=0,
         description="Optional random sleep (ms) applied when a get() returns None, "
-                    "to dampen thundering-herd on hot keys.",
+        "to dampen thundering-herd on hot keys.",
     )
     # NOTE: `enable_client_cache: bool = Field(default=True, ...)` already
     # exists above (around line 69). Per spec D7 its default `True` is
-    # intentional; do NOT re-declare this field. Operator-supplied
+    # intentional; do NOT redeclare this field. Operator-supplied
     # RedisCacheSettings override the default.
 
 
@@ -208,7 +208,9 @@ class RedisCacheAdapter(EnsureClientMixin):
         namespaced = self._namespaced_key(key)
         value = await client.get(namespaced)
         if value is None and self._settings.stampede_jitter_ms > 0:
-            await asyncio.sleep(random.uniform(0, self._settings.stampede_jitter_ms) / 1000.0)
+            await asyncio.sleep(
+                random.uniform(0, self._settings.stampede_jitter_ms) / 1000.0
+            )
         return value
 
     async def set(self, key: str, value: Any, *, ttl: float | None = None) -> None:

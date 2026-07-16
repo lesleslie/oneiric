@@ -1056,6 +1056,7 @@ dependencies = [
     { name = "websockets" },
     { name = "zuban" },
 ]
+sdist = { url = "https://files.pythonhosted.org/packages/20/10/016de8b0e95f022334e9fae61323aba82db0667cdaeb37867623dc6aaf3e/crackerjack-0.68.4.tar.gz", hash = "sha256:09dcf886c1f334bd2f603afb84b1a63b217a0dc718c548763f53e52bc50b1742", size = 5358564, upload-time = "2026-07-16T08:42:07.475Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/42/34/f83247b116aabbdc5f2246a13a4c4f2ae003443ce80c676e8a053438175d/crackerjack-0.68.4-py3-none-any.whl", hash = "sha256:9d7f9e5066ec2d9c5be2f39e19a82f2594a463d1d4d2dc4deec977b67c967406", size = 1531660, upload-time = "2026-07-16T08:42:04.702Z" },
 ]
@@ -3170,7 +3171,7 @@ wheels = [
 
 [[package]]
 name = "oneiric"
-version = "0.13.7"
+version = "0.13.8"
 source = { editable = "." }
 dependencies = [
     { name = "aiobreaker" },
