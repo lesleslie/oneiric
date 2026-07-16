@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import random
 from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field, RedisDsn
@@ -85,6 +86,22 @@ class RedisCacheSettings(BaseModel):
         ge=1,
         description="Override for TrackingCache idle eviction threshold in seconds.",
     )
+    ttl_seconds: int = Field(
+        default=3600,
+        ge=0,
+        description="Optional TTL in seconds applied at every set() call when no "
+                    "per-call ttl override is passed; 0 disables TTL.",
+    )
+    stampede_jitter_ms: int = Field(
+        default=0,
+        ge=0,
+        description="Optional random sleep (ms) applied when a get() returns None, "
+                    "to dampen thundering-herd on hot keys.",
+    )
+    # NOTE: `enable_client_cache: bool = Field(default=True, ...)` already
+    # exists above (around line 69). Per spec D7 its default `True` is
+    # intentional; do NOT re-declare this field. Operator-supplied
+    # RedisCacheSettings override the default.
 
 
 class RedisCacheAdapter(EnsureClientMixin):
