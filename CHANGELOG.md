@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.8] - 2026-07-16
+
+### Added
+
+- oneiric: Consume ttl_seconds and stampede_jitter_ms in set/get
+- oneiric: Extend RedisCacheSettings with ttl_seconds and stampede_jitter_ms
+
+### Changed
+
+- oneiric: Add trailing newline to test_redis_cache_settings.py
+
+### Fixed
+
+- oneiric: Stampede_jitter_ms sleeps ms, not seconds
+- oneiric: Strip leading space from AdapterMetadata.factory strings
+
+### Documentation
+
+- implementation: Mark ADAPTER_REMEDIATION_EXECUTION Track A and C shipped
+- implementation: Mark ADAPTER_REMEDIATION_PLAN Gantt complete and Gemini open
+- implementation: Mark ORCHESTRATION_PARITY_PLAN M1-M3 shipped and M4 partial
+- implementation: Mark SERVERLESS_AND_PARITY_EXECUTION §6 and §8 shipped
+- Mark IMPLEMENTATION_PHASE_TRACKER M4 partial
+- plans: Reconcile stale-done test rows and track items
+- plans: Reconcile stale-done test rows and track items
+
+### Testing
+
+- oneiric: Cover new fields + factory-string + set/get consumer code
+
 ## [0.13.7] - 2026-07-13
 
 ### Internal
