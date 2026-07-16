@@ -91,7 +91,7 @@ class RedisCacheAdapter(EnsureClientMixin):
     metadata = AdapterMetadata(
         category="cache",
         provider="redis",
-        factory="oneiric.adapters.cache.redis: RedisCacheAdapter",
+        factory="oneiric.adapters.cache.redis:RedisCacheAdapter",
         capabilities=["kv", "ttl", "distributed"],
         stack_level=10,
         priority=400,

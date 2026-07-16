@@ -30,7 +30,7 @@ class MemoryCacheAdapter:
     metadata = AdapterMetadata(
         category="cache",
         provider="memory",
-        factory="oneiric.adapters.cache.memory: MemoryCacheAdapter",
+        factory="oneiric.adapters.cache.memory:MemoryCacheAdapter",
         capabilities=["kv", "ttl"],
         stack_level=5,
         priority=100,
