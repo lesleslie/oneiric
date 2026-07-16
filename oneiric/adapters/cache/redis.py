@@ -208,7 +208,7 @@ class RedisCacheAdapter(EnsureClientMixin):
         namespaced = self._namespaced_key(key)
         value = await client.get(namespaced)
         if value is None and self._settings.stampede_jitter_ms > 0:
-            await asyncio.sleep(random.uniform(0, self._settings.stampede_jitter_ms))
+            await asyncio.sleep(random.uniform(0, self._settings.stampede_jitter_ms) / 1000.0)
         return value
 
     async def set(self, key: str, value: Any, *, ttl: float | None = None) -> None:

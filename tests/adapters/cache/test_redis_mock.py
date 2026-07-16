@@ -668,7 +668,7 @@ async def test_get_applies_stampede_jitter_on_miss(monkeypatch: pytest.MonkeyPat
     )
     result = await adapter.get("k")
     uniform_mock.assert_called_once_with(0, 20)
-    sleep_mock.assert_awaited_once_with(0.015)
+    sleep_mock.assert_awaited_once_with(0.015 / 1000.0)
     assert result is None
 
 
