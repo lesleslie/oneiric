@@ -206,17 +206,20 @@ class RedisCacheAdapter(EnsureClientMixin):
     async def get(self, key: str) -> Any:
         client = self._ensure_client("redis-client-not-initialized")
         namespaced = self._namespaced_key(key)
-        return await client.get(namespaced)
+        value = await client.get(namespaced)
+        if value is None and self._settings.stampede_jitter_ms > 0:
+            await asyncio.sleep(random.uniform(0, self._settings.stampede_jitter_ms))
+        return value
 
     async def set(self, key: str, value: Any, *, ttl: float | None = None) -> None:
         client = self._ensure_client("redis-client-not-initialized")
+        if ttl is not None and ttl <= 0:
+            raise LifecycleError("redis-cache-negative-ttl")
+        effective_ttl = ttl if ttl is not None else self._settings.ttl_seconds
         namespaced = self._namespaced_key(key)
         kwargs: dict[str, Any] = {}
-        if ttl is not None:
-            if ttl <= 0:
-                raise LifecycleError("redis-cache-negative-ttl")
-            milliseconds = max(1, int(ttl * 1000))
-            kwargs["px"] = milliseconds
+        if effective_ttl and effective_ttl > 0:
+            kwargs["px"] = max(1, int(effective_ttl * 1000))
         await client.set(namespaced, value, **kwargs)
 
     async def delete(self, key: str) -> None:

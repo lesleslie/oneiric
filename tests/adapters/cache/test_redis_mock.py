@@ -8,6 +8,7 @@ in-memory mock client.
 from __future__ import annotations
 
 from typing import Any
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -537,3 +538,176 @@ async def test_create_client_with_tracking_cache_kwargs(
     ]
     adapter._owns_client = False
     await adapter.cleanup()
+
+
+# ---------------------------------------------------------------------------
+# Tests — ttl_seconds / stampede_jitter_ms consumer behavior in set/get.
+# ---------------------------------------------------------------------------
+"""Tests for ttl_seconds / stampede_jitter_ms consumer behavior in set/get."""
+
+
+@pytest.fixture(autouse=True)
+def _stub_coredis_availability(monkeypatch):
+    """Permit constructing RedisCacheAdapter without a real coredis install.
+
+    `RedisCacheAdapter.__init__` raises a `LifecycleError` if
+    `_COREDIS_AVAILABLE` is `False`. Autouse-stubbing it to True lets
+    the mock-only tests below instantiate the adapter safely.
+    Mirrors the fixture pattern in `tests/adapters/cache/test_redis_mock.py:64-73`.
+    """
+    monkeypatch.setattr(
+        "oneiric.adapters.cache.redis._COREDIS_AVAILABLE", True, raising=False
+    )
+
+
+def _build_adapter(mock_client: MagicMock, *, ttl: int = 3600, jitter: int = 0) -> RedisCacheAdapter:
+    adapter = RedisCacheAdapter(RedisCacheSettings(ttl_seconds=ttl, stampede_jitter_ms=jitter))
+    adapter._client = mock_client
+    return adapter
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_set_applies_default_ttl_seconds_when_no_kwarg_passed() -> None:
+    """Confirms the documented default (3600s) flows through to coredis px."""
+    mock_client = MagicMock()
+    mock_client.set = AsyncMock(return_value=True)
+    adapter = _build_adapter(mock_client)  # NO ttl_seconds override; default applies
+    await adapter.set("k", "v")
+    _, kwargs = mock_client.set.call_args
+    assert kwargs.get("px") == 3600 * 1000
+    # also: no spurious ttl kwarg leaks to coredis
+    assert "ttl" not in kwargs
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_set_uses_configured_ttl_seconds_when_no_kwarg_passed() -> None:
+    mock_client = MagicMock()
+    mock_client.set = AsyncMock(return_value=True)
+    adapter = _build_adapter(mock_client, ttl=120, jitter=0)
+    await adapter.set("k", "v")
+    _, kwargs = mock_client.set.call_args
+    assert kwargs.get("px") == max(1, 120 * 1000)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_set_settings_ttl_zero_omits_px() -> None:
+    """`settings.ttl_seconds=0` must disable the settings-derived TTL entirely."""
+    mock_client = MagicMock()
+    mock_client.set = AsyncMock(return_value=True)
+    adapter = _build_adapter(mock_client, ttl=0, jitter=0)
+    await adapter.set("k", "v")
+    _, kwargs = mock_client.set.call_args
+    assert "px" not in kwargs
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_set_per_call_ttl_overrides_settings_ttl_seconds() -> None:
+    """Per-call `ttl` takes precedence over `settings.ttl_seconds`, even with non-zero setting.
+
+    Records the **exact** call signature to detect any spurious `ttl=...`
+    kwarg that would otherwise be silently accepted by the mock's
+    catch-all `**_` sink.
+    """
+    mock_client = MagicMock()
+    mock_client.set = AsyncMock(return_value=True)
+    adapter = _build_adapter(mock_client, ttl=120, jitter=0)
+    await adapter.set("k", "v", ttl=5)
+    args, kwargs = mock_client.set.call_args
+    assert kwargs == {"px": 5000}
+    assert "ttl" not in kwargs
+    # positional first arg is the namespaced key
+    assert args[0] == adapter._namespaced_key("k")
+    assert args[1] == "v"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_set_per_call_ttl_negative_raises_lifecycle_error() -> None:
+    """Regression guard: existing test_set_negative_ttl_raises asserts LifecycleError on ttl<0.
+    The consumer code must NOT silently swallow it when settings.ttl_seconds also happens to be 0."""
+    mock_client = MagicMock()
+    mock_client.set = AsyncMock(return_value=True)
+    adapter = _build_adapter(mock_client, ttl=0, jitter=0)
+    with pytest.raises(LifecycleError):
+        await adapter.set("k", "v", ttl=-1)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_set_per_call_ttl_zero_raises_lifecycle_error() -> None:
+    """Regression guard: existing test_set_zero_ttl_raises asserts LifecycleError on ttl=0."""
+    mock_client = MagicMock()
+    mock_client.set = AsyncMock(return_value=True)
+    adapter = _build_adapter(mock_client, ttl=120, jitter=0)
+    with pytest.raises(LifecycleError):
+        await adapter.set("k", "v", ttl=0)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_get_applies_stampede_jitter_on_miss(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Deterministic: patch BOTH random.uniform and asyncio.sleep; assert exact values.
+
+    Avoids any timing-window flake and proves the consumer code actually
+    wired both calls — it would FAIL if either branch were removed.
+    """
+    mock_client = MagicMock()
+    mock_client.get = AsyncMock(return_value=None)
+    adapter = _build_adapter(mock_client, jitter=20)
+    uniform_mock = MagicMock(return_value=0.015)  # 15 ms in seconds
+    sleep_mock = AsyncMock()
+    monkeypatch.setattr(
+        "oneiric.adapters.cache.redis.random.uniform", uniform_mock, raising=True
+    )
+    monkeypatch.setattr(
+        "oneiric.adapters.cache.redis.asyncio.sleep", sleep_mock, raising=True
+    )
+    result = await adapter.get("k")
+    uniform_mock.assert_called_once_with(0, 20)
+    sleep_mock.assert_awaited_once_with(0.015)
+    assert result is None
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_get_skips_stampede_jitter_on_hit(monkeypatch: pytest.MonkeyPatch) -> None:
+    """On a hit, neither random.uniform nor asyncio.sleep is reached."""
+    mock_client = MagicMock()
+    mock_client.get = AsyncMock(return_value=b"v")
+    adapter = _build_adapter(mock_client, jitter=20)
+    uniform_mock = MagicMock()
+    sleep_mock = AsyncMock()
+    monkeypatch.setattr(
+        "oneiric.adapters.cache.redis.random.uniform", uniform_mock, raising=True
+    )
+    monkeypatch.setattr(
+        "oneiric.adapters.cache.redis.asyncio.sleep", sleep_mock, raising=True
+    )
+    result = await adapter.get("k")
+    uniform_mock.assert_not_called()
+    sleep_mock.assert_not_awaited()
+    assert result == b"v"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_get_skips_stampede_jitter_when_setting_is_zero(monkeypatch: pytest.MonkeyPatch) -> None:
+    mock_client = MagicMock()
+    mock_client.get = AsyncMock(return_value=None)
+    adapter = _build_adapter(mock_client, jitter=0)
+    uniform_mock = MagicMock()
+    sleep_mock = AsyncMock()
+    monkeypatch.setattr(
+        "oneiric.adapters.cache.redis.random.uniform", uniform_mock, raising=True
+    )
+    monkeypatch.setattr(
+        "oneiric.adapters.cache.redis.asyncio.sleep", sleep_mock, raising=True
+    )
+    result = await adapter.get("k")
+    uniform_mock.assert_not_called()
+    sleep_mock.assert_not_awaited()
+    assert result is None
