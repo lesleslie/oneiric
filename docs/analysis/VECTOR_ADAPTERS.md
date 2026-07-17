@@ -1,6 +1,16 @@
+---
+status: partial
+role: implementation
+date: 2025-12-29
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: adapter-architecture
+---
+
 # Vector Database Adapters
 
-**Status:** Initial Implementation
+**Status:** Initial Implementation  <!-- legacy status — see YAML frontmatter -->
 **Date:** 2025-11-27
 **Adapters:** Pinecone, Qdrant, PGVector
 

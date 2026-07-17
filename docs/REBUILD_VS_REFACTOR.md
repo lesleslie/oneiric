@@ -1,3 +1,13 @@
+---
+status: active
+role: canonical
+date: 2025-12-29
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: resolver
+---
+
 # Rebuild vs. Refactor (Python 3.13 Baseline)
 
 Context: We can drop backward compatibility. We want a modern async architecture with

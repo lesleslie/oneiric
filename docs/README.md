@@ -1,3 +1,13 @@
+---
+status: active
+role: canonical
+date: 2026-01-21
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: lifecycle
+---
+
 # Oneiric Documentation
 
 **Version:** 0.3.3 (Audit: 95/100 at v0.2.0)

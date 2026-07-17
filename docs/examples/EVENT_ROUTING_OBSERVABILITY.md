@@ -1,3 +1,13 @@
+---
+status: active
+role: canonical
+date: 2025-12-11
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: observability
+---
+
 # Event Routing Observability Demo
 
 **Last Updated:** 2025-12-09

@@ -1,3 +1,13 @@
+---
+status: active
+role: canonical
+date: 2025-12-11
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: observability
+---
+
 # Session-Mgmt MCP Observability Runbook
 
 Session-Mgmt’s MCP cut-over relies on the same artifacts as Crackerjack/Fastblocks. Follow these steps whenever you stage a release.

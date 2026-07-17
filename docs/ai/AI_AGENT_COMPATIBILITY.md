@@ -1,3 +1,13 @@
+---
+status: active
+role: canonical
+date: 2025-12-19
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: adapter-architecture
+---
+
 # AI Agent & Design Service Compatibility
 
 Goal: make Oneiric easy for AI agents, MCP servers, and design tools to inspect, orchestrate, and monitor.

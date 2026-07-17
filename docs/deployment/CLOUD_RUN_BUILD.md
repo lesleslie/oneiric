@@ -1,3 +1,13 @@
+---
+status: active
+role: canonical
+date: 2026-05-10
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: oneiric-config
+---
+
 # Cloud Run Buildpacks Deployment Guide
 
 **Last Updated:** 2025-12-07

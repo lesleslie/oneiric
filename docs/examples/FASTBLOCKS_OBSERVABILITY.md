@@ -1,3 +1,13 @@
+---
+status: active
+role: canonical
+date: 2025-12-29
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: observability
+---
+
 # Fastblocks Observability Checklist
 
 Use this checklist whenever we validate Fastblocks workflows on Oneiric. The inspectors + telemetry snapshot replace the old MCP dashboard screenshots.

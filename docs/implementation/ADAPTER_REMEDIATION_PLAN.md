@@ -1,3 +1,13 @@
+---
+status: partial
+role: implementation
+date: 2026-07-15
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: adapter-architecture
+---
+
 # Adapter Remediation & Execution Plan
 
 **Date:** 2025-12-03

@@ -1,3 +1,13 @@
+---
+status: active
+role: umbrella
+date: 2026-01-21
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: lifecycle
+---
+
 # Oneiric Strategic Roadmap
 
 **Last Updated:** 2025-12-09

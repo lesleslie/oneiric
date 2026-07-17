@@ -1,7 +1,17 @@
+---
+status: active
+role: implementation
+date: 2025-01-27
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: routing-composition
+---
+
 # Phase 4: Mahavishnu Integration Design
 
 **Date:** 2025-01-27
-**Status:** Approved Design
+**Status:** Approved Design  <!-- legacy status — see YAML frontmatter -->
 **Implementing:** Connect OTelStorageAdapter with Mahavishnu ObservabilityManager
 
 ______________________________________________________________________

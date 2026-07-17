@@ -1,9 +1,19 @@
+---
+status: active
+role: canonical
+date: 2026-01-02
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: mcp-design
+---
+
 # MCP Server Migration Checklist Template
 
 **Project Name:** [PROJECT_NAME]
 **Migration Lead:** [YOUR_NAME]
 **Target Completion:** [TARGET_DATE]
-**Status:** ⏳ Not Started | 🟡 In Progress | ✅ Completed | ❌ Blocked
+**Status:** ⏳ Not Started | 🟡 In Progress | ✅ Completed | ❌ Blocked  <!-- legacy status — see YAML frontmatter -->
 
 ______________________________________________________________________
 

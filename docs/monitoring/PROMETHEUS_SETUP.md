@@ -1,7 +1,17 @@
+---
+status: active
+role: canonical
+date: 2026-01-21
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: observability
+---
+
 # Prometheus Monitoring Setup for Oneiric
 
 **Last Updated:** 2025-11-26
-**Status:** Production Ready
+**Status:** Production Ready  <!-- legacy status — see YAML frontmatter -->
 **Maintainer:** Platform Team
 
 ______________________________________________________________________

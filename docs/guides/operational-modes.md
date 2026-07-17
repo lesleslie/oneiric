@@ -1,3 +1,13 @@
+---
+status: active
+role: canonical
+date: 2026-05-10
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: oneiric-config
+---
+
 # Oneiric Operational Modes
 
 Oneiric supports two operational modes designed for different use cases: **Lite Mode** for development and testing, and **Standard Mode** for production deployments with remote resolution and distributed configuration.
@@ -645,4 +655,4 @@ ______________________________________________________________________
 
 **Last Updated**: 2025-02-09
 **Oneiric Version**: v0.3.3
-**Status**: Production Ready
+**Status**: Production Ready  <!-- legacy status — see YAML frontmatter -->

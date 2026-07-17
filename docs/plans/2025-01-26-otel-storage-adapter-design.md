@@ -1,7 +1,17 @@
+---
+status: active
+role: implementation
+date: 2025-01-26
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: observability
+---
+
 # Oneiric OTel Storage Adapter Design
 
 **Date**: 2025-01-26
-**Status**: Approved Design
+**Status**: Approved Design  <!-- legacy status — see YAML frontmatter -->
 **Implementing**: Option B - Traces with Vector Similarity Search
 
 ______________________________________________________________________

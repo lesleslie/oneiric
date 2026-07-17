@@ -1,7 +1,17 @@
+---
+status: active
+role: implementation
+date: 2025-01-27
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: lifecycle
+---
+
 # Phase 3: QueryService Design
 
 **Date:** 2025-01-27
-**Status:** Approved Design
+**Status:** Approved Design  <!-- legacy status — see YAML frontmatter -->
 **Implementing:** Vector similarity search and trace correlation queries
 
 ______________________________________________________________________

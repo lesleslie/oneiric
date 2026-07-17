@@ -1,3 +1,13 @@
+---
+status: complete
+role: historical
+date: 2025-01-25
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: observability
+---
+
 # OpenTelemetry Integration & Device Discovery Analysis
 
 **Date**: 2025-01-25

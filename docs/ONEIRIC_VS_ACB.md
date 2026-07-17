@@ -1,3 +1,13 @@
+---
+status: active
+role: canonical
+date: 2026-01-21
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: adapter-architecture
+---
+
 # Oneiric vs ACB: Comprehensive Comparison & Strategy
 
 **Last Updated:** 2025-12-19

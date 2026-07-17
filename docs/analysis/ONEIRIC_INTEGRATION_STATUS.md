@@ -1,3 +1,13 @@
+---
+status: active
+role: canonical
+date: 2025-01-25
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: lifecycle
+---
+
 # Oneiric Integration Status: Task Queues & Messaging
 **Date**: 2025-01-25
 **Projects**: Mahavishnu, Session-Buddy, Oneiric

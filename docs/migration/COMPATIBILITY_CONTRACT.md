@@ -1,6 +1,16 @@
+---
+status: active
+role: canonical
+date: 2026-01-02
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: mcp-design
+---
+
 # MCP Server Compatibility Contract
 
-**Status:** ✅ COMPLETED
+**Status:** ✅ COMPLETED  <!-- legacy status — see YAML frontmatter -->
 **Created:** 2025-12-30
 **Last Updated:** 2025-12-30
 **Purpose:** Define the compatibility contract for all MCP server migrations to Oneiric

@@ -1,3 +1,13 @@
+---
+status: active
+role: canonical
+date: 2026-02-03
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: lifecycle
+---
+
 # Local CLI Demo
 
 This runnable example shows how to combine the CLI, remote manifest loader, and the new logging/resiliency knobs.

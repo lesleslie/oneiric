@@ -1,3 +1,13 @@
+---
+status: active
+role: canonical
+date: 2025-12-29
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: adapter-architecture
+---
+
 # Graph Adapters (Neo4j & ArangoDB)
 
 **Last Updated:** 2025-12-10

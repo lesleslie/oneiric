@@ -1,6 +1,16 @@
+---
+status: shipped
+role: historical
+date: 2025-01-28
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: lifecycle
+---
+
 # Phase 5: Performance & Polish - Implementation Plan
 
-> **Status:** Shipped (historical). All 5 tasks verified in place — drift-sync reconciliation 2026-07-15.
+> **Status:** Shipped (historical). All 5 tasks verified in place — drift-sync reconciliation 2026-07-15.  <!-- legacy status — see YAML frontmatter -->
 >
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 

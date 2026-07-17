@@ -1,8 +1,18 @@
+---
+status: complete
+role: historical
+date: 2025-12-19
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: lifecycle
+---
+
 # Resolver Secret Cache Refresh Design
 
 **Last Updated:** 2025-12-19
 **Owners:** Platform Core (resolver/runtime), Docs Team (runbooks)
-**Status:** Implemented in v0.2.x (design record retained for reference)
+**Status:** Implemented in v0.2.x (design record retained for reference)  <!-- legacy status — see YAML frontmatter -->
 
 This note captures the implementation plan for zero-downtime secret rotation so the outstanding Stage 5 audit item (“Secrets rotation requires manual restart”) can be closed in v0.2.x.
 

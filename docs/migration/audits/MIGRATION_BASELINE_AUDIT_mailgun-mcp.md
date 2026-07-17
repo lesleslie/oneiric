@@ -1,9 +1,19 @@
+---
+status: complete
+role: historical
+date: 2026-01-02
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: mcp-design
+---
+
 # mailgun-mcp Migration Baseline Audit
 
 **Project:** mailgun-mcp
 **Date:** 2025-12-30
 **Version:** 0.1.3
-**Status:** Pre-migration baseline
+**Status:** Pre-migration baseline  <!-- legacy status — see YAML frontmatter -->
 
 ## Executive Summary
 

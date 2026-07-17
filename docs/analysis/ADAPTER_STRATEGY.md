@@ -1,8 +1,18 @@
+---
+status: draft
+role: implementation
+date: 2025-12-19
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: adapter-architecture
+---
+
 # Adapter Strategy & Roadmap
 
 **Purpose:** Define the adapter porting strategy, naming conventions, and ORM/query interface approach for Oneiric.
 
-**Status:** Planning Document
+**Status:** Planning Document  <!-- legacy status — see YAML frontmatter -->
 **Date:** 2025-11-26
 
 ______________________________________________________________________

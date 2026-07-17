@@ -1,3 +1,13 @@
+---
+status: active
+role: canonical
+date: 2025-12-11
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: lifecycle
+---
+
 # Migration Validation & Cut-over Checklist
 
 This checklist captures the artifacts every repo must produce before we switch its MCP workloads from ACB to Oneiric. It pairs with the Fastblocks parity fixture so teams can rehearse the cut-over repeatably in CI and through the CLI.

@@ -1,8 +1,18 @@
+---
+status: active
+role: umbrella
+date: 2026-01-21
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: lifecycle
+---
+
 # Oneiric: Uncompleted Tasks & Future Enhancements
 
 **Last Updated:** 2025-12-19
 **Project Version:** 0.3.3 (Audit: 95/100 at v0.2.0)
-**Status:** Production-ready with planned enhancements
+**Status:** Production-ready with planned enhancements  <!-- legacy status — see YAML frontmatter -->
 
 ```mermaid
 pie title Production Readiness Status

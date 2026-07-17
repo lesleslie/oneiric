@@ -1,3 +1,13 @@
+---
+status: complete
+role: historical
+date: 2025-12-10
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: adapter-architecture
+---
+
 # Adapter Obsolescence Analysis
 
 **Purpose:** Identify adapters that are no longer needed in Oneiric's modern architecture.

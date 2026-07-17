@@ -1,7 +1,17 @@
+---
+status: complete
+role: historical
+date: 2026-07-15
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: adapter-architecture
+---
+
 # Adapter Porting Summary - December 2025
 
 **Date:** 2025-12-18
-**Status:** Phase 1 Complete
+**Status:** Phase 1 Complete  <!-- legacy status — see YAML frontmatter -->
 **Total Adapters Ported:** 10+ categories (see sections)
 
 ______________________________________________________________________

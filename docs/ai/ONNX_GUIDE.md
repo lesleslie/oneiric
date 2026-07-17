@@ -1,3 +1,13 @@
+---
+status: active
+role: canonical
+date: 2026-01-02
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: learning-pipeline
+---
+
 # ONNXRuntime Usage Guide for Python 3.13 (3.14 Planned)
 
 Oneiric currently targets Python 3.13. When testing Python 3.14 (planned), ONNXRuntime wheels may lag behind new releases. This guide explains how to work with ONNXRuntime when needed.

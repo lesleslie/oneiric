@@ -1,6 +1,16 @@
+---
+status: complete
+role: historical
+date: 2026-02-03
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: lifecycle
+---
+
 # Package 7: Minor Improvements - Implementation Plan
 
-**Status:** ✅ COMPLETE
+**Status:** ✅ COMPLETE  <!-- legacy status — see YAML frontmatter -->
 **Date:** 2025-02-02
 **Completed By:** Claude Code (Python Pro Agent)
 

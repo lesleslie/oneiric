@@ -1,7 +1,17 @@
+---
+status: active
+role: canonical
+date: 2026-05-10
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: lifecycle
+---
+
 # Troubleshooting Guide for Oneiric
 
 **Last Updated:** 2025-11-26
-**Status:** Production Ready
+**Status:** Production Ready  <!-- legacy status — see YAML frontmatter -->
 **Maintainer:** Platform Team
 
 ______________________________________________________________________

@@ -1,3 +1,13 @@
+---
+status: active
+role: canonical
+date: 2025-12-19
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: observability
+---
+
 # Load Testing
 
 Use the built-in load test harness to stress concurrency and measure latency/throughput

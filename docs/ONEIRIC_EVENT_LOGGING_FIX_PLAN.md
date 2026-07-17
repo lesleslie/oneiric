@@ -1,3 +1,13 @@
+---
+status: complete
+role: historical
+date: 2026-01-02
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: observability
+---
+
 # Oneiric Event Logging Exposure Fix Plan
 
 ## Executive Summary

@@ -1,3 +1,13 @@
+---
+status: active
+role: canonical
+date: 2026-05-10
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: lifecycle
+---
+
 # Oneiric Admin Shell
 
 Universal component resolution and lifecycle management shell with session tracking.

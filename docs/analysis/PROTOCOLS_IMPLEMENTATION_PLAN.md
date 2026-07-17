@@ -1,3 +1,13 @@
+---
+status: draft
+role: implementation
+date: 2025-12-19
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: lifecycle
+---
+
 ## Protocol Implementation Plan (Oneiric)
 
 ### Scope

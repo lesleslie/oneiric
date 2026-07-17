@@ -1,6 +1,16 @@
+---
+status: complete
+role: historical
+date: 2026-02-05
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: storage-consolidation
+---
+
 # Multi-Tier Cache Implementation
 
-**Status**: ✅ Complete
+**Status**: ✅ Complete  <!-- legacy status — see YAML frontmatter -->
 **Date**: 2026-02-05
 **Impact**: 60-80% latency reduction for all adapter resolution operations
 

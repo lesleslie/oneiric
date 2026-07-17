@@ -1,6 +1,16 @@
+---
+status: draft
+role: implementation
+date: 2026-01-02
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: mcp-design
+---
+
 # MCP Server Migration to Oneiric - Unified Implementation Plan
 
-**Status:** 🟡 READY AFTER FOUNDATION GATES
+**Status:** 🟡 READY AFTER FOUNDATION GATES  <!-- legacy status — see YAML frontmatter -->
 **Created:** 2025-12-27
 **Timeline:** 8 weeks
 **Total Effort:** ~100 hours

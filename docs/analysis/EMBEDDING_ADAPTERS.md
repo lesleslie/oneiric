@@ -1,6 +1,16 @@
+---
+status: active
+role: canonical
+date: 2025-12-29
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: learning-pipeline
+---
+
 # Embedding Adapters
 
-**Status:** Production Ready
+**Status:** Production Ready  <!-- legacy status — see YAML frontmatter -->
 **Date:** 2025-11-27
 **Adapters:** OpenAI (hosted), Sentence Transformers / ONNX (local, manual install while Python 3.14 upgrade wheels are pending)
 

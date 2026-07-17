@@ -1,3 +1,13 @@
+---
+status: active
+role: canonical
+date: 2026-01-02
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: mcp-design
+---
+
 ## MCP Server CLI Standard (Oneiric)
 
 This document standardizes MCP server lifecycle and health commands across all

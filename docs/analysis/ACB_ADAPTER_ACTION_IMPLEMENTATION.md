@@ -1,3 +1,13 @@
+---
+status: partial
+role: implementation
+date: 2026-01-21
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: adapter-architecture
+---
+
 # ACB Adapter & Action Migration Implementation Plan
 
 Purpose: migrate all ACB adapters and action utilities into Oneiric's unified resolver/lifecycle stack without maintaining any legacy compatibility layers.

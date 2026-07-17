@@ -1,7 +1,17 @@
+---
+status: complete
+role: historical
+date: 2025-01-27
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: lifecycle
+---
+
 # Phase 1: Foundation - Complete Review
 
 **Date:** 2025-01-27
-**Status:** ✅ COMPLETE (6/6 tasks)
+**Status:** ✅ COMPLETE (6/6 tasks)  <!-- legacy status — see YAML frontmatter -->
 **Time Investment:** ~3 hours
 **Branch:** `feature/otel-storage-adapter`
 

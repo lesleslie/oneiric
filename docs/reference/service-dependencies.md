@@ -1,3 +1,13 @@
+---
+status: active
+role: canonical
+date: 2026-04-21
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: oneiric-config
+---
+
 # Oneiric Service Dependencies
 
 This document describes the service dependencies and integration points for Oneiric in the ecosystem architecture.
@@ -603,4 +613,4 @@ ______________________________________________________________________
 
 **Last Updated**: 2025-02-09
 **Oneiric Version**: v0.3.3
-**Status**: Production Ready
+**Status**: Production Ready  <!-- legacy status — see YAML frontmatter -->

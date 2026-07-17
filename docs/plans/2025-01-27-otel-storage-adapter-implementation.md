@@ -1,3 +1,13 @@
+---
+status: complete
+role: implementation
+date: 2025-01-27
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: observability
+---
+
 # OTel Storage Adapter Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.

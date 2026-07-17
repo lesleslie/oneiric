@@ -1,3 +1,13 @@
+---
+status: active
+role: canonical
+date: 2025-12-10
+last_reviewed: 2026-07-17
+superseded_by: null
+blocks_on: []
+topic: plugin-standardization
+---
+
 # Hello Oneiric Plugin
 
 This reference package shows how to publish a lightweight adapter plugin via entry points.
