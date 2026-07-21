@@ -1,12 +1,6 @@
----
-status: active
-role: canonical
-date: 2026-04-03
-last_reviewed: 2026-07-17
-superseded_by: null
-blocks_on: []
-topic: mcp-design
----
+______________________________________________________________________
+
+## status: active role: canonical date: 2026-04-03 last_reviewed: 2026-07-17 superseded_by: null blocks_on: [] topic: mcp-design
 
 # ULID Ecosystem Migration Guide
 
@@ -153,7 +147,7 @@ def create_session(project_name: str) -> str:
 
 ### Mahavishnu Workflow Integration
 
-**Status:** ✅ **COMPLETE** - Already implemented  <!-- legacy status — see YAML frontmatter -->
+**Status:** ✅ **COMPLETE** - Already implemented <!-- legacy status — see YAML frontmatter -->
 
 **Location:** `/Users/les/Projects/mahavishnu/mahavishnu/core/workflow_models.py`
 

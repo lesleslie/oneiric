@@ -1,12 +1,6 @@
----
-status: active
-role: canonical
-date: 2026-01-02
-last_reviewed: 2026-07-17
-superseded_by: null
-blocks_on: []
-topic: learning-pipeline
----
+______________________________________________________________________
+
+## status: active role: canonical date: 2026-01-02 last_reviewed: 2026-07-17 superseded_by: null blocks_on: [] topic: learning-pipeline
 
 # ONNXRuntime Usage Guide for Python 3.13 (3.14 Planned)
 

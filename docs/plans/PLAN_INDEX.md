@@ -1,13 +1,16 @@
----
+______________________________________________________________________
+
 status: active
 role: canonical
 date: 2026-07-16
 last_reviewed: 2026-07-16
 superseded_by: null
 blocks_on:
-  - docs/schemas/document-frontmatter-v1.md
-topic: convergence-control-plane
----
+
+- docs/schemas/document-frontmatter-v1.md
+  topic: convergence-control-plane
+
+______________________________________________________________________
 
 # Plan Index
 
@@ -87,15 +90,15 @@ One table per store. Entries are sorted by `date` DESC, with ties broken by path
 
 | Path | Date | Status | Role | Topic | Title |
 |---|---|---|---|---|---|
-| [`docs/plans/2025-01-28-phase5-performance-implementation.md`](docs/plans/2025-01-28-phase5-performance-implementation.md) | 2025-01-28 | `shipped` | `historical` | `lifecycle` | Phase 5: Performance & Polish - Implementation Plan |
-| [`docs/plans/2025-01-27-otel-storage-adapter-implementation.md`](docs/plans/2025-01-27-otel-storage-adapter-implementation.md) | 2025-01-27 | `complete` | `implementation` | `observability` | OTel Storage Adapter Implementation Plan |
-| [`docs/plans/2025-01-27-phase2-embeddings-design.md`](docs/plans/2025-01-27-phase2-embeddings-design.md) | 2025-01-27 | `active` | `implementation` | `learning-pipeline` | Phase 2: EmbeddingService Design |
-| [`docs/plans/2025-01-27-phase2-embeddings-implementation.md`](docs/plans/2025-01-27-phase2-embeddings-implementation.md) | 2025-01-27 | `complete` | `implementation` | `learning-pipeline` | Phase 2: EmbeddingService Implementation Plan |
-| [`docs/plans/2025-01-27-phase3-query-service-design.md`](docs/plans/2025-01-27-phase3-query-service-design.md) | 2025-01-27 | `active` | `implementation` | `lifecycle` | Phase 3: QueryService Design |
-| [`docs/plans/2025-01-27-phase3-query-service-implementation.md`](docs/plans/2025-01-27-phase3-query-service-implementation.md) | 2025-01-27 | `complete` | `implementation` | `lifecycle` | Phase 3: QueryService Implementation Plan |
-| [`docs/plans/2025-01-27-phase4-mahavishnu-integration-design.md`](docs/plans/2025-01-27-phase4-mahavishnu-integration-design.md) | 2025-01-27 | `active` | `implementation` | `routing-composition` | Phase 4: Mahavishnu Integration Design |
-| [`docs/plans/2025-01-27-phase4-mahavishnu-integration-implementation.md`](docs/plans/2025-01-27-phase4-mahavishnu-integration-implementation.md) | 2025-01-27 | `complete` | `implementation` | `routing-composition` | Phase 4: Mahavishnu Integration Implementation Plan |
-| [`docs/plans/2025-01-26-otel-storage-adapter-design.md`](docs/plans/2025-01-26-otel-storage-adapter-design.md) | 2025-01-26 | `active` | `implementation` | `observability` | Oneiric OTel Storage Adapter Design |
+| [`docs/plans/2025-01-28-phase5-performance-implementation.md`](2025-01-28-phase5-performance-implementation.md) | 2025-01-28 | `shipped` | `historical` | `lifecycle` | Phase 5: Performance & Polish - Implementation Plan |
+| [`docs/plans/2025-01-27-otel-storage-adapter-implementation.md`](2025-01-27-otel-storage-adapter-implementation.md) | 2025-01-27 | `complete` | `implementation` | `observability` | OTel Storage Adapter Implementation Plan |
+| [`docs/plans/2025-01-27-phase2-embeddings-design.md`](2025-01-27-phase2-embeddings-design.md) | 2025-01-27 | `active` | `implementation` | `learning-pipeline` | Phase 2: EmbeddingService Design |
+| [`docs/plans/2025-01-27-phase2-embeddings-implementation.md`](2025-01-27-phase2-embeddings-implementation.md) | 2025-01-27 | `complete` | `implementation` | `learning-pipeline` | Phase 2: EmbeddingService Implementation Plan |
+| [`docs/plans/2025-01-27-phase3-query-service-design.md`](2025-01-27-phase3-query-service-design.md) | 2025-01-27 | `active` | `implementation` | `lifecycle` | Phase 3: QueryService Design |
+| [`docs/plans/2025-01-27-phase3-query-service-implementation.md`](2025-01-27-phase3-query-service-implementation.md) | 2025-01-27 | `complete` | `implementation` | `lifecycle` | Phase 3: QueryService Implementation Plan |
+| [`docs/plans/2025-01-27-phase4-mahavishnu-integration-design.md`](2025-01-27-phase4-mahavishnu-integration-design.md) | 2025-01-27 | `active` | `implementation` | `routing-composition` | Phase 4: Mahavishnu Integration Design |
+| [`docs/plans/2025-01-27-phase4-mahavishnu-integration-implementation.md`](2025-01-27-phase4-mahavishnu-integration-implementation.md) | 2025-01-27 | `complete` | `implementation` | `routing-composition` | Phase 4: Mahavishnu Integration Implementation Plan |
+| [`docs/plans/2025-01-26-otel-storage-adapter-design.md`](2025-01-26-otel-storage-adapter-design.md) | 2025-01-26 | `active` | `implementation` | `observability` | Oneiric OTel Storage Adapter Design |
 
 ### Superpowers Specs (`docs/superpowers/specs/`)
 

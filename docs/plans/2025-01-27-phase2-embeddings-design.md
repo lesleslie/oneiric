@@ -1,17 +1,11 @@
----
-status: active
-role: implementation
-date: 2025-01-27
-last_reviewed: 2026-07-17
-superseded_by: null
-blocks_on: []
-topic: learning-pipeline
----
+______________________________________________________________________
+
+## status: active role: implementation date: 2025-01-27 last_reviewed: 2026-07-17 superseded_by: null blocks_on: [] topic: learning-pipeline
 
 # Phase 2: EmbeddingService Design
 
 **Date:** 2025-01-27
-**Status:** Approved Design  <!-- legacy status — see YAML frontmatter -->
+**Status:** Approved Design <!-- legacy status — see YAML frontmatter -->
 **Implementing:** Vector embeddings for trace similarity search
 
 ______________________________________________________________________

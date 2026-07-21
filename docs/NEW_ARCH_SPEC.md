@@ -1,12 +1,6 @@
----
-status: active
-role: canonical
-date: 2026-01-21
-last_reviewed: 2026-07-17
-superseded_by: null
-blocks_on: []
-topic: resolver
----
+______________________________________________________________________
+
+## status: active role: canonical date: 2026-01-21 last_reviewed: 2026-07-17 superseded_by: null blocks_on: [] topic: resolver
 
 # New Architecture Specification (Oneiric, Python 3.13 Baseline)
 

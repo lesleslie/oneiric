@@ -1,17 +1,11 @@
----
-status: active
-role: canonical
-date: 2026-01-21
-last_reviewed: 2026-07-17
-superseded_by: null
-blocks_on: []
-topic: oneiric-config
----
+______________________________________________________________________
+
+## status: active role: canonical date: 2026-01-21 last_reviewed: 2026-07-17 superseded_by: null blocks_on: [] topic: oneiric-config
 
 # Remote Manifest Schema Reference
 
 **Version:** 2.0 (Stage 4 Enhancement)
-**Status:** Production Ready  <!-- legacy status — see YAML frontmatter -->
+**Status:** Production Ready <!-- legacy status — see YAML frontmatter -->
 **Backward Compatible:** Yes (all new fields are optional)
 
 ______________________________________________________________________

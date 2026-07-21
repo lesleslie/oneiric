@@ -1,16 +1,10 @@
----
-status: active
-role: canonical
-date: 2025-12-29
-last_reviewed: 2026-07-17
-superseded_by: null
-blocks_on: []
-topic: adapter-architecture
----
+______________________________________________________________________
+
+## status: active role: canonical date: 2025-12-29 last_reviewed: 2026-07-17 superseded_by: null blocks_on: [] topic: adapter-architecture
 
 # DuckDB Database Adapter
 
-**Status:** Production Ready  <!-- legacy status — see YAML frontmatter -->
+**Status:** Production Ready <!-- legacy status — see YAML frontmatter -->
 **Date:** 2025-11-27
 **Category:** database
 

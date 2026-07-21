@@ -1,17 +1,11 @@
----
-status: active
-role: canonical
-date: 2026-07-16
-last_reviewed: 2026-07-17
-superseded_by: null
-blocks_on: []
-topic: lifecycle
----
+______________________________________________________________________
+
+## status: active role: canonical date: 2026-07-16 last_reviewed: 2026-07-17 superseded_by: null blocks_on: [] topic: lifecycle
 
 # Document Frontmatter Schema v1
 
 **Date:** 2026-07-16
-**Status:** accepted  <!-- legacy status — see YAML frontmatter -->
+**Status:** accepted <!-- legacy status — see YAML frontmatter -->
 **Source plan:** [2026-07-16-plan-lifecycle-unification.md](../superpowers/plans/2026-07-16-plan-lifecycle-unification.md)
 
 ## Goal

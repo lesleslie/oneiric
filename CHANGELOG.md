@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.1] - 2026-07-21
+
+### Documentation
+
+- oneiric: Apply plan-lifecycle-unification playbook (P7.B)
+
+### Testing
+
+- oneiric: Fix fakeredis dep + coredis TrackingCache abstract method
+
+### Internal
+
+- oneiric: Remove LICENSE (consolidated to root-level LICENSE)
+- oneiric: Remove unused logo + 5 point-in-time archive summaries
+- oneiric: Sync uv.lock to pyproject.toml (0.14.0)
+
 ## [0.13.8] - 2026-07-16
 
 ### Added

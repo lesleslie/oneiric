@@ -1,12 +1,6 @@
----
-status: active
-role: canonical
-date: 2026-04-21
-last_reviewed: 2026-07-17
-superseded_by: null
-blocks_on: []
-topic: oneiric-config
----
+______________________________________________________________________
+
+## status: active role: canonical date: 2026-04-21 last_reviewed: 2026-07-17 superseded_by: null blocks_on: [] topic: oneiric-config
 
 # Oneiric Service Dependencies
 
@@ -613,4 +607,4 @@ ______________________________________________________________________
 
 **Last Updated**: 2025-02-09
 **Oneiric Version**: v0.3.3
-**Status**: Production Ready  <!-- legacy status — see YAML frontmatter -->
+**Status**: Production Ready <!-- legacy status — see YAML frontmatter -->

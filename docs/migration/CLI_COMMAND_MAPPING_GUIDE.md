@@ -1,16 +1,10 @@
----
-status: draft
-role: canonical
-date: 2026-01-02
-last_reviewed: 2026-07-17
-superseded_by: null
-blocks_on: []
-topic: mcp-design
----
+______________________________________________________________________
+
+## status: draft role: canonical date: 2026-01-02 last_reviewed: 2026-07-17 superseded_by: null blocks_on: [] topic: mcp-design
 
 # MCP Server CLI Command Mapping Guide
 
-**Status:** 🟡 DRAFT  <!-- legacy status — see YAML frontmatter -->
+**Status:** 🟡 DRAFT <!-- legacy status — see YAML frontmatter -->
 **Created:** 2025-12-30
 **Last Updated:** 2025-12-30
 **Purpose:** Standardize CLI commands across all MCP servers using Oneiric patterns

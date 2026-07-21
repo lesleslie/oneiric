@@ -1,12 +1,6 @@
----
-status: active
-role: canonical
-date: 2025-12-10
-last_reviewed: 2026-07-17
-superseded_by: null
-blocks_on: []
-topic: lifecycle-hooks
----
+______________________________________________________________________
+
+## status: active role: canonical date: 2025-12-10 last_reviewed: 2026-07-17 superseded_by: null blocks_on: [] topic: lifecycle-hooks
 
 # Adapter Lifecycle Template
 

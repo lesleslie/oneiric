@@ -12,6 +12,8 @@ try:
     from coredis.exceptions import RedisError  # pragma: no cover
     from coredis.patterns.cache import (  # pragma: no cover
         LRUCache,
+    )
+    from coredis.patterns.cache import (
         TrackingCache as _AbstractTrackingCache,
     )
 
@@ -37,7 +39,9 @@ from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
 
 
-class _TrackingCacheImpl(_AbstractTrackingCache):
+class _TrackingCacheImpl(
+    _AbstractTrackingCache,  # ty: ignore[unsupported-base]
+):
     """Concrete :class:`TrackingCache` shim preserving the legacy kwarg surface.
 
     coredis moved ``TrackingCache`` to :mod:`coredis.patterns.cache` and made

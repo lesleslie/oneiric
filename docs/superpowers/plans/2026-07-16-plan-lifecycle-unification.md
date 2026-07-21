@@ -1,0 +1,754 @@
+---
+status: draft
+role: implementation
+date: 2026-07-16
+last_reviewed: 2026-07-16
+superseded_by: null
+blocks_on:
+  - docs/schemas/document-frontmatter-v1.md
+topic: convergence-control-plane
+---
+
+# Plan Lifecycle Unification — Frontmatter Standardization Across Documentation Stores
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Date:** 2026-07-16
+**Status:** <!-- legacy status: draft — moved to YAML frontmatter -->
+**Role:** <!-- legacy role: implementation — moved to YAML frontmatter -->
+
+**Goal:** Replace the eight ad-hoc status conventions currently scattered across `.claude/decisions/`, `docs/followups/`, `docs/adr/`, `docs/superpowers/specs/`, `docs/superpowers/plans/`, and `docs/plans/` with a single YAML frontmatter contract — five lifecycle values, five role values, and a small set of metadata fields — then mechanically validate the 178 in-scope files in Mahavishnu so PLAN_INDEX.md, the decision README, and discovery tools can read one source of truth.
+
+**Architecture:** Two coordinated work tracks. Track A defines the contract (schema doc, validator, dry-run audit). Track B applies frontmatter to the 178 inventoried files in store-by-store waves (P1 ADRs → P2 plans → P3 superpowers specs → P4 superpowers plans → P5 decisions/followups), then regenerates PLAN_INDEX.md from frontmatter in P6. No new tooling; existing YAML/grep is enough. P7 cross-repository expansion is gated on each repo first producing its own inventory.
+
+**Tech Stack:** YAML frontmatter (parsed via Python's `yaml.safe_load`), `bash`/`sed` for mechanical prepending, `pytest` for validator unit tests, `markdown-link-check` (already in repo) for `superseded_by`/`blocks_on` link validation, `gh` for cross-repo Phase 7.
+
+## Approved Adjustments (2026-07-16)
+
+Two open questions were resolved before execution began. These are now binding for P0–P6.
+
+### Adjustment A — Hybrid `topic` vocabulary
+
+The original draft left `topic` free-form and deferred normalization to P7. After adversarial review surfaced synonym-drift risk (e.g. `tui` vs `terminal-ui` vs `tui-design`) as a high-severity flaw, the schema doc now ships with a **curated seed list of ~10 well-established topics** plus a warning mode for unrecognized strings. The validator's behavior:
+
+- **Known topics** (in the seed list): accepted without warning.
+- **Unknown topics**: accepted, but the validator emits a `--strict` warning so the maintainer can decide whether to expand the vocabulary or normalize the value.
+- **Curated seed list** (initial 10, expand in P0 Step 1 as needed):
+  `mcp-design`, `storage-consolidation`, `adapter-architecture`, `terminal`, `routing-composition`, `learning-pipeline`, `observability`, `auth`, `convergence-control-plane`, `worktree-management`.
+- The vocabulary file lives next to the schema doc: `docs/schemas/topic-vocabulary-v1.md`. Editing it is a normal doc change requiring no plan amendment.
+
+### Adjustment B — Two-pass per store for migration-ordering coupling
+
+The original single-pass design flunked adversarial review on a coupling flaw: P3 specs point at P2 plans via `superseded_by`, so any single-pass validator would either fail on forward-pointing links or silently pass them. The fix splits every per-store phase (P1–P5) into two passes:
+
+- **Pass 1 — frontmatter-only write.** Each phase prepends frontmatter to files in its store. The `superseded_by` and `blocks_on` links are written **verbatim** (their values do not yet need to resolve). Link validation is skipped during this pass. The legacy inline status is preserved as an HTML comment so the validator can be run in `--allow-nonstandard` mode without false positives.
+
+- **Pass 2 — link-validation sweep.** After ALL stores (P1–P5) finish their pass-1 writes, a single post-P5 link-validation sweep runs across the entire corpus. Forward-pointing `superseded_by` and `blocks_on` that resolve to real files pass; broken links are listed for human review.
+
+- **P6 isolation.** The PLAN_INDEX regenerator (P6) runs only after the post-P5 sweep clears with zero broken links. If broken links remain, P6 is blocked and a remediation pass is added.
+
+This roughly doubles the edit count during P1–P5 but catches broken links immediately rather than masking them for the duration of the migration.
+
+______________________________________________________________________
+
+## Why These Changes
+
+Investigation revealed:
+
+- **Eight incompatible status conventions** coexist across six stores. ADRs use `**Accepted**` / `**Proposed**`; followups use `**Status:** Resolved.`; specs use `**Status:** Approved (rev 2)`; plans use `**Status:** COMPLETE — all 42 tasks shipped`; decisions use no frontmatter at all. Agents greping for "Status:" cannot reconcile them, and PLAN_INDEX.md is regenerated by hand from this brittle mix.
+- **178 in-scope files** were inventoried across the six stores (excluding `docs/plans/PLAN_INDEX.md`, which is the generated artifact this plan makes reproducible). Lifecycle distribution: 50 draft, 21 complete, 17 historical, 16 accepted, 9 proposed, 8 active, 6 superseded, 4 resolved, 3 shipped, 2 umbrella. The vocabulary is already wider than the actual content needs.
+- **No validator exists.** Three of every four files (84/178) carry "nonstandard" status markers — meaning the marker is present but not in the canonical `## Status\n\n**...**` block. Discovery tools cannot rely on a stable shape.
+- **`superseded_by` and `blocks_on` are not machine-readable.** `docs/plans/claw-inspired-orchestration-proposal.md` says "SUPERSEDED — 2026-05-07. All three patterns ... shipped under different module names" but the body text never names the successor. A future tool that wants to follow the chain cannot do so without reading prose.
+- **PLAN_INDEX.md is regenerated by hand.** Every status change requires editing two files (the source doc and the index). Drift between the two is the single most common documentation bug surfaced in retrospective reviews.
+
+The unifying fix is a small frontmatter contract (status, role, date, last_reviewed, superseded_by, blocks_on, topic, decision_date for ADRs) plus a Python validator that rejects unknown values, broken links, and conflicting inline status markers. Applying it is mechanical and bounded — the constraint is to keep edits to ~80 mechanical additions across the corpus, with per-file frontmatter prepending rather than wholesale rewriting.
+
+______________________________________________________________________
+
+## File Map
+
+The File Map covers all 178 in-scope files. Counts reflect Phase deliverables; cross-references are pre-existing in body text and are preserved verbatim.
+
+### Store: docs/adr/ (14 files, Phase P1)
+
+| Path | Current Status | Proposed Status | Proposed Role | Topic |
+|---|---|---|---|---|
+| `docs/adr/001-use-oneiric.md` | Accepted | active | canonical | oneiric-config |
+| `docs/adr/002-mcp-first-design.md` | Accepted | active | canonical | mcp-design |
+| `docs/adr/003-error-handling-strategy.md` | Accepted | active | canonical | error-handling |
+| `docs/adr/004-adapter-architecture.md` | Accepted | active | canonical | adapter-architecture |
+| `docs/adr/005-memory-architecture.md` | Accepted | active | canonical | memory-architecture |
+| `docs/adr/006-simplify-storage-architecture.md` | Accepted | active | canonical | storage-consolidation |
+| `docs/adr/007-saga-coordinator-pattern.md` | Accepted | active | canonical | saga-pattern |
+| `docs/adr/008-zero-downtime-migration.md` | Accepted | active | canonical | zero-downtime-migration |
+| `docs/adr/009-hybrid-adapter-registry.md` | Accepted | active | canonical | adapter-registry |
+| `docs/adr/010-adapter-security.md` | Accepted | active | canonical | adapter-security |
+| `docs/adr/011-two-router-composition.md` | accepted | active | canonical | routing-composition |
+| `docs/adr/012-learning-pipeline-runtime-owner.md` | Accepted | active | canonical | learning-pipeline |
+| `docs/adr/013-mahavishnu-dhara-adapter-tool-boundary.md` | Proposed | draft | canonical | adapter-tool-boundary |
+| `docs/adr/014-honcho-peer-model-routing-precedence.md` | Accepted | active | canonical | honcho-routing |
+
+### Store: docs/plans/ (66 files, Phase P2)
+
+**Canonical / index / template (Phase P2 task 1):**
+
+| Path | Current Status | Proposed Status | Proposed Role |
+|---|---|---|---|
+| `docs/plans/README.md` | (no frontmatter) | active | canonical |
+| `docs/plans/TEMPLATE.md` | draft, planning | active | canonical |
+| `docs/plans/PLAN_INDEX.md` | EXCLUDED — regenerated in P6 | — | — |
+
+**Umbrella plans (Phase P2 task 2):**
+
+| Path | Current Status | Proposed Status | Proposed Role |
+|---|---|---|---|
+| `docs/plans/2026-04-04-ecosystem-execution-board.md` | (no frontmatter) | active | umbrella |
+| `docs/plans/2026-05-10-bodai-control-plane-convergence-plan.md` | complete, historical | complete | umbrella |
+| `docs/plans/2026-04-04-ecosystem-execution-board.md` | (active) | active | umbrella |
+
+**Canonical architecture plans (Phase P2 task 3):**
+
+| Path | Current Status | Proposed Status | Proposed Role |
+|---|---|---|---|
+| `docs/plans/2026-04-02-storage-consolidation-and-akosha-role.md` | Proposed | active | canonical |
+| `docs/plans/2026-04-03-ecosystem-metrics-standardization-spec.md` | Proposed standard | draft | canonical |
+| `docs/plans/2026-04-03-metrics-implementation-strategy.md` | Proposed | draft | canonical |
+| `docs/plans/2026-04-03-metrics-remediation-plan.md` | Proposed | draft | canonical |
+| `docs/plans/2026-04-16-bodai-agent-platform-master-spec.md` | Draft | draft | canonical |
+| `docs/plans/2026-04-25-type-adapter-migration-plan.md` | active, Phase 3 | active | implementation |
+
+**Implementation plans — active/in-flight (Phase P2 task 4):**
+
+| Path | Current Status | Proposed Status | Proposed Role |
+|---|---|---|---|
+| `docs/plans/2025-02-11-adaptive-router-feedback-loops.md` | Phase D Complete | active | implementation |
+| `docs/plans/2026-02-10-pool-websocket-integration.md` | (no frontmatter) | draft | implementation |
+| `docs/plans/2026-02-10-websocket-phase3.md` | (no frontmatter) | draft | implementation |
+| `docs/plans/2026-02-20-self-improvement-implementation.md` | (no frontmatter) | draft | implementation |
+| `docs/plans/2026-02-20-status-enum-consolidation.md` | (no frontmatter) | draft | implementation |
+| `docs/plans/2026-02-27-health-check-implementation-plan.md` | (no frontmatter) | draft | implementation |
+| `docs/plans/2026-02-27-health-check-system-design.md` | Approved | active | implementation |
+| `docs/plans/2026-02-20-self-improvement-design.md` | Approved | active | implementation |
+| `docs/plans/2026-04-04-ecosystem-execution-board.md` | (active) | active | umbrella |
+| `docs/plans/2026-04-08-bifrost-gateway-plan.md` | In progress | active | implementation |
+| `docs/plans/2026-04-13-mcp-context-optimization.md` | Draft | draft | implementation |
+| `docs/plans/2026-04-25-mahavishnu-ecosystem-control-plane-update-plan.md` | SHIPPED | shipped | implementation |
+| `docs/plans/2026-04-25-ecosystem-docs-canonicalization-plan.md` | Complete | complete | implementation |
+| `docs/plans/2026-05-07-dhara-state-backend-addendum.md` | approved | active | implementation |
+| `docs/plans/2026-05-07-unified-config-design.md` | approved | active | implementation |
+| `docs/plans/2026-05-09-unified-event-bus-spec.md` | draft | draft | implementation |
+| `docs/plans/2026-05-23-unified-exception-logging.md` | COMPLETED | complete | implementation |
+| `docs/plans/2026-07-11-phase-6-bodai-observability.md` | draft, planning | draft | implementation |
+| `docs/plans/2026-07-11-ultracode-integration-wiring.md` | partial, implementation | partial | implementation |
+| `docs/plans/dhara-outstanding-items-plan.md` | (no frontmatter) | active | implementation |
+| `docs/plans/IMPLEMENTATION_EXECUTION_STRATEGY.md` | (no frontmatter) | draft | implementation |
+| `docs/plans/llm-provider-reconfiguration-v2.md` | Reviewed | draft | implementation |
+| `docs/plans/mcp-connection-stability-plan.md` | Reviewed | active | implementation |
+| `docs/plans/native-macos-automation-backend-plan.md` | Draft | draft | implementation |
+| `docs/plans/session-buddy-llama-server-ollama-migration.md` | ALL PHASES COMPLETE | complete | implementation |
+| `docs/plans/session-buddy-multi-channel-spec.md` | Delivered | complete | implementation |
+| `docs/plans/2026-07-14-oneiric-event-envelope-wire-standardization.md` | shipped, historical | shipped | implementation |
+
+**Implementation plans — draft (Phase P2 task 5):**
+
+| Path | Current Status | Proposed Status | Proposed Role |
+|---|---|---|---|
+| `docs/plans/2025-01-25-category-evolution-enhancements.md` | Ready for Implementation | draft | implementation |
+| `docs/plans/2026-04-08-ecosystem-consolidation-review.md` | (no frontmatter) | draft | historical |
+| `docs/plans/2026-04-03-ecosystem-metrics-standardization-plan.md` | Ready for implementation | draft | implementation |
+
+**Implementation plans — complete (Phase P2 task 6):**
+
+| Path | Current Status | Proposed Status | Proposed Role |
+|---|---|---|---|
+| `docs/plans/2026-04-16-bodai-master-implementation-plan.md` | Phase 0..CP7 shipped | complete | implementation |
+| `docs/plans/2026-05-07-mahavishnu-master-backlog.md` | canonical, Final Gate | complete | implementation |
+| `docs/plans/2026-05-10-minimax27-provider-migration.md` | complete, historical | complete | historical |
+| `docs/plans/2026-05-10-terminal-worker-unification-plan.md` | completed | complete | implementation |
+| `docs/plans/2026-05-11-worktree-manage-consolidation-plan.md` | complete, historical | complete | historical |
+| `docs/plans/2026-05-24-bodai-deployment-guide.md` | complete, implementation | complete | reference |
+| `docs/plans/PREFECT_ADAPTER_COMPLETION_PLAN.md` | COMPLETE | complete | implementation |
+
+**Historical / superseded / records (Phase P2 task 7):**
+
+| Path | Current Status | Proposed Status | Proposed Role | Notes |
+|---|---|---|---|---|
+| `docs/plans/2026-05-23-bodai-routing-feedback-loop.md` | v1 superseded | complete | historical | superseded_by: `2026-05-23-bodai-routing-feedback-loop-v4.md` |
+| `docs/plans/2026-05-23-bodai-routing-feedback-loop-v2.md` | v2 superseded | complete | historical | superseded_by: `2026-05-23-bodai-routing-feedback-loop-v4.md` |
+| `docs/plans/2026-05-23-bodai-routing-feedback-loop-v3.md` | v3 superseded | complete | historical | superseded_by: `2026-05-23-bodai-routing-feedback-loop-v4.md` |
+| `docs/plans/2026-05-23-bodai-routing-feedback-loop-v4.md` | v4 (active) | active | implementation | — |
+| `docs/plans/2026-05-11-bodai-deletion-adoption-ledger.md` | draft, ledger | draft | implementation | — |
+| `docs/plans/2026-05-11-remaining-work-execution-order.md` | completed | complete | implementation | — |
+| `docs/plans/2026-05-11-shared-foundation-adoption-matrix.md` | draft, matrix | draft | implementation | — |
+| `docs/plans/2026-06-04-checkpoint.md` | (no frontmatter) | complete | historical | — |
+| `docs/plans/2026-06-07-checkpoint.md` | (no frontmatter) | complete | historical | — |
+| `docs/plans/claw-inspired-orchestration-proposal.md` | SUPERSEDED | complete | historical | superseded_by: `2026-04-25-mahavishnu-ecosystem-control-plane-update-plan.md` |
+| `docs/plans/PRE_IMPLEMENTATION_CHECKLIST.md` | (P0/P1 complete) | complete | historical | — |
+| `docs/plans/REVIEW_architecture.md` | (review) | complete | historical | — |
+| `docs/plans/REVIEW_ecosystem.md` | REVISIONS NEEDED | complete | historical | — |
+| `docs/plans/REVIEW_implementation.md` | (review) | complete | historical | — |
+| `docs/plans/REVIEW_implementation_v3.md` | (review v3) | complete | historical | — |
+| `docs/plans/REVIEW_plan_coherence.md` | (review) | complete | historical | — |
+| `docs/plans/REVIEW_PACKET_2026-04-02.md` | (no frontmatter) | complete | historical | — |
+| `docs/plans/REVIEW_serverless.md` | (review) | complete | historical | — |
+| `docs/plans/TLS_IMPLEMENTATION_SUMMARY.md` | (summary) | complete | historical | — |
+| `docs/plans/tensorzero-gateway-plan.md` | SUPERSEDED | complete | historical | superseded_by: `2026-05-16-llm-routing-plan1-mcp-common.md` |
+
+### Store: docs/superpowers/specs/ (32 files, Phase P3)
+
+| Path | Current Status | Proposed Status | Proposed Role | Topic |
+|---|---|---|---|---|
+| `docs/superpowers/specs/2026-04-09-tui-design.md` | (marker file) | complete | historical | tui — superseded_by: `docs/plans/2026-04-16-bodai-agent-platform-master-spec.md` |
+| `docs/superpowers/specs/2026-04-14-akosha-skills-design.md` | (no frontmatter) | draft | implementation | akosha-skills |
+| `docs/superpowers/specs/2026-04-14-bodai-radar-design.md` | (no frontmatter) | draft | implementation | bodai-radar |
+| `docs/superpowers/specs/2026-04-14-session-archaeologist-design.md` | (no frontmatter) | draft | implementation | session-archaeologist |
+| `docs/superpowers/specs/2026-04-26-agent-skill-modernization-design.md` | Draft | draft | implementation | agent-skill-modernization |
+| `docs/superpowers/specs/2026-04-26-code-indexing-integration-design.md` | Draft | draft | implementation | code-indexing-integration |
+| `docs/superpowers/specs/2026-04-26-config-consolidation-design.md` | Draft | draft | implementation | config-consolidation |
+| `docs/superpowers/specs/2026-04-26-pattern-learning-scaffolding-design.md` | Draft | draft | implementation | pattern-learning-scaffolding |
+| `docs/superpowers/specs/2026-04-26-splashstand-oneiric-migration-design.md` | Draft | draft | implementation | splashstand-oneiric |
+| `docs/superpowers/specs/2026-04-27-bodai-auth-standardization-design.md` | Approved | active | implementation | bodai-auth |
+| `docs/superpowers/specs/2026-05-16-llm-routing-standardization-design.md` | Approved (rev 2) | active | implementation | llm-routing |
+| `docs/superpowers/specs/2026-05-22-terminal-grid-design.md` | Approved for implementation | active | implementation | terminal-grid |
+| `docs/superpowers/specs/2026-05-23-unified-iterm2-applescript-design.md` | Draft for review | draft | implementation | unified-iterm2-applescript |
+| `docs/superpowers/specs/2026-05-24-dhara-serverless-design.md` | draft | draft | implementation | dhara-serverless |
+| `docs/superpowers/specs/2026-06-19-external-integrations-design.md` | Approved rev 3 | active | implementation | external-integrations |
+| `docs/superpowers/specs/2026-06-19-wave2a-chaos-hardening-design.md` | Approved | active | implementation | chaos-hardening |
+| `docs/superpowers/specs/2026-06-19-wave2b-a2a-worker-design.md` | Approved | active | implementation | a2a-worker |
+| `docs/superpowers/specs/2026-06-21-bodai-crow-server-design.md` | Draft (v5) | draft | implementation | bodai-crow-server |
+| `docs/superpowers/specs/2026-06-22-adapter-runtime-observability-design.md` | DEFERRED | draft | implementation | adapter-runtime-observability — blocks_on: `dhara-http-api-surface` |
+| `docs/superpowers/specs/2026-06-22-anti-ai-flavor-style-sop-design.md` | Draft | draft | implementation | style-sop |
+| `docs/superpowers/specs/2026-06-22-completion-report-schema-v1-design.md` | Draft | draft | implementation | completion-report-schema |
+| `docs/superpowers/specs/2026-06-22-confidence-ceiling-gate-design.md` | Draft | draft | implementation | confidence-ceiling-gate |
+| `docs/superpowers/specs/2026-06-22-live-observe-presence-over-gate-design.md` | DEFERRED | draft | implementation | live-observe-presence — blocks_on: `dhara-http-api-surface` |
+| `docs/superpowers/specs/2026-06-22-multi-tenant-context-packs-design.md` | DEFERRED | draft | implementation | multi-tenant-context-packs — blocks_on: `dhara-http-api-surface` |
+| `docs/superpowers/specs/2026-06-22-precommitment-hypothesis-lock-design.md` | Draft | draft | implementation | precommitment-hypothesis-lock |
+| `docs/superpowers/specs/2026-06-22-project-scoped-sop-evolution-design.md` | DEFERRED | draft | implementation | project-scoped-sop-evolution — blocks_on: `dhara-sql-execute-query` |
+| `docs/superpowers/specs/2026-06-22-three-layer-self-heal-design.md` | Draft | draft | implementation | three-layer-self-heal |
+| `docs/superpowers/specs/2026-06-22-three-zone-skill-pipeline-design.md` | Draft | draft | implementation | three-zone-skill-pipeline |
+| `docs/superpowers/specs/2026-07-14-multi-backend-pty-design.md` | Approved (awaiting plan) | active | implementation | multi-backend-pty |
+| `docs/superpowers/specs/2026-07-15-constellation-tui-design.md` | Approved | active | implementation | constellation-tui |
+| `docs/superpowers/specs/2026-07-15-mahavishnu-acp-server-design.md` | Approved | active | implementation | mahavishnu-acp-server |
+| `docs/superpowers/specs/2026-07-15-sb-checkpoint-stash-clobber-fix-design.md` | approved (pending code) | active | implementation | sb-checkpoint-stash-clobber-fix |
+
+### Store: docs/superpowers/plans/ (47 files, Phase P4)
+
+**Active / shipped / complete (Phase P4 task 1):**
+
+| Path | Current Status | Proposed Status | Proposed Role |
+|---|---|---|---|
+| `docs/superpowers/plans/2026-04-26-code-indexing-integration.md` | COMPLETE 2026-04-30 | complete | implementation |
+| `docs/superpowers/plans/2026-04-26-config-consolidation.md` | delivered 2026-05-14 | shipped | implementation |
+| `docs/superpowers/plans/2026-04-26-pattern-learning-scaffolding.md` | COMPLETE | complete | implementation |
+| `docs/superpowers/plans/2026-04-26-splashstand-oneiric-migration.md` | COMPLETE | complete | implementation |
+| `docs/superpowers/plans/2026-05-07-bodai-phase1-harden-control-plane.md` | COMPLETE | shipped | implementation |
+| `docs/superpowers/plans/2026-05-07-bodai-phase3-cross-repo-coordination.md` | COMPLETE | shipped | implementation |
+| `docs/superpowers/plans/2026-05-14-doc-sync-and-channel-phase2.md` | (this plan's predecessor) | shipped | implementation |
+| `docs/superpowers/plans/2026-07-15-sb-checkpoint-stash-clobber-fix.md` | (no frontmatter) | draft | implementation |
+
+**Drafts / no status (Phase P4 task 2):** the remaining 39 files in `docs/superpowers/plans/` carry no canonical Status marker. They are prepended with `status: draft` and `role: implementation` and are tagged with their existing topic. The exhaustive list is the inverse of the eight listed above. Examples:
+
+| Path | Proposed Status | Proposed Role | Topic |
+|---|---|---|---|
+| `docs/superpowers/plans/2026-04-14-akosha-skills.md` | draft | implementation | akosha-skills |
+| `docs/superpowers/plans/2026-04-14-bodai-radar.md` | draft | implementation | bodai-radar |
+| `docs/superpowers/plans/2026-04-14-session-archaeologist.md` | draft | implementation | session-archaeologist |
+| `docs/superpowers/plans/2026-04-26-agent-skill-modernization.md` | draft | implementation | agent-skill-modernization |
+| `docs/superpowers/plans/2026-04-27-bodai-auth-standardization.md` | draft | implementation | bodai-auth |
+| `docs/superpowers/plans/2026-05-01-runpod-flash-pool.md` | draft | implementation | runpod-flash-pool |
+| `docs/superpowers/plans/2026-05-08-hatchet-adapter.md` | draft | implementation | hatchet-adapter |
+| `docs/superpowers/plans/2026-05-16-llm-routing-plan1-mcp-common.md` | draft | implementation | llm-routing-plan1 |
+| `docs/superpowers/plans/2026-05-16-llm-routing-plan2-downstream-migration.md` | draft | implementation | llm-routing-plan2 |
+| `docs/superpowers/plans/2026-05-22-terminal-grid-plan.md` | draft | implementation | terminal-grid |
+| `docs/superpowers/plans/2026-05-23-unified-iterm2-applescript-plan.md` | draft | implementation | unified-iterm2-applescript |
+| `docs/superpowers/plans/2026-05-25-dhara-serverless-implementation-plan.md` | draft | implementation | dhara-serverless |
+| `docs/superpowers/plans/2026-06-01-dhara-crackerjack-critical-bug-fixes.md` | draft | implementation | dhara-crackerjack-bug-fixes |
+| `docs/superpowers/plans/2026-06-19-track1-terminal-gap.md` | draft | implementation | track1-terminal-gap |
+| `docs/superpowers/plans/2026-06-19-track2-openhands.md` | draft | implementation | track2-openhands |
+| `docs/superpowers/plans/2026-06-19-track3-toad-tui.md` | draft | implementation | track3-toad-tui |
+| `docs/superpowers/plans/2026-06-19-track4-turbovec.md` | draft | implementation | track4-turbovec |
+| `docs/superpowers/plans/2026-06-19-wave2b-a2a-worker.md` | draft | implementation | wave2b-a2a-worker |
+| `docs/superpowers/plans/2026-06-22-adapter-runtime-observability.md` | draft | implementation | adapter-runtime-observability |
+| `docs/superpowers/plans/2026-06-22-anti-ai-flavor-style-sop.md` | draft | implementation | style-sop |
+| `docs/superpowers/plans/2026-06-22-bodai-crow-http-server.md` | draft | implementation | bodai-crow-http-server |
+| `docs/superpowers/plans/2026-06-22-completion-report-schema-v1.md` | draft | implementation | completion-report-schema |
+| `docs/superpowers/plans/2026-06-22-confidence-ceiling-gate.md` | draft | implementation | confidence-ceiling-gate |
+| `docs/superpowers/plans/2026-06-22-live-observe-presence-over-gate.md` | draft | implementation | live-observe-presence |
+| `docs/superpowers/plans/2026-06-22-multi-tenant-context-packs.md` | draft | implementation | multi-tenant-context-packs |
+| `docs/superpowers/plans/2026-06-22-precommitment-hypothesis-lock.md` | draft | implementation | precommitment-hypothesis-lock |
+| `docs/superpowers/plans/2026-06-22-project-scoped-sop-evolution.md` | draft | implementation | project-scoped-sop-evolution |
+| `docs/superpowers/plans/2026-06-22-three-layer-self-heal.md` | draft | implementation | three-layer-self-heal |
+| `docs/superpowers/plans/2026-06-22-three-zone-skill-pipeline.md` | draft | implementation | three-zone-skill-pipeline |
+| `docs/superpowers/plans/2026-06-23-remove-vestigial-bs4-from-mahavishnu.md` | draft | implementation | vestigial-bs4-removal |
+| `docs/superpowers/plans/2026-06-26-dhara-substrate-extension.md` | Drafted 2026-06-26 | draft | implementation | dhara-substrate-extension |
+| `docs/superpowers/plans/2026-06-26-fastmcp-3-upgrade-inventory.md` | Read-only audit complete | complete | record |
+| `docs/superpowers/plans/2026-06-26-fastmcp-3-upgrade.md` | Drafted 2026-06-26 | draft | implementation | fastmcp-3-upgrade |
+| `docs/superpowers/plans/2026-06-26-mcpserver-settings-convention.md` | Drafted 2026-06-26 | draft | implementation | mcpserver-settings-convention |
+| `docs/superpowers/plans/2026-06-26-session-buddy-schema-alignment.md` | Drafted 2026-06-26 | draft | implementation | session-buddy-schema-alignment |
+| `docs/superpowers/plans/2026-06-27-dhara-substrate-implementation.md` | (no frontmatter) | draft | implementation | dhara-substrate-implementation |
+| `docs/superpowers/plans/2026-07-13-mcp-server-family-mcpbase-migration.md` | (no frontmatter) | draft | implementation | mcpbase-migration |
+| `docs/superpowers/plans/2026-07-14-multi-backend-pty.md` | (no frontmatter) | draft | implementation | multi-backend-pty |
+| `docs/superpowers/plans/2026-07-15-constellation-tui.md` | (no frontmatter) | draft | implementation | constellation-tui |
+
+### Store: .claude/decisions/ (11 files, Phase P5 — lighter schema)
+
+The lighter decision schema omits `superseded_by` and `blocks_on`. All decisions receive `status`, `role`, `date`, `last_reviewed`, `topic`.
+
+| Path | Current Status | Proposed Status | Proposed Role | Topic |
+|---|---|---|---|---|
+| `.claude/decisions/README.md` | (Status column) | active | canonical | decision-index |
+| `.claude/decisions/agent-curation-strategy.md` | (no frontmatter) | active | canonical | agent-curation |
+| `.claude/decisions/bodai-observability-pattern.md` | (no frontmatter) | active | canonical | bodai-observability |
+| `.claude/decisions/component-health-cli-gap.md` | (no frontmatter) | active | canonical | component-health |
+| `.claude/decisions/dhara-key-prefixes-2026-07-15.md` | (no frontmatter) | active | canonical | dhara-key-prefixes |
+| `.claude/decisions/mahavishnu-tool-preference-policy.md` | (no frontmatter) | active | canonical | tool-preference |
+| `.claude/decisions/removed-scripts.md` | (no frontmatter) | active | canonical | removed-scripts |
+| `.claude/decisions/skill-vs-agent-strategy.md` | (no frontmatter) | active | canonical | skill-vs-agent |
+| `.claude/decisions/technical-debt-roadmap.md` | 4/5 RESOLVED | active | implementation | technical-debt |
+| `.claude/decisions/test-matrix-review-followups.md` | (no frontmatter) | active | implementation | test-matrix-followups |
+| `.claude/decisions/wire-up-contract.md` | (no frontmatter) | active | canonical | wire-up-contract |
+
+### Store: docs/followups/ (8 files, Phase P5 — full schema)
+
+| Path | Current Status | Proposed Status | Proposed Role | Topic |
+|---|---|---|---|---|
+| `docs/followups/2026-06-29-agno-adapter-config-field-path.md` | Resolved | complete | historical | agno-adapter-config |
+| `docs/followups/2026-06-29-crow-mcp-client-wiring.md` | Resolved | complete | historical | crow-mcp-client |
+| `docs/followups/2026-06-29-dlq-silent-fallback.md` | Resolved | complete | historical | dlq-silent-fallback |
+| `docs/followups/2026-06-29-opensearch-diverged-flags.md` | Resolved | complete | historical | opensearch-diverged-flags |
+| `docs/followups/2026-06-29-pydantic-settings-source-resolution.md` | Resolved | complete | historical | pydantic-settings-source-resolution |
+| `docs/followups/2026-07-15-comprehensive-hooks-cleanup-checkpoint.md` | (Date header) | complete | historical | comprehensive-hooks-cleanup |
+| `docs/followups/2026-07-15-pickup-bodai-hooks-and-sb-debug.md` | (Created header) | active | implementation | bodai-hooks-sb-debug |
+| `docs/followups/2026-07-15-sb-checkpoint-stash-clobber.md` | Recurring defect | complete | historical | sb-checkpoint-stash-clobber |
+
+### New artifacts (Phases P0 + P6)
+
+| Action | Path | Change |
+|---|---|---|
+| Create | `docs/schemas/document-frontmatter-v1.md` | Schema definition with five lifecycle values, five role values, full and lite schemas, ISO date rules, blocks_on link rules, legacy mapping table |
+| Create | `scripts/validate_document_frontmatter.py` | Python validator scanning the six stores; reject unknown values, broken links, conflicting inline markers |
+| Create | `tests/unit/test_document_frontmatter.py` | Unit tests for the validator (valid metadata, missing keys, legacy-value rejection, broken links, exclusions) |
+| Regenerate | `docs/plans/PLAN_INDEX.md` | Generated from frontmatter; excluded from per-document frontmatter requirement |
+
+### Excluded paths (explicit)
+
+- `docs/plans/PLAN_INDEX.md` (generated artifact, regenerated in P6)
+- `docs/plans/drafts/**` (scratch material; promotion to `docs/plans/` requires valid frontmatter)
+- `**/*.backup` and `**/*.backup.json` (no frontmatter, no validation)
+- `.claude/worktrees/**` (worktree copies; validator runs on main only)
+
+______________________________________________________________________
+
+## Phases
+
+The phases are sequenced top-down: contract → ADRs → plans → specs → superpowers-plans → decisions/followups → regeneration → cross-repo.
+
+**Per-store phases P1–P5 follow the two-pass pattern from Adjustment B.** Each phase writes frontmatter in Pass 1 (link-validation skipped), preserves legacy inline status as HTML comments under `--allow-nonstandard`. A single **post-P5 link-validation sweep** runs at the boundary between P5 and P6; P6 is blocked until that sweep clears with zero unresolved `superseded_by` or `blocks_on` paths. Phases P0 and P7 are standalone and not subject to the two-pass rule.
+
+### Phase P0: Define the contract
+
+**Goal:** Produce and validate the metadata schema and validator before any frontmatter is written.
+
+**Files:**
+
+- Create: `docs/schemas/document-frontmatter-v1.md`
+- Create: `scripts/validate_document_frontmatter.py`
+- Create: `tests/unit/test_document_frontmatter.py`
+- Modify: `docs/plans/TEMPLATE.md`
+
+- [ ] **Step 1: Author `docs/schemas/document-frontmatter-v1.md`**
+
+The schema doc lists five lifecycle values (`draft`, `active`, `partial`, `shipped`, `complete`), five role values (`canonical`, `implementation`, `umbrella`, `historical`, `superseded`), the full schema fields (`status`, `role`, `date`, `last_reviewed`, `superseded_by`, `blocks_on`, `topic`, `decision_date`), and the lite decision schema (omit `superseded_by`, `blocks_on`). Include the legacy mapping table:
+
+| Legacy string | Maps to |
+|---|---|
+| Accepted / approved / approved for implementation | active |
+| Approved (rev N) | active |
+| Proposed / Ready for Implementation | draft |
+| Draft / Draft for review / brainstormed | draft |
+| DEFERRED | draft (with blocks_on populated) |
+| In progress / active | active |
+| Complete / completed / all phases complete / delivered | complete or shipped depending on body |
+| Shipped | shipped |
+| Resolved | complete |
+| Superseded | complete (with role=superseded and superseded_by populated) |
+
+- [ ] **Step 2: Update `docs/plans/TEMPLATE.md`**
+
+Replace the example header in TEMPLATE.md so its canonical example uses the unified frontmatter block:
+
+```yaml
+---
+status: draft
+role: implementation
+date: 2026-07-16
+last_reviewed: 2026-07-16
+superseded_by: null
+blocks_on: []
+topic: <canonical-topic-slug>
+---
+```
+
+- [ ] **Step 3: Write the validator**
+
+`scripts/validate_document_frontmatter.py` scans the six stores, rejects unknown lifecycle/role values, requires the seven full-schema keys (lite for decisions), validates ISO-8601 date format (`^\d{4}-\d{2}-\d{2}$`), validates that every entry in `blocks_on` is either an existing file path or a stable identifier starting with `ext:`, and validates that `superseded_by` (when set) resolves to a real file. The validator emits a report on `--dry-run` and writes nothing.
+
+- [ ] **Step 4: Write `tests/unit/test_document_frontmatter.py`**
+
+Cover valid metadata, missing keys, legacy-value rejection (`status: Accepted` rejected), invalid dates (`2026-7-16` rejected), broken `superseded_by` link, valid `blocks_on` with file path and `ext:` identifier, plan/drafts exclusion, and `PLAN_INDEX.md` exclusion.
+
+- [ ] **Step 5: Run validator in dry-run mode**
+
+```bash
+uv run python scripts/validate_document_frontmatter.py --dry-run
+```
+
+Expected: report every existing nonstandard status string with its proposed normalized value. No writes.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add docs/schemas/document-frontmatter-v1.md docs/plans/TEMPLATE.md scripts/validate_document_frontmatter.py tests/unit/test_document_frontmatter.py
+git commit -m "feat: frontmatter v1 schema, validator, and unit tests (Phase P0)"
+```
+
+### Phase P1: Normalize 14 ADRs
+
+**Goal:** Establish canonical terminology by migrating the architectural decision records first.
+
+**Files:** All 14 files under `docs/adr/`. No `.backup*` variants.
+
+- [ ] **Step 1: Prepend full frontmatter to all 14 ADRs**
+
+Each ADR receives the seven-field frontmatter. ADRs add `decision_date` populated from the body's Date line. `superseded_by` stays `null` for all 14 ADRs (no ADR is currently superseded). ADRs 1–12 and 14 receive `status: active`; ADR 013 (`**Proposed**`) receives `status: draft`. All 14 receive `role: canonical`. Topics are listed in the File Map above.
+
+- [ ] **Step 2: Remove duplicated inline status blocks**
+
+Where the body contains a `## Status\n\n**Accepted**` block immediately after the heading, leave the heading intact but remove the duplicated status block. Where the body contains inline `**Status**: Accepted` on a single line, leave the line in place but mark it as legacy in a trailing comment (`<!-- legacy status: Accepted — see frontmatter -->`) so the validator does not flag it.
+
+- [ ] **Step 3: Run validator**
+
+```bash
+uv run python scripts/validate_document_frontmatter.py docs/adr/
+```
+
+Expected: 14 files pass, 0 errors.
+
+- [ ] **Step 4: Spot-audit three ADRs**
+
+Read `docs/adr/001-use-oneiric.md`, `docs/adr/006-simplify-storage-architecture.md`, and `docs/adr/013-mahavishnu-dhara-adapter-tool-boundary.md` and confirm frontmatter values match body semantics.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add docs/adr/
+git commit -m "docs(adr): normalize 14 ADRs to unified frontmatter"
+```
+
+### Phase P2: Normalize 66 docs/plans files
+
+**Goal:** Migrate the largest store; wire supersession chains for the routing-feedback-loop family and the two known superseded plans.
+
+**Files:** 65 files under `docs/plans/` (excluding `PLAN_INDEX.md`).
+
+- [ ] **Step 1: Apply umbrella frontmatter to the two umbrella plans**
+
+`docs/plans/2026-04-04-ecosystem-execution-board.md` and `docs/plans/2026-05-10-bodai-control-plane-convergence-plan.md` receive `role: umbrella`.
+
+- [ ] **Step 2: Apply canonical frontmatter to architecture standards**
+
+`docs/plans/README.md`, `docs/plans/TEMPLATE.md`, `docs/plans/2026-04-02-storage-consolidation-and-akosha-role.md` receive `role: canonical` and `status: active`.
+
+- [ ] **Step 3: Apply implementation frontmatter to active plans**
+
+The 30+ active in-flight plans in the File Map get `status: active` (or `partial` / `shipped` as listed) and `role: implementation`.
+
+- [ ] **Step 4: Apply draft frontmatter to unreviewed plans**
+
+The five draft proposals (category evolution, ecosystem metrics plan, llm-provider-reconfiguration-v2, native-macos-automation, mcp-context-optimization) get `status: draft` and `role: implementation`.
+
+- [ ] **Step 5: Apply complete frontmatter to closed plans**
+
+The eight `COMPLETE` / `delivered` / `all phases complete` plans get `status: complete` or `shipped` per File Map. The four checkpoint and TLS summary files get `role: historical`.
+
+- [ ] **Step 6: Wire the four supersession chains**
+
+Four files in this store are explicitly superseded:
+- `docs/plans/2026-05-23-bodai-routing-feedback-loop.md` → `superseded_by: docs/plans/2026-05-23-bodai-routing-feedback-loop-v4.md`
+- `docs/plans/2026-05-23-bodai-routing-feedback-loop-v2.md` → `superseded_by: docs/plans/2026-05-23-bodai-routing-feedback-loop-v4.md`
+- `docs/plans/2026-05-23-bodai-routing-feedback-loop-v3.md` → `superseded_by: docs/plans/2026-05-23-bodai-routing-feedback-loop-v4.md`
+- `docs/plans/claw-inspired-orchestration-proposal.md` → `superseded_by: docs/plans/2026-04-25-mahavishnu-ecosystem-control-plane-update-plan.md`
+- `docs/plans/tensorzero-gateway-plan.md` → `superseded_by: docs/superpowers/plans/2026-05-16-llm-routing-plan1-mcp-common.md`
+
+All five receive `role: historical`. The successor files are validated to exist before commit.
+
+- [ ] **Step 7: Run validator**
+
+```bash
+uv run python scripts/validate_document_frontmatter.py docs/plans/
+```
+
+Expected: 65 files pass (PLAN_INDEX.md excluded). All four supersession targets resolve.
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add docs/plans/
+git commit -m "docs(plans): normalize 65 files to unified frontmatter; wire supersession chains"
+```
+
+### Phase P3: Normalize 32 specs
+
+**Goal:** Migrate `docs/superpowers/specs/` and make spec→plan relationships machine-readable.
+
+**Files:** 32 files under `docs/superpowers/specs/`.
+
+- [ ] **Step 1: Apply full frontmatter to all 32 specs**
+
+Each spec receives `status: draft` or `active` per File Map. All four `DEFERRED` specs receive `status: draft` and populate `blocks_on` with the named dependency (e.g., `blocks_on: [ext:dhara-http-api-surface]`). The marker file `docs/superpowers/specs/2026-04-09-tui-design.md` receives `status: complete`, `role: historical`, and `superseded_by: docs/plans/2026-04-16-bodai-agent-platform-master-spec.md`.
+
+- [ ] **Step 2: Match spec/plan topic pairs**
+
+Every spec's `topic` matches the topic of its paired plan in `docs/superpowers/plans/` (or its `docs/plans/` supersession target). Mismatches are listed in the validator report and corrected before commit.
+
+- [ ] **Step 3: Run validator**
+
+```bash
+uv run python scripts/validate_document_frontmatter.py docs/superpowers/specs/
+```
+
+Expected: 32 files pass. Every `blocks_on` entry either resolves to an existing file or starts with `ext:`.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add docs/superpowers/specs/
+git commit -m "docs(specs): normalize 32 specs to unified frontmatter; defer blocks_on"
+```
+
+### Phase P4: Normalize 47 superpowers plans
+
+**Goal:** Migrate `docs/superpowers/plans/`; finalize spec/plan pairing.
+
+**Files:** 47 files under `docs/superpowers/plans/`.
+
+- [ ] **Step 1: Apply complete/shipped frontmatter to the eight closed plans**
+
+Per File Map; the seven `COMPLETE` plans get `status: complete`; `2026-04-26-config-consolidation.md` and the two Bodai phase plans get `status: shipped` because post-delivery adoption/verification remained.
+
+- [ ] **Step 2: Apply draft frontmatter to the 39 plans with no status marker**
+
+The 39 plans lacking a canonical Status line receive `status: draft` and `role: implementation`. Topic values match paired spec topics where applicable.
+
+- [ ] **Step 3: Run validator**
+
+```bash
+uv run python scripts/validate_document_frontmatter.py docs/superpowers/plans/
+```
+
+Expected: 47 files pass.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add docs/superpowers/plans/
+git commit -m "docs(superpowers-plans): normalize 47 plans to unified frontmatter"
+```
+
+### Phase P5: Normalize decisions and followups
+
+**Goal:** Apply the lite schema to decisions and the full schema to followups.
+
+**Files:** 11 files under `.claude/decisions/`; 8 files under `docs/followups/`.
+
+- [ ] **Step 1: Apply lite schema to 11 decisions**
+
+Each `.claude/decisions/*.md` receives the lite frontmatter (`status`, `role`, `date`, `last_reviewed`, `topic`). `.claude/decisions/technical-debt-roadmap.md` and `test-matrix-review-followups.md` receive `role: implementation`; the remaining 9 receive `role: canonical`. The decision `README.md` becomes the canonical decision index.
+
+- [ ] **Step 2: Apply full schema to 8 followups**
+
+Each `docs/followups/*.md` receives the full schema. The five Resolved followups from 2026-06-29 receive `status: complete` and `role: historical`. The 2026-07-15 pickup prompt receives `status: active` and `role: implementation`. The two 2026-07-15 checkpoint/clobber followups receive `status: complete` and `role: historical`.
+
+- [ ] **Step 3: Re-derive the decision README's Status column**
+
+Regenerate `.claude/decisions/README.md`'s Status column from each decision's frontmatter. No body content changes; only the column values are mechanically updated.
+
+- [ ] **Step 4: Run validator**
+
+```bash
+uv run python scripts/validate_document_frontmatter.py .claude/decisions/ docs/followups/
+```
+
+Expected: 19 files pass.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add .claude/decisions/ docs/followups/
+git commit -m "docs(decisions+followups): normalize 19 files to unified frontmatter"
+```
+
+### Phase P6: Regenerate PLAN_INDEX and enforce one source of truth
+
+**Goal:** Make `PLAN_INDEX.md` derived from frontmatter; reject conflicting inline markers in CI.
+
+**Files:** Modify `scripts/validate_document_frontmatter.py` to regenerate `PLAN_INDEX.md` from frontmatter; add a CI check to the documentation quality gate.
+
+- [ ] **Step 1: Add `--regenerate-index` flag to the validator**
+
+When run with `--regenerate-index`, the validator writes a fresh `docs/plans/PLAN_INDEX.md` from frontmatter. The generated file is excluded from per-document frontmatter requirements (carries only a generated-on timestamp comment).
+
+- [ ] **Step 2: Run regeneration and diff**
+
+```bash
+uv run python scripts/validate_document_frontmatter.py --regenerate-index
+git diff docs/plans/PLAN_INDEX.md | head -100
+```
+
+Expected: index shows entries grouped by role (canonical, umbrella, active implementation, draft, complete, historical, superseded).
+
+- [ ] **Step 3: Add `--strict-inline` to CI gate**
+
+The validator in strict mode rejects any inline status marker (`**Status:**`, `**Accepted**`, etc.) that disagrees with frontmatter. Run in CI on every PR.
+
+- [ ] **Step 4: Spot-audit 10 random files**
+
+Pick 10 random in-scope files; verify each appears in PLAN_INDEX.md with matching status/role.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add scripts/validate_document_frontmatter.py docs/plans/PLAN_INDEX.md
+git commit -m "feat: regenerate PLAN_INDEX from frontmatter; strict inline-marker CI gate"
+```
+
+### Phase P7: Cross-repository expansion (gated on per-repo inventory)
+
+**Goal:** Apply the same schema to dhara, akosha, session-buddy, crackerjack, oneiric — only after each repository produces its own inventory.
+
+**Files:** None in this repo. Per-repo migration is its own plan.
+
+- [ ] **Step 1: Inventory each sibling repo**
+
+Run the dry-run validator against `dhara/docs/adr/**`, `dhara/docs/plans/**`, `dhara/docs/followups/**`, `dhara/.claude/decisions/**`, and the equivalents in akosha, session-buddy, crackerjack, oneiric. Publish per-repo counts (in-scope files, missing metadata count, unresolved link count) before editing.
+
+- [ ] **Step 2: Reuse `docs/schemas/document-frontmatter-v1.md` and the same validator**
+
+Do not introduce per-repo schema variants. If a sibling repo uses a status string not in the v1 vocabulary, surface it as a v1 schema amendment first, then apply migration.
+
+- [ ] **Step 3: Gate**
+
+Each repo reports its own counts before any edits begin. Each repo's migration is its own plan tracked separately in `docs/plans/<repo>-frontmatter-migration.md`.
+
+______________________________________________________________________
+
+## Integration Contract
+
+- **Triggered from:** Operator decision to unify documentation lifecycle vocabulary across Mahavishnu's six stores. Replaces ad-hoc status markers with a single frontmatter contract.
+
+- **Returns to / updates:**
+  - `docs/plans/PLAN_INDEX.md` — regenerated from frontmatter in P6; sole source of truth for plan index
+  - `.claude/decisions/README.md` — Status column re-derived from per-decision frontmatter in P5
+  - `scripts/validate_document_frontmatter.py` — invoked by CI on every PR; rejects unknown values, broken links, conflicting inline markers
+
+- **Demonstrable by:**
+  ```bash
+  uv run python scripts/validate_document_frontmatter.py
+  ```
+  Expected exit code 0; 178 in-scope files validated; 0 errors.
+  ```bash
+  grep -L '^status:' docs/plans/*.md docs/superpowers/plans/*.md docs/superpowers/specs/*.md docs/adr/*.md .claude/decisions/*.md docs/followups/*.md
+  ```
+  Expected: empty output (every in-scope file carries a `status:` line).
+
+- **Rollback signal:** Revert P6 commit (`feat: regenerate PLAN_INDEX from frontmatter; strict inline-marker CI gate`) to restore the hand-maintained `PLAN_INDEX.md`. Frontmatter added in P1–P5 remains in files but does not affect PLAN_INDEX.md after rollback. Re-apply phases one at a time to bisect.
+
+- **Observability added:** Validator emits a per-file report on `--dry-run`; CI logs the report and fails on any unknown value, broken `superseded_by`, broken `blocks_on`, or conflicting inline status marker.
+
+______________________________________________________________________
+
+## Verification
+
+Run these checks after all phases are merged. Each is a one-liner with an expected result.
+
+```bash
+# 1. Validator passes all 178 in-scope files
+uv run python scripts/validate_document_frontmatter.py
+# Expected: "178 files validated, 0 errors, 0 warnings"
+
+# 2. Every in-scope file carries frontmatter
+grep -L '^status:' docs/plans/*.md docs/superpowers/plans/*.md docs/superpowers/specs/*.md docs/adr/*.md .claude/decisions/*.md docs/followups/*.md
+# Expected: empty output
+
+# 3. No legacy status strings remain
+grep -rE '^\*\*Status\*\*: (Accepted|Approved|Proposed|Draft|Resolved)' docs/adr/ docs/superpowers/ docs/plans/ docs/followups/ .claude/decisions/ 2>/dev/null | grep -v '<!-- legacy'
+# Expected: empty output
+
+# 4. All superseded_by targets resolve
+grep -h '^superseded_by:' docs/plans/*.md docs/superpowers/specs/*.md | grep -v 'null' | awk -F': ' '{print $2}' | while read path; do
+  test -f "$path" || echo "broken link: $path"
+done
+# Expected: empty output
+
+# 5. PLAN_INDEX.md is deterministic
+uv run python scripts/validate_document_frontmatter.py --regenerate-index
+git diff --stat docs/plans/PLAN_INDEX.md
+# Expected: no diff on second run
+
+# 6. Spec/plan topic pairs match
+for spec in docs/superpowers/specs/*.md; do
+  topic=$(grep '^topic:' "$spec" | awk '{print $2}')
+  plan="${spec//specs/plans}"
+  if [ -f "$plan" ]; then
+    plan_topic=$(grep '^topic:' "$plan" | awk '{print $2}')
+    [ "$topic" != "$plan_topic" ] && echo "topic mismatch: $spec -> $plan ($topic vs $plan_topic)"
+  fi
+done
+# Expected: empty output (or only intentional mismatches listed in a comment)
+```
+
+______________________________________________________________________
+
+## Risks & Mitigations
+
+| Risk | Likelihood | Impact | Mitigation |
+|---|---|---|---|
+| Normalization loses the distinction between "delivered and verified" (shipped) and "delivered, awaiting verification" (complete) | Medium | Medium | Validator emits a `shipped->complete` auto-transition warning when no follow-up task is open in the plan body; manual review queue catches missed cases |
+| Inline status markers in body text drift from frontmatter after future edits | High | Low | `--strict-inline` CI gate (P6) rejects conflicting inline markers; new files require frontmatter at creation time |
+| `superseded_by` paths break after file renames | Medium | Medium | Validator checks every non-null `superseded_by` against the filesystem before commit; P6.5 follow-up reserves `ext:` identifiers for cross-repo supersession |
+| Eight different legacy strings mapping to the same normalized value loses precision (e.g., `Approved (rev 2)` vs `Approved`) | Low | Low | Schema doc records the exact legacy string in a `legacy_status_aliases` table; agents greping for the legacy string consult the table first |
+| Free-form `topic` strings diverge silently across repos (e.g., `tui` vs `terminal-ui`) | High | Medium | Topic vocabulary is published in the schema doc; new topics are added via amendment commit; CI lint rejects topics not in the controlled vocabulary |
+| Plan/scratch directory `docs/plans/drafts/` is never validated and ages out | Medium | Low | A `--check-drafts-age` flag warns when any draft file is older than 90 days; promoted drafts must have valid frontmatter before indexing |
+| P7 cross-repo migration is blocked because no sibling repo has produced its inventory | High | Medium | P7 is gated on per-repo inventory commits; P0 runs in Mahavishnu only; sibling-repo work is its own plan tracked in `docs/plans/<repo>-frontmatter-migration.md` |
+| Frontmatter parser rejects a valid YAML form (e.g., single quotes for ISO dates with non-ASCII characters) | Low | Low | Validator uses `yaml.safe_load` and round-trips every parsed file in test fixtures; reject anything beyond ISO date strings and explicit `null` |
+| Merging two branches with different `last_reviewed` values for the same file causes a conflict | Low | Low | Document the merge rule: max(`last_reviewed`) wins; conflicts land in conflict markers and the developer chooses |
+| Index file growth: PLAN_INDEX.md could grow unboundedly as the corpus grows | Medium | Low | Top-level PLAN_INDEX.md lists only `canonical` + `umbrella` + `active` implementation; historical/superseded entries route to `docs/plans/INDEX_HISTORICAL.md` and `docs/plans/INDEX_SUPERSEDED.md` |
+
+______________________________________________________________________
+
+## Self-Review
+
+### Spec Coverage
+
+| Requirement | Phase |
+|---|---|
+| Five-value lifecycle and five-value role vocabulary | P0 |
+| Full and lite frontmatter schemas | P0 |
+| Validator rejects unknown values, broken links, conflicting inline markers | P0, P6 |
+| 14 ADRs normalized | P1 |
+| 66 plans normalized (incl. 4 supersession chains) | P2 |
+| 32 specs normalized (incl. 4 deferred→draft with blocks_on) | P3 |
+| 47 superpowers plans normalized | P4 |
+| 11 decisions + 8 followups normalized | P5 |
+| PLAN_INDEX.md regenerated from frontmatter | P6 |
+| Cross-repo expansion gated on per-repo inventory | P7 |
+
+### Placeholder Scan
+
+Clean — every step either modifies an existing file or describes a concrete deliverable. No `TBD`/`TODO` markers in the migration steps.
+
+### Open Questions
+
+- **Topic vocabulary source of truth.** Where should the controlled topic list live? Currently proposed as a section of `docs/schemas/document-frontmatter-v1.md`. Acceptable to defer until first cross-repo audit (P7) reveals actual divergences.
+- **Cross-repo `superseded_by` representation.** `ext:` identifier scheme is proposed but not yet enforced. P7 should commit to one of: identifier-registry, path-prefix-by-repo, or no-cross-repo-supersession. **Decision:** keep it gated on P7 inventory; do not invent convention until first need arises.
+- **Decision README regeneration cadence.** Re-deriving `.claude/decisions/README.md` from frontmatter is mechanical; should it run on every CI commit (continuous) or only when a decision file changes (event-driven)? **Decision:** event-driven; the decision README's CI gate runs `validate_document_frontmatter.py .claude/decisions/ --regenerate-readme`.
