@@ -9,12 +9,18 @@ from pydantic import BaseModel, Field, RedisDsn
 
 try:
     from coredis import Redis
-    from coredis.cache import TrackingCache  # pragma: no cover
     from coredis.exceptions import RedisError  # pragma: no cover
+    from coredis.patterns.cache import (  # pragma: no cover
+        LRUCache,
+        TrackingCache as _AbstractTrackingCache,
+    )
 
     _COREDIS_AVAILABLE = True  # pragma: no cover
 except ImportError:  # pragma: no cover - exercised when extras missing
-    Redis = TrackingCache = None  # type: ignore
+    Redis = LRUCache = None  # type: ignore
+
+    class _AbstractTrackingCache:  # type: ignore[no-redef]
+        pass
 
     class RedisError(Exception):
         pass
@@ -29,6 +35,50 @@ from oneiric.core.client_mixins import EnsureClientMixin
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
+
+
+class _TrackingCacheImpl(_AbstractTrackingCache):
+    """Concrete :class:`TrackingCache` shim preserving the legacy kwarg surface.
+
+    coredis moved ``TrackingCache`` to :mod:`coredis.patterns.cache` and made
+    it abstract (requires ``run`` and ``get_client_id`` implementations plus a
+    ``connection_pool`` + ``cache`` constructor pair). Adapter init only needs
+    a kwargs-capturable TrackingCache instance; the real tracking connection
+    is established later by the Redis client itself. This shim restores a
+    minimally-instantiable form that still satisfies ``isinstance(obj,
+    TrackingCache)``.
+    """
+
+    def __init__(self, **kwargs: Any) -> None:
+        # Bypass TrackingCache.__init__ which requires a real connection_pool;
+        # set only the attributes the inherited get/put/invalidate/reset/stats
+        # methods touch.
+        max_keys = kwargs.pop("max_keys", 4096)
+        # ``max_size_bytes`` was a legacy option the current coredis API does
+        # not accept on LRUCache, so we drop it silently.
+        kwargs.pop("max_size_bytes", None)
+        self._max_idle_seconds = kwargs.pop("max_idle_seconds", 60)
+        self._cache = LRUCache(max_keys=max_keys)
+        self._retry_policy = None
+        # ``_connection_pool`` is unused because ``run()`` is a no-op below.
+        self._connection_pool = None  # type: ignore[assignment]
+
+    async def run(self, task_status: Any = None) -> None:
+        return None
+
+    def get_client_id(self, connection: Any = None) -> int | None:
+        return None
+
+    @property
+    def healthy(self) -> bool:
+        return False
+
+
+# Rebind the module-level :data:`TrackingCache` to the concrete shim so direct
+# instantiation in adapter init works. Tests that monkeypatch
+# ``oneiric.adapters.cache.redis.TrackingCache`` will substitute their own
+# class here and still be honored (the reference is consulted at call time).
+TrackingCache = _TrackingCacheImpl  # type: ignore[assignment,misc]  # noqa: F811
 
 
 class RedisCacheSettings(BaseModel):
@@ -238,7 +288,7 @@ class RedisCacheAdapter(EnsureClientMixin):
     def _create_client(self) -> Redis:  # noqa: C901
         kwargs: dict[str, Any] = {
             "decode_responses": self._settings.decode_responses,
-            "socket_timeout": self._settings.socket_timeout,
+            "stream_timeout": self._settings.socket_timeout,
             "client_name": self._settings.client_name,
         }
         if self._settings.enable_client_cache:

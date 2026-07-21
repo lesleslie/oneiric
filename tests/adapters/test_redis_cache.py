@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 
 coredis = pytest.importorskip("coredis")
-TrackingCache = coredis.cache.TrackingCache
+TrackingCache = coredis.patterns.cache.TrackingCache
 from fakeredis.aioredis import FakeRedis
 
 from oneiric.adapters.bootstrap import register_builtin_adapters

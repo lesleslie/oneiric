@@ -226,6 +226,7 @@ dev = [
     "zensical>=0.0.46",
     "sqlalchemy[asyncio]>=2.0.51",
     "pgvector>=0.4.2",
+    "fakeredis>=2.21.0",
 ]
 secrets-keyring = [
     "keyring>=25.7.0",
