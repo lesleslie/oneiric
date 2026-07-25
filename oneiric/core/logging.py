@@ -29,8 +29,14 @@ _SUPPRESS_EVENTS = False
 
 class LoggingSinkConfig(BaseModel):
     target: Literal["stdout", "stderr", "file", "http"] = Field(
-        default="stdout",
-        description="Handler target (stdout/stderr/file/http).",
+        default="stderr",
+        description=(
+            "Handler target (stdout/stderr/file/http). Defaults to stderr so "
+            "library log output does not pollute a consumer's stdout (e.g. a "
+            "shell that sources the process via process substitution). "
+            "Override to 'stdout' only when the consumer explicitly wants logs "
+            "on the main channel (e.g. a log aggregator piping the process)."
+        ),
     )
     level: str = Field(default="INFO", description="Minimum level for this sink.")
     path: str | None = Field(default=None, description="File path when target=file.")

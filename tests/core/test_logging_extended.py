@@ -39,7 +39,7 @@ class TestLoggingConfig:
         """LoggingSinkConfig has correct defaults."""
         config = LoggingSinkConfig()
         assert config.level == "INFO"
-        assert config.target == "stdout"
+        assert config.target == "stderr"
 
     def test_logging_sink_config_custom_values(self):
         """LoggingSinkConfig accepts custom values."""

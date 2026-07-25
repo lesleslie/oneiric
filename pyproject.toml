@@ -1,6 +1,6 @@
 [project]
 name = "oneiric"
-version = "0.14.1"
+version = "0.15.0"
 description = "Universal resolution layer for pluggable components with hot-swapping and remote manifest delivery"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -28,6 +28,9 @@ dependencies = [
 
 [project.scripts]
 oneiric = "oneiric.cli:main"
+
+[project.license]
+text = "BSD-3-CLAUSE"
 
 [project.urls]
 ONNXRuntime-Compatibility = "https://github.com/microsoft/onnxruntime/issues/new"  # Placeholder for tracking ONNX compatibility

@@ -110,7 +110,7 @@ def _isolate_logging_state() -> None:
 def test_logging_sink_config_defaults() -> None:
     """LoggingSinkConfig exposes documented defaults."""
     sink = LoggingSinkConfig()
-    assert sink.target == "stdout"
+    assert sink.target == "stderr"
     assert sink.level == "INFO"
     assert sink.path is None
     assert sink.endpoint is None
@@ -183,9 +183,9 @@ def test_logging_config_defaults() -> None:
     assert config.timestamper_format == "iso"
     assert config.extra_processors == []
     assert config.include_trace_context is True
-    # Default sink is a single stdout sink
+    # Default sink is a single stderr sink
     assert len(config.sinks) == 1
-    assert config.sinks[0].target == "stdout"
+    assert config.sinks[0].target == "stderr"
 
 
 def test_logging_config_validation_rejects_non_bool_emit_json() -> None:

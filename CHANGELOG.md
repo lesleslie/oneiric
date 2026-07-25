@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0] - 2026-07-25
+
+### Changed (BREAKING)
+
+- oneiric: `LoggingSinkConfig.target` default flipped from `"stdout"` to
+  `"stderr"`. This prevents library log output from polluting a consumer's
+  stdout (e.g. a shell that sources a Python script via process substitution,
+  which fails to interpret `[info]`-bracket log lines as glob patterns).
+  Aligns with the Unix convention that stdout carries results, stderr carries
+  diagnostics. Callers that want logs on stdout (e.g. log aggregators piping
+  the process) must now set `logging.sinks[0].target = "stdout"` explicitly.
+
+### Fixed
+
+- oneiric: 3 tests in `test_logging_comprehensive.py` and
+  `test_logging_extended.py` updated to assert the new `stderr` default.
+  These tests were the only consumers of the previous default.
+
 ## [0.14.1] - 2026-07-21
 
 ### Documentation
