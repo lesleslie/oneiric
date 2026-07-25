@@ -1,13 +1,16 @@
----
+______________________________________________________________________
+
 status: draft
 role: implementation
 date: 2026-07-16
 last_reviewed: 2026-07-16
 superseded_by: null
 blocks_on:
-  - docs/schemas/document-frontmatter-v1.md
-topic: convergence-control-plane
----
+
+- docs/schemas/document-frontmatter-v1.md
+  topic: convergence-control-plane
+
+______________________________________________________________________
 
 # Plan Lifecycle Unification — Frontmatter Standardization Across Documentation Stores
 
@@ -352,8 +355,11 @@ The phases are sequenced top-down: contract → ADRs → plans → specs → sup
 **Files:**
 
 - Create: `docs/schemas/document-frontmatter-v1.md`
+
 - Create: `scripts/validate_document_frontmatter.py`
+
 - Create: `tests/unit/test_document_frontmatter.py`
+
 - Modify: `docs/plans/TEMPLATE.md`
 
 - [ ] **Step 1: Author `docs/schemas/document-frontmatter-v1.md`**
@@ -474,6 +480,7 @@ The eight `COMPLETE` / `delivered` / `all phases complete` plans get `status: co
 - [ ] **Step 6: Wire the four supersession chains**
 
 Four files in this store are explicitly superseded:
+
 - `docs/plans/2026-05-23-bodai-routing-feedback-loop.md` → `superseded_by: docs/plans/2026-05-23-bodai-routing-feedback-loop-v4.md`
 - `docs/plans/2026-05-23-bodai-routing-feedback-loop-v2.md` → `superseded_by: docs/plans/2026-05-23-bodai-routing-feedback-loop-v4.md`
 - `docs/plans/2026-05-23-bodai-routing-feedback-loop-v3.md` → `superseded_by: docs/plans/2026-05-23-bodai-routing-feedback-loop-v4.md`
@@ -647,18 +654,23 @@ ______________________________________________________________________
 - **Triggered from:** Operator decision to unify documentation lifecycle vocabulary across Mahavishnu's six stores. Replaces ad-hoc status markers with a single frontmatter contract.
 
 - **Returns to / updates:**
+
   - `docs/plans/PLAN_INDEX.md` — regenerated from frontmatter in P6; sole source of truth for plan index
   - `.claude/decisions/README.md` — Status column re-derived from per-decision frontmatter in P5
   - `scripts/validate_document_frontmatter.py` — invoked by CI on every PR; rejects unknown values, broken links, conflicting inline markers
 
 - **Demonstrable by:**
+
   ```bash
   uv run python scripts/validate_document_frontmatter.py
   ```
+
   Expected exit code 0; 178 in-scope files validated; 0 errors.
+
   ```bash
   grep -L '^status:' docs/plans/*.md docs/superpowers/plans/*.md docs/superpowers/specs/*.md docs/adr/*.md .claude/decisions/*.md docs/followups/*.md
   ```
+
   Expected: empty output (every in-scope file carries a `status:` line).
 
 - **Rollback signal:** Revert P6 commit (`feat: regenerate PLAN_INDEX from frontmatter; strict inline-marker CI gate`) to restore the hand-maintained `PLAN_INDEX.md`. Frontmatter added in P1–P5 remains in files but does not affect PLAN_INDEX.md after rollback. Re-apply phases one at a time to bisect.

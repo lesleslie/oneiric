@@ -6,7 +6,7 @@ ______________________________________________________________________
 
 **Date:** 2026-07-16
 **Status:** accepted <!-- legacy status — see YAML frontmatter -->
-**Source plan:** [2026-07-16-plan-lifecycle-unification.md](../superpowers/plans/2026-07-16-plan-lifecycle-unification.md)
+**Source plan:** `2026-07-16-plan-lifecycle-unification.md` (in `mahavishnu/docs/superpowers/plans/` — the originating repo; this schema is a Crackerjack wrapper around that plan's validator)
 
 ## Goal
 
@@ -138,7 +138,7 @@ Two open questions were resolved before migration began. Both are binding for Ph
 ## Cross-References
 
 - [`docs/schemas/topic-vocabulary-v1.md`](./topic-vocabulary-v1.md) — controlled topic list (seed + amendment rule).
-- [`docs/superpowers/plans/2026-07-16-plan-lifecycle-unification.md`](../superpowers/plans/2026-07-16-plan-lifecycle-unification.md) — the source plan defining the migration phases and integration contract.
+- `2026-07-16-plan-lifecycle-unification.md` (in `mahavishnu/docs/superpowers/plans/`) — the source plan defining the migration phases and integration contract.
 - [`docs/plans/PLAN_INDEX.md`](../plans/PLAN_INDEX.md) — the index regenerated from frontmatter in Phase P6.
 - [`.claude/decisions/README.md`](../../.claude/decisions/README.md) — the decision index; Status column re-derived from per-decision frontmatter in Phase P5.
 

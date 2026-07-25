@@ -5,6 +5,76 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0] - 2026-07-25
+
+### Added
+
+- **BREAKING:** oneiric: Flip default sink target from stdout to stderr
+- oneiric: Add TrackedSettings wrapper for adapter config telemetry
+- oneiric: Consume ttl_seconds and stampede_jitter_ms in set/get
+- oneiric: Extend RedisCacheSettings with ttl_seconds and stampede_jitter_ms
+
+### Changed
+
+- Oneiric (quality: 66/100) - 2026-07-04 01:29:08
+- oneiric: Add trailing newline to test_redis_cache_settings.py
+
+### Fixed
+
+- oneiric: Stampede_jitter_ms sleeps ms, not seconds
+- oneiric: Strip leading space from AdapterMetadata.factory strings
+
+### Documentation
+
+- implementation: Mark ADAPTER_REMEDIATION_EXECUTION Track A and C shipped
+- implementation: Mark ADAPTER_REMEDIATION_PLAN Gantt complete and Gemini open
+- implementation: Mark ORCHESTRATION_PARITY_PLAN M1-M3 shipped and M4 partial
+- implementation: Mark SERVERLESS_AND_PARITY_EXECUTION §6 and §8 shipped
+- Mark IMPLEMENTATION_PHASE_TRACKER M4 partial
+- oneiric: Apply plan-lifecycle-unification playbook (P7.B)
+- plans: Reconcile stale-done test rows and track items
+- plans: Reconcile stale-done test rows and track items
+
+### Testing
+
+- Add hypothesis dep and shared fixtures for comprehensive suites
+- Add mock-based coverage for cache, queue, and secrets adapters
+- Comprehensive suites for cross-cutting modules (loader, logging)
+- Comprehensive suites for domain bridges (base, events, tasks, services, workflows, watchers)
+- Comprehensive suites for foundational modules (resolution, models, checkpoints, protocols, dag, events)
+- Fix 2 pre-existing failures + add 3 loader circuit-breaker integration tests
+- oneiric: Cover new fields + factory-string + set/get consumer code
+- oneiric: Fix fakeredis dep + coredis TrackingCache abstract method
+
+### Internal
+
+- Bump version to 0.11.0
+- Bump version to 0.12.0
+- Bump version to 0.12.1
+- Bump version to 0.12.2
+- Bump version to 0.12.3
+- Bump version to 0.13.0
+- Bump version to 0.13.1
+- Bump version to 0.13.2
+- Bump version to 0.13.3
+- Bump version to 0.13.4
+- Bump version to 0.13.6
+- Bump version to 0.13.7
+- Bump version to 0.13.8
+- Bump version to 0.14.0
+- Bump version to 0.14.1
+- gitignore: Add backup file patterns to silence checkpoint tool artifacts
+- gitignore: Consolidate 108-line drift into canonical structure
+- gitignore: Track *.backup.json + remove stray tracked artifact
+- gitignore: Track .worktrees/ to silence worktree add artifacts
+- gitignore: Untrack .lycheecache
+- oneiric: Remove LICENSE (consolidated to root-level LICENSE)
+- oneiric: Remove unused logo + 5 point-in-time archive summaries
+- oneiric: Sync uv.lock to pyproject.toml (0.14.0)
+- Restore LICENSE
+- Untrack .idea directory (already in .gitignore)
+- Untrack and delete 31 historical *.backup/*.bak files
+
 ## [0.15.0] - 2026-07-25
 
 ### Changed (BREAKING)
