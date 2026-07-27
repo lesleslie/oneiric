@@ -11,6 +11,12 @@
 
 Oneiric extracts the resolver/lifecycle core from ACB and turns it into a stand-alone platform. Register adapters, services, tasks, events, workflows, and actions; explain every decision; hot-swap providers; stream telemetry; replay workflow notifications; and hydrate capabilities from signed remote manifests.
 
+## Bodai Ecosystem Role
+
+Oneiric is the **resolver / runtime foundation** of the [Bodai ecosystem](https://github.com/lesleslie/bodai) — it powers the adapter system, service lifecycle, and runtime orchestration that Mahavishnu, Akosha, Dhara, Session-Buddy, and Crackerjack all depend on.
+
+Standalone, Oneiric is a deterministic component resolution library for Python 3.13+ runtimes — useful for any application that needs to register, resolve, and lifecycle adapters, services, tasks, events, and workflows. See [bodai/docs](https://github.com/lesleslie/bodai) for how Oneiric is used across the ecosystem.
+
 ## Quick Links
 
 - [Roadmap & Phase Tracking](#roadmap--phase-tracking)
