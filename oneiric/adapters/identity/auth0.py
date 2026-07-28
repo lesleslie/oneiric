@@ -72,7 +72,7 @@ class Auth0IdentityAdapter(HTTPXClientMixin):
         try:
             await self._fetch_jwks(force=True)
             return True
-        except Exception as exc:  # pragma: no cover - network failure
+        except (OSError, RuntimeError) as exc:  # pragma: no cover - network failure
             self._logger.warning("adapter-health-error", error=str(exc))
             return False
 
@@ -99,7 +99,7 @@ class Auth0IdentityAdapter(HTTPXClientMixin):
             issuer=issuer,
         )
 
-    async def _fetch_jwks(self, *, force: bool = False) -> dict[str, Any]:  # noqa: C901
+    async def _fetch_jwks(self, *, force: bool = False) -> dict[str, Any]:
         async with self._jwks_lock:
             should_refresh = force
             if self._jwks and self._jwks_loaded_at:

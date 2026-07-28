@@ -96,12 +96,12 @@ class CircuitBreaker:
         multiplier = 1 + min(self._open_count, 5) * 0.25
         new_recovery = min(self._base_recovery * multiplier, self._max_recovery)
         try:
-            setattr(self._breaker, "timeout_duration", timedelta(seconds=new_recovery))
-        except Exception:
+            self._breaker.timeout_duration = timedelta(seconds=new_recovery)  # ty: ignore[invalid-assignment]
+        except (TypeError, ValueError, AttributeError):
             return
 
 
-async def run_with_retry[T](  # noqa: C901
+async def run_with_retry[T](
     operation: Callable[[], Awaitable[T] | T],
     *,
     attempts: int = 3,

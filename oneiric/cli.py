@@ -201,7 +201,7 @@ def _extract_notification_metadata(candidate: Candidate) -> dict[str, Any] | Non
     }
 
 
-def _derive_notification_route(  # noqa: C901
+def _derive_notification_route(
     state: CLIState,
     *,
     workflow_key: str | None,
@@ -354,7 +354,7 @@ def _manifest_entry_from_adapter(
         qualname = getattr(func, "__qualname__", module_name)
         factory_str = f"{module_name}:{qualname}"
     else:
-        raise ValueError(f"Unsupported factory type: {type(adapter.factory)}")
+        raise TypeError(f"Unsupported factory type: {type(adapter.factory)}")
 
     settings_model_str: str | None = None
     if adapter.settings_model:
@@ -400,7 +400,7 @@ def _manifest_entry_from_action(
         qualname = getattr(func, "__qualname__", module_name)
         factory_str = f"{module_name}:{qualname}"
     else:
-        raise ValueError(f"Unsupported factory type: {type(action.factory)}")
+        raise TypeError(f"Unsupported factory type: {type(action.factory)}")
 
     return RemoteManifestEntry(
         domain="action",
@@ -720,7 +720,7 @@ def _initialize_state(
 def _state(ctx: typer.Context) -> CLIState:
     state = ctx.obj
     if not isinstance(state, CLIState):
-        raise RuntimeError("CLI state not initialized")
+        raise TypeError("CLI state not initialized")
     return state
 
 
@@ -833,7 +833,7 @@ async def _handle_remote_sync(
             )
 
 
-async def _handle_orchestrate(  # noqa: C901
+async def _handle_orchestrate(
     settings: OneiricSettings,
     resolver: Resolver,
     lifecycle: LifecycleManager,
@@ -994,7 +994,7 @@ def _build_remote_metrics(telemetry) -> str:
     return " ".join(metric_parts)
 
 
-def _workflow_inspector_summary(  # noqa: C901
+def _workflow_inspector_summary(
     bridge: WorkflowBridge,
     filters: Sequence[str],
     last_run: dict[str, Any] | None,
@@ -1026,7 +1026,7 @@ def _workflow_inspector_summary(  # noqa: C901
     return {"summary": summary, "missing": missing}
 
 
-def _workflow_target_keys(  # noqa: C901
+def _workflow_target_keys(
     filters: Sequence[str], available: Iterable[str]
 ) -> list[str]:
     include_all = not filters
@@ -1077,7 +1077,7 @@ def _build_workflow_node(entry: Mapping[str, Any]) -> dict[str, Any] | None:
     return node_entry
 
 
-def _build_workflow_summary(  # noqa: C901
+def _build_workflow_summary(
     workflow_key: str,
     dag_spec: dict[str, Any],
     last_run: dict[str, Any] | None,
@@ -1127,7 +1127,7 @@ def _emit_inspector_payload(payload: dict[str, Any], json_output: bool) -> None:
     if workflows is not None:
         _print_workflow_inspector(workflows)
     if workflows is not None and events is not None:
-        print("")
+        print()
     if events is not None:
         _print_event_inspector(events)
 
@@ -1544,7 +1544,7 @@ def _build_status_record(
     return record
 
 
-def _print_status_record(record: dict[str, Any]) -> None:  # noqa: C901
+def _print_status_record(record: dict[str, Any]) -> None:
     key = record["key"]
     state = record["state"]
     configured = record.get("configured_provider")
@@ -1812,7 +1812,7 @@ def _print_activity_snapshot(snapshot: dict[str, Any]) -> None:
     _print_domain_activity_details(activity)
 
 
-def _print_lifecycle_snapshot(snapshot: dict[str, Any]) -> None:  # noqa: C901
+def _print_lifecycle_snapshot(snapshot: dict[str, Any]) -> None:
     lifecycle_state = snapshot.get("lifecycle_state") or {}
     if not lifecycle_state:
         return
@@ -2145,7 +2145,7 @@ def _format_event_result(result: HandlerResult) -> str:
 
 
 @event_app.command("emit")
-def event_emit_command(  # noqa: C901
+def event_emit_command(
     ctx: typer.Context,
     topic: str = typer.Argument(..., help="Topic/subject to emit."),
     payload: str | None = typer.Option(
@@ -2767,7 +2767,7 @@ def manifest_pack(
 
 
 @manifest_app.command("export")
-def manifest_export(  # noqa: C901
+def manifest_export(
     output_path: Path = typer.Option(
         Path("build/manifest.yaml"),
         "--output",
@@ -2902,7 +2902,7 @@ def _render_manifest(manifest_dict: dict[str, Any], target: Path) -> str:
 
 
 @manifest_app.command("sign")
-def manifest_sign(  # noqa: C901
+def manifest_sign(
     input_path: Path = typer.Option(
         ...,
         "--input",

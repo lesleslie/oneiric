@@ -249,7 +249,7 @@ class APNSPushAdapter:
             return await result
         return result
 
-    async def _dispatch(  # noqa: C901
+    async def _dispatch(
         self,
         client: Any,
         token: str,

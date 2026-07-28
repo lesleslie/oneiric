@@ -106,7 +106,7 @@ class Route53DNSAdapter:
                 MaxItems="1",
             )
             return "ResourceRecordSets" in resp
-        except Exception as exc:  # pragma: no cover - network path
+        except (OSError, RuntimeError) as exc:  # pragma: no cover - network path
             self._logger.warning("route53-dns-health-failed", error=str(exc))
             return False
 

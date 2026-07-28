@@ -100,7 +100,7 @@ class OpenAILLMAdapter(LLMBase):
 
             await client.models.list()
             return True
-        except Exception as e:
+        except (openai.OpenAIError, OSError) as e:  # ty: ignore[unresolved-reference]
             self._logger.error(f"Health check failed: {e}")
             return False
 
@@ -194,8 +194,8 @@ class OpenAILLMAdapter(LLMBase):
                 },
             )
 
-        except Exception as e:
-            self._logger.error(f"Chat completion failed: {e}", exc_info=True)
+        except Exception:
+            self._logger.exception("Chat completion failed")
             raise
 
     def _build_openai_request_params(
@@ -306,8 +306,8 @@ class OpenAILLMAdapter(LLMBase):
             stream = await client.chat.completions.create(**params)
             async for chunk in self._process_stream_chunks(stream, model):
                 yield chunk
-        except Exception as e:
-            self._logger.error(f"Streaming chat completion failed: {e}", exc_info=True)
+        except Exception:
+            self._logger.exception("Streaming chat completion failed")
             raise
 
     def _build_stream_request_params(
@@ -443,7 +443,7 @@ class OpenAILLMAdapter(LLMBase):
 
     async def _list_models(self) -> list[LLMModelInfo]:
         models = []
-        for model_name in _OPENAI_MODEL_DATA.keys():
+        for model_name in _OPENAI_MODEL_DATA:
             model_info = await self._get_model_info(model_name)
             models.append(model_info)
         return models
@@ -456,7 +456,7 @@ class OpenAILLMAdapter(LLMBase):
             return len(encoding.encode(text))
         except ImportError:
             return await super()._count_tokens(text, model)
-        except Exception:
+        except (ValueError, TypeError, KeyError, AttributeError):
             return await super()._count_tokens(text, model)
 
 

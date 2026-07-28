@@ -84,7 +84,7 @@ class QdrantAdapter(VectorBase[QdrantSettings]):
             provider="qdrant",
         )
 
-    async def _create_client(self) -> Any:  # noqa: C901
+    async def _create_client(self) -> Any:
         try:
             from qdrant_client import AsyncQdrantClient
 
@@ -230,7 +230,7 @@ class QdrantAdapter(VectorBase[QdrantSettings]):
         try:
             await self._client.get_cluster_info()
             return True
-        except Exception as exc:
+        except (OSError, RuntimeError) as exc:
             self._logger.warning("qdrant-health-check-failed", error=str(exc))
             return False
 
@@ -238,7 +238,7 @@ class QdrantAdapter(VectorBase[QdrantSettings]):
         if self._client:
             try:
                 await self._client.close()
-            except Exception as exc:
+            except OSError as exc:
                 self._logger.warning("qdrant-cleanup-warning", error=str(exc))
             finally:
                 self._client = None
@@ -313,7 +313,7 @@ class QdrantAdapter(VectorBase[QdrantSettings]):
 
             return None
 
-        except Exception as exc:
+        except (ValueError, TypeError, KeyError) as exc:
             self._logger.warning("qdrant-filter-build-failed", error=str(exc))
             return None
 
@@ -325,7 +325,7 @@ class QdrantAdapter(VectorBase[QdrantSettings]):
     ) -> list[str]:
         return await self.upsert(collection, documents, **kwargs)
 
-    async def upsert(  # noqa: C901
+    async def upsert(
         self,
         collection: str,
         documents: list[VectorDocument],

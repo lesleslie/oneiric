@@ -7,12 +7,12 @@ from .sftp import SFTPFileTransferAdapter, SFTPFileTransferSettings
 __all__ = [
     "FTPFileTransferAdapter",
     "FTPFileTransferSettings",
-    "SFTPFileTransferAdapter",
-    "SFTPFileTransferSettings",
     "HTTPArtifactAdapter",
     "HTTPArtifactSettings",
     "HTTPSUploadAdapter",
     "HTTPSUploadSettings",
     "SCPFileTransferAdapter",
     "SCPFileTransferSettings",
+    "SFTPFileTransferAdapter",
+    "SFTPFileTransferSettings",
 ]

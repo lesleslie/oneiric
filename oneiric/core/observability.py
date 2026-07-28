@@ -34,7 +34,7 @@ def get_tracer(component: str | None = None) -> Tracer:
 def inject_trace_context(headers: dict[str, str]) -> dict[str, str]:
     try:  # pragma: no cover - depends on opentelemetry SDK extras
         from opentelemetry.propagate import inject
-    except Exception:
+    except ImportError:
         return headers
     inject(headers)
     return headers
@@ -94,8 +94,7 @@ def observed_span(
 ) -> Iterator[Span]:
     tracer = get_tracer(component)
     context_scope = scoped_log_context(**log_context) if log_context else nullcontext()
-    with context_scope:
-        with tracer.start_as_current_span(name) as span:
-            if attributes:
-                span.set_attributes(dict(attributes))
-            yield span
+    with context_scope, tracer.start_as_current_span(name) as span:
+        if attributes:
+            span.set_attributes(dict(attributes))
+        yield span

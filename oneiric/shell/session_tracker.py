@@ -83,7 +83,7 @@ class SessionEventEmitter:
             await session.call_tool("health_check", {})
             self.available = True
             return True
-        except Exception as e:
+        except (OSError, RuntimeError) as e:
             logger.debug(f"Session-Buddy MCP unavailable: {e}")
             self._handle_failure()
             return False
@@ -160,7 +160,7 @@ class SessionEventEmitter:
                 logger.error(f"Unexpected result type: {type(result)}")
                 return None
 
-        except Exception as e:
+        except (OSError, RuntimeError) as e:
             logger.error(f"Failed to emit session start event: {e}")
             return None
 
@@ -203,7 +203,7 @@ class SessionEventEmitter:
             logger.info(f"Session ended: {session_id}")
             return True
 
-        except Exception as e:
+        except (OSError, RuntimeError) as e:
             logger.error(f"Failed to emit session end event: {e}")
             return False
 

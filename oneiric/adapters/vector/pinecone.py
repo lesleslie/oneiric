@@ -108,7 +108,7 @@ class PineconeAdapter(VectorBase[PineconeSettings]):
                 self._logger.debug(
                     "pinecone-index-exists", index=self._settings.index_name
                 )
-            except Exception:
+            except (OSError, RuntimeError):
                 self._logger.info(
                     "pinecone-index-not-found-creating", index=self._settings.index_name
                 )
@@ -161,7 +161,7 @@ class PineconeAdapter(VectorBase[PineconeSettings]):
         try:
             stats = self._index.describe_index_stats()
             return stats is not None
-        except Exception as exc:
+        except (OSError, RuntimeError) as exc:
             self._logger.warning("pinecone-health-check-failed", error=str(exc))
             return False
 

@@ -83,7 +83,7 @@ class GCPSecretManagerAdapter:
                 allow_missing=True,
             )
             return True
-        except Exception as exc:  # pragma: no cover - network path
+        except (OSError, RuntimeError) as exc:  # pragma: no cover - network path
             self._logger.warning("adapter-health-error", error=str(exc))
             return False
 

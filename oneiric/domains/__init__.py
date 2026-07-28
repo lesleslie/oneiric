@@ -13,12 +13,12 @@ from .workflows import WorkflowBridge
 __all__ = [
     "DomainBridge",
     "DomainHandle",
-    "ServiceBridge",
-    "TaskBridge",
     "EventBridge",
-    "WorkflowBridge",
-    "ServiceConfigWatcher",
-    "TaskConfigWatcher",
     "EventConfigWatcher",
+    "ServiceBridge",
+    "ServiceConfigWatcher",
+    "TaskBridge",
+    "TaskConfigWatcher",
+    "WorkflowBridge",
     "WorkflowConfigWatcher",
 ]

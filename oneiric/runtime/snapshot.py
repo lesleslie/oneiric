@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import sys
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from oneiric.core.config import resolve_cache_dir_path
@@ -85,12 +87,15 @@ class RuntimeSnapshotManager:
             latest_file = snapshot_files[0]
 
             try:
-                with open(latest_file, encoding="utf-8") as f:
-                    data = json.load(f)
-                    self.current_snapshot = RuntimeSnapshot.from_dict(data)
+
+                def _read_snapshot() -> RuntimeSnapshot:
+                    with open(latest_file, encoding="utf-8") as f:
+                        return RuntimeSnapshot.from_dict(json.load(f))
+
+                self.current_snapshot = await asyncio.to_thread(_read_snapshot)
 
                 logger.info(f"Loaded snapshot from {latest_file}")
-            except (json.JSONDecodeError, KeyError) as e:
+            except (json.JSONDecodeError, KeyError, OSError) as e:
                 logger.error(f"Failed to load snapshot {latest_file}: {e}")
 
     async def create_snapshot(self, components: dict[str, Any]) -> RuntimeSnapshot:
@@ -118,8 +123,12 @@ class RuntimeSnapshotManager:
         filepath = self.snapshots_dir / filename
 
         try:
-            with open(filepath, "w", encoding="utf-8") as f:
-                json.dump(snapshot.to_dict(), f, indent=2)
+
+            def _write_snapshot() -> None:
+                with open(filepath, "w", encoding="utf-8") as f:
+                    json.dump(snapshot.to_dict(), f, indent=2)
+
+            await asyncio.to_thread(_write_snapshot)
 
             logger.info(f"Saved snapshot to {filepath}")
         except OSError as e:
@@ -150,10 +159,13 @@ class RuntimeSnapshotManager:
 
         for file in snapshot_files:
             try:
-                with open(file, encoding="utf-8") as f:
-                    data = json.load(f)
-                    snapshots.append(RuntimeSnapshot.from_dict(data))
-            except (json.JSONDecodeError, KeyError) as e:
+
+                def _read_file(f: Path = file) -> RuntimeSnapshot:
+                    with open(f, encoding="utf-8") as fh:
+                        return RuntimeSnapshot.from_dict(json.load(fh))
+
+                snapshots.append(await asyncio.to_thread(_read_file))
+            except (json.JSONDecodeError, KeyError, OSError) as e:
                 logger.error(f"Failed to load snapshot {file}: {e}")
 
         return snapshots
@@ -164,4 +176,4 @@ class RuntimeSnapshotManager:
         self.current_snapshot = None
 
 
-__all__ = ["RuntimeSnapshotManager", "RuntimeSnapshot"]
+__all__ = ["RuntimeSnapshot", "RuntimeSnapshotManager"]

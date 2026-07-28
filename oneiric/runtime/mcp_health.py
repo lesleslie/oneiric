@@ -125,4 +125,4 @@ class HealthMonitor:
         return ComponentHealth(name, status, details, error)
 
 
-__all__ = ["HealthStatus", "ComponentHealth", "HealthCheckResponse", "HealthMonitor"]
+__all__ = ["ComponentHealth", "HealthCheckResponse", "HealthMonitor", "HealthStatus"]

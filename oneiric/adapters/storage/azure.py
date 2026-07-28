@@ -93,7 +93,7 @@ class AzureBlobStorageAdapter:
         container = self._ensure_container()
         try:
             return await container.exists()
-        except Exception as exc:  # pragma: no cover - network errors
+        except OSError as exc:  # pragma: no cover - network errors
             self._logger.warning("adapter-health-error", error=str(exc))
             return False
 
@@ -158,6 +158,4 @@ class AzureBlobStorageAdapter:
         if isinstance(error_code, str) and error_code.lower() == "blobnotfound":
             return True
         message = getattr(exc, "message", None)
-        if isinstance(message, str) and "404" in message:
-            return True
-        return False
+        return bool(isinstance(message, str) and "404" in message)

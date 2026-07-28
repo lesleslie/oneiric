@@ -77,7 +77,7 @@ class EventDispatchSettings(BaseModel):
     )
 
 
-class EventDispatchAction:  # noqa: C901
+class EventDispatchAction:
     metadata = ActionMetadata(
         key="event.dispatch",
         provider="builtin-event-dispatch",
@@ -251,7 +251,7 @@ class EventDispatchAction:  # noqa: C901
                     duration_ms=duration_ms,
                     reason=reason,
                 )
-            except Exception as exc:  # pragma: no cover - http error path
+            except httpx.HTTPError as exc:  # pragma: no cover - http error path
                 duration_ms = round((time.perf_counter() - started) * 1000, 2)
                 return self._hook_result(
                     hook,

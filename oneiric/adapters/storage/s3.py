@@ -104,7 +104,7 @@ class S3StorageAdapter(EnsureClientMixin):
                     Bucket=self._settings.bucket, Key=self._settings.healthcheck_key
                 )
             return True
-        except Exception as exc:  # pragma: no cover - network error path
+        except (OSError, RuntimeError) as exc:  # pragma: no cover - network error path
             self._logger.warning("adapter-health-error", error=str(exc))
             return False
 
@@ -144,7 +144,7 @@ class S3StorageAdapter(EnsureClientMixin):
         client = self._ensure_client("s3-client-not-initialized")
         await client.delete_object(Bucket=self._settings.bucket, Key=key)
 
-    async def list(self, prefix: str = "") -> list[str]:  # noqa: C901  # ty: ignore[invalid-type-form] — ty resolves `list` to the method in scope
+    async def list(self, prefix: str = "") -> list[str]:  # ty: ignore[invalid-type-form] — ty resolves `list` to the method in scope
         client = self._ensure_client("s3-client-not-initialized")
         continuation: str | None = None
         items: list[str] = []

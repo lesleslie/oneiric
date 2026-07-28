@@ -71,7 +71,7 @@ class InfisicalSecretAdapter:
                 "healthcheck-this-key-should-not-exist", allow_missing=True
             )
             return True
-        except Exception as exc:  # pragma: no cover - network
+        except (OSError, RuntimeError) as exc:  # pragma: no cover - network
             self._logger.warning("adapter-health-error", error=str(exc))
             return False
 

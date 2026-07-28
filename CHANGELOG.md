@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.1] - 2026-07-27
+
+### Documentation
+
+- readme: Add Bodai Ecosystem Role section
+
+### Internal
+
+- deps: Bump crackerjack>=0.70.0; refresh regenerator doc reference
+- deps: Bump crackerjack>=0.70.0; remove duplicated validator script
+
 ## [0.16.0] - 2026-07-25
 
 ### Added
@@ -65,7 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump version to 0.14.1
 - gitignore: Add backup file patterns to silence checkpoint tool artifacts
 - gitignore: Consolidate 108-line drift into canonical structure
-- gitignore: Track *.backup.json + remove stray tracked artifact
+- gitignore: Track \*.backup.json + remove stray tracked artifact
 - gitignore: Track .worktrees/ to silence worktree add artifacts
 - gitignore: Untrack .lycheecache
 - oneiric: Remove LICENSE (consolidated to root-level LICENSE)

@@ -4,7 +4,7 @@ import logging
 import threading
 from typing import Any
 
-from IPython.terminal.embed import InteractiveShellEmbed
+from IPython.terminal.embed import InteractiveShellEmbed  # noqa: T100
 from IPython.terminal.ipapp import load_default_config
 
 from .config import ShellConfig
@@ -47,7 +47,7 @@ class AdminShell:
         ipython_config = load_default_config()
         ipython_config.TerminalInteractiveShell.colors = "Linux"
 
-        self.shell = InteractiveShellEmbed(
+        self.shell = InteractiveShellEmbed(  # noqa: T100
             config=ipython_config,
             banner1=self._get_banner(),
             user_ns=self.namespace,
@@ -120,7 +120,7 @@ class AdminShell:
                     loop = asyncio.new_event_loop()
                     asyncio.set_event_loop(loop)
                     loop.run_until_complete(self._notify_session_end())
-                except Exception as e:
+                except (OSError, RuntimeError) as e:
                     logger.error(f"Session end emission failed: {e}")
                 finally:
                     loop.close()
@@ -142,7 +142,7 @@ class AdminShell:
             if component_name:
                 return importlib_metadata.version(component_name)
             return "unknown"
-        except Exception:
+        except ImportError:
             return "unknown"
 
     def _get_adapters_info(self) -> list[str]:

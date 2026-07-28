@@ -102,7 +102,7 @@ class MongoDBAdapter(NoSQLAdapterBase[MongoDBSettings]):
             client = await self._ensure_client()
             await client.admin.command("ping")
             return True
-        except Exception as exc:  # pragma: no cover - network
+        except (OSError, RuntimeError) as exc:  # pragma: no cover - network
             self._logger.warning("mongodb-health-failed", error=str(exc))
             return False
 

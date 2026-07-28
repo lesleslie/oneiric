@@ -134,7 +134,7 @@ class CandidateRegistry:
             )
             self._recompute(stored.domain, stored.key)
 
-    def resolve(  # noqa: C901
+    def resolve(
         self,
         domain: str,
         key: str,
@@ -214,7 +214,7 @@ class CandidateRegistry:
         with traced_decision(event):
             pass
 
-    def _score_candidates(  # noqa: C901
+    def _score_candidates(
         self,
         domain: str,
         key: str,
@@ -346,7 +346,7 @@ class Resolver:
     ) -> None:
         register_pkg(self.registry, package_name, path, candidates, priority=priority)
 
-    def resolve(  # noqa: C901
+    def resolve(
         self,
         domain: str,
         key: str,

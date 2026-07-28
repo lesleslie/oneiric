@@ -39,7 +39,7 @@ def load_remote_telemetry(cache_dir: str) -> RemoteSyncTelemetry:
         return RemoteSyncTelemetry()
     try:
         return RemoteSyncTelemetry(**json.loads(path.read_text()))
-    except Exception:
+    except (OSError, ValueError):
         return RemoteSyncTelemetry()
 
 

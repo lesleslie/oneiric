@@ -15,7 +15,7 @@ if TYPE_CHECKING:  # pragma: no cover
 
 try:  # pragma: no cover - optional dependency import
     import httpx
-except Exception:  # pragma: no cover - optional dependency import
+except ImportError:  # pragma: no cover - optional dependency import
     httpx: Any = None
 
 
@@ -114,7 +114,7 @@ class NetdataMonitoringAdapter:
         try:
             response = await self._client.get("/api/v1/info")
             return response.status_code < 400
-        except Exception:  # pragma: no cover - network error path
+        except OSError:  # pragma: no cover - network error path
             return False
 
     async def cleanup(self) -> None:
@@ -139,7 +139,7 @@ class NetdataMonitoringAdapter:
                 await self._collect_oneiric_metrics()
             except asyncio.CancelledError:
                 break
-            except Exception as e:  # pragma: no cover - error handling
+            except (OSError, RuntimeError) as e:  # pragma: no cover - error handling
                 self._logger.warning(
                     "metrics-collection-error",
                     error=str(e),
@@ -152,7 +152,7 @@ class NetdataMonitoringAdapter:
 
         try:
             self._logger.debug("collecting-oneiric-metrics")
-        except Exception as e:  # pragma: no cover - error handling
+        except (OSError, RuntimeError) as e:  # pragma: no cover - error handling
             self._logger.warning("oneiric-metrics-collection-error", error=str(e))
 
     async def send_custom_metric(
@@ -170,7 +170,7 @@ class NetdataMonitoringAdapter:
 
             response = await self._client.post("/api/v1/data", json=payload)
             return response.status_code < 400
-        except Exception as e:  # pragma: no cover - error handling
+        except OSError as e:  # pragma: no cover - error handling
             self._logger.warning(
                 "custom-metric-send-error",
                 chart_name=chart_name,

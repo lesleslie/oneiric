@@ -568,7 +568,7 @@ class SecretsHook:
         return (override or self._default_cache_key or "default").lower()
 
 
-def _env_overrides(project_name: str = "oneiric") -> dict[str, Any]:  # noqa: C901
+def _env_overrides(project_name: str = "oneiric") -> dict[str, Any]:
     """Generate environment variable overrides for a project.
 
     Environment variables should be formatted as:

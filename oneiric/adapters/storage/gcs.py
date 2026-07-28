@@ -79,7 +79,7 @@ class GCSStorageAdapter:
         try:
             await asyncio.to_thread(bucket.exists)
             return True
-        except Exception as exc:  # pragma: no cover - network errors
+        except OSError as exc:  # pragma: no cover - network errors
             self._logger.warning("adapter-health-error", error=str(exc))
             return False
 

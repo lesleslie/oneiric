@@ -5,7 +5,7 @@ import os
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 from oneiric import plugins
 from oneiric.adapters import AdapterBridge
@@ -188,7 +188,7 @@ class RuntimeOrchestrator:
             self.workflow_bridge.refresh_dags()
         return result
 
-    async def start(  # noqa: C901
+    async def start(
         self,
         *,
         manifest_url: str | None = None,
@@ -200,7 +200,7 @@ class RuntimeOrchestrator:
                 await watcher.start()
         try:
             await self.secrets.prefetch()
-        except Exception as exc:  # pragma: no cover - defensive log
+        except (OSError, RuntimeError) as exc:  # pragma: no cover - defensive log
             logger.warning("secrets-prefetch-failed", error=str(exc))
         if self._supervisor:
             await self._supervisor.start()
@@ -251,10 +251,10 @@ class RuntimeOrchestrator:
             try:
                 await self.secrets.rotate(include_provider_cache=True)
                 logger.info("secrets-rotation-complete", interval=interval)
-            except Exception as exc:  # pragma: no cover - background loop
+            except (OSError, RuntimeError) as exc:  # pragma: no cover - background loop
                 logger.warning("secrets-rotation-failed", error=str(exc))
 
-    async def __aenter__(self) -> RuntimeOrchestrator:
+    async def __aenter__(self) -> Self:
         await self.start()
         return self
 
@@ -270,7 +270,7 @@ class RuntimeOrchestrator:
             await asyncio.sleep(interval)
             try:
                 await self.sync_remote(manifest_url=manifest_url)
-            except Exception as exc:  # pragma: no cover - logged upstream
+            except (OSError, RuntimeError) as exc:  # pragma: no cover - logged upstream
                 logger.error(
                     "remote-refresh-error",
                     url=manifest_url,

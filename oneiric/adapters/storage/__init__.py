@@ -4,12 +4,12 @@ from .local import LocalStorageAdapter, LocalStorageSettings
 from .s3 import S3StorageAdapter, S3StorageSettings
 
 __all__ = [
+    "AzureBlobStorageAdapter",
+    "AzureBlobStorageSettings",
+    "GCSStorageAdapter",
+    "GCSStorageSettings",
     "LocalStorageAdapter",
     "LocalStorageSettings",
     "S3StorageAdapter",
     "S3StorageSettings",
-    "GCSStorageAdapter",
-    "GCSStorageSettings",
-    "AzureBlobStorageAdapter",
-    "AzureBlobStorageSettings",
 ]

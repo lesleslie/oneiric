@@ -90,7 +90,10 @@ class DynamoDBAdapter(NoSQLAdapterBase):
                 if loader:
                     await loader()
             return True
-        except Exception as exc:  # pragma: no cover - network/runtime errors
+        except (
+            OSError,
+            RuntimeError,
+        ) as exc:  # pragma: no cover - network/runtime errors
             self._logger.warning("dynamodb-health-check-failed", error=str(exc))
             return False
 

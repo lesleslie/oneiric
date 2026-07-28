@@ -130,7 +130,7 @@ class WorkflowNotifySettings(BaseModel):
     )
 
 
-class WorkflowNotifyAction:  # noqa: C901
+class WorkflowNotifyAction:
     metadata = ActionMetadata(
         key="workflow.notify",
         provider="builtin-workflow-notify",

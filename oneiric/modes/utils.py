@@ -147,18 +147,21 @@ def validate_mode_requirements(
     config = mode.get_config()
 
     # Validate remote settings for standard mode
-    if config.remote_enabled and config.signature_required:
-        if not settings.remote.manifest_url:
-            # Only warn if remote is enabled but no URL is provided
-            # This is not necessarily an error, as manifest can be provided via CLI
-            pass
+    if (
+        config.remote_enabled
+        and config.signature_required
+        and not settings.remote.manifest_url
+    ):
+        # Only warn if remote is enabled but no URL is provided
+        # This is not necessarily an error, as manifest can be provided via CLI
+        pass
 
     # Validate cache directory
     cache_dir = Path(settings.remote.cache_dir)
     if not cache_dir.exists():
         try:
             cache_dir.mkdir(parents=True, exist_ok=True)
-        except Exception as e:
+        except OSError as e:
             errors.append(f"Cannot create cache directory {cache_dir}: {e}")
 
     return errors

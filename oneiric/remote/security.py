@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import binascii
 import json
 import os
 
@@ -34,7 +35,7 @@ def load_trusted_public_keys() -> list[Ed25519PublicKey]:
             key_bytes = base64.b64decode(key_b64)
             public_key = Ed25519PublicKey.from_public_bytes(key_bytes)
             keys.append(public_key)
-        except Exception as exc:
+        except (ValueError, TypeError, binascii.Error) as exc:
             logger.warning(
                 "invalid-public-key",
                 key_b64_prefix=key_b64[:16],
@@ -65,7 +66,7 @@ def verify_manifest_signature(
 
     try:
         signature_bytes = base64.b64decode(signature_b64)
-    except Exception as exc:
+    except (ValueError, TypeError, binascii.Error) as exc:
         return False, f"Invalid base64 signature: {exc}"
 
     errors = []
@@ -81,7 +82,7 @@ def verify_manifest_signature(
         except InvalidSignature:
             errors.append(f"key_{i}: signature mismatch")
             continue
-        except Exception as exc:
+        except (ValueError, TypeError) as exc:
             errors.append(f"key_{i}: {type(exc).__name__}: {exc}")
             continue
 

@@ -77,7 +77,7 @@ class SQLiteDatabaseAdapter:
             cursor = await conn.execute("SELECT 1;")
             await cursor.close()
             return True
-        except Exception as exc:  # pragma: no cover - disk errors
+        except (OSError, RuntimeError) as exc:  # pragma: no cover - disk errors
             self._logger.warning("adapter-health-error", error=str(exc))
             return False
 

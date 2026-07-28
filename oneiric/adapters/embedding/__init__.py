@@ -18,14 +18,14 @@ from oneiric.adapters.embedding.openai import (
 __all__ = [
     "EmbeddingBase",
     "EmbeddingBaseSettings",
+    "EmbeddingBatch",
+    "EmbeddingMatrix",
     "EmbeddingModel",
     "EmbeddingResult",
-    "EmbeddingBatch",
     "EmbeddingUtils",
     "EmbeddingVector",
-    "EmbeddingMatrix",
-    "PoolingStrategy",
-    "VectorNormalization",
     "OpenAIEmbeddingAdapter",
     "OpenAIEmbeddingSettings",
+    "PoolingStrategy",
+    "VectorNormalization",
 ]

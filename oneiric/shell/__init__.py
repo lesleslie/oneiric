@@ -17,21 +17,21 @@ from .formatters import (
 )
 
 __all__ = [
-    # Oneiric-specific
-    "OneiricShell",
     # Base classes
     "AdminShell",
-    "ShellConfig",
+    "BaseLogFormatter",
+    "BaseProgressFormatter",
     # Formatters
     "BaseTableFormatter",
-    "BaseProgressFormatter",
-    "BaseLogFormatter",
-    "TableColumn",
+    "EnvironmentInfo",
+    # Oneiric-specific
+    "OneiricShell",
+    "SessionEndEvent",
     # Event models
     "SessionStartEvent",
-    "SessionEndEvent",
+    "ShellConfig",
+    "TableColumn",
     "UserInfo",
-    "EnvironmentInfo",
-    "get_session_start_event_schema",
     "get_session_end_event_schema",
+    "get_session_start_event_schema",
 ]

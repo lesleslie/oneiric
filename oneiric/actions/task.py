@@ -117,7 +117,7 @@ class _ScheduleRule:
     tags: dict[str, str]
 
 
-class _CronExpression:  # noqa: C901
+class _CronExpression:
     _MAX_SEARCH_MINUTES = 525_600
 
     def __init__(self, expression: str) -> None:
@@ -155,9 +155,7 @@ class _CronExpression:  # noqa: C901
             return dom_match or dow_match
         if self._days is not None and not dom_match:
             return False
-        if self._weekdays is not None and not dow_match:
-            return False
-        return True
+        return not (self._weekdays is not None and not dow_match)
 
     def _match_field(self, values: list[int] | None, candidate: int) -> bool:
         return values is None or candidate in values
@@ -444,9 +442,7 @@ class TaskScheduleAction:
             return True
         if state["runs_remaining"] is not None and state["runs_remaining"] <= 0:
             return True
-        if state["limit"] == 0 and state["next_run"] is not None:
-            return True
-        return False
+        return bool(state["limit"] == 0 and state["next_run"] is not None)
 
     def _build_rule_dict(self, rule: _ScheduleRule) -> dict[str, Any]:
         return {

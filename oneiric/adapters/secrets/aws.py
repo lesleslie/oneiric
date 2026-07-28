@@ -103,7 +103,10 @@ class AWSSecretManagerAdapter:
         try:
             value = await self.get_secret(probe, allow_missing=True)
             return value is not None
-        except Exception as exc:  # pragma: no cover - external failure path
+        except (
+            OSError,
+            RuntimeError,
+        ) as exc:  # pragma: no cover - external failure path
             self._logger.warning("adapter-health-error", error=str(exc))
             return False
 

@@ -5,7 +5,7 @@ import base64
 import json
 import pickle
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, ClassVar, Literal
 
 import yaml
 from pydantic import BaseModel, Field
@@ -49,7 +49,7 @@ class SerializationAction:
         settings_model=SerializationActionSettings,
     )
 
-    _TEXT_FORMATS = {"json", "yaml"}
+    _TEXT_FORMATS: ClassVar[frozenset[str]] = frozenset({"json", "yaml"})
 
     def __init__(self, settings: SerializationActionSettings | None = None) -> None:
         self._settings = settings or SerializationActionSettings()
@@ -75,7 +75,7 @@ class SerializationAction:
             return await self._decode(fmt, payload)
         raise LifecycleError("serialization-invalid-mode")
 
-    async def _encode(self, fmt: str, payload: dict) -> dict:  # noqa: C901
+    async def _encode(self, fmt: str, payload: dict) -> dict:
         value = payload.get("value")
         if value is None and "data" in payload:
             value = payload["data"]

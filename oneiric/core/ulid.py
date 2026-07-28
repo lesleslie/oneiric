@@ -144,22 +144,22 @@ except ImportError:
 
 
 __all__ = [
-    "generate_config_id",
-    "is_config_ulid",
-    "extract_timestamp",
-    "parse_config_ulid",
-    "ConfigTraceability",
-    "generate_with_retry",  # NEW
     "CollisionError",  # NEW
-    "get_collision_stats",  # NEW
-    "register_reference",  # NEW from ulid_resolution
-    "resolve_ulid",  # NEW from ulid_resolution
+    "ConfigTraceability",
+    "SystemReference",  # NEW from ulid_resolution
+    "export_registry",  # NEW from ulid_resolution
+    "extract_timestamp",
     "find_references_by_system",  # NEW from ulid_resolution
     "find_related_ulids",  # NEW from ulid_resolution
+    "generate_config_id",
+    "generate_with_retry",  # NEW
+    "get_collision_stats",  # NEW
     "get_cross_system_trace",  # NEW from ulid_resolution
-    "export_registry",  # NEW from ulid_resolution
     "get_registry_stats",  # NEW from ulid_resolution
-    "SystemReference",  # NEW from ulid_resolution
+    "is_config_ulid",
+    "parse_config_ulid",
+    "register_reference",  # NEW from ulid_resolution
+    "resolve_ulid",  # NEW from ulid_resolution
 ]
 
 
@@ -248,11 +248,11 @@ class ConfigTraceability:
     """
 
     __slots__ = (
-        "_config_id",
-        "_source",
         "_change_type",
-        "_timestamp_ms",
+        "_config_id",
         "_metadata",
+        "_source",
+        "_timestamp_ms",
     )
 
     def __init__(

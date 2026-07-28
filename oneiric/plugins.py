@@ -86,7 +86,12 @@ def discover_metadata(group: str) -> Iterable[object]:
     for factory in load_callables(group):
         try:
             yield factory()
-        except Exception as exc:  # pragma: no cover - logging guard
+        except (
+            ImportError,
+            OSError,
+            ValueError,
+            TypeError,
+        ) as exc:  # pragma: no cover - logging guard
             logger.warning(
                 "plugin-metadata-failed",
                 group=group,
@@ -115,8 +120,8 @@ def register_entrypoint_plugins(
         return PluginRegistrationReport.empty()
 
     report = _process_plugin_groups(resolver, groups)
-    setattr(resolver, "_oneiric_plugins_loaded", True)
-    setattr(resolver, "_oneiric_plugin_report", report)
+    resolver._oneiric_plugins_loaded = True  # ty: ignore[unresolved-attribute]
+    resolver._oneiric_plugin_report = report  # ty: ignore[unresolved-attribute]
 
     if report.registered:
         logger.info(
@@ -187,7 +192,12 @@ def _invoke_factory(
     try:
         payload = result.factory()
         return (payload, False)
-    except Exception as exc:  # pragma: no cover - diagnostic only
+    except (
+        ImportError,
+        OSError,
+        ValueError,
+        TypeError,
+    ) as exc:  # pragma: no cover - diagnostic only
         logger.warning(
             "plugin-metadata-failed",
             group=group,
@@ -260,7 +270,12 @@ def _load_entry_point_factories(group: str) -> list[_FactoryLoadResult]:
         result = _FactoryLoadResult(group=group, entry_point=entry_point.name)
         try:
             loaded = entry_point.load()
-        except Exception as exc:  # pragma: no cover - logging guard
+        except (
+            ImportError,
+            OSError,
+            ValueError,
+            TypeError,
+        ) as exc:  # pragma: no cover - logging guard
             logger.warning(
                 "plugin-load-failed",
                 group=group,

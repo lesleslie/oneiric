@@ -8,8 +8,8 @@ __all__ = [
     "LogfireMonitoringSettings",
     "NetdataMonitoringAdapter",
     "NetdataMonitoringSettings",
-    "SentryMonitoringAdapter",
-    "SentryMonitoringSettings",
     "OTLPObservabilityAdapter",
     "OTLPObservabilitySettings",
+    "SentryMonitoringAdapter",
+    "SentryMonitoringSettings",
 ]

@@ -34,7 +34,7 @@ def load_runtime_telemetry(path: str | Path) -> RuntimeObservabilitySnapshot:
         return RuntimeObservabilitySnapshot()
     try:
         data = json.loads(file.read_text())
-    except Exception:
+    except (OSError, ValueError):
         return RuntimeObservabilitySnapshot()
     snapshot = RuntimeObservabilitySnapshot()
     if isinstance(data, Mapping):
@@ -106,7 +106,7 @@ class RuntimeTelemetryRecorder:
             "recorded_at": _timestamp(),
         }
 
-    def _workflow_payload(  # noqa: C901
+    def _workflow_payload(
         self,
         workflow_key: str,
         dag_spec: Mapping[str, Any],

@@ -86,7 +86,7 @@ class DuckDBPGQAdapter:
         try:
             rows = await self.query("SELECT 1 AS ok")
             return bool(rows and rows[0].get("ok") == 1)
-        except Exception as exc:  # pragma: no cover - defensive
+        except OSError as exc:  # pragma: no cover - defensive
             self._logger.warning("duckdb-pgq-health-failed", error=str(exc))
             return False
 

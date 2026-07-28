@@ -47,7 +47,7 @@ class SystemReference:
         # Extract timestamp from ULID for time-based queries
         try:
             self.timestamp = get_timestamp(ulid)
-        except Exception:
+        except (ValueError, TypeError):
             logger.warning(f"Failed to parse ULID timestamp: {ulid}")
             self.timestamp = 0
 
@@ -200,11 +200,11 @@ def get_registry_stats() -> dict[str, Any]:
 # Export public API
 __all__ = [
     "SystemReference",
-    "register_reference",
-    "resolve_ulid",
+    "export_registry",
     "find_references_by_system",
     "find_related_ulids",
     "get_cross_system_trace",
-    "export_registry",
     "get_registry_stats",
+    "register_reference",
+    "resolve_ulid",
 ]

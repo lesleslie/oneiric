@@ -96,7 +96,7 @@ class FTPFileTransferAdapter:
         try:
             await client.list(self._settings.root_path or ".")
             return True
-        except Exception as exc:  # pragma: no cover - network path
+        except OSError as exc:  # pragma: no cover - network path
             self._logger.warning("ftp-health-failed", error=str(exc))
             return False
 

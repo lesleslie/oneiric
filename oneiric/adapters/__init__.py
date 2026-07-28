@@ -6,11 +6,11 @@ from .watcher import AdapterConfigWatcher
 
 __all__ = [
     "AdapterBridge",
+    "AdapterConfigWatcher",
     "AdapterHandle",
     "AdapterMetadata",
-    "register_adapter_metadata",
-    "AdapterConfigWatcher",
     "TrackedSettings",
-    "register_builtin_adapters",
     "builtin_adapter_metadata",
+    "register_adapter_metadata",
+    "register_builtin_adapters",
 ]

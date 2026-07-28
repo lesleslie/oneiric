@@ -88,7 +88,7 @@ class MySQLDatabaseAdapter:
             finally:
                 pool.release(conn)
             return True
-        except Exception as exc:  # pragma: no cover - network
+        except (OSError, RuntimeError) as exc:  # pragma: no cover - network
             self._logger.warning("adapter-health-error", error=str(exc))
             return False
 

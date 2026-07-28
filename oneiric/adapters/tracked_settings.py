@@ -26,7 +26,7 @@ import os
 from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Protocol, Self
 
 import httpx
 from pydantic import BaseModel
@@ -224,7 +224,7 @@ class TrackedSettings:
 
     # -- HTTP client lifecycle -----------------------------------------------
 
-    async def __aenter__(self) -> TrackedSettings:
+    async def __aenter__(self) -> Self:
         await self._ensure_client()
         return self
 
@@ -257,7 +257,7 @@ class TrackedSettings:
                     "timestamp": datetime.now(UTC).isoformat(),
                 }
                 await self._post_json("/tools/store_config_snapshot", payload)
-            except Exception as exc:  # pragma: no cover - defensive
+            except httpx.HTTPError as exc:  # pragma: no cover - defensive
                 logger.warning(
                     "tracked-settings-snapshot-push-failed",
                     adapter_id=self._adapter_id,
@@ -271,7 +271,7 @@ class TrackedSettings:
         try:
             response = await client.post(path, json=payload)
             response.raise_for_status()
-        except Exception as exc:
+        except httpx.HTTPError as exc:
             kind = _EVENT_SNAPSHOT if "snapshot" in path else _EVENT_CHANGE_BATCH
             self._capture_fallback(kind, payload)
             logger.warning(
@@ -289,7 +289,7 @@ class TrackedSettings:
                 kind=kind,
                 payload=payload,
             )
-        except Exception as exc:  # pragma: no cover - filesystem failure
+        except OSError as exc:  # pragma: no cover - filesystem failure
             logger.warning(
                 "tracked-settings-fallback-write-failed",
                 adapter_id=self._adapter_id,
@@ -311,11 +311,8 @@ class TrackedSettings:
             self._flush_task = asyncio.create_task(self._debounced_flush())
 
     async def _debounced_flush(self) -> None:
-        try:
-            await asyncio.sleep(self._debounce_seconds)
-            await self.flush_pending()
-        except asyncio.CancelledError:  # pragma: no cover - race
-            raise
+        await asyncio.sleep(self._debounce_seconds)
+        await self.flush_pending()
 
     async def flush_pending(self) -> None:
         """Push any pending change events as a single batched POST."""
@@ -337,7 +334,7 @@ class TrackedSettings:
             }
             try:
                 await self._post_json("/tools/store_config_events", payload)
-            except Exception as exc:  # pragma: no cover - defensive
+            except httpx.HTTPError as exc:  # pragma: no cover - defensive
                 logger.warning(
                     "tracked-settings-change-batch-failed",
                     adapter_id=self._adapter_id,

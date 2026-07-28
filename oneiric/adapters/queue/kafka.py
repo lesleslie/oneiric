@@ -103,7 +103,7 @@ class KafkaQueueAdapter:
                 if partitions is None:
                     raise RuntimeError("topic-not-found")
             return True
-        except Exception as exc:  # pragma: no cover - network
+        except (OSError, RuntimeError) as exc:  # pragma: no cover - network
             self._logger.warning("kafka-health-check-failed", error=str(exc))
             return False
 

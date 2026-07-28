@@ -80,7 +80,7 @@ class AioHTTPAdapter:
         try:
             response = await self.get(self._settings.healthcheck_path)
             return response.status < 500
-        except Exception as exc:  # pragma: no cover - defensive log path
+        except (OSError, RuntimeError) as exc:  # pragma: no cover - defensive log path
             self._logger.warning("adapter-health-failed", error=str(exc))
             return False
 

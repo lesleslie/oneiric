@@ -87,12 +87,10 @@ class EventFilter:
             return False
         if self.equals is not _UNSET and value != self.equals:
             return False
-        if self.any_of is not None and value not in self.any_of:
-            return False
-        return True
+        return not (self.any_of is not None and value not in self.any_of)
 
 
-def parse_event_filters(  # noqa: C901
+def parse_event_filters(
     entries: Iterable[Mapping[str, Any]] | None,
 ) -> tuple[EventFilter, ...]:
     if not entries:
@@ -155,7 +153,7 @@ class HandlerResult:
 class EventDispatcher:
     def __init__(self, handlers: Iterable[EventHandler] | None = None) -> None:
         self._handlers: list[EventHandler] = sorted(
-            list(handlers or []), key=lambda handler: handler.priority, reverse=True
+            handlers or [], key=lambda handler: handler.priority, reverse=True
         )
         self._logger = get_logger("runtime.event_dispatcher")
 
@@ -185,7 +183,7 @@ class EventDispatcher:
 
         return results
 
-    async def _run_handler(  # noqa: C901
+    async def _run_handler(
         self,
         handler: EventHandler,
         envelope: EventEnvelope,
@@ -203,8 +201,7 @@ class EventDispatcher:
         )
         jitter = float(policy.get("jitter") or policy.get("backoff_jitter") or 0.25)
         max_attempts = max(max_attempts, 1)
-        if max_delay < base_delay:
-            max_delay = base_delay
+        max_delay = max(max_delay, base_delay)
 
         async def _execute():
             nonlocal attempts
@@ -246,7 +243,12 @@ class EventDispatcher:
                     )
                 else:
                     value = await _execute()
-            except Exception as exc:  # pragma: no cover - protective log surface
+            except (
+                OSError,
+                RuntimeError,
+                ValueError,
+                TypeError,
+            ) as exc:  # pragma: no cover - protective log surface
                 duration = time.perf_counter() - start
                 attempts = max(attempts, 1)
                 span.record_exception(exc)

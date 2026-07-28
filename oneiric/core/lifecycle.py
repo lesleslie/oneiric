@@ -212,7 +212,7 @@ class LifecycleManager:
             raise LifecycleError(f"No candidate registered for {domain}:{key}")
         return candidate
 
-    async def _apply_candidate(self, candidate: Candidate, *, force: bool) -> Any:  # noqa: C901
+    async def _apply_candidate(self, candidate: Candidate, *, force: bool) -> Any:
         log_context = {
             "domain": candidate.domain,
             "key": candidate.key,
@@ -281,7 +281,10 @@ class LifecycleManager:
                 if instance is not None and instance is not previous:
                     try:
                         await self._cleanup_instance(instance)
-                    except Exception as cleanup_exc:  # pragma: no cover - defensive log
+                    except (
+                        OSError,
+                        RuntimeError,
+                    ) as cleanup_exc:  # pragma: no cover - defensive log
                         self._logger.warning(
                             "swap-cleanup-failed",
                             domain=candidate.domain,
@@ -444,7 +447,7 @@ class LifecycleManager:
             return
         try:
             data = json.loads(self._status_snapshot_path.read_text())
-        except Exception as exc:  # pragma: no cover - log diagnostic
+        except (OSError, ValueError) as exc:  # pragma: no cover - log diagnostic
             self._logger.warning(
                 "lifecycle-status-load-failed",
                 path=str(self._status_snapshot_path),

@@ -107,7 +107,7 @@ class SchedulerHTTPServer:
     async def _handle_workflow_task(self, request: web.Request):
         try:
             payload = await request.json()
-        except Exception:
+        except ValueError:
             return web.json_response(
                 {"error": "invalid-json"}, status=400, dumps=_safe_dumps
             )
@@ -119,7 +119,10 @@ class SchedulerHTTPServer:
             result = await self._processor.process(payload)
         except ValueError as exc:
             return web.json_response({"error": str(exc)}, status=400, dumps=_safe_dumps)
-        except Exception as exc:  # pragma: no cover - runtime failures logged
+        except (
+            OSError,
+            RuntimeError,
+        ) as exc:  # pragma: no cover - runtime failures logged
             self._logger.error(
                 "scheduler-http-error",
                 error=str(exc),

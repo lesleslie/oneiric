@@ -3,15 +3,12 @@ from __future__ import annotations
 from abc import abstractmethod
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 from oneiric.core.logging import get_logger
-
-if TYPE_CHECKING:
-    pass
 
 
 class VectorSearchResult(BaseModel):

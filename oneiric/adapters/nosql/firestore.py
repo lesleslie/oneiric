@@ -72,7 +72,10 @@ class FirestoreAdapter(NoSQLAdapterBase):
             query = collection.limit(1)
             await query.get()
             return True
-        except Exception as exc:  # pragma: no cover - network/runtime errors
+        except (
+            OSError,
+            RuntimeError,
+        ) as exc:  # pragma: no cover - network/runtime errors
             self._logger.warning("firestore-health-check-failed", error=str(exc))
             return False
 

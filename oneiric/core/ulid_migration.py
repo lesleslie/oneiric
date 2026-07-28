@@ -233,9 +233,9 @@ def estimate_migration_time(
 # Export public API
 __all__ = [
     "MigrationPlan",
-    "detect_id_type",
-    "generate_migration_map",
     "create_expand_contract_migration",
-    "validate_migration_integrity",
+    "detect_id_type",
     "estimate_migration_time",
+    "generate_migration_map",
+    "validate_migration_integrity",
 ]

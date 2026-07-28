@@ -246,7 +246,7 @@ class LavinMQQueueAdapter:
                 if callable(declare):
                     await declare(passive=True)
                 return True
-            except Exception as exc:
+            except (OSError, RuntimeError) as exc:
                 self._logger.warning("lavinmq-amqp-health-check-failed", error=str(exc))
 
         if Protocol.MQTT in self._active_protocols:
@@ -579,7 +579,7 @@ class LavinMQQueueAdapter:
                             source_protocol=Protocol.MQTT,
                         )
                     )
-        except Exception as exc:
+        except (OSError, RuntimeError) as exc:
             self._logger.warning("lavinmq-mqtt-subscriber-error", error=str(exc))
             # Attempt reconnection after delay
             await asyncio.sleep(self._settings.reconnect_interval)

@@ -95,7 +95,7 @@ class PgvectorAdapter(VectorBase[PgvectorSettings]):
             async with self._connection() as conn:
                 await conn.execute("SELECT 1;")
             return True
-        except Exception as exc:  # pragma: no cover - defensive
+        except (OSError, RuntimeError) as exc:  # pragma: no cover - defensive
             self._logger.warning("pgvector-health-failed", error=str(exc))
             return False
 
@@ -119,8 +119,10 @@ class PgvectorAdapter(VectorBase[PgvectorSettings]):
         operator = self._distance_operator()
         params: list[Any] = []
         sql_parts = [
-            f"SELECT id, metadata, {'embedding' if include_vectors else 'NULL'} AS embedding, "
-            f"embedding {operator} $1::vector AS distance",
+            (
+                f"SELECT id, metadata, {'embedding' if include_vectors else 'NULL'} AS embedding, "
+                f"embedding {operator} $1::vector AS distance"
+            ),
             f"FROM {table}",
         ]
         params.append(query_vector)

@@ -133,15 +133,18 @@ class RedisStreamsQueueAdapter(EnsureClientMixin):
         self._logger.info("adapter-cleanup-complete", adapter="redis-streams-queue")
 
     async def _close_client_connection(self) -> None:
-        if close := getattr(self._client, "close", None):
-            if inspect.isawaitable(maybe := close()):
-                await maybe
+        if (close := getattr(self._client, "close", None)) and inspect.isawaitable(
+            maybe := close()
+        ):
+            await maybe
 
     async def _disconnect_connection_pool(self) -> None:
-        if pool := getattr(self._client, "connection_pool", None):
-            if disconnect := getattr(pool, "disconnect", None):
-                if inspect.isawaitable(maybe := disconnect()):
-                    await maybe
+        if (
+            (pool := getattr(self._client, "connection_pool", None))
+            and (disconnect := getattr(pool, "disconnect", None))
+            and inspect.isawaitable(maybe := disconnect())
+        ):
+            await maybe
 
     async def enqueue(self, data: Mapping[str, Any]) -> str:
         client = self._ensure_client("redis-streams-client-not-initialized")

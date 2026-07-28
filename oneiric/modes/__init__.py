@@ -31,17 +31,17 @@ from oneiric.modes.utils import (
 )
 
 __all__ = [
-    "OperationMode",
     "LiteMode",
+    "OperationMode",
     "StandardMode",
+    "apply_mode_to_settings",
     "create_mode",
     "get_mode",
-    "register_mode",
-    "apply_mode_to_settings",
     "get_mode_from_environment",
     "get_mode_startup_info",
     "load_mode_config_file",
     "print_mode_startup_info",
+    "register_mode",
     "validate_mode_requirements",
 ]
 

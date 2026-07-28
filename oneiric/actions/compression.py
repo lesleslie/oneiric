@@ -6,7 +6,7 @@ import hashlib
 import json
 import lzma
 import zlib
-from typing import Literal
+from typing import Any, ClassVar, Literal
 
 from pydantic import BaseModel, Field
 
@@ -142,7 +142,7 @@ class HashAction:
         settings_model=HashActionSettings,
     )
 
-    _ALGORITHMS = {
+    _ALGORITHMS: ClassVar[dict[str, Any]] = {
         "sha256": hashlib.sha256,
         "sha512": hashlib.sha512,
         "blake2b": hashlib.blake2b,

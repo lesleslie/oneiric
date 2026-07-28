@@ -17,7 +17,7 @@ try:  # pragma: no cover - optional dependency import
     import sentry_sdk as _sentry_sdk_module  # type: ignore[import-untyped]
 
     sentry_sdk: Any = _sentry_sdk_module
-except Exception:  # pragma: no cover - optional dependency import
+except ImportError:  # pragma: no cover - optional dependency import
     sentry_sdk: Any = None
 
 

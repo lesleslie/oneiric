@@ -96,7 +96,7 @@ class RabbitMQQueueAdapter:
             if callable(declare):
                 await declare(passive=True)
             return True
-        except Exception as exc:  # pragma: no cover - network
+        except (OSError, RuntimeError) as exc:  # pragma: no cover - network
             self._logger.warning("rabbitmq-health-check-failed", error=str(exc))
             return False
 

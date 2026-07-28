@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import time
 from dataclasses import dataclass
@@ -145,8 +146,11 @@ class RuntimeCacheManager:
             for entry in self.cache.values():
                 cache_data.append(entry.to_dict())
 
-            with open(self.cache_file, "w", encoding="utf-8") as f:
-                json.dump(cache_data, f, indent=2)
+            def _write_cache() -> None:
+                with open(self.cache_file, "w", encoding="utf-8") as f:
+                    json.dump(cache_data, f, indent=2)
+
+            await asyncio.to_thread(_write_cache)
 
             logger.debug(f"Cache saved to {self.cache_file}")
         except OSError as e:
@@ -184,4 +188,4 @@ class RuntimeCacheManager:
         self.initialized = False
 
 
-__all__ = ["RuntimeCacheManager", "CacheEntry"]
+__all__ = ["CacheEntry", "RuntimeCacheManager"]

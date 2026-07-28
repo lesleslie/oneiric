@@ -71,7 +71,7 @@ class ServiceSupervisor:
         with self._lock:
             return {domain: state.copy() for domain, state in self._state.items()}
 
-    def add_listener(  # noqa: C901
+    def add_listener(
         self,
         callback: ListenerCallback,
         *,
@@ -108,7 +108,7 @@ class ServiceSupervisor:
             return DomainActivity()
         return state
 
-    def _calculate_deltas(  # noqa: C901
+    def _calculate_deltas(
         self, fresh: dict[str, dict[str, DomainActivity]]
     ) -> list[tuple[str, str, DomainActivity]]:
         deltas: list[tuple[str, str, DomainActivity]] = []
@@ -151,8 +151,8 @@ class ServiceSupervisor:
         try:
             result = callback(domain, key, state)
             if inspect.isawaitable(result):
-                asyncio.create_task(result)  # ty: ignore[invalid-argument-type]  # noqa: ERA001
-        except Exception as exc:  # pragma: no cover - defensive log
+                asyncio.create_task(result)  # ty: ignore[invalid-argument-type]
+        except (OSError, RuntimeError) as exc:  # pragma: no cover - defensive log
             logger.warning(
                 "supervisor-listener-error",
                 domain=domain,

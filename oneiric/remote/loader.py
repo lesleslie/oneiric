@@ -127,7 +127,7 @@ class ArtifactManager:
 
         return await self._fetch_remote_file(uri, destination, sha256, headers)
 
-    def _validate_uri(self, uri: str) -> None:  # noqa: C901
+    def _validate_uri(self, uri: str) -> None:
         if not uri:
             raise ValueError("URI cannot be empty")
         if uri.startswith("file://") and not self.allow_file_uris:
@@ -139,9 +139,10 @@ class ArtifactManager:
         if uri.startswith("/") and not uri.startswith("file://"):
             raise ValueError(f"Path traversal attempt detected in URI: {uri}")
 
-        if not uri.startswith(("http://", "https://", "file://")):
-            if "/" in uri or "\\" in uri:
-                raise ValueError(f"Path traversal attempt detected in URI: {uri}")
+        if not uri.startswith(("http://", "https://", "file://")) and (
+            "/" in uri or "\\" in uri
+        ):
+            raise ValueError(f"Path traversal attempt detected in URI: {uri}")
 
     def _get_safe_filename(self, uri: str, sha256: str | None) -> str:
         if sha256:
@@ -206,21 +207,23 @@ class ArtifactManager:
     async def _download_to_temp_file(self, uri: str, headers: dict[str, str]) -> Path:
         tmp_file: Path | None = None
         try:
-            async with httpx.AsyncClient(
-                verify=self.verify_tls,
-                timeout=self.timeout,
-                follow_redirects=True,
-            ) as client:
-                async with client.stream("GET", uri, headers=headers) as response:
-                    response.raise_for_status()
-                    with tempfile.NamedTemporaryFile(
-                        dir=self.cache_dir,
-                        prefix="dl-",
-                        delete=False,
-                    ) as fh:
-                        tmp_file = Path(fh.name)
-                        async for chunk in response.aiter_bytes():
-                            fh.write(chunk)
+            async with (
+                httpx.AsyncClient(
+                    verify=self.verify_tls,
+                    timeout=self.timeout,
+                    follow_redirects=True,
+                ) as client,
+                client.stream("GET", uri, headers=headers) as response,
+            ):
+                response.raise_for_status()
+                with tempfile.NamedTemporaryFile(
+                    dir=self.cache_dir,
+                    prefix="dl-",
+                    delete=False,
+                ) as fh:
+                    tmp_file = Path(fh.name)
+                    async for chunk in response.aiter_bytes():
+                        fh.write(chunk)
         except Exception:
             if tmp_file is not None:
                 tmp_file.unlink(missing_ok=True)
@@ -320,7 +323,7 @@ async def remote_sync_loop(
                 retry_after=exc.retry_after,
             )
             continue
-        except Exception as exc:  # pragma: no cover - log and continue
+        except (OSError, RuntimeError) as exc:  # pragma: no cover - log and continue
             error = str(exc)
             logger.error(
                 "remote-refresh-error",
@@ -395,8 +398,10 @@ async def _run_sync(
             entry_uri = entry.uri
             entry_sha = entry.sha256
 
-            async def _fetch_artifact() -> Path:
-                return await artifact_manager.fetch(entry_uri, entry_sha, headers)
+            async def _fetch_artifact(
+                _uri: str = entry_uri, _sha: str | None = entry_sha
+            ) -> Path:
+                return await artifact_manager.fetch(_uri, _sha, headers)
 
             artifact_path = cast(
                 "Path | None",
@@ -497,7 +502,7 @@ def _retry_attributes(url: str, operation: str) -> dict[str, str]:
     return {"domain": "remote", "operation": operation, "host": host}
 
 
-def _parse_manifest(  # noqa: C901
+def _parse_manifest(
     text: str,
     *,
     verify_signature: bool = True,
@@ -508,7 +513,7 @@ def _parse_manifest(  # noqa: C901
     except json.JSONDecodeError:
         data = yaml.safe_load(text)
     if not isinstance(data, dict):
-        raise ValueError("Remote manifest must be a mapping at the top level.")
+        raise TypeError("Remote manifest must be a mapping at the top level.")
 
     policy = signature_policy or RemoteSourceConfig()
 
@@ -541,7 +546,7 @@ def _parse_manifest(  # noqa: C901
     return RemoteManifest(**data)
 
 
-def _extract_signatures(data: dict[str, Any]) -> tuple[list[str], list[str]]:  # noqa: C901
+def _extract_signatures(data: dict[str, Any]) -> tuple[list[str], list[str]]:
     signatures: list[str] = []
     algorithms: list[str] = []
 

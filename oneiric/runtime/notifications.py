@@ -105,7 +105,11 @@ class NotificationRouter:
                     channel=record.get("channel", "workflow"),
                     message=record.get("message", ""),
                 )
-            except Exception as exc:  # pragma: no cover - defensive logging
+            except (
+                KeyError,
+                ValueError,
+                TypeError,
+            ) as exc:  # pragma: no cover - defensive logging
                 self._logger.warning(
                     "notification-title-template-error",
                     template=route.title_template,

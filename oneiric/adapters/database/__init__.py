@@ -4,12 +4,12 @@ from .postgres import PostgresDatabaseAdapter, PostgresDatabaseSettings
 from .sqlite import SQLiteDatabaseAdapter, SQLiteDatabaseSettings
 
 __all__ = [
+    "DuckDBDatabaseAdapter",
+    "DuckDBDatabaseSettings",
+    "MySQLDatabaseAdapter",
+    "MySQLDatabaseSettings",
     "PostgresDatabaseAdapter",
     "PostgresDatabaseSettings",
     "SQLiteDatabaseAdapter",
     "SQLiteDatabaseSettings",
-    "MySQLDatabaseAdapter",
-    "MySQLDatabaseSettings",
-    "DuckDBDatabaseAdapter",
-    "DuckDBDatabaseSettings",
 ]

@@ -70,8 +70,19 @@ class AdapterBridge(DomainBridge):
             capture_adapter_state_metrics(
                 handle.instance, category=handle.key, provider=handle.provider
             )
-        except Exception:  # pragma: no cover - defensive metric sampling
-            pass
+        except (
+            OSError,
+            ValueError,
+            TypeError,
+            KeyError,
+            AttributeError,
+        ) as exc:  # pragma: no cover - defensive metric sampling
+            self._logger.debug(
+                "adapter-metrics-error",
+                error=str(exc),
+                category=handle.key,
+                provider=handle.provider,
+            )
         self._logger.info(
             "adapter-ready",
             category=handle.key,

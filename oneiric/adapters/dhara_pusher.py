@@ -188,7 +188,7 @@ class DharaAdapterPusher:
                 "error": f"HTTP error: {e}",
             }
 
-        except Exception as e:
+        except (ValueError, KeyError, TypeError) as e:
             return {
                 "success": False,
                 "error": str(e),

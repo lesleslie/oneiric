@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import inspect
 import random
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from pydantic import BaseModel, Field, RedisDsn
 
@@ -29,8 +29,6 @@ except ImportError:  # pragma: no cover - exercised when extras missing
 
     _COREDIS_AVAILABLE = False
 
-if TYPE_CHECKING:  # pragma: no cover
-    pass
 
 from oneiric.adapters.metadata import AdapterMetadata
 from oneiric.core.client_mixins import EnsureClientMixin
@@ -82,7 +80,7 @@ class _TrackingCacheImpl(
 # instantiation in adapter init works. Tests that monkeypatch
 # ``oneiric.adapters.cache.redis.TrackingCache`` will substitute their own
 # class here and still be honored (the reference is consulted at call time).
-TrackingCache = _TrackingCacheImpl  # type: ignore[assignment,misc]  # noqa: F811
+TrackingCache = _TrackingCacheImpl  # type: ignore[assignment,misc]
 
 
 class RedisCacheSettings(BaseModel):
@@ -289,7 +287,7 @@ class RedisCacheAdapter(EnsureClientMixin):
     def _namespaced_key(self, key: str) -> str:
         return f"{self._settings.key_prefix}{key}" if self._settings.key_prefix else key
 
-    def _create_client(self) -> Redis:  # noqa: C901
+    def _create_client(self) -> Redis:
         kwargs: dict[str, Any] = {
             "decode_responses": self._settings.decode_responses,
             "stream_timeout": self._settings.socket_timeout,

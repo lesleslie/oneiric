@@ -141,7 +141,7 @@ class AgentDBAdapter(VectorBase):
             client = await self._ensure_client()
             result = await client.call_tool("agentdb_health", {})
             return result.get("status") == "healthy"
-        except Exception as e:
+        except (OSError, RuntimeError, ValueError) as e:
             self._logger.warning("AgentDB health check failed", error=str(e))
             return False
 
@@ -152,7 +152,7 @@ class AgentDBAdapter(VectorBase):
                 self._mcp_client = None
             self._client = None
             self._logger.info("AgentDB adapter cleaned up")
-        except Exception as e:
+        except (OSError, RuntimeError) as e:
             self._logger.warning("Error during AgentDB cleanup", error=str(e))
 
     async def search(
@@ -401,10 +401,7 @@ class AgentDBAdapter(VectorBase):
             collections = result.get("collections", [])
 
             prefix = self._settings.collection_prefix
-            return [
-                col[len(prefix) :] if col.startswith(prefix) else col
-                for col in collections
-            ]
+            return [col.removeprefix(prefix) for col in collections]
 
         except Exception as e:
             self._logger.error("AgentDB list_collections failed", error=str(e))

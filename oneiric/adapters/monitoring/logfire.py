@@ -13,7 +13,7 @@ from oneiric.core.resolution import CandidateSource
 
 try:  # pragma: no cover - optional dependency
     import logfire  # type: ignore[import-untyped]
-except Exception:  # pragma: no cover - optional dependency
+except ImportError:  # pragma: no cover - optional dependency
     logfire: Any = None
 
 

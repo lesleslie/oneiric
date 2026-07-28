@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-from functools import lru_cache
 from typing import Any
 
 import numpy as np
@@ -15,6 +14,10 @@ try:
 except ImportError:
     SENTENCE_TRANSFORMERS_AVAILABLE = False
     SentenceTransformer: Any = None
+
+
+_EMBED_CACHE: dict[tuple[int, str], np.ndarray] = {}
+_EMBED_CACHE_MAX = 1000
 
 
 class EmbeddingService:
@@ -57,10 +60,20 @@ class EmbeddingService:
         model = self._load_model()
         return model.encode(text)
 
-    @lru_cache(maxsize=1000)
     def _embed_cached(self, cache_key: int, text: str) -> np.ndarray:
+        # Module-level cache avoids pinning `self` (B019) and lets instances
+        # share embeddings. Bounded by `_EMBED_CACHE_MAX` to keep memory
+        # predictable.
+        cache_key_tuple = (cache_key, text)
+        cached = _EMBED_CACHE.get(cache_key_tuple)
+        if cached is not None:
+            return cached
         model = self._load_model()
-        return model.encode(text)
+        embedding = model.encode(text)
+        if len(_EMBED_CACHE) >= _EMBED_CACHE_MAX:
+            _EMBED_CACHE.pop(next(iter(_EMBED_CACHE)))
+        _EMBED_CACHE[cache_key_tuple] = embedding
+        return embedding
 
     async def embed_trace(self, trace: dict[str, Any]) -> np.ndarray:
         from oneiric.core.logging import get_logger
@@ -77,7 +90,7 @@ class EmbeddingService:
             logger.debug("embedding-generated", trace_id=trace.get("trace_id"))
             return embedding
 
-        except Exception as exc:
+        except (ImportError, RuntimeError, OSError, ValueError) as exc:
             logger.warning(
                 "embedding-generation-failed",
                 error=str(exc),

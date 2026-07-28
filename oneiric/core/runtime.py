@@ -4,7 +4,7 @@ import asyncio
 import math
 from collections.abc import AsyncIterator, Awaitable, Callable, Coroutine, Sequence
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Any, Self
 
 import anyio
 
@@ -24,7 +24,7 @@ class RuntimeTaskGroup:
         self._group: asyncio.TaskGroup | None = None
         self._tasks: list[asyncio.Task[Any]] = []
 
-    async def __aenter__(self) -> RuntimeTaskGroup:
+    async def __aenter__(self) -> Self:
         self._group = asyncio.TaskGroup()
         await self._group.__aenter__()
         self._logger.debug("taskgroup-enter", name=self.name)

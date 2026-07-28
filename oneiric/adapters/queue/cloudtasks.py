@@ -92,7 +92,7 @@ class CloudTasksQueueAdapter(EnsureClientMixin):
             queue_path = self._ensure_queue_path()
             await client.get_queue(name=queue_path)
             return True
-        except Exception as exc:  # pragma: no cover - upstream exceptions
+        except (OSError, RuntimeError) as exc:  # pragma: no cover - upstream exceptions
             self._logger.warning("cloudtasks-health-failed", error=str(exc))
             return False
 

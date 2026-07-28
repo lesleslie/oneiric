@@ -69,7 +69,7 @@ class RemoteManifestEntry(BaseModel):
 
     @field_validator("capabilities", mode="before")
     @classmethod
-    def _normalize_capabilities(  # noqa: C901
+    def _normalize_capabilities(
         cls, value: Iterable[CapabilityDescriptor | str | dict[str, Any]] | None
     ) -> list[CapabilityDescriptor]:
         if value is None:
@@ -95,7 +95,7 @@ class RemoteManifestEntry(BaseModel):
     def capability_names(self) -> list[str]:
         return [cap.name for cap in self.capabilities]
 
-    def capability_payloads(self) -> list[dict[str, Any]]:  # noqa: C901
+    def capability_payloads(self) -> list[dict[str, Any]]:
         payloads: list[dict[str, Any]] = []
         for descriptor in self.capabilities:
             payload = descriptor.model_dump(exclude_none=True)

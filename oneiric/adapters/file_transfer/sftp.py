@@ -109,7 +109,7 @@ class SFTPFileTransferAdapter:
         try:
             await client.listdir(".")
             return True
-        except Exception as exc:  # pragma: no cover - network path
+        except OSError as exc:  # pragma: no cover - network path
             self._logger.warning("sftp-health-failed", error=str(exc))
             return False
 

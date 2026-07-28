@@ -143,7 +143,7 @@ class HTTPClientAdapter:
             if inspect.isawaitable(maybe_coro):
                 await maybe_coro
         elif hasattr(self._client, "close"):
-            close_callable = getattr(self._client, "close")
+            close_callable = self._client.close
             if callable(close_callable):
                 close_callable()
         self._client = None

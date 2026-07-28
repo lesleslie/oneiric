@@ -130,7 +130,7 @@ class MCPServerCLIFactory:
             health = asyncio.run(server.health_check())
             self._log_health_results(health)
             self._cleanup_runtime_components(server)
-        except Exception as e:
+        except (RuntimeError, OSError) as e:
             logger.error(f"Health check failed: {e}")
 
     def _initialize_runtime_components(self, server) -> None:
@@ -162,4 +162,4 @@ class MCPServerCLIFactory:
         self.app()
 
 
-__all__ = ["MCPServerCLIFactory", "MCPServerBase"]
+__all__ = ["MCPServerBase", "MCPServerCLIFactory"]

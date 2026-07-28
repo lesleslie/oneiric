@@ -106,7 +106,7 @@ class PubSubQueueAdapter:
         try:
             await asyncio.to_thread(publisher.get_topic, topic_path)
             return True
-        except Exception as exc:  # pragma: no cover - upstream path
+        except (OSError, RuntimeError) as exc:  # pragma: no cover - upstream path
             self._logger.warning("pubsub-health-failed", error=str(exc))
             return False
 

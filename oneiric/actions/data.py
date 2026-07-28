@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
-from typing import Any, Literal
+from typing import Any, ClassVar, Literal
 
 from pydantic import BaseModel, Field
 
@@ -31,7 +31,7 @@ class DataTransformSettings(BaseModel):
     )
 
 
-class DataTransformAction:  # noqa: C901
+class DataTransformAction:
     metadata = ActionMetadata(
         key="data.transform",
         provider="builtin-data-transform",
@@ -259,7 +259,7 @@ class DataSanitizeAction:
         self, sanitized: dict, mask_set: set, mask_value: Any, normalize
     ) -> int:
         masked = 0
-        for key in sanitized.keys():
+        for key in sanitized:
             if normalize(key) in mask_set:
                 sanitized[key] = mask_value
                 masked += 1
@@ -343,7 +343,7 @@ class ValidationSchemaAction:
         settings_model=ValidationSchemaSettings,
     )
 
-    _TYPE_MAP = {
+    _TYPE_MAP: ClassVar[dict[str, tuple[type, ...]]] = {
         "str": (str,),
         "int": (int,),
         "float": (float, int),
@@ -443,7 +443,7 @@ class ValidationSchemaAction:
         errors: list[str],
     ) -> None:
         field_names = {rule.name for rule in fields}
-        extra = [key for key in record.keys() if key not in field_names]
+        extra = [key for key in record if key not in field_names]
         if extra:
             errors.append(f"unexpected-fields: {','.join(extra)}")
 

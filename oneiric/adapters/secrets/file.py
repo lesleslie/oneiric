@@ -84,7 +84,7 @@ class FileSecretAdapter:
             raise LifecycleError("unsupported-secrets-file-format")
         try:
             data = json.loads(self._settings.path.read_text())
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             raise LifecycleError("invalid-secrets-file") from exc
         if not isinstance(data, dict):
             raise LifecycleError("secrets-file-must-be-object")

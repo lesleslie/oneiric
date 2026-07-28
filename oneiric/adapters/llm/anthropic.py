@@ -92,7 +92,7 @@ class AnthropicLLM(LLMBase):
             client = await self._ensure_client()
 
             return client is not None
-        except Exception as exc:
+        except (OSError, RuntimeError) as exc:
             self._logger.warning(
                 "anthropic-health-check-failed",
                 error=str(exc),
@@ -248,7 +248,7 @@ class AnthropicLLM(LLMBase):
         if self.settings.top_k > 0:
             request_params["top_k"] = self.settings.top_k
 
-        if "tools" in kwargs and kwargs["tools"]:
+        if kwargs.get("tools"):
             request_params["tools"] = self._format_anthropic_tools(kwargs["tools"])
 
         if self.settings.thinking_enabled:
@@ -540,7 +540,7 @@ class AnthropicLLM(LLMBase):
     def _add_tools_if_present(
         self, params: dict[str, Any], kwargs: dict[str, Any]
     ) -> None:
-        if "tools" in kwargs and kwargs["tools"]:
+        if kwargs.get("tools"):
             params["tools"] = self._format_anthropic_tools(kwargs["tools"])
 
     def _add_thinking_if_enabled(self, params: dict[str, Any]) -> None:

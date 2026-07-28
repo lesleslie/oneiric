@@ -208,8 +208,6 @@ _SUPPRESS_EVENTS = False
 
 
 def _filter_event_logs(logger, method_name, event_dict):
-    global _SUPPRESS_EVENTS
-
     if _SUPPRESS_EVENTS and "event" in event_dict:
         return {}
     return event_dict

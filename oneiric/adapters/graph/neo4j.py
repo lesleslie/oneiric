@@ -70,7 +70,7 @@ class Neo4jGraphAdapter:
             async with driver.session(database=self._settings.database) as session:
                 await session.run("RETURN 1;")
             return True
-        except Exception as exc:  # pragma: no cover - network
+        except (OSError, RuntimeError) as exc:  # pragma: no cover - network
             self._logger.warning("neo4j-health-check-failed", error=str(exc))
             return False
 

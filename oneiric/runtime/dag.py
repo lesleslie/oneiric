@@ -74,7 +74,7 @@ def plan_levels(graph: nx.DiGraph) -> list[list[str]]:
     return [list(generation) for generation in nx.topological_generations(graph)]
 
 
-async def execute_dag(  # noqa: C901
+async def execute_dag(
     graph: nx.DiGraph,
     *,
     checkpoint: MutableMapping[str, Any] | None = None,
@@ -284,8 +284,7 @@ def _parse_retry_policy(policy: dict[str, Any]) -> dict[str, Any]:
     jitter = float(policy.get("jitter") or policy.get("backoff_jitter") or 0.25)
 
     max_attempts = max(max_attempts, 1)
-    if max_delay < base_delay:
-        max_delay = base_delay
+    max_delay = max(max_delay, base_delay)
 
     return {
         "max_attempts": max_attempts,
@@ -380,5 +379,10 @@ async def _maybe_call_hook(hook: HookCallable | None, **kwargs: Any) -> None:
         result = hook(**kwargs)
         if inspect.isawaitable(result):
             await result
-    except Exception as exc:  # pragma: no cover - defensive logging
+    except (
+        TypeError,
+        ValueError,
+        OSError,
+        RuntimeError,
+    ) as exc:  # pragma: no cover - defensive logging
         logger.warning("dag-hook-failed", hook=str(hook), error=str(exc))

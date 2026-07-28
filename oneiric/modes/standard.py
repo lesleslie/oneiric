@@ -120,7 +120,7 @@ class StandardMode(OperationMode):
             errors.append(
                 f"Cache directory {cache_dir} is not writable. Check permissions."
             )
-        except Exception as e:
+        except OSError as e:
             errors.append(f"Failed to access cache directory: {e}")
 
         # Warn about network connectivity (non-blocking)

@@ -3,9 +3,9 @@ from .bridge import ActionBridge
 from .metadata import ActionMetadata, register_action_metadata
 
 __all__ = [
-    "ActionMetadata",
-    "register_action_metadata",
     "ActionBridge",
+    "ActionMetadata",
     "builtin_action_metadata",
+    "register_action_metadata",
     "register_builtin_actions",
 ]

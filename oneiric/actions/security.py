@@ -6,7 +6,7 @@ import hmac
 import json
 import secrets
 from datetime import UTC, datetime
-from typing import Any, Literal
+from typing import Any, ClassVar, Literal
 
 from pydantic import BaseModel, Field
 
@@ -57,7 +57,7 @@ class SecuritySignatureAction:
         settings_model=SecuritySignatureSettings,
     )
 
-    _ALGORITHMS = {
+    _ALGORITHMS: ClassVar[dict[str, Any]] = {
         "sha256": hashlib.sha256,
         "sha512": hashlib.sha512,
         "blake2b": hashlib.blake2b,

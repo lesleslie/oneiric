@@ -76,7 +76,7 @@ class ArangoDBGraphAdapter:
             await self._ensure_client()
             await self.query_aql("RETURN 1")
             return True
-        except Exception as exc:  # pragma: no cover - external dependency
+        except (OSError, RuntimeError) as exc:  # pragma: no cover - external dependency
             self._logger.warning("arangodb-health-failed", error=str(exc))
             return False
 

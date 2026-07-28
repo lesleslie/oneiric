@@ -6,8 +6,8 @@ __all__ = [
     "RemoteManifest",
     "RemoteManifestEntry",
     "RemoteSyncResult",
-    "sync_remote_manifest",
-    "remote_sync_loop",
     "RemoteSyncTelemetry",
     "load_remote_telemetry",
+    "remote_sync_loop",
+    "sync_remote_manifest",
 ]

@@ -11,11 +11,6 @@ from oneiric.adapters.vector.vector_types import (
 )
 
 __all__ = [
-    "VectorBase",
-    "VectorBaseSettings",
-    "VectorCollection",
-    "VectorDocument",
-    "VectorSearchResult",
     "AgentDBAdapter",
     "AgentDBSettings",
     "PgvectorAdapter",
@@ -24,4 +19,9 @@ __all__ = [
     "PineconeSettings",
     "QdrantAdapter",
     "QdrantSettings",
+    "VectorBase",
+    "VectorBaseSettings",
+    "VectorCollection",
+    "VectorDocument",
+    "VectorSearchResult",
 ]

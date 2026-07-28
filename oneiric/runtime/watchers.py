@@ -4,13 +4,13 @@ import asyncio
 import os
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 try:  # pragma: no cover - optional dependency exercised in integration tests
     from watchfiles import awatch
 
     WATCHFILES_AVAILABLE = True
-except Exception:  # pragma: no cover - import guard for serverless bundles
+except ImportError:  # pragma: no cover - import guard for serverless bundles
     WATCHFILES_AVAILABLE = False
     awatch = None  # type: ignore
 
@@ -80,7 +80,7 @@ class SelectionWatcher:
         await self._task
         self._task = None
 
-    async def __aenter__(self) -> SelectionWatcher:
+    async def __aenter__(self) -> Self:
         await self.start()
         return self
 
@@ -126,7 +126,7 @@ class SelectionWatcher:
             for key, provider in selections.items()
             if self._last.get(key) != provider
         }
-        removed = {key for key in self._last.keys() if key not in selections}
+        removed = {key for key in self._last if key not in selections}
         if not added_or_changed and not removed:
             if self._refresh_on_every_tick:
                 self.bridge.update_settings(layer)

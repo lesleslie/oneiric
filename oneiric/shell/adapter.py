@@ -102,7 +102,7 @@ class OneiricShell(AdminShell):
             import importlib.metadata as importlib_metadata
 
             return importlib_metadata.version("oneiric")
-        except Exception:
+        except ImportError:
             return "unknown"
 
     def _get_adapters_info(self) -> list[str]:
@@ -202,7 +202,7 @@ Type 'help()' for Python help or %help_shell for shell commands
             # Re-validate Pydantic model
             self.app.model_validate(self.app.model_dump())
             console.print("[green]✓ Configuration is valid[/green]")
-        except Exception as e:
+        except (ValueError, TypeError) as e:
             console.print(f"[red]✗ Configuration error: {e}[/red]")
 
     async def _emit_session_start(self) -> None:
@@ -225,7 +225,7 @@ Type 'help()' for Python help or %help_shell for shell commands
                 logger.debug(
                     "Session tracking unavailable (Session-Buddy MCP not reachable)"
                 )
-        except Exception as e:
+        except (OSError, RuntimeError) as e:
             logger.debug(f"Failed to emit session start: {e}")
 
     async def _emit_session_end(self) -> None:
@@ -239,7 +239,7 @@ Type 'help()' for Python help or %help_shell for shell commands
                 metadata={},
             )
             logger.info(f"Oneiric shell session ended: {self._session_id}")
-        except Exception as e:
+        except (OSError, RuntimeError) as e:
             logger.debug(f"Failed to emit session end: {e}")
         finally:
             self._session_id = None
