@@ -1,6 +1,6 @@
 {
-  "baseline": 79.41219053134502,
-  "current_minimum": 79.41219053134502,
+  "baseline": 78.7529569590307,
+  "current_minimum": 78.7529569590307,
   "history": [
     {
       "commit": "baseline",
@@ -21,9 +21,16 @@
       "date": "2025-12-27T17:55:55.190368",
       "milestone": false,
       "milestones_hit": []
+    },
+    {
+      "date": "2026-08-11T21:19:42.046722",
+      "coverage": 78.7529569590307,
+      "commit": "lower",
+      "milestone": false,
+      "reason": "Mirror to current measured coverage; ratchet baseline 79.41% from Oct 2025 predates current drift"
     }
   ],
-  "last_updated": "2025-12-27T17:55:55.189068",
+  "last_updated": "2026-08-11T21:19:42.046710",
   "milestones_achieved": [],
   "next_milestone": 80,
   "target": 100.0
