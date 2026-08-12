@@ -65,6 +65,7 @@ addopts = [
     "--cov-report=term-missing",
     "--cov-report=html",
     "--cov-report=xml",
+    "--cov-fail-under=79.41219053134502"
 ]
 markers = [
     "security: Security-related tests",
