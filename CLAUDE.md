@@ -8,9 +8,9 @@ For a shorter, tool-neutral bootstrap document, start with `AGENTS.md`.
 
 Oneiric is a **universal resolution layer** for pluggable components with hot-swapping, multi-domain support, and remote manifest delivery. It extracts and modernizes the component discovery and lifecycle patterns into a standalone infrastructure layer.
 
-**Status:** Production Ready (0.2.0) - Hardened for controlled deployment. See `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for comprehensive audit (score: 95/100, 526 tests, 83% coverage) and `docs/ONEIRIC_VS_ACB.md` for comparison with ACB and migration strategy.
+**Status:** Production Ready (0.16.2) - Hardened for controlled deployment. See `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for comprehensive audit (score: 95/100, 526 tests, 83% coverage) and `docs/ONEIRIC_VS_ACB.md` for comparison with ACB and migration strategy.
 
-**Python Version:** 3.14+ (async-first, modern type hints)
+**Python Version:** 3.13+ (async-first, modern type hints)
 
 ## Architecture
 
@@ -159,7 +159,7 @@ python -m crackerjack run -a major   # Bump major version
 This project uses **Zuban** (via Crackerjack) for ultra-fast type checking. Due to a known Zuban parsing bug with `[tool.mypy]` in `pyproject.toml`, type checking configuration is in `mypy.ini` instead:
 
 - **Configuration file**: `mypy.ini` (not `pyproject.toml`)
-- **Python version**: 3.14
+- **Python version**: 3.13
 - **Excluded directories**: `.venv`, `build`, `dist`, `tests`, `scripts/`
 - **Module-level suppressions**: See `mypy.ini` for per-module `ignore_errors` settings
 
@@ -525,7 +525,7 @@ uv run python -m oneiric.cli activity --json
 Oneiric extracts ACB's adapter resolution pattern into a universal layer. See `docs/ACB_COMPARISON.md` for detailed comparison:
 
 - **ACB:** Production-ready full platform (v0.31.10, 92/100 score)
-- **Oneiric:** Alpha resolution layer (v0.1.0, 68/100 score)
+- **Oneiric:** Alpha resolution layer (v0.16.2, 68/100 score)
 
 Oneiric is **not competing** with ACB—it's formalizing one of ACB's core patterns for potential future adoption once production-hardened.
 

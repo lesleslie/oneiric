@@ -18,7 +18,7 @@
 
 ## Coding Style & Naming Conventions
 
-- Target Python 3.14+, 4-space indentation, and comprehensive type hints; prefer `pydantic.BaseModel` for config/DTOs and `structlog`-backed loggers via `core.logging.get_logger`.
+- Target Python 3.13+, 4-space indentation, and comprehensive type hints; prefer `pydantic.BaseModel` for config/DTOs and `structlog`-backed loggers via `core.logging.get_logger`.
 - Module naming is lowercase with underscores; provider identifiers stay kebab-case inside manifests, while Pydantic models use PascalCase (`RemoteSourceConfig`).
 - Keep async entrypoints explicit (e.g., `async def refresh_remote(...)`) and expose orchestration hooks through thin adapters so lifecycle managers remain testable.
 - Default cloud posture: new storage/secrets integrations should prioritize Google Cloud (GCS + Secret Manager) with AWS providers treated as optional fallbacks.
