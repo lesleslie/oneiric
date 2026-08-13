@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 
 import structlog
 from opentelemetry import trace
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field
 from structlog.contextvars import (
     bind_contextvars,
     clear_contextvars,
@@ -56,7 +56,14 @@ class LoggingSinkConfig(BaseModel):
 
 
 class LoggingConfig(BaseModel):
-    level: str = Field(default="INFO", description="Root log level.")
+    level: str = Field(
+        default="INFO",
+        validation_alias=AliasChoices("level", "ONEIRIC_LOG_LEVEL"),
+        description=(
+            "Root log level. Bound from the ONEIRIC_LOG_LEVEL environment "
+            "variable; accepts DEBUG, INFO, WARNING, ERROR, or CRITICAL."
+        ),
+    )
     emit_json: bool = Field(
         default=True,
         description="Emit JSON logs suitable for log aggregation systems.",

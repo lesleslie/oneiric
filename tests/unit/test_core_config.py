@@ -14,6 +14,7 @@ from oneiric.core.config import (
     SecretsConfig,
     domain_activity_path,
     lifecycle_snapshot_path,
+    load_settings,
     resolver_settings_from_config,
     runtime_health_path,
     runtime_observability_path,
@@ -195,3 +196,52 @@ class TestResolverSettingsFromConfig:
         s.adapters.selections = {"cache": "redis"}
         rs = resolver_settings_from_config(s)
         assert rs.selections.get("adapter") == {"cache": "redis"}
+
+
+# ---------------------------------------------------------------------------
+# Env-var aliases (P0-A: ONEIRIC_ACTIVITY_STORE / ONEIRIC_LOG_LEVEL /
+# ONEIRIC_RUNTIME_SUPERVISOR__ENABLED)
+# ---------------------------------------------------------------------------
+
+
+class TestEnvVarAliases:
+    def test_oneiric_activity_store_env_override(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        target = tmp_path / "custom_activity.sqlite"
+        monkeypatch.setenv("ONEIRIC_ACTIVITY_STORE", str(target))
+        monkeypatch.delenv(
+            "ONEIRIC_RUNTIME_PATHS__DOMAIN_ACTIVITY_PATH", raising=False
+        )
+        monkeypatch.delenv("ONEIRIC_LOG_LEVEL", raising=False)
+        monkeypatch.delenv(
+            "ONEIRIC_RUNTIME_SUPERVISOR__ENABLED", raising=False
+        )
+        # Run from a fresh cwd so load_settings() does not see a project yaml
+        monkeypatch.chdir(tmp_path)
+        s = load_settings()
+        assert s.runtime_paths.domain_activity_path == str(target)
+        assert domain_activity_path(s) == target
+        assert target.parent.exists()
+
+    def test_oneiric_log_level_env_override(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.setenv("ONEIRIC_LOG_LEVEL", "DEBUG")
+        monkeypatch.delenv("ONEIRIC_ACTIVITY_STORE", raising=False)
+        monkeypatch.delenv(
+            "ONEIRIC_RUNTIME_SUPERVISOR__ENABLED", raising=False
+        )
+        monkeypatch.chdir(tmp_path)
+        s = load_settings()
+        assert s.logging.level == "DEBUG"
+
+    def test_oneiric_runtime_supervisor_env_override(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.setenv("ONEIRIC_RUNTIME_SUPERVISOR__ENABLED", "false")
+        monkeypatch.delenv("ONEIRIC_ACTIVITY_STORE", raising=False)
+        monkeypatch.delenv("ONEIRIC_LOG_LEVEL", raising=False)
+        monkeypatch.chdir(tmp_path)
+        s = load_settings()
+        assert s.runtime_supervisor.enabled is False

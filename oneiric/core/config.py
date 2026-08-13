@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, cast
 
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field
 from pydantic_settings import SettingsConfigDict
 
 from oneiric.runtime.health import default_runtime_health_path
@@ -199,10 +199,31 @@ class RuntimePathsConfig(BaseModel):
         default=None,
         description="Override path for workflow checkpoint SQLite store.",
     )
+    domain_activity_path: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "domain_activity_path", "ONEIRIC_ACTIVITY_STORE"
+        ),
+        description=(
+            "Override path for the domain activity SQLite store. Bound from "
+            "the ONEIRIC_ACTIVITY_STORE environment variable; if unset, the "
+            "store lives under <cache_dir>/domain_activity.sqlite."
+        ),
+    )
 
 
 class RuntimeSupervisorConfig(BaseModel):
-    enabled: bool = True
+    enabled: bool = Field(
+        default=True,
+        validation_alias=AliasChoices(
+            "enabled", "ONEIRIC_RUNTIME_SUPERVISOR__ENABLED"
+        ),
+        description=(
+            "Enable the service supervisor loop. Bound from "
+            "ONEIRIC_RUNTIME_SUPERVISOR__ENABLED (the __ delimiter maps to "
+            "runtime_supervisor.enabled via _env_overrides)."
+        ),
+    )
     poll_interval: float = Field(
         default=2.0,
         ge=0.1,
@@ -226,6 +247,12 @@ class OneiricMCPConfig(BaseModel):
 
 
 class OneiricSettings(BaseModel):
+    model_config = SettingsConfigDict(
+        env_prefix="ONEIRIC_",
+        env_nested_delimiter="__",
+        extra="allow",
+        populate_by_name=True,
+    )
     config_dir: str | None = None
     cache_dir: str | None = None
     app: AppConfig = Field(default_factory=AppConfig)
@@ -400,6 +427,11 @@ def runtime_health_path(settings: OneiricSettings) -> Path:
 
 
 def domain_activity_path(settings: OneiricSettings) -> Path:
+    override = getattr(settings.runtime_paths, "domain_activity_path", None)
+    if override:
+        path = Path(override).expanduser()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        return path
     cache = resolve_cache_dir_path(settings.cache_dir or settings.remote.cache_dir)
     return cache / "domain_activity.sqlite"
 
@@ -589,14 +621,36 @@ def _env_overrides(project_name: str = "oneiric") -> dict[str, Any]:
     # Convert project name to env prefix (e.g., "session_buddy" -> "SESSION_BUDDY_")
     prefix = f"{project_name.upper()}_"
 
+    # Single-underscore env-var aliases for backward compat with documented
+    # variables that pre-date the `__` nested-key convention.
+    # Map: env-var suffix (after prefix) -> nested override dict
+    _ALIAS_OVERRIDES: dict[str, dict[str, Any]] = {
+        "ACTIVITY_STORE": {
+            "runtime_paths": {"domain_activity_path": None},
+        },
+        "LOG_LEVEL": {"logging": {"level": None}},
+    }
+
     overrides: dict[str, Any] = {}
     for key, value in os.environ.items():
         if not key.startswith(prefix):
             continue
+        suffix = key[len(prefix) :]
+        coerced = _coerce_env_value(value)
+
+        # Apply single-underscore alias overrides first (backward compat)
+        if suffix in _ALIAS_OVERRIDES and "__" not in suffix:
+            target_template = _ALIAS_OVERRIDES[suffix]
+            for section, fields in target_template.items():
+                section_dict = overrides.setdefault(section, {})
+                if isinstance(section_dict, dict):
+                    for field in fields:
+                        section_dict[field] = coerced
+            continue
+
         # Remove prefix and split on __ to get nested keys
         # Example: "REMOTE__CACHE_DIR" -> ["remote", "cache_dir"]
-        path = key[len(prefix) :].lower().split("__")
-        coerced = _coerce_env_value(value)
+        path = suffix.lower().split("__")
 
         # Special handling for profile (single-level override)
         if len(path) == 1 and path[0] == "profile":
