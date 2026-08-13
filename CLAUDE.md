@@ -8,7 +8,7 @@ For a shorter, tool-neutral bootstrap document, start with `AGENTS.md`.
 
 Oneiric is a **universal resolution layer** for pluggable components with hot-swapping, multi-domain support, and remote manifest delivery. It extracts and modernizes the component discovery and lifecycle patterns into a standalone infrastructure layer.
 
-**Status:** Production Ready (0.16.2) - Hardened for controlled deployment. See `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for comprehensive audit (score: 95/100, 526 tests, 83% coverage) and `docs/ONEIRIC_VS_ACB.md` for comparison with ACB and migration strategy.
+**Status:** Production Ready (0.16.2) - Hardened for controlled deployment. See `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for comprehensive audit (score: 95/100, 4112 tests, 83% coverage) and `docs/ONEIRIC_VS_ACB.md` for comparison with ACB and migration strategy.
 
 **Python Version:** 3.13+ (async-first, modern type hints)
 
@@ -165,13 +165,13 @@ This project uses **Zuban** (via Crackerjack) for ultra-fast type checking. Due 
 
 **Important**: Do NOT add `[tool.zuban]` or `[tool.mypy]` to `pyproject.toml` - this will cause parsing errors. All type checking config must be in `mypy.ini`.
 
-**Note:** Comprehensive test suite with 526 passing tests and 83% coverage. Security hardening complete (all P0 vulnerabilities resolved). See `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for detailed quality assessment.
+**Note:** Comprehensive test suite with 4112 passing tests and 83% coverage. Security hardening complete (all P0 vulnerabilities resolved). See `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for detailed quality assessment.
 
 ### Testing
 
 **Test Suite Overview:**
 
-- **Total:** 716 tests across 94 test files in 10 categories
+- **Total:** 4112 tests across 200 test files in 10 categories
 - **Coverage:** 83% (target: 60%, achieved: 138% of target)
 - **Test Categories:** Core (68), Adapters (60), Domains (44), Security (100), Remote/Runtime/CLI (117), Integration (39), E2E (8)
 - **Timeout:** 600s (10 minutes) configured in `[tool.crackerjack]`
@@ -242,7 +242,7 @@ Tests can be marked with the following markers to enable selective execution:
 1. **Full Test Suite** (10 minutes):
 
    ```bash
-   make test             # Run all 716 tests
+   make test             # Run all 4112 tests
    ```
 
 1. **Development Workflow** (iterative):
