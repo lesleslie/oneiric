@@ -21,11 +21,11 @@ graph TB
     end
 
     subgraph "Domain Layer"
-        AdapterBridge["adapters/bridge.py"]
-        ServiceBridge["services/bridge.py"]
-        TaskBridge["tasks/bridge.py"]
-        EventBridge["events/bridge.py"]
-        WorkflowBridge["workflows/bridge.py"]
+        AdapterBridge["oneiric/adapters/bridge.py<br/>AdapterBridge"]
+        ServiceBridge["oneiric/domains/services.py<br/>ServiceBridge"]
+        TaskBridge["oneiric/domains/tasks.py<br/>TaskBridge"]
+        EventBridge["oneiric/domains/events.py<br/>EventBridge"]
+        WorkflowBridge["oneiric/domains/workflows.py<br/>WorkflowBridge"]
     end
 
     Resolution -->|"resolves candidates"| AdapterBridge
