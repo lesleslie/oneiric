@@ -61,39 +61,7 @@ ______________________________________________________________________
 
 **Timing:** Complete 24 hours before maintenance
 
-```mermaid
-graph LR
-    subgraph "Pre-Maintenance Phase (24h before)"
-        Comm["1. Communication<br/>72h advance notice"]
-        Prep["2. Preparation<br/>Backups + staging test"]
-        Mon["3. Monitoring<br/>Silence expected alerts"]
-        Access["4. Access<br/>Verify prod access"]
-    end
-
-    subgraph "Maintenance Phase"
-        Execute["Execute maintenance<br/>Follow runbook"]
-        Monitor["Monitor progress<br/>Check metrics/logs"]
-    end
-
-    subgraph "Post-Maintenance Phase"
-        Verify["Verify success<br/>Health checks"]
-        Cleanup["Cleanup<br/>Remove silences"]
-        Document["Document<br/>Update runbooks"]
-    end
-
-    Comm --> Prep --> Mon --> Access
-    Access --> Execute
-    Execute --> Monitor
-    Monitor --> Verify
-    Verify --> Cleanup --> Document
-
-    style Comm fill:#e1f5ff
-    style Prep fill:#fff4e1
-    style Mon fill:#f0e1ff
-    style Access fill:#ffe1f0
-    style Execute fill:#ccffcc
-    style Verify fill:#e1ffe1
-```
+The pre-maintenance phase has 4 sequential steps (Communication → Preparation → Monitoring → Access) over 24h before the window. The maintenance phase then executes the runbook with continuous monitoring. The post-maintenance phase verifies success, removes alert silences, and updates runbooks with any new findings.
 
 ### 1. Communication
 

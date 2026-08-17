@@ -55,13 +55,7 @@ graph LR
 
 **ACB (Before):**
 
-```mermaid
-graph LR
-    APP[Application] --> DEP[depends.get]
-    DEP --> ADP[Adapter]
-
-    style DEP fill:#ffecb3
-```
+Under ACB the application calls `depends.get(...)` to resolve an adapter directly; there is no central resolver or lifecycle manager.
 
 **Oneiric (After):**
 

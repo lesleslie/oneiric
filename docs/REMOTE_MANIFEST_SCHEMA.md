@@ -592,28 +592,7 @@ ______________________________________________________________________
 
 ### Recommended Enhancement Path
 
-```mermaid
-graph LR
-    V1["v1 Manifest<br/>(Basic Fields)"]
-    Phase1["Phase 1:<br/>Adapter Metadata"]
-    Phase2["Phase 2:<br/>Dependencies"]
-    Phase3["Phase 3:<br/>Action Metadata"]
-    Phase4["Phase 4:<br/>Documentation"]
-    V2["v2 Manifest<br/>(Full Featured)"]
-
-    V1 --> Phase1
-    Phase1 --> Phase2
-    Phase2 --> Phase3
-    Phase3 --> Phase4
-    Phase4 --> V2
-
-    style V1 fill:#e1f5ff
-    style V2 fill:#ccffcc
-    style Phase1 fill:#fff4e1
-    style Phase2 fill:#f0e1ff
-    style Phase3 fill:#ffe1f0
-    style Phase4 fill:#e1ffe1
-```
+The recommended adoption path runs v1 → Phase 1 (Adapter Metadata) → Phase 2 (Dependencies) → Phase 3 (Action Metadata) → Phase 4 (Documentation) → v2. Each phase adds one schema dimension and remains backward-compatible because all v2 fields are optional.
 
 **Phase 1:** Add adapter metadata
 

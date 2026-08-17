@@ -286,27 +286,11 @@ The `runtime_health.json` payload must conform to the mcp-common health schema u
 
 #### For Python Projects (mailgun, unifi, opera, raindrop)
 
-```mermaid
-graph LR
-    A[Current FastMCP] --> B[Add Oneiric CLI Factory]
-    B --> C[Integrate Lifecycle Hooks]
-    C --> D[Update Configuration]
-    D --> E[Add Observability]
-    E --> F[Update Tests]
-    F --> G[Migrated to Oneiric]
-```
+For each Python project, the migration runs as a 6-step pipeline: add the Oneiric CLI factory, integrate lifecycle hooks, update configuration, add observability, update tests, and finally mark the project as migrated.
 
 #### For Node.js Project (excalidraw)
 
-```mermaid
-graph LR
-    A[Current Node.js] --> B[Migration Assessment]
-    B -->|Option 1| C[Create Python Equivalent]
-    B -->|Option 2| D[Node.js Adapter Layer]
-    C --> E[Integrate Oneiric Patterns]
-    D --> E[Integrate Oneiric Patterns]
-    E --> F[Migrated to Oneiric]
-```
+The Node.js path starts with a migration assessment that branches into either a Python rewrite or a Node.js adapter layer; both branches converge on integrating Oneiric patterns before declaring the project migrated.
 
 ### Integration Patterns
 
