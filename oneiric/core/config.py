@@ -201,9 +201,7 @@ class RuntimePathsConfig(BaseModel):
     )
     domain_activity_path: str | None = Field(
         default=None,
-        validation_alias=AliasChoices(
-            "domain_activity_path", "ONEIRIC_ACTIVITY_STORE"
-        ),
+        validation_alias=AliasChoices("domain_activity_path", "ONEIRIC_ACTIVITY_STORE"),
         description=(
             "Override path for the domain activity SQLite store. Bound from "
             "the ONEIRIC_ACTIVITY_STORE environment variable; if unset, the "
@@ -215,9 +213,7 @@ class RuntimePathsConfig(BaseModel):
 class RuntimeSupervisorConfig(BaseModel):
     enabled: bool = Field(
         default=True,
-        validation_alias=AliasChoices(
-            "enabled", "ONEIRIC_RUNTIME_SUPERVISOR__ENABLED"
-        ),
+        validation_alias=AliasChoices("enabled", "ONEIRIC_RUNTIME_SUPERVISOR__ENABLED"),
         description=(
             "Enable the service supervisor loop. Bound from "
             "ONEIRIC_RUNTIME_SUPERVISOR__ENABLED (the __ delimiter maps to "

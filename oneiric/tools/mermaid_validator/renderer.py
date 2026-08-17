@@ -111,9 +111,7 @@ DEFAULT_MERMAID_PREFIXES: tuple[str, ...] = (
 # imported and executed as code. We trust only the locally-vendored
 # `node_modules/jsdom/` installed in the oneiric repo by `npm install`
 # (which pins the version in package.json). The path is `<repo>/node_modules/`.
-DEFAULT_JSDOM_LOCATIONS: tuple[str, ...] = (
-    "node_modules/jsdom/lib/api.js",
-)
+DEFAULT_JSDOM_LOCATIONS: tuple[str, ...] = ("node_modules/jsdom/lib/api.js",)
 
 
 def _locate_mermaid_core() -> Path | None:
@@ -202,9 +200,7 @@ def _locate_jsdom() -> Path | None:
 def _is_trusted_mermaid_path(path: Path) -> bool:
     """Allow-list check: `path` must live under a known-good mermaid prefix."""
     resolved = str(path.resolve())
-    return any(
-        resolved.startswith(prefix) for prefix in DEFAULT_MERMAID_PREFIXES
-    )
+    return any(resolved.startswith(prefix) for prefix in DEFAULT_MERMAID_PREFIXES)
 
 
 def validate_mermaid_blocks(
@@ -220,6 +216,16 @@ def validate_mermaid_blocks(
     if not blocks:
         return []
 
+    runner, mermaid_core, jsdom = _resolve_mermaid_runtime()
+    payload = _encode_blocks(blocks)
+    completed = _run_mermaid_subprocess(
+        runner, mermaid_core, jsdom, payload, timeout, len(blocks)
+    )
+    return _parse_mermaid_results(completed)
+
+
+def _resolve_mermaid_runtime() -> tuple[Path, Path, Path]:
+    """Locate the runner script, mermaid core, and jsdom; raise if any missing."""
     runner = Path(__file__).parent / "validate_mermaid.mjs"
     if not runner.exists():
         raise FileNotFoundError(f"validate_mermaid.mjs not found at {runner}")
@@ -240,15 +246,27 @@ def validate_mermaid_blocks(
             "wave-11 dev dep, or set ONEIRIC_JSDOM to its absolute path"
         )
 
-    payload = json.dumps(
-        [
-            {"file": str(b.file), "line": b.line, "code": b.code}
-            for b in blocks
-        ]
+    return runner, mermaid_core, jsdom
+
+
+def _encode_blocks(blocks: list[MermaidBlock]) -> str:
+    """Serialize blocks to the JSON payload the Node.js runner expects."""
+    return json.dumps(
+        [{"file": str(b.file), "line": b.line, "code": b.code} for b in blocks]
     )
 
+
+def _run_mermaid_subprocess(
+    runner: Path,
+    mermaid_core: Path,
+    jsdom: Path,
+    payload: str,
+    timeout: float,
+    block_count: int,
+) -> subprocess.CompletedProcess:
+    """Invoke the Node.js validator; wrap missing-node / timeout as RuntimeError."""
     try:
-        completed = subprocess.run(
+        return subprocess.run(
             ["node", str(runner), str(mermaid_core), str(jsdom)],
             input=payload,
             capture_output=True,
@@ -262,10 +280,14 @@ def validate_mermaid_blocks(
         ) from e
     except subprocess.TimeoutExpired as e:
         raise RuntimeError(
-            f"validate_mermaid.mjs timed out after {timeout}s on {len(blocks)} "
-            f"blocks"
+            f"validate_mermaid.mjs timed out after {timeout}s on {block_count} blocks"
         ) from e
 
+
+def _parse_mermaid_results(
+    completed: subprocess.CompletedProcess,
+) -> list[MermaidValidationError]:
+    """Translate the validator's stdout into a list of MermaidValidationError."""
     if completed.returncode != 0:
         raise RuntimeError(
             f"validate_mermaid.mjs exited {completed.returncode}: "
@@ -280,17 +302,15 @@ def validate_mermaid_blocks(
             f"stdout={completed.stdout[:200]!r}"
         ) from e
 
-    errors: list[MermaidValidationError] = []
-    for entry in results:
-        if entry.get("status") == "error":
-            errors.append(
-                MermaidValidationError(
-                    file=Path(entry["file"]),
-                    line=entry["line"],
-                    error=entry.get("error", "<unknown error>"),
-                )
-            )
-    return errors
+    return [
+        MermaidValidationError(
+            file=Path(entry["file"]),
+            line=entry["line"],
+            error=entry.get("error", "<unknown error>"),
+        )
+        for entry in results
+        if entry.get("status") == "error"
+    ]
 
 
 def find_broken_mermaid_blocks(

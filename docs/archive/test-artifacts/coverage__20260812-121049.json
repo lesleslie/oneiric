@@ -1,22 +1,22 @@
 {
+  "files": {},
   "meta": {
-    "version": "7.15.2",
-    "timestamp": "2026-08-11T20:00:00.000000",
     "branch_coverage": false,
-    "show_contexts": false
+    "show_contexts": false,
+    "timestamp": "2026-08-11T20:00:00.000000",
+    "version": "7.15.2"
   },
+  "plural": "",
   "totals": {
+    "covered_branches": 0,
     "covered_lines": 467,
-    "num_statements": 593,
-    "percent_covered": 78.7529569590307,
-    "percent_covered_display": "78.75",
-    "missing_lines": 126,
     "excluded_lines": 0,
+    "missing_branches": 0,
+    "missing_lines": 126,
     "num_branches": 0,
     "num_partial_branches": 0,
-    "covered_branches": 0,
-    "missing_branches": 0
-  },
-  "files": {},
-  "plural": ""
+    "num_statements": 593,
+    "percent_covered": 78.7529569590307,
+    "percent_covered_display": "78.75"
+  }
 }

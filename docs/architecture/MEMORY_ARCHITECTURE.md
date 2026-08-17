@@ -24,20 +24,20 @@ stemmed from undocumented expectations about how the settings layer
 resolves conflicts and how the lifecycle status snapshot interacts with
 cold starts.
 
----
+______________________________________________________________________
 
 ## Table of Contents
 
 1. [Storage Inventory](#1-storage-inventory)
-2. [Programmatic Write Surface](#2-programmatic-write-surface)
-3. [Programmatic Read Surface](#3-programmatic-read-surface)
-4. [Cross-Component Visibility](#4-cross-component-visibility)
-5. [Integration Contract](#5-integration-contract)
-6. [Sample Queries](#6-sample-queries)
-7. [Diagrams](#7-diagrams)
-8. [Operational Notes](#8-operational-notes)
+1. [Programmatic Write Surface](#2-programmatic-write-surface)
+1. [Programmatic Read Surface](#3-programmatic-read-surface)
+1. [Cross-Component Visibility](#4-cross-component-visibility)
+1. [Integration Contract](#5-integration-contract)
+1. [Sample Queries](#6-sample-queries)
+1. [Diagrams](#7-diagrams)
+1. [Operational Notes](#8-operational-notes)
 
----
+______________________________________________________________________
 
 ## 1. Storage Inventory
 
@@ -234,7 +234,7 @@ The `cwd_hash` namespace is critical for tests — it lets multiple
 `.oneiric_cache/` in the repo root is the production path (cwd-stable)
 that `crackerjack` and the CLI use.
 
----
+______________________________________________________________________
 
 ## 2. Programmatic Write Surface
 
@@ -294,7 +294,7 @@ The Oneiric `RuntimeOrchestrator` runs five `SelectionWatcher`s
 the orchestrator must call `load_settings()` again to see changes —
 the typed `OneiricSettings` instance is immutable once constructed.
 
----
+______________________________________________________________________
 
 ## 3. Programmatic Read Surface
 
@@ -441,7 +441,7 @@ Oneiric is the only component whose MCP surface is **empty**. The "MCP"
 analogue for Oneiric is the Python import boundary — every consumer
 imports `oneiric.core.*` and `oneiric.runtime.*` directly.
 
----
+______________________________________________________________________
 
 ## 4. Cross-Component Visibility
 
@@ -473,7 +473,7 @@ not** store:
 - **Dhara KV / time-series / ecosystem state** — Dhara owns the persistent object graph.
 - **LLM provider configuration / API keys** — those live in component-level env vars (`MAHAVISHNU_*`, `SESSION_BUDDY_*`, etc.) that Oneiric loads via `load_settings`. Oneiric itself does not store API keys.
 
----
+______________________________________________________________________
 
 ## 5. Integration Contract
 
@@ -490,12 +490,12 @@ Mahavishnu, and Crackerjack).
 in this order:
 
 1. code defaults
-2. `settings/<project>.yaml`
-3. `settings/local.yaml`
-4. `${XDG_CONFIG_HOME}/<project>/config.yaml`
-5. `${XDG_CONFIG_HOME}/<project>/local.yaml`
-6. env vars
-7. explicit `path=...`
+1. `settings/<project>.yaml`
+1. `settings/local.yaml`
+1. `${XDG_CONFIG_HOME}/<project>/config.yaml`
+1. `${XDG_CONFIG_HOME}/<project>/local.yaml`
+1. env vars
+1. explicit `path=...`
 
 …where XDG layers overrode `settings/local.yaml` only because the
 implementation called `_load_layer_file` with `_deep_merge` in the
@@ -509,13 +509,13 @@ silently lost to `settings/local.yaml` checked into the repo.
 apply layers in this exact precedence (low → high):
 
 1. code defaults (`OneiricSettings` field defaults)
-2. `settings/<project>.yaml` (committed project config)
-3. `settings/<project>.yml` (YML alternative, same priority as .yaml)
-4. `settings/local.yaml` (gitignored project-local)
-5. `${XDG_CONFIG_HOME}/<project>/config.yaml` (user config)
-6. `${XDG_CONFIG_HOME}/<project>/local.yaml` (user local — highest file layer)
-7. `${PROJECT}_*__*` env vars (`_env_overrides(project_name)`)
-8. explicit `path=` argument (absolute highest priority; applied LAST so it overrides env vars)
+1. `settings/<project>.yaml` (committed project config)
+1. `settings/<project>.yml` (YML alternative, same priority as .yaml)
+1. `settings/local.yaml` (gitignored project-local)
+1. `${XDG_CONFIG_HOME}/<project>/config.yaml` (user config)
+1. `${XDG_CONFIG_HOME}/<project>/local.yaml` (user local — highest file layer)
+1. `${PROJECT}_*__*` env vars (`_env_overrides(project_name)`)
+1. explicit `path=` argument (absolute highest priority; applied LAST so it overrides env vars)
 
 When `${XDG_CONFIG_HOME}` is unset, it defaults to `~/.config`. When
 `{PROJECT}_CONFIG` env var is set, the explicit path is loaded first
@@ -550,10 +550,11 @@ adapter as if it had never been activated, breaking health checks
 when the previous process exited).
 
 The fix:
+
 1. `_persist_status_snapshot` builds the full `[status.as_dict() for status in self._status.values()]` payload.
-2. Writes to `<path>.tmp` first.
-3. `tmp_path.replace(path)` (atomic on POSIX + Windows).
-4. `_load_status_snapshot` returns silently if the file does not exist or is unreadable; otherwise reads the full file and rebuilds the `dict[(domain, key)] -> LifecycleStatus` map.
+1. Writes to `<path>.tmp` first.
+1. `tmp_path.replace(path)` (atomic on POSIX + Windows).
+1. `_load_status_snapshot` returns silently if the file does not exist or is unreadable; otherwise reads the full file and rebuilds the `dict[(domain, key)] -> LifecycleStatus` map.
 
 **Contract**: `lifecycle_status.json` is a **complete snapshot** of
 every status known to `LifecycleManager._status` at the time of the
@@ -612,7 +613,7 @@ documented in plans but not yet the runtime authority.
 | **Multi-tenant secrets provider** | `SecretsConfig` has a `provider` field; the built-in `EnvSecretAdapter` / `FileSecretAdapter` are simple | No Vault / AWS Secrets Manager adapter wired by default (those adapters exist but require manual config) | Document the `provider:` field in `oneiric/core/config.py:SecretsConfig`; add operator runbook |
 | **CLI `oneiric settings show` / `validate`** | The CLI has `oneiric list` / `oneiric explain` / `oneiric plugins` but no dedicated `settings show` subcommand | Operators must `cat settings/<project>.yaml` directly; no canonical validation that the merged `OneiricSettings` round-trips through Pydantic | Add `oneiric settings show [--project <name>] [--as-yaml]` and `oneiric settings validate` |
 
----
+______________________________________________________________________
 
 ## 6. Sample Queries
 
@@ -904,7 +905,7 @@ last_registered=87
 last_per_domain={"adapter": 87}
 ```
 
----
+______________________________________________________________________
 
 ## 7. Diagrams
 
@@ -914,10 +915,10 @@ above; the third — **Adapter lifecycle** — is included in this section.
 1. **Schema map** (Section 1) — `erDiagram` of all six on-disk stores
    plus the in-process DI registry, the settings layered source, and the
    TrackedSettings Dhara push.
-2. **Settings layer resolution** (this section) — `flowchart` showing
+1. **Settings layer resolution** (this section) — `flowchart` showing
    the precedence order from code defaults through the seven layered
    sources.
-3. **Adapter lifecycle** (this section) — `sequenceDiagram` of install →
+1. **Adapter lifecycle** (this section) — `sequenceDiagram` of install →
    register → resolve → activate → use → swap → cleanup.
 
 ### Settings layer resolution (precedence order)
@@ -1053,7 +1054,7 @@ sequenceDiagram
     LM->>LM: _run_hooks(on_cleanup, ...)
 ```
 
----
+______________________________________________________________________
 
 ## 8. Operational Notes
 
@@ -1075,25 +1076,31 @@ The most-confused operator questions are:
 Three patterns are in production today:
 
 1. **Built-in adapter via Dhara push** (default for the 87+ built-ins):
+
    ```bash
    python -m oneiric.adapters.dhara_pusher --dhara-url http://localhost:8683
    ```
+
    Posts one `Adapter` row per built-in to Dhara `adapters[adapter:<domain>:<key>:<provider>]`.
 
-2. **Entry-point plugin** (per consumer package):
+1. **Entry-point plugin** (per consumer package):
+
    ```python
    # pyproject.toml
    [project.entry-points."oneiric.adapters"]
    custom_cache = "my_pkg.adapters:register"
    ```
+
    ```python
    # my_pkg/adapters.py
    def register():
        return [AdapterMetadata(category="cache", provider="custom", ...)]
    ```
+
    Loaded at `RuntimeOrchestrator.__init__` via `plugins.register_entrypoint_plugins`.
 
-3. **Remote manifest** (per-environment overrides):
+1. **Remote manifest** (per-environment overrides):
+
    ```yaml
    # settings/<project>.yaml
    remote:
@@ -1103,6 +1110,7 @@ Three patterns are in production today:
      signature_required: true
      signature_threshold: 2
    ```
+
    Synced every `refresh_interval` seconds by `remote_sync_loop` (managed by `RuntimeOrchestrator`).
 
 Upgrade workflow: bump the version in `AdapterMetadata.version` (or the
@@ -1118,11 +1126,11 @@ uses an in-process `CandidateRegistry` (a `defaultdict[(domain,key), list[Candid
 backed by the resolver. Lifecycle:
 
 1. **Cold start**: `Resolver.__init__` → `CandidateRegistry(settings)` → empty `_candidates` + empty `_active` + empty `_shadowed`.
-2. **Bootstrap**: `RuntimeOrchestrator.__init__` → `plugins.register_entrypoint_plugins(resolver, settings.plugins)` → walks entry-point groups, registers candidates, populates `_candidates`.
-3. **Remote sync**: `RuntimeOrchestrator.sync_remote(manifest_url)` → `sync_remote_manifest(resolver, settings.remote)` → registers one `Candidate` per `RemoteManifestEntry`.
-4. **Steady state**: every `bridge.use` calls `resolver.resolve` (in-process, no IO) and `lifecycle.activate` / `lifecycle.swap`.
-5. **Hot reload**: `SelectionWatcher` polls `load_settings()` every 5s; on change, calls `bridge.update_settings(layer_settings)`. The `Resolver` itself is not rebuilt — only the `LayerSettings.selections` and `provider_settings` change, which affect the next `resolver.resolve` call's `override_provider` + `require_all` semantics.
-6. **Shutdown**: `RuntimeOrchestrator.stop` → supervisor stop → bridge `__aexit__` (no-op today; cleanup is per-instance via `LifecycleManager._cleanup_instance` on swap) → `LifecycleManager._persist_status_snapshot` writes the final state.
+1. **Bootstrap**: `RuntimeOrchestrator.__init__` → `plugins.register_entrypoint_plugins(resolver, settings.plugins)` → walks entry-point groups, registers candidates, populates `_candidates`.
+1. **Remote sync**: `RuntimeOrchestrator.sync_remote(manifest_url)` → `sync_remote_manifest(resolver, settings.remote)` → registers one `Candidate` per `RemoteManifestEntry`.
+1. **Steady state**: every `bridge.use` calls `resolver.resolve` (in-process, no IO) and `lifecycle.activate` / `lifecycle.swap`.
+1. **Hot reload**: `SelectionWatcher` polls `load_settings()` every 5s; on change, calls `bridge.update_settings(layer_settings)`. The `Resolver` itself is not rebuilt — only the `LayerSettings.selections` and `provider_settings` change, which affect the next `resolver.resolve` call's `override_provider` + `require_all` semantics.
+1. **Shutdown**: `RuntimeOrchestrator.stop` → supervisor stop → bridge `__aexit__` (no-op today; cleanup is per-instance via `LifecycleManager._cleanup_instance` on swap) → `LifecycleManager._persist_status_snapshot` writes the final state.
 
 ### Failure modes
 
@@ -1153,10 +1161,10 @@ backed by the resolver. Lifecycle:
 | Operation | Typical latency | Hot path? |
 |-----------|-----------------|-----------|
 | `load_settings(project_name="...")` | 5-50 ms (4 file reads + Pydantic validate) | Yes (every consumer startup) |
-| `resolver.resolve(domain, key)` | <1 ms (in-process tuple compare + filter) | Yes (every `bridge.use`) |
-| `resolver.explain(domain, key)` | <1 ms (same as resolve + dict build) | No |
+| `resolver.resolve(domain, key)` | \<1 ms (in-process tuple compare + filter) | Yes (every `bridge.use`) |
+| `resolver.explain(domain, key)` | \<1 ms (same as resolve + dict build) | No |
 | `bridge.use(key)` (cold) | 50-500 ms (factory import + health check) | Yes (first call) |
-| `bridge.use(key)` (warm) | <1 ms (cached instance) | Yes |
+| `bridge.use(key)` (warm) | \<1 ms (cached instance) | Yes |
 | `bridge.use(key, force_reload=True)` | 50-500 ms (factory + health + cleanup) | Yes (hot-swap) |
 | `_persist_status_snapshot` | 5-20 ms (JSON encode + atomic rename) | Yes (every state change) |
 | `DomainActivityStore.set` / `get` | 1-5 ms (SQLite write) | Yes (every pause/drain) |
@@ -1190,7 +1198,7 @@ The contracts in Section 5 are derived from these ADRs and decisions
 
 See `oneiric/docs/` for the full ADR catalog and migration history.
 
----
+______________________________________________________________________
 
 ## See Also
 

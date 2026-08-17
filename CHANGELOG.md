@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.3] - 2026-08-17
+
+### Added
+
+- oneiric: Mirror wave-11 mermaid CI guard from crackerjack
+- oneiric: Wire 3 env-var aliases via Pydantic AliasChoices
+
+### Fixed
+
+- oneiric: Align lifecycle state names with LifecycleStatus enum
+- oneiric: Correct bridge paths in NEW_ARCH_SPEC top-level packages
+- oneiric: Fix migration phase decision no-go path
+- oneiric: Remove 2 linear migration-plan strips
+- oneiric: Remove 4 trivially-low-info decorative diagrams
+- oneiric: Rename wave-11 JS comment + restore average-line chart overlay
+- oneiric: Repair 3 broken mermaid diagrams in VISUAL_GUIDE.md
+- oneiric: Trim deployment diagram to documented targets (Cloud Run + systemd)
+
+### Documentation
+
+- Add version-consistency CI guard from 2026-08-12 audit
+- oneiric: Reconcile version + python version stamps per wave-1 verifier
+- oneiric: Update stale test count in CLAUDE.md
+
+### Internal
+
+- gitignore: Untrack .coverage-ratchet.json (bodai 2026-08-17)
+
 ## [0.16.2] - 2026-08-12
 
 ### Fixed
