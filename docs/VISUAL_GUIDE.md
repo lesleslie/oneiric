@@ -838,48 +838,21 @@ graph TD
 
 ```mermaid
 graph TB
-    subgraph "Cloud Run (Google Cloud)"
-        CR[Cloud Run Service]
-        CR_B[Build + Deploy]
-        CR_M[Automatic Scaling]
-    end
+    APP[Oneiric Application]
 
-    subgraph "Kubernetes"
-        K8S[Kubernetes Deployment]
-        K8S_H[Helm Charts]
-        K8S_M[Horizontal Pod Autoscaler]
+    subgraph "Cloud Run (Google Cloud)"
+        CR[Cloud Run Service<br/>Buildpack + Procfile]
     end
 
     subgraph "systemd (Linux)"
-        SD[systemd Service]
-        SD_S[Socket Activation]
-        SD_R[Auto-restart on failure]
+        SD[systemd Service<br/>ExecStart = oneiric.cli orchestrate]
     end
 
-    subgraph "Docker Compose"
-        DC[Docker Compose]
-        DC_N[Multi-container]
-        DC_R[Restart policies]
-    end
-
-    subgraph "Oneiric Application"
-        APP[Application Code]
-        ORCH[Runtime Orchestrator]
-        CONF[Config Files]
-    end
-
-    CR --> APP
-    K8S --> APP
-    SD --> APP
-    DC --> APP
-
-    APP --> ORCH
-    ORCH --> CONF
+    APP --> CR
+    APP --> SD
 
     style CR fill:#e8f5e9
-    style K8S fill:#e3f2fd
     style SD fill:#fff3e0
-    style DC fill:#f3e5f5
 ```
 
 ### Deployment Decision Tree
@@ -889,29 +862,23 @@ graph TD
     A[Choose Deployment] --> B{Infrastructure?}
 
     B -->|GCP Cloud| C{Need Auto-scaling?}
-    B -->|Kubernetes Cluster| D[Kubernetes Deployment]
-    B -->|Single Linux Server| E{Need Process Supervision?}
-    B -->|Local Development| F[Docker Compose]
+    B -->|Single Linux Server| D{Need Process Supervision?}
 
-    C -->|Yes| G[Cloud Run]
-    C -->|No| H[Compute Engine<br/>+ systemd]
+    C -->|Yes| E[Cloud Run]
+    C -->|No| F[Compute Engine<br/>+ systemd]
 
-    E -->|Yes| I[systemd Service]
-    E -->|No| J[Manual/Supervisor]
+    D -->|Yes| G[systemd Service]
+    D -->|No| H[Manual/Supervisor]
 
-    G --> K[✓ Serverless]
-    D --> L[✓ Container Orchestration]
-    I --> M[✓ Production Service]
-    H --> N[✓ VM Service]
-    F --> O[✓ Local Development]
-    J --> P[✓ Simple Service]
+    E --> I[✓ Serverless]
+    G --> J[✓ Production Service]
+    F --> K[✓ VM Service]
+    H --> L[✓ Simple Service]
 
+    style I fill:#c8e6c9
+    style J fill:#c8e6c9
     style K fill:#c8e6c9
-    style L fill:#c8e6c9
-    style M fill:#c8e6c9
-    style N fill:#c8e6c9
-    style O fill:#fff9c4
-    style P fill:#fff9c4
+    style L fill:#fff9c4
 ```
 
 ______________________________________________________________________
@@ -1039,20 +1006,23 @@ graph TB
     A[oneiric CLI] --> B[list]
     A --> C[explain]
     A --> D[status]
+    A --> D2[swap]
     A --> E[health]
+    A --> E2[action-invoke]
     A --> F[activity]
+    A --> F2[pause]
+    A --> F3[drain]
     A --> G[remote-sync]
+    A --> G2[remote-status]
     A --> H[orchestrate]
-    A --> I[pause/drain]
-
-    B --> J[--domain adapter<br/>--json]
-    C --> K[--domain service<br/>--key status]
-    D --> L[--domain task<br/>--key process<br/>--json]
-    E --> M[--probe]
-    F --> N[--json<br/>--resume]
-    G --> O[--manifest URL<br/>--watch<br/>--refresh-interval]
-    H --> O
-    I --> P[--domain workflow<br/>--key etl<br/>--note reason]
+    A --> H2[shell]
+    A --> M[manifest]
+    A --> S[secrets]
+    A --> Ev[event]
+    A --> W[workflow]
+    A --> P[plugins]
+    A --> SI[supervisor-info]
+    A --> L[load-test]
 
     style A fill:#e3f2fd
     style B fill:#e8f5e9
