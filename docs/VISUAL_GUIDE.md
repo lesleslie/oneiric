@@ -214,31 +214,17 @@ ______________________________________________________________________
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Registered: Component Registered
-
-    Registered --> Activating: resolve() called
-    Activating --> Instantiating: Factory called
-    Instantiating --> HealthChecking: Instance created
-    HealthChecking --> Ready: Health check passed
-    HealthChecking --> Failed: Health check failed
-    Instantiating --> Failed: Factory raised exception
-
-    Ready --> Active: In use by application
-    Active --> Swapping: swap() called
-
-    Swapping --> Activating: New provider
-    Swapping --> Ready: Swap failed, kept old
-    Swapping --> RolledBack: New failed, restored old
-
-    RolledBack --> Active: Previous instance active
-
+    [*] --> Unknown: Registration
+    Unknown --> Activating: activate() called
+    Activating --> Ready: health() passed
+    Activating --> Failed: factory raised OR health() failed
+    Ready --> Activating: swap() called (pending_provider set)
+    Ready --> Failed: subsequent health() failed
+    Activating --> Ready: swap rollback (kept old)
+    Activating --> RolledBack: swap failed, restored old
+    RolledBack --> Ready: Previous instance active
     Failed --> [*]: Component unavailable
-    Active --> [*]: Unregistered
-
-    note right of Ready
-        Entry point for
-        application usage
-    end note
+    Ready --> [*]: Unregistered
 ```
 
 ### Hot-Swap Flow
@@ -416,36 +402,40 @@ ______________________________________________________________________
 classDiagram
     class DomainBridge {
         <<abstract>>
+        +str domain
         +Resolver resolver
         +LifecycleManager lifecycle
-        +Settings settings
-        +use(key) Handle
-        +list_active() List
-        +explain(key) Explanation
+        +LayerSettings settings
+        +DomainActivityStore activity_store
+        +ServiceSupervisor supervisor
+        +async use(key, *, provider, capabilities, require_all, force_reload) DomainHandle
+        +active_candidates() list
+        +shadowed_candidates() list
+        +explain(key, *, capabilities, require_all) dict
     }
 
     class AdapterBridge {
-        +use(adapter) Handle
+        +async use(category, *, provider, capabilities, require_all, force_reload) AdapterHandle
         +list_adapters() List
     }
 
     class ServiceBridge {
-        +use(service) Handle
+        +async use(category, *, provider, capabilities, require_all, force_reload) ServiceHandle
         +list_services() List
     }
 
     class TaskBridge {
-        +use(task) Handle
+        +async use(category, *, provider, capabilities, require_all, force_reload) TaskHandle
         +list_tasks() List
     }
 
     class EventBridge {
-        +use(event) Handle
+        +async use(category, *, provider, capabilities, require_all, force_reload) EventHandle
         +list_events() List
     }
 
     class WorkflowBridge {
-        +use(workflow) Handle
+        +async use(category, *, provider, capabilities, require_all, force_reload) WorkflowHandle
         +list_workflows() List
     }
 
