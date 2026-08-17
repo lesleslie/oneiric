@@ -237,7 +237,7 @@ sequenceDiagram
 
 ```mermaid
 graph TD
-    A[swap() called] --> B[Instantiate New]
+    A["swap() called"] --> B[Instantiate New]
     B --> C{Success?}
 
     C -->|No| ROLLBACK[Rollback to Old]
@@ -656,7 +656,7 @@ graph TB
     end
 
     subgraph "Layer 4: Timing Protection"
-        TIMING[Constant-Time Compare<br/>hmac.compare()<br/>Prevents side-channel]
+        TIMING["Constant-Time Compare<br/>hmac.compare()<br/>Prevents side-channel"]
     end
 
     subgraph "Layer 3: Remote Security"
@@ -723,8 +723,6 @@ sequenceDiagram
             end
         end
     end
-
-    style Verify fill:#e8f5e9
 ```
 
 ### Thread Safety Model
