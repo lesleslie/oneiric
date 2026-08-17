@@ -399,15 +399,6 @@ graph LR
 
 ### Benefits After Migration
 
-```mermaid
-mindmap
-  root((Oneiric<br/>Benefits))
-    Deterministic_Overrides["Deterministic Overrides<br/>Across the stack"]
-    Hot_Swap["Hot Swap<br/>Safer rollout<br/>Config-driven changes"]
-    Unified_Observability["Unified Observability<br/>OTel tracing<br/>Structured logging<br/>Health reporting"]
-    Plugin_Delivery["Plugin/Remote Delivery<br/>Share components<br/>No copy/paste<br/>Ad-hoc components"]
-```
-
 **Migration Steps:**
 
 1. Add stack priority map per app (`STACK_ORDER` env or config; e.g., sites →

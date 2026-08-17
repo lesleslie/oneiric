@@ -137,35 +137,6 @@ graph TD
 
 ### Resolution Decision Tree
 
-```mermaid
-graph TD
-    A[Need: Cache Adapter] --> B{Config Override?}
-    B -->|Yes: adapters.yml| C[Use Config Provider]
-    B -->|No| D{Priority Set?}
-
-    D -->|Yes| E[Highest Priority Wins]
-    D -->|No| F{Stack Level Set?}
-
-    F -->|Yes| G[Highest Stack Level Wins]
-    F -->|No| H[Last Registered Wins]
-
-    C --> I[Check Capabilities]
-    E --> I
-    G --> I
-    H --> I
-
-    I --> J{Capabilities Match?}
-    J -->|Yes| K[✓ Provider Selected]
-    J -->|No| L[✗ Try Next Candidate]
-
-    L --> M{More Candidates?}
-    M -->|Yes| I
-    M -->|No| N[Return None]
-
-    style K fill:#c8e6c9
-    style N fill:#ffcdd2
-```
-
 ### Score Calculation
 
 ```mermaid
@@ -637,18 +608,6 @@ xychart-beta
 
 ### Test Suite Distribution
 
-```mermaid
-pie title Test Distribution by Category (716 Total Tests)
-    "Core Tests" : 68
-    "Adapter Tests" : 60
-    "Domain Tests" : 44
-    "Security Tests" : 100
-    "Remote/Runtime/CLI" : 117
-    "Integration Tests" : 39
-    "E2E Tests" : 8
-    "Extended Tests" : 280
-```
-
 ### Property-Based Testing Strategy
 
 ```mermaid
@@ -769,27 +728,6 @@ sequenceDiagram
 ```
 
 ### Thread Safety Model
-
-```mermaid
-graph LR
-    A[Thread 1] -->|register| B[Resolver Registry<br/>RLock protected]
-    C[Thread 2] -->|register| B
-    D[Thread 3] -->|resolve| B
-
-    B -->|acquire lock| E{Critical Section}
-    E -->|Thread 1| F[Modify Registry]
-    E -->|Thread 2| G[Read Registry]
-    E -->|Thread 3| H[Query Registry]
-
-    F -->|release lock| B
-    G -->|release lock| B
-    H -->|release lock| B
-
-    B --> I[✓ Thread-Safe Result]
-
-    style B fill:#e3f2fd
-    style I fill:#c8e6c9
-```
 
 ______________________________________________________________________
 
