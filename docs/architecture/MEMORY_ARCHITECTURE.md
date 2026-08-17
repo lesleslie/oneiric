@@ -924,7 +924,7 @@ above; the third — **Adapter lifecycle** — is included in this section.
 
 ```mermaid
 flowchart TD
-    Start([load_settings called]) --> CodeDefaults[Code defaults<br/>OneiricSettings fields]
+    Start(["load_settings called"]) --> CodeDefaults["Code defaults<br/>OneiricSettings fields"]
 
     CodeDefaults --> ProjectYaml{settings/<project>.yaml<br/>or .yml exists?}
     ProjectYaml -->|yes| LoadProject[Load + deep_merge]
@@ -947,8 +947,8 @@ flowchart TD
     LoadXdgLocal --> EnvVars
     SkipXdgLocal --> EnvVars
 
-    EnvVars[<code>${PROJECT}_*__*</code> env vars<br/>via _env_overrides]
-    EnvVars --> ExplicitPath{Explicit path= argument<br/>OR ${PROJECT}_CONFIG env?}
+    EnvVars["<code>${PROJECT}_*__*</code> env vars<br/>via _env_overrides"]
+    EnvVars --> ExplicitPath{"Explicit path= argument<br/>OR ${PROJECT}_CONFIG env?"}
 
     ExplicitPath -->|yes| LoadExplicit[Load + deep_merge LAST]
     ExplicitPath -->|no| Validate

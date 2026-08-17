@@ -412,16 +412,11 @@ ______________________________________________________________________
 ### Coverage Comparison
 
 ```mermaid
-barChart
-    title MCP Server Test Coverage Baselines
-    x-axis Project
-    y-axis Coverage %
-    bar ["mailgun-mcp", 46]
-    bar ["unifi-mcp", 27]
-    bar ["opera-cloud-mcp", 39]
-    bar ["raindropio-mcp", 89]
-    bar ["excalidraw-mcp", 77]
-    line ["Average", 55.6]
+xychart-beta
+    title "MCP Server Test Coverage Baselines"
+    x-axis ["mailgun-mcp", "unifi-mcp", "opera-cloud-mcp", "raindropio-mcp", "excalidraw-mcp"]
+    y-axis "Coverage %" 0 --> 100
+    bar [46, 27, 39, 89, 77]
 ```
 
 ### Test Quality Assessment
