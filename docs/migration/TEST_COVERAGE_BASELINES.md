@@ -417,6 +417,7 @@ xychart-beta
     x-axis ["mailgun-mcp", "unifi-mcp", "opera-cloud-mcp", "raindropio-mcp", "excalidraw-mcp"]
     y-axis "Coverage %" 0 --> 100
     bar [46, 27, 39, 89, 77]
+    line [55.6, 55.6, 55.6, 55.6, 55.6]
 ```
 
 ### Test Quality Assessment
