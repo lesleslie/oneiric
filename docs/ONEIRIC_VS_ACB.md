@@ -503,7 +503,7 @@ graph LR
     Start --> Phase1
     Phase1 --> Decision1
     Decision1 -->|"Yes"| Decision2
-    Decision1 -->|"No"| Complete
+    Decision1 -->|"No"| Stop
     Decision2 -->|"No"| Stop
     Decision2 -->|"Yes"| Phase2
     Phase2 --> Complete
