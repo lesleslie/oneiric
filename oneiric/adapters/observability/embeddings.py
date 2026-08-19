@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from typing import Any
 
 import numpy as np
@@ -39,7 +40,8 @@ class EmbeddingService:
         )
 
     def _generate_cache_key(self, trace: dict[str, Any]) -> int:
-        return hash(frozenset(sorted(trace.items())))
+        canonical_trace = json.dumps(trace, sort_keys=True, default=str)
+        return hash(canonical_trace)
 
     def _generate_fallback_embedding(self, trace_id: str) -> np.ndarray:
         hash_int = int(hashlib.sha256(trace_id.encode()).hexdigest(), 16)

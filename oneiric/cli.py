@@ -354,7 +354,7 @@ def _manifest_entry_from_adapter(
         qualname = getattr(func, "__qualname__", module_name)
         factory_str = f"{module_name}:{qualname}"
     else:
-        raise TypeError(f"Unsupported factory type: {type(adapter.factory)}")
+        raise ValueError(f"Unsupported factory type: {type(adapter.factory)}")
 
     settings_model_str: str | None = None
     if adapter.settings_model:
@@ -400,7 +400,7 @@ def _manifest_entry_from_action(
         qualname = getattr(func, "__qualname__", module_name)
         factory_str = f"{module_name}:{qualname}"
     else:
-        raise TypeError(f"Unsupported factory type: {type(action.factory)}")
+        raise ValueError(f"Unsupported factory type: {type(action.factory)}")
 
     return RemoteManifestEntry(
         domain="action",
@@ -720,7 +720,7 @@ def _initialize_state(
 def _state(ctx: typer.Context) -> CLIState:
     state = ctx.obj
     if not isinstance(state, CLIState):
-        raise TypeError("CLI state not initialized")
+        raise RuntimeError("CLI state not initialized")
     return state
 
 
@@ -2564,6 +2564,17 @@ def _http_server_enabled(
     env_port = os.getenv("PORT")
     if env_port:
         return True
+    if profile_name is None:
+        return False
+    if hasattr(profile_name, "profile"):
+        nested_profile = getattr(profile_name, "profile", None)
+        if nested_profile is not None and hasattr(nested_profile, "name"):
+            profile_name = nested_profile.name
+    if not isinstance(profile_name, str):
+        if hasattr(profile_name, "name"):
+            profile_name = getattr(profile_name, "name")
+    if not isinstance(profile_name, str):
+        return False
     normalized = profile_name.lower() if profile_name else ""
     return normalized == "serverless"
 

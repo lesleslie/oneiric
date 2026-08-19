@@ -606,7 +606,7 @@ class TestQdrantBuildFilter:
     def test_filter_exception_returns_none(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        # Don't inject models -- the import inside _build_qdrant_filter will fail
+        monkeypatch.setitem(sys.modules, "qdrant_client.models", None)
         adapter = QdrantAdapter(QdrantSettings())
         result = adapter._build_qdrant_filter({"key": "val"})
         assert result is None

@@ -32,7 +32,7 @@ class InMemoryRedisStreamsClient:
         return True
 
     async def xgroup_create(
-        self, stream: str, group: str, *, id: str, mkstream: bool
+        self, stream: str, group: str, *, identifier: str, mkstream: bool
     ) -> None:
         key = f"{stream}:{group}"
         if key in self.groups:

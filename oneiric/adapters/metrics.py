@@ -121,6 +121,6 @@ def _read_value(instance: Any, name: str) -> Any:
     if callable(value):
         try:
             return value()
-        except (AttributeError, TypeError, ValueError):
+        except Exception:
             return None
     return value

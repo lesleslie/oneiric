@@ -513,7 +513,7 @@ def _parse_manifest(
     except json.JSONDecodeError:
         data = yaml.safe_load(text)
     if not isinstance(data, dict):
-        raise TypeError("Remote manifest must be a mapping at the top level.")
+        raise ValueError("Remote manifest must be a mapping at the top level.")
 
     policy = signature_policy or RemoteSourceConfig()
 

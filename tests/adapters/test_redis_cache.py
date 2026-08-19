@@ -48,11 +48,13 @@ async def test_redis_cache_delete_and_clear() -> None:
 
 @pytest.mark.asyncio
 async def test_redis_cache_negative_ttl_raises() -> None:
-    adapter = RedisCacheAdapter(RedisCacheSettings())
+    fake = FakeRedis(decode_responses=True)
+    adapter = RedisCacheAdapter(RedisCacheSettings(), redis_client=fake)
     await adapter.init()
     with pytest.raises(LifecycleError):
         await adapter.set("foo", "bar", ttl=-1)
     await adapter.cleanup()
+    await fake.aclose()
 
 
 def test_register_builtin_adapters_registers_redis_adapter() -> None:

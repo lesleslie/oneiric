@@ -114,7 +114,7 @@ class NetdataMonitoringAdapter:
         try:
             response = await self._client.get("/api/v1/info")
             return response.status_code < 400
-        except OSError:  # pragma: no cover - network error path
+        except Exception:  # pragma: no cover - network error path
             return False
 
     async def cleanup(self) -> None:
@@ -170,7 +170,7 @@ class NetdataMonitoringAdapter:
 
             response = await self._client.post("/api/v1/data", json=payload)
             return response.status_code < 400
-        except OSError as e:  # pragma: no cover - error handling
+        except Exception as e:  # pragma: no cover - error handling
             self._logger.warning(
                 "custom-metric-send-error",
                 chart_name=chart_name,

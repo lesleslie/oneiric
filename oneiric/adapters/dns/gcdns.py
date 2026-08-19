@@ -72,7 +72,7 @@ class GCDNSAdapter:
         try:
             exists = await asyncio.to_thread(zone.exists)
             return bool(exists)
-        except OSError as exc:  # pragma: no cover - network path
+        except Exception as exc:  # pragma: no cover - network path
             self._logger.warning("gcdns-health-failed", error=str(exc))
             return False
 

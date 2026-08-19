@@ -199,7 +199,11 @@ class RuntimeOrchestrator:
             for watcher in self._watchers:
                 await watcher.start()
         try:
-            await self.secrets.prefetch()
+            prefetch = getattr(self.secrets, "prefetch", None)
+            if callable(prefetch):
+                result = prefetch()
+                if hasattr(result, "__await__"):
+                    await result
         except (OSError, RuntimeError) as exc:  # pragma: no cover - defensive log
             logger.warning("secrets-prefetch-failed", error=str(exc))
         if self._supervisor:

@@ -117,7 +117,7 @@ class OpenAIEmbeddingAdapter(EmbeddingBase):
         try:
             await self.embed_text("health check test")
             return True
-        except (OSError, RuntimeError) as exc:
+        except Exception as exc:
             self._logger.warning("openai-embedding-health-check-failed", error=str(exc))
             return False
 
@@ -125,7 +125,7 @@ class OpenAIEmbeddingAdapter(EmbeddingBase):
         if self._client:
             try:
                 await self._client.close()
-            except OSError as exc:
+            except Exception as exc:
                 self._logger.warning("openai-cleanup-warning", error=str(exc))
             finally:
                 self._client = None

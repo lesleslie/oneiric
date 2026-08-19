@@ -334,7 +334,7 @@ class TestMultiTierCacheAdapter:
         mock_l1.get = AsyncMock(return_value="value")
         mock_l1.health = AsyncMock(return_value=True)
 
-        settings = MultiTierCacheSettings(enable_metrics=False)
+        settings = MultiTierCacheSettings(enable_metrics=False, l2_enabled=False)
         cache = MultiTierCacheAdapter(
             settings=settings, l1_cache=mock_l1, l2_cache=None
         )

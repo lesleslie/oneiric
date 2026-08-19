@@ -10,6 +10,11 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+import anyio
+from anyio.streams.memory import (
+    MemoryObjectReceiveStream,
+    MemoryObjectSendStream,
+)
 from mcp import ClientSession, StdioServerParameters
 from tenacity import (
     retry,
@@ -60,7 +65,13 @@ class SessionEventEmitter:
     async def _get_session(self) -> ClientSession:
         """Get or create MCP client session."""
         if self._session is None:
-            self._session = ClientSession(self._server_params)  # type: ignore
+            read_stream, write_stream = anyio.create_memory_object_stream(max_buffer_size=0)
+            self._read_stream: MemoryObjectReceiveStream | None = read_stream
+            self._write_stream: MemoryObjectSendStream | None = write_stream
+            self._session = ClientSession(
+                read_stream,  # type: ignore[arg-type]
+                write_stream,  # type: ignore[arg-type]
+            )
             await self._session.__aenter__()
             await self._session.initialize()
             self._consecutive_failures = 0
@@ -83,7 +94,7 @@ class SessionEventEmitter:
             await session.call_tool("health_check", {})
             self.available = True
             return True
-        except (OSError, RuntimeError) as e:
+        except Exception as e:
             logger.debug(f"Session-Buddy MCP unavailable: {e}")
             self._handle_failure()
             return False
@@ -160,7 +171,7 @@ class SessionEventEmitter:
                 logger.error(f"Unexpected result type: {type(result)}")
                 return None
 
-        except (OSError, RuntimeError) as e:
+        except Exception as e:
             logger.error(f"Failed to emit session start event: {e}")
             return None
 
@@ -203,7 +214,7 @@ class SessionEventEmitter:
             logger.info(f"Session ended: {session_id}")
             return True
 
-        except (OSError, RuntimeError) as e:
+        except Exception as e:
             logger.error(f"Failed to emit session end event: {e}")
             return False
 

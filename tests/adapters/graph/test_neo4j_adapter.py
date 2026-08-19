@@ -86,7 +86,8 @@ async def test_cleanup(adapter, fake_driver):
 async def test_create_relationship(adapter) -> None:
     """create_relationship() builds Cypher query and returns result (lines 100-104)."""
     result = await adapter.create_relationship(1, 2, "KNOWS", {"since": 2020})
-    assert result is None  # FakeDriver returns {"n": ...}, no "r" key
+    # Adapter returns {} when query result lacks the requested key.
+    assert result == {}
 
 
 @pytest.mark.asyncio()

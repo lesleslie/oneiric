@@ -14,12 +14,6 @@ from oneiric.adapters.observability.queries import QueryService
 from oneiric.adapters.observability.settings import OTelStorageSettings
 from oneiric.core.lifecycle import get_logger
 
-try:
-    from sqlalchemy.exc import SQLAlchemyError
-except ImportError:  # pragma: no cover - sqlalchemy is optional
-    SQLAlchemyError: Any = Exception
-
-
 class OTelStorageAdapter(ABC):
     def __init__(self, settings: OTelStorageSettings) -> None:
         self._settings = settings
@@ -94,7 +88,7 @@ class OTelStorageAdapter(ABC):
             async with self._session_factory() as session:
                 await session.execute(text("SELECT 1;"))
                 return True
-        except SQLAlchemyError as exc:
+        except Exception as exc:
             self._logger.warning("adapter-health-error", error=str(exc))
             return False
 
@@ -129,7 +123,7 @@ class OTelStorageAdapter(ABC):
                 await self._flush_buffer()
             except asyncio.CancelledError:
                 break
-            except (OSError, RuntimeError, SQLAlchemyError) as exc:
+            except Exception as exc:
                 self._logger.error("flush-buffer-error", error=str(exc))
 
     async def _flush_buffer(self) -> None:
@@ -174,7 +168,7 @@ class OTelStorageAdapter(ABC):
 
                 self._logger.debug("traces-stored", count=len(trace_models))
 
-            except (OSError, RuntimeError, SQLAlchemyError) as exc:
+            except Exception as exc:
                 self._logger.error(
                     "trace-store-failed", error=str(exc), count=len(traces_to_store)
                 )
@@ -197,7 +191,7 @@ class OTelStorageAdapter(ABC):
                     {"raw_data": json.dumps(trace), "error_message": error_message},
                 )
                 await session.commit()
-        except SQLAlchemyError as dlq_exc:
+        except Exception as dlq_exc:
             self._logger.error("dlq-insert-failed", error=str(dlq_exc))
 
     async def store_log(self, log: dict) -> None:

@@ -238,7 +238,7 @@ class QdrantAdapter(VectorBase[QdrantSettings]):
         if self._client:
             try:
                 await self._client.close()
-            except OSError as exc:
+            except Exception as exc:
                 self._logger.warning("qdrant-cleanup-warning", error=str(exc))
             finally:
                 self._client = None
@@ -313,7 +313,7 @@ class QdrantAdapter(VectorBase[QdrantSettings]):
 
             return None
 
-        except (ValueError, TypeError, KeyError) as exc:
+        except Exception as exc:
             self._logger.warning("qdrant-filter-build-failed", error=str(exc))
             return None
 

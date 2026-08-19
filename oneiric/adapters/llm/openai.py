@@ -100,8 +100,8 @@ class OpenAILLMAdapter(LLMBase):
 
             await client.models.list()
             return True
-        except (openai.OpenAIError, OSError) as e:  # ty: ignore[unresolved-reference]
-            self._logger.error(f"Health check failed: {e}")
+        except Exception as exc:
+            self._logger.warning("OpenAI health check failed", error=str(exc))
             return False
 
     async def cleanup(self) -> None:
@@ -456,7 +456,7 @@ class OpenAILLMAdapter(LLMBase):
             return len(encoding.encode(text))
         except ImportError:
             return await super()._count_tokens(text, model)
-        except (ValueError, TypeError, KeyError, AttributeError):
+        except Exception:
             return await super()._count_tokens(text, model)
 
 

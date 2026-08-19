@@ -192,5 +192,6 @@ class ArangoDBGraphAdapter:
 
         return ArangoClient(
             hosts=self._settings.hosts,
+            verify=self._settings.verify,
             request_timeout=self._settings.request_timeout,
         )

@@ -82,7 +82,7 @@ def verify_manifest_signature(
         except InvalidSignature:
             errors.append(f"key_{i}: signature mismatch")
             continue
-        except (ValueError, TypeError) as exc:
+        except Exception as exc:
             errors.append(f"key_{i}: {type(exc).__name__}: {exc}")
             continue
 

@@ -181,7 +181,7 @@ class DuckDBDatabaseAdapter:
                     f"LOAD {safe_ext}"
                 )  # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query,python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
                 self._logger.debug("duckdb-extension-loaded", extension=safe_ext)
-            except (DuckDBError, OSError) as exc:
+            except Exception as exc:
                 self._logger.warning(
                     "duckdb-extension-failed", extension=safe_ext, error=str(exc)
                 )
@@ -207,7 +207,7 @@ class DuckDBDatabaseAdapter:
             conn = self._ensure_conn()
             result = conn.execute("SELECT 1").fetchone()
             return result is not None and result[0] == 1
-        except (DuckDBError, OSError) as exc:
+        except Exception as exc:
             self._logger.warning("duckdb-health-check-failed", error=str(exc))
             return False
 
@@ -215,7 +215,7 @@ class DuckDBDatabaseAdapter:
         if self._conn:
             try:
                 self._conn.close()
-            except (DuckDBError, OSError) as exc:
+            except Exception as exc:
                 self._logger.warning("duckdb-cleanup-warning", error=str(exc))
             finally:
                 self._conn = None
@@ -234,7 +234,7 @@ class DuckDBDatabaseAdapter:
             rowcount = 0
             try:
                 rowcount = len(result.fetchall()) if result.description else 0
-            except (DuckDBError, OSError):
+            except Exception:
                 rowcount = 0
 
             return rowcount

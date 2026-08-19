@@ -47,7 +47,7 @@ class SystemReference:
         # Extract timestamp from ULID for time-based queries
         try:
             self.timestamp = get_timestamp(ulid)
-        except (ValueError, TypeError):
+        except Exception:  # pragma: no cover - defensive log path
             logger.warning(f"Failed to parse ULID timestamp: {ulid}")
             self.timestamp = 0
 
