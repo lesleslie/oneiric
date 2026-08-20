@@ -10,7 +10,7 @@ from oneiric.domains.workflows import WorkflowBridge
 try:  # pragma: no cover - optional dependency guard
     from aiohttp import web
 except ModuleNotFoundError:  # pragma: no cover - import deferred until runtime
-    web = None  # type: ignore[assignment]  # ty: ignore[invalid-assignment]
+    web = None  # type: ignore[assignment]
 
 
 class WorkflowTaskProcessor:
@@ -81,8 +81,8 @@ class SchedulerHTTPServer:
         self._app = web.Application()
         self._app.router.add_get("/healthz", self._handle_health)
         self._app.router.add_post("/tasks/workflow", self._handle_workflow_task)
-        self._runner: web.AppRunner | None = None
-        self._site: web.TCPSite | None = None
+        self._runner: web.AppRunner | None = None  # ty: ignore[unresolved-attribute]
+        self._site: web.TCPSite | None = None  # ty: ignore[unresolved-attribute]
 
     async def start(self) -> None:
         assert web is not None
@@ -101,24 +101,26 @@ class SchedulerHTTPServer:
             self._runner = None
         self._logger.info("scheduler-http-stopped")
 
-    async def _handle_health(self, _: web.Request):
-        return web.json_response({"status": "ok"})
+    async def _handle_health(self, _: web.Request):  # ty: ignore[unresolved-attribute]
+        return web.json_response({"status": "ok"})  # ty: ignore[unresolved-attribute]
 
-    async def _handle_workflow_task(self, request: web.Request):
+    async def _handle_workflow_task(self, request: web.Request):  # ty: ignore[unresolved-attribute]
         try:
             payload = await request.json()
         except ValueError:
-            return web.json_response(
+            return web.json_response(  # ty: ignore[unresolved-attribute]
                 {"error": "invalid-json"}, status=400, dumps=_safe_dumps
             )
         if not isinstance(payload, Mapping):
-            return web.json_response(
+            return web.json_response(  # ty: ignore[unresolved-attribute]
                 {"error": "payload-must-be-object"}, status=400, dumps=_safe_dumps
             )
         try:
             result = await self._processor.process(payload)
         except ValueError as exc:
-            return web.json_response({"error": str(exc)}, status=400, dumps=_safe_dumps)
+            return web.json_response(  # ty: ignore[unresolved-attribute]
+                {"error": str(exc)}, status=400, dumps=_safe_dumps
+            )
         except (
             OSError,
             RuntimeError,
@@ -127,10 +129,10 @@ class SchedulerHTTPServer:
                 "scheduler-http-error",
                 error=str(exc),
             )
-            return web.json_response(
+            return web.json_response(  # ty: ignore[unresolved-attribute]
                 {"error": "workflow-execution-failed"}, status=500, dumps=_safe_dumps
             )
-        return web.json_response(
+        return web.json_response(  # ty: ignore[unresolved-attribute]
             {"status": "completed", "result": result}, status=200, dumps=_safe_dumps
         )
 

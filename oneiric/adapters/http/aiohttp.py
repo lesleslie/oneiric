@@ -11,7 +11,7 @@ try:
     _AIOHTTP_AVAILABLE = True
 except ImportError:  # pragma: no cover - optional dependency
     aiohttp = None  # type: ignore
-    ClientResponse = Any  # type: ignore
+    ClientResponse = Any
     _AIOHTTP_AVAILABLE = False
 
 from oneiric.adapters.metadata import AdapterMetadata

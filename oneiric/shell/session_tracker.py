@@ -11,10 +11,6 @@ from pathlib import Path
 from typing import Any
 
 import anyio
-from anyio.streams.memory import (
-    MemoryObjectReceiveStream,
-    MemoryObjectSendStream,
-)
 from mcp import ClientSession, StdioServerParameters
 from tenacity import (
     retry,
@@ -68,11 +64,9 @@ class SessionEventEmitter:
             read_stream, write_stream = anyio.create_memory_object_stream(
                 max_buffer_size=0
             )
-            self._read_stream: MemoryObjectReceiveStream | None = read_stream
-            self._write_stream: MemoryObjectSendStream | None = write_stream
             self._session = ClientSession(
-                read_stream,  # type: ignore[arg-type]
-                write_stream,  # type: ignore[arg-type]
+                read_stream,  # ty: ignore[invalid-argument-type]
+                write_stream,  # ty: ignore[invalid-argument-type]
             )
             await self._session.__aenter__()
             await self._session.initialize()
