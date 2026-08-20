@@ -4,7 +4,13 @@ import asyncio
 import os
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Self
+from typing import TYPE_CHECKING, Any, Self
+
+if TYPE_CHECKING:
+    # Type-only import: narrows ty's view of `awatch` to non-None so the
+    # call site in _run_event_loop type-checks cleanly. Runtime stays
+    # guarded by the try/except below + the WATCHFILES_AVAILABLE flag.
+    from watchfiles import awatch
 
 try:  # pragma: no cover - optional dependency exercised in integration tests
     from watchfiles import awatch

@@ -2,10 +2,17 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from oneiric.core.logging import get_logger
 from oneiric.domains.workflows import WorkflowBridge
+
+if TYPE_CHECKING:
+    # Type-only import: narrows ty's view of `web` to non-None so attribute
+    # accesses (web.AppRunner, web.Request, web.json_response) type-check
+    # cleanly. Runtime stays guarded by the try/except below + the
+    # `assert web is not None` in start().
+    from aiohttp import web
 
 try:  # pragma: no cover - optional dependency guard
     from aiohttp import web
