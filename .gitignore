@@ -26,6 +26,8 @@ wheels/
 .cache/
 .lycheecache
 .lycheecache/
+.pyscn/
+.pyscn
 
 # Coverage reports
 .coverage
