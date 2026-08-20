@@ -628,8 +628,8 @@ See `tests/security/test_signature_verification.py` for comprehensive test cover
 
 ## References
 
-- [ED25519 Signature Scheme](https://ed25519.cr.yp.to/)
-- [RFC 8032: Edwards-Curve Digital Signature Algorithm](https://www.rfc-editor.org/rfc/rfc8032)
+- [RFC 8032: Edwards-Curve Digital Signature Algorithm (EdDSA)](https://datatracker.ietf.org/doc/html/rfc8032)
+- [EdDSA (Edwards-curve Digital Signature Algorithm)](https://en.wikipedia.org/wiki/EdDSA)
 - [Cryptography Library Documentation](https://cryptography.io/en/latest/hazmat/primitives/asymmetric/ed25519/)
 - [Supply Chain Security Best Practices](https://slsa.dev/)
 
