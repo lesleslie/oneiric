@@ -140,7 +140,7 @@ Two open questions were resolved before migration began. Both are binding for Ph
 - [`docs/schemas/topic-vocabulary-v1.md`](./topic-vocabulary-v1.md) — controlled topic list (seed + amendment rule).
 - `2026-07-16-plan-lifecycle-unification.md` (in `mahavishnu/docs/superpowers/plans/`) — the source plan defining the migration phases and integration contract.
 - [`docs/plans/PLAN_INDEX.md`](../plans/PLAN_INDEX.md) — the index regenerated from frontmatter in Phase P6.
-- [`.claude/decisions/README.md`](../../.claude/decisions/README.md) — the decision index; Status column re-derived from per-decision frontmatter in Phase P5.
+- `.claude/decisions/README.md` — the decision index; Status column re-derived from per-decision frontmatter in Phase P5.
 
 ## Change History
 

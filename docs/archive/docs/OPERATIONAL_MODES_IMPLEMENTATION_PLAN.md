@@ -247,7 +247,7 @@ oneiric start --mode=standard --manifest-url=https://example.com/manifest.yaml
 - Signature verification required
 - ~ 5 minute setup
 
-See [Operational Modes Guide](docs/guides/operational-modes.md) for details.
+See [Operational Modes Guide](../../guides/operational-modes.md) for details.
 ```
 
 ## Success Criteria
