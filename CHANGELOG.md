@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.5] - 2026-08-20
+
+### Fixed
+
+- oneiric: Reconcile ty ignore directives (round 2)
+- oneiric: Remove ty:ignore[unresolved-attribute] from optional-imported method bodies
+- oneiric: TYPE_CHECKING imports for lazy-optional aiohttp + watchfiles
+
+### Internal
+
+- gitignore: Untrack .pyscn/ (bodai 2026-08-20)
+
 ## [0.16.4] - 2026-08-20
 
 ### Fixed

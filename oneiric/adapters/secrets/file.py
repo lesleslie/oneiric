@@ -60,7 +60,7 @@ class FileSecretAdapter:
         try:
             self._load(force=True)
             return True
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             self._logger.warning("secrets-file-health-failed", error=str(exc))
             return False
 

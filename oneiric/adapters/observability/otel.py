@@ -14,6 +14,7 @@ from oneiric.adapters.observability.queries import QueryService
 from oneiric.adapters.observability.settings import OTelStorageSettings
 from oneiric.core.lifecycle import get_logger
 
+
 class OTelStorageAdapter(ABC):
     def __init__(self, settings: OTelStorageSettings) -> None:
         self._settings = settings
