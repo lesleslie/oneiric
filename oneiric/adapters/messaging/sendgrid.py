@@ -131,7 +131,7 @@ class SendGridAdapter(HTTPXClientMixin):
         return MessagingSendResult(
             message_id=message_id,
             status_code=response.status_code,
-            response_headers=response.headers.copy(),
+            response_headers=response.headers.copy(),  # ty: ignore
         )
 
     def _build_payload(self, message: OutboundEmailMessage) -> dict[str, Any]:

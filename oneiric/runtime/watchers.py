@@ -12,7 +12,7 @@ try:  # pragma: no cover - optional dependency exercised in integration tests
     WATCHFILES_AVAILABLE = True
 except ImportError:  # pragma: no cover - import guard for serverless bundles
     WATCHFILES_AVAILABLE = False
-    awatch = None
+    awatch = None  # ty: ignore
 
 from oneiric.core.config import LayerSettings, OneiricSettings, load_settings
 from oneiric.core.logging import get_logger
@@ -112,7 +112,7 @@ class SelectionWatcher:
             await self._run_poll_loop()
             return
         await self._tick()
-        async for _changes in awatch(self._watch_path, stop_event=self._stop_event):  # ty: ignore[call-non-callable]
+        async for _changes in awatch(self._watch_path, stop_event=self._stop_event):  # ty: ignore
             if self._stop_event.is_set():
                 break
             await self._tick()
