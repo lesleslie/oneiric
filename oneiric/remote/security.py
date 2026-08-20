@@ -82,7 +82,7 @@ def verify_manifest_signature(
         except InvalidSignature:
             errors.append(f"key_{i}: signature mismatch")
             continue
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 — collect all key-validation errors for the caller
             errors.append(f"key_{i}: {type(exc).__name__}: {exc}")
             continue
 

@@ -97,7 +97,7 @@ class CircuitBreaker:
         new_recovery = min(self._base_recovery * multiplier, self._max_recovery)
         try:
             self._breaker.timeout_duration = timedelta(seconds=new_recovery)  # ty: ignore[invalid-assignment]
-        except Exception:
+        except Exception:  # noqa: BLE001 — defensive: circuit-breaker tuning must never raise
             return
 
 

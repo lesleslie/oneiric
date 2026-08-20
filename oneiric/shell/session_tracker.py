@@ -65,7 +65,9 @@ class SessionEventEmitter:
     async def _get_session(self) -> ClientSession:
         """Get or create MCP client session."""
         if self._session is None:
-            read_stream, write_stream = anyio.create_memory_object_stream(max_buffer_size=0)
+            read_stream, write_stream = anyio.create_memory_object_stream(
+                max_buffer_size=0
+            )
             self._read_stream: MemoryObjectReceiveStream | None = read_stream
             self._write_stream: MemoryObjectSendStream | None = write_stream
             self._session = ClientSession(
@@ -94,7 +96,7 @@ class SessionEventEmitter:
             await session.call_tool("health_check", {})
             self.available = True
             return True
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 — MCP probe must degrade to unavailable, never raise
             logger.debug(f"Session-Buddy MCP unavailable: {e}")
             self._handle_failure()
             return False
@@ -171,7 +173,7 @@ class SessionEventEmitter:
                 logger.error(f"Unexpected result type: {type(result)}")
                 return None
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 — observability emit must not break session start
             logger.error(f"Failed to emit session start event: {e}")
             return None
 
@@ -214,7 +216,7 @@ class SessionEventEmitter:
             logger.info(f"Session ended: {session_id}")
             return True
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 — observability emit must not break session end
             logger.error(f"Failed to emit session end event: {e}")
             return False
 

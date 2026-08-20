@@ -131,6 +131,12 @@ max-complexity = 15
 # B008 in oneiric/cli.py — Typer idiom: `typer.Option(...)` in default args.
 # Documented project convention (see mahavishnu CLAUDE.md).
 "oneiric/cli.py" = ["B008"]
+# Adapter code (DB, LLM, observability, vector DB, monitoring, etc.)
+# intentionally catches broad Exception in health-check and SDK-call
+# probe paths — narrowing to specific SDK exception types would be
+# brittle (new SDK versions can raise new types) and noisy to maintain
+# across 19 sites. Logged + returns False/None is the documented pattern.
+"oneiric/adapters/**/*.py" = ["BLE001"]
 
 [tool.crackerjack]
 # QA adapter timeouts (in seconds)
