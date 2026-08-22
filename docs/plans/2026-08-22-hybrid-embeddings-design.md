@@ -18,7 +18,7 @@ implementations**, all in degraded states:
 - `oneiric/adapters/observability/embeddings.py` — optional sentence-transformers,
   mock fallback
 - `mahavishnu/ingesters/otel_ingester.py` — lazy optional sentence-transformers
-  + fastembed, redundant paths
+  - fastembed, redundant paths
 
 This plan **consolidates all embedding concerns into oneiric** with a
 5-backend probe chain that finally delivers real semantic embeddings to
@@ -29,10 +29,10 @@ ______________________________________________________________________
 ## Goals
 
 1. **Real embeddings everywhere** — `is_available()` finally returns `True`
-2. **Single source of truth** — one EmbeddingService, one config schema
-3. **Graceful degradation** — chain probes each backend; first responder wins
-4. **No ONNX dependency** — matches project policy set in crackerjack / session-buddy
-5. **Zero hard deps** — all backends are HTTP or pure-numpy (model2vec)
+1. **Single source of truth** — one EmbeddingService, one config schema
+1. **Graceful degradation** — chain probes each backend; first responder wins
+1. **No ONNX dependency** — matches project policy set in crackerjack / session-buddy
+1. **Zero hard deps** — all backends are HTTP or pure-numpy (model2vec)
 
 ______________________________________________________________________
 
@@ -182,27 +182,32 @@ ______________________________________________________________________
 ## Integration Contract
 
 ### Triggered from
+
 - `akosha.mcp.server` lifespan (replaces existing `get_embedding_service()` singleton init)
 - `mahavishnu.ingesters.otel_ingester` (replaces lazy optional-import branches)
 - `mahavishnu.core.embeddings_oneiric` (delegates to oneiric)
 
 ### Returns to / updates
+
 - All MCP embedding tools in akosha: `generate_embedding`, `generate_batch_embeddings`, `search_all_systems`
 - Mahavishnu OTel semantic trace search
 - Future Bodai components needing embeddings
 
 ### Demonstrable by
+
 1. `pytest oneiric/tests/unit/test_embedding_chain.py` — all 5 backends tested in isolation
-2. `pytest oneiric/tests/unit/test_embedding_probe.py` — probe order verified
-3. Runtime: `curl http://localhost:8682/health` → akosha reports backend name
-4. Runtime: `mcp__akosha__generate_embedding("hello")` → returns REAL 384-dim embedding (via Ollama today)
+1. `pytest oneiric/tests/unit/test_embedding_probe.py` — probe order verified
+1. Runtime: `curl http://localhost:8682/health` → akosha reports backend name
+1. Runtime: `mcp__akosha__generate_embedding("hello")` → returns REAL 384-dim embedding (via Ollama today)
 
 ### Rollback signal
+
 - If `is_available()` returns `False` after rollout → probe order needs adjustment
 - If encode latency > 200ms for Ollama path → check `OLLAMA_NUM_PARALLEL` config
 - If `MINIMAX_GROUP_ID` missing causes auth error → check probe timeout
 
 ### Observability added
+
 - New Prometheus counter: `oneiric_embedding_backend_selections_total{backend}`
 - New Prometheus histogram: `oneiric_embedding_encode_duration_seconds{backend}`
 - Span attribute on each encode call: `embedding.backend`, `embedding.dimension`

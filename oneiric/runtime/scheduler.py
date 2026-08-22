@@ -125,9 +125,7 @@ class SchedulerHTTPServer:
         try:
             result = await self._processor.process(payload)
         except ValueError as exc:
-            return web.json_response(
-                {"error": str(exc)}, status=400, dumps=_safe_dumps
-            )
+            return web.json_response({"error": str(exc)}, status=400, dumps=_safe_dumps)
         except (
             OSError,
             RuntimeError,

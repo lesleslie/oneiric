@@ -123,7 +123,7 @@ class EmbeddingService:
                         extra={"backend": name},
                     )
                     return
-            except Exception as exc:  # noqa: BLE001 — probes must not raise
+            except Exception as exc:
                 logger.debug(
                     "oneiric.embedding.probe_failed",
                     extra={"backend": name, "error": str(exc)},
@@ -266,7 +266,7 @@ class EmbeddingService:
         deterministic for a given ``trace_id`` so search ranks stay
         stable across runs (semantically meaningless but reproducible).
         """
-        seed_text = str(trace_id)
+        seed_text = trace_id
         # Deterministic seed from SHA-256 of the text.
         digest = hashlib.sha256(seed_text.encode()).digest()
         seed_int = int.from_bytes(digest[:8], "big")
@@ -361,7 +361,7 @@ class EmbeddingService:
                         and "vectors" in body
                         and body["vectors"]
                     ):
-                        self._backend_dim = int(len(body["vectors"][0]))
+                        self._backend_dim = len(body["vectors"][0])
                         return True
         except httpx.HTTPError:
             return False
@@ -381,7 +381,7 @@ class EmbeddingService:
             # Cache the loaded model for subsequent encode calls.
             self._model2vec_model = model  # type: ignore[attr-defined]
             return True
-        except Exception:  # noqa: BLE001 — model download/load may fail
+        except Exception:
             return False
 
     async def _probe_encode_via(
@@ -477,9 +477,7 @@ class EmbeddingService:
             )
             resp.raise_for_status()
             body = resp.json()
-            return [
-                np.asarray(vec, dtype=np.float32) for vec in body["vectors"]
-            ]
+            return [np.asarray(vec, dtype=np.float32) for vec in body["vectors"]]
 
     def _encode_model2vec(self, texts: list[str]) -> list[np.ndarray]:
         model = getattr(self, "_model2vec_model", None)
@@ -488,5 +486,5 @@ class EmbeddingService:
 
             model = StaticModel.from_pretrained(self._settings.model2vec_model_name)
             self._model2vec_model = model  # type: ignore[attr-defined]
-        arr = model.encode(list(texts))
+        arr = model.encode(texts.copy())
         return [np.asarray(row, dtype=np.float32) for row in arr]

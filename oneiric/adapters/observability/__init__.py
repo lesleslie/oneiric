@@ -21,16 +21,16 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 __all__ = [
-    "OTelStorageAdapter",
-    "OTelStorageSettings",
     "EmbeddingService",
     "EmbeddingSettings",
+    "OTelStorageAdapter",
+    "OTelStorageSettings",
 ]
 
 
 if TYPE_CHECKING:
-    from oneiric.adapters.observability.embeddings import EmbeddingService
     from oneiric.adapters.observability.embedding_settings import EmbeddingSettings
+    from oneiric.adapters.observability.embeddings import EmbeddingService
     from oneiric.adapters.observability.otel import OTelStorageAdapter
     from oneiric.adapters.observability.settings import OTelStorageSettings
 
@@ -52,7 +52,7 @@ _LAZY_EXPORTS = {
 }
 
 
-def __getattr__(name: str):  # noqa: D401 — module-level __getattr__
+def __getattr__(name: str):
     """Lazily resolve submodule exports on first attribute access.
 
     This keeps ``from oneiric.adapters.observability.embeddings import
