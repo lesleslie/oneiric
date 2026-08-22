@@ -1,3 +1,21 @@
+"""Tests for EmbeddingService public behavior + trace-text helpers.
+
+The hybrid chain itself is exercised in
+``tests/adapters/observability/test_hybrid_embeddings.py``; this file
+focuses on the legacy surface that ``otel_ingester`` and similar
+callers depend on:
+
+- ``_build_text_from_trace`` — still part of the public surface
+- ``_generate_cache_key`` — still used by ``embed_trace``
+- ``_generate_fallback_embedding`` — the deterministic mock fallback
+- ``embed_trace`` — the high-level API callers use
+
+Tests for the removed sentence-transformers internals (``_load_model``,
+``_generate_embedding``, ``_embed_cached``) were deleted when the
+sentence-transformers backend was replaced by the probe chain —
+see ``docs/plans/2026-08-22-hybrid-embeddings-design.md``.
+"""
+
 from __future__ import annotations
 
 import numpy as np
@@ -6,7 +24,7 @@ import pytest
 from oneiric.adapters.observability.embeddings import EmbeddingService
 
 # ---------------------------------------------------------------------------
-# Tests — _build_text_from_trace
+# Tests — _build_text_from_trace (kept from old suite)
 # ---------------------------------------------------------------------------
 
 
@@ -34,7 +52,7 @@ def test_build_text_from_trace_defaults() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Tests — _generate_cache_key
+# Tests — _generate_cache_key (kept from old suite)
 # ---------------------------------------------------------------------------
 
 
@@ -48,7 +66,12 @@ def test_generate_cache_key_consistent() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Tests — _generate_fallback_embedding
+# Tests — _generate_fallback_embedding (mock fallback)
+#
+# Note: the new mock uses numpy.random.standard_normal (Gaussian) seeded
+# from the trace_id's SHA-256, so values are centered around 0 (not in
+# [0,1] as the old byte-shuffling version was). The test asserts the
+# new contract: L2-normalized, deterministic, variable per id.
 # ---------------------------------------------------------------------------
 
 
@@ -57,8 +80,8 @@ def test_generate_fallback_embedding_shape() -> None:
     emb = svc._generate_fallback_embedding("trace-abc")
     assert isinstance(emb, np.ndarray)
     assert emb.shape == (384,)
-    assert emb.min() >= 0.0
-    assert emb.max() <= 1.0
+    # L2-normalized
+    assert abs(float(np.linalg.norm(emb)) - 1.0) < 1e-5
 
 
 def test_generate_fallback_embedding_deterministic() -> None:
@@ -76,143 +99,37 @@ def test_generate_fallback_embedding_differs_by_id() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Tests — _load_model
-# ---------------------------------------------------------------------------
-
-
-def test_load_model_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        "oneiric.adapters.observability.embeddings.SENTENCE_TRANSFORMERS_AVAILABLE",
-        False,
-    )
-    svc = EmbeddingService()
-    with pytest.raises(ImportError, match="sentence-transformers"):
-        svc._load_model()
-
-
-def test_load_model_caches_instance(monkeypatch: pytest.MonkeyPatch) -> None:
-    class FakeModel:
-        def encode(self, text: str) -> np.ndarray:
-            return np.zeros(384)
-
-    fake_instance = FakeModel()
-    monkeypatch.setattr(
-        "oneiric.adapters.observability.embeddings.SENTENCE_TRANSFORMERS_AVAILABLE",
-        True,
-    )
-    monkeypatch.setattr(
-        "oneiric.adapters.observability.embeddings.SentenceTransformer",
-        lambda _name: fake_instance,
-    )
-    svc = EmbeddingService()
-    m1 = svc._load_model()
-    m2 = svc._load_model()
-    assert m1 is m2  # cached — constructor called only once
-
-
-# ---------------------------------------------------------------------------
-# Tests — _generate_embedding / _embed_cached
+# Tests — embed_trace public API
+#
+# These rely on the chain auto-falling back to mock (no real backend
+# configured). They verify that ``embed_trace`` keeps the same
+# outward contract (returns np.ndarray, handles missing trace_id).
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.asyncio
-async def test_generate_embedding(monkeypatch: pytest.MonkeyPatch) -> None:
-    expected = np.ones(384)
+async def test_embed_trace_returns_ndarray_when_no_backend_available() -> None:
+    """Without ``await initialize()`` the chain is uninitialised.
 
-    class FakeModel:
-        def encode(self, text: str) -> np.ndarray:
-            return expected
-
-    monkeypatch.setattr(
-        "oneiric.adapters.observability.embeddings.SENTENCE_TRANSFORMERS_AVAILABLE",
-        True,
-    )
-    monkeypatch.setattr(
-        "oneiric.adapters.observability.embeddings.SentenceTransformer",
-        lambda _name: FakeModel(),
-    )
+    The test asserts that ``embed_trace`` still returns a valid ndarray
+    (the mock fallback) so the legacy trace-ingestion call sites don't
+    break when the chain hasn't been awaited yet.
+    """
     svc = EmbeddingService()
-    result = await svc._generate_embedding("hello")
-    assert np.array_equal(result, expected)
-
-
-def test_embed_cached(monkeypatch: pytest.MonkeyPatch) -> None:
-    calls: list[str] = []
-
-    class FakeModel:
-        def encode(self, text: str) -> np.ndarray:
-            calls.append(text)
-            return np.zeros(384)
-
-    monkeypatch.setattr(
-        "oneiric.adapters.observability.embeddings.SENTENCE_TRANSFORMERS_AVAILABLE",
-        True,
-    )
-    monkeypatch.setattr(
-        "oneiric.adapters.observability.embeddings.SentenceTransformer",
-        lambda _name: FakeModel(),
-    )
-    svc = EmbeddingService()
-    # lru_cache is per-instance but here the function is unbound — call it twice
-    k = svc._generate_cache_key({"x": 1})
-    r1 = svc._embed_cached(k, "test text")
-    r2 = svc._embed_cached(k, "test text")
-    assert np.array_equal(r1, r2)
-
-
-# ---------------------------------------------------------------------------
-# Tests — embed_trace (success and fallback)
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.asyncio
-async def test_embed_trace_success(monkeypatch: pytest.MonkeyPatch) -> None:
-    class FakeModel:
-        def encode(self, text: str) -> np.ndarray:
-            return np.ones(384)
-
-    monkeypatch.setattr(
-        "oneiric.adapters.observability.embeddings.SENTENCE_TRANSFORMERS_AVAILABLE",
-        True,
-    )
-    monkeypatch.setattr(
-        "oneiric.adapters.observability.embeddings.SentenceTransformer",
-        lambda _name: FakeModel(),
-    )
-    svc = EmbeddingService()
-    trace = {"trace_id": "t-1", "service": "svc", "operation": "op"}
-    result = await svc.embed_trace(trace)
-    assert isinstance(result, np.ndarray)
-
-
-@pytest.mark.asyncio
-async def test_embed_trace_fallback_on_error(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        "oneiric.adapters.observability.embeddings.SENTENCE_TRANSFORMERS_AVAILABLE",
-        False,
-    )
-    svc = EmbeddingService()
-    trace = {"trace_id": "fallback-trace"}
-    result = await svc.embed_trace(trace)
+    result = await svc.embed_trace({"trace_id": "fallback-trace"})
     assert isinstance(result, np.ndarray)
     assert result.shape == (384,)
 
 
 @pytest.mark.asyncio
-async def test_embed_trace_fallback_no_trace_id(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(
-        "oneiric.adapters.observability.embeddings.SENTENCE_TRANSFORMERS_AVAILABLE",
-        False,
-    )
+async def test_embed_trace_handles_missing_trace_id() -> None:
     svc = EmbeddingService()
     result = await svc.embed_trace({})  # no trace_id key
     assert result.shape == (384,)
 
 
 # ---------------------------------------------------------------------------
-# Tests — observability settings validator
+# Tests — observability settings validator (kept from old suite)
 # ---------------------------------------------------------------------------
 
 

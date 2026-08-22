@@ -76,6 +76,13 @@ def test_adapter_metrics_branches(monkeypatch) -> None:
 
 @pytest.mark.asyncio
 async def test_embedding_service_branches(monkeypatch) -> None:
+    """Trace-helper + fallback behavior of the hybrid EmbeddingService.
+
+    The old sentence-transformers-specific branches were removed when
+    the chain replaced the eager model loader. New branches live in
+    ``tests/adapters/observability/test_hybrid_embeddings.py`` (probe
+    chain, encode delegation, mock fallback).
+    """
     service = EmbeddingService()
     trace = {
         "trace_id": "abc",
@@ -93,33 +100,18 @@ async def test_embedding_service_branches(monkeypatch) -> None:
         ),
         int,
     )
+    # Mock fallback is L2-normalized at the configured dimension.
     assert len(service._generate_fallback_embedding("x")) == 384
+    import numpy as np
 
-    monkeypatch.setattr(
-        "oneiric.adapters.observability.embeddings.SENTENCE_TRANSFORMERS_AVAILABLE",
-        False,
-    )
-    with pytest.raises(ImportError):
-        service._load_model()
+    assert abs(float(np.linalg.norm(service._generate_fallback_embedding("x"))) - 1.0) < 1e-5
 
-    monkeypatch.setattr(
-        "oneiric.adapters.observability.embeddings.SENTENCE_TRANSFORMERS_AVAILABLE",
-        True,
-    )
+    # When ``encode`` raises, ``embed_trace`` must fall back to the
+    # deterministic mock rather than propagating the error.
+    async def boom(*_args: object, **_kwargs: object) -> object:
+        raise RuntimeError("encode failed")
 
-    class FakeModel:
-        def encode(self, text):
-            return np.array([1.0, 2.0])
-
-    monkeypatch.setattr(
-        "oneiric.adapters.observability.embeddings.SentenceTransformer",
-        lambda model_name: FakeModel(),
-    )
-    monkeypatch.setattr(
-        service,
-        "_embed_cached",
-        lambda cache_key, text: (_ for _ in ()).throw(RuntimeError("boom")),
-    )
+    monkeypatch.setattr(service, "encode", boom)
     fallback = await service.embed_trace({"trace_id": "trace-1"})
     assert len(fallback) == 384
 
