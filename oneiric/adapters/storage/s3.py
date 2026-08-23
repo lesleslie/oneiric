@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Awaitable, Callable
 from typing import Any
 
@@ -11,6 +12,12 @@ from oneiric.core.client_mixins import EnsureClientMixin
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
+
+# S3 user-defined metadata keys are restricted to this character set per the
+# S3 spec. Total user metadata is capped at 2 KB per object; values are
+# always stored as UTF-8 strings.
+_METADATA_KEY_RE = re.compile(r"^[A-Za-z0-9!\-_.*'()]+$")
+_MAX_USER_METADATA_BYTES = 2048
 
 
 class S3StorageSettings(BaseModel):
@@ -116,12 +123,75 @@ class S3StorageAdapter(EnsureClientMixin):
         self._logger.info("adapter-cleanup-complete", adapter="s3-storage")
 
     async def upload(
-        self, key: str, data: bytes, *, content_type: str | None = None
+        self,
+        key: str,
+        data: bytes,
+        *,
+        content_type: str | None = None,
+        metadata: dict[str, str] | None = None,
     ) -> None:
         client = self._ensure_client("s3-client-not-initialized")
-        await client.put_object(
-            Bucket=self._settings.bucket, Key=key, Body=data, ContentType=content_type
-        )
+        put_kwargs: dict[str, Any] = {
+            "Bucket": self._settings.bucket,
+            "Key": key,
+            "Body": data,
+            "ContentType": content_type,
+        }
+        if metadata:
+            sanitized = self._sanitize_metadata(metadata)
+            put_kwargs["Metadata"] = sanitized
+        await client.put_object(**put_kwargs)
+
+    def _sanitize_metadata(self, metadata: dict[str, str]) -> dict[str, str]:
+        """Validate user-defined metadata against S3 constraints.
+
+        S3 limits user metadata keys to ``[A-Za-z0-9!-_.*'()]`` and total
+        encoded metadata to 2048 bytes. Raise ``LifecycleError`` on
+        violation so misconfigured callers fail fast at upload time
+        rather than at retrieval.
+        """
+        total_bytes = 0
+        sanitized: dict[str, str] = {}
+        for key, value in metadata.items():
+            if not _METADATA_KEY_RE.match(key):
+                raise LifecycleError(
+                    f"s3-metadata-invalid-key: {key!r} must match "
+                    f"{_METADATA_KEY_RE.pattern!r}"
+                )
+            if not isinstance(value, str):
+                raise LifecycleError(
+                    f"s3-metadata-invalid-value: {key!r} must be str, got "
+                    f"{type(value).__name__}"
+                )
+            encoded = value.encode("utf-8")
+            total_bytes += len(key.encode("utf-8")) + len(encoded)
+            sanitized[key] = value
+        if total_bytes > _MAX_USER_METADATA_BYTES:
+            raise LifecycleError(
+                f"s3-metadata-too-large: {total_bytes} > "
+                f"{_MAX_USER_METADATA_BYTES} bytes"
+            )
+        return sanitized
+
+    async def exists(self, key: str) -> bool:
+        """Return True iff ``key`` exists in the bucket.
+
+        Uses ``head_object`` (cheap, no body transfer) and treats 404 /
+        ``NoSuchKey`` as ``False``. Any other exception propagates —
+        callers should expect transient AWS errors (5xx) to surface.
+        """
+        client = self._ensure_client("s3-client-not-initialized")
+        try:
+            await client.head_object(Bucket=self._settings.bucket, Key=key)
+        except Exception as exc:
+            if is_not_found_error(
+                exc,
+                codes={"NoSuchKey", "NotFound", "404"},
+                messages=("NoSuchKey", "Not Found", "404"),
+            ):
+                return False
+            raise
+        return True
 
     async def download(self, key: str) -> bytes | None:
         client = self._ensure_client("s3-client-not-initialized")

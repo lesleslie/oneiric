@@ -580,3 +580,50 @@ def test_multitier_auto_creates_l2_with_url(
 
     assert len(captured) == 1
     assert captured[0].url is not None
+
+
+# ---------------------------------------------------------------------------
+# Tests — delete_prefix (PR-A)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_multitier_delete_prefix_clears_both_layers() -> None:
+    """delete_prefix must remove from L1 + L2 and return combined count.
+
+    With ``write_through=True`` (default), every ``set()`` writes to both
+    layers, so ``delete_prefix`` returns ``2 * matching_keys`` (one per
+    layer). This is documented as the "invalidation effort" metric.
+    """
+    l1 = MemoryCacheAdapter()
+    l2 = MemoryCacheAdapter()
+    multi = MultiTierCacheAdapter(l1_cache=l1, l2_cache=l2)
+    await multi.init()
+
+    await multi.set("w:h1:materialized", "/tmp/h1")
+    await multi.set("w:h1:sha256", "abc")
+    await multi.set("w:h2:materialized", "/tmp/h2")
+
+    removed = await multi.delete_prefix("w:h1:")
+    assert removed == 4  # 2 keys × 2 layers
+
+    assert await multi.get("w:h1:materialized") is None
+    assert await multi.get("w:h1:sha256") is None
+    assert await multi.get("w:h2:materialized") == "/tmp/h2"
+    await multi.cleanup()
+
+
+@pytest.mark.asyncio
+async def test_multitier_delete_prefix_with_only_l1() -> None:
+    """delete_prefix works when L2 is disabled (returns L1 count only)."""
+    settings = MultiTierCacheSettings(l2_enabled=False, l1_enabled=True)
+    multi = MultiTierCacheAdapter(settings=settings)
+    await multi.init()
+    await multi.set("a:1", "x")
+    await multi.set("a:2", "y")
+    await multi.set("b:3", "z")
+    removed = await multi.delete_prefix("a:")
+    assert removed == 2
+    assert await multi.get("a:1") is None
+    assert await multi.get("b:3") == "z"
+    await multi.cleanup()

@@ -136,6 +136,22 @@ class AzureBlobStorageAdapter:
             if not self._is_not_found(exc):
                 raise
 
+    async def exists(self, key: str) -> bool:
+        """Return True iff ``key`` exists in the container.
+
+        Uses ``get_blob_properties`` (cheap HEAD) and translates
+        ``ResourceNotFoundError`` into ``False``. Other exceptions
+        propagate so transient Azure errors surface to the caller.
+        """
+        blob_client = self._ensure_container().get_blob_client(key)
+        try:
+            await blob_client.get_blob_properties()
+        except Exception as exc:
+            if self._is_not_found(exc):
+                return False
+            raise
+        return True
+
     async def list(self, prefix: str = "") -> list[str]:  # ty: ignore[invalid-type-form] — ty resolves `list` to the method in scope
         container = self._ensure_container()
         items: list[str] = []

@@ -280,6 +280,31 @@ class RedisCacheAdapter(EnsureClientMixin):
         client = self._ensure_client("redis-client-not-initialized")
         await client.delete(self._namespaced_key(key))
 
+    async def delete_prefix(self, prefix: str) -> int:
+        """Delete every key matching ``prefix + "*"`` via SCAN + DEL.
+
+        Caller-supplied ``prefix`` is fully qualified — the adapter does
+        **not** re-apply ``self._settings.key_prefix``. This matches the
+        convention used by the memory adapter's ``delete_prefix`` and lets
+        upstream wrappers (e.g. ``MultiTierCacheAdapter``) thread a single
+        namespaced prefix through all layers.
+
+        Returns the number of keys actually deleted. SCAN is non-blocking
+        and may return duplicates in extreme cases (rare but documented);
+        ``delete`` is idempotent so duplicate deletes are harmless.
+
+        Performance: with the recommended ``allkeys-lfu`` eviction policy
+        and ~100k worktree entries, SCAN over ``worktrees/<handle_id>:*``
+        is O(handles_per_prefix) + RTT × batches. Document the cost in
+        operational runbooks if invalidation is hot-path.
+        """
+        client = self._ensure_client("redis-client-not-initialized")
+        count = 0
+        async for key in client.scan_iter(match=prefix + "*"):
+            await client.delete(key)
+            count += 1
+        return count
+
     async def clear(self) -> None:
         client = self._ensure_client("redis-client-not-initialized")
         await client.flushdb()

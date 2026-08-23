@@ -387,6 +387,28 @@ class MultiTierCacheAdapter:
             await self._l2.delete(key)
         self._logger.debug("cache-delete", key=key)
 
+    async def delete_prefix(self, prefix: str) -> int:
+        """Delete every key matching ``prefix + "*"`` from both layers.
+
+        L1 (memory) uses ``str.startswith`` scan; L2 (Redis) uses
+        ``SCAN + DEL`` via the underlying ``RedisCacheAdapter``. The
+        total returned is ``l1_count + l2_count`` (not deduplicated) —
+        callers that need dedup should subtract, but in practice the
+        same key lives in both layers so the sum is the right
+        "invalidation effort" metric.
+
+        Used by Mahavishnu's ``WorktreeCache.invalidate_handle`` to clear
+        all per-handle cache entries (materialized worktree path,
+        bundle hash, etc.) in a single call.
+        """
+        l1_count = await self._l1.delete_prefix(prefix) if self._l1 else 0
+        l2_count = await self._l2.delete_prefix(prefix) if self._l2 else 0
+        total = l1_count + l2_count
+        self._logger.debug(
+            "cache-delete-prefix", prefix=prefix, l1_count=l1_count, l2_count=l2_count
+        )
+        return total
+
     async def clear(self) -> None:
         """Clear all cache layers."""
         if self._l1:

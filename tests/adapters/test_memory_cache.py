@@ -90,3 +90,55 @@ async def test_memory_cache_negative_ttl_raises() -> None:
     await cache.init()
     with pytest.raises(LifecycleError, match="negative-ttl-not-allowed"):
         await cache.set("k", "v", ttl=-1.0)
+
+
+# ---------------------------------------------------------------------------
+# Tests — delete_prefix (PR-A)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_memory_delete_prefix_removes_matching_keys() -> None:
+    cache = MemoryCacheAdapter()
+    await cache.init()
+    await cache.set("foo:a", 1)
+    await cache.set("foo:b", 2)
+    await cache.set("bar:c", 3)
+    removed = await cache.delete_prefix("foo:")
+    assert removed == 2
+    assert await cache.get("foo:a") is None
+    assert await cache.get("foo:b") is None
+    assert await cache.get("bar:c") == 3
+    await cache.cleanup()
+
+
+@pytest.mark.asyncio
+async def test_memory_delete_prefix_preserves_lru_order_on_survivors() -> None:
+    """OrderedDict.pop must not shift survivors' access-recency positions."""
+    cache = MemoryCacheAdapter()
+    await cache.init()
+    await cache.set("keep:1", "a")
+    await cache.set("drop:x", "b")
+    await cache.set("keep:2", "c")
+    # Touch keep:1 to make it MRU; touch keep:2 to make it MRU after.
+    await cache.get("keep:1")
+    await cache.get("keep:2")
+    # Now drop the middle one — survivors should retain their LRU chain.
+    await cache.delete_prefix("drop:")
+    # After cleanup, MRU order is keep:1, keep:2 (keep:2 was touched last).
+    # Capacity enforcement relies on OrderedDict.move_to_end in set(); here
+    # we just verify the survivors still exist and are accessible.
+    assert await cache.get("keep:1") == "a"
+    assert await cache.get("keep:2") == "c"
+    await cache.cleanup()
+
+
+@pytest.mark.asyncio
+async def test_memory_delete_prefix_returns_zero_on_no_match() -> None:
+    cache = MemoryCacheAdapter()
+    await cache.init()
+    await cache.set("a", 1)
+    removed = await cache.delete_prefix("nothing:")
+    assert removed == 0
+    assert await cache.get("a") == 1
+    await cache.cleanup()

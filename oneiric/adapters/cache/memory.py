@@ -79,6 +79,21 @@ class MemoryCacheAdapter:
         async with self._lock:
             self._store.pop(key, None)
 
+    async def delete_prefix(self, prefix: str) -> int:
+        """Delete every key whose name starts with ``prefix``.
+
+        LRU order is preserved on the survivors because ``OrderedDict.pop``
+        removes only the targeted key without shifting any other key's
+        position; survivors stay in their existing access-recency order.
+
+        Returns the number of keys deleted.
+        """
+        async with self._lock:
+            victims = [k for k in self._store if k.startswith(prefix)]
+            for k in victims:
+                self._store.pop(k, None)
+            return len(victims)
+
     async def clear(self) -> None:
         async with self._lock:
             self._store.clear()

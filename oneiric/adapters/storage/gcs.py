@@ -114,6 +114,20 @@ class GCSStorageAdapter:
             if not is_not_found_error(exc, codes={404}, messages=("404", "Not Found")):
                 raise
 
+    async def exists(self, key: str) -> bool:
+        """Return True iff ``key`` exists in the bucket.
+
+        Uses the GCS client's ``Blob.exists()`` (cheap HEAD against the
+        object). Translates ``NotFound`` into ``False``.
+        """
+        blob = self._ensure_bucket().blob(key)
+        try:
+            return bool(await asyncio.to_thread(blob.exists))
+        except Exception as exc:
+            if is_not_found_error(exc, codes={404}, messages=("404", "Not Found")):
+                return False
+            raise
+
     async def list(self, prefix: str = "") -> list[str]:  # ty: ignore[invalid-type-form] — ty resolves `list` to the method in scope
         bucket = self._ensure_bucket()
         return await asyncio.to_thread(self._list_names, bucket, prefix)
