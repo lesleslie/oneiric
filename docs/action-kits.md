@@ -61,8 +61,7 @@ result = await action.execute({
 matched = result["matched_rules"]
 ```
 
-**Adopted by**: (none yet — production candidate; see
-`mahavishnu/workers/automation_router.py` for early prototype).
+**Adopted by**: (none yet — production candidate)
 
 ---
 
