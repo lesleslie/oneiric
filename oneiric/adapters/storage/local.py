@@ -49,9 +49,28 @@ class LocalStorageAdapter:
 
     async def init(self) -> None:
         if self._settings.create_parents:
-            self._base_path.mkdir(parents=True, exist_ok=True)
+            try:
+                self._base_path.mkdir(parents=True, exist_ok=True)
+            except (PermissionError, OSError) as exc:
+                # Serverless / read-only-filesystem deployments cannot
+                # create a writable base. Surface a clear lifecycle
+                # error with a fix hint. ADR 015 v4 §7.
+                raise LifecycleError(
+                    "local-storage-readonly-filesystem"
+                ) from exc
         elif not self._base_path.exists():
             raise LifecycleError("storage-base-path-missing")
+
+        # Defense in depth: even if mkdir() succeeded (e.g. directory
+        # already existed), the filesystem may now be read-only. Check
+        # writability before declaring init() successful.
+        import os
+
+        if not os.access(self._base_path, os.W_OK):
+            raise LifecycleError(
+                "local-storage-readonly-filesystem"
+            )
+
         self._logger.info(
             "adapter-init", adapter="local-storage", base=str(self._base_path)
         )
