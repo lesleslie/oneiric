@@ -29,7 +29,6 @@ emulator later only requires swapping the fake client.
 
 from __future__ import annotations
 
-import asyncio
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from typing import Any
@@ -46,7 +45,7 @@ class _FakeGCSBlob:
     the streaming surface driven by ``save_stream`` and ``load_stream``.
     """
 
-    bucket: "_FakeGCSBucket"
+    bucket: _FakeGCSBucket
     name: str
     metadata: dict[str, str] = field(default_factory=dict)
     _upload_calls: list[dict[str, Any]] = field(default_factory=list)

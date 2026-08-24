@@ -76,7 +76,7 @@ class _FakeAzureBlobClient:
 
     def __init__(
         self,
-        container: "_FakeAzureContainerClient",
+        container: _FakeAzureContainerClient,
         name: str,
         *,
         fail_after: int | None = None,
@@ -148,7 +148,7 @@ class _FakeAzureContainerClient:
     objects: dict[str, bytes] = field(default_factory=dict)
     objects_meta: dict[str, dict[str, str]] = field(default_factory=dict)
     name: str = "demo"
-    blob_client_factory: Callable[["_FakeAzureContainerClient", str], _FakeAzureBlobClient] | None = None
+    blob_client_factory: Callable[[_FakeAzureContainerClient, str], _FakeAzureBlobClient] | None = None
     fail_after: int | None = None
 
     def get_blob_client(self, name: str) -> _FakeAzureBlobClient:
@@ -186,7 +186,7 @@ class _FakeAzureServiceClient:
         assert name == self._container.name
         return self._container
 
-    def from_connection_string(cls, connection_string: str) -> "_FakeAzureServiceClient":
+    def from_connection_string(cls, connection_string: str) -> _FakeAzureServiceClient:
         # Not used in the streaming tests — we inject the sync client
         # via ``_build_sync_client`` override below.
         raise NotImplementedError("inject sync container instead")
