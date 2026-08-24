@@ -13,6 +13,7 @@ from .http import HttpFetchAction
 from .metadata import ActionMetadata, register_action_metadata
 from .security import SecuritySecureAction, SecuritySignatureAction
 from .serialization import SerializationAction
+from .streaming_compression import StreamingCompressionAction
 from .task import TaskScheduleAction
 from .workflow import (
     WorkflowAuditAction,
@@ -26,6 +27,7 @@ def builtin_action_metadata() -> list[ActionMetadata]:
     return [
         CompressionAction.metadata,
         HashAction.metadata,
+        StreamingCompressionAction.metadata,
         WorkflowAuditAction.metadata,
         WorkflowOrchestratorAction.metadata,
         WorkflowNotifyAction.metadata,
