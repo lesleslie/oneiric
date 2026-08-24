@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.0] - 2026-08-24
+
+### Added
+
+- actions: Register streaming-compression action-kit entry
+- actions: StreamingCompressionAction with zstandard streaming codec
+- adapters: Delete_prefix on cache tiers + storage metadata/exists (PR-A)
+- LocalStorageAdapter streaming save/load
+- S3StorageAdapter streaming with multipart abort
+- storage: GCS + Azure streaming save/load matching Local + S3
+- storage: Raise LifecycleError on read-only filesystem
+
+### Fixed
+
+- oneiric: Remove redundant forward-reference quotes + unused asyncio import
+
+### Documentation
+
+- action-kits: Document StreamingCompressionAction
+- changelog: Note compression-zstd group addition
+- oneiric-action-kits: Add canonical catalog of 17 builtin action kits
+- oneiric-action-kits: Drop phantom automation_router reference from automation.trigger Adopted by
+
+### Testing
+
+- storage: Streaming save/load tests for Local + S3 adapters
+- streaming_compression: Failing test for StreamingCompressionAction
+
+### Internal
+
+- Bump requires-python to >=3.14
+- claude-md: Add oneiric action-kit discovery breadcrumb
+- deps: Add compression-zstd PEP 735 group
+- oneiric: Bump tool-config pins from 3.13 to 3.14
+- oneiric: Uv python pin 3.14
+
 ## [Unreleased]
 
 ### Added

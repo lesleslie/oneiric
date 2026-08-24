@@ -5,6 +5,7 @@ import builtins
 import os
 import tempfile
 from collections.abc import Callable, Iterator
+from contextlib import suppress
 from pathlib import Path
 
 from pydantic import BaseModel, Field
@@ -152,10 +153,8 @@ class LocalStorageAdapter:
                 metadata_keys=len(metadata) if metadata else 0,
             )
         except BaseException:
-            try:
-                os.unlink(tmp_name)
-            except FileNotFoundError:
-                pass
+            with suppress(FileNotFoundError):
+                Path(tmp_name).unlink()
             raise
         return bytes_written
 
@@ -177,7 +176,7 @@ class LocalStorageAdapter:
             raise LifecycleError("local-storage-key-not-found")
 
         def reader() -> Iterator[bytes]:
-            with open(path, "rb") as f:
+            with path.open("rb") as f:
                 while True:
                     chunk = f.read(chunk_size)
                     if not chunk:
