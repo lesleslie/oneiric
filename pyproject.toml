@@ -411,3 +411,6 @@ vector = [
 "vector-qdrant" = [
     "qdrant-client>=1.18.0",
 ]
+"compression-zstd" = [
+    "zstandard>=0.23.0",
+]
