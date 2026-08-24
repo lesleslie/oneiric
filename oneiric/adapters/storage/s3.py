@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 import re
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Iterator
 from typing import Any
 
+from opentelemetry import metrics, trace
 from pydantic import BaseModel, Field
 
 from oneiric.adapters.metadata import AdapterMetadata
@@ -12,6 +14,34 @@ from oneiric.core.client_mixins import EnsureClientMixin
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
+
+# Streaming-specific OTel counters (ADR 015 v4 Phase 3). The abort counter
+# keeps ``{backend, principal_short}`` as low-cardinality labels and surfaces
+# the precise ``abort_reason`` (e.g. cancelled vs exception) as a span
+# attribute only, so cardinality stays bounded while operators can still
+# pivot from a metric spike to the originating span.
+_STREAMING_METER = metrics.get_meter("oneiric.storage.streaming")
+_S3_MULTIPART_ABORT_COUNTER = _STREAMING_METER.create_counter(
+    name="s3_multipart_abort_total",
+    unit="1",
+    description=(
+        "S3 multipart upload aborts by backend and principal. "
+        "abort_reason is recorded as a span attribute, not a label."
+    ),
+)
+
+
+def _record_s3_multipart_abort(
+    *, backend: str, principal_short: str, reason: str, bytes_uploaded: int
+) -> None:
+    """Emit s3_multipart_abort_total counter + record reason on current span."""
+    _S3_MULTIPART_ABORT_COUNTER.add(
+        1, attributes={"backend": backend, "principal_short": principal_short}
+    )
+    span = trace.get_current_span()
+    if span.is_recording():
+        span.set_attribute("abort_reason", reason)
+        span.set_attribute("bytes_uploaded_before_abort", bytes_uploaded)
 
 # S3 user-defined metadata keys are restricted to this character set per the
 # S3 spec. Total user metadata is capped at 2 KB per object; values are
@@ -236,3 +266,172 @@ class S3StorageAdapter(EnsureClientMixin):
             if not continuation:
                 break
         return items
+
+    async def save_stream(
+        self,
+        key: str,
+        chunk_reader: Callable[[], Iterator[bytes]],
+        *,
+        metadata: dict[str, str] | None = None,
+    ) -> int:
+        """Stream chunks to S3 via multipart upload with abort on partial failure.
+
+        Per ADR 015 v4 Phase 3 spec: ``chunk_reader`` is a sync
+        ``Callable[[], Iterator[bytes]]`` so callers can iterate the body
+        from any source (tar pipe, file reader) without binding it to the
+        event loop. The async client drives ``CreateMultipartUpload`` ->
+        ``UploadPart`` -> ``CompleteMultipartUpload``; on any
+        ``BaseException`` (including ``asyncio.CancelledError``) we issue
+        ``AbortMultipartUpload`` so orphan parts do not accrue storage
+        cost. ``s3_multipart_abort_total{backend, principal_short}`` is
+        emitted on every abort; ``abort_reason`` lives on the span to
+        keep label cardinality bounded.
+        """
+        client = self._ensure_client("s3-client-not-initialized")
+        bucket = self._settings.bucket
+        # _principal_short is attached at adapter wiring time when running
+        # under the orchestrator; fall back to ``unknown`` so metric labels
+        # stay populated for non-orchestrator deployments.
+        principal_short = getattr(self, "_principal_short", "unknown")
+
+        upload_kwargs: dict[str, Any] = {"Bucket": bucket, "Key": key}
+        if metadata:
+            upload_kwargs["Metadata"] = self._sanitize_metadata(metadata)
+
+        upload_id: str | None = None
+        bytes_uploaded = 0
+        try:
+            create_resp = await client.create_multipart_upload(**upload_kwargs)
+            upload_id = create_resp["UploadId"]
+            parts: list[dict[str, Any]] = []
+            part_number = 1
+            for chunk in chunk_reader():
+                if not chunk:
+                    continue
+                upload_resp = await client.upload_part(
+                    Bucket=bucket,
+                    Key=key,
+                    PartNumber=part_number,
+                    UploadId=upload_id,
+                    Body=chunk,
+                )
+                parts.append({"PartNumber": part_number, "ETag": upload_resp["ETag"]})
+                bytes_uploaded += len(chunk)
+                part_number += 1
+            await client.complete_multipart_upload(
+                Bucket=bucket,
+                Key=key,
+                UploadId=upload_id,
+                MultipartUpload={"Parts": parts},
+            )
+            self._logger.info(
+                "s3-stream-save",
+                key=key,
+                bytes=bytes_uploaded,
+                parts=len(parts),
+                metadata_keys=len(metadata) if metadata else 0,
+            )
+            return bytes_uploaded
+        except BaseException as exc:
+            reason = "cancelled" if isinstance(exc, asyncio.CancelledError) else "exception"
+            if upload_id is not None:
+                try:
+                    await client.abort_multipart_upload(
+                        Bucket=bucket, Key=key, UploadId=upload_id
+                    )
+                except Exception as abort_exc:  # pragma: no cover - best effort
+                    self._logger.warning(
+                        "s3-multipart-abort-failed",
+                        key=key,
+                        error=str(abort_exc),
+                    )
+            _record_s3_multipart_abort(
+                backend="s3",
+                principal_short=principal_short,
+                reason=reason,
+                bytes_uploaded=bytes_uploaded,
+            )
+            raise
+
+    def load_stream(
+        self,
+        key: str,
+        *,
+        chunk_size: int = 65536,
+    ) -> Callable[[], Iterator[bytes]]:
+        """Return a callable that yields S3 object body chunks.
+
+        Uses a sync ``boto3`` client (lazy-created from the underlying
+        AWS session) so the body can be iterated synchronously without
+        bridging async -> sync at the consumer. The callable produces a
+        fresh ``Iterator[bytes]`` on each invocation.
+
+        Raises ``LifecycleError`` if the object is missing (mirrors the
+        ``LifecycleError`` contract used by the local adapter).
+        """
+        bucket = self._settings.bucket
+        sync_client = self._build_sync_client()
+        # Probe existence upfront so the caller gets the same error shape
+        # as the local adapter (LifecycleError) instead of an aioboto3
+        # # BotoCoreError leaking out of the callable on iteration.
+        try:
+            sync_client.head_object(Bucket=bucket, Key=key)
+        except Exception as exc:
+            if is_not_found_error(
+                exc,
+                codes={"NoSuchKey", "NotFound", "404"},
+                messages=("NoSuchKey", "Not Found", "404"),
+            ):
+                raise LifecycleError("s3-storage-key-not-found") from exc
+            raise
+
+        def reader() -> Iterator[bytes]:
+            response = sync_client.get_object(Bucket=bucket, Key=key)
+            try:
+                body = response["Body"]
+                while True:
+                    chunk = body.read(chunk_size)
+                    if not chunk:
+                        break
+                    yield chunk
+            finally:
+                response["Body"].close()
+
+        return reader
+
+    def _build_sync_client(self) -> Any:
+        """Lazily build a sync ``boto3`` client from the same session.
+
+        The async aioboto3 client cannot yield a streaming body synchronously,
+        so the streaming load path needs a sync counterpart. We re-use the
+        session kwargs (region, profile, endpoint URL, accelerate, creds) so
+        callers see consistent auth/endpoint config across both clients.
+        """
+        cached = getattr(self, "_sync_client", None)
+        if cached is not None:
+            return cached
+        try:
+            import boto3
+            from botocore.config import Config
+        except ModuleNotFoundError as exc:  # pragma: no cover - defensive
+            raise LifecycleError("boto3-missing") from exc
+
+        session_kwargs: dict[str, Any] = {}
+        if self._settings.profile_name:
+            session_kwargs["profile_name"] = self._settings.profile_name
+        if self._settings.region:
+            session_kwargs["region_name"] = self._settings.region
+        session = boto3.session.Session(**session_kwargs)
+
+        client_kwargs: dict[str, Any] = {
+            "service_name": "s3",
+            "endpoint_url": self._settings.endpoint_url,
+            "use_accelerate_endpoint": self._settings.use_accelerate_endpoint,
+            "aws_access_key_id": self._settings.access_key_id,
+            "aws_secret_access_key": self._settings.secret_access_key,
+            "aws_session_token": self._settings.session_token,
+            "config": Config(signature_version="s3v4"),
+        }
+        client_kwargs = {k: v for k, v in client_kwargs.items() if v is not None}
+        self._sync_client = session.client(**client_kwargs)
+        return self._sync_client
