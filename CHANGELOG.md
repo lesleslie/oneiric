@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Add optional `compression-zstd` PEP 735 dependency group with `zstandard>=0.23.0` for Phase 3 streaming tar.zst work (ADR 015 v4).
+
 ## [0.17.0] - 2026-08-22
 
 ### Added
