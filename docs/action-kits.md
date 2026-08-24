@@ -150,6 +150,100 @@ digest = result["digest"]
 
 ---
 
+### `compression.stream`
+
+**Module**: `oneiric.actions.streaming_compression`
+**Use when**: compressing or decompressing a *chunked* source (file
+chunks, network bytes, worktree bundles >100MB) that can't be
+materialized in memory before compression — yields a stream of output
+bytes via a stateful chunker/decompressor.
+**Don't use when**: you have a small in-memory payload (use
+`compression.encode`, which returns base64 in a single envelope) or
+you need an archive container (zip/tar). This kit only compresses raw
+byte streams.
+
+**Codec**: `zstandard>=0.23.0` for the `zstd` algorithm (default), via
+the `compression-zstd` PEP 735 dependency group
+(`uv sync --group compression-zstd`). The `gzip` algorithm uses the
+stdlib `zlib` module and has no extra dependency. The `zstandard`
+import is lazy — selecting `zstd` without the group installed raises
+`LifecycleError("zstandard dependency required for zstd algorithm;
+install with \`uv sync --group compression-zstd\`")` rather than
+failing at module load.
+
+**Settings** (see `StreamingCompressionSettings`):
+- `algorithm` (`"zstd"` | `"gzip"`, default `"zstd"`).
+- `level` (int, 1-22, default 3) — handed to `zstandard.ZstdCompressor`
+  for `zstd`; for `gzip`, used as the `zlib` compression level (1-9
+  range, but the schema permits 1-22 for uniformity; values above 9
+  are clamped by zlib at runtime).
+
+**Payload shape** (action-kit dispatch via `execute()`):
+- `mode` (`"compress"` | `"decompress"`, default `"compress"`).
+
+> **Note**: the `execute()` entrypoint is metadata-only — it returns
+> `{"status": "noop", "mode": ..., "note": "use compress/decompress
+> directly"}` because the action-kit dispatcher can't transport an
+> iterator of bytes. Callers that need the actual streamed bytes
+> should construct the action directly and invoke `compress()` or
+> `decompress()`.
+
+**Direct API** (bypass dispatch — use this for streaming):
+```python
+def compress(
+    chunk_reader: Callable[[], Iterator[bytes]],
+    *,
+    algorithm: str | None = None,
+    level: int | None = None,
+) -> Iterator[bytes]: ...
+
+def decompress(
+    chunk_reader: Callable[[], Iterator[bytes]],
+    *,
+    algorithm: str | None = None,
+) -> Iterator[bytes]: ...
+```
+
+The `chunk_reader` is a *zero-arg callable* returning an iterator of
+bytes (not the iterator itself) — this lets callers re-invoke the
+reader for retries without exhausting a one-shot generator. Previous
+spec revisions carried vestigial `(offset, chunk_size)` parameters;
+those were removed.
+
+**Result shape** (for direct API calls):
+- `compress()` / `decompress()` yield raw bytes; the caller consumes
+  the iterator and is responsible for assembly (file writes,
+  `shutil.copyfileobj`, network send, etc.).
+- `execute()` returns `{"status": "noop", "mode": str, "note": str}`.
+
+**Minimal example**:
+```python
+from oneiric.actions.streaming_compression import (
+    StreamingCompressionAction,
+    StreamingCompressionSettings,
+)
+
+action = StreamingCompressionAction(
+    settings=StreamingCompressionSettings(algorithm="zstd", level=3),
+)
+
+# compress a chunked source (e.g., a tar iterator) into a stream
+with open("bundle.tar.zst", "wb") as out:
+    for chunk in action.compress(lambda: tar_chunk_iter("bundle.tar")):
+        out.write(chunk)
+
+# decompress back to plaintext
+with open("bundle.tar", "wb") as out:
+    for chunk in action.decompress(lambda: read_chunks("bundle.tar.zst")):
+        out.write(chunk)
+```
+
+**Adopted by**: Phase 3 streaming tar.zst work in mahavishnu
+(worktree bundles >100MB) — wires through S3 / local storage
+multipart paths.
+
+---
+
 ### `data.sanitize`
 
 **Module**: `oneiric.actions.data`
