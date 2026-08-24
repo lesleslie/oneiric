@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import tempfile
+from collections.abc import Callable, Iterator
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -151,6 +153,139 @@ class AzureBlobStorageAdapter:
                 return False
             raise
         return True
+
+    async def save_stream(
+        self,
+        key: str,
+        chunk_reader: Callable[[], Iterator[bytes]],
+        *,
+        metadata: dict[str, str] | None = None,
+    ) -> str:
+        """Stream a chunked payload to Azure Blob Storage via a SpooledTemporaryFile.
+
+        Per ADR 015 v4 Phase 3 spec: ``chunk_reader`` is a sync
+        ``Callable[[], Iterator[bytes]]`` so callers can iterate the body
+        from any source (tar pipe, file reader) without binding it to
+        the event loop. Chunks are drained into a ``SpooledTemporaryFile``
+        (rolls to disk past 64 MiB) and then uploaded in a single
+        ``upload_blob`` call. ``length`` is supplied so the SDK can pick
+        the optimal chunk strategy for the body size. Returns the
+        storage ``key``.
+        """
+        try:
+            from azure.storage.blob import ContentSettings
+        except ModuleNotFoundError as exc:  # pragma: no cover - defensive
+            raise LifecycleError("azure-storage-blob-missing") from exc
+
+        bytes_written = 0
+        with tempfile.SpooledTemporaryFile(max_size=64 * 1024 * 1024) as spool:
+            for chunk in chunk_reader():
+                if not chunk:
+                    continue
+                spool.write(chunk)
+                bytes_written += len(chunk)
+            spool.seek(0)
+            upload_kwargs: dict[str, Any] = {
+                "blob_type": "BlockBlob",
+                "overwrite": True,
+                "length": bytes_written,
+                "content_settings": ContentSettings(
+                    content_type=self._settings.default_content_type,
+                ),
+            }
+            if metadata:
+                upload_kwargs["metadata"] = dict(metadata)
+            await self._ensure_container().get_blob_client(key).upload_blob(
+                spool, **upload_kwargs
+            )
+
+        self._logger.info(
+            "azure-stream-save",
+            key=key,
+            bytes=bytes_written,
+            metadata_keys=len(metadata) if metadata else 0,
+        )
+        return key
+
+    def load_stream(
+        self,
+        key: str,
+        *,
+        chunk_size: int = 65536,
+    ) -> Callable[[], Iterator[bytes]]:
+        """Return a callable yielding Azure blob body chunks.
+
+        The ``azure.storage.blob.aio`` client used elsewhere in this
+        adapter cannot yield a streaming body synchronously, so the
+        streaming load path lazily builds a sync
+        ``azure.storage.blob.BlobServiceClient`` (mirroring the S3
+        adapter's ``_build_sync_client`` pattern) and the returned
+        callable performs a fresh ``download_blob().readall()`` into a
+        ``SpooledTemporaryFile`` on every invocation — that way each
+        iteration of the body is independent and the file handle is
+        closed deterministically when the iterator is exhausted.
+
+        Raises ``LifecycleError`` if the blob is missing so callers see
+        the same error shape as the local + S3 adapters.
+        """
+        sync_client = self._build_sync_client()
+        container_name = self._settings.container
+        blob_client = sync_client.get_container_client(container_name).get_blob_client(
+            key
+        )
+        try:
+            blob_client.get_blob_properties()
+        except Exception as exc:
+            if self._is_not_found(exc):
+                raise LifecycleError("azure-storage-key-not-found") from exc
+            raise
+
+        def reader() -> Iterator[bytes]:
+            with tempfile.SpooledTemporaryFile(max_size=64 * 1024 * 1024) as spool:
+                downloader = blob_client.download_blob()
+                spool.write(downloader.readall())
+                spool.seek(0)
+                while True:
+                    chunk = spool.read(chunk_size)
+                    if not chunk:
+                        break
+                    yield chunk
+
+        return reader
+
+    def _build_sync_client(self) -> Any:
+        """Lazily build a sync ``azure.storage.blob.BlobServiceClient``.
+
+        The async ``aio`` client cannot yield a streaming body
+        synchronously, so the streaming load path needs a sync
+        counterpart. We re-use the same connection settings
+        (connection_string or account_url + credential) so callers see
+        consistent auth config across both clients.
+        """
+        cached = getattr(self, "_sync_client", None)
+        if cached is not None:
+            return cached
+        try:
+            from azure.storage.blob import BlobServiceClient
+        except ModuleNotFoundError as exc:  # pragma: no cover - defensive
+            raise LifecycleError("azure-storage-blob-missing") from exc
+
+        connection_string = self._settings.connection_string
+        account_url = self._settings.account_url
+        credential = self._settings.credential
+        if connection_string:
+            self._sync_client = BlobServiceClient.from_connection_string(
+                connection_string
+            )
+        elif account_url:
+            if not credential:
+                raise LifecycleError("azure-storage-credential-required")
+            self._sync_client = BlobServiceClient(
+                account_url=account_url, credential=credential
+            )
+        else:
+            raise LifecycleError("azure-storage-client-misconfigured")
+        return self._sync_client
 
     async def list(self, prefix: str = "") -> list[str]:  # ty: ignore[invalid-type-form] — ty resolves `list` to the method in scope
         container = self._ensure_container()
