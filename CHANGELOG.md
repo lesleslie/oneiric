@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- cli: BodaiCLIBase base class for Bodai Core 7 component CLIs (Task 4.1)
+  - Unified callback (`@self.callback(invoke_without_command=True)`) wires the
+    `--json` global flag and the `--version` / `-V` Typer options (one
+    release deprecation shim).
+  - `_pre_callback(ctx)` subclass hook for akosha / oneiric preserved
+    callbacks — no second `@app.callback` allowed.
+  - `_resolve_json_output(ctx)` helper replaces duplicated
+    `(ctx.obj or {}).get("json_output", False)` reads.
+  - `_detect_version()` catches `PackageNotFoundError` only (other exceptions
+    propagate).
+  - `doctor` / `health` split: `NotImplementedError` → `ExitCode.UNAVAILABLE`
+    vs `Exception` → `ExitCode.ERROR`, with `logger.exception` per project
+    CLAUDE.md.
+  - Removed the old `_intercept_version_flag()` sys.argv-mutating method.
+  - `ExitCode` enum: `SUCCESS=0`, `ERROR=1`, `USAGE_ERROR=2`,
+    `UNAVAILABLE=3`, `PERMISSION_DENIED=4`, `TIMEOUT=124`.
+
 ### Changed
 
 - refactor(cli): Convert flat `oneiric/cli.py` (3222-line module) to a package
