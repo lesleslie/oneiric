@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- refactor(cli): Convert flat `oneiric/cli.py` (3222-line module) to a package
+  `oneiric/cli/`. Moved contents to `oneiric/cli/__init__.py`. Added placeholder
+  `oneiric/cli/base.py` with `BodaiCLIBase` (Task 4.1 replaces with the full
+  cascade-fixed implementation).
+
 ## [0.18.0] - 2026-08-24
 
 ### Added
