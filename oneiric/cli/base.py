@@ -33,7 +33,8 @@ from __future__ import annotations
 import json
 import logging
 import warnings
-from importlib.metadata import PackageNotFoundError, version as metadata_version
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as metadata_version
 from typing import Any
 
 import typer

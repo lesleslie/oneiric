@@ -33,6 +33,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `oneiric/cli/base.py` with `BodaiCLIBase` (Task 4.1 replaces with the full
   cascade-fixed implementation).
 
+### Fixed
+
+- ci: Widen `B008` per-file-ignore from `oneiric/cli.py` to
+  `oneiric/cli/**.py`. The path glob was stale after Task 4.0 moved the flat
+  module into the `cli/` package, so ruff flagged 11 `typer.Option(...)`
+  sites in `cli/__init__.py` as `B008` (Typer-in-defaults idiom). Also
+  autofix the unsorted `from importlib.metadata import PackageNotFoundError,
+  version as metadata_version` import in `cli/base.py` (`I001`).
+
 ## [0.18.0] - 2026-08-24
 
 ### Added
