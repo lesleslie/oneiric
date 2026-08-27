@@ -61,7 +61,7 @@ try:
         DHURUVA_AVAILABLE = True
     else:
         raise ImportError("dhura-style backend not available")
-except (ImportError, AttributeError):  # pragma: no cover - fallback path
+except ImportError, AttributeError:  # pragma: no cover - fallback path
     DHURUVA_AVAILABLE = False
     # Fallback implementation if druva is not available
     import secrets

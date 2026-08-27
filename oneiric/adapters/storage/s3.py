@@ -43,6 +43,7 @@ def _record_s3_multipart_abort(
         span.set_attribute("abort_reason", reason)
         span.set_attribute("bytes_uploaded_before_abort", bytes_uploaded)
 
+
 # S3 user-defined metadata keys are restricted to this character set per the
 # S3 spec. Total user metadata is capped at 2 KB per object; values are
 # always stored as UTF-8 strings.
@@ -333,7 +334,9 @@ class S3StorageAdapter(EnsureClientMixin):
             )
             return bytes_uploaded
         except BaseException as exc:
-            reason = "cancelled" if isinstance(exc, asyncio.CancelledError) else "exception"
+            reason = (
+                "cancelled" if isinstance(exc, asyncio.CancelledError) else "exception"
+            )
             if upload_id is not None:
                 try:
                     await client.abort_multipart_upload(
@@ -403,7 +406,7 @@ class S3StorageAdapter(EnsureClientMixin):
         """Lazily build a sync ``boto3`` client from the same session.
 
         The async aioboto3 client cannot yield a streaming body synchronously,
-        so the streaming load path needs a sync counterpart. We re-use the
+        so the streaming load path needs a sync counterpart. We reuse the
         session kwargs (region, profile, endpoint URL, accelerate, creds) so
         callers see consistent auth/endpoint config across both clients.
         """

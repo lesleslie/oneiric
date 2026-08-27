@@ -9,7 +9,7 @@ production callers.
 new entry (don't break ordering); do the same in
 `oneiric/oneiric/actions/__init__.py::builtin_action_metadata()`.
 
----
+______________________________________________________________________
 
 ### `automation.trigger`
 
@@ -23,14 +23,17 @@ schedule decides *when to fire*.
 
 **Settings** (see `AutomationTriggerSettings` in
 `oneiric/actions/automation.py`):
+
 - `max_rules` (int, 1-200, default 20) — safety cap on rules per call.
 
 **Payload shape**:
+
 - `context` (Mapping) — dictionary inspected by `AutomationCondition` paths.
-- `rules` (list[`AutomationRule`], required, min_length 1) — evaluated in order.
+- `rules` (list\[`AutomationRule`\], required, min_length 1) — evaluated in order.
 - `stop_on_first_match` (bool | None) — short-circuit override per call.
 
 **Result shape**:
+
 ```python
 {"status": "triggered" | "noop",
  "matched_rules": [{"name", "action", "payload", "condition_count"}],
@@ -39,6 +42,7 @@ schedule decides *when to fire*.
 ```
 
 **Minimal example**:
+
 ```python
 from oneiric.actions.automation import (
     AutomationTriggerAction,
@@ -63,7 +67,7 @@ matched = result["matched_rules"]
 
 **Adopted by**: (none yet — production candidate)
 
----
+______________________________________________________________________
 
 ### `compression.encode`
 
@@ -76,15 +80,18 @@ container (zip/tar), or to compress bytes already in a binary protocol
 — those are not what this kit does.
 
 **Settings** (see `CompressionActionSettings`):
+
 - `algorithm` (`"zlib"` | `"bz2"` | `"lzma"`, default `"zlib"`).
 - `level` (int, 0-9, default 6) — handed to the underlying algorithm.
 
 **Payload shape**:
+
 - `mode` (`"compress"` | `"decompress"`, default `"compress"`).
 - `algorithm` (str) — overrides settings; `"zlib"`/`"bz2"`/`"lzma"`.
 - `text` (str, required when `mode == "compress"`) or `data` (str, base64, required when `mode == "decompress"`).
 
 **Result shape**:
+
 ```python
 # mode == "compress"
 {"mode": "compress", "algorithm": str, "data": "<base64>"}
@@ -93,6 +100,7 @@ container (zip/tar), or to compress bytes already in a binary protocol
 ```
 
 **Minimal example**:
+
 ```python
 from oneiric.actions.compression import (
     CompressionAction,
@@ -106,7 +114,7 @@ token = result["data"]
 
 **Adopted by**: (none yet — internal scaffolding only).
 
----
+______________________________________________________________________
 
 ### `compression.hash`
 
@@ -118,17 +126,20 @@ addressing — supports `sha256`/`sha512`/`blake2b` with optional salt.
 `security.signature` (HMAC) instead. This kit is *unkeyed*.
 
 **Settings** (see `HashActionSettings`):
+
 - `algorithm` (`"sha256"` | `"sha512"` | `"blake2b"`, default `"sha256"`).
 - `encoding` (`"hex"` | `"base64"`, default `"hex"`).
 - `salt` (str | None) — optional prefix prepended before hashing.
 
 **Payload shape**:
+
 - `value` (str | bytes | JSON-serializable) — required; alternatively `text` or `data`.
 - `algorithm` (str) — overrides settings.
 - `encoding` (str) — overrides settings.
 - `salt` (str) — overrides settings; concatenated before hashing.
 
 **Result shape**:
+
 ```python
 {"status": "hashed",
  "algorithm": str,
@@ -138,6 +149,7 @@ addressing — supports `sha256`/`sha512`/`blake2b` with optional salt.
 ```
 
 **Minimal example**:
+
 ```python
 from oneiric.actions.compression import HashAction, HashActionSettings
 
@@ -148,7 +160,7 @@ digest = result["digest"]
 
 **Adopted by**: (none yet — internal scaffolding only).
 
----
+______________________________________________________________________
 
 ### `compression.stream`
 
@@ -167,11 +179,11 @@ the `compression-zstd` PEP 735 dependency group
 (`uv sync --group compression-zstd`). The `gzip` algorithm uses the
 stdlib `zlib` module and has no extra dependency. The `zstandard`
 import is lazy — selecting `zstd` without the group installed raises
-`LifecycleError("zstandard dependency required for zstd algorithm;
-install with \`uv sync --group compression-zstd\`")` rather than
+`LifecycleError("zstandard dependency required for zstd algorithm; install with \`uv sync --group compression-zstd\`")\` rather than
 failing at module load.
 
 **Settings** (see `StreamingCompressionSettings`):
+
 - `algorithm` (`"zstd"` | `"gzip"`, default `"zstd"`).
 - `level` (int, 1-22, default 3) — handed to `zstandard.ZstdCompressor`
   for `zstd`; for `gzip`, used as the `zlib` compression level (1-9
@@ -179,16 +191,17 @@ failing at module load.
   are clamped by zlib at runtime).
 
 **Payload shape** (action-kit dispatch via `execute()`):
+
 - `mode` (`"compress"` | `"decompress"`, default `"compress"`).
 
 > **Note**: the `execute()` entrypoint is metadata-only — it returns
-> `{"status": "noop", "mode": ..., "note": "use compress/decompress
-> directly"}` because the action-kit dispatcher can't transport an
+> `{"status": "noop", "mode": ..., "note": "use compress/decompress directly"}` because the action-kit dispatcher can't transport an
 > iterator of bytes. Callers that need the actual streamed bytes
 > should construct the action directly and invoke `compress()` or
 > `decompress()`.
 
 **Direct API** (bypass dispatch — use this for streaming):
+
 ```python
 def compress(
     chunk_reader: Callable[[], Iterator[bytes]],
@@ -211,12 +224,14 @@ spec revisions carried vestigial `(offset, chunk_size)` parameters;
 those were removed.
 
 **Result shape** (for direct API calls):
+
 - `compress()` / `decompress()` yield raw bytes; the caller consumes
   the iterator and is responsible for assembly (file writes,
   `shutil.copyfileobj`, network send, etc.).
 - `execute()` returns `{"status": "noop", "mode": str, "note": str}`.
 
 **Minimal example**:
+
 ```python
 from oneiric.actions.streaming_compression import (
     StreamingCompressionAction,
@@ -242,7 +257,7 @@ with open("bundle.tar", "wb") as out:
 (worktree bundles >100MB) — wires through S3 / local storage
 multipart paths.
 
----
+______________________________________________________________________
 
 ### `data.sanitize`
 
@@ -256,6 +271,7 @@ drop list, and a mask list (configurable mask value) in one pass.
 provenance.
 
 **Settings** (see `DataSanitizeSettings`):
+
 - `allow_fields` (list[str] | None) — if set, only these fields survive.
 - `drop_fields` (list[str]) — removed after the allowlist is applied.
 - `mask_fields` (list[str]) — replaced with `mask_value`.
@@ -263,12 +279,14 @@ provenance.
 - `case_sensitive` (bool, default `False`).
 
 **Payload shape**:
+
 - `data` (Mapping, required) — alternatively `record`.
 - `allow_fields` / `drop_fields` / `mask_fields` (list[str]) — override settings.
 - `mask_value` (Any) — override settings.
 - `case_sensitive` (bool) — override settings.
 
 **Result shape**:
+
 ```python
 {"status": "sanitized",
  "data": dict,
@@ -276,6 +294,7 @@ provenance.
 ```
 
 **Minimal example**:
+
 ```python
 from oneiric.actions.data import DataSanitizeAction, DataSanitizeSettings
 
@@ -288,7 +307,7 @@ sanitized = result["data"]
 
 **Adopted by**: (none yet — internal scaffolding only).
 
----
+______________________________________________________________________
 
 ### `data.transform`
 
@@ -302,18 +321,21 @@ fields and error aggregation (use `validation.schema`). Transform
 doesn't check types; it just reshapes.
 
 **Settings** (see `DataTransformSettings`):
+
 - `include_fields` (list[str] | None) — when set, only these survive.
 - `exclude_fields` (list[str]) — fields removed.
 - `rename_fields` (dict[str, str]) — source → destination rename map.
 - `defaults` (dict[str, Any]) — applied when keys are missing.
 
 **Payload shape**:
+
 - `data` (Mapping, required) — alternatively `record`.
 - `include_fields` / `exclude_fields` (list[str]) — override settings.
 - `rename_fields` (dict[str, str]) — override settings.
 - `defaults` (dict[str, Any]) — override settings.
 
 **Result shape**:
+
 ```python
 {"status": "transformed",
  "data": dict,
@@ -322,6 +344,7 @@ doesn't check types; it just reshapes.
 ```
 
 **Minimal example**:
+
 ```python
 from oneiric.actions.data import DataTransformAction, DataTransformSettings
 
@@ -334,7 +357,7 @@ record = result["data"]
 
 **Adopted by**: (none yet — internal scaffolding only).
 
----
+______________________________________________________________________
 
 ### `debug.console`
 
@@ -348,6 +371,7 @@ sensitive fields by name (`secret`, `token`, `password`, `key`).
 store.
 
 **Settings** (see `DebugConsoleSettings`):
+
 - `default_level` (`"debug"` | `"info"` | `"warning"` | `"error"` | `"critical"`, default `"info"`).
 - `include_timestamp` (bool, default `True`) — adds ISO timestamp to record.
 - `prefix` (str, default `"[debug]"`) — written before the message when echoing.
@@ -355,12 +379,14 @@ store.
 - `scrub_fields` (list[str]) — fields scrubbed from nested `details`.
 
 **Payload shape**:
+
 - `message` (str, required).
 - `level` (str) — overrides `default_level`.
 - `details` (Mapping) — structured fields; nested `scrub_fields` are redacted.
 - `prefix` / `echo` / `include_timestamp` / `scrub_fields` — override settings.
 
 **Result shape**:
+
 ```python
 {"status": "emitted",
  "message": str,
@@ -371,6 +397,7 @@ store.
 ```
 
 **Minimal example**:
+
 ```python
 from oneiric.actions.debug import DebugConsoleAction, DebugConsoleSettings
 
@@ -384,7 +411,7 @@ status = result["status"]
 
 **Adopted by**: (none yet — internal scaffolding only).
 
----
+______________________________________________________________________
 
 ### `event.dispatch`
 
@@ -397,6 +424,7 @@ kits — that's the `EventBus` infrastructure. Dispatch is for *external*
 webhook fan-out.
 
 **Settings** (see `EventDispatchSettings`):
+
 - `default_topic` (str, default `"events.default"`).
 - `default_source` (str, default `"oneiric.runtime"`).
 - `max_hooks` (int, default 10).
@@ -405,6 +433,7 @@ webhook fan-out.
 - `dry_run` (bool, default `True`) — `True` to simulate delivery.
 
 **Payload shape**:
+
 - `topic` (str) — required; overrides `default_topic`.
 - `payload` (Mapping) — required; the event body. Alternatively `data`.
 - `metadata` (Mapping) — event metadata.
@@ -414,6 +443,7 @@ webhook fan-out.
 - `dry_run` (bool) — overrides settings.
 
 **Result shape**:
+
 ```python
 {"status": "dispatched" | "skipped" | "queued",
  "event": {"event_id", "topic", "source", "timestamp", "payload", "metadata"},
@@ -423,6 +453,7 @@ webhook fan-out.
 ```
 
 **Minimal example**:
+
 ```python
 from oneiric.actions.event import EventDispatchAction, EventDispatchSettings
 
@@ -442,7 +473,7 @@ delivered = result["delivered"]
 
 **Adopted by**: (none yet — internal scaffolding only).
 
----
+______________________________________________________________________
 
 ### `http.fetch`
 
@@ -456,6 +487,7 @@ parses it). For streaming/long-polling, no built-in kit — bring your
 own `httpx.AsyncClient`.
 
 **Settings** (see `HttpActionSettings` extends `BaseURLSettings`):
+
 - `default_method` (str, default `"GET"`) — GET/POST/PUT/PATCH/DELETE/HEAD/OPTIONS.
 - `timeout_seconds` (float, default 10.0).
 - `verify_ssl` (bool, default `True`).
@@ -465,6 +497,7 @@ own `httpx.AsyncClient`.
 - `base_url` (str | None, from `BaseURLSettings`) — combined with `path` when set.
 
 **Payload shape**:
+
 - `url` (str) — required unless `path`+`base_url` is set.
 - `method` (str) — overrides settings.
 - `path` (str) — joined to `base_url` when `url` is omitted.
@@ -474,6 +507,7 @@ own `httpx.AsyncClient`.
 - `timeout`, `verify`, `allow_redirects`, `raise_for_status` — per-call overrides.
 
 **Result shape**:
+
 ```python
 {"status": "success" | "error",
  "status_code": int, "ok": bool, "method": str, "url": str,
@@ -482,6 +516,7 @@ own `httpx.AsyncClient`.
 ```
 
 **Minimal example**:
+
 ```python
 from oneiric.actions.http import HttpFetchAction, HttpActionSettings
 
@@ -492,7 +527,7 @@ body = result["json"]
 
 **Adopted by**: (none yet — internal scaffolding only).
 
----
+______________________________________________________________________
 
 ### `security.secure`
 
@@ -506,11 +541,13 @@ JWT/SSO flows (out of scope). For HMAC signatures, use
 `security.signature` instead.
 
 **Settings** (see `SecuritySecureSettings`):
+
 - `token_length` (int, default 32) — bytes fed to `secrets.token_urlsafe`.
 - `password_iterations` (int, default 100_000) — PBKDF2 rounds.
 - `include_symbols` (bool, default `True`).
 
 **Payload shape**:
+
 - `mode` (`"token"` | `"password-hash"` | `"password-verify"` | `"compare"`, default `"token"`).
 - `length` (int) — token length override (mode `token`).
 - `password`, `salt`, `iterations` — mode `password-hash` / `password-verify`.
@@ -518,6 +555,7 @@ JWT/SSO flows (out of scope). For HMAC signatures, use
 - `a`, `b` (str) — mode `compare`.
 
 **Result shape**:
+
 ```python
 # mode == "token"
 {"status": "token", "token": str, "length": int}
@@ -530,6 +568,7 @@ JWT/SSO flows (out of scope). For HMAC signatures, use
 ```
 
 **Minimal example**:
+
 ```python
 from oneiric.actions.security import SecuritySecureAction, SecuritySecureSettings
 
@@ -542,7 +581,7 @@ token = result["token"]
 
 **Adopted by**: (none yet — internal scaffolding only).
 
----
+______________________________________________________________________
 
 ### `security.signature`
 
@@ -554,6 +593,7 @@ key difference from `compression.hash`) with the secret you supply.
 or full JWT/SSO. This kit only does HMAC.
 
 **Settings** (see `SecuritySignatureSettings`):
+
 - `algorithm` (`"sha256"` | `"sha512"` | `"blake2b"`, default `"sha256"`).
 - `encoding` (`"hex"` | `"base64"`, default `"hex"`).
 - `secret` (str | None) — fallback when payload omits `secret`.
@@ -561,6 +601,7 @@ or full JWT/SSO. This kit only does HMAC.
 - `include_timestamp` (bool, default `True`).
 
 **Payload shape**:
+
 - `secret` (str) — required (or set in settings).
 - `message` / `body` / `data` (str | bytes | JSON-serializable) — required.
 - `algorithm` / `encoding` — override settings.
@@ -568,6 +609,7 @@ or full JWT/SSO. This kit only does HMAC.
 - `include_timestamp` (bool) — override settings.
 
 **Result shape**:
+
 ```python
 {"status": "signed",
  "algorithm": str,
@@ -578,6 +620,7 @@ or full JWT/SSO. This kit only does HMAC.
 ```
 
 **Minimal example**:
+
 ```python
 from oneiric.actions.security import (
     SecuritySignatureAction,
@@ -593,7 +636,7 @@ sig = result["signature"]
 
 **Adopted by**: (none yet — internal scaffolding only).
 
----
+______________________________________________________________________
 
 ### `serialization.encode`
 
@@ -607,11 +650,13 @@ json/yaml/pickle, or you want to load pickle from an untrusted source
 is logged but not enforced).
 
 **Settings** (see `SerializationActionSettings`):
+
 - `default_format` (`"json"` | `"yaml"` | `"pickle"`, default `"json"`).
 - `sort_keys` (bool, default `False`) — deterministic output for json/yaml.
 - `ensure_ascii` (bool, default `False`) — force ASCII for json.
 
 **Payload shape**:
+
 - `mode` (`"encode"` | `"decode"`, default `"encode"`).
 - `format` (str) — override `default_format`.
 - `value` / `data` (Any, required when encoding) — alternatively `text` when decoding.
@@ -619,6 +664,7 @@ is logged but not enforced).
 - `sort_keys` / `ensure_ascii` — override settings.
 
 **Result shape**:
+
 ```python
 # mode == "encode" (text formats)
 {"status": "encoded", "format": "json"|"yaml", "text": str}
@@ -629,6 +675,7 @@ is logged but not enforced).
 ```
 
 **Minimal example**:
+
 ```python
 from oneiric.actions.serialization import (
     SerializationAction,
@@ -644,7 +691,7 @@ text = result["text"]
 
 **Adopted by**: (none yet — internal scaffolding only).
 
----
+______________________________________________________________________
 
 ### `task.schedule`
 
@@ -658,12 +705,14 @@ plans; wire the output into a runner) or you need a sub-minute cadence
 (currently minute-resolution; the cron parser walks minute boundaries).
 
 **Settings** (see `TaskScheduleSettings`):
+
 - `default_queue` (str, default `"default"`).
 - `default_priority` (int, default 100, ge 0).
 - `timezone` (str, default `"UTC"`).
 - `max_preview_runs` (int, 1-50, default 5).
 
 **Payload shape**:
+
 - `task_type` (str, required) — task type to enqueue when the rule fires.
 - `cron_expression` / `cron` (str) — 5-field minute-resolution cron; mutually exclusive with `interval_seconds`.
 - `interval_seconds` / `interval` / `every_seconds` (float, gt 0) — fixed cadence.
@@ -672,6 +721,7 @@ plans; wire the output into a runner) or you need a sub-minute cadence
 - `priority` (int, ge 0), `start_time` / `end_time` (datetime), `max_runs` (int, gt 0), `preview_runs` (int, ge 0), `timezone` (str), `tags` (Mapping).
 
 **Result shape**:
+
 ```python
 {"status": "scheduled" | "unscheduled",
  "rule": {"rule_id", "name", "task_type", "queue", "priority",
@@ -683,6 +733,7 @@ plans; wire the output into a runner) or you need a sub-minute cadence
 ```
 
 **Minimal example**:
+
 ```python
 from oneiric.actions.task import TaskScheduleAction, TaskScheduleSettings
 
@@ -699,7 +750,7 @@ next_run = result["next_run"]
 
 **Adopted by**: (none yet — internal scaffolding only).
 
----
+______________________________________________________________________
 
 ### `validation.schema`
 
@@ -712,17 +763,20 @@ errors.
 or redact secrets (use `data.sanitize`). Validation doesn't mutate.
 
 **Settings** (see `ValidationSchemaSettings`):
-- `fields` (list[`ValidationFieldRule`]) — name/type/required/allow_null per field.
+
+- `fields` (list\[`ValidationFieldRule`\]) — name/type/required/allow_null per field.
 - `allow_extra` (bool, default `True`) — allow keys beyond the schema.
 - `fail_fast` (bool, default `False`) — stop on first error vs. collect.
 
 **Payload shape**:
+
 - `data` (Mapping, required) — alternatively `record`.
-- `fields` (list[dict | `ValidationFieldRule`]) — overrides settings.
+- `fields` (list\[dict | `ValidationFieldRule`\]) — overrides settings.
 - `allow_extra` (bool) — override settings.
 - `fail_fast` (bool) — override settings.
 
 **Result shape**:
+
 ```python
 {"status": "valid" | "invalid",
  "data": dict,            # original record
@@ -731,6 +785,7 @@ or redact secrets (use `data.sanitize`). Validation doesn't mutate.
 ```
 
 **Minimal example**:
+
 ```python
 from oneiric.actions.data import (
     ValidationSchemaAction,
@@ -753,7 +808,7 @@ status = result["status"]
 
 **Adopted by**: (none yet — internal scaffolding only).
 
----
+______________________________________________________________________
 
 ### `workflow.audit`
 
@@ -767,12 +822,14 @@ emit, but durable to the log stream.
 *log-stream only*, not user-facing.
 
 **Settings** (see `WorkflowAuditSettings`):
+
 - `channel` (str, default `"workflow"`).
 - `include_timestamp` (bool, default `True`).
 - `default_event` (str, default `"workflow.audit"`).
 - `redact_fields` (list[str]) — fields masked to `"***"` in nested details.
 
 **Payload shape**:
+
 - `event` (str) — required (or relies on `default_event`).
 - `channel` (str) — overrides settings.
 - `details` (Mapping) — structured fields; nested `redact_fields` are masked.
@@ -780,6 +837,7 @@ emit, but durable to the log stream.
 - `include_timestamp` (bool) — override settings.
 
 **Result shape**:
+
 ```python
 {"status": "recorded",
  "event": str,
@@ -789,6 +847,7 @@ emit, but durable to the log stream.
 ```
 
 **Minimal example**:
+
 ```python
 from oneiric.actions.workflow import WorkflowAuditAction, WorkflowAuditSettings
 
@@ -804,7 +863,7 @@ status = result["status"]
 
 **Adopted by**: (none yet — internal scaffolding only).
 
----
+______________________________________________________________________
 
 ### `workflow.notify`
 
@@ -818,12 +877,14 @@ both "needs to be seen by humans" and "needs to be in the log".
 `event.dispatch`). Notify targets *humans* (or the log channel).
 
 **Settings** (see `WorkflowNotifySettings`):
+
 - `default_channel` (str, default `"workflow"`).
 - `default_level` (`"debug"` | `"info"` | `"warning"` | `"error"` | `"critical"`, default `"info"`).
 - `default_recipients` (list[str]) — applied when payload omits recipients.
 - `require_message` (bool, default `True`).
 
 **Payload shape**:
+
 - `message` (str) — required when `require_message` is true.
 - `channel` (str) — overrides settings.
 - `level` (str) — overrides settings; defaults to `"info"` if invalid.
@@ -831,6 +892,7 @@ both "needs to be seen by humans" and "needs to be in the log".
 - `context` (Mapping) — opaque context blob forwarded with the notification.
 
 **Result shape**:
+
 ```python
 {"status": "queued" | "logged",
  "message": str,
@@ -841,6 +903,7 @@ both "needs to be seen by humans" and "needs to be in the log".
 ```
 
 **Minimal example**:
+
 ```python
 from oneiric.actions.workflow import WorkflowNotifyAction, WorkflowNotifySettings
 
@@ -857,7 +920,7 @@ status = result["status"]
 
 **Adopted by**: (none yet — internal scaffolding only).
 
----
+______________________________________________________________________
 
 ### `workflow.orchestrate`
 
@@ -870,20 +933,23 @@ and entry/terminal step detection — pure planner, no execution.
 orchestrator). Orchestrate produces a plan; it doesn't execute it.
 
 **Settings** (see `WorkflowOrchestratorSettings`):
+
 - `max_parallel_steps` (int, default 4, ge 1) — cap on parallel batch size.
 - `default_version` (str, default `"1.0.0"`) — applied when definitions omit one.
 - `default_retry_attempts` (int, default 3, ge 0).
 - `default_timeout_seconds` (float, default 300.0, gt 0).
 
 **Payload shape** (see `WorkflowDefinitionSpec`):
+
 - `workflow_id` (str, required).
 - `name`, `version`, `description` (str) — optional metadata.
 - `start_paused` (bool, default `False`) — produce a paused plan.
-- `steps` (list[`WorkflowStepSpec`], required) — each has `step_id`, `name`, `action`, optional `depends_on`/`retry_attempts`/`timeout_seconds`/`metadata`/`tags`.
+- `steps` (list\[`WorkflowStepSpec`\], required) — each has `step_id`, `name`, `action`, optional `depends_on`/`retry_attempts`/`timeout_seconds`/`metadata`/`tags`.
 - `metadata`, `context`, `tags` — workflow-level extras.
 - `target_steps` (list[str]) — optional subset to compile (dependencies included).
 
 **Result shape**:
+
 ```python
 {"status": "planned" | "paused",
  "workflow_id", "name", "version", "run_token", "generated_at",
@@ -898,6 +964,7 @@ orchestrator). Orchestrate produces a plan; it doesn't execute it.
 ```
 
 **Minimal example**:
+
 ```python
 from oneiric.actions.workflow import (
     WorkflowOrchestratorAction,
@@ -920,7 +987,7 @@ batches = result["schedule"]
 
 **Adopted by**: (none yet — internal scaffolding only).
 
----
+______________________________________________________________________
 
 ### `workflow.retry`
 
@@ -934,6 +1001,7 @@ whether to schedule another attempt.
 wire it to `workflow.orchestrate`).
 
 **Settings** (see `WorkflowRetrySettings`):
+
 - `max_attempts` (int, default 3, ge 1).
 - `base_delay_seconds` (float, default 1.0, ge 0).
 - `multiplier` (float, default 2.0, ge 1.0).
@@ -941,17 +1009,20 @@ wire it to `workflow.orchestrate`).
 - `jitter` (float, default 0.1, clamped 0-1).
 
 **Payload shape**:
+
 - `attempt` (int, default 0, ge 0) — current attempt count.
 - `max_attempts` (int, ge 1) — override settings.
 - `base_delay_seconds`, `multiplier`, `max_delay_seconds`, `jitter` — overrides.
 
 **Result shape**:
+
 ```python
 {"attempt": int, "max_attempts": int, "status": "scheduled" | "exhausted",
  "next_attempt": int | None, "delay_seconds": float | None}
 ```
 
 **Minimal example**:
+
 ```python
 from oneiric.actions.workflow import WorkflowRetryAction, WorkflowRetrySettings
 

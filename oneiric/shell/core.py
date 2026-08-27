@@ -39,7 +39,7 @@ class AdminShell:
         try:
             module = __import__(module_name, fromlist=[attr_name])
             return getattr(module, attr_name)
-        except (ImportError, AttributeError):
+        except ImportError, AttributeError:
             return None
 
     def start(self) -> None:

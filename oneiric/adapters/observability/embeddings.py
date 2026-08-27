@@ -420,7 +420,7 @@ class EmbeddingService:
             data = body.get("data") or []
             if data and "embedding" in data[0]:
                 return np.asarray(data[0]["embedding"], dtype=np.float32)
-        except (httpx.HTTPError, ValueError, KeyError):
+        except httpx.HTTPError, ValueError, KeyError:
             return None
         return None
 

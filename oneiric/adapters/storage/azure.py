@@ -195,8 +195,10 @@ class AzureBlobStorageAdapter:
             }
             if metadata:
                 upload_kwargs["metadata"] = dict(metadata)
-            await self._ensure_container().get_blob_client(key).upload_blob(
-                spool, **upload_kwargs
+            await (
+                self._ensure_container()
+                .get_blob_client(key)
+                .upload_blob(spool, **upload_kwargs)
             )
 
         self._logger.info(
@@ -258,7 +260,7 @@ class AzureBlobStorageAdapter:
 
         The async ``aio`` client cannot yield a streaming body
         synchronously, so the streaming load path needs a sync
-        counterpart. We re-use the same connection settings
+        counterpart. We reuse the same connection settings
         (connection_string or account_url + credential) so callers see
         consistent auth config across both clients.
         """

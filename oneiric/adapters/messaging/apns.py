@@ -320,6 +320,6 @@ class APNSPushAdapter:
     def _filter_kwargs(self, target: Any, kwargs: dict[str, Any]) -> dict[str, Any]:
         try:
             params = inspect.signature(target).parameters
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return kwargs
         return {key: value for key, value in kwargs.items() if key in params}

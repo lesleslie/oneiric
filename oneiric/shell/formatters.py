@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 try:
     from rich.console import Console
@@ -20,7 +20,7 @@ class TableColumn:
 
 
 class BaseTableFormatter:
-    def __init__(self, console: Optional["Console"] = None, max_width: int = 120):
+    def __init__(self, console: Console | None = None, max_width: int = 120):
         if not RICH_AVAILABLE:
             self.console = None
         elif console:
@@ -68,7 +68,7 @@ class BaseTableFormatter:
 
 
 class BaseLogFormatter:
-    def __init__(self, console: Optional["Console"] = None):
+    def __init__(self, console: Console | None = None):
         if not RICH_AVAILABLE:
             self.console = None
         elif console:
@@ -121,7 +121,7 @@ class BaseLogFormatter:
 
 
 class BaseProgressFormatter:
-    def __init__(self, console: Optional["Console"] = None):
+    def __init__(self, console: Console | None = None):
         if not RICH_AVAILABLE:
             self.console = None
         elif console:

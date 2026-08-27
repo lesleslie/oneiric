@@ -2,7 +2,7 @@
 
 Covers the cascade-fixed implementation:
 - Unified callback wires --json and --version via Typer options (round-1 F-α fix).
-- _pre_callback hook lets subclasses extend the callback without re-declaring it.
+- _pre_callback hook lets subclasses extend the callback without redeclaring it.
 - _resolve_json_output helper replaces duplicated (ctx.obj or {}).get(...) (round-2 F-δ fix).
 - _detect_version catches PackageNotFoundError only (round-2 F-β fix).
 - doctor/health: NotImplementedError -> UNAVAILABLE, Exception -> ERROR (round-2 F-γ fix).
@@ -169,7 +169,7 @@ def test_global_short_version_flag_accepted(
 def test_no_extra_callback_registered(fake_app: BodaiCLIBase) -> None:
     """Exactly ONE callback is registered: the unified root callback.
 
-    Cascade-fix invariant (round-1 F-α): subclasses must not re-declare
+    Cascade-fix invariant (round-1 F-α): subclasses must not redeclare
     ``@app.callback``. Use the ``_pre_callback`` hook instead. If a subclass
     adds a second callback, Typer raises at construction time.
     """
@@ -189,7 +189,7 @@ def test_intercept_version_flag_method_removed(fake_app: BodaiCLIBase) -> None:
 
 
 def test_pre_callback_called_when_subclass_overrides(runner: CliRunner) -> None:
-    """Subclasses can hook _pre_callback(ctx) without re-declaring @app.callback."""
+    """Subclasses can hook _pre_callback(ctx) without redeclaring @app.callback."""
     captured: dict[str, bool] = {"called": False}
 
     class FakeApp(BodaiCLIBase):

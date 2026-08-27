@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.0] - 2026-08-27
+
+### Added
+
+- oneiric: Add BodaiCLIBase + ExitCode (Task 4.1)
+
+### Changed
+
+- oneiric: Convert cli.py to package (Task 4.0 precondition for BodaiCLIBase)
+
+### Fixed
+
+- oneiric: Route logger.exception component via stdlib extra= channel
+- oneiric: Widen B008 exemption to cli/**.py + autofix base.py I001 import sort
+
+### Internal
+
+- build: Standardize oneiric on hatchling backend
+
 ## [Unreleased]
 
 ### Added

@@ -129,6 +129,6 @@ class LogfireMonitoringAdapter:
             return kwargs
         try:
             params = inspect.signature(configure).parameters
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return kwargs
         return {key: value for key, value in kwargs.items() if key in params}

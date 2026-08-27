@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 # Global registry of ULID → system mappings
-_ulid_registry: dict[str, "SystemReference"] = {}
+_ulid_registry: dict[str, SystemReference] = {}
 
 
 class SystemReference:
@@ -88,7 +88,7 @@ def resolve_ulid(ulid: str) -> SystemReference | None:
     return _ulid_registry.get(ulid)
 
 
-def find_references_by_system(system: str) -> list["SystemReference"]:
+def find_references_by_system(system: str) -> list[SystemReference]:
     """Find all references from a specific system.
 
     Args:

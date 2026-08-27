@@ -213,7 +213,7 @@ class AutomationTriggerAction:
         try:
             actual_value = float(actual)
             expected_value = float(expected)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return False
         if op == "gt":
             return actual_value > expected_value

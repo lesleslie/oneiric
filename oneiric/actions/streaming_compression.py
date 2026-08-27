@@ -63,9 +63,7 @@ class StreamingCompressionAction:
 
     _SUPPORTED: ClassVar[set[str]] = {"gzip", "zstd"}
 
-    def __init__(
-        self, settings: StreamingCompressionSettings | None = None
-    ) -> None:
+    def __init__(self, settings: StreamingCompressionSettings | None = None) -> None:
         self._settings = settings or StreamingCompressionSettings()
         self._logger = get_logger("action.compression.stream")
 
@@ -85,9 +83,7 @@ class StreamingCompressionAction:
         """
         algo = (algorithm or self._settings.algorithm).lower()
         if algo not in self._SUPPORTED:
-            raise LifecycleError(
-                f"compression-stream-unsupported-algorithm: {algo}"
-            )
+            raise LifecycleError(f"compression-stream-unsupported-algorithm: {algo}")
         if algo == "zstd":
             yield from self._zstd_stream_compress(
                 chunk_reader(),
@@ -108,9 +104,7 @@ class StreamingCompressionAction:
         """Decompress a chunked compressed source back into plaintext bytes."""
         algo = (algorithm or self._settings.algorithm).lower()
         if algo not in self._SUPPORTED:
-            raise LifecycleError(
-                f"compression-stream-unsupported-algorithm: {algo}"
-            )
+            raise LifecycleError(f"compression-stream-unsupported-algorithm: {algo}")
         if algo == "zstd":
             yield from self._zstd_stream_decompress(chunk_reader())
         else:  # "gzip"
@@ -134,9 +128,7 @@ class StreamingCompressionAction:
         }
 
     @staticmethod
-    def _zstd_stream_compress(
-        chunks: Iterator[bytes], level: int
-    ) -> Iterator[bytes]:
+    def _zstd_stream_compress(chunks: Iterator[bytes], level: int) -> Iterator[bytes]:
         # Lazy import — zstandard is an optional dep via the
         # `compression-zstd` PEP 735 group; the runtime code must
         # raise a clear LifecycleError when it's missing rather than
@@ -184,9 +176,7 @@ class StreamingCompressionAction:
             yield tail
 
     @staticmethod
-    def _gzip_stream_compress(
-        chunks: Iterator[bytes], level: int
-    ) -> Iterator[bytes]:
+    def _gzip_stream_compress(chunks: Iterator[bytes], level: int) -> Iterator[bytes]:
         # Python's gzip module doesn't expose a streaming compressor, so use
         # zlib with a gzip header for streaming gzip output.
         cctx = zlib.compressobj(level, zlib.DEFLATED, wbits=15 + 16)

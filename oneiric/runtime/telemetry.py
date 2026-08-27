@@ -34,7 +34,7 @@ def load_runtime_telemetry(path: str | Path) -> RuntimeObservabilitySnapshot:
         return RuntimeObservabilitySnapshot()
     try:
         data = json.loads(file.read_text())
-    except (OSError, ValueError):
+    except OSError, ValueError:
         return RuntimeObservabilitySnapshot()
     snapshot = RuntimeObservabilitySnapshot()
     if isinstance(data, Mapping):

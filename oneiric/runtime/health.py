@@ -41,7 +41,7 @@ def load_runtime_health(path: str | Path) -> RuntimeHealthSnapshot:
         return RuntimeHealthSnapshot()
     try:
         data = json.loads(file.read_text())
-    except (OSError, ValueError):
+    except OSError, ValueError:
         return RuntimeHealthSnapshot()
     if not isinstance(data, dict):
         return RuntimeHealthSnapshot()

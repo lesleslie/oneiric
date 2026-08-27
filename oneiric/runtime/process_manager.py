@@ -20,7 +20,7 @@ class ProcessManager:
             with self.pid_file.open() as f:
                 pid = int(f.read().strip())
                 self.pid = pid
-        except (ValueError, FileNotFoundError):
+        except ValueError, FileNotFoundError:
             return False
 
         try:

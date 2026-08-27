@@ -59,9 +59,7 @@ class LocalStorageAdapter:
                 # Serverless / read-only-filesystem deployments cannot
                 # create a writable base. Surface a clear lifecycle
                 # error with a fix hint. ADR 015 v4 §7.
-                raise LifecycleError(
-                    "local-storage-readonly-filesystem"
-                ) from exc
+                raise LifecycleError("local-storage-readonly-filesystem") from exc
         elif not self._base_path.exists():
             raise LifecycleError("storage-base-path-missing")
 
@@ -71,9 +69,7 @@ class LocalStorageAdapter:
         import os
 
         if not os.access(self._base_path, os.W_OK):
-            raise LifecycleError(
-                "local-storage-readonly-filesystem"
-            )
+            raise LifecycleError("local-storage-readonly-filesystem")
 
         self._logger.info(
             "adapter-init", adapter="local-storage", base=str(self._base_path)

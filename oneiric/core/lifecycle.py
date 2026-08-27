@@ -556,6 +556,6 @@ def _parse_timestamp(value: str | None) -> datetime | None:
 def _is_number(value: Any) -> bool:
     try:
         float(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return False
     return True
