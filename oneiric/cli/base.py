@@ -170,7 +170,7 @@ class BodaiCLIBase(typer.Typer):
                 )
                 raise typer.Exit(code=ExitCode.UNAVAILABLE) from None
             except Exception as exc:  # pragma: no cover - subclass hook
-                logger.exception("doctor-failed", component=self.component_name)
+                logger.exception("doctor-failed", extra={"component": self.component_name})
                 typer.echo(f"{self.component_name}: doctor failed: {exc}")
                 raise typer.Exit(code=ExitCode.ERROR) from None
 
@@ -194,7 +194,7 @@ class BodaiCLIBase(typer.Typer):
                 )
                 raise typer.Exit(code=ExitCode.UNAVAILABLE) from None
             except Exception as exc:  # pragma: no cover - subclass hook
-                logger.exception("health-failed", component=self.component_name)
+                logger.exception("health-failed", extra={"component": self.component_name})
                 typer.echo(f"{self.component_name}: health failed: {exc}")
                 raise typer.Exit(code=ExitCode.ERROR) from None
 

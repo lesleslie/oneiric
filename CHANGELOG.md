@@ -39,8 +39,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `oneiric/cli/**.py`. The path glob was stale after Task 4.0 moved the flat
   module into the `cli/` package, so ruff flagged 11 `typer.Option(...)`
   sites in `cli/__init__.py` as `B008` (Typer-in-defaults idiom). Also
-  autofix the unsorted `from importlib.metadata import PackageNotFoundError,
-  version as metadata_version` import in `cli/base.py` (`I001`).
+  autofix the unsorted `from importlib.metadata import PackageNotFoundError, version as metadata_version` import in `cli/base.py` (`I001`).
+- typing: Switch `logger.exception(...)` calls in `oneiric/cli/base.py`
+  `doctor`/`health` error handlers from a `component=self.component_name`
+  kwarg to `extra={"component": self.component_name}`. The unbound
+  `component=` kwarg tripped `ty`'s bound-method parameter check
+  (``Argument 'component' does not match any known parameter of bound
+  method 'Logger.exception'``) under comprehensive hooks. `extra=` is the
+  stdlib-documented channel for structured context on LogRecord and
+  flows through every JSON formatter unchanged.
 
 ## [0.18.0] - 2026-08-24
 
