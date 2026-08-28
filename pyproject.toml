@@ -33,6 +33,9 @@ dependencies = [
 [project.scripts]
 oneiric = "oneiric.cli:main"
 
+[project.entry-points."bodai.apps"]
+oneiric = "oneiric.cli:app"
+
 [project.license]
 text = "BSD-3-CLAUSE"
 
