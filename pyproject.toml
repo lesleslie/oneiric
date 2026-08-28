@@ -152,6 +152,10 @@ max-complexity = 15
 skylos_timeout = 600  # 10 minutes for skylos analysis (analyzes 71 files)
 refurb_timeout = 600  # 10 minutes for refurb analysis (analyzes 178 Python files)
 
+[tool.ty]
+# Scope ty to the package directory only (not tests/, benches/, docs/examples/)
+src = { include = ["oneiric/**/*.py"] }
+
 [tool.skylos]
 exclude_folders = [
     ".venv",

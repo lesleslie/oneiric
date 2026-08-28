@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - oneiric: Route logger.exception component via stdlib extra= channel
-- oneiric: Widen B008 exemption to cli/**.py + autofix base.py I001 import sort
+- oneiric: Widen B008 exemption to cli/\*\*.py + autofix base.py I001 import sort
 
 ### Internal
 
@@ -63,8 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `doctor`/`health` error handlers from a `component=self.component_name`
   kwarg to `extra={"component": self.component_name}`. The unbound
   `component=` kwarg tripped `ty`'s bound-method parameter check
-  (``Argument 'component' does not match any known parameter of bound
-  method 'Logger.exception'``) under comprehensive hooks. `extra=` is the
+  (`Argument 'component' does not match any known parameter of bound method 'Logger.exception'`) under comprehensive hooks. `extra=` is the
   stdlib-documented channel for structured context on LogRecord and
   flows through every JSON formatter unchanged.
 

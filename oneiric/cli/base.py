@@ -13,7 +13,7 @@ their repo-specific checks. Both raise ``NotImplementedError`` by default;
 per-repo CI tests must assert the hooks return real data, not ``{}``.
 
 The ``_pre_callback(ctx)`` subclass hook (default no-op) lets akosha/oneiric
-preserve their preserved callbacks without re-declaring ``@app.callback``.
+preserve their preserved callbacks without redeclaring ``@app.callback``.
 
 Round-1 cascade-fix notes:
 
@@ -28,6 +28,7 @@ Round-1 cascade-fix notes:
 - ``_resolve_json_output(ctx)`` helper (round-2 F-δ fix) replaces the
   duplicated ``(ctx.obj or {}).get("json_output", False)`` pattern.
 """
+
 from __future__ import annotations
 
 import json
@@ -93,7 +94,7 @@ class BodaiCLIBase(typer.Typer):
 
         Default no-op. ``akosha`` and ``oneiric`` use this to preserve their
         own callback side-effects (config init, logging setup) without
-        re-declaring ``@app.callback``.
+        redeclaring ``@app.callback``.
         """
 
     # ------------------------------------------------------------------
@@ -165,12 +166,12 @@ class BodaiCLIBase(typer.Typer):
             try:
                 checks = self._doctor_checks()
             except NotImplementedError:
-                typer.echo(
-                    f"{self.component_name}: doctor checks not yet implemented"
-                )
+                typer.echo(f"{self.component_name}: doctor checks not yet implemented")
                 raise typer.Exit(code=ExitCode.UNAVAILABLE) from None
             except Exception as exc:  # pragma: no cover - subclass hook
-                logger.exception("doctor-failed", extra={"component": self.component_name})
+                logger.exception(
+                    "doctor-failed", extra={"component": self.component_name}
+                )
                 typer.echo(f"{self.component_name}: doctor failed: {exc}")
                 raise typer.Exit(code=ExitCode.ERROR) from None
 
@@ -178,7 +179,11 @@ class BodaiCLIBase(typer.Typer):
                 typer.echo(json.dumps({"checks": checks}, indent=2, default=str))
                 return
             for name, info in checks.items():
-                status = info.get("status", "unknown") if isinstance(info, dict) else "unknown"
+                status = (
+                    info.get("status", "unknown")
+                    if isinstance(info, dict)
+                    else "unknown"
+                )
                 detail = info.get("detail", "") if isinstance(info, dict) else str(info)
                 typer.echo(f"{name}: {status} - {detail}")
 
@@ -189,12 +194,12 @@ class BodaiCLIBase(typer.Typer):
             try:
                 snapshot = self._health_probe()
             except NotImplementedError:
-                typer.echo(
-                    f"{self.component_name}: health checks not yet implemented"
-                )
+                typer.echo(f"{self.component_name}: health checks not yet implemented")
                 raise typer.Exit(code=ExitCode.UNAVAILABLE) from None
             except Exception as exc:  # pragma: no cover - subclass hook
-                logger.exception("health-failed", extra={"component": self.component_name})
+                logger.exception(
+                    "health-failed", extra={"component": self.component_name}
+                )
                 typer.echo(f"{self.component_name}: health failed: {exc}")
                 raise typer.Exit(code=ExitCode.ERROR) from None
 
