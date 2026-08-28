@@ -6,6 +6,7 @@ import json
 import os
 import tempfile
 import tomllib
+import warnings
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any, cast
@@ -273,32 +274,50 @@ class OneiricSettings(BaseModel):
 def load_settings(
     path: str | Path | None = None,
     project_name: str = "oneiric",
+    project_root: str | Path | None = None,
 ) -> OneiricSettings:
     """Load Oneiric settings with XDG-compliant layered configuration.
 
     Configuration priority (highest to lowest):
-    1. Explicit path argument
-    2. {PROJECT_NAME}_CONFIG environment variable
-    3. Environment variable overrides ({PROJECT_NAME}_{SETTING}__)
-    4. XDG user local override: ~/.config/{project_name}/local.yaml
-    5. XDG user config: ~/.config/{project_name}/config.yaml
-    6. Project local override: settings/local.yaml (development)
-    7. Project committed config: settings/{project_name}.yaml
-    8. Code defaults
+    1. Explicit ``path`` argument
+    2. ``{PROJECT_NAME}_CONFIG`` environment variable
+    3. Environment variable overrides (``{PROJECT_NAME}_{SETTING}__``)
+    4. XDG user-local override: ``~/.config/{project_name}/local.yaml``
+    5. XDG user config: ``~/.config/{project_name}/config.yaml``
+    6. Project local override: ``<project_root>/settings/local.yaml``
+    7. Project local override: ``settings/local.yaml`` (deprecated, CWD-relative)
+    8. Project committed config: ``<project_root>/settings/{project_name}.yaml``
+    9. Project committed config: ``settings/{project_name}.yaml``
+       (deprecated, CWD-relative)
+    10. Code defaults
+
+    Project-layer paths are anchored at the package install location (the
+    directory containing this package, e.g. ``<repo>/oneiric/``) so they
+    resolve correctly under any process spawn context (launchd, nohup,
+    containers, worktrees). When the anchored file does not exist and
+    ``project_root`` was not explicitly provided, ``load_settings()`` falls
+    back to CWD-relative resolution and emits a ``DeprecationWarning`` so
+    operators who ``cd ~/Projects/repo && ./bin/run`` keep working during
+    the migration window.
 
     Note: XDG config overrides project local config because user preferences
     should take precedence over repository defaults.
 
     Args:
-        path: Optional explicit config file path (highest priority)
+        path: Optional explicit config file path (highest priority).
         project_name: Project identifier for XDG/environment variable lookup
-            (e.g., "oneiric", "session_buddy", "crackerjack")
+            (e.g., "oneiric", "session_buddy", "crackerjack").
+        project_root: Optional explicit project root directory. When ``None``
+            (default), inferred from this module's package install location
+            (``Path(__file__).resolve().parent.parent.parent``). Pass
+            explicitly when calling from a different package or test that
+            needs to anchor at a specific checkout.
 
     Returns:
-        Validated OneiricSettings instance with all layers applied
+        Validated OneiricSettings instance with all layers applied.
 
     Examples:
-        >>> # Load with defaults
+        >>> # Load with defaults (anchored at package install location)
         >>> settings = load_settings()
 
         >>> # Load for specific project (uses XDG config)
@@ -306,8 +325,22 @@ def load_settings(
 
         >>> # Load with explicit config override
         >>> settings = load_settings(path="/path/to/config.yaml")
+
+        >>> # Anchor at an explicit checkout (e.g., for tests)
+        >>> settings = load_settings(project_root="/path/to/repo")
     """
     data: dict[str, Any] = {}
+
+    # Resolve project_root once at function entry. Default to the directory
+    # containing this package: oneiric/core/config.py -> oneiric/core ->
+    # oneiric -> <project_root>. This makes the project layer anchor at
+    # the package install location, immune to CWD changes from process
+    # spawn contexts (launchd, nohup, containers, worktrees).
+    if project_root is None:
+        project_root_path = Path(__file__).resolve().parent.parent.parent
+    else:
+        project_root_path = Path(project_root)
+    project_root_provided_explicitly = project_root is not None
 
     def _load_layer_file(path: Path, *, layer: str) -> None:
         nonlocal data
@@ -354,13 +387,59 @@ def load_settings(
             )
 
     # Layer 1: Project committed config (settings/{project_name}.yaml)
-    # Base repository defaults for the current project.
-    _load_layer_file(Path("settings") / f"{project_name}.yaml", layer="project")
-    _load_layer_file(Path("settings") / f"{project_name}.yml", layer="project")
+    # Anchor at project_root (the package install location) so launchd,
+    # nohup, container, and worktree-spawned processes can find their
+    # config. Fall back to CWD-relative resolution with a
+    # DeprecationWarning so operators who `cd ~/Projects/repo && ./bin/run`
+    # keep working during the migration window. When project_root was
+    # passed explicitly, we trust the caller and do NOT fall back.
+    anchored_project_yaml = project_root_path / "settings" / f"{project_name}.yaml"
+    anchored_project_yml = project_root_path / "settings" / f"{project_name}.yml"
+    if anchored_project_yaml.exists() or anchored_project_yml.exists():
+        _load_layer_file(anchored_project_yaml, layer="project")
+        _load_layer_file(anchored_project_yml, layer="project")
+    elif not project_root_provided_explicitly:
+        # Only fall back to CWD when project_root was inferred (not explicit).
+        cwd_project_yaml = Path("settings") / f"{project_name}.yaml"
+        cwd_project_yml = Path("settings") / f"{project_name}.yml"
+        if cwd_project_yaml.exists() or cwd_project_yml.exists():
+            warnings.warn(
+                (
+                    f"settings/{project_name}.yaml resolved relative to CWD "
+                    f"({Path.cwd()!s}). CWD-relative project-layer resolution "
+                    f"is deprecated and will be removed in a future major "
+                    f"version. Anchor your config at the package install "
+                    f"location by passing project_root= explicitly."
+                ),
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        _load_layer_file(cwd_project_yaml, layer="project")
+        _load_layer_file(cwd_project_yml, layer="project")
+    # else: explicit project_root with no anchored file = silent no-op
 
     # Layer 2: Project local override (settings/local.yaml)
-    # Development-specific, repository-local overrides.
-    _load_layer_file(Path("settings") / "local.yaml", layer="project-local")
+    # Development-specific, repository-local overrides. Same anchoring
+    # strategy as Layer 1.
+    anchored_project_local = project_root_path / "settings" / "local.yaml"
+    if anchored_project_local.exists():
+        _load_layer_file(anchored_project_local, layer="project-local")
+    elif not project_root_provided_explicitly:
+        # Only fall back to CWD when project_root was inferred (not explicit).
+        cwd_project_local = Path("settings") / "local.yaml"
+        if cwd_project_local.exists():
+            warnings.warn(
+                (
+                    f"settings/local.yaml resolved relative to CWD "
+                    f"({Path.cwd()!s}). CWD-relative project-layer "
+                    f"resolution is deprecated; pass project_root= "
+                    f"explicitly to silence this warning."
+                ),
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        _load_layer_file(cwd_project_local, layer="project-local")
+    # else: explicit project_root with no anchored file = silent no-op
 
     # Layer 3: XDG user config (~/.config/{project_name}/config.yaml)
     # User-level config should override repository defaults.
