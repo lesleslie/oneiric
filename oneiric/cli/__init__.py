@@ -7,6 +7,7 @@ import inspect
 import json
 import math
 import os
+import warnings
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -25,6 +26,7 @@ from oneiric.actions.metadata import ActionMetadata
 from oneiric.adapters import AdapterBridge
 from oneiric.adapters.bootstrap import builtin_adapter_metadata
 from oneiric.adapters.metadata import AdapterMetadata, register_adapter_metadata
+from oneiric.cli.base import BodaiCLIBase, ExitCode
 from oneiric.core.config import (
     OneiricSettings,
     SecretsHook,
@@ -70,7 +72,201 @@ logger = get_logger("cli")
 DOMAINS = ("adapter", "service", "task", "event", "workflow", "action")
 DEFAULT_REMOTE_REFRESH_INTERVAL = 300.0
 
-app = typer.Typer(help="Oneiric runtime management CLI.")
+
+class OneiricCLI(BodaiCLIBase):
+    """Oneiric BodaiCLIBase subclass preserving the original L1959 unified callback.
+
+    Phase 3.5: self-adopt BodaiCLIBase to gain ``version``/``doctor``/``health``
+    global commands, ``--json``/``--version`` flags, and ``ExitCode`` semantics
+    while preserving oneiric's six CLI options (``--config``, ``--import``,
+    ``--profile``, ``--demo``, ``--debug``, ``--suppress-events``) and the
+    side-effects of the original L1959 ``cli_root`` callback (early logging,
+    debug env-var, ``_initialize_state``).
+
+    The ``_pre_callback(ctx)`` helper from BodaiCLIBase is insufficient here
+    because it receives only ``ctx`` and cannot expose six new Typer options
+    to a callback body. We therefore override ``_register_global_callback``
+    to redeclare ``@self.callback(invoke_without_command=True)`` with the
+    full option set and a body that preserves the L1959 logic.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(
+            component_name="oneiric",
+            help="Oneiric runtime management CLI.",
+        )
+
+    def _register_global_callback(self) -> None:
+        """Redeclare the unified callback with oneiric's L1959 options.
+
+        The body sets ``ctx.obj["json_output"]``, handles the deprecated
+        ``--version``/``-V`` flag, then runs the original L1959 logic:
+        ``help-on-no-subcommand``, ``--suppress-events`` early-logging,
+        ``--debug`` env-var, and ``_initialize_state`` populating
+        ``ctx.obj`` with a :class:`CLIState`.
+        """
+
+        @self.callback(invoke_without_command=True)
+        def _oneiric_root(
+            ctx: typer.Context,
+            json_output: bool = typer.Option(
+                False,
+                "--json",
+                help="Emit machine-readable JSON instead of human-readable text.",
+            ),
+            version_flag: bool = typer.Option(
+                False,
+                "--version",
+                "-V",
+                help="[DEPRECATED] Use 'oneiric version' instead.",
+                is_flag=True,
+            ),
+            config: str | None = typer.Option(
+                None,
+                "--config",
+                help="Path to settings file.",
+                metavar="PATH",
+            ),
+            imports: list[str] | None = typer.Option(
+                None,
+                "--import",
+                metavar="MODULE",
+                help="Module(s) to import for adapter registration side-effects.",
+                show_default=False,
+            ),
+            profile: str | None = typer.Option(
+                None,
+                "--profile",
+                metavar="NAME",
+                help="Runtime profile to apply (default, serverless).",
+                show_default=False,
+                case_sensitive=False,
+            ),
+            demo: bool = typer.Option(
+                False, "--demo", help="Register built-in demo providers."
+            ),
+            debug: bool = typer.Option(
+                False,
+                "--debug",
+                help="Enable debug mode which shows detailed event logs.",
+            ),
+            suppress_events: bool = typer.Option(
+                False,
+                "--suppress-events",
+                help="Suppress Oneiric event logs from console output.",
+            ),
+        ) -> None:
+            ctx.ensure_object(dict)
+            ctx.obj["json_output"] = json_output
+
+            if version_flag:
+                warnings.warn(
+                    "--version is deprecated; use 'oneiric version'. "
+                    "The flag will be removed in the next minor.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+                typer.echo(f"{self.component_name}: {self.component_version}")
+                raise typer.Exit(code=ExitCode.SUCCESS)
+
+            if ctx.invoked_subcommand is None:
+                typer.echo(ctx.get_help())
+                raise typer.Exit()
+
+            if suppress_events:
+                from oneiric.core.logging import configure_early_logging
+
+                configure_early_logging(suppress_events=True)
+
+            if debug:
+                os.environ["ONEIRIC_APP__DEBUG"] = "true"
+            else:
+                os.environ.pop("ONEIRIC_APP__DEBUG", None)
+
+            ctx.obj = _initialize_state(config, imports or [], demo, profile)
+
+    def _doctor_checks(self) -> dict[str, dict[str, str]]:
+        """Real diagnostic checks against oneiric's runtime surface.
+
+        Calls into ``oneiric.core.config.load_settings`` and
+        ``oneiric.runtime.health.load_runtime_health`` rather than returning
+        stubs. Each entry is ``{status, detail}`` so ``BodaiCLIBase.doctor``
+        can format it directly.
+        """
+        # Lazy imports avoid a circular import through cli/__init__.py at
+        # module-load time (these symbols are also imported at top-of-file).
+        results: dict[str, dict[str, str]] = {}
+        try:
+            settings = load_settings(None)
+            resolver_settings = resolver_settings_from_config(settings)
+            selections_count = sum(
+                len(per_domain) for per_domain in resolver_settings.selections.values()
+            )
+            results["settings"] = {
+                "status": "ok",
+                "detail": (
+                    f"profile={settings.profile or 'default'}, "
+                    f"debug={settings.app.debug}, "
+                    f"resolver_selections={selections_count}, "
+                    f"resolver_default_priority={resolver_settings.default_priority}"
+                ),
+            }
+        except (ValueError, OSError, RuntimeError) as exc:  # pragma: no cover
+            results["settings"] = {"status": "error", "detail": str(exc)}
+
+        try:
+            settings = load_settings(None)
+            path = runtime_health_path(settings)
+            snap = load_runtime_health(path)
+            watcher_state = "running" if snap.watchers_running else "stopped"
+            remote_state = "enabled" if snap.remote_enabled else "disabled"
+            results["runtime_health"] = {
+                "status": "ok" if snap.last_remote_error is None else "degraded",
+                "detail": (
+                    f"watchers={watcher_state}, remote={remote_state}, "
+                    f"pid={snap.orchestrator_pid or 'none'}, "
+                    f"last_sync={snap.last_remote_sync_at or 'never'}"
+                ),
+            }
+        except (ValueError, OSError, RuntimeError) as exc:  # pragma: no cover
+            results["runtime_health"] = {"status": "error", "detail": str(exc)}
+
+        return results
+
+    def _health_probe(self) -> dict[str, Any]:
+        """Real health probe of oneiric's runtime.
+
+        Reads the runtime health snapshot file (or its empty default) and
+        returns a JSON-serializable dict with ``status``, ``component``, and
+        the watcher/remote/orchestrator fields.
+        """
+        try:
+            settings = load_settings(None)
+            path = runtime_health_path(settings)
+            snap = load_runtime_health(path)
+        except (ValueError, OSError, RuntimeError) as exc:
+            return {
+                "status": "error",
+                "component": "oneiric",
+                "detail": str(exc),
+                "version": self.component_version,
+            }
+
+        healthy = snap.watchers_running and snap.last_remote_error is None
+        return {
+            "status": "healthy" if healthy else "degraded",
+            "component": "oneiric",
+            "watchers_running": snap.watchers_running,
+            "remote_enabled": snap.remote_enabled,
+            "last_remote_sync_at": snap.last_remote_sync_at,
+            "last_remote_error": snap.last_remote_error,
+            "orchestrator_pid": snap.orchestrator_pid,
+            "updated_at": snap.updated_at,
+            "version": self.component_version,
+        }
+
+
+app = OneiricCLI()
 manifest_app = typer.Typer(help="Manifest utilities (packaging, inspection).")
 secrets_app = typer.Typer(help="Secrets cache + rotation helpers.")
 event_app = typer.Typer(help="Event dispatcher helpers.")
@@ -1954,59 +2150,6 @@ def _candidate_summary(candidate: Candidate) -> dict[str, Any]:
         "source": candidate.source.value,
         "metadata": candidate.metadata,
     }
-
-
-@app.callback(invoke_without_command=True)
-def cli_root(
-    ctx: typer.Context,
-    config: str | None = typer.Option(
-        None,
-        "--config",
-        help="Path to settings file.",
-        metavar="PATH",
-    ),
-    imports: list[str] | None = typer.Option(
-        None,
-        "--import",
-        metavar="MODULE",
-        help="Module(s) to import for adapter registration side-effects.",
-        show_default=False,
-    ),
-    profile: str | None = typer.Option(
-        None,
-        "--profile",
-        metavar="NAME",
-        help="Runtime profile to apply (default, serverless).",
-        show_default=False,
-        case_sensitive=False,
-    ),
-    demo: bool = typer.Option(
-        False, "--demo", help="Register built-in demo providers."
-    ),
-    debug: bool = typer.Option(
-        False, "--debug", help="Enable debug mode which shows detailed event logs."
-    ),
-    suppress_events: bool = typer.Option(
-        False,
-        "--suppress-events",
-        help="Suppress Oneiric event logs from console output.",
-    ),
-) -> None:
-    if ctx.invoked_subcommand is None:
-        typer.echo(ctx.get_help())
-        raise typer.Exit()
-
-    if suppress_events:
-        from oneiric.core.logging import configure_early_logging
-
-        configure_early_logging(suppress_events=True)
-
-    if debug:
-        os.environ["ONEIRIC_APP__DEBUG"] = "true"
-    else:
-        os.environ.pop("ONEIRIC_APP__DEBUG", None)
-
-    ctx.obj = _initialize_state(config, imports or [], demo, profile)
 
 
 @app.command("list")
