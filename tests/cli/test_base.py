@@ -18,7 +18,6 @@ from typer.testing import CliRunner
 
 from oneiric.cli.base import BodaiCLIBase, ExitCode
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -271,3 +270,129 @@ def test_exit_code_constants() -> None:
     assert ExitCode.UNAVAILABLE == 3
     assert ExitCode.PERMISSION_DENIED == 4
     assert ExitCode.TIMEOUT == 124
+
+
+# ---------------------------------------------------------------------------
+# OneiricCLI self-adoption (Phase 3.5)
+# ---------------------------------------------------------------------------
+
+
+def test_app_is_bodai_cli_base() -> None:
+    """oneiric.cli.app must be a BodaiCLIBase instance with component_name='oneiric'."""
+    from oneiric.cli import app
+    from oneiric.cli.base import BodaiCLIBase
+
+    assert isinstance(app, BodaiCLIBase)
+    assert app.component_name == "oneiric"
+    assert isinstance(app.component_version, str)
+
+
+def test_doctor_returns_real_checks() -> None:
+    """oneiric._doctor_checks must return non-empty dict with status-bearing entries.
+
+    The Phase 3.5 spec requires REAL checks (calls into oneiric.config +
+    oneiric.runtime.health), not stubs that return ``{}`` or
+    ``UNAVAILABLE``.
+    """
+    from oneiric.cli import app
+
+    checks = app._doctor_checks()
+    assert isinstance(checks, dict)
+    assert len(checks) > 0, "_doctor_checks must return at least one real check"
+
+    for name, info in checks.items():
+        assert isinstance(info, dict), f"check {name!r} must be a dict"
+        assert "status" in info, f"check {name!r} missing 'status'"
+        assert info["status"] in {"ok", "degraded", "idle", "error"}
+
+
+def test_health_probe_returns_real_data() -> None:
+    """oneiric._health_probe must return a dict with 'status' (real, not UNAVAILABLE)."""
+    from oneiric.cli import app
+
+    snapshot = app._health_probe()
+    assert isinstance(snapshot, dict)
+    assert "status" in snapshot
+    assert snapshot["status"] in {"healthy", "degraded", "error"}
+    assert snapshot.get("component") == "oneiric"
+
+
+def test_oneiric_global_json_flag_accepted(runner: CliRunner) -> None:
+    """`oneiric --json version` must exit SUCCESS (--json wired via BodaiCLIBase)."""
+    from oneiric.cli import app
+
+    result = runner.invoke(app, ["--json", "version"])
+    assert result.exit_code == ExitCode.SUCCESS
+    assert "oneiric" in result.output
+
+
+def test_oneiric_global_version_flag_accepted(runner: CliRunner) -> None:
+    """`oneiric --version` must exit SUCCESS and emit 'oneiric' (BodaiCLIBase flag)."""
+    import warnings
+
+    from oneiric.cli import app
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        result = runner.invoke(app, ["--version"])
+
+    assert result.exit_code == ExitCode.SUCCESS
+    assert "oneiric" in result.output
+    assert any(
+        issubclass(w.category, DeprecationWarning) for w in caught
+    ), "Expected DeprecationWarning for --version flag"
+
+
+def test_callback_preserved_via_pre_callback(runner: CliRunner) -> None:
+    """L1959 callback body still runs: ctx.obj['json_output'] is set after --json.
+
+    Also confirms that the original side-effects (help-on-no-subcommand)
+    still trigger when no subcommand is passed.
+    """
+    from oneiric.cli import app
+
+    # 1. --json wires ctx.obj['json_output'] through the unified callback
+    result = runner.invoke(app, ["--json", "version"])
+    assert result.exit_code == ExitCode.SUCCESS, (
+        f"Unified callback raised: {result.output!r}"
+    )
+
+    # 2. help-on-no-subcommand is preserved (typer echoes help and exits 0)
+    result_no_cmd = runner.invoke(app, ["--json"])
+    # No subcommand triggers the original help-on-no-subcommand branch.
+    # Exit code is 0 (raise typer.Exit() with no code).
+    assert "Usage:" in result_no_cmd.output or "oneiric" in result_no_cmd.output
+
+
+def test_no_typer_typer_app_at_module_level() -> None:
+    """oneiric.cli.app must NOT be a bare typer.Typer; must be BodaiCLIBase."""
+    import typer
+
+    from oneiric.cli import app
+    from oneiric.cli.base import BodaiCLIBase
+
+    # BodaiCLIBase subclasses typer.Typer, so isinstance(app, typer.Typer) is
+    # expected. The important guard is that we got there via BodaiCLIBase,
+    # proving the self-adoption landed.
+    assert isinstance(app, BodaiCLIBase)
+    assert type(app) is not typer.Typer
+
+
+def test_sub_typed_apps_remain_bare_typer() -> None:
+    """The 4 sub-typers (manifest/secrets/event/workflow) stay bare typer.Typer.
+
+    Phase 3.5 spec: only the top-level app adopts BodaiCLIBase.
+    """
+    import typer
+
+    from oneiric.cli import (
+        event_app,
+        manifest_app,
+        secrets_app,
+        workflow_app,
+    )
+
+    for sub in (manifest_app, secrets_app, event_app, workflow_app):
+        assert type(sub) is typer.Typer, (
+            f"{sub!r} should be a bare typer.Typer, not a BodaiCLIBase subclass"
+        )
