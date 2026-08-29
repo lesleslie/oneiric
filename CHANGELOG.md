@@ -32,6 +32,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `oneiric/cli/`. Moved contents to `oneiric/cli/__init__.py`. Added placeholder
   `oneiric/cli/base.py` with `BodaiCLIBase` (Task 4.1 replaces with the full
   cascade-fixed implementation).
+- **feat!: rename `BodaiCLIBase` → `OneiricCLIBase`** (breaking change). The
+  Typer base class for the oneiric CLI ecosystem has been renamed. No
+  deprecation alias — hard cutover per project decision 2026-08-28. Update
+  imports from `from oneiric.cli.base import BodaiCLIBase` to
+  `from oneiric.cli.base import OneiricCLIBase`.
 
 ## [0.18.0] - 2026-08-24
 
