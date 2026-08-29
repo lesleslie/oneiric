@@ -26,7 +26,7 @@ from oneiric.actions.metadata import ActionMetadata
 from oneiric.adapters import AdapterBridge
 from oneiric.adapters.bootstrap import builtin_adapter_metadata
 from oneiric.adapters.metadata import AdapterMetadata, register_adapter_metadata
-from oneiric.cli.base import BodaiCLIBase, ExitCode
+from oneiric.cli.base import ExitCode, OneiricCLIBase
 from oneiric.core.config import (
     OneiricSettings,
     SecretsHook,
@@ -73,17 +73,17 @@ DOMAINS = ("adapter", "service", "task", "event", "workflow", "action")
 DEFAULT_REMOTE_REFRESH_INTERVAL = 300.0
 
 
-class OneiricCLI(BodaiCLIBase):
-    """Oneiric BodaiCLIBase subclass preserving the original L1959 unified callback.
+class OneiricCLI(OneiricCLIBase):
+    """Oneiric OneiricCLIBase subclass preserving the original L1959 unified callback.
 
-    Phase 3.5: self-adopt BodaiCLIBase to gain ``version``/``doctor``/``health``
+    Phase 3.5: self-adopt OneiricCLIBase to gain ``version``/``doctor``/``health``
     global commands, ``--json``/``--version`` flags, and ``ExitCode`` semantics
     while preserving oneiric's six CLI options (``--config``, ``--import``,
     ``--profile``, ``--demo``, ``--debug``, ``--suppress-events``) and the
     side-effects of the original L1959 ``cli_root`` callback (early logging,
     debug env-var, ``_initialize_state``).
 
-    The ``_pre_callback(ctx)`` helper from BodaiCLIBase is insufficient here
+    The ``_pre_callback(ctx)`` helper from OneiricCLIBase is insufficient here
     because it receives only ``ctx`` and cannot expose six new Typer options
     to a callback body. We therefore override ``_register_global_callback``
     to redeclare ``@self.callback(invoke_without_command=True)`` with the
@@ -190,7 +190,7 @@ class OneiricCLI(BodaiCLIBase):
 
         Calls into ``oneiric.core.config.load_settings`` and
         ``oneiric.runtime.health.load_runtime_health`` rather than returning
-        stubs. Each entry is ``{status, detail}`` so ``BodaiCLIBase.doctor``
+        stubs. Each entry is ``{status, detail}`` so ``OneiricCLIBase.doctor``
         can format it directly.
         """
         # Lazy imports avoid a circular import through cli/__init__.py at

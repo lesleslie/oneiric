@@ -277,12 +277,12 @@ def test_exit_code_constants() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_app_is_bodai_cli_base() -> None:
-    """oneiric.cli.app must be a BodaiCLIBase instance with component_name='oneiric'."""
+def test_app_is_oneiric_cli_base() -> None:
+    """oneiric.cli.app must be a OneiricCLIBase instance with component_name='oneiric'."""
     from oneiric.cli import app
-    from oneiric.cli.base import BodaiCLIBase
+    from oneiric.cli.base import OneiricCLIBase
 
-    assert isinstance(app, BodaiCLIBase)
+    assert isinstance(app, OneiricCLIBase)
     assert app.component_name == "oneiric"
     assert isinstance(app.component_version, str)
 
@@ -318,7 +318,7 @@ def test_health_probe_returns_real_data() -> None:
 
 
 def test_oneiric_global_json_flag_accepted(runner: CliRunner) -> None:
-    """`oneiric --json version` must exit SUCCESS (--json wired via BodaiCLIBase)."""
+    """`oneiric --json version` must exit SUCCESS (--json wired via OneiricCLIBase)."""
     from oneiric.cli import app
 
     result = runner.invoke(app, ["--json", "version"])
@@ -327,7 +327,7 @@ def test_oneiric_global_json_flag_accepted(runner: CliRunner) -> None:
 
 
 def test_oneiric_global_version_flag_accepted(runner: CliRunner) -> None:
-    """`oneiric --version` must exit SUCCESS and emit 'oneiric' (BodaiCLIBase flag)."""
+    """`oneiric --version` must exit SUCCESS and emit 'oneiric' (OneiricCLIBase flag)."""
     import warnings
 
     from oneiric.cli import app
@@ -365,23 +365,23 @@ def test_callback_preserved_via_pre_callback(runner: CliRunner) -> None:
 
 
 def test_no_typer_typer_app_at_module_level() -> None:
-    """oneiric.cli.app must NOT be a bare typer.Typer; must be BodaiCLIBase."""
+    """oneiric.cli.app must NOT be a bare typer.Typer; must be OneiricCLIBase."""
     import typer
 
     from oneiric.cli import app
-    from oneiric.cli.base import BodaiCLIBase
+    from oneiric.cli.base import OneiricCLIBase
 
-    # BodaiCLIBase subclasses typer.Typer, so isinstance(app, typer.Typer) is
-    # expected. The important guard is that we got there via BodaiCLIBase,
+    # OneiricCLIBase subclasses typer.Typer, so isinstance(app, typer.Typer) is
+    # expected. The important guard is that we got there via OneiricCLIBase,
     # proving the self-adoption landed.
-    assert isinstance(app, BodaiCLIBase)
+    assert isinstance(app, OneiricCLIBase)
     assert type(app) is not typer.Typer
 
 
 def test_sub_typed_apps_remain_bare_typer() -> None:
     """The 4 sub-typers (manifest/secrets/event/workflow) stay bare typer.Typer.
 
-    Phase 3.5 spec: only the top-level app adopts BodaiCLIBase.
+    Phase 3.5 spec: only the top-level app adopts OneiricCLIBase.
     """
     import typer
 
@@ -394,5 +394,5 @@ def test_sub_typed_apps_remain_bare_typer() -> None:
 
     for sub in (manifest_app, secrets_app, event_app, workflow_app):
         assert type(sub) is typer.Typer, (
-            f"{sub!r} should be a bare typer.Typer, not a BodaiCLIBase subclass"
+            f"{sub!r} should be a bare typer.Typer, not a OneiricCLIBase subclass"
         )
