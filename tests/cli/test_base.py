@@ -1,4 +1,4 @@
-"""Tests for BodaiCLIBase (oneiric.cli.base).
+"""Tests for OneiricCLIBase (oneiric.cli.base).
 
 Covers the cascade-fixed implementation:
 - Unified callback wires --json and --version via Typer options (round-1 F-α fix).
@@ -16,7 +16,7 @@ import pytest
 import typer
 from typer.testing import CliRunner
 
-from oneiric.cli.base import BodaiCLIBase, ExitCode
+from oneiric.cli.base import OneiricCLIBase, ExitCode
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -30,9 +30,9 @@ def runner() -> CliRunner:
 
 
 @pytest.fixture
-def fake_app() -> BodaiCLIBase:
-    """Return a minimal BodaiCLIBase subclass with default behavior."""
-    class FakeApp(BodaiCLIBase):
+def fake_app() -> OneiricCLIBase:
+    """Return a minimal OneiricCLIBase subclass with default behavior."""
+    class FakeApp(OneiricCLIBase):
         pass
 
     return FakeApp(component_name="test-component")
@@ -44,7 +44,7 @@ def fake_app() -> BodaiCLIBase:
 
 
 def test_subclass_constructor_sets_metadata() -> None:
-    class FakeApp(BodaiCLIBase):
+    class FakeApp(OneiricCLIBase):
         pass
 
     app = FakeApp(component_name="test-component")
@@ -53,7 +53,7 @@ def test_subclass_constructor_sets_metadata() -> None:
 
 
 def test_subclass_help_string_passed_through() -> None:
-    class FakeApp(BodaiCLIBase):
+    class FakeApp(OneiricCLIBase):
         pass
 
     app = FakeApp(component_name="x", help="custom help text")
@@ -65,28 +65,28 @@ def test_subclass_help_string_passed_through() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_version_command_works(runner: CliRunner, fake_app: BodaiCLIBase) -> None:
+def test_version_command_works(runner: CliRunner, fake_app: OneiricCLIBase) -> None:
     result = runner.invoke(fake_app, ["version"])
     assert result.exit_code == ExitCode.SUCCESS
     assert "test-component" in result.output
 
 
 def test_doctor_command_returns_unavailable_when_not_implemented(
-    runner: CliRunner, fake_app: BodaiCLIBase
+    runner: CliRunner, fake_app: OneiricCLIBase
 ) -> None:
     result = runner.invoke(fake_app, ["doctor"])
     assert result.exit_code == ExitCode.UNAVAILABLE
 
 
 def test_health_command_returns_unavailable_when_not_implemented(
-    runner: CliRunner, fake_app: BodaiCLIBase
+    runner: CliRunner, fake_app: OneiricCLIBase
 ) -> None:
     result = runner.invoke(fake_app, ["health"])
     assert result.exit_code == ExitCode.UNAVAILABLE
 
 
 def test_subclass_doctor_override(runner: CliRunner) -> None:
-    class FakeApp(BodaiCLIBase):
+    class FakeApp(OneiricCLIBase):
         def _doctor_checks(self) -> dict[str, dict[str, str]]:
             return {"check1": {"status": "ok", "detail": "fine"}}
 
@@ -97,7 +97,7 @@ def test_subclass_doctor_override(runner: CliRunner) -> None:
 
 
 def test_subclass_health_override(runner: CliRunner) -> None:
-    class FakeApp(BodaiCLIBase):
+    class FakeApp(OneiricCLIBase):
         def _health_probe(self) -> dict[str, str]:
             return {"status": "ok", "detail": "running"}
 
@@ -112,7 +112,7 @@ def test_subclass_health_override(runner: CliRunner) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_global_json_flag_accepted(runner: CliRunner, fake_app: BodaiCLIBase) -> None:
+def test_global_json_flag_accepted(runner: CliRunner, fake_app: OneiricCLIBase) -> None:
     """`--json version` must exit 0 and emit JSON-friendly payload."""
     result = runner.invoke(fake_app, ["--json", "version"])
     assert result.exit_code == ExitCode.SUCCESS
@@ -120,7 +120,7 @@ def test_global_json_flag_accepted(runner: CliRunner, fake_app: BodaiCLIBase) ->
 
 
 def test_global_json_flag_makes_doctor_emit_json(runner: CliRunner) -> None:
-    class FakeApp(BodaiCLIBase):
+    class FakeApp(OneiricCLIBase):
         def _doctor_checks(self) -> dict[str, dict[str, str]]:
             return {"alpha": {"status": "ok", "detail": "ready"}}
 
@@ -131,7 +131,7 @@ def test_global_json_flag_makes_doctor_emit_json(runner: CliRunner) -> None:
     assert '"alpha"' in result.output
 
 
-def test_global_version_flag_accepted(runner: CliRunner, fake_app: BodaiCLIBase) -> None:
+def test_global_version_flag_accepted(runner: CliRunner, fake_app: OneiricCLIBase) -> None:
     """`--version` flag emits DeprecationWarning + version, exits 0."""
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
@@ -146,7 +146,7 @@ def test_global_version_flag_accepted(runner: CliRunner, fake_app: BodaiCLIBase)
 
 
 def test_global_short_version_flag_accepted(
-    runner: CliRunner, fake_app: BodaiCLIBase
+    runner: CliRunner, fake_app: OneiricCLIBase
 ) -> None:
     """`-V` short flag works identically."""
     with warnings.catch_warnings(record=True) as caught:
@@ -165,7 +165,7 @@ def test_global_short_version_flag_accepted(
 # ---------------------------------------------------------------------------
 
 
-def test_no_extra_callback_registered(fake_app: BodaiCLIBase) -> None:
+def test_no_extra_callback_registered(fake_app: OneiricCLIBase) -> None:
     """Exactly ONE callback is registered: the unified root callback.
 
     Cascade-fix invariant (round-1 F-α): subclasses must not redeclare
@@ -179,7 +179,7 @@ def test_no_extra_callback_registered(fake_app: BodaiCLIBase) -> None:
     assert callback.invoke_without_command is True
 
 
-def test_intercept_version_flag_method_removed(fake_app: BodaiCLIBase) -> None:
+def test_intercept_version_flag_method_removed(fake_app: OneiricCLIBase) -> None:
     """Round-1 F-α fix: the old sys.argv-mutating method is gone."""
     assert not hasattr(fake_app, "_intercept_version_flag"), (
         "_intercept_version_flag should be removed (round-1 F-α fix); "
@@ -191,7 +191,7 @@ def test_pre_callback_called_when_subclass_overrides(runner: CliRunner) -> None:
     """Subclasses can hook _pre_callback(ctx) without redeclaring @app.callback."""
     captured: dict[str, bool] = {"called": False}
 
-    class FakeApp(BodaiCLIBase):
+    class FakeApp(OneiricCLIBase):
         def _pre_callback(self, ctx: typer.Context) -> None:
             captured["called"] = True
 
@@ -204,23 +204,23 @@ def test_pre_callback_called_when_subclass_overrides(runner: CliRunner) -> None:
     )
 
 
-def test_pre_callback_default_is_noop(runner: CliRunner, fake_app: BodaiCLIBase) -> None:
+def test_pre_callback_default_is_noop(runner: CliRunner, fake_app: OneiricCLIBase) -> None:
     """Default _pre_callback is a no-op and does not raise."""
     result = runner.invoke(fake_app, ["version"])
     assert result.exit_code == ExitCode.SUCCESS
 
 
-def test_resolve_json_output_helper_present(fake_app: BodaiCLIBase) -> None:
+def test_resolve_json_output_helper_present(fake_app: OneiricCLIBase) -> None:
     """Round-2 F-δ fix: _resolve_json_output(ctx) helper exists."""
     assert hasattr(fake_app, "_resolve_json_output")
     assert callable(fake_app._resolve_json_output)
 
 
-def test_detect_version_narrow_catch(fake_app: BodaiCLIBase) -> None:
+def test_detect_version_narrow_catch(fake_app: OneiricCLIBase) -> None:
     """Round-2 F-β fix: only PackageNotFoundError is swallowed."""
     import inspect
 
-    source = inspect.getsource(BodaiCLIBase._detect_version)
+    source = inspect.getsource(OneiricCLIBase._detect_version)
     assert "PackageNotFoundError" in source
     # Should NOT use bare `except Exception:` — that would hide real errors.
     assert "except Exception" not in source, (
@@ -237,7 +237,7 @@ def test_detect_version_narrow_catch(fake_app: BodaiCLIBase) -> None:
 def test_doctor_returns_error_on_subclass_exception(runner: CliRunner) -> None:
     """doctor: Exception (not NotImplementedError) -> ExitCode.ERROR."""
 
-    class BrokenApp(BodaiCLIBase):
+    class BrokenApp(OneiricCLIBase):
         def _doctor_checks(self) -> dict[str, str]:
             raise RuntimeError("doctor exploded")
 
@@ -249,7 +249,7 @@ def test_doctor_returns_error_on_subclass_exception(runner: CliRunner) -> None:
 def test_health_returns_error_on_subclass_exception(runner: CliRunner) -> None:
     """health: Exception (not NotImplementedError) -> ExitCode.ERROR."""
 
-    class BrokenApp(BodaiCLIBase):
+    class BrokenApp(OneiricCLIBase):
         def _health_probe(self) -> dict[str, str]:
             raise RuntimeError("health exploded")
 

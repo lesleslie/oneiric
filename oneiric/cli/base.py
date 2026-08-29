@@ -1,6 +1,6 @@
-"""BodaiCLIBase — shared Typer base for all Bodai Core 7 component CLIs.
+"""OneiricCLIBase — shared Typer base for oneiric CLI consumers.
 
-Each Core 7 repo subclasses ``BodaiCLIBase(component_name="...")`` to get:
+Each component subclasses ``OneiricCLIBase(component_name="...")`` to get:
 
 - ``version`` / ``doctor`` / ``health`` global commands
 - ``--json`` global flag
@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 
 
 class ExitCode:
-    """Standardized exit codes across all Bodai CLIs."""
+    """Standardized exit codes for oneiric CLI consumers."""
 
     SUCCESS = 0
     ERROR = 1
@@ -54,8 +54,8 @@ class ExitCode:
     TIMEOUT = 124
 
 
-class BodaiCLIBase(typer.Typer):
-    """Base Typer app for all Bodai component CLIs."""
+class OneiricCLIBase(typer.Typer):
+    """Base Typer app for oneiric CLI consumers."""
 
     def __init__(
         self,
