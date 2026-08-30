@@ -254,7 +254,7 @@ class PgvectorAdapter(VectorBase[PgvectorSettings]):
                 CREATE INDEX IF NOT EXISTS {table_name}_embedding_idx
                 ON {qualified}
                 USING ivfflat (embedding {operator_class})
-                WITH (lists := {self._settings.ivfflat_lists})
+                WITH (lists = {self._settings.ivfflat_lists})
                 """
             )
         return True

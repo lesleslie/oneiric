@@ -279,6 +279,27 @@ async def test_create_collection(
 
 
 @pytest.mark.asyncio
+async def test_create_collection_index_uses_plain_equals_for_lists(
+    pool_adapter: tuple[PgvectorAdapter, FakeConnection],
+) -> None:
+    """create_collection() emits ``WITH (lists = N)`` (not ``:=``) for Postgres 17+.
+
+    Regression guard: Postgres 17+ rejects the ``:=`` named-parameter syntax
+    inside index ``WITH()`` clauses. We must use plain ``=`` so the index
+    builds on Postgres 17+ (and remains valid on earlier releases).
+    """
+    adapter, conn = pool_adapter
+    await adapter.create_collection(
+        "things", dimension=128, distance_metric="cosine"
+    )
+    index_sql = next(
+        sql for sql, _ in conn.executed if "CREATE INDEX" in sql
+    )
+    assert "WITH (lists = 100)" in index_sql
+    assert ":=" not in index_sql
+
+
+@pytest.mark.asyncio
 async def test_delete_collection(
     pool_adapter: tuple[PgvectorAdapter, FakeConnection],
 ) -> None:
