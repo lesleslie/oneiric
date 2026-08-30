@@ -225,7 +225,6 @@ ______________________________________________________________________
 - [Remote Manifests](docs/REMOTE_MANIFEST_SCHEMA.md) - Signed remote delivery
 - [Event System](docs/CLI_REFERENCE.md#events) - Event dispatch and fan-out
 - [Workflow Orchestration](docs/CLI_REFERENCE.md#workflows) - DAG execution
-- [Admin Shell](docs/ONEIRIC_ADMIN_SHELL.md) - Interactive debugging
 
 ______________________________________________________________________
 

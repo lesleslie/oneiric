@@ -47,6 +47,7 @@ contribution workflow below.
 | `plugin-standardization` | Claude Code plugin manifest, marketplace layout, slash command namespace, plugin validation scaffold (introduced for Bodai plugin rollout 2026-07-16). |
 | `resolver` | Oneiric candidate discovery, precedence, explainability, and universal component resolution. |
 | `lifecycle-hooks` | Oneiric activation, health-check, hot-swap, rollback, and cleanup hook contracts. |
+| `decision-index` | `.claude/decisions/` README index file (canonical decision inventory). |
 
 ## Contribution Workflow
 
