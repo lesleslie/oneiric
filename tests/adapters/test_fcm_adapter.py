@@ -64,7 +64,7 @@ async def test_fcm_requires_token() -> None:
 
 @pytest.mark.asyncio
 async def test_httpx_adapter_performs_requests() -> None:
-    import httpx
+    import httpx2 as httpx
 
     from oneiric.adapters.http.httpx import HTTPClientAdapter
 
@@ -83,7 +83,7 @@ async def test_httpx_adapter_performs_requests() -> None:
 
 @pytest.mark.asyncio
 async def test_httpx_adapter_health_checks_with_base_url() -> None:
-    import httpx
+    import httpx2 as httpx
 
     from oneiric.adapters.http.httpx import HTTPClientAdapter, HTTPClientSettings
 
@@ -100,7 +100,7 @@ async def test_httpx_adapter_health_checks_with_base_url() -> None:
 
 @pytest.mark.asyncio
 async def test_httpx_adapter_health_without_base_url() -> None:
-    import httpx
+    import httpx2 as httpx
 
     from oneiric.adapters.http.httpx import HTTPClientAdapter
 

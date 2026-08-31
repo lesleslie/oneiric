@@ -4,7 +4,7 @@ from collections.abc import Mapping
 from typing import Any, Literal
 from urllib.parse import urljoin
 
-import httpx
+import httpx2 as httpx
 from pydantic import Field
 
 from oneiric.actions.metadata import ActionMetadata

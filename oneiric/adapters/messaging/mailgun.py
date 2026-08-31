@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from urllib.parse import urlencode
 
-import httpx
+import httpx2 as httpx
 from pydantic import AnyHttpUrl, EmailStr, Field, SecretStr
 
 from oneiric.adapters.httpx_base import HTTPXClientMixin

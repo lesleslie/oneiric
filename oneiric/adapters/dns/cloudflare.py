@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-import httpx
+import httpx2 as httpx
 from pydantic import AnyHttpUrl, Field, SecretStr
 
 from oneiric.adapters.httpx_base import HTTPXClientMixin

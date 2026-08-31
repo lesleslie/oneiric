@@ -4,6 +4,8 @@ import time
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
+import aiohttp
+
 from oneiric.adapters.metadata import AdapterMetadata
 from oneiric.adapters.metrics import record_adapter_request_metrics
 from oneiric.core.lifecycle import LifecycleError
@@ -17,7 +19,6 @@ if TYPE_CHECKING:
     # aiohttp is an optional dep; runtime loads it lazily below. Annotations
     # are strings under ``from __future__ import annotations`` so this
     # TYPE_CHECKING import only affects type checkers.
-    import aiohttp
     from aiohttp import ClientResponse
 
 
@@ -67,8 +68,8 @@ class AioHTTPAdapter:
         session: aiohttp.ClientSession | None = None,
     ) -> None:
         try:
-            import aiohttp  # noqa: PLC0415 — optional dep, lazy import
-            from aiohttp import ClientResponse  # noqa: PLC0415
+            import aiohttp
+            from aiohttp import ClientResponse
         except ImportError as exc:
             raise LifecycleError(
                 "aiohttp-not-installed: pip install oneiric[http-aiohttp]"

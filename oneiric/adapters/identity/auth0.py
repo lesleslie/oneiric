@@ -6,7 +6,7 @@ import time
 from collections.abc import Sequence
 from typing import Any
 
-import httpx
+import httpx2 as httpx
 import jwt
 from jwt import algorithms
 from pydantic import BaseModel, Field

@@ -14,7 +14,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from asyncio import Task
 
 try:  # pragma: no cover - optional dependency import
-    import httpx
+    import httpx2 as httpx
 except ImportError:  # pragma: no cover - optional dependency import
     httpx: Any = None
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-import httpx
+import httpx2 as httpx
 
 from oneiric.core.lifecycle import LifecycleError
 

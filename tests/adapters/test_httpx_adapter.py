@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import httpx
+import httpx2 as httpx
 import pytest
 
 from oneiric.adapters.http.httpx import HTTPClientAdapter, HTTPClientSettings
@@ -194,79 +194,23 @@ def test_ensure_client_raises_when_none() -> None:
 
 
 @pytest.mark.asyncio
-async def test_async_client_shim_request() -> None:
-    from oneiric.adapters.http.httpx import _AsyncClientShim
-
-    transport = httpx.MockTransport(lambda req: httpx.Response(200))
-    shim = _AsyncClientShim(
-        base_url=None,
-        timeout=5.0,
-        verify=True,
-        headers=None,
-        transport=transport,
-    )
-    resp = await shim.request("GET", "https://example.com/")
-    assert resp.status_code == 200
-
-
-@pytest.mark.asyncio
-async def test_async_client_shim_get_post() -> None:
-    from oneiric.adapters.http.httpx import _AsyncClientShim
-
-    transport = httpx.MockTransport(lambda req: httpx.Response(200))
-    shim = _AsyncClientShim(
-        base_url=None,
-        timeout=5.0,
-        verify=True,
-        headers={"X-H": "v"},
-        transport=transport,
-    )
-    resp = await shim.get("https://example.com/a")
-    assert resp.status_code == 200
-
-    resp2 = await shim.post("https://example.com/b")
-    assert resp2.status_code == 200
-    await shim.aclose()
-
-
-# ---------------------------------------------------------------------------
-# Tests — coverage gaps
-# ---------------------------------------------------------------------------
-
-
-def test_async_client_shim_with_base_url(monkeypatch: pytest.MonkeyPatch) -> None:
-    """_AsyncClientShim sets client_kwargs['url'] when base_url is provided (line 51)."""
-    from oneiric.adapters.http.httpx import _AsyncClientShim
-
-    captured: list[dict] = []
-
-    class _FakeClient:
-        def __init__(self, **kwargs: object) -> None:
-            captured.append(dict(kwargs))
-
-        def close(self) -> None:
-            pass
-
-    monkeypatch.setattr("oneiric.adapters.http.httpx.httpx.Client", _FakeClient)
-    _AsyncClientShim(
-        base_url="https://example.com",
-        timeout=5.0,
-        verify=True,
-        headers=None,
-        transport=None,
-    )
-    assert captured[0].get("url") == "https://example.com"
-
-
-@pytest.mark.asyncio
 async def test_request_fallback_without_caller() -> None:
-    """_request falls back to client.request() when caller=None (line 200)."""
+    """_request falls back to client.request() when caller=None.
+
+    Covers the AsyncClient path (the shim was removed in the httpx2 migration
+    because the shim's truthy short-circuit meant it never actually executed).
+    """
     transport = httpx.MockTransport(lambda req: httpx.Response(200))
     adapter = HTTPClientAdapter(transport=transport)
     await adapter.init()
     resp = await adapter._request("GET", "https://example.com/", caller=None)
     assert resp.status_code == 200
     await adapter.cleanup()
+
+
+# ---------------------------------------------------------------------------
+# Tests — coverage gaps
+# ---------------------------------------------------------------------------
 
 
 def test_httpx_mixin_ensure_client_raises_when_no_client() -> None:

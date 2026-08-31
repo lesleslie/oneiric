@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 from typing import Any
 
-import httpx
+import httpx2 as httpx
 from pydantic import AnyHttpUrl, BaseModel, Field
 
 from oneiric.adapters.metadata import AdapterMetadata

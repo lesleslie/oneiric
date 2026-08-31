@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
-import httpx
+import httpx2 as httpx
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, ValidationError
 
 from oneiric.actions.metadata import ActionMetadata

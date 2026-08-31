@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import httpx
+import httpx2 as httpx
 import pytest
 
 from oneiric.remote.loader import ArtifactManager

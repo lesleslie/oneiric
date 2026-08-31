@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, TypedDict
 
-import httpx
+import httpx2 as httpx
 
 from oneiric.core.logging import get_logger
 

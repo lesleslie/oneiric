@@ -347,7 +347,7 @@ async def test_remote_sync_loop_circuit_breaker_logs_and_continues(monkeypatch) 
 async def test_download_to_temp_file_cleans_up_on_stream_error(
     tmp_path, monkeypatch
 ) -> None:
-    import httpx
+    import httpx2 as httpx
 
     mgr = ArtifactManager(str(tmp_path))
 
@@ -380,7 +380,7 @@ async def test_download_to_temp_file_cleans_up_on_stream_error(
 
 @pytest.mark.asyncio
 async def test_fetch_text_via_httpx_returns_response_text(monkeypatch) -> None:
-    import httpx
+    import httpx2 as httpx
 
     mock_response = MagicMock()
     mock_response.raise_for_status = MagicMock()

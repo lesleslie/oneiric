@@ -39,7 +39,7 @@ class _FakeResponse:
 
     def raise_for_status(self) -> None:
         if self.status_code >= 400:
-            import httpx
+            import httpx2 as httpx
 
             raise httpx.HTTPStatusError(
                 "error", request=MagicMock(), response=MagicMock()
@@ -58,7 +58,7 @@ def _make_pusher(
     def fake_post(url: str, json: dict[str, Any]) -> _FakeResponse:
         calls.append({"url": url, "json": json})
         if raise_http:
-            import httpx
+            import httpx2 as httpx
 
             raise httpx.ConnectError("connection refused")
         return _FakeResponse(response or {"success": True})

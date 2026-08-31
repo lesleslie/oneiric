@@ -28,7 +28,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Protocol, Self
 
-import httpx
+import httpx2 as httpx
 from pydantic import BaseModel
 
 from oneiric.core.logging import get_logger

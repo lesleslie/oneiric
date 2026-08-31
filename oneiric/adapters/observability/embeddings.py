@@ -36,7 +36,7 @@ import json
 import logging
 from typing import TYPE_CHECKING, Any
 
-import httpx
+import httpx2 as httpx
 import numpy as np
 
 from oneiric.adapters.observability.embedding_settings import EmbeddingSettings

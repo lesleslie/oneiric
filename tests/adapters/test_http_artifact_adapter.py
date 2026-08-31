@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import httpx
+import httpx2 as httpx
 import pytest
 
 from oneiric.adapters.file_transfer.http_artifact import (

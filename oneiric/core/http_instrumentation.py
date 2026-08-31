@@ -3,7 +3,7 @@ from __future__ import annotations
 import time
 from collections.abc import Awaitable, Callable
 
-import httpx
+import httpx2 as httpx
 
 from oneiric.core.observability import observed_span
 

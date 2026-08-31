@@ -6,7 +6,7 @@ import hmac
 from collections.abc import Mapping
 from urllib.parse import urlencode
 
-import httpx
+import httpx2 as httpx
 from pydantic import AnyHttpUrl, Field, SecretStr
 
 from oneiric.adapters.httpx_base import HTTPXClientMixin

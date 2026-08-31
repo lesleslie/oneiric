@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any, cast
 from urllib.parse import urlparse
 
-import httpx
+import httpx2 as httpx
 import yaml
 
 from oneiric.core.config import RemoteSourceConfig, SecretsHook, resolve_cache_dir_path

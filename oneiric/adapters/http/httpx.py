@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import asyncio
 import inspect
 from typing import Any
 
-import httpx
+import httpx2 as httpx
 from pydantic import Field
 
 from oneiric.adapters.metadata import AdapterMetadata
@@ -34,41 +33,6 @@ class HTTPClientSettings(BaseURLSettings):
         default="/",
         description="Relative path to hit during health checks when base_url is configured.",
     )
-
-
-class _AsyncClientShim:
-    def __init__(
-        self,
-        *,
-        base_url: str | None,
-        timeout: float,
-        verify: bool,
-        headers: dict[str, str] | None,
-        transport: Any,
-    ) -> None:
-        client_kwargs: dict[str, Any] = {}
-        if base_url:
-            client_kwargs["url"] = base_url
-        if headers:
-            client_kwargs["headers"] = headers
-        if transport:
-            client_kwargs["transport"] = transport
-
-        self._client = httpx.Client(**client_kwargs)
-        self._timeout = timeout
-        self._verify = verify
-
-    async def request(self, method: str, url: str, **kwargs: Any) -> httpx.Response:
-        return await asyncio.to_thread(self._client.request, method, url, **kwargs)
-
-    async def get(self, url: str, **kwargs: Any) -> httpx.Response:
-        return await asyncio.to_thread(self._client.get, url, **kwargs)
-
-    async def post(self, url: str, **kwargs: Any) -> httpx.Response:
-        return await asyncio.to_thread(self._client.post, url, **kwargs)
-
-    async def aclose(self) -> None:
-        await asyncio.to_thread(self._client.close)
 
 
 class HTTPClientAdapter:
@@ -101,9 +65,6 @@ class HTTPClientAdapter:
         )
 
     async def init(self) -> None:
-        async_client_cls: type[Any] = (
-            getattr(httpx, "AsyncClient", None) or _AsyncClientShim
-        )
         client_kwargs: dict[str, Any] = {
             "timeout": self._settings.timeout,
             "verify": self._settings.verify,
@@ -115,7 +76,7 @@ class HTTPClientAdapter:
         if self._transport:
             client_kwargs["transport"] = self._transport
 
-        self._client = async_client_cls(**client_kwargs)
+        self._client = httpx.AsyncClient(**client_kwargs)
         self._logger.info(
             "adapter-init",
             adapter="httpx",

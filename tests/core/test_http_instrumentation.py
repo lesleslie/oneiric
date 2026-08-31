@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 
-import httpx
+import httpx2 as httpx
 import pytest
 
 from oneiric.core.http_instrumentation import observed_http_request
