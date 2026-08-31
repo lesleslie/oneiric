@@ -10,10 +10,25 @@ from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
 
-try:
-    from duckdb import Error as DuckDBError
-except ImportError:  # pragma: no cover - duckdb is optional
-    DuckDBError: Any = OSError
+
+def __getattr__(name: str) -> Any:
+    """Lazy module attribute loader (PEP 562).
+
+    ``DuckDBError`` is part of this module's public API (consumed via
+    ``from oneiric.adapters.database.duckdb import DuckDBError``) but
+    pulling duckdb at module-import time would cost ~100-1000ms on cold
+    start (heavy C extension). Defer the import until the first attribute
+    access, then cache the resolved value in module globals so subsequent
+    internal references find it without re-importing.
+    """
+    if name == "DuckDBError":
+        try:
+            from duckdb import Error as _duckdb_error
+        except ImportError:
+            _duckdb_error: Any = OSError
+        globals()["DuckDBError"] = _duckdb_error
+        return _duckdb_error
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 class DuckDBDatabaseSettings(BaseModel):

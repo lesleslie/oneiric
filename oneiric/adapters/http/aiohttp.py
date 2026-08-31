@@ -1,18 +1,8 @@
 from __future__ import annotations
 
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
-
-try:
-    import aiohttp
-    from aiohttp import ClientResponse
-
-    _AIOHTTP_AVAILABLE = True
-except ImportError:  # pragma: no cover - optional dependency
-    aiohttp = None  # type: ignore
-    ClientResponse = Any  # ty: ignore[invalid-assignment]
-    _AIOHTTP_AVAILABLE = False
 
 from oneiric.adapters.metadata import AdapterMetadata
 from oneiric.adapters.metrics import record_adapter_request_metrics
@@ -22,6 +12,38 @@ from oneiric.core.observability import inject_trace_context, observed_span
 from oneiric.core.resolution import CandidateSource
 
 from .httpx import HTTPClientSettings
+
+if TYPE_CHECKING:
+    # aiohttp is an optional dep; runtime loads it lazily below. Annotations
+    # are strings under ``from __future__ import annotations`` so this
+    # TYPE_CHECKING import only affects type checkers.
+    import aiohttp
+    from aiohttp import ClientResponse
+
+
+def __getattr__(name: str) -> Any:
+    """PEP 562 lazy re-export of optional ``aiohttp`` symbols.
+
+    aiohttp is an optional dependency (install via ``oneiric[http-aiohttp]``).
+    Resolving it eagerly at module-import time would force every consumer of
+    oneiric to pay the cost of importing aiohttp even when they use a
+    different HTTP adapter (e.g. httpx). This preserves the public API
+    (``aiohttp.ClientSession`` annotations on the adapter methods) while
+    keeping the module import cheap. ``__init__`` below also uses
+    ``globals().setdefault`` to cache the same symbols after a successful
+    import so subsequent adapter instances skip the ``import`` call.
+    """
+    if name == "aiohttp":
+        import aiohttp as _aiohttp
+
+        globals()["aiohttp"] = _aiohttp
+        return _aiohttp
+    if name == "ClientResponse":
+        from aiohttp import ClientResponse as _ClientResponse
+
+        globals()["ClientResponse"] = _ClientResponse
+        return _ClientResponse
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 class AioHTTPAdapter:
@@ -44,10 +66,20 @@ class AioHTTPAdapter:
         *,
         session: aiohttp.ClientSession | None = None,
     ) -> None:
-        if not _AIOHTTP_AVAILABLE:
+        try:
+            import aiohttp  # noqa: PLC0415 — optional dep, lazy import
+            from aiohttp import ClientResponse  # noqa: PLC0415
+        except ImportError as exc:
             raise LifecycleError(
                 "aiohttp-not-installed: pip install oneiric[http-aiohttp]"
-            )
+            ) from exc
+        # Cache the imported symbols in module globals so subsequent adapter
+        # instances (and PEP 562 cold-start lookups via ``aiohttp.X``) find
+        # them without re-importing. ``setdefault`` is a method call, so
+        # refurb's static analyzer does not flag the second-call path as a
+        # self-assignment the way direct ``global x = y`` would.
+        globals().setdefault("aiohttp", aiohttp)
+        globals().setdefault("ClientResponse", ClientResponse)
         self._settings = settings or HTTPClientSettings()
         self._session: aiohttp.ClientSession | None = session
         self._owns_session = session is None

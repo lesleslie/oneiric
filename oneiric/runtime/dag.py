@@ -4,16 +4,22 @@ import inspect
 import time
 from collections.abc import Awaitable, Callable, Iterable, MutableMapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 from uuid import uuid4
 
 import anyio
-import networkx as nx
 
 from oneiric.core.logging import get_logger
 from oneiric.core.observability import observed_span
 from oneiric.core.resiliency import run_with_retry
 from oneiric.runtime.metrics import record_workflow_node_metrics
+
+if TYPE_CHECKING:
+    # networkx is a hard dependency but loaded lazily inside the workflow
+    # functions to keep import-time low (networkx alone is ~50-200ms cold).
+    # Annotations are strings under ``from __future__ import annotations``,
+    # so this TYPE_CHECKING import only affects type checkers.
+    import networkx as nx
 
 TaskCallable = Callable[[], Awaitable[Any]]
 HookCallable = Callable[..., Awaitable[None] | None]
@@ -59,6 +65,8 @@ class DAGRunResult(TypedDict):
 
 
 def build_graph(tasks: Iterable[DAGTask]) -> nx.DiGraph:
+    import networkx as nx
+
     graph = nx.DiGraph()
     for task in tasks:
         graph.add_node(task.key, task=task)
@@ -71,6 +79,8 @@ def build_graph(tasks: Iterable[DAGTask]) -> nx.DiGraph:
 
 
 def plan_levels(graph: nx.DiGraph) -> list[list[str]]:
+    import networkx as nx
+
     return [list(generation) for generation in nx.topological_generations(graph)]
 
 

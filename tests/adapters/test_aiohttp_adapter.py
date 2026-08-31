@@ -246,7 +246,14 @@ async def test_request_generic_exception_propagates() -> None:
 def test_init_raises_when_aiohttp_unavailable(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Constructor raises LifecycleError when aiohttp is not installed."""
-    monkeypatch.setattr("oneiric.adapters.http.aiohttp._AIOHTTP_AVAILABLE", False)
+    """Constructor raises LifecycleError when aiohttp is not installed.
+
+    The adapter now loads aiohttp lazily inside ``__init__``; simulate
+    the missing-optional case by removing ``aiohttp`` from ``sys.modules``
+    so the in-constructor ``import aiohttp`` raises ImportError.
+    """
+    import sys
+
+    monkeypatch.setitem(sys.modules, "aiohttp", None)
     with pytest.raises(LifecycleError, match="aiohttp-not-installed"):
         AioHTTPAdapter()

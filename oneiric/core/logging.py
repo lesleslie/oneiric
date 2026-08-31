@@ -170,10 +170,10 @@ def _create_handler_for_target(sink: LoggingSinkConfig) -> logging.Handler:
     target = sink.target
 
     if target == "stdout":
-        return logging.StreamHandler(sys.stdout)
+        return _create_stream_handler(sys.stdout)
 
     if target == "stderr":
-        return logging.StreamHandler(sys.stderr)
+        return _create_stream_handler(sys.stderr)
 
     if target == "file":
         return _create_file_handler(sink)
@@ -184,15 +184,44 @@ def _create_handler_for_target(sink: LoggingSinkConfig) -> logging.Handler:
     raise ValueError(f"Unsupported logging target: {target}")
 
 
+def _create_stream_handler(stream: Any) -> logging.Handler:
+    """Stream handler with line-buffering forced.
+
+    Python's stderr/stdout are block-buffered when redirected to a file
+    (launchd redirects MCP server stderr to ``StandardErrorPath``); without
+    this reconfigure, structured log lines only flush on process exit or
+    every ~4KB, leaving operators staring at an empty log file for 30+ s
+    while a server is starting.
+    """
+    if hasattr(stream, "reconfigure"):
+        # No-op when stream is already line-buffered (TTY).
+        try:
+            stream.reconfigure(line_buffering=True)
+        except ValueError, OSError:  # pragma: no cover - reconfigure fails closed
+            pass
+    return logging.StreamHandler(stream)
+
+
 def _create_file_handler(sink: LoggingSinkConfig) -> logging.Handler:
     path = Path(sink.path or "oneiric.log")
     path.parent.mkdir(parents=True, exist_ok=True)
-    return logging.handlers.RotatingFileHandler(
+    handler = logging.handlers.RotatingFileHandler(
         path,
         maxBytes=max(sink.max_bytes, 1024),
         backupCount=max(sink.backup_count, 1),
         encoding="utf-8",
     )
+    # Force the underlying file stream to line-buffering so each log
+    # record appears on disk immediately, matching the behavior callers
+    # expect when ``PYTHONUNBUFFERED=1`` is set (which only affects the
+    # Python-level text I/O wrappers, not ``open(..., buffering=8192)``).
+    file_stream = getattr(handler, "stream", None)
+    if file_stream is not None and hasattr(file_stream, "reconfigure"):
+        try:
+            file_stream.reconfigure(line_buffering=True)
+        except ValueError, OSError:  # pragma: no cover
+            pass
+    return handler
 
 
 def _create_http_handler(sink: LoggingSinkConfig) -> logging.Handler:
