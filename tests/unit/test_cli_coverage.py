@@ -125,14 +125,14 @@ def test_demo_cli_queue_enqueue() -> None:
 
 
 # ---------------------------------------------------------------------------
-# _state — RuntimeError path
+# _state — TypeError path
 # ---------------------------------------------------------------------------
 
 
 def test_state_raises_when_obj_not_clstate() -> None:
     ctx = MagicMock()
     ctx.obj = "not-a-state"
-    with pytest.raises(RuntimeError, match="CLI state not initialized"):
+    with pytest.raises(TypeError, match="CLI state has unexpected type"):
         _state(ctx)
 
 
@@ -1221,14 +1221,14 @@ def test_plugins_command_with_errors(capsys) -> None:
 
 # action-invoke — no action bridge (line 2082)
 def test_action_invoke_no_bridge() -> None:
-    state = _make_mock_state(**{"action": None})
+    state = _make_mock_state(action=None)
     result = _run_command("action-invoke", "test.action", state=state)
     assert result.exit_code != 0 or "not initialized" in result.output
 
 
 # event emit — no event bridge (line 2151)
 def test_event_emit_no_bridge() -> None:
-    state = _make_mock_state(**{"event": None})
+    state = _make_mock_state(event=None)
     result = _run_command("event", "emit", "test.topic", state=state)
     assert result.exit_code != 0 or "not initialized" in result.output
 
@@ -1244,7 +1244,7 @@ def test_event_emit_no_handlers_matched() -> None:
 
 # workflow run — no bridge (line 2315)
 def test_workflow_run_no_bridge() -> None:
-    state = _make_mock_state(**{"workflow": None})
+    state = _make_mock_state(workflow=None)
     result = _run_command("workflow", "run", "my-wf", state=state)
     assert result.exit_code != 0 or "not initialized" in result.output
 
@@ -1262,7 +1262,7 @@ def test_workflow_run_empty_results() -> None:
 
 # workflow enqueue — no bridge (line 2395)
 def test_workflow_enqueue_no_bridge() -> None:
-    state = _make_mock_state(**{"workflow": None})
+    state = _make_mock_state(workflow=None)
     result = _run_command("workflow", "enqueue", "my-wf", state=state)
     assert result.exit_code != 0 or "not initialized" in result.output
 
@@ -1280,7 +1280,7 @@ def test_workflow_enqueue_non_json_output() -> None:
 
 # workflow plan — no bridge (line 2436)
 def test_workflow_plan_no_bridge() -> None:
-    state = _make_mock_state(**{"workflow": None})
+    state = _make_mock_state(workflow=None)
     result = _run_command("workflow", "plan", state=state)
     assert result.exit_code != 0 or "not initialized" in result.output
 
@@ -1896,7 +1896,7 @@ def test_handle_status_with_shadowed_candidates_iterated(capsys) -> None:
     settings.remote.latency_budget_ms = None
 
     with patch(
-        "oneiric.cli.load_remote_telemetry", return_value=MagicMock(as_dict=lambda: {})
+        "oneiric.cli.load_remote_telemetry", return_value=MagicMock(as_dict=dict)
     ):
         _handle_status(
             bridge,

@@ -94,6 +94,7 @@ class OneiricCLI(OneiricCLIBase):
         super().__init__(
             component_name="oneiric",
             help="Oneiric runtime management CLI.",
+            no_args_is_help=False,
         )
 
     def _register_global_callback(self) -> None:
@@ -916,7 +917,7 @@ def _initialize_state(
 def _state(ctx: typer.Context) -> CLIState:
     state = ctx.obj
     if not isinstance(state, CLIState):
-        raise TypeError("CLI state not initialized")
+        raise TypeError(f"CLI state has unexpected type: {type(state).__name__}")
     return state
 
 

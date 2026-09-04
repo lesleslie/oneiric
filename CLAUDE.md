@@ -8,7 +8,7 @@ For a shorter, tool-neutral bootstrap document, start with `AGENTS.md`.
 
 Oneiric is a **universal resolution layer** for pluggable components with hot-swapping, multi-domain support, and remote manifest delivery. It extracts and modernizes the component discovery and lifecycle patterns into a standalone infrastructure layer.
 
-**Status:** Production Ready (0.16.3) - Hardened for controlled deployment. See `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for comprehensive audit (score: 95/100, 4112 tests, 83% coverage) and `docs/ONEIRIC_VS_ACB.md` for comparison with ACB and migration strategy.
+**Status:** Production Ready (0.21.0) - Hardened for controlled deployment. See `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for comprehensive audit (score: 95/100, 4112 tests, 83% coverage) and `docs/ONEIRIC_VS_ACB.md` for comparison with ACB and migration strategy.
 
 **Python Version:** 3.13+ (async-first, modern type hints)
 

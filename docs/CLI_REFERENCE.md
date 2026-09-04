@@ -5,7 +5,7 @@ ______________________________________________________________________
 # Oneiric CLI Reference
 
 **Last Updated:** 2025-02-02
-**Version:** 0.16.3
+**Version:** 0.21.0
 
 Complete reference for all Oneiric CLI commands with examples, use cases, and troubleshooting tips.
 

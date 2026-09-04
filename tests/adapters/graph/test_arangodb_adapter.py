@@ -223,8 +223,13 @@ async def test_default_client_factory(
     created: list[dict] = []
 
     class FakeArangoClient:
-        def __init__(self, hosts: str, verify: bool, request_timeout: float) -> None:
-            created.append({"hosts": hosts, "verify": verify})
+        def __init__(
+            self,
+            hosts: str,
+            verify_override: bool,
+            request_timeout: float,
+        ) -> None:
+            created.append({"hosts": hosts, "verify": verify_override})
 
         def db(self, name: str, *, username: str, password: str | None) -> FakeDB:
             return FakeDB()

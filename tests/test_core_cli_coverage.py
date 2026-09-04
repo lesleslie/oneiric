@@ -304,6 +304,7 @@ class TestStopRestart:
 
     def test_start_server_keyboard_interrupt_triggers_shutdown(self):
         import asyncio as stdlib_asyncio
+        import time as stdlib_time
         from unittest.mock import patch
 
         class AppServer(MCPServerBase):
@@ -317,7 +318,7 @@ class TestStopRestart:
         )
         sync_sleep = MagicMock(side_effect=KeyboardInterrupt)
         with patch.object(stdlib_asyncio, "run", return_value=None):
-            with patch.object(stdlib_asyncio, "sleep", new=sync_sleep):
+            with patch.object(stdlib_time, "sleep", new=sync_sleep):
                 factory._start_server()  # Should catch KeyboardInterrupt, not raise
 
 

@@ -7,7 +7,7 @@
 
 **Explainable component resolution, lifecycle management, and remote delivery for Python 3.13+ runtimes**
 
-> **Status:** Production Ready (audit v0.2.0, current v0.16.3) — see `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for audit metrics and `coverage.json` for the latest coverage snapshot.
+> **Status:** Production Ready (audit v0.2.0, current v0.21.0) — see `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for audit metrics and `coverage.json` for the latest coverage snapshot.
 
 Oneiric extracts the resolver/lifecycle core from ACB and turns it into a stand-alone platform. Register adapters, services, tasks, events, workflows, and actions; explain every decision; hot-swap providers; stream telemetry; replay workflow notifications; and hydrate capabilities from signed remote manifests.
 
