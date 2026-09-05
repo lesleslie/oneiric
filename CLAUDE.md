@@ -8,9 +8,11 @@ For a shorter, tool-neutral bootstrap document, start with `AGENTS.md`.
 
 Oneiric is a **universal resolution layer** for pluggable components with hot-swapping, multi-domain support, and remote manifest delivery. It extracts and modernizes the component discovery and lifecycle patterns into a standalone infrastructure layer.
 
-**Status:** Production Ready (0.21.1) - Hardened for controlled deployment. See `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for comprehensive audit (score: 95/100, 4112 tests, 83% coverage) and `docs/ONEIRIC_VS_ACB.md` for comparison with ACB and migration strategy.
+**Status:** Production Ready (0.21.1) — hardened for controlled deployment. See `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for the most recent comprehensive audit, and `docs/ONEIRIC_VS_ACB.md` for comparison with ACB and migration strategy.
 
-**Python Version:** 3.13+ (async-first, modern type hints)
+**Current state:** 4218 tests passing, 98.75% coverage — a +20pp margin over the 78.75% coverage ratchet baseline.
+
+**Python Version:** 3.14+ (async-first, modern type hints) — matches `requires-python = ">=3.14"` in `pyproject.toml`.
 
 ## Architecture
 
@@ -50,8 +52,13 @@ oneiric/
 │   ├── watchers.py        # Domain selection watchers
 │   ├── activity.py        # Pause/drain state persistence
 │   └── health.py          # Runtime health snapshots
-└── cli.py                 # Typer-based CLI (11 commands)
+└── cli/                   # Typer-based CLI package
+    ├── __init__.py        # Typer app + commands (see docs/CLI_REFERENCE.md)
+    └── base.py            # OneiricCLIBase / ExitCode (BodaiCLIBase adoption)
 ```
+
+`oneiric/core/cli.py` holds the core CLI/MCP server primitives (`MCPServerBase`)
+and is separate from the `oneiric/cli/` command package above.
 
 ### Resolution Precedence (4-tier)
 
@@ -90,30 +97,30 @@ All domains (adapters, services, tasks, events, workflows) use the same `DomainB
 uv run python main.py
 
 # CLI commands (with demo providers)
-uv run python -m oneiric.cli --demo list --domain adapter
-uv run python -m oneiric.cli --demo explain status --domain service
-uv run python -m oneiric.cli --demo status --domain service --key status
-uv run python -m oneiric.cli --demo health --probe
+uv run oneiric --demo list --domain adapter
+uv run oneiric --demo explain status --domain service
+uv run oneiric --demo status --domain service --key status
+uv run oneiric --demo health --probe
 
 # Remote manifest sync
-uv run python -m oneiric.cli remote-sync --manifest docs/sample_remote_manifest.yaml
-uv run python -m oneiric.cli remote-sync --manifest docs/sample_remote_manifest.yaml --watch --refresh-interval 60
-uv run python -m oneiric.cli remote-status
+uv run oneiric remote-sync --manifest docs/sample_remote_manifest.yaml
+uv run oneiric remote-sync --manifest docs/sample_remote_manifest.yaml --watch --refresh-interval 60
+uv run oneiric remote-status
 
 # Runtime orchestrator (long-running)
-uv run python -m oneiric.cli orchestrate --manifest docs/sample_remote_manifest.yaml --refresh-interval 120
+uv run oneiric orchestrate --manifest docs/sample_remote_manifest.yaml --refresh-interval 120
 
 # Domain activity controls
-uv run python -m oneiric.cli pause --domain service status --note "maintenance window"
-uv run python -m oneiric.cli drain --domain service status --note "draining queue"
-uv run python -m oneiric.cli pause --resume --domain service status
+uv run oneiric pause --domain service status --note "maintenance window"
+uv run oneiric drain --domain service status --note "draining queue"
+uv run oneiric pause --resume --domain service status
 ```
 
 ### Shell Completions
 
 ```bash
 # Install Typer shell completions (one-time setup)
-uv run python -m oneiric.cli --install-completion
+uv run oneiric --install-completion
 ```
 
 ### Quality Control with Crackerjack
@@ -159,21 +166,21 @@ python -m crackerjack run -a major   # Bump major version
 This project uses **Zuban** (via Crackerjack) for ultra-fast type checking. Due to a known Zuban parsing bug with `[tool.mypy]` in `pyproject.toml`, type checking configuration is in `mypy.ini` instead:
 
 - **Configuration file**: `mypy.ini` (not `pyproject.toml`)
-- **Python version**: 3.13
+- **Python version**: 3.14
 - **Excluded directories**: `.venv`, `build`, `dist`, `tests`, `scripts/`
 - **Module-level suppressions**: See `mypy.ini` for per-module `ignore_errors` settings
 
 **Important**: Do NOT add `[tool.zuban]` or `[tool.mypy]` to `pyproject.toml` - this will cause parsing errors. All type checking config must be in `mypy.ini`.
 
-**Note:** Comprehensive test suite with 4112 passing tests and 83% coverage. Security hardening complete (all P0 vulnerabilities resolved). See `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for detailed quality assessment.
+**Note:** Comprehensive test suite with 4218 passing tests and 98.75% coverage. Security hardening complete (all P0 vulnerabilities resolved). See `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for detailed quality assessment.
 
 ### Testing
 
 **Test Suite Overview:**
 
-- **Total:** 4112 tests across 200 test files in 10 categories
-- **Coverage:** 83% (target: 60%, achieved: 138% of target)
-- **Test Categories:** Core (68), Adapters (60), Domains (44), Security (100), Remote/Runtime/CLI (117), Integration (39), E2E (8)
+- **Total:** 4218 passing tests (plus 17 skipped, 1 xfailed) across 210 test files
+- **Coverage:** 98.75% (coverage ratchet baseline: 78.75%)
+- **Test Categories:** by directory — `tests/adapters/` (83 files), `tests/unit/` (25), `tests/core/` (22), `tests/runtime/` (17), `tests/actions/` (11), `tests/domains/` (10), `tests/remote/` (9), `tests/integration/` (6), `tests/security/` (5), `tests/shell/` (5), `tests/cli/` (3), `tests/benchmarks/` (1)
 - **Timeout:** 600s (10 minutes) configured in `[tool.crackerjack]`
 
 **Quick Start with Makefile:**
@@ -242,7 +249,7 @@ Tests can be marked with the following markers to enable selective execution:
 1. **Full Test Suite** (10 minutes):
 
    ```bash
-   make test             # Run all 4112 tests
+   make test             # Run the full test suite
    ```
 
 1. **Development Workflow** (iterative):
@@ -431,7 +438,7 @@ The `docs/` directory contains comprehensive documentation organized by purpose:
 
 - **`ONEIRIC_VS_ACB.md`** - Complete comparison, migration guide, hybrid strategy ⭐
 - **`UNCOMPLETED_TASKS.md`** - Future enhancements, known issues (zero blockers)
-- **`implementation/STAGE5_FINAL_AUDIT_REPORT.md`** - Production readiness audit (95/100 score) ⭐
+- **`implementation/STAGE5_FINAL_AUDIT_REPORT.md`** - Production readiness audit (scored 95/100 at Stage 5; canonical audit of record) ⭐
 - `NEW_ARCH_SPEC.md` - Complete architecture specification
 - `RESOLUTION_LAYER_SPEC.md` - Detailed resolution layer design
 
@@ -495,19 +502,19 @@ Automatic spans for:
 
 ```bash
 # Show active vs shadowed components
-uv run python -m oneiric.cli --demo list --domain adapter
+uv run oneiric --demo list --domain adapter
 
 # Explain why a component was chosen
-uv run python -m oneiric.cli --demo explain status --domain service
+uv run oneiric --demo explain status --domain service
 
 # Show lifecycle state
-uv run python -m oneiric.cli --demo status --domain service --key status --json
+uv run oneiric --demo status --domain service --key status --json
 
 # Check runtime health
-uv run python -m oneiric.cli --demo health --probe --json
+uv run oneiric --demo health --probe --json
 
 # View activity (paused/draining)
-uv run python -m oneiric.cli activity --json
+uv run oneiric activity --json
 ```
 
 ## Future Enhancements (from docs)
@@ -522,7 +529,9 @@ uv run python -m oneiric.cli activity --json
 
 ## Relationship to ACB
 
-Oneiric extracts ACB's adapter resolution pattern into a universal layer. See `docs/ACB_COMPARISON.md` for detailed comparison:
+Oneiric extracts ACB's adapter resolution pattern into a universal layer. See `docs/ONEIRIC_VS_ACB.md` for detailed comparison.
+
+**Historical snapshot** — the scores below come from the original ACB comparison and describe Oneiric **as of v0.16.2**, before the 0.20.x hardening work. They are retained for context and are *not* a statement about the current release. For current state see the Status header at the top of this file.
 
 - **ACB:** Production-ready full platform (v0.31.10, 92/100 score)
 - **Oneiric:** Alpha resolution layer (v0.16.2, 68/100 score)
@@ -581,7 +590,7 @@ This project follows crackerjack's clean code philosophy:
 
 - **Security patterns**: No hardcoded paths, proper temp file handling
 
-- **Python 3.13+ modern patterns**: Use `|` unions, pathlib over os.path
+- **Python 3.14+ modern patterns**: Use `|` unions, pathlib over os.path
 
 ```bash
 python -m crackerjack
@@ -630,6 +639,7 @@ Canonical rule: `.claude/decisions/mcp-backend-wiring-discipline.md`
 (lives in the mahavishnu repo and is cross-referenced for the ecosystem).
 
 When adding any new MCP tool to this repo:
+
 - [ ] Tool registration includes `tests/integration/test_<tool>_e2e.py`.
 - [ ] Data feed exposes the four mandatory metrics.
 - [ ] `/health` aggregator includes this feed's state.
