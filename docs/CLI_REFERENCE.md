@@ -36,7 +36,7 @@ Install shell completions for bash/zsh/fish:
 
 ```bash
 # Install completions
-uv run python -m oneiric.cli --install-completion
+uv run oneiric --install-completion
 
 # Restart shell or source
 source ~/.bashrc  # or ~/.zshrc
@@ -63,7 +63,7 @@ Most commands support `--demo` flag to use built-in demo providers:
 
 ```bash
 # Use demo adapters/services/tasks
-uv run python -m oneiric.cli --demo list --domain adapter
+uv run oneiric --demo list --domain adapter
 ```
 
 ______________________________________________________________________
@@ -1127,8 +1127,8 @@ ______________________________________________________________________
 **Solution:**
 
 ```bash
-# Use full module path
-python -m oneiric.cli [command]
+# Use the installed console script
+oneiric [command]
 
 # Or install via pip
 pip install oneiric

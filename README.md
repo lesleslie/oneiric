@@ -5,7 +5,7 @@
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![Python: 3.14+](https://img.shields.io/badge/python-3.14%2B-green)](https://www.python.org/downloads/)
 
-**Explainable component resolution, lifecycle management, and remote delivery for Python 3.13+ runtimes**
+**Explainable component resolution, lifecycle management, and remote delivery for Python 3.14+ runtimes**
 
 > **Status:** Production Ready (audit v0.2.0, current v0.21.1) — see `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for audit metrics and `coverage.json` for the latest coverage snapshot.
 
@@ -15,7 +15,7 @@ Oneiric extracts the resolver/lifecycle core from ACB and turns it into a stand-
 
 Oneiric is the **resolver / runtime foundation** of the [Bodai ecosystem](https://github.com/lesleslie/bodai) — it powers the adapter system, service lifecycle, and runtime orchestration that Mahavishnu, Akosha, Dhara, Session-Buddy, and Crackerjack all depend on.
 
-Standalone, Oneiric is a deterministic component resolution library for Python 3.13+ runtimes — useful for any application that needs to register, resolve, and lifecycle adapters, services, tasks, events, and workflows. See [bodai/docs](https://github.com/lesleslie/bodai) for how Oneiric is used across the ecosystem.
+Standalone, Oneiric is a deterministic component resolution library for Python 3.14+ runtimes — useful for any application that needs to register, resolve, and lifecycle adapters, services, tasks, events, and workflows. See [bodai/docs](https://github.com/lesleslie/bodai) for how Oneiric is used across the ecosystem.
 
 ## Quick Links
 
@@ -148,42 +148,42 @@ uv add oneiric
 uv run python main.py
 
 # Inspect demo metadata
-uv run python -m oneiric.cli --demo list --domain adapter
-uv run python -m oneiric.cli --demo explain status --domain service --key status
+uv run oneiric --demo list --domain adapter
+uv run oneiric --demo explain status --domain service --key status
 
 # Orchestrator inspectors (no long-running loop)
-uv run python -m oneiric.cli orchestrate --print-dag --workflow fastblocks.workflows.fulfillment --inspect-json
-uv run python -m oneiric.cli orchestrate --events --inspect-json
+uv run oneiric orchestrate --print-dag --workflow fastblocks.workflows.fulfillment --inspect-json
+uv run oneiric orchestrate --events --inspect-json
 
 # Inspect workflow DAG plan (topology + metadata)
-uv run python -m oneiric.cli workflow plan \
+uv run oneiric workflow plan \
   --workflow fastblocks.workflows.fulfillment \
   --json
 
 # Remote sync (file or HTTPS manifest)
-uv run python -m oneiric.cli remote-sync --manifest docs/sample_remote_manifest.yaml --watch --refresh-interval 120
+uv run oneiric remote-sync --manifest docs/sample_remote_manifest.yaml --watch --refresh-interval 120
 
 # Emit events (fan-out/filters/retry proof)
-uv run python -m oneiric.cli event emit \
+uv run oneiric event emit \
   --topic fastblocks.order.created \
   --payload '{"order_id":"demo-123","region":"us"}' \
   --json
 
 # Run workflows/DAGs once (without enqueueing)
-uv run python -m oneiric.cli workflow run \
+uv run oneiric workflow run \
   --workflow fastblocks.workflows.fulfillment \
   --context '{"order_id":"demo-123"}' \
   --json
 
 # Use stored checkpoints (or disable them) for workflow runs
-uv run python -m oneiric.cli workflow run \
+uv run oneiric workflow run \
   --workflow fastblocks.workflows.fulfillment \
   --workflow-checkpoints \
   --resume-checkpoint \
   --json
 
 # Inspect DAG plan/topology without executing
-uv run python -m oneiric.cli orchestrate \
+uv run oneiric orchestrate \
   --print-dag \
   --workflow fastblocks.workflows.fulfillment \
   --inspect-json
@@ -193,13 +193,13 @@ uv run python -m oneiric.cli orchestrate \
 # JSON to parity issues alongside the CLI `status --json` snapshot before executing workflows.
 
 # Replay workflow.notify payloads through ChatOps adapters
-uv run python -m oneiric.cli action-invoke workflow.notify \
+uv run oneiric action-invoke workflow.notify \
   --workflow fastblocks.workflows.fulfillment \
   --payload '{"message":"Deploy ready","channel":"deploys"}' \
   --send-notification --json
 
 # Long-running orchestrator (with remote refresh + scheduler HTTP server)
-uv run python -m oneiric.cli orchestrate \
+uv run oneiric orchestrate \
   --manifest docs/sample_remote_manifest.yaml \
   --refresh-interval 120 \
   --http-port 8080
@@ -209,21 +209,21 @@ uv run python -m oneiric.cli orchestrate \
 
 ```bash
 # Package the manifest that will be baked into the Cloud Run build
-uv run python -m oneiric.cli manifest pack \
+uv run oneiric manifest pack \
   --input docs/sample_remote_manifest.yaml \
   --output build/serverless_manifest.json
 
 # Capture supervisor + health proofs before deploying
 ONEIRIC_PROFILE=serverless \
-  uv run python -m oneiric.cli supervisor-info --json
+  uv run oneiric supervisor-info --json
 
 ONEIRIC_PROFILE=serverless \
-  uv run python -m oneiric.cli health --probe --json \
+  uv run oneiric health --probe --json \
     --manifest build/serverless_manifest.json
 
 # Run the orchestrator locally with serverless defaults
 ONEIRIC_PROFILE=serverless \
-  uv run python -m oneiric.cli orchestrate \
+  uv run oneiric orchestrate \
     --no-remote \
     --health-path /tmp/runtime_health.json
 ```
