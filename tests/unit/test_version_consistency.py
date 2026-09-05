@@ -129,22 +129,24 @@ class TestVersionConsistency:
     def test_python_version_matches(self) -> None:
         """`requires-python` in pyproject must equal the version we document.
 
-        Oneiric docs say ``Python 3.13+``. ``pyproject.toml:6`` is the source
-        of truth; if it changes, the docs must follow.
+        Oneiric docs should say ``Python 3.14+``. ``pyproject.toml:6`` is the
+        source of truth; if it changes, the docs must follow.
         """
         with PYPROJECT_PATH.open("rb") as f:
             data = tomllib.load(f)
         required = data.get("project", {}).get("requires-python", "")
-        # Acceptable forms: ">=3.13", ">=3.13.5", ">=3.13,<4"
+        # Acceptable forms: ">=3.14", ">=3.14.5", ">=3.14,<4"
         match = re.search(r">=\s*(\d+\.\d+)", str(required))
         assert match, f"could not parse requires-python {required!r}"
         actual = match.group(1)
 
-        # Spot-check the README badge (canonical, kept in sync by maintainers)
+        # Spot-check the README badge (canonical, kept in sync by maintainers).
+        # The badge shape is: [![Python: 3.14+](https://...)](https://...)
+        # so we anchor on the alt text through its closing bracket.
         with README_PATH.open(encoding="utf-8") as f:
             head = "".join(line for _, line in zip(range(20), f))
         badge_match = re.search(
-            r"\[[!]\[Python:\s*(\d+\.\d+)\+?\(", head
+            r"\[!\[Python:\s*(\d+\.\d+)\+?\]", head
         )
         if badge_match is None:
             pytest.skip("README Python badge pattern not found")
