@@ -504,13 +504,11 @@ async def test_probe_encode_via_non_200_returns_none(monkeypatch) -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(500)
 
-    # Capture the original AsyncClient class BEFORE patching (otherwise the
-    # closure would capture our factory and recurse).
+    # _probe_encode_via takes an existing client as a positional argument, so
+    # no module-level AsyncClient patch is needed — build the MockTransport
+    # client directly via the factory.
     factory = _make_async_client_factory(handler)
-    _install_mock_client(monkeypatch, handler)
     svc = EmbeddingService()
-    # _probe_encode_via takes an existing client; build one with MockTransport
-    # directly via the factory so it gets the right transport without recursion.
     client = factory(timeout=5)
     result = await svc._probe_encode_via(
         client, "https://example.com/embed", "model", ["probe"]
@@ -525,7 +523,6 @@ async def test_probe_encode_via_openai_shape_returns_ndarray(monkeypatch) -> Non
         )
 
     factory = _make_async_client_factory(handler)
-    _install_mock_client(monkeypatch, handler)
     svc = EmbeddingService()
     client = factory(timeout=5)
     result = await svc._probe_encode_via(
@@ -543,7 +540,6 @@ async def test_probe_encode_via_ollama_shape_returns_ndarray(monkeypatch) -> Non
         return httpx.Response(200, content=b'{"embedding": [0.1, 0.2]}')
 
     factory = _make_async_client_factory(handler)
-    _install_mock_client(monkeypatch, handler)
     svc = EmbeddingService()
     client = factory(timeout=5)
     result = await svc._probe_encode_via(
@@ -560,7 +556,6 @@ async def test_probe_encode_via_invalid_json_returns_none(monkeypatch) -> None:
         return httpx.Response(200, content=b"not json at all {{")
 
     factory = _make_async_client_factory(handler)
-    _install_mock_client(monkeypatch, handler)
     svc = EmbeddingService()
     client = factory(timeout=5)
     result = await svc._probe_encode_via(
@@ -576,7 +571,6 @@ async def test_probe_encode_via_missing_embedding_key_returns_none(monkeypatch) 
         return httpx.Response(200, content=b'{"data": [{}]}')
 
     factory = _make_async_client_factory(handler)
-    _install_mock_client(monkeypatch, handler)
     svc = EmbeddingService()
     client = factory(timeout=5)
     result = await svc._probe_encode_via(
@@ -765,7 +759,6 @@ async def test_initialize_selects_llama_cpp_when_first_probe_succeeds(
     _install_mock_client(monkeypatch, handler)
     svc = EmbeddingService(
         settings=EmbeddingSettings(
-            ollama_enabled=False,  # avoid probe-encode race in test
             minimax_enabled=False,
             model2vec_enabled=False,
         )
