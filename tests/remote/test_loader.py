@@ -295,7 +295,7 @@ class TestManifestParsing:
         """Parse rejects non-dict top level."""
         invalid_text = json.dumps(["list", "not", "dict"])
 
-        with pytest.raises(ValueError, match="must be a mapping"):
+        with pytest.raises(TypeError, match="must be a mapping"):
             _parse_manifest(invalid_text, verify_signature=False)
 
     def test_parse_manifest_with_signature(self):

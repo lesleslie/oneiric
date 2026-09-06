@@ -551,7 +551,7 @@ def _manifest_entry_from_adapter(
         qualname = getattr(func, "__qualname__", module_name)
         factory_str = f"{module_name}:{qualname}"
     else:
-        raise ValueError(f"Unsupported factory type: {type(adapter.factory)}")
+        raise TypeError(f"Unsupported factory type: {type(adapter.factory)}")
 
     settings_model_str: str | None = None
     if adapter.settings_model:
@@ -597,7 +597,7 @@ def _manifest_entry_from_action(
         qualname = getattr(func, "__qualname__", module_name)
         factory_str = f"{module_name}:{qualname}"
     else:
-        raise ValueError(f"Unsupported factory type: {type(action.factory)}")
+        raise TypeError(f"Unsupported factory type: {type(action.factory)}")
 
     return RemoteManifestEntry(
         domain="action",

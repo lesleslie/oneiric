@@ -6,7 +6,7 @@
 **Status**: read-only inventory — no code changes proposed in this document
 **Sister audit**: `mahavishnu/docs/superpowers/specs/2026-09-05-mcp-common-phase1-design.md`
 
----
+______________________________________________________________________
 
 ## TL;DR
 
@@ -23,12 +23,12 @@ oneiric is **production-ready** but has accumulated drift between docs and reali
 | G | **MED** | Python version floor drift: README badge + CLAUDE.md claim **3.13+**, but `pyproject.toml` `requires-python = ">=3.14"`. | trivial |
 | H | **LOW** | 13 Python 2 `except X, Y:` sites — **style, not correctness** under PEP 758 (Python 3.14 accepts unparenthesized form). Same pattern as mcp-common Phase 2 Bug #9. | trivial |
 | I | **LOW** | 7 production `assert` sites — bandit B101 violation, vanish under `python -O`. | trivial |
-| J | **LOW** | 198 `print()` calls — but 90%+ are doctest `>>>` examples + Rich `console.print()`. Real production print() count likely <20. | trivial (probably no-op) |
+| J | **LOW** | 198 `print()` calls — but 90%+ are doctest `>>>` examples + Rich `console.print()`. Real production print() count likely \<20. | trivial (probably no-op) |
 | K | **LOW** | `# ty: ignore` (40) > `# type: ignore` (31) — in-flight ty migration needs canonicalization (5 lines carry both). | trivial |
 
 **No** suspected "new" bugs beyond the 6 already-failing tests. Static type-checker (mypy) available; ty not installed in venv. Recent commit history (60 days) shows 15 fix commits — active maintenance, mostly quality-gate hygiene (ty, ruff, import sort).
 
----
+______________________________________________________________________
 
 ## Detailed findings
 
@@ -46,11 +46,13 @@ FAILED tests/unit/test_version_consistency.py::TestVersionConsistency::TestVersi
 ```
 
 **Group 1 — version_consistency (3 failures, BUG #B fix above)**:
+
 - All three assert that a string in some doc file matches the version in `pyproject.toml`
 - All fail because docs say `0.21.0`, pyproject says `0.21.1`
 - Fix: bump doc strings to `0.21.1`
 
 **Group 2 — remote loader (2 failures)**:
+
 - `test_parse_manifest_invalid_top_level` and `test_rejects_non_mapping` both feed `[1, 2, 3]` to `_parse_manifest()` and expect... a specific exception class.
 - Current production code raises bare `TypeError("Remote manifest must be a mapping at the top level.")` (see `oneiric/remote/loader.py:516`).
 - Test expects (need to read both tests) likely a `RemoteManifestError` or similar custom exception.
@@ -60,12 +62,13 @@ FAILED tests/unit/test_version_consistency.py::TestVersionConsistency::TestVersi
 - Needs a maintainer ruling.
 
 **Group 3 — CLI helper (1 failure)**:
+
 - `test_cli_notification_and_manifest_helpers` — a CLI helper branch test. Could be related to the recent BodaiCLIBase→OneiricCLIBase rename (commit `64bf1ec`).
 - Likely same root cause as the loader bugs: post-rename test/code drift.
 
 **Next step**: read each failing test's assertion message and the production code it's testing. The 3 version_consistency ones are doc fixes (Bug #B). The 3 loader/CLI ones need a maintainer call on whether to fix the test or the code.
 
----
+______________________________________________________________________
 
 ### B. Version drift in CLAUDE.md / README / CLI ref (HIGH)
 
@@ -76,13 +79,14 @@ CLAUDE.md Status line says '0.21.0' but pyproject says '0.21.1'.
 Three doc files all hard-code the version string and were not updated when `pyproject.toml` was bumped from 0.21.0 → 0.21.1.
 
 **Verification needed**: spot-check that the 3 failing tests point to the right files. Likely:
+
 - `CLAUDE.md` (line ~11, "Production Ready (X.Y.Z)" header)
 - `README.md` (banner image / version badge)
 - `docs/CLI_REFERENCE.md` or similar (header line)
 
 Fix: bump the 3 strings to `0.21.1`. Trivial — likely 1-line changes per file.
 
----
+______________________________________________________________________
 
 ### C. CLAUDE.md internal contradiction (HIGH)
 
@@ -95,7 +99,7 @@ The "95/100 / v0.21.0" appears to be aspirational/copy-paste from a stale draft;
 
 Fix: rewrite the status header to be self-consistent with the version (Bug #B fix) and either remove the audit history line or label it clearly as historical.
 
----
+______________________________________________________________________
 
 ### D. Low-coverage module: `embeddings.py` 31% (MED)
 
@@ -104,10 +108,11 @@ Fix: rewrite the status header to be self-consistent with the version (Bug #B fi
 **Action**: either add tests for the untested paths or — if those paths are not actually used in production — consider removing them. Likely requires reading the file to know.
 
 Other low-coverage modules (less severe, > 60%):
+
 - `oneiric/adapters/observability/__init__.py` — 36% (small file, may be re-exports)
 - `oneiric/adapters/observability/streaming_compression.py` — 65%
 
----
+______________________________________________________________________
 
 ### E. CLAUDE.md hard-number drift (MED)
 
@@ -119,7 +124,7 @@ Other low-coverage modules (less severe, > 60%):
 
 The 98.04% actual coverage is significantly better than the 83% claim — the doc understates quality. Fix: update CLAUDE.md numbers to match reality.
 
----
+______________________________________________________________________
 
 ### F. CLAUDE.md architectural tree drift (MED)
 
@@ -132,7 +137,7 @@ oneiric/core/cli.py    ← separate file
 
 CLAUDE.md's `python -m oneiric.cli` examples may or may not still work depending on which one is the entry point. **Action**: update CLAUDE.md to match the actual `oneiric/cli/` package structure and verify the entry point.
 
----
+______________________________________________________________________
 
 ### G. Python version floor drift (MED)
 
@@ -142,7 +147,7 @@ CLAUDE.md's `python -m oneiric.cli` examples may or may not still work depending
 
 **Action**: update README badge + CLAUDE.md to say 3.14+. Affects install instructions.
 
----
+______________________________________________________________________
 
 ### H. Python 2 except-comma sites (LOW — style only)
 
@@ -152,7 +157,7 @@ Fix: optional — wrap in parens for consistency with modern Python style. Trivi
 
 **Locations** (per smells.md): spans `core/`, `runtime/`, `shell/`, `adapters/monitoring/`, `tools/`.
 
----
+______________________________________________________________________
 
 ### I. Production `assert` sites (LOW)
 
@@ -162,20 +167,21 @@ Fix: optional — replace with explicit `if not cond: raise RuntimeError(...)`. 
 
 **Note**: one of the 7 may be inside a docstring (mcp-common's Bug #7 was a docstring example). Verify before fixing.
 
----
+______________________________________________________________________
 
 ### J. `print()` sites (LOW — likely no-op)
 
 198 sites, but inflated by:
+
 - Doctest `>>>` examples (e.g., `oneiric/core/ulid.py`)
 - Rich `console.print()` (e.g., `oneiric/tools/mermaid_validator/renderer.py`)
 - Legitimate CLI prompts and progress output
 
-Real production `print()` count likely <20. Same pattern as mcp-common Phase 2 Bug #5 (which closed as no-op after pre-flight).
+Real production `print()` count likely \<20. Same pattern as mcp-common Phase 2 Bug #5 (which closed as no-op after pre-flight).
 
 **Recommended action**: do not fix unless a specific site is identified as a real bug. Audit-on-demand only.
 
----
+______________________________________________________________________
 
 ### K. `# ty: ignore` vs `# type: ignore` migration (LOW)
 
@@ -185,7 +191,7 @@ Real production `print()` count likely <20. Same pattern as mcp-common Phase 2 B
 
 Suggests an in-flight ty migration. Recommend: canonicalize to whichever tool is now authoritative (probably `# ty: ignore` per `crackerjack`'s default + the ty-rollout memory). Trivial.
 
----
+______________________________________________________________________
 
 ## Things explicitly NOT found
 
@@ -197,27 +203,28 @@ Suggests an in-flight ty migration. Recommend: canonicalize to whichever tool is
 - Coverage gate is **PASSING** (98.04% ≥ 78.75% ratchet baseline, +19.29pp margin).
 - Recent commits show active quality maintenance (15 fix commits in last 60 days).
 
----
+______________________________________________________________________
 
 ## Recommended fix scope (proposed)
 
 For the implementation plan (Phase 4), I'd recommend shipping these in a single coordinated release:
 
 **Definitely ship (HIGH severity)**:
+
 1. Fix the 3 version_consistency doc files → bumps tests pass (Bug #B)
-2. Resolve CLAUDE.md internal contradiction (Bug #C)
-3. Triage the 3 loader/CLI failures: maintainer ruling on whether test or code is right (Bug #A groups 2 + 3)
+1. Resolve CLAUDE.md internal contradiction (Bug #C)
+1. Triage the 3 loader/CLI failures: maintainer ruling on whether test or code is right (Bug #A groups 2 + 3)
 
 **Should ship (MED severity)**:
-4. Rewrite CLAUDE.md to match current state: version, test count, coverage, Python floor, architecture tree (Bugs #E, #F, #G combined — single CLAUDE.md rewrite like mcp-common Phase 1)
-5. Add coverage for `embeddings.py` core paths OR prune untested code (Bug #D)
+4\. Rewrite CLAUDE.md to match current state: version, test count, coverage, Python floor, architecture tree (Bugs #E, #F, #G combined — single CLAUDE.md rewrite like mcp-common Phase 1)
+5\. Add coverage for `embeddings.py` core paths OR prune untested code (Bug #D)
 
 **Optional (LOW severity)**:
-6. Modernize 13 except-comma sites (Bug #H)
-7. Replace 7 production asserts (Bug #I)
-8. Canonicalize ty vs type ignores (Bug #K)
+6\. Modernize 13 except-comma sites (Bug #H)
+7\. Replace 7 production asserts (Bug #I)
+8\. Canonicalize ty vs type ignores (Bug #K)
 
 **Skip (no-op)**:
-9. print() cleanup (Bug #J) — pre-flight would close as no-op
+9\. print() cleanup (Bug #J) — pre-flight would close as no-op
 
 Total estimated effort: 3-5 commits across 2 repos (oneiric + maybe crackerjack if a new release-audit check is added).

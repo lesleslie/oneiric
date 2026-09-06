@@ -31,7 +31,7 @@ def adapter_to_manifest_entry(
     elif callable(adapter.factory):
         factory_str = f"{adapter.factory.__module__}:{adapter.factory.__qualname__}"
     else:
-        raise ValueError(f"Unsupported factory type: {type(adapter.factory)}")
+        raise TypeError(f"Unsupported factory type: {type(adapter.factory)}")
 
     settings_model_str: str | None = None
     if adapter.settings_model:
@@ -76,7 +76,7 @@ def action_to_manifest_entry(
     elif callable(action.factory):
         factory_str = f"{action.factory.__module__}:{action.factory.__qualname__}"
     else:
-        raise ValueError(f"Unsupported factory type: {type(action.factory)}")
+        raise TypeError(f"Unsupported factory type: {type(action.factory)}")
 
     return RemoteManifestEntry(
         domain="action",

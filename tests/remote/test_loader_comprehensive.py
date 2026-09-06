@@ -1290,7 +1290,7 @@ class TestParseManifest:
         assert manifest.entries[0].key == "cache"
 
     def test_rejects_non_mapping(self, reset_remote_breakers) -> None:
-        with pytest.raises(ValueError, match="must be a mapping"):
+        with pytest.raises(TypeError, match="must be a mapping"):
             _parse_manifest("[1, 2, 3]", verify_signature=False)
 
     def test_rejects_unsigned_when_required(self, reset_remote_breakers) -> None:

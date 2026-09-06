@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.2] - 2026-09-05
+
+### Fixed
+
+- oneiric: Raise ValueError not TypeError for invalid manifest + factory
+
+### Documentation
+
+- CLAUDE.md: Cross-reference MCP backend wiring discipline (Bodai-wide)
+- oneiric: Add audit memo for production bugs, coverage, doc drift, smells
+- oneiric: Add Phase 4 implementation plan (4 tasks + verification)
+- oneiric: Bump version stamp 0.21.0 -> 0.21.1 across CLAUDE.md, README, CLI ref
+- oneiric: Fix broken CLI invocation + Python 3.13+ drift in README + CLI ref
+- oneiric: Rewrite CLAUDE.md to fix drift (Bugs C, E, F, G)
+
+### Testing
+
+- oneiric: Add coverage for EmbeddingService probe chain
+- oneiric: Address Task 3 review findings (Important)
+- oneiric: Fix test_python_version_matches regex + docstring
+
 ## [0.20.2] - 2026-08-30
 
 ### Fixed

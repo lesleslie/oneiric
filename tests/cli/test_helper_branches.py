@@ -378,7 +378,7 @@ def test_cli_notification_and_manifest_helpers() -> None:
         requires_secrets=False,
         settings_model=None,
     )
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         _manifest_entry_from_adapter(bad_adapter, "1.2.3")
 
     action = ActionMetadata(
@@ -407,7 +407,7 @@ def test_cli_notification_and_manifest_helpers() -> None:
         extras={},
         side_effect_free=False,
     )
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         _manifest_entry_from_action(bad_action, "9.9.9")
 
 
