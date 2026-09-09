@@ -1,6 +1,14 @@
 ______________________________________________________________________
 
-## status: active role: canonical date: 2026-02-03 last_reviewed: 2026-07-17 superseded_by: null blocks_on: [] topic: mcp-design
+---
+status: active
+role: canonical
+date: 2026-02-03
+last_reviewed: 2026-09-09
+superseded_by: null
+blocks_on: []
+topic: mcp-design
+---
 
 # Migration Guide: ACB to Oneiric
 
