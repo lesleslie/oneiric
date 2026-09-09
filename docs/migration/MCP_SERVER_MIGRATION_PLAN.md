@@ -173,7 +173,7 @@ graph TD
 
 **Lifecycle command shape (Crackerjack):**
 
-- Commands use **subcommand syntax** (`start`, `stop`, `restart`, `status`, `health`, `health --probe`) instead of legacy flags. (See `crackerjack/docs/MIGRATION_GUIDE_0.47.0.md`, `crackerjack/docs/reference/BREAKING_CHANGES.md`)
+- Commands use **subcommand syntax** (`start`, `stop`, `restart`, `status`, `health`, `health --probe`) instead of legacy flags. (See `crackerjack/docs/MIGRATION_GUIDE.md`, `crackerjack/docs/reference/BREAKING_CHANGES.md`)
 - Lifecycle commands are provided via `MCPServerCLIFactory` integration. (See `crackerjack/docs/PHASE_5-7_COMPLETION.md`)
 
 **Health + status semantics (Crackerjack):**
@@ -207,7 +207,7 @@ ______________________________________________________________________
 
 **CLI / Lifecycle:**
 
-- Commands and semantics must match Crackerjack’s Oneiric CLI contract: `start`, `stop`, `restart`, `status`, `health`, `health --probe`. (See `crackerjack/docs/MIGRATION_GUIDE_0.47.0.md`, `crackerjack/docs/reference/BREAKING_CHANGES.md`)
+- Commands and semantics must match Crackerjack’s Oneiric CLI contract: `start`, `stop`, `restart`, `status`, `health`, `health --probe`. (See `crackerjack/docs/MIGRATION_GUIDE.md`, `crackerjack/docs/reference/BREAKING_CHANGES.md`)
 
 **Runtime Cache + Status:**
 
@@ -1385,7 +1385,7 @@ ______________________________________________________________________
 
 **Operational Model Sources:**
 
-- Crackerjack CLI + lifecycle: `../crackerjack/docs/MIGRATION_GUIDE_0.47.0.md`
+- Crackerjack CLI + lifecycle: `../crackerjack/docs/MIGRATION_GUIDE.md`
 - Crackerjack breaking changes + runtime cache: `../crackerjack/docs/reference/BREAKING_CHANGES.md`
 - Crackerjack Oneiric execution plan (status/telemetry snapshots): `../crackerjack/docs/archive/implementation-plans/ONEIRIC_MIGRATION_EXECUTION_PLAN.md`
 - Session-Buddy health schema (mcp-common): `../session-buddy/docs/reference/API_REFERENCE.md`

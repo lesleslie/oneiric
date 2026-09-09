@@ -206,7 +206,7 @@ capabilities:
 | `capabilities` | `list[CapabilityDescriptor or str]` | Capability descriptors (name + optional schema/security metadata). Strings remain supported for backward compatibility. | `[{"name": "kv", "event_types": ["cache.hit"], "payload_schema": {...}, "security": {...}}, "ttl"]` | Feature discovery, manifest linting |
 | `owner` | `str` | Team/person responsible | `"Platform Core Team"` | Ownership tracking |
 | `requires_secrets` | `bool` | Whether secrets are required | `true` | Security validation |
-| `settings_model` | `str` | Import path to Pydantic settings model | `"oneiric.adapters.cache.redis:RedisSettings"` | Config validation |
+| `settings_model` | `str` | Import path to Pydantic settings model | `"oneiric.adapters.cache.redis:RedisCacheSettings"` | Config validation |
 
 ### Action-Specific Fields
 
@@ -338,7 +338,7 @@ entries:
       - name: tracking
     owner: "Platform Core Team"
     requires_secrets: true
-    settings_model: "oneiric.adapters.cache.redis:RedisSettings"
+    settings_model: "oneiric.adapters.cache.redis:RedisCacheSettings"
 
     # Dependencies (v2)
     requires:
@@ -470,7 +470,7 @@ from oneiric.remote.loader import sync_remote_manifest
     "capabilities": ["kv", "ttl"],
     "owner": "Platform Core Team",
     "requires_secrets": True,
-    "settings_model": "oneiric.adapters.cache.redis:RedisSettings",
+    "settings_model": "oneiric.adapters.cache.redis:RedisCacheSettings",
     # Action-specific (if present)
     "side_effect_free": False,
     "timeout_seconds": 30.0,

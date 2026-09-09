@@ -570,7 +570,7 @@ if __name__ == "__main__":
 import asyncio
 import os
 from oneiric.core.resolution import Resolver
-from oneiric.core.config import Settings
+from oneiric.core.config import OneiricSettings
 from oneiric.remote.loader import sync_remote_manifest
 
 

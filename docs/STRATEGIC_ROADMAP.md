@@ -110,7 +110,7 @@ graph LR
 1. **M0 – Baseline (Complete):** Adapter remediation underway, HTTP regression fixed, remote tests restored.
 1. **M1 – Serverless-ready runtime (Target Q1 2026):** Procfile + buildpack docs, resolver/serverless profile, lazy import guards.
 1. **M2 – Platform parity (Target Q2 2026):** Event routing, task DAGs, service supervisors implemented in Oneiric; parity tests run.
-1. **M3 – Cut-over (TBD):** Crackerjack, FastBlocks, session-mgmt-mcp move to Oneiric-only deployments; ACB archived.
+1. **M3 – Cut-over (TBD):** Crackerjack, FastBlocks, session-buddy move to Oneiric-only deployments; ACB archived.
 
 ______________________________________________________________________
 

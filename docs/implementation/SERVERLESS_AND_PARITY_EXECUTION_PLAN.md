@@ -18,7 +18,7 @@ ______________________________________________________________________
 
 ## 1. Decisions & Guardrails (Recap)
 
-1. **ACB sunset:** Oneiric will replace ACB end-to-end across Crackerjack, FastBlocks, and session-mgmt-mcp. No hybrid “mix adapters/actions” mode will ship because no production workloads force backwards compatibility.
+1. **ACB sunset:** Oneiric will replace ACB end-to-end across Crackerjack, FastBlocks, and session-buddy. No hybrid “mix adapters/actions” mode will ship because no production workloads force backwards compatibility.
 1. **Lean adapters/actions:** `_base.py` scaffolding is retired; shared helpers live in `common.py` modules with lazy imports. New adapters/actions must follow that pattern and expose optional extras for heavyweight dependencies.
 1. **Secrets precedence:** Secret Manager adapters (GCP/AWS) and other providers take precedence over plain env vars in serverless profiles; env adapters remain as fallbacks for local dev/testing.
 1. **Observability posture:** Structlog JSON stays on `stdout`; `stderr` is reserved for crashes. Rich/loguru pretty output is allowed only for dev runs. Remote loader remains on `httpx` + `tenacity/aiobreaker`; adapters may wrap other HTTP libs when needed.

@@ -36,7 +36,7 @@ class RedisCacheAdapter:
     metadata = AdapterMetadata(
         category="cache",
         provider="redis",
-        factory="oneiric.adapters.redis.cache:RedisCacheAdapter",
+        factory="oneiric.adapters.cache.redis:RedisCacheAdapter",
         capabilities=["kv", "ttl", "metrics"],
         stack_level=50,
         priority=500,

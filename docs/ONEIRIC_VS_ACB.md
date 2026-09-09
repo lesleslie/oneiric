@@ -245,7 +245,7 @@ async with remote_loader.watch(refresh_interval=300):
 - ✅ **Runtime inspectors:** `uv run python -m oneiric.cli orchestrate --print-dag` prints the active DAG graph (nodes, dependencies, retry policy, queue metadata) without launching the orchestrator. `--events` surfaces event handlers (topics, concurrency, filters). Add `--inspect-json` to feed the payload straight into MCP dashboards.
 - ✅ **Telemetry snapshots:** every event dispatch and workflow run updates `.oneiric_cache/runtime_telemetry.json` (same shape as `remote_status.json`) with handler attempts, failures, and node-level latencies. Dashboards can consume it alongside remote telemetry with zero extra wiring.
 - ✅ **Structured exporters:** the dispatcher + DAG executor emit `runtime-event-telemetry` and `runtime-workflow-telemetry` logs that Logfire/OTLP adapters forward to Crackerjack dashboards automatically.
-- ✅ **Runbooks:** new repo guides (Crackerjack, Fastblocks, session-mgmt-mcp) walk through capturing inspector output + telemetry before deploying, so every parity review ships with reproducible artifacts.
+- ✅ **Runbooks:** new repo guides (Crackerjack, Fastblocks, session-buddy) walk through capturing inspector output + telemetry before deploying, so every parity review ships with reproducible artifacts.
 
 > **ACB counterpart:** relies on bespoke MCP dashboards; there’s no CLI inspector or portable JSON snapshot.
 
@@ -743,7 +743,7 @@ ______________________________________________________________________
 
 1. ✅ **Short term:** Hybrid approach (Oneiric adapters + existing ACB services) while parity work happens.
 1. ✅ **Medium term:** Execute the platform parity roadmap (events, task DAGs, service supervisors) with serverless-friendly architecture.
-1. ✅ **Long term:** Retire ACB once Oneiric reaches full feature coverage; all dependent apps (Crackerjack, FastBlocks, session-mgmt-mcp) standardize on Oneiric deployments.
+1. ✅ **Long term:** Retire ACB once Oneiric reaches full feature coverage; all dependent apps (Crackerjack, FastBlocks, session-buddy) standardize on Oneiric deployments.
 
 **The world needs both:** ACB for building apps today, Oneiric as the next-generation adapter resolution layer that makes those apps more observable and flexible.
 

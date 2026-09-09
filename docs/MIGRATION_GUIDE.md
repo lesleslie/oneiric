@@ -196,7 +196,7 @@ class RedisAdapter(Cache):
 
 ```python
 from oneiric.adapters import AdapterMetadata
-from oneiric.adapters.cache import CacheAdapter
+from oneiric.adapters.cache import RedisCacheAdapter
 from pydantic import BaseModel, Field
 
 class RedisSettings(BaseModel):
@@ -205,7 +205,7 @@ class RedisSettings(BaseModel):
     class Config:
         populate_by_name = True
 
-class RedisAdapter(CacheAdapter):
+class RedisAdapter(RedisCacheAdapter):
     settings: RedisSettings
 
     async def health_check(self) -> bool:
@@ -454,10 +454,10 @@ adapters:
 ### Load Remote Manifest
 
 ```python
-from oneiric.remote.loader import RemoteManifestLoader
+from oneiric.remote.loader import sync_remote_manifest
 from oneiric.remote.security import verify_manifest_signature
 
-loader = RemoteManifestLoader(
+loader = sync_remote_manifest(
     manifest_url="https://cdn.example.com/manifest.yaml",
     trusted_public_keys=["ed25519:..."],
 )
@@ -510,9 +510,9 @@ logger.info("cache-operation", key="user:123", operation="get")
 ### OpenTelemetry Tracing
 
 ```python
-from oneiric.core.observability import trace_resolution
+from oneiric.core.observability import traced_decision
 
-with trace_resolution("adapter", "cache"):
+with traced_decision("adapter", "cache"):
     handle = await bridge.use("cache")
     # Span created automatically with metadata
 ```

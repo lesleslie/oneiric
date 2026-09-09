@@ -12,7 +12,7 @@ topic: lifecycle
 
 **Last Updated:** 2025-12-06
 **Owner:** Platform Core & Runtime Team
-**Purpose:** Outline the remaining work to bring Oneiric's events, tasks, and service orchestration capabilities to full parity with ACB so Crackerjack, Fastblocks, and session-mgmt-mcp can run solely on Oneiric. Strategic priorities are summarized in \[\[STRATEGIC_ROADMAP|`docs/STRATEGIC_ROADMAP.md`\]\] and every milestone in this plan rolls up to \[\[IMPLEMENTATION_PHASE_TRACKER|`docs/IMPLEMENTATION_PHASE_TRACKER.md`\]\]. For the broader documentation index (architecture specs, runbooks, observability guides) see \[\[README|`docs/README.md`\]\].
+**Purpose:** Outline the remaining work to bring Oneiric's events, tasks, and service orchestration capabilities to full parity with ACB so Crackerjack, Fastblocks, and session-buddy can run solely on Oneiric. Strategic priorities are summarized in \[\[STRATEGIC_ROADMAP|`docs/STRATEGIC_ROADMAP.md`\]\] and every milestone in this plan rolls up to \[\[IMPLEMENTATION_PHASE_TRACKER|`docs/IMPLEMENTATION_PHASE_TRACKER.md`\]\]. For the broader documentation index (architecture specs, runbooks, observability guides) see \[\[README|`docs/README.md`\]\].
 
 ______________________________________________________________________
 
@@ -123,7 +123,7 @@ ______________________________________________________________________
 
 - ✅ **CLI enhancements:** `oneiric.cli orchestrate --print-dag` and `--events` now stream inspector payloads (human or `--inspect-json`) without booting the runtime loop. Inspectors surface DAG topology, queue metadata, handler concurrency, filters, and the supervisor’s pause/drain snapshot so MCP dashboards can render parity views.
 - ✅ **Telemetry:** a new `runtime_telemetry.json` sink (mirroring the remote telemetry writer) records event handler attempts + workflow node durations. The dispatcher + DAG engine feed the recorder, and Logfire/OTLP exporters pick up the structured logs for Crackerjack dashboards.
-- ✅ **Docs:** `docs/ONEIRIC_VS_ACB.md`, the parity plan, and repo-specific guides (Crackerjack, Fastblocks, session-mgmt-mcp) document how to capture DAG/Event inspectors, where telemetry lives, and how to replay the flows with `uv run python -m oneiric.cli`.
+- ✅ **Docs:** `docs/ONEIRIC_VS_ACB.md`, the parity plan, and repo-specific guides (Crackerjack, Fastblocks, session-buddy) document how to capture DAG/Event inspectors, where telemetry lives, and how to replay the flows with `uv run python -m oneiric.cli`.
 - ✅ **Event routing runbook:** `docs/examples/EVENT_ROUTING_OBSERVABILITY.md` now walks through the subscriber inspector, CLI `event emit`, and telemetry capture required for M1 proofs.
 - ✅ **Workflow/DAG observability:** `docs/examples/FASTBLOCKS_OBSERVABILITY.md` includes `workflow run` + `workflow enqueue` commands, checkpoint capture instructions, and telemetry artifacts so the M2 DAG runtime deliverables have concrete evidence.
 - ✅ **ChatOps:** the existing Slack/Teams/Webhook adapters stay wired to `workflow.notify`, and the new documentation walks platform teams through forwarding inspector + telemetry output into their ChatOps rooms alongside the notification payloads.

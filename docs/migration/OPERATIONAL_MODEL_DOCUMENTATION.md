@@ -31,7 +31,7 @@ ______________________________________________________________________
 
 **Primary Sources:**
 
-- `crackerjack/docs/MIGRATION_GUIDE_0.47.0.md`
+- `crackerjack/docs/MIGRATION_GUIDE.md`
 - `crackerjack/docs/reference/BREAKING_CHANGES.md`
 - `crackerjack/docs/archive/implementation-plans/ONEIRIC_MIGRATION_EXECUTION_PLAN.md`
 
@@ -131,7 +131,7 @@ ______________________________________________________________________
 **Primary Sources:**
 
 - `session-buddy/docs/reference/API_REFERENCE.md`
-- `mcp-common/health.py`
+- `mcp-common/mcp_common/health.py`
 
 ### Health Schema Primitives
 
@@ -905,11 +905,11 @@ ______________________________________________________________________
 
 ### Primary Sources
 
-- **Crackerjack Migration Guide:** `crackerjack/docs/MIGRATION_GUIDE_0.47.0.md`
+- **Crackerjack Migration Guide:** `crackerjack/docs/MIGRATION_GUIDE.md`
 - **Crackerjack Breaking Changes:** `crackerjack/docs/reference/BREAKING_CHANGES.md`
 - **Crackerjack Oneiric Plan:** `crackerjack/docs/archive/implementation-plans/ONEIRIC_MIGRATION_EXECUTION_PLAN.md`
 - **Session-Buddy API Reference:** `session-buddy/docs/reference/API_REFERENCE.md`
-- **MCP-Common Health:** `mcp-common/health.py`
+- **MCP-Common Health:** `mcp-common/mcp_common/health.py`
 
 ### Implementation References
 
