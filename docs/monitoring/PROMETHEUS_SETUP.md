@@ -39,7 +39,7 @@ This guide configures Prometheus to monitor Oneiric's resolution layer, lifecycl
 - **Alert Rules:** Critical and warning alerts for operational issues
 
 ```mermaid
-graph LR
+flowchart LR
     subgraph "Oneiric Application"
         App["Oneiric Runtime"]
         Metrics["Metrics Endpoint<br/>:8000/metrics"]
@@ -716,6 +716,52 @@ groups:
           summary: "{{ $value }} Oneiric components are paused"
           description: "Components in maintenance mode"
 ```
+
+______________________________________________________________________
+
+## Cloud Run / serverless
+
+The Prometheus scrape model assumes a long-lived pull target. Cloud Run is request-driven and short-lived, so a traditional pull scrape won't reliably work. Use **Google Managed Prometheus (GMP)** with the GMP collector sidecar, or push OTLP to Cloud Monitoring.
+
+### Option A: Google Managed Prometheus (recommended)
+
+GMP uses a sidecar collector that **pulls** from your service and forwards to Cloud Monitoring. No external scrape config is required because GMP is push-based from the sidecar.
+
+```yaml
+# deployment.yaml fragment — Cloud Run service with GMP sidecar
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/execution-environment: gen2
+  containers:
+    - name: oneiric
+      image: gcr.io/$PROJECT_ID/oneiric-runtime:$TAG
+      ports:
+        - name: http1
+          containerPort: 8080
+    - name: gmp-collector
+      image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.0.0  # placeholder
+      # See https://cloud.google.com/stackdriver/docs/managed-prometheus for the
+      # exact sidecar spec; the GMP collector scrapes http://localhost:8080/metrics
+      # and forwards to Cloud Monitoring.
+```
+
+Key points:
+
+- The orchestrator must expose `http_port=8080/metrics` (see [CLOUD_RUN_BUILD.md](../deployment/CLOUD_RUN_BUILD.md) → Ports).
+- GMP requires the `roles/monitoring.metricWriter` IAM role on the service account.
+- No Prometheus scrape config is needed in this mode.
+
+### Option B: OTLP exporter to Cloud Monitoring
+
+If GMP is not available, configure Oneiric to push OTLP metrics to a Collector that forwards to Cloud Monitoring. Set the OTLP endpoint via `OTEL_EXPORTER_OTLP_ENDPOINT` and grant `roles/monitoring.metricWriter`.
+
+### Option C: Self-hosted Prometheus with federation
+
+If you already run a Prometheus cluster elsewhere, add a federation endpoint and scrape Cloud Run via a public HTTPS endpoint behind IAP. This is the highest-friction option; prefer GMP.
+
+See [CLOUD_RUN_BUILD.md](../deployment/CLOUD_RUN_BUILD.md) for the Cloud Run deploy flow.
 
 ______________________________________________________________________
 

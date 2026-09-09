@@ -15,6 +15,14 @@ topic: adapter-architecture
 **Status:** Planning Document <!-- legacy status — see YAML frontmatter -->
 **Date:** 2025-11-26
 
+> **Terminology:** Throughout Oneiric docs:
+> - **adapter** = one *candidate* in the resolver with `domain='adapter'`
+> - **key** = the category (e.g., `cache`, `database`, `vector`)
+> - **provider** = the implementation (e.g., `redis`, `memcached` for cache adapters)
+> - **candidate** = the resolver-level term for an adapter entry
+>
+> When a doc says "provider" it means the `provider` field of `AdapterMetadata`.
+
 ______________________________________________________________________
 
 ## Current Adapter Landscape
@@ -604,7 +612,7 @@ class PineconeAdapter:
         self._index = None
         self._logger = get_logger("adapters.vector.pinecone")
 
-    async def initialize(self) -> None:
+    async def init(self) -> None:
         """Initialize Pinecone client and index."""
         try:
             self._client = Pinecone(api_key=self._settings.api_key)

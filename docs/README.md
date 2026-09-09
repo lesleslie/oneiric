@@ -10,8 +10,8 @@ topic: lifecycle
 
 # Oneiric Documentation
 
-**Version:** 0.3.3 (Audit: 95/100 at v0.2.0)
-**Last Updated:** 2025-12-19
+**Version:** 0.21.2 (Audit: 95/100 at v0.2.0)
+**Last Updated:** 2026-09-09
 
 ______________________________________________________________________
 
@@ -80,7 +80,7 @@ ______________________________________________________________________
 ## Documentation Structure
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph "Documentation Root"
         Essential["Essential Documents<br/>(architecture, comparison)"]
         Roadmap["Strategic Roadmap<br/>(priorities, execution tracks)"]
@@ -229,7 +229,7 @@ graph TB
 - **LOCAL_CLI_DEMO.md** - CLI usage examples (now covers ChatOps replay flags)
 - **CRACKERJACK_OBSERVABILITY.md** - Crackerjack DAG/event/telemetry capture workflow
 - **FASTBLOCKS_OBSERVABILITY.md** - Fastblocks parity inspector checklist + CLI commands
-- **SESSION_MGMT_MCP_OBSERVABILITY.md** - Session-Mgmt MCP observability and ChatOps transcript capture
+- **SESSION_BUDDY_OBSERVABILITY.md** - Session-Buddy observability and ChatOps transcript capture
 - **EVENT_ROUTING_OBSERVABILITY.md** - Event subscriber inspector + CLI emit proof for parity reviews
 - **FASTBLOCKS_PARITY_FIXTURE.yaml** - Shared manifest used by docs, CLI demos, and migration tests
 - **sample_remote_manifest.yaml / sample_remote_manifest_v2.yaml** - Canonical manifests with serverless profile toggles, Procfile-ready metadata, and full adapter coverage for local rehearsals
@@ -240,7 +240,7 @@ ______________________________________________________________________
 ## Key Documents by Use Case
 
 ```mermaid
-graph TD
+flowchart TD
     subgraph "New User Journey"
         NU1["1. ONEIRIC_VS_ACB.md<br/>Understand relationship"]
         NU2["2. NEW_ARCH_SPEC.md<br/>Learn architecture"]

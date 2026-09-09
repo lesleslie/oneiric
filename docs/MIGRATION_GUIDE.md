@@ -4,7 +4,7 @@ ______________________________________________________________________
 
 # Migration Guide: ACB to Oneiric
 
-**Last Updated:** 2025-02-02
+**Last Updated:** 2026-09-09
 **Target Audience:** Developers migrating from ACB to Oneiric
 **Prerequisites:** Familiarity with ACB adapter patterns
 
@@ -28,7 +28,7 @@ This guide helps you migrate applications from ACB to Oneiric. Oneiric extracts 
 ### Visual Concept Mapping
 
 ```mermaid
-graph LR
+flowchart LR
     subgraph "ACB Architecture"
         ACB1[depends.get]
         ACB2[Adapter]
@@ -60,7 +60,7 @@ Under ACB the application calls `depends.get(...)` to resolve an adapter directl
 **Oneiric (After):**
 
 ```mermaid
-graph LR
+flowchart LR
     APP[Application] --> RES[Resolver]
     RES --> LIFE[LifecycleManager]
     LIFE --> ADP[Adapter]
@@ -472,14 +472,14 @@ await loader.watch(resolver, refresh_interval=120)
 ### Sign Manifests
 
 ```bash
-# Generate keypair
-oneiric.cli manifest generate-keypair
+# Generate keypair (using openssl — `oneiric` does not have a generate-keypair subcommand)
+openssl genpkey -algorithm ed25519 -out private_key.pem
 
 # Sign manifest
-oneiric.cli manifest sign \
+oneiric manifest sign \
   --input manifest.yaml \
   --output manifest.signed.yaml \
-  --private-key-path private_key.pem
+  --private-key private_key.pem
 ```
 
 ______________________________________________________________________
@@ -521,16 +521,16 @@ with traced_decision("adapter", "cache"):
 
 ```bash
 # Explain why a component was chosen
-oneiric.cli explain adapter cache
+oneiric explain cache --domain adapter
 
 # Show all candidates (active + shadowed)
-oneiric.cli list adapter --shadowed
+oneiric list --domain adapter --shadowed
 
 # Show lifecycle status
-oneiric.cli status adapter cache --json
+oneiric status --domain adapter --key cache --json
 
 # Health check
-oneiric.cli health --probe
+oneiric health --probe
 ```
 
 ______________________________________________________________________

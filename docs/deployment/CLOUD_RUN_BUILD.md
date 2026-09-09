@@ -20,7 +20,7 @@ ______________________________________________________________________
 ## 1. Overview
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph "Development"
         Code["Oneiric Source Code"]
         Procfile["Procfile<br/>(web process)"]
@@ -159,12 +159,16 @@ gcloud run deploy oneiric-runtime \
   --image "$IMAGE" \
   --region us-central1 \
   --platform managed \
-  --allow-unauthenticated \
+  --no-allow-unauthenticated \
   --port 8080 \
   --max-instances 5 \
   --min-instances 0 \
   --set-env-vars "ONEIRIC_CONFIG=/workspace/config/serverless.yaml"
 ```
+
+**Ports:** `--port 8080` is the Cloud Run ingress port (required by Cloud Run; the platform sets `$PORT`). Oneiric's own HTTP server (`config.http_port`, default `8000`) is the orchestrator's metrics/healthz endpoint and must be set to `8080` in `serverless` profile for Cloud Run to receive traffic. If you want Prometheus to scrape, expose `http_port=8080/metrics` on the same port Cloud Run is listening on, or use Google Managed Prometheus with a sidecar (see PROMETHEUS_SETUP.md → Cloud Run).
+
+**Authentication:** Do NOT use `--allow-unauthenticated` because the service account has `roles/secretmanager.secretAccessor`. Recommended: invoke the Cloud Run service from Cloud Tasks with OIDC tokens, or front it with IAP / API Gateway.
 
 Recommendations:
 
@@ -181,7 +185,7 @@ For smaller services you can skip explicit image builds:
 gcloud run deploy oneiric-runtime \
   --source . \
   --region us-central1 \
-  --allow-unauthenticated \
+  --no-allow-unauthenticated \
   --set-env-vars "ONEIRIC_PROFILE=serverless" \
   --set-env-vars "ONEIRIC_CONFIG=/workspace/config/serverless.yaml"
 ```
@@ -196,7 +200,7 @@ ______________________________________________________________________
 ## 6. Secrets & Configuration
 
 ```mermaid
-graph TD
+flowchart TD
     subgraph "Configuration Precedence"
         SecretMgr["Secret Manager<br/>(Highest Priority)"]
         EnvVars["Environment Variables<br/>(Medium Priority)"]
@@ -313,7 +317,7 @@ ______________________________________________________________________
 
 The orchestrator writes `runtime_health.json` (with supervisor + lifecycle metadata) and `domain_activity.sqlite` under `.oneiric_cache/`; Cloud Run operators can tail that directory to confirm the Service Supervisor sees the same state exposed via the CLI.
 
-The orchestrator now exposes an HTTP server when `oneiric.cli orchestrate` runs with the default (or serverless) profile and a listening port is available (`$PORT`, `--http-port`). It serves:
+The orchestrator now exposes an HTTP server when `oneiric.cli orchestrate` runs with the default (or serverless) profile and a listening port is available (`$PORT`, `--http-port` or `config.http_port`). It serves:
 
 - `GET /healthz` – lightweight readiness probe for Cloud Run.
 - `POST /tasks/workflow` – Cloud Tasks callback that expects the JSON payload emitted by `workflow enqueue`. Point the Cloud Tasks adapter’s `http_target_url` at `https://<service>/tasks/workflow` so DAG runs begin as soon as tasks are delivered.
@@ -351,7 +355,7 @@ Reusing layer 'launcher'
 Successfully built image gcr.io/demo-project/oneiric-runtime:9f36c2a
 
 $ gcloud run deploy oneiric-runtime --image "$IMAGE" --region us-central1 \
-    --allow-unauthenticated \
+    --no-allow-unauthenticated \
     --set-env-vars "ONEIRIC_PROFILE=serverless" \
     --set-env-vars "ONEIRIC_CONFIG=/workspace/config/serverless.yaml"
 Deploying container...done.
