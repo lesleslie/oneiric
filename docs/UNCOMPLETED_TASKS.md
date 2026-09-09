@@ -14,13 +14,13 @@ topic: lifecycle
 **Project Version:** 0.3.3 (Audit: 95/100 at v0.2.0)
 **Status:** Production-ready with planned enhancements <!-- legacy status — see YAML frontmatter -->
 
-> **Test count consolidation (2026-09-09):** Earlier sections of this document reference a stale snapshot (705 tests / 79.4% coverage from 2025-12-19). Per the Phase 4 plan (`docs/superpowers/plans/2026-09-05-oneiric-phase4.md`), the canonical figures are **4196 tests passing, 98.04% coverage** (a +19pp margin over the 78.75% ratchet baseline).
+> **Test count consolidation (2026-09-09):** Earlier sections of this document reference a stale snapshot (705 tests / 79.4% coverage from 2025-12-19). Per the Phase 4 plan (`docs/superpowers/plans/2026-09-05-oneiric-phase4.md`), the canonical figures are **4217 tests passing, 98.75% coverage** (a +20pp margin over the 78.75% ratchet baseline; live numbers refreshed as of the latest test run).
 
 ______________________________________________________________________
 
 ## Executive Summary
 
-**Current State:** Oneiric is **production-ready** (95/100 audit score). Core features are implemented; use the Stage 5 audit for baseline metrics and `coverage.json` for the latest coverage snapshot.
+**Current State:** Oneiric is **production-ready** (95/100 audit score). Core features are implemented; use the Stage 5 audit for baseline metrics and `coverage.xml` for the latest coverage snapshot.
 
 **Uncompleted Items:** The items below are **future enhancements**, not blockers. The project is ready for controlled production deployment.
 
@@ -73,7 +73,7 @@ ______________________________________________________________________
 
 ### Priority: MEDIUM (Non-Blocking Issues)
 
-**Overall Test Status:** Phase 4 plan (v0.21.0) reports **4196 tests passing**, 5 skipped, 0 failures; coverage is **98.04%** (a +19pp margin over the 78.75% ratchet baseline). See `docs/superpowers/plans/2026-09-05-oneiric-phase4.md` for the consolidated metric and `coverage.json` for the latest snapshot. An older 2025-12-19 run recorded 705 passing tests at 79.4% coverage and is preserved below for historical context.
+**Overall Test Status:** Phase 4 plan (v0.21.0) reports **4217 tests passing**, 16 skipped, 2 deselected, 1 xfailed; coverage is **98.75%** (a +20pp margin over the 78.75% ratchet baseline). See `docs/superpowers/plans/2026-09-05-oneiric-phase4.md` for the consolidated metric and `coverage.xml` for the latest snapshot. An older 2025-12-19 run recorded 705 passing tests at 79.4% coverage and is preserved below for historical context.
 
 **Known Issues:** No active test failures observed in the latest run; validate in CI for environment-specific adapters.
 
@@ -113,9 +113,9 @@ Current remote manifest system is **fully functional**. These are convenience fe
 
 | Feature | Status | Priority | Notes |
 |---------|--------|----------|-------|
-| **Manifest pack command** | ✅ **COMPLETE** | HIGH | `oneiric.cli manifest pack` produces canonical JSON |
-| **Manifest export from registry** | ✅ **COMPLETE** | LOW | `oneiric.cli manifest export` generates manifests from builtin metadata |
-| **Manifest signing CLI** | ✅ **COMPLETE** | LOW | `oneiric.cli manifest sign` signs manifests with ED25519 keys |
+| **Manifest pack command** | ✅ **COMPLETE** | HIGH | `oneiric manifest pack` produces canonical JSON |
+| **Manifest export from registry** | ✅ **COMPLETE** | LOW | `oneiric manifest export` generates manifests from builtin metadata |
+| **Manifest signing CLI** | ✅ **COMPLETE** | LOW | `oneiric manifest sign` signs manifests with ED25519 keys |
 | **Manifest validation CLI** | ✅ **COMPLETE** | HIGH | Remote loader validates all manifests (will switch to httpx + tenacity) |
 | **Migration guide v1 → v2** | ⏳ **FUTURE** | LOW | Only needed if manifest schema changes |
 
@@ -208,7 +208,7 @@ None (all current items complete).
 
 **Strengths:**
 
-- ✅ **4196 tests passing, 98.04% coverage** (consolidated from Phase 4 plan; the older 705 tests / 76% run is preserved as historical context in section 3 above)
+- ✅ **4217 tests passing, 98.75% coverage** (consolidated from Phase 4 plan; the older 705 tests / 76% run is preserved as historical context in section 3 above)
 - ✅ All P0 security vulnerabilities resolved
 - ✅ Comprehensive operational documentation
 - ✅ All core features implemented and tested

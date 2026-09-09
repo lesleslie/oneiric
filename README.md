@@ -7,7 +7,7 @@
 
 **Explainable component resolution, lifecycle management, and remote delivery for Python 3.14+ runtimes**
 
-> **Status:** Production Ready (audit v0.20.x, current v0.21.2) — see `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for audit metrics and `coverage.json` for the latest coverage snapshot.
+> **Status:** Production Ready (audit v0.20.x, current v0.21.2) — see `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for audit metrics and `coverage.xml` for the latest coverage snapshot.
 
 Oneiric extracts the resolver/lifecycle core from ACB and turns it into a stand-alone platform. Register adapters, services, tasks, events, workflows, and actions; explain every decision; hot-swap providers; stream telemetry; replay workflow notifications; and hydrate capabilities from signed remote manifests.
 
@@ -42,14 +42,14 @@ ______________________________________________________________________
 
 ## Why Oneiric
 
-- **Deterministic resolver:** Explicit selections → stack order → priorities → registration order, with `resolver.explain` + `oneiric.cli --demo explain …` showing every reason and shadowed candidate.
+- **Deterministic resolver:** Explicit selections → stack order → priorities → registration order, with `resolver.explain` + `oneiric --demo explain …` showing every reason and shadowed candidate.
 - **Lifecycle orchestration:** `LifecycleManager` wraps activation → health → bind → cleanup plus rollback, swap latency histograms, and structured logging for every domain.
 - **Config watchers & supervisor:** `SelectionWatcher` uses watchfiles/polling to auto‑swap components, while the `ServiceSupervisor` enforces pause/drain state recorded in the SQLite `DomainActivityStore`.
-- **Remote manifests + packaging:** CDN/file manifests (ED25519 signatures + SHA256) hydrate all domains. Use `oneiric.cli manifest pack` to emit canonical JSON and `docs/examples/FASTBLOCKS_PARITY_FIXTURE.yaml` to rehearse parity in CI.
+- **Remote manifests + packaging:** CDN/file manifests (ED25519 signatures + SHA256) hydrate all domains. Use `oneiric manifest pack` to emit canonical JSON and `docs/examples/FASTBLOCKS_PARITY_FIXTURE.yaml` to rehearse parity in CI.
 - **Runtime orchestration:** `RuntimeOrchestrator` wires bridges, watchers, remote sync, workflow checkpoints (`WorkflowCheckpointStore`), scheduler HTTP server hooks, and structured telemetry snapshots.
 - **Event/workflow parity:** The event dispatcher handles topics, priorities, retry policies, filters, and exclusive fan-out; workflow bridges run DAGs inline, enqueue jobs, and expose queue metadata for Cloud Tasks/Pub/Sub adapters.
-- **Observability + ChatOps:** `oneiric.core.logging` (structlog), `RuntimeTelemetryRecorder` (`.oneiric_cache/runtime_telemetry.json`), runtime health snapshots, `oneiric.cli status/health/activity/remote-status`, and the `NotificationRouter` that forwards `workflow.notify` payloads to Slack/Teams/Webhooks from CLI or orchestrator runs. Monitoring adapters include Logfire, Sentry, OTLP, and Netdata for comprehensive system and application observability.
-- **Plugin/secrets tooling:** Entry-point discovery auto-loads adapters/services/tasks/events/workflows (`oneiric.cli plugins`), while `SecretsHook` caches provider results and `oneiric.cli secrets rotate` invalidates cached values.
+- **Observability + ChatOps:** `oneiric.core.logging` (structlog), `RuntimeTelemetryRecorder` (`.oneiric_cache/runtime_telemetry.json`), runtime health snapshots, `oneiric status/health/activity/remote-status`, and the `NotificationRouter` that forwards `workflow.notify` payloads to Slack/Teams/Webhooks from CLI or orchestrator runs. Monitoring adapters include Logfire, Sentry, OTLP, and Netdata for comprehensive system and application observability.
+- **Plugin/secrets tooling:** Entry-point discovery auto-loads adapters/services/tasks/events/workflows (`oneiric plugins`), while `SecretsHook` caches provider results and `oneiric secrets rotate` invalidates cached values.
 - **Documentation + runbooks:** `docs/README.md` indexes 40+ living documents (architecture, telemetry, deployment, observability checklists, cut-over validation) so operational workflows match the runtime.
 
 ______________________________________________________________________
@@ -134,7 +134,7 @@ ______________________________________________________________________
 - **Scheduler HTTP server:** Optional aiohttp server (`SchedulerHTTPServer`) processes Cloud Tasks callbacks via `WorkflowTaskProcessor`. CLI `--http-port/--no-http` toggles this path for serverless deployments.
 - **Telemetry + health:** `RuntimeTelemetryRecorder` tracks event dispatch + workflow execution stats; `RuntimeHealthSnapshot` writes orchestrator PID, watcher/remote state, per-domain registration counts, and activity/lifecycle snapshots to `.oneiric_cache/runtime_health.json`.
 - **Notification router:** `NotificationRouter` converts `workflow.notify` payloads into `NotificationMessage` objects and sends them through messaging adapters. CLI `action-invoke workflow.notify --workflow … --send-notification` uses the same route metadata as runtime workflows.
-- **Remote status:** `oneiric.cli remote-status` loads cached remote telemetry (`remote_status.json`) with sync timestamps, per-domain counts, and latency budget comparisons (the manifest URL comes from settings, not the cache file).
+- **Remote status:** `oneiric remote-status` loads cached remote telemetry (`remote_status.json`) with sync timestamps, per-domain counts, and latency budget comparisons (the manifest URL comes from settings, not the cache file).
 
 ______________________________________________________________________
 
@@ -256,7 +256,7 @@ ______________________________________________________________________
 
 - **Structured logging:** `oneiric.core.logging` wraps structlog with domain/key/provider context, JSON output, timestamper, optional sinks (stdout, stderr, file, HTTP), and tracer injection. See `docs/OBSERVABILITY_GUIDE.md`.
 - **Runtime telemetry:** `.oneiric_cache/runtime_telemetry.json` stores the last event dispatch + workflow execution (matched handlers, attempts, failures, per-node durations, retry counts). CLI inspectors update the same file so you can attach it to parity PRs.
-- **Health snapshots:** `.oneiric_cache/runtime_health.json` includes watcher state, orchestrator PID, remote metrics, and pause/drain snapshots for `oneiric.cli health`.
+- **Health snapshots:** `.oneiric_cache/runtime_health.json` includes watcher state, orchestrator PID, remote metrics, and pause/drain snapshots for `oneiric health`.
 - **Remote telemetry:** `.oneiric_cache/remote_status.json` stores sync telemetry (duration, per-domain registrations, success/failure counters) and powers `remote-status`.
 - **Notification evidence:** `NotificationRoute` metadata can be derived from workflow definitions or CLI overrides; CLI transcripts should accompany telemetry + DAG/event payloads as documented in `docs/examples/CRACKERJACK_OBSERVABILITY.md`, `FASTBLOCKS_OBSERVABILITY.md`, and `SESSION_BUDDY_OBSERVABILITY.md`.
 - **Parity/cut-over artifacts:** `docs/implementation/CUTOVER_VALIDATION_CHECKLIST.md` enumerates manifest snapshots, DAG/event JSON, telemetry archives, and ChatOps transcripts required before flipping Crackerjack/Fastblocks/Session-Buddy to Oneiric.
@@ -267,7 +267,7 @@ ______________________________________________________________________
 
 - **Schema:** `docs/REMOTE_MANIFEST_SCHEMA.md` defines v2 entries (capabilities, retry policies, DAG specs, platform constraints, documentation links).
 - **Security:** `oneiric.remote.security` enforces ED25519 signatures and SHA256 digests; manifest metadata includes ownership, secrets posture, and dependency hints.
-- **Packaging:** `oneiric.cli manifest pack --input docs/sample_remote_manifest.yaml --output build/manifest.json` produces canonical JSON for Cloud Run / serverless deploys.
+- **Packaging:** `oneiric manifest pack --input docs/sample_remote_manifest.yaml --output build/manifest.json` produces canonical JSON for Cloud Run / serverless deploys.
 - **Telemetry:** Remote sync writes `remote_status.json` (duration, latency budget, per-domain registrations). Pair `remote-status --json` with telemetry pipelines.
 - **Fixtures/tests:** `docs/examples/FASTBLOCKS_PARITY_FIXTURE.yaml` feeds both docs and `tests/integration/test_migration_parity.py`; update the fixture + parity guides together to keep CI evidence in sync.
 
@@ -305,7 +305,7 @@ uv run pytest tests/runtime -vv
 python -m crackerjack -a patch
 ```
 
-- Stage 5 audit (v0.20.x) recorded earlier-stage metrics; current Phase 4 plan (v0.21.0) reports **4196 tests passing, 98.04% coverage**, and no P0/P1 issues; see `coverage.json` for the current coverage snapshot.
+- Stage 5 audit (v0.20.x) recorded earlier-stage metrics; current Phase 4 plan (v0.21.0) reports **4217 tests passing, 98.75% coverage**, and no P0/P1 issues (live numbers refreshed as of the latest test run); see `coverage.xml` for the current coverage snapshot.
 - Runtime telemetry + notification router + supervisor paths are covered by `tests/runtime/test_telemetry.py`, `test_notifications.py`, `test_supervisor.py`, and CLI/integration suites.
 - `python -m crackerjack` mirrors the multi-repo gate used in Crackerjack/ACB/FastBlocks.
 

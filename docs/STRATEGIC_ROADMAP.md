@@ -39,7 +39,7 @@ ______________________________________________________________________
 | Aspect | Decision | References |
 |--------|----------|------------|
 | Runtime Target | Google Cloud Run (or equivalent) | `Procfile`, `README.md` (Operations section) |
-| Build Strategy | Prefer Cloud Native Buildpacks; `pack build`/`gcloud run deploy --source .`; Procfile-first bootstrap via `oneiric.cli orchestrate --profile serverless` | `Procfile`, `docs/deployment/CLOUD_RUN_BUILD.md` |
+| Build Strategy | Prefer Cloud Native Buildpacks; `pack build`/`gcloud run deploy --source .`; Procfile-first bootstrap via `oneiric orchestrate --profile serverless` | `Procfile`, `docs/deployment/CLOUD_RUN_BUILD.md` |
 | Config Source | Secret adapters (GCP default) + inline manifests (remote polling off by default in serverless profile) | `oneiric.core.config`, serverless plan |
 | Hot-Swap/Watchers | Optional; enabled for long-lived services (Crackerjack) but disabled in serverless profile to minimize cold starts | `SERVERLESS_AND_PARITY_EXECUTION_PLAN.md §3` |
 

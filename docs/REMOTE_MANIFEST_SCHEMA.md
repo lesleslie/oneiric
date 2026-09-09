@@ -415,7 +415,7 @@ entries:
     metadata:
       description: "Dispatches user webhooks"
 
-Event handlers inherit the same `retry_policy` structure as actions; Oneiric's dispatcher will retry the handler callback according to `attempts/base_delay/max_delay/jitter` and record the attempt count in CLI telemetry (`oneiric.cli event emit` output).
+Event handlers inherit the same `retry_policy` structure as actions; Oneiric's dispatcher will retry the handler callback according to `attempts/base_delay/max_delay/jitter` and record the attempt count in CLI telemetry (`oneiric event emit` output).
 
   # Workflow DAG example
   - domain: workflow
