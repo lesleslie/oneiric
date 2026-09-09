@@ -241,7 +241,9 @@ ______________________________________________________________________
 
 ## CLI Map
 
-- **Domain introspection:** `oneiric.cli list`, `status`, `explain`, `swap`, and `--shadowed` target adapters/services/tasks/events/workflows/actions with structured JSON output.
+> **Invocation:** The console script installed by `[project.scripts]` is **`oneiric`** — use `oneiric list`, `oneiric status`, etc. The module path `oneiric.cli` is also valid Python and reachable via `python -m oneiric.cli <sub>` (useful when the binary is not on `PATH`, e.g. dev installs and CI). Older docs and example transcripts occasionally write `oneiric.cli <sub>` as the CLI form; treat those as the binary form (`oneiric <sub>`) unless the line is clearly a Python invocation (`python -m oneiric.cli`, `from oneiric.cli import …`).
+
+- **Domain introspection:** `oneiric list`, `status`, `explain`, `swap`, and `--shadowed` target adapters/services/tasks/events/workflows/actions with structured JSON output.
 - **Runtime controls:** `pause`, `drain`, `activity`, `health --probe`, `supervisor-info`, and `status` manage/inspect pause-drain states, lifecycle metrics, and supervisor toggles; `activity` surfaces SQLite-backed counts for dashboards.
 - **Workflows & events:** `workflow plan`, `workflow run`, `workflow enqueue`, `event emit` interact with DAGs, queue adapters, and event dispatcher metadata; CLI accepts JSON context/metadata payloads for parity tests.
 - **Remote + manifests:** `remote-sync`, `remote-status`, `manifest pack` (YAML→JSON packaging), and `manifest` inspectors keep manifests + cached telemetry aligned. `docs/examples/FASTBLOCKS_PARITY_FIXTURE.yaml` plus `tests/integration/test_migration_parity.py` enforce parity.
@@ -256,8 +258,8 @@ ______________________________________________________________________
 - **Runtime telemetry:** `.oneiric_cache/runtime_telemetry.json` stores the last event dispatch + workflow execution (matched handlers, attempts, failures, per-node durations, retry counts). CLI inspectors update the same file so you can attach it to parity PRs.
 - **Health snapshots:** `.oneiric_cache/runtime_health.json` includes watcher state, orchestrator PID, remote metrics, and pause/drain snapshots for `oneiric.cli health`.
 - **Remote telemetry:** `.oneiric_cache/remote_status.json` stores sync telemetry (duration, per-domain registrations, success/failure counters) and powers `remote-status`.
-- **Notification evidence:** `NotificationRoute` metadata can be derived from workflow definitions or CLI overrides; CLI transcripts should accompany telemetry + DAG/event payloads as documented in `docs/examples/CRACKERJACK_OBSERVABILITY.md`, `FASTBLOCKS_OBSERVABILITY.md`, and `SESSION_MGMT_MCP_OBSERVABILITY.md`.
-- **Parity/cut-over artifacts:** `docs/implementation/CUTOVER_VALIDATION_CHECKLIST.md` enumerates manifest snapshots, DAG/event JSON, telemetry archives, and ChatOps transcripts required before flipping Crackerjack/Fastblocks/Session-Mgmt to Oneiric.
+- **Notification evidence:** `NotificationRoute` metadata can be derived from workflow definitions or CLI overrides; CLI transcripts should accompany telemetry + DAG/event payloads as documented in `docs/examples/CRACKERJACK_OBSERVABILITY.md`, `FASTBLOCKS_OBSERVABILITY.md`, and `SESSION_BUDDY_OBSERVABILITY.md`.
+- **Parity/cut-over artifacts:** `docs/implementation/CUTOVER_VALIDATION_CHECKLIST.md` enumerates manifest snapshots, DAG/event JSON, telemetry archives, and ChatOps transcripts required before flipping Crackerjack/Fastblocks/Session-Buddy to Oneiric.
 
 ______________________________________________________________________
 
