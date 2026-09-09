@@ -30,7 +30,7 @@ ______________________________________________________________________
 ## 2. Workstreams
 
 ```mermaid
-graph LR
+flowchart LR
     subgraph "Workstreams"
         WSA["WS-A: Serverless Profile<br/>Q1 2026"]
         WSB["WS-B: Orchestration Parity<br/>Q2 2026"]

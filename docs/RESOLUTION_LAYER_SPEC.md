@@ -31,7 +31,7 @@ This specification defines a shared discovery/registration/resolver layer for al
 Applied in order for each domain/key (highest wins):
 
 ```mermaid
-graph TD
+flowchart TD
     Start["resolve(domain, key)"]
     Check1{"Explicit Override<br/>in config/manifest?"}
     Apply1["Apply explicit selection"]
@@ -186,7 +186,7 @@ sequenceDiagram
 ## Domain Integration
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph "Resolver Layer"
         Resolver["Resolver<br/>(shared across all domains)"]
         CandidateRegistry["Candidate Registry<br/>(active + shadowed)"]
@@ -325,7 +325,7 @@ sequenceDiagram
 ## Compatibility & Migration
 
 ```mermaid
-graph LR
+flowchart LR
     Step1["Step 1: Implement Core<br/>In-memory resolver/registry"]
     Step2["Step 2: Route Adapters<br/>Tie into import_adapter/_find_adapter"]
     Step3["Step 3: Add Hot Swap<br/>Enable adapter hot swapping"]

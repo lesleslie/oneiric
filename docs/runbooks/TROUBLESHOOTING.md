@@ -51,7 +51,7 @@ ______________________________________________________________________
 ### Standard Approach (DEDUCE)
 
 ```mermaid
-graph TD
+flowchart TD
     Start["Issue Detected"]
     Define["D: Define Problem<br/>What is symptom?<br/>When did it start?"]
     Examine["E: Examine System<br/>Check logs, metrics, config"]
@@ -108,7 +108,7 @@ ______________________________________________________________________
 ## Quick Reference
 
 ```mermaid
-graph TD
+flowchart TD
     Issue["Issue Symptom"]
     Symptom1{"Component not<br/>resolving?"}
     Symptom2{"Swaps failing<br/>frequently?"}

@@ -44,7 +44,7 @@ Running Oneiric as a systemd service provides:
 - **Health Monitoring:** Watchdog support for hanging processes
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph "Linux System"
         Boot["Boot"]
         Systemd["systemd"]

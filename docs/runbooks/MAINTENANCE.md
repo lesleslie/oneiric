@@ -809,7 +809,7 @@ ______________________________________________________________________
 ### General Rollback Decision Tree
 
 ```mermaid
-graph TD
+flowchart TD
     Issue["Issue Detected During/After Maintenance"]
     Assess{"Assess Severity"}
     P0["P0: Critical<br/>Service down, data loss risk"]

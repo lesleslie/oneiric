@@ -99,7 +99,7 @@ oneiric remote-status
 ## Incident Response Workflow
 
 ```mermaid
-graph TD
+flowchart TD
     A[Incident Detected] --> B{Severity?}
     B -->|P0/P1| C[Page On-Call]
     B -->|P2/P3| D[Create Ticket]

@@ -13,7 +13,7 @@ topic: adapter-architecture
 Purpose: migrate all ACB adapters and action utilities into Oneiric's unified resolver/lifecycle stack without maintaining any legacy compatibility layers.
 
 ```mermaid
-graph LR
+flowchart LR
     subgraph "ACB Legacy"
         ACBAdapters["ACB Adapters<br/>(Legacy)"]
         ACBActions["ACB Actions<br/>(Legacy)"]

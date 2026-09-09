@@ -35,7 +35,7 @@ ______________________________________________________________________
 ### High-Level Architecture
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph "Your Application"
         APP[Application Code]
         CLI[Oneiric CLI]
@@ -85,7 +85,7 @@ graph TB
 ### Component Relationships
 
 ```mermaid
-graph LR
+flowchart LR
     A[Resolver] -->|registers| B[CandidateRegistry]
     B -->|resolves| C[Candidate]
     C -->|activates| D[LifecycleManager]
@@ -108,7 +108,7 @@ ______________________________________________________________________
 ### 4-Tier Precedence Flow
 
 ```mermaid
-graph TD
+flowchart TD
     START[Resolve Request] --> TIER1{Tier 1:<br/>Explicit Override?}
 
     TIER1 -->|Yes| SELECT[Selected Provider]
@@ -146,7 +146,7 @@ graph TD
 ### Score Calculation
 
 ```mermaid
-graph LR
+flowchart LR
     A[Candidate] --> B[Calculate Score]
 
     B --> C[override_score<br/>0 or 1]
@@ -242,7 +242,7 @@ sequenceDiagram
 ### Rollback Scenarios
 
 ```mermaid
-graph TD
+flowchart TD
     A["swap() called"] --> B[Instantiate New]
     B --> C{Success?}
 
@@ -277,7 +277,7 @@ ______________________________________________________________________
 ### Remote Sync Architecture
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph "Remote Sources"
         S3[(Amazon S3)]
         GCS[(Google Cloud Storage)]
@@ -318,7 +318,7 @@ graph TB
 ### Manifest Verification Flow
 
 ```mermaid
-graph TD
+flowchart TD
     A[Fetch Manifest] --> B{Cached?}
     B -->|Yes| C[Load from Cache]
     B -->|No| D[HTTP Fetch]
@@ -355,7 +355,7 @@ graph TD
 ### Security Layers
 
 ```mermaid
-graph LR
+flowchart LR
     A[Manifest URL] --> B[SSRF Protection<br/>Block Private IPs]
     B --> C[HTTP Fetch<br/>30s Timeout]
     C --> D[Digest Check<br/>SHA256]
@@ -457,7 +457,7 @@ sequenceDiagram
 ### Config Watcher Flow
 
 ```mermaid
-graph LR
+flowchart LR
     A[Config File] --> B[Watcher<br/>poll every 5s]
     B --> C{Changed?}
     C -->|No| B
@@ -553,7 +553,7 @@ sequenceDiagram
 ### Complete Observability Flow
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph "Events"
         E1[resolve event]
         E2[activate event]
@@ -617,7 +617,7 @@ xychart-beta
 ### Property-Based Testing Strategy
 
 ```mermaid
-graph TD
+flowchart TD
     A[Hypothesis Strategies] --> B[Text Generation]
     A --> C[Integer Generation]
     A --> D[List Generation]
@@ -648,7 +648,7 @@ ______________________________________________________________________
 ### Security Hardening Layers
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph "Layer 7: Application"
         APP[Domain-Agnostic Config<br/>Unified security model]
     end
@@ -740,7 +740,7 @@ ______________________________________________________________________
 ### Performance Optimization Flow
 
 ```mermaid
-graph TD
+flowchart TD
     A[Performance Issue?] --> B{Type of Problem?}
 
     B -->|Slow Resolution| C[Check Candidate Count]
@@ -779,7 +779,7 @@ graph TD
 ### Deployment Architecture Options
 
 ```mermaid
-graph TB
+flowchart TB
     APP[Oneiric Application]
 
     subgraph "Cloud Run (Google Cloud)"
@@ -800,7 +800,7 @@ graph TB
 ### Deployment Decision Tree
 
 ```mermaid
-graph TD
+flowchart TD
     A[Choose Deployment] --> B{Infrastructure?}
 
     B -->|GCP Cloud| C{Need Auto-scaling?}
@@ -830,7 +830,7 @@ ______________________________________________________________________
 ### Component Resolution Troubleshooting
 
 ```mermaid
-graph TD
+flowchart TD
     A[Component Not Found?] --> B{Error Type?}
 
     B -->|Returns None| C[Check Registration]
@@ -862,7 +862,7 @@ graph TD
 ### Hot-Swap Failure Troubleshooting
 
 ```mermaid
-graph TD
+flowchart TD
     A[Hot-Swap Failed?] --> B{Failure Point?}
 
     B -->|Factory Error| C[Check Provider Code]
@@ -901,7 +901,7 @@ graph TD
 ### Remote Sync Troubleshooting
 
 ```mermaid
-graph TD
+flowchart TD
     A[Remote Sync Failed?] --> B{Error Type?}
 
     B -->|Connection Error| C[Check Network]
@@ -944,7 +944,7 @@ ______________________________________________________________________
 ### CLI Command Structure
 
 ```mermaid
-graph TB
+flowchart TB
     A[oneiric CLI] --> B[list]
     A --> C[explain]
     A --> D[status]
@@ -1004,7 +1004,7 @@ sequenceDiagram
 ### Remote Sync Workflow
 
 ```mermaid
-graph LR
+flowchart LR
     A[Start Sync] --> B{Watch Mode?}
     B -->|No| C[One-time Sync]
     B -->|Yes| D[Background Loop]

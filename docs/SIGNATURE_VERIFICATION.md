@@ -11,7 +11,7 @@ Oneiric supports cryptographic signature verification for remote manifests using
 **Security Level:** CVSS 8.1 mitigation (Supply Chain Attack Prevention)
 
 ```mermaid
-graph LR
+flowchart LR
     subgraph "Publisher Side"
         Manifest["Manifest YAML/JSON"]
         PrivateKey["Private Key<br/>(ED25519)"]
@@ -50,7 +50,7 @@ graph LR
 ## Security Model
 
 ```mermaid
-graph TD
+flowchart TD
     Attacker["🎯 Attacker Goals"]
     Mitigated["✅ Mitigated by ED25519"]
     NotMitigated["⚠️ Not Mitigated<br/>(Out of Scope)"]

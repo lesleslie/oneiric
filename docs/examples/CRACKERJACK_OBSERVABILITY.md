@@ -13,7 +13,7 @@ topic: observability
 Oneiric ships the CLI + telemetry hooks we need to mirror ACB's MCP dashboards. Use this playbook before every Crackerjack parity review or deployment.
 
 ```mermaid
-graph TD
+flowchart TD
     Start["Parity Review Start"]
     DAG["1. Capture DAGs<br/>orchestrate --print-dag"]
     Events["2. Capture Events<br/>orchestrate --events --inspect-json"]

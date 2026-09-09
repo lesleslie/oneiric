@@ -13,7 +13,7 @@ topic: lifecycle
 This runnable example shows how to combine the CLI, remote manifest loader, and the new logging/resiliency knobs.
 
 ```mermaid
-graph TD
+flowchart TD
     Start["1. Setup Config<br/>cp demo_settings.toml"]
     Orchestrator["2. Start Orchestrator<br/>uv run python -m oneiric.cli orchestrate"]
     Inspect["3. Inspect Health<br/>health --probe"]

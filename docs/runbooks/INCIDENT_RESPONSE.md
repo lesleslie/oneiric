@@ -58,7 +58,7 @@ ______________________________________________________________________
 ## Incident Severity Levels
 
 ```mermaid
-graph TD
+flowchart TD
     Alert["Incident Detected"]
     Classify{"Classify Severity"}
     P0["P0 - Critical<br/>< 5min response<br/>Page immediately"]
@@ -113,7 +113,7 @@ ______________________________________________________________________
 ## General Incident Response Process
 
 ```mermaid
-graph LR
+flowchart LR
     subgraph "Phase 1: Acknowledge (< 5 min)"
         Ack1["Acknowledge alert<br/>in PagerDuty/AlertManager"]
         Ack2["Join incident channel<br/>Slack #incident-response"]

@@ -35,7 +35,7 @@ ______________________________________________________________________
 This guide provides production-ready Grafana dashboards for monitoring Oneiric's resolution layer, lifecycle operations, remote sync, and system health.
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph "Dashboard Hierarchy"
         Overview["Overview Dashboard<br/>Executive Summary"]
         DeepDive["Deep Dive Dashboards"]
