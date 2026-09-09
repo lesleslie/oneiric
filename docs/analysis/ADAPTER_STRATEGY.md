@@ -1,6 +1,12 @@
-______________________________________________________________________
-
-## status: draft role: implementation date: 2025-12-19 last_reviewed: 2026-07-17 superseded_by: null blocks_on: [] topic: adapter-architecture
+---
+status: draft
+role: implementation
+date: 2025-12-19
+last_reviewed: 2026-09-09
+superseded_by: null
+blocks_on: []
+topic: adapter-architecture
+---
 
 # Adapter Strategy & Roadmap
 

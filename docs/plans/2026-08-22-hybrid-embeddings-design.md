@@ -1,4 +1,12 @@
-## status: active role: implementation date: 2026-08-22 last_reviewed: 2026-08-22 superseded_by: null blocks_on: [] topic: embeddings
+---
+status: active
+role: implementation
+date: 2026-08-22
+last_reviewed: 2026-09-09
+superseded_by: null
+blocks_on: []
+topic: learning-pipeline
+---
 
 # Hybrid EmbeddingService Design
 

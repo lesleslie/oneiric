@@ -1,6 +1,12 @@
-______________________________________________________________________
-
-## status: shipped role: historical date: 2025-01-28 last_reviewed: 2026-07-17 superseded_by: null blocks_on: [] topic: lifecycle
+---
+status: shipped
+role: historical
+date: 2025-01-28
+last_reviewed: 2026-09-09
+superseded_by: null
+blocks_on: []
+topic: lifecycle
+---
 
 # Phase 5: Performance & Polish - Implementation Plan
 

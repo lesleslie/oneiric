@@ -1,16 +1,12 @@
-______________________________________________________________________
-
+---
 status: draft
 role: implementation
 date: 2026-07-16
-last_reviewed: 2026-07-16
+last_reviewed: 2026-09-09
 superseded_by: null
-blocks_on:
-
-- docs/schemas/document-frontmatter-v1.md
-  topic: convergence-control-plane
-
-______________________________________________________________________
+blocks_on: []
+topic: convergence-control-plane
+---
 
 # Plan Lifecycle Unification — Frontmatter Standardization Across Documentation Stores
 

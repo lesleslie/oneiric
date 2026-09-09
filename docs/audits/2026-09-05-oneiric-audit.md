@@ -1,3 +1,13 @@
+---
+status: complete
+role: historical
+date: 2026-09-05
+last_reviewed: 2026-09-09
+superseded_by: null
+blocks_on: []
+topic: lifecycle
+---
+
 # Oneiric Audit — 2026-09-05
 
 **Repo**: `/Users/les/Projects/oneiric` (version 0.21.1)

@@ -1,3 +1,13 @@
+---
+status: active
+role: canonical
+date: 2026-09-09
+last_reviewed: 2026-09-09
+superseded_by: null
+blocks_on: []
+topic: adapter-architecture
+---
+
 # Oneiric Action Kits — Catalog
 
 This is the canonical reference for every built-in action kit in

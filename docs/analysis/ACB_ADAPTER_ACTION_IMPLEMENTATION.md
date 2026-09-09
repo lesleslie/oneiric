@@ -1,6 +1,12 @@
-______________________________________________________________________
-
-## status: partial role: implementation date: 2026-01-21 last_reviewed: 2026-07-17 superseded_by: null blocks_on: [] topic: adapter-architecture
+---
+status: partial
+role: implementation
+date: 2026-01-21
+last_reviewed: 2026-09-09
+superseded_by: null
+blocks_on: []
+topic: adapter-architecture
+---
 
 # ACB Adapter & Action Migration Implementation Plan
 

@@ -1,6 +1,12 @@
-______________________________________________________________________
-
-## status: active role: canonical date: 2026-01-28 last_reviewed: 2026-07-17 superseded_by: null blocks_on: [] topic: observability
+---
+status: active
+role: canonical
+date: 2026-01-28
+last_reviewed: 2026-09-09
+superseded_by: null
+blocks_on: []
+topic: observability
+---
 
 # OTel Storage Adapter - Performance Tuning Guide
 

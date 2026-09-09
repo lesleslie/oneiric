@@ -1,3 +1,13 @@
+---
+status: active
+role: canonical
+date: 2026-09-09
+last_reviewed: 2026-09-09
+superseded_by: null
+blocks_on: []
+topic: lifecycle
+---
+
 # Oneiric Memory Architecture
 
 > **Status**: Living document. Updated whenever the settings schema, adapter catalog, lifecycle contract, or CLI surface change.

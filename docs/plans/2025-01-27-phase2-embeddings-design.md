@@ -1,6 +1,12 @@
-______________________________________________________________________
-
-## status: active role: implementation date: 2025-01-27 last_reviewed: 2026-07-17 superseded_by: null blocks_on: [] topic: learning-pipeline
+---
+status: active
+role: implementation
+date: 2025-01-27
+last_reviewed: 2026-09-09
+superseded_by: null
+blocks_on: []
+topic: learning-pipeline
+---
 
 # Phase 2: EmbeddingService Design
 
