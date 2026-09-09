@@ -10,9 +10,11 @@ topic: lifecycle
 
 # Oneiric: Uncompleted Tasks & Future Enhancements
 
-**Last Updated:** 2025-12-19
+**Last Updated:** 2026-09-09
 **Project Version:** 0.3.3 (Audit: 95/100 at v0.2.0)
 **Status:** Production-ready with planned enhancements <!-- legacy status — see YAML frontmatter -->
+
+> **Test count consolidation (2026-09-09):** Earlier sections of this document reference a stale snapshot (705 tests / 79.4% coverage from 2025-12-19). Per the Phase 4 plan (`docs/superpowers/plans/2026-09-05-oneiric-phase4.md`), the canonical figures are **4196 tests passing, 98.04% coverage** (a +19pp margin over the 78.75% ratchet baseline).
 
 ______________________________________________________________________
 
@@ -71,7 +73,7 @@ ______________________________________________________________________
 
 ### Priority: MEDIUM (Non-Blocking Issues)
 
-**Overall Test Status:** Latest local run (2025-12-19) completed **705 passing tests**, **5 skipped**, **0 failures**. Coverage is **79.4%**; see `coverage.json` or re-run `uv run pytest` for the latest counts. The Stage 5 audit recorded 18 non-blocking failures that are no longer present in current runs.
+**Overall Test Status:** Phase 4 plan (v0.21.0) reports **4196 tests passing**, 5 skipped, 0 failures; coverage is **98.04%** (a +19pp margin over the 78.75% ratchet baseline). See `docs/superpowers/plans/2026-09-05-oneiric-phase4.md` for the consolidated metric and `coverage.json` for the latest snapshot. An older 2025-12-19 run recorded 705 passing tests at 79.4% coverage and is preserved below for historical context.
 
 **Known Issues:** No active test failures observed in the latest run; validate in CI for environment-specific adapters.
 
@@ -99,7 +101,7 @@ These are **operational documentation** tasks, not code features:
 
 **Impact:** None - all critical operational docs are complete.
 
-**Recommendation:** ACB deprecation notices should wait until Oneiric has real-world adoption (Q2 2025+).
+**Recommendation:** ACB deprecation notices should wait until Oneiric has real-world adoption — status pending re-verification.
 
 ______________________________________________________________________
 
@@ -206,8 +208,7 @@ None (all current items complete).
 
 **Strengths:**
 
-- ✅ 705 passing tests (5 skipped)
-- ✅ 76% coverage (latest run)
+- ✅ **4196 tests passing, 98.04% coverage** (consolidated from Phase 4 plan; the older 705 tests / 76% run is preserved as historical context in section 3 above)
 - ✅ All P0 security vulnerabilities resolved
 - ✅ Comprehensive operational documentation
 - ✅ All core features implemented and tested
@@ -219,7 +220,7 @@ None (all current items complete).
 
 **Recommendation:** Deploy to production with monitoring. No blockers.
 
-### For v0.2.x Patch Release: ⏳ **TEST HARDENING**
+### For v0.2.x Patch Release: ✅ **TEST HARDENING** — completed
 
 **Goals:**
 
@@ -227,17 +228,17 @@ None (all current items complete).
 1. Improve CI test isolation
 1. Clean up pytest collection warnings
 
-**Priority:** Medium (quality improvement, not functionality)
+**Priority:** Medium (quality improvement, not functionality) — closed as part of subsequent quality work; see the Phase 4 plan for current test counts.
 
-### For v0.3.0 Feature Release (Q1 2025): ⏳ **QUALITY ENHANCEMENTS**
+### For v0.3.0 (Q1 2025) — QUALITY ENHANCEMENTS: shipped in v0.21.2
 
 **Goals:**
 
 1. Load testing + durability follow-ups based on production feedback
 
-**Priority:** Low (nice to have, not critical)
+**Priority:** Low (nice to have, not critical) — load testing shipped in `docs/LOAD_TESTING.md` (see Phase 4 plan coverage).
 
-### For v1.0 Stable Release (Q2 2025): ⏳ **REAL-WORLD VALIDATION**
+### For v1.0 (Q2 2025) — REAL-WORLD VALIDATION: status pending
 
 **Goals:**
 
@@ -246,7 +247,7 @@ None (all current items complete).
 1. Performance optimization based on usage patterns
 1. Advanced features based on user requests
 
-**Priority:** Evaluate based on v0.2.x/v0.3.0 adoption
+**Priority:** Evaluate based on v0.21.x / v1.0 adoption — v1.0 has not yet been tagged; current state is the 0.21.2 production-ready release.
 
 ______________________________________________________________________
 

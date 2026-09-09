@@ -4,7 +4,7 @@ ______________________________________________________________________
 
 # Oneiric Strategic Roadmap
 
-**Last Updated:** 2025-12-09
+**Last Updated:** 2026-09-09
 **Audience:** Platform Core, Runtime Team, Docs Team
 **Purpose:** Provide a concise, up-to-date map of Oneiric’s end-state vision, near-term priorities, and how existing plans fit together so contributors don’t have to chase multiple documents. Progress for every track is mirrored in \[\[IMPLEMENTATION_PHASE_TRACKER|`docs/IMPLEMENTATION_PHASE_TRACKER.md`\]\], while detailed execution steps live in \[\[SERVERLESS_AND_PARITY_EXECUTION_PLAN|`docs/implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md`\]\] and \[\[ORCHESTRATION_PARITY_PLAN|`docs/implementation/ORCHESTRATION_PARITY_PLAN.md`\]\]. For a full documentation index (architecture, reference, runbooks), start with \[\[README|`docs/README.md`\]\].
 
@@ -89,10 +89,10 @@ ______________________________________________________________________
 ## 4. Milestones
 
 ```mermaid
-graph LR
+flowchart LR
     M0["M0: Baseline<br/>✅ Complete<br/>Adapter remediation started"]
-    M1["M1: Serverless-ready<br/>Target: Q1 2026<br/>Procfile + buildpack docs"]
-    M2["M2: Platform parity<br/>Target: Q2 2026<br/>Events + DAGs + supervisors"]
+    M1["M1: Serverless-ready<br/>Completed v0.21.x<br/>Procfile + buildpack docs"]
+    M2["M2: Platform parity<br/>Completed v0.21.x<br/>Events + DAGs + supervisors"]
     M3["M3: Cut-over<br/>Target: TBD<br/>ACB archived"]
 
     M0 -->|"70% complete"| M1
@@ -108,8 +108,8 @@ graph LR
 **Milestone Details:**
 
 1. **M0 – Baseline (Complete):** Adapter remediation underway, HTTP regression fixed, remote tests restored.
-1. **M1 – Serverless-ready runtime (Target Q1 2026):** Procfile + buildpack docs, resolver/serverless profile, lazy import guards.
-1. **M2 – Platform parity (Target Q2 2026):** Event routing, task DAGs, service supervisors implemented in Oneiric; parity tests run.
+1. **M1 – Serverless-ready runtime (completed in v0.21.x, was targeted Q1 2026):** Procfile + buildpack docs (`Procfile`, `Procfile.cloudrun`, `docs/deployment/CLOUD_RUN_BUILD.md`), resolver/serverless profile, lazy import guards.
+1. **M2 – Platform parity (completed in v0.21.x, was targeted Q2 2026):** Event routing, task DAGs (`oneiric/runtime/dag.py`), service supervisors (`oneiric/runtime/supervisor.py`) implemented in Oneiric; parity tests run.
 1. **M3 – Cut-over (TBD):** Crackerjack, FastBlocks, session-buddy move to Oneiric-only deployments; ACB archived.
 
 ______________________________________________________________________

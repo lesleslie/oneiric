@@ -7,7 +7,7 @@
 
 **Explainable component resolution, lifecycle management, and remote delivery for Python 3.14+ runtimes**
 
-> **Status:** Production Ready (audit v0.2.0, current v0.21.2) — see `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for audit metrics and `coverage.json` for the latest coverage snapshot.
+> **Status:** Production Ready (audit v0.20.x, current v0.21.2) — see `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for audit metrics and `coverage.json` for the latest coverage snapshot.
 
 Oneiric extracts the resolver/lifecycle core from ACB and turns it into a stand-alone platform. Register adapters, services, tasks, events, workflows, and actions; explain every decision; hot-swap providers; stream telemetry; replay workflow notifications; and hydrate capabilities from signed remote manifests.
 
@@ -57,7 +57,7 @@ ______________________________________________________________________
 ## Domain Coverage & Built-ins
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph "Shared Infrastructure"
         Resolver["Resolver<br/>(4-tier precedence)"]
         Lifecycle["LifecycleManager<br/>(swap + rollback)"]
@@ -303,7 +303,7 @@ uv run pytest tests/runtime -vv
 python -m crackerjack -a patch
 ```
 
-- Stage 5 audit (v0.2.0) reported 526 tests, 83 % coverage, and no P0/P1 issues; see `coverage.json` for the current coverage snapshot.
+- Stage 5 audit (v0.20.x) recorded earlier-stage metrics; current Phase 4 plan (v0.21.0) reports **4196 tests passing, 98.04% coverage**, and no P0/P1 issues; see `coverage.json` for the current coverage snapshot.
 - Runtime telemetry + notification router + supervisor paths are covered by `tests/runtime/test_telemetry.py`, `test_notifications.py`, `test_supervisor.py`, and CLI/integration suites.
 - `python -m crackerjack` mirrors the multi-repo gate used in Crackerjack/ACB/FastBlocks.
 

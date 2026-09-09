@@ -4,7 +4,7 @@ ______________________________________________________________________
 
 # Oneiric vs ACB: Comprehensive Comparison & Strategy
 
-**Last Updated:** 2025-12-19
+**Last Updated:** 2026-09-09
 **Oneiric Version:** 0.3.3 (Audit: 95/100 at v0.2.0)
 **ACB Version:** 0.31.10 (Production: 92/100)
 
@@ -19,7 +19,7 @@ ______________________________________________________________________
 ### Quick Comparison
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph "Feature Comparison"
         Maturity["Maturity<br/>Oneiric: 95/100 vs ACB: 92/100"]
         Production["Production Ready<br/>Both ✅"]
@@ -403,7 +403,7 @@ ______________________________________________________________________
 ### Hybrid Architecture
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph "Application Layer"
         App["Your Application"]
     end
@@ -491,7 +491,7 @@ ______________________________________________________________________
 ## Migration Strategy
 
 ```mermaid
-graph LR
+flowchart LR
     Start["Current State<br/>(ACB Only)"]
     Phase1["Phase 1: Adapters<br/>2-3 weeks, Low Risk"]
     Decision1{"Value<br/>Achieved?"}
@@ -666,14 +666,14 @@ ______________________________________________________________________
 
 **Immediate:** Continue using ACB (stable, proven)
 
-**Q1 2025:** Pilot Oneiric migration for adapters only
+**Q1 2025 (completed):** Pilot Oneiric migration for adapters
 
 - Migrate cache, storage, database adapters
 - Keep ACB DI for services
 - Keep ACB events (if using FastBlocks)
 - **Result:** Best of both worlds
 
-**Q2 2025:** Evaluate results
+**Q2 2025 (completed):** Evaluation completed; outcomes recorded in the Migration Track sections of this document and the Phase 4 plan (`docs/superpowers/plans/2026-09-05-oneiric-phase4.md`).
 
 - If successful: Expand to more projects
 - If issues: Revert and wait for Oneiric 1.0

@@ -16,7 +16,7 @@ This checklist captures the artifacts every repo must produce before we switch i
 
 - **Remote manifest:** `docs/examples/FASTBLOCKS_PARITY_FIXTURE.yaml` mirrors the Fastblocks workflows (event trigger, two task nodes, notification action, and queue adapter). The same manifest can be consumed by ACB and Oneiric so dashboards show identical DAGs. `tests/integration/test_migration_parity.py` consumes the fixture so CI confirms the same registration counts documented here.
 - **Test harness:** `uv run pytest tests/integration/test_migration_parity.py` loads the manifest via `RuntimeOrchestrator.sync_remote` and asserts each domain is registered plus the DAG metadata is refreshed. Re-run this test after modifying the fixture or parity plan.
-- **Runtime telemetry:** The orchestrator writes `.oneiric_cache/runtime_telemetry.json`. Copy this file into the repo-specific observability folders (Crackerjack/Fastblocks/Session-Mgmt) to attach telemetry snapshots to PRs.
+- **Runtime telemetry:** The orchestrator writes `.oneiric_cache/runtime_telemetry.json`. Copy this file into the repo-specific observability folders (Crackerjack/Fastblocks/Session-Buddy) to attach telemetry snapshots to PRs.
 
 ## 2. Validation Steps
 
@@ -35,7 +35,7 @@ Perform the following before declaring a repo ready for cut-over:
 |------|------------------|----------------|-------------------|--------|
 | Crackerjack | Pending | Pending | Pending | 🟡 Needs validation |
 | Fastblocks | Pending | Pending | Pending | 🟡 Needs validation |
-| session-mgmt-mcp | Pending | Pending | Pending | 🟡 Needs validation |
+| session-buddy | Pending | Pending | Pending | 🟡 Needs validation |
 
 Update the table (✅ / 🟢 Ready) once the artifacts above are attached to the repo’s migration PR.
 

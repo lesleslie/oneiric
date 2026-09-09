@@ -1,5 +1,5 @@
 ---
-status: active
+status: complete
 role: implementation
 date: 2025-01-26
 last_reviewed: 2026-09-09

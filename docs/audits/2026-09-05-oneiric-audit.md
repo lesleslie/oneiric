@@ -10,11 +10,13 @@ topic: lifecycle
 
 # Oneiric Audit — 2026-09-05
 
-**Repo**: `/Users/les/Projects/oneiric` (version 0.21.1)
+**Repo**: `/Users/les/Projects/oneiric` (current version 0.21.2; audit was performed at **v0.21.1**, the live release on 2026-09-05)
 **Scope**: production bugs + coverage gaps + code smells + documentation drift
 **Method**: 4 parallel inventory subagents (coverage, bugs, doc-drift, smells)
 **Status**: read-only inventory — no code changes proposed in this document
 **Sister audit**: `mahavishnu/docs/superpowers/specs/2026-09-05-mcp-common-phase1-design.md`
+
+> **Note on historical version references:** The findings below reference `0.21.0` / `0.21.1` because they describe the state of the repo at the time the audit was conducted (v0.21.1). Subsequent fixes (e.g., the version bump to 0.21.2 in `pyproject.toml`) are referenced elsewhere in the Phase 4 plan.
 
 ______________________________________________________________________
 

@@ -14,7 +14,7 @@ This guide explains how to configure Oneiric's structured logging, context helpe
 the resiliency controls for remote manifest fetches, and the runtime telemetry + ChatOps notification helpers introduced in 0.2.0.
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph "Logging Pipeline"
         Logs["Application Logs"]
         Struct["structlog Processors"]
@@ -152,7 +152,7 @@ the actual secret material stays in Secret Manager or a secrets adapter.
 - Both commands exit immediately, making them safe to run in CI to snapshot runtime wiring before deploying.
 - Every dispatch/run updates `.oneiric_cache/runtime_telemetry.json` with the last event dispatch + workflow execution (handler attempts/failures, per-node durations). CLI inspectors trigger the same writes so you can capture artifacts without letting the orchestrator loop run indefinitely.
 - Forward the telemetry JSON to Logfire/OTLP collectors if you want historical graphs without scraping CLI commands; the runtime recorder also emits structured `runtime-event-telemetry` and `runtime-workflow-telemetry` logs for Logfire dashboards.
-- For migration evidence, copy `.oneiric_cache/runtime_telemetry.json` into the repo-specific folders under `docs/examples/` (see the Crackerjack/Fastblocks/Session‑Mgmt guides). `tests/integration/test_migration_parity.py` consumes the same fixture to ensure telemetry + manifests stay aligned.
+- For migration evidence, copy `.oneiric_cache/runtime_telemetry.json` into the repo-specific folders under `docs/examples/` (see the Crackerjack/Fastblocks/Session-Buddy guides). `tests/integration/test_migration_parity.py` consumes the same fixture to ensure telemetry + manifests stay aligned.
 
 ### CLI Notification Replay
 
@@ -181,7 +181,7 @@ the actual secret material stays in Secret Manager or a secrets adapter.
 - `oneiric.cli activity --json` outputs per-domain pause/drain counts along with
   the individual entries, making it trivial to chart how many services are in a
   maintenance state at any given time.
-- Pair those commands with the repo-specific parity guides under `docs/examples/*_OBSERVABILITY.md`; they spell out which artifacts (DAG JSON, event JSON, telemetry, ChatOps transcript) must accompany Crackerjack/Fastblocks/Session‑Mgmt rehearsals.
+- Pair those commands with the repo-specific parity guides under `docs/examples/*_OBSERVABILITY.md`; they spell out which artifacts (DAG JSON, event JSON, telemetry, ChatOps transcript) must accompany Crackerjack/Fastblocks/Session-Buddy rehearsals.
 
 ### Tracking Adapter/Action Migration
 

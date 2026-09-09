@@ -17,7 +17,7 @@ services, tasks, events, workflows) plug into the same resolver and lifecycle.
 ## Top-Level Packages
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph "Core Layer"
         Runtime["core/runtime<br/>Context, DI, TaskGroup"]
         Resolution["core/resolution<br/>Candidate model, Resolver"]
@@ -82,7 +82,7 @@ graph TB
 ## Candidate Model (shared)
 
 ```mermaid
-graph LR
+flowchart LR
     subgraph "Candidate Structure"
         Candidate["Candidate"]
         Domain["domain"]
@@ -126,7 +126,7 @@ graph LR
 ### Resolution Precedence (4-tier)
 
 ```mermaid
-graph TD
+flowchart TD
     Start["Resolver.resolve(domain, key)"]
     Tier1["Tier 1: Explicit Config Override<br/>(settings/*.yaml selections)"]
     Tier2["Tier 2: Package-Inferred Priority<br/>(ONEIRIC_STACK_ORDER env var)"]
@@ -164,7 +164,7 @@ graph TD
 ## Domain Mapping
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph "Adapter Domain"
         AdapterKey["key = category<br/>(cache, queue, storage)"]
         AdapterProvider["provider = adapter name<br/>(redis, sqs, s3)"]
@@ -308,7 +308,7 @@ sequenceDiagram
 ## Discovery Sources
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph "Discovery Mechanisms"
         Local["Local Package Discovery<br/>register_pkg()"]
         EntryPoint["Entry Points Discovery<br/>enumerate_entry_points()"]
@@ -364,7 +364,7 @@ graph TB
 
 - Typed settings; `settings/*.yaml` (or TOML) for explicit overrides (domain/key →
   provider). Remote manifest location configurable. Stack order configurable via env
-  (e.g., `STACK_ORDER=sites,splashstand,fastblocks,oneiric`).
+  (e.g., `STACK_ORDER=sites,fastblocks,oneiric`).
 
 ## CLI/Diagnostics
 
@@ -376,7 +376,7 @@ graph TB
 - No legacy constraints. Keep existing adapter behavior by wrapping implementations
   with lifecycle/resolver shims; actions utilities remain, with DI/context bindings.
 
-## Integration Guidance (fastblocks, crackerjack, splashstand, session-mgmt-mcp)
+## Integration Guidance (fastblocks, crackerjack, session-buddy)
 
 - Feasibility: high. Existing adapter modules can be registered as candidates; their
   categories map directly. Services/tasks/events/workflows integrate by defining
@@ -385,8 +385,8 @@ graph TB
 ### Migration Steps
 
 ```mermaid
-graph LR
-    Step1["Step 1: Add Stack Priority Map<br/>STACK_ORDER env or config<br/>(sites → splashstand → fastblocks → oneiric)"]
+flowchart LR
+    Step1["Step 1: Add Stack Priority Map<br/>STACK_ORDER env or config<br/>(sites → fastblocks → oneiric)"]
     Step2["Step 2: Register Packages<br/>Use register_pkg()<br/>(no old globals)"]
     Step3["Step 3: Wrap Adapters<br/>Add lifecycle shims<br/>Declare stack_level/provider metadata"]
     Step4["Step 4: Bind Domains<br/>Use bridges for services/tasks/events/workflows<br/>Remove legacy registration"]
@@ -408,7 +408,7 @@ graph LR
 **Migration Steps:**
 
 1. Add stack priority map per app (`STACK_ORDER` env or config; e.g., sites →
-   splashstand → fastblocks → oneiric).
+   sites → fastblocks → oneiric).
 1. Register packages via new `register_pkg` (no old globals).
 1. Wrap adapters with lifecycle shims; declare stack_level/provider metadata.
 1. Bind services/tasks/events/workflows through their bridges; remove legacy
@@ -418,7 +418,7 @@ graph LR
 
 **Strengthening Apps:**
 
-- Deterministic overrides across the stack (sites → splashstand → fastblocks → oneiric).
+- Deterministic overrides across the stack (sites → fastblocks → oneiric).
 - Hot swap for safer rollout and config-driven changes.
 - Unified observability and health/reporting.
 - Plugin/remote delivery to share components across repos without copy/paste.

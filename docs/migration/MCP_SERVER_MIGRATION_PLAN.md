@@ -116,7 +116,7 @@ All MCP server projects remain in their **own directories** as sibling repos und
 ### Dependency Analysis
 
 ```mermaid
-graph TD
+flowchart TD
     subgraph CurrentState
         excalidraw[excalidraw-mcp] -->|Node.js| express
         excalidraw --> websocket
@@ -185,7 +185,7 @@ graph TD
 **Runtime cache + instance isolation (Crackerjack):**
 
 - Oneiric uses `.oneiric_cache/` for runtime snapshots; multi-instance uses `--instance-id` with per-instance cache folders (e.g., `.oneiric_cache/worker-1/server.pid`). (See `crackerjack/docs/reference/BREAKING_CHANGES.md`)
-- WebSocket monitoring is **removed**; dashboards are replaced by Oneiric snapshots + external observability tools. (See `crackerjack/docs/reference/BREAKING_CHANGES.md`, `crackerjack/docs/archive/implementation-plans/ONEIRIC_MIGRATION_EXECUTION_PLAN.md`)
+- **Migrated MCP servers should not include custom WebSocket monitoring**; dashboards are replaced by Oneiric snapshots + external observability tools. (Oneiric itself does ship WebSocket primitives for high-throughput backends; the migration rule is per-server, not universal.) (See `crackerjack/docs/reference/BREAKING_CHANGES.md`, `crackerjack/docs/archive/implementation-plans/ONEIRIC_MIGRATION_EXECUTION_PLAN.md`)
 
 **Health data contract (Session-Buddy / mcp-common):**
 
@@ -219,7 +219,7 @@ ______________________________________________________________________
 
 **Observability:**
 
-- Telemetry is provided by Oneiric; no custom WebSocket monitoring is expected in migrated servers. (See `crackerjack/docs/reference/BREAKING_CHANGES.md`, `crackerjack/docs/archive/implementation-plans/ONEIRIC_MIGRATION_EXECUTION_PLAN.md`)
+- **Migrated MCP servers should not include custom WebSocket monitoring**; telemetry is provided by Oneiric + the per-repo parity guides. (See `crackerjack/docs/reference/BREAKING_CHANGES.md`, `crackerjack/docs/archive/implementation-plans/ONEIRIC_MIGRATION_EXECUTION_PLAN.md`)
 
 ### CLI + Runtime Cache Contract (Per-Repo)
 
