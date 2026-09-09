@@ -1,6 +1,10 @@
-______________________________________________________________________
-
-## status: active role: canonical date: 2026-07-17 last_reviewed: 2026-07-17 superseded_by: null blocks_on: [] topic: lifecycle
+---
+title: Oneiric Topic Vocabulary
+status: active
+role: canonical
+topic: lifecycle
+last_reviewed: 2026-09-09
+---
 
 # Topic Vocabulary v1
 
