@@ -306,6 +306,8 @@ flowchart TD
 
 ### For Developers
 
+1. **[guides/custom-adapter.md](guides/custom-adapter.md)** - Writing a custom adapter (entry-point plugin pattern)
+1. **[examples/plugins/hello_oneiric_plugin/](examples/plugins/hello_oneiric_plugin/)** - Runnable plugin example (entry-points, `AdapterMetadata`, `Candidate`)
 1. **[RESOLUTION_LAYER_SPEC.md](RESOLUTION_LAYER_SPEC.md)** - Resolution system internals
 1. **[REMOTE_MANIFEST_SCHEMA.md](REMOTE_MANIFEST_SCHEMA.md)** - Remote manifest format
 1. **[SIGNATURE_VERIFICATION.md](SIGNATURE_VERIFICATION.md)** - Security implementation
@@ -369,7 +371,7 @@ ______________________________________________________________________
 
 **Code Quality:**
 
-- ✅ **Modern Python** (3.13+, 3.14 planned)
+- ✅ **Modern Python** (3.14+)
 - ✅ **Type-safe** (Pydantic throughout)
 - ✅ **Observable** (structlog, OpenTelemetry)
 

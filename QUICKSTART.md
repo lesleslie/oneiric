@@ -1,6 +1,6 @@
 # Oneiric Quickstart (5 minutes)
 
-Oneiric is the configuration management and component resolution system for the ecosystem. It provides explainable component resolution, lifecycle management, and remote delivery for Python 3.13+ runtimes.
+Oneiric is the configuration management and component resolution system for the ecosystem. It provides explainable component resolution, lifecycle management, and remote delivery for Python 3.14+ runtimes.
 
 ## Level 1: Basic Configuration (1 minute) ✅
 
@@ -11,21 +11,18 @@ pip install oneiric
 # Or with uv (recommended)
 uv add oneiric
 
-# Initialize configuration
-oneiric init
+# Show the CLI surface and current version
+oneiric version
 
-# Load configuration
-oneiric load config.yaml
+# Run the orchestrator with an explicit settings file
+oneiric start --config config.yaml
 
-# Resolve components
-oneiric resolve
-
-# List available components
+# List available components (resolver runs on every command)
 oneiric list --domain adapter
 oneiric list --domain service
 ```
 
-**What you learned**: Basic installation, configuration loading, and component listing.
+**What you learned**: Basic installation, settings-file selection, and component listing. The resolver runs implicitly on every command; there is no separate `oneiric init` or `oneiric load`.
 
 ______________________________________________________________________
 
@@ -34,9 +31,6 @@ ______________________________________________________________________
 ```bash
 # List available adapters
 oneiric list --domain adapter --shadowed
-
-# Install adapter from local registry
-oneiric activate adapter postgresql --provider pgvector
 
 # Check adapter status
 oneiric status --domain adapter --key postgresql
@@ -50,31 +44,29 @@ oneiric swap adapter postgresql --provider sqlite
 # Pause adapter (stop accepting work)
 oneiric pause adapter postgresql --note "Upgrading database"
 
-# Resume adapter
-oneiric resume adapter postgresql
+# Resume adapter (unpause via the --resume flag on `pause`)
+oneiric pause adapter postgresql --resume
 
 # Drain adapter (graceful shutdown)
 oneiric drain adapter postgresql --note "Maintenance window"
 ```
 
-**What you learned**: Adapter activation, resolution explanation, lifecycle management (pause/resume/drain).
+**What you learned**: Status inspection, resolution explanation, and lifecycle management (`swap`, `pause [--resume]`, `drain`). Oneiric does not expose a separate `oneiric activate` or `oneiric resume` command.
 
 ______________________________________________________________________
 
 ## Level 3: Advanced Resolution (2 minutes) 🎯
 
 ```bash
-# Enable remote resolution
-oneiric enable-remote --url http://localhost:8683/mcp
-
-# Sync from remote manifest
+# Sync from remote manifest (one-shot)
 oneiric remote-sync --manifest docs/sample_remote_manifest.yaml
 
-# Resolve with dependencies
-oneiric resolve --with-dependencies
+# Or run the orchestrator (configures remote sync + watchers)
+oneiric start --config config.yaml
 
-# Export resolved configuration
-oneiric export --output resolved.yaml
+# Export the resolved manifest to disk
+oneiric manifest export --version 0.21.2 --source oneiric-local \
+  --output build/manifest.yaml
 
 # Inspect workflow DAG plan
 oneiric workflow plan \
@@ -94,7 +86,7 @@ oneiric event emit \
   --json
 ```
 
-**What you learned**: Remote resolution, dependency management, workflow execution, event dispatch.
+**What you learned**: Remote manifest sync, manifest export, workflow execution, event dispatch. There is no standalone `oneiric enable-remote` or `oneiric resolve`; remote sync runs through `remote-sync` or implicitly via the orchestrator.
 
 ______________________________________________________________________
 
@@ -124,14 +116,14 @@ oneiric start
 
 ```bash
 export ONEIRIC_MODE=standard
-oneiric start --remote-url http://druva:8683/mcp
+oneiric start --manifest http://dhara:8683/mcp
 ```
 
 **Features**:
 
 - Remote resolution enabled
 - Distributed configuration
-- Adapter distribution via Druva
+- Adapter distribution via Dhara
 - Cloud backup support
 - Production-ready scaling
 
@@ -151,7 +143,7 @@ ______________________________________________________________________
 - **Protocol**: MCP
 - **URL**: http://localhost:8680/mcp
 
-**Druva (Curator)**
+**Dhara (Curator — persistent object storage and Oneiric adapter distribution)**
 
 - **Purpose**: Adapter distribution and remote manifests
 - **Protocol**: MCP
@@ -182,7 +174,7 @@ ______________________________________________________________________
 
 | State | Meaning | Command |
 |-------|---------|---------|
-| **Active** | Normal operation | `oneiric resume <domain> <key>` |
+| **Active** | Normal operation | `oneiric pause <domain> <key> --resume` |
 | **Paused** | Not accepting new work | `oneiric pause <domain> <key>` |
 | **Draining** | Graceful shutdown | `oneiric drain <domain> <key>` |
 
@@ -236,24 +228,24 @@ ______________________________________________________________________
 # Check adapter registry
 oneiric list --domain adapter --shadowed
 
-# Enable remote resolution
-oneiric enable-remote --url http://localhost:8683/mcp
+# Inspect remote manifest sync state
+oneiric remote-status --json
 
-# Verify Druva connection
+# Verify Dhara connection
 oneiric health --probe
 ```
 
 ### "Remote sync failed"
 
 ```bash
-# Check manifest URL
-oneiric remote-sync --manifest /path/to/manifest.yaml --verify-only
+# Check manifest URL and dry-run the sync
+oneiric remote-sync --manifest /path/to/manifest.yaml
 
-# Verify signature
-oneiric manifest verify --input manifest.json
-
-# Check remote status
+# Inspect the cached remote telemetry
 oneiric remote-status --json
+
+# Verify a signed manifest directly with the manifest subcommands
+oneiric manifest pack --input /path/to/manifest.yaml --stdout
 ```
 
 ### "Component not responding"
@@ -262,8 +254,8 @@ oneiric remote-status --json
 # Check activity state
 oneiric activity --domain adapter --key postgresql
 
-# Force resume
-oneiric resume adapter postgresql
+# Force resume (via the --resume flag on `pause`)
+oneiric pause adapter postgresql --resume
 
 # Check health
 oneiric health --probe --json
