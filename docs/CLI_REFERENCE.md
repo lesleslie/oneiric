@@ -18,9 +18,11 @@ ______________________________________________________________________
 1. [Domain Commands](#domain-commands)
 1. [Resolution Commands](#resolution-commands)
 1. [Lifecycle Commands](#lifecycle-commands)
+   - [Process Management](#process-management)
 1. [Orchestration Commands](#orchestration-commands)
 1. [Event & Workflow Commands](#event--workflow-commands)
 1. [Remote Manifest Commands](#remote-manifest-commands)
+   - [Manifest Commands](#manifest-commands)
 1. [Observability Commands](#observability-commands)
 1. [Plugin & Secrets Commands](#plugin--secrets-commands)
 1. [Common Patterns](#common-patterns)
@@ -76,7 +78,6 @@ ______________________________________________________________________
 | `--config PATH` | Specify config file | `--config /path/to/config.toml status` |
 | `--suppress-events` | Filter out event log output | `--suppress-events list --domain adapter` |
 | `--json` | Output JSON instead of tables | `list --domain adapter --json` |
-| `--verbose` | Enable verbose logging | `--verbose health --probe` |
 | `--help` | Show command help | `swap --help` |
 
 ______________________________________________________________________
@@ -89,19 +90,19 @@ List all registered components for a domain.
 
 ```bash
 # List all adapters
-oneiric.cli list --domain adapter
+oneiric list --domain adapter
 
 # List services
-oneiric.cli list --domain service
+oneiric list --domain service
 
 # Include shadowed (inactive) candidates
-oneiric.cli list --domain adapter --shadowed
+oneiric list --domain adapter --shadowed
 
 # JSON output for scripts
-oneiric.cli list --domain adapter --json
+oneiric list --domain adapter --json
 
 # Filter by key
-oneiric.cli list --domain adapter --key cache
+oneiric list --domain adapter --key cache
 ```
 
 **Output Example:**
@@ -128,16 +129,16 @@ Show status of a specific component.
 
 ```bash
 # Show adapter status
-oneiric.cli status --domain adapter --key cache
+oneiric status --domain adapter --key cache
 
 # Show service status
-oneiric.cli status --domain service --key payment-processor
+oneiric status --domain service --key payment-processor
 
 # JSON output
-oneiric.cli status --domain adapter --key cache --json
+oneiric status --domain adapter --key cache --json
 
 # Include lifecycle state
-oneiric.cli status --domain adapter --key cache --verbose
+oneiric status --domain adapter --key cache --shadowed
 ```
 
 **Output Example (JSON):**
@@ -170,16 +171,16 @@ Explain why a component was selected.
 
 ```bash
 # Explain adapter selection
-oneiric.cli explain --domain adapter --key cache
+oneiric explain --domain adapter --key cache
 
 # Explain service selection
-oneiric.cli explain --domain service --key status
+oneiric explain --domain service --key status
 
 # Show all candidates with reasons
-oneiric.cli explain --domain adapter --key cache --verbose
+oneiric explain --domain adapter --key cache
 
 # JSON output
-oneiric.cli explain --domain adapter --key cache --json
+oneiric explain --domain adapter --key cache --json
 ```
 
 **Output Example:**
@@ -217,16 +218,13 @@ Hot-swap to a different provider.
 
 ```bash
 # Swap cache from Redis to Memcached
-oneiric.cli swap --domain adapter --key cache --provider memcached
+oneiric swap --domain adapter --key cache --provider memcached
 
 # Force swap (skip health check)
-oneiric.cli swap --domain adapter --key cache --provider memcached --force
-
-# Dry run (show what would happen)
-oneiric.cli swap --domain adapter --key cache --provider memcached --dry-run
+oneiric swap --domain adapter --key cache --provider memcached --force
 
 # Swap service
-oneiric.cli swap --domain service --key payment-processor --provider stripe
+oneiric swap --domain service --key payment-processor --provider stripe
 ```
 
 **What Happens:**
@@ -244,24 +242,42 @@ oneiric.cli swap --domain service --key payment-processor --provider stripe
 - Emergency provider switch
 - Blue-green deployments
 
-### `resolve`
-
-Manually trigger resolution (useful for debugging).
-
-```bash
-# Resolve and display result
-oneiric.cli resolve --domain adapter --key cache
-
-# Show all candidates
-oneiric.cli resolve --domain adapter --key cache --all
-
-# Test with different priority
-ONEIRIC_STACK_ORDER="custom:20" oneiric.cli resolve --domain adapter --key cache
-```
-
 ______________________________________________________________________
 
 ## Lifecycle Commands
+
+### `version`
+
+Print the installed Oneiric version and exit with `ExitCode.SUCCESS`.
+
+```bash
+oneiric version
+# oneiric: 0.21.1
+
+oneiric version --json  # (inherits the global --json flag from the root callback)
+```
+
+The older `--version`/`-V` Typer flags still work but emit a
+`DeprecationWarning` directing callers to `oneiric version`.
+
+### `doctor`
+
+Run diagnostic checks against the component's runtime and report pass/fail
+status per check.
+
+| Option | Description |
+|--------|-------------|
+| `--json` | Emit checks as a JSON object (`{"checks": {name: {status, detail}}}`). |
+
+```bash
+oneiric doctor
+
+oneiric doctor --json
+```
+
+When the subclass hook raises `NotImplementedError`, `doctor` exits with
+`ExitCode.UNAVAILABLE` (3). When it raises any other exception, the
+command exits with `ExitCode.ERROR` (1).
 
 ### `health`
 
@@ -269,16 +285,16 @@ Check health of components or entire system.
 
 ```bash
 # Probe all components
-oneiric.cli health --probe
+oneiric health --probe
 
 # Probe specific domain
-oneiric.cli health --domain adapter --key cache
+oneiric health --domain adapter --key cache
 
 # JSON output for monitoring
-oneiric.cli health --probe --json
+oneiric health --probe --json
 
 # Continuous monitoring (watch mode)
-oneiric.cli health --probe --watch --interval 30
+oneiric health --probe --json
 ```
 
 **Output Example:**
@@ -306,14 +322,14 @@ Pause a component (stops accepting new work).
 
 ```bash
 # Pause component
-oneiric.cli pause --domain service --key email-sender --note "Maintenance window"
+oneiric pause --domain service --key email-sender --note "Maintenance window"
 
 # Pause multiple components
-oneiric.cli pause --domain service --key payment-processor
-oneiric.cli pause --domain adapter --key queue
+oneiric pause --domain service --key payment-processor
+oneiric pause --domain adapter --key queue
 
 # Resume paused component
-oneiric.cli pause --resume --domain service --key email-sender
+oneiric pause --resume --domain service --key email-sender
 ```
 
 **Use Cases:**
@@ -329,10 +345,10 @@ Drain a component (finish existing work, stop new work).
 
 ```bash
 # Drain component
-oneiric.cli drain --domain service --key worker --note "Deploying new version"
+oneiric drain --domain service --key worker --note "Deploying new version"
 
 # Resume drained component
-oneiric.cli drain --resume --domain service --key worker
+oneiric drain --resume --domain service --key worker
 ```
 
 **Difference from Pause:**
@@ -352,17 +368,13 @@ Show pause/drain activity state.
 
 ```bash
 # Show all activity
-oneiric.cli activity
+oneiric activity
 
 # Show specific domain
-oneiric.cli activity --domain service
+oneiric activity --domain service
 
 # JSON output
-oneiric.cli activity --json
-
-# Filter by state
-oneiric.cli activity --state paused
-oneiric.cli activity --state draining
+oneiric activity --json
 ```
 
 **Output Example:**
@@ -400,13 +412,13 @@ Show Service Supervisor status and configuration.
 
 ```bash
 # Show supervisor status
-oneiric.cli supervisor-info
+oneiric supervisor-info
 
 # Check if enabled
-oneiric.cli supervisor-info --json
+oneiric supervisor-info --json
 
 # Use with specific config
-ONEIRIC_CONFIG=/path/to/config.toml oneiric.cli supervisor-info
+ONEIRIC_CONFIG=/path/to/config.toml oneiric supervisor-info
 ```
 
 **Output Example:**
@@ -437,6 +449,113 @@ Profile: serverless
 - Validate serverless profile
 - Pre-deployment checks
 
+### `load-test`
+
+Run an in-process load test against the resolver/lifecycle pipeline and
+report latency statistics.
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--total`, `-t` | Total tasks to execute. | `1000` |
+| `--concurrency`, `-c` | Maximum concurrent tasks. | `50` |
+| `--warmup` | Warmup tasks to run before measuring. | `0` |
+| `--sleep-ms` | Sleep duration per task (ms). | `0.0` |
+| `--payload-bytes` | Payload bytes hashed per task. | `0` |
+| `--timeout` | Cancel the run after this many seconds. | None |
+| `--json` | Emit the result as JSON. | `False` |
+
+```bash
+oneiric load-test
+
+oneiric load-test --total 5000 --concurrency 200 --json
+```
+
+### `shell`
+
+Start an interactive IPython admin shell pre-loaded with the active
+configuration layer, settings validator, and lifecycle query helpers.
+Session tracking is routed through Session-Buddy MCP.
+
+```bash
+oneiric shell
+# Oneiric> show_layers()           # Show config layer precedence
+# Oneiric> validate_config()       # Validate current configuration
+# Oneiric> reload_settings()       # Reload from all layers
+```
+
+The shell does not accept any flags.
+
+### Process Management
+
+The `start` / `stop` / `process-status` commands wrap the long-running
+`orchestrate` process behind a PID file so it can run in the background.
+The PID file defaults to
+`<cache_dir>/orchestrator.pid` (`<cache_dir>` comes from the active
+settings layer; `~/.oneiric_cache/orchestrator.pid` by default).
+
+#### `start`
+
+Spawn the orchestrator in the background.
+
+| Option | Description |
+|--------|-------------|
+| `--config PATH` | Path to settings file. |
+| `--profile NAME` | Runtime profile (`default`, `serverless`). |
+| `--manifest URI` | Override manifest URL/path. |
+| `--refresh-interval SECONDS` | Override remote refresh interval. |
+| `--no-remote` | Disable remote sync/refresh. |
+| `--workflow-checkpoints PATH` | Workflow checkpoint SQLite store (defaults to cache dir). |
+| `--no-workflow-checkpoints` | Disable workflow DAG checkpoint persistence. |
+| `--http-port PORT` | Run the builtin scheduler HTTP server on this port. |
+| `--http-host HOST` | Interface for the scheduler HTTP server (`0.0.0.0` default). |
+| `--no-http` | Disable the builtin scheduler HTTP server. |
+| `--pid-file PATH` | Path to the PID file for the background process. |
+
+```bash
+oneiric start --http-port 8080 --profile serverless
+
+oneiric start --config settings/prod.yaml --refresh-interval 120 --pid-file /var/run/oneiric.pid
+```
+
+`start` exits `1` if the orchestrator is already running or fails to
+launch.
+
+#### `stop`
+
+Stop the background orchestrator (sends SIGTERM, then escalates as
+needed).
+
+| Option | Description |
+|--------|-------------|
+| `--pid-file PATH` | Path to PID file (defaults to `<cache_dir>/orchestrator.pid`). |
+
+```bash
+oneiric stop
+
+oneiric stop --pid-file /var/run/oneiric.pid
+```
+
+`stop` exits `1` if no orchestrator is running or the stop fails.
+
+#### `process-status`
+
+Show whether the background orchestrator is running and on which PID
+file.
+
+| Option | Description |
+|--------|-------------|
+| `--pid-file PATH` | Path to PID file (defaults to `<cache_dir>/orchestrator.pid`). |
+| `--json` | Emit status payload as JSON. |
+
+```bash
+oneiric process-status
+
+oneiric process-status --json
+```
+
+When the orchestrator is not running and a stale PID file is present, the
+command prints its location so operators can clean it up.
+
 ______________________________________________________________________
 
 ## Orchestration Commands
@@ -447,23 +566,23 @@ Start the runtime orchestrator (long-running process).
 
 ```bash
 # Basic orchestrator
-oneiric.cli orchestrate
+oneiric orchestrate
 
 # With remote manifest
-oneiric.cli orchestrate --manifest docs/sample_remote_manifest.yaml
+oneiric orchestrate --manifest docs/sample_remote_manifest.yaml
 
 # With refresh interval
-oneiric.cli orchestrate --manifest manifest.yaml --refresh-interval 120
+oneiric orchestrate --manifest manifest.yaml --refresh-interval 120
 
 # Serverless profile (Cloud Run)
-oneiric.cli orchestrate --profile serverless --no-remote
+oneiric orchestrate --profile serverless --no-remote
 
 # With scheduler HTTP server
-oneiric.cli orchestrate --http-port 8080
+oneiric orchestrate --http-port 8080
 
 # Inspect without running
-oneiric.cli orchestrate --print-dag --workflow fastblocks.workflows.fulfillment
-oneiric.cli orchestrate --events --inspect-json
+oneiric orchestrate --print-dag --workflow fastblocks.workflows.fulfillment
+oneiric orchestrate --events --inspect-json
 ```
 
 **Options:**
@@ -474,7 +593,7 @@ oneiric.cli orchestrate --events --inspect-json
 | `--refresh-interval SEC` | Remote refresh interval | 300 |
 | `--profile NAME` | Runtime profile (default/serverless) | default |
 | `--no-remote` | Disable remote sync | False |
-| `--no-watchers` | Disable config watchers | False |
+| `--no-workflow-checkpoints` | Disable workflow DAG checkpoint persistence | False |
 | `--http-port PORT` | Enable scheduler HTTP server | None |
 | `--print-dag` | Print workflow DAG and exit | False |
 | `--events` | Print event handlers and exit | False |
@@ -497,19 +616,16 @@ Emit an event to the event dispatcher.
 
 ```bash
 # Emit event with JSON payload
-oneiric.cli event emit --topic user.created \
+oneiric event emit --topic user.created \
   --payload '{"user_id":"123","email":"user@example.com"}'
 
-# With metadata
-oneiric.cli event emit --topic order.paid \
+# With headers
+oneiric event emit --topic order.paid \
   --payload '{"order_id":"456"}' \
-  --metadata '{"source":"web"}'
+  --headers '{"source":"web"}'
 
 # JSON output
-oneiric.cli event emit --topic test.event --payload '{}' --json
-
-# Dry run (show handlers without dispatching)
-oneiric.cli event emit --topic test.event --payload '{}' --dry-run
+oneiric event emit --topic test.event --payload '{}' --json
 ```
 
 **Output Example:**
@@ -538,15 +654,15 @@ Show workflow DAG plan without executing.
 
 ```bash
 # Show workflow plan
-oneiric.cli workflow plan --workflow fastblocks.workflows.fulfillment
+oneiric workflow plan --workflow fastblocks.workflows.fulfillment
 
 # JSON output
-oneiric.cli workflow plan --workflow myapp.workflows.process \
+oneiric workflow plan --workflow myapp.workflows.process \
   --json
 
 # Include node details
-oneiric.cli workflow plan --workflow myapp.workflows.process \
-  --verbose
+oneiric workflow plan --workflow myapp.workflows.process \
+  --json
 ```
 
 **Output Example:**
@@ -600,21 +716,21 @@ Execute a workflow once (without enqueueing).
 
 ```bash
 # Run workflow
-oneiric.cli workflow run --workflow fastblocks.workflows.fulfillment \
+oneiric workflow run --workflow fastblocks.workflows.fulfillment \
   --context '{"order_id":"123"}'
 
 # With checkpoints
-oneiric.cli workflow run --workflow myapp.workflows.process \
+oneiric workflow run --workflow myapp.workflows.process \
   --context '{"user_id":"456"}' \
   --workflow-checkpoints
 
 # Resume from checkpoint
-oneiric.cli workflow run --workflow myapp.workflows.process \
+oneiric workflow run --workflow myapp.workflows.process \
   --context '{"user_id":"456"}' \
   --resume-checkpoint
 
 # JSON output
-oneiric.cli workflow run --workflow myapp.workflows.process \
+oneiric workflow run --workflow myapp.workflows.process \
   --context '{}' --json
 ```
 
@@ -631,20 +747,20 @@ Enqueue a workflow for execution (via queue adapter).
 
 ```bash
 # Enqueue workflow
-oneiric.cli workflow enqueue --workflow fastblocks.workflows.fulfillment \
+oneiric workflow enqueue --workflow fastblocks.workflows.fulfillment \
   --context '{"order_id":"123"}'
 
 # Specify queue category
-oneiric.cli workflow enqueue --workflow myapp.workflows.process \
+oneiric workflow enqueue --workflow myapp.workflows.process \
   --context '{"user_id":"456"}' \
   --queue-category queue.scheduler
 
 # Specify provider
-oneiric.cli workflow enqueue --workflow myapp.workflows.process \
+oneiric workflow enqueue --workflow myapp.workflows.process \
   --context '{}' --provider cloudtasks
 
 # JSON output
-oneiric.cli workflow enqueue --workflow myapp.workflows.process \
+oneiric workflow enqueue --workflow myapp.workflows.process \
   --context '{}' --json
 ```
 
@@ -671,13 +787,13 @@ Invoke an action (including workflow.notify).
 
 ```bash
 # Invoke workflow.notify action
-oneiric.cli action-invoke workflow.notify \
+oneiric action-invoke workflow.notify \
   --workflow fastblocks.workflows.fulfillment \
   --payload '{"message":"Deploy ready","channel":"deploys"}' \
   --send-notification
 
 # Custom adapter override
-oneiric.cli action-invoke workflow.notify \
+oneiric action-invoke workflow.notify \
   --workflow myapp.workflows.deploy \
   --payload '{"status":"success"}' \
   --send-notification \
@@ -685,7 +801,7 @@ oneiric.cli action-invoke workflow.notify \
   --notify-target "#platform-alerts"
 
 # JSON output
-oneiric.cli action-invoke workflow.notify \
+oneiric action-invoke workflow.notify \
   --workflow myapp.workflows.deploy \
   --payload '{}' --json
 ```
@@ -707,16 +823,13 @@ Sync components from remote manifest.
 
 ```bash
 # Sync from manifest
-oneiric.cli remote-sync --manifest docs/sample_remote_manifest.yaml
+oneiric remote-sync --manifest docs/sample_remote_manifest.yaml
 
 # Watch mode (continuous sync)
-oneiric.cli remote-sync --manifest manifest.yaml --watch --refresh-interval 120
+oneiric remote-sync --manifest manifest.yaml --watch --refresh-interval 120
 
 # One-time sync
-oneiric.cli remote-sync --manifest https://cdn.example.com/manifest.yaml
-
-# Verbose output
-oneiric.cli remote-sync --manifest manifest.yaml --verbose
+oneiric remote-sync --manifest https://cdn.example.com/manifest.yaml
 ```
 
 **Use Cases:**
@@ -732,13 +845,13 @@ Show remote sync status and telemetry.
 
 ```bash
 # Show remote status
-oneiric.cli remote-status
+oneiric remote-status
 
 # JSON output
-oneiric.cli remote-status --json
+oneiric remote-status --json
 
 # Show per-domain details
-oneiric.cli remote-status --verbose
+oneiric remote-status --json
 ```
 
 **Output Example:**
@@ -775,21 +888,20 @@ Package YAML manifest to JSON.
 
 ```bash
 # Pack manifest
-oneiric.cli manifest pack \
+oneiric manifest pack \
   --input docs/sample_remote_manifest.yaml \
   --output build/manifest.json
 
-# With signature
-oneiric.cli manifest pack \
+# Compact output
+oneiric manifest pack \
   --input manifest.yaml \
-  --output manifest.signed.json \
-  --sign \
-  --private-key-path private_key.pem
+  --output build/manifest.json \
+  --compact
 
-# Validate only
-oneiric.cli manifest pack \
+# Write to stdout
+oneiric manifest pack \
   --input manifest.yaml \
-  --validate-only
+  --stdout
 ```
 
 **Use Cases:**
@@ -801,22 +913,28 @@ oneiric.cli manifest pack \
 
 ### `manifest sign`
 
-Sign a manifest with ED25519 key.
+Sign a manifest with an ED25519 key.
 
 ```bash
-# Generate keypair (one-time)
-oneiric.cli manifest generate-keypair --output-dir ./
-
-# Sign manifest
-oneiric.cli manifest sign \
+# Sign manifest (PEM key)
+oneiric manifest sign \
   --input manifest.yaml \
-  --output manifest.signed.yaml \
-  --private-key-path private_key.pem
+  --private-key private_key.pem \
+  --output manifest.signed.yaml
 
-# Verify signature
-oneiric.cli manifest verify \
-  --input manifest.signed.yaml \
-  --public-key-path public_key.pem
+# Sign with raw 32-byte key and key id
+oneiric manifest sign \
+  --input manifest.yaml \
+  --private-key ed25519.raw \
+  --key-id prod-2026-q2 \
+  --append
+
+# Expire after one hour
+oneiric manifest sign \
+  --input manifest.yaml \
+  --private-key private_key.pem \
+  --expires-in 3600 \
+  --stdout
 ```
 
 **Use Cases:**
@@ -826,82 +944,43 @@ oneiric.cli manifest verify \
 - Remote manifest verification
 - CI/CD integration
 
+### Manifest Commands
+
+The `manifest` sub-app (`manifest_app` in `oneiric.cli`) bundles manifest
+packaging helpers.
+
+#### `manifest export`
+
+Generate a fresh `RemoteManifest` from the registered builtin adapter
+and action metadata.
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--output`, `-o` | Destination manifest file (use `-` for stdout). | `build/manifest.yaml` |
+| `--version` | Default version for entries (semver). | _required_ |
+| `--source` | Manifest source identifier. | `oneiric-production` |
+| `--format` | Output format (`yaml` or `json`). | `yaml` |
+| `--no-adapters` | Exclude adapter entries. | `False` |
+| `--no-actions` | Exclude action entries. | `False` |
+| `--pretty`/`--compact` | Pretty-print the output. | `pretty` |
+| `--stdout` | Write output to stdout regardless of `--output`. | `False` |
+
+```bash
+oneiric manifest export --version 1.2.0
+
+oneiric manifest export --version 0.9.0 --format json --no-actions --stdout
+```
+
+The `--version` option is required and supplies the manifest entry
+`version` for every emitted adapter/action payload.
+
 ______________________________________________________________________
 
 ## Observability Commands
 
-### `telemetry`
-
-Show runtime telemetry.
-
-```bash
-# Show all telemetry
-oneiric.cli telemetry
-
-# Event telemetry
-oneiric.cli telemetry --events
-
-# Workflow telemetry
-oneiric.cli telemetry --workflows
-
-# JSON output
-oneiric.cli telemetry --json
-```
-
-**Output Example:**
-
-```
-Runtime Telemetry:
-
-Last Event Dispatch:
-  Topic: order.created
-  Handlers: 3
-  Duration: 145ms
-  Attempts: 1
-  Errors: 0
-
-Last Workflow Execution:
-  Workflow: fastblocks.workflows.fulfillment
-  Nodes: 4
-  Duration: 2.3s
-  Retries: 1
-  Errors: 0
-```
-
-**Use Cases:**
-
-- Debug runtime behavior
-- Performance analysis
-- Error tracking
-- Dashboard data source
-
-### `logs`
-
-Show structured logs (if file sink configured).
-
-```bash
-# Show recent logs
-oneiric.cli logs
-
-# Filter by domain
-oneiric.cli logs --domain adapter
-
-# Filter by level
-oneiric.cli logs --level error
-
-# Tail logs
-oneiric.cli logs --tail
-
-# JSON output
-oneiric.cli logs --json
-```
-
-**Use Cases:**
-
-- Local debugging
-- Log inspection
-- Error investigation
-- Development testing
+The runtime observability surface is exposed via [`health`](#health),
+[`activity`](#activity), and [`load-test`](#load-test) — there is no
+`telemetry` or `logs` subcommand in this release.
 
 ______________________________________________________________________
 
@@ -913,13 +992,10 @@ List entry-point plugins.
 
 ```bash
 # List all plugins
-oneiric.cli plugins
+oneiric plugins
 
-# Show specific group
-oneiric.cli plugins --group oneiric.adapters
-
-# Verbose output
-oneiric.cli plugins --verbose
+# JSON output
+oneiric plugins --json
 ```
 
 **Output Example:**
@@ -954,13 +1030,13 @@ Rotate (invalidate) cached secrets.
 
 ```bash
 # Rotate specific keys
-oneiric.cli secrets rotate --keys redis_url,api_key
+oneiric secrets rotate --keys redis_url,api_key
 
 # Rotate all secrets
-oneiric.cli secrets rotate --all
+oneiric secrets rotate --all
 
-# Dry run
-oneiric.cli secrets rotate --keys api_key --dry-run
+# Override provider
+oneiric secrets rotate --all --provider vault
 ```
 
 **Use Cases:**
@@ -985,18 +1061,18 @@ set -e
 echo "Running pre-deploy smoke tests..."
 
 # Check health
-oneiric.cli health --probe --json > health.json
+oneiric health --probe --json > health.json
 cat health.json
 
 # Verify critical components
-oneiric.cli status --domain adapter --key cache --json
-oneiric.cli status --domain service --key payment-processor --json
+oneiric status --domain adapter --key cache --json
+oneiric status --domain service --key payment-processor --json
 
 # Test workflow plan
-oneiric.cli workflow plan --workflow fastblocks.workflows.fulfillment
+oneiric workflow plan --workflow fastblocks.workflows.fulfillment
 
-# Test event routing (dry run)
-oneiric.cli event emit --topic test.smoke --payload '{}' --dry-run
+# Test event routing
+oneiric event emit --topic test.smoke --payload '{}' --json
 
 echo "Smoke tests passed!"
 ```
@@ -1014,18 +1090,18 @@ NEW_PROVIDER="memcached"
 echo "Starting zero-downtime swap..."
 
 # Pre-flight: check new provider health
-oneiric.cli health --domain adapter --key $COMPONENT --provider $NEW_PROVIDER
+oneiric health --domain adapter --key $COMPONENT --probe
 
 # Perform swap
-oneiric.cli swap --domain adapter --key $COMPONENT --provider $NEW_PROVIDER
+oneiric swap --domain adapter --key $COMPONENT --provider $NEW_PROVIDER
 
 # Verify
-oneiric.cli status --domain adapter --key $COMPONENT
+oneiric status --domain adapter --key $COMPONENT
 
 # If failed, rollback
 if [ $? -ne 0 ]; then
   echo "Swap failed, rolling back..."
-  oneiric.cli swap --domain adapter --key $COMPONENT --provider $OLD_PROVIDER --force
+  oneiric swap --domain adapter --key $COMPONENT --provider $OLD_PROVIDER --force
   exit 1
 fi
 
@@ -1045,12 +1121,12 @@ HTTP_PORT=8080
 echo "Deploying orchestrator..."
 
 # Package manifest
-oneiric.cli manifest pack \
+oneiric manifest pack \
   --input manifest.yaml \
   --output build/manifest.json
 
 # Start orchestrator
-oneiric.cli orchestrate \
+oneiric orchestrate \
   --manifest $MANIFEST_URL \
   --refresh-interval $REFRESH_INTERVAL \
   --http-port $HTTP_PORT \
@@ -1068,23 +1144,18 @@ set -e
 echo "Validating remote manifest..."
 
 # Validate schema
-oneiric.cli manifest pack \
+oneiric manifest pack \
   --input manifest.yaml \
-  --validate-only
+  --output build/manifest.json
 
 # Sign manifest
-oneiric.cli manifest sign \
+oneiric manifest sign \
   --input manifest.yaml \
-  --output manifest.signed.yaml \
-  --private-key-path $PRIVATE_KEY_PATH
-
-# Verify signature
-oneiric.cli manifest verify \
-  --input manifest.signed.yaml \
-  --public-key-path $PUBLIC_KEY_PATH
+  --private-key $PRIVATE_KEY_PATH \
+  --output manifest.signed.yaml
 
 # Test sync
-oneiric.cli remote-sync --manifest manifest.signed.yaml --dry-run
+oneiric remote-sync --manifest manifest.signed.yaml --watch
 
 echo "Manifest validation passed!"
 ```
@@ -1101,19 +1172,19 @@ NOTE="Incident #123: High error rate"
 echo "Starting incident response..."
 
 # Drain component gracefully
-oneiric.cli drain --domain service --key worker --note "$NOTE"
+oneiric drain --domain service --key worker --note "$NOTE"
 
 # Wait for drain
 sleep 30
 
 # Check activity
-oneiric.cli activity --domain service --json
+oneiric activity --domain service --json
 
 # Health check
-oneiric.cli health --probe --domain service --key worker
+oneiric health --probe --domain service --key worker
 
 # When resolved, resume
-oneiric.cli drain --resume --domain service --key worker --note "Incident resolved"
+oneiric drain --resume --domain service --key worker --note "Incident resolved"
 
 echo "Incident response complete!"
 ```
@@ -1153,13 +1224,13 @@ cp docs/examples/demo_settings.toml ~/.oneiric.toml
 
 ```bash
 # Check what's registered
-oneiric.cli list --domain adapter --shadowed
+oneiric list --domain adapter --shadowed
 
 # Explain resolution
-oneiric.cli explain --domain adapter --key cache
+oneiric explain --domain adapter --key cache
 
 # Use demo mode to test
-oneiric.cli --demo list --domain adapter
+oneiric --demo list --domain adapter
 ```
 
 ### Issue: Swap fails health check
@@ -1168,13 +1239,13 @@ oneiric.cli --demo list --domain adapter
 
 ```bash
 # Check health manually
-oneiric.cli health --domain adapter --key cache --provider memcached
+oneiric health --domain adapter --key cache --probe
 
 # Force swap if you're sure
-oneiric.cli swap --domain adapter --key cache --provider memcached --force
+oneiric swap --domain adapter --key cache --provider memcached --force
 
 # Check logs for errors
-oneiric.cli logs --tail
+tail -f .oneiric_cache/runtime.log
 ```
 
 ### Issue: Remote sync fails
@@ -1185,14 +1256,11 @@ oneiric.cli logs --tail
 # Check manifest URL
 curl -v $MANIFEST_URL
 
-# Verify signature
-oneiric.cli manifest verify --input manifest.yaml
-
 # Check remote status
-oneiric.cli remote-status --verbose
+oneiric remote-status --json
 
-# Sync with verbose output
-oneiric.cli remote-sync --manifest manifest.yaml --verbose
+# Sync with watch mode
+oneiric remote-sync --manifest manifest.yaml --watch
 ```
 
 ### Issue: Orchestrator won't start
@@ -1201,13 +1269,13 @@ oneiric.cli remote-sync --manifest manifest.yaml --verbose
 
 ```bash
 # Check config
-oneiric.cli supervisor-info
+oneiric supervisor-info
 
 # Validate manifest
-oneiric.cli manifest pack --input manifest.yaml --validate-only
+oneiric manifest pack --input manifest.yaml --output build/manifest.json
 
 # Test health
-oneiric.cli health --probe
+oneiric health --probe
 
 # Check logs
 tail -f .oneiric_cache/runtime.log
@@ -1219,16 +1287,16 @@ tail -f .oneiric_cache/runtime.log
 
 ```bash
 # Check event handlers
-oneiric.cli orchestrate --events --inspect-json
+oneiric orchestrate --events --inspect-json
 
 # Dry run event
-oneiric.cli event emit --topic test.event --payload '{}' --dry-run
+oneiric event emit --topic test.event --payload '{}' --json
 
 # Check telemetry
-oneiric.cli telemetry --events
+oneiric activity --json
 
 # Verify event dispatcher
-oneiric.cli status --domain event --key dispatcher
+oneiric status --domain event --key dispatcher
 ```
 
 ### Issue: Workflow fails
@@ -1237,17 +1305,17 @@ oneiric.cli status --domain event --key dispatcher
 
 ```bash
 # Check workflow plan
-oneiric.cli workflow plan --workflow myapp.workflows.process
+oneiric workflow plan --workflow myapp.workflows.process
 
 # Run with checkpoints
-oneiric.cli workflow run --workflow myapp.workflows.process \
+oneiric workflow run --workflow myapp.workflows.process \
   --context '{}' --workflow-checkpoints
 
-# Check telemetry
-oneiric.cli telemetry --workflows
+# Check activity
+oneiric activity --json
 
 # Resume from checkpoint
-oneiric.cli workflow run --workflow myapp.workflows.process \
+oneiric workflow run --workflow myapp.workflows.process \
   --context '{}' --resume-checkpoint
 ```
 
@@ -1268,15 +1336,21 @@ ______________________________________________________________________
 
 ## Exit Codes
 
-| Code | Meaning |
-|------|---------|
-| 0 | Success |
-| 1 | General error |
-| 2 | Invalid usage |
-| 3 | Component not found |
-| 4 | Health check failed |
-| 5 | Swap failed |
-| 6 | Remote sync failed |
+The canonical exit codes are defined by
+`oneiric.cli.base.ExitCode`:
+
+| Code | Constant | Meaning |
+|------|----------|---------|
+| 0 | `SUCCESS` | Command completed normally |
+| 1 | `ERROR` | Generic runtime failure |
+| 2 | `USAGE_ERROR` | Invalid arguments or configuration |
+| 3 | `UNAVAILABLE` | Component's `doctor`/`health` hooks raised `NotImplementedError` |
+| 4 | `PERMISSION_DENIED` | Insufficient permissions for the requested operation |
+| 124 | `TIMEOUT` | Operation exceeded its deadline |
+
+Subcommands may raise other codes (e.g. `process-status` exits `1` when the
+orchestrator is already running); the table above covers the standard
+contract used by `OneiricCLIBase` and its subclasses.
 
 ______________________________________________________________________
 
