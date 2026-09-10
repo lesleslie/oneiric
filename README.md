@@ -305,7 +305,7 @@ uv run pytest tests/runtime -vv
 python -m crackerjack -a patch
 ```
 
-- Stage 5 audit (v0.20.x) recorded earlier-stage metrics; current Phase 4 plan (v0.21.0) reports **4217 tests passing, 98.75% coverage**, and no P0/P1 issues (live numbers refreshed as of the latest test run); see `coverage.xml` for the current coverage snapshot.
+- Stage 5 audit (v0.20.x) recorded earlier-stage metrics; current Phase 4 plan (v0.21.0) reports **4217 tests passing, 99% coverage**, and no P0/P1 issues (live numbers refreshed as of the latest test run); see `coverage.xml` for the current coverage snapshot.
 - Runtime telemetry + notification router + supervisor paths are covered by `tests/runtime/test_telemetry.py`, `test_notifications.py`, `test_supervisor.py`, and CLI/integration suites.
 - `python -m crackerjack` mirrors the multi-repo gate used in Crackerjack/ACB/FastBlocks.
 

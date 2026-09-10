@@ -10,7 +10,7 @@ Oneiric is a **universal resolution layer** for pluggable components with hot-sw
 
 **Status:** Production Ready (0.21.2) — hardened for controlled deployment. See `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for the most recent comprehensive audit, and `docs/ONEIRIC_VS_ACB.md` for comparison with ACB and migration strategy.
 
-**Current state:** 4218 tests passing, 98.75% coverage — a +20pp margin over the 78.75% coverage ratchet baseline.
+**Current state:** 4218 tests passing, 99% coverage — a +20pp margin over the 79% coverage ratchet baseline.
 
 **Python Version:** 3.14+ (async-first, modern type hints) — matches `requires-python = ">=3.14"` in `pyproject.toml`.
 
@@ -172,14 +172,14 @@ This project uses **Zuban** (via Crackerjack) for ultra-fast type checking. Due 
 
 **Important**: Do NOT add `[tool.zuban]` or `[tool.mypy]` to `pyproject.toml` - this will cause parsing errors. All type checking config must be in `mypy.ini`.
 
-**Note:** Comprehensive test suite with 4218 passing tests and 98.75% coverage. Security hardening complete (all P0 vulnerabilities resolved). See `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for detailed quality assessment.
+**Note:** Comprehensive test suite with 4218 passing tests and 99% coverage. Security hardening complete (all P0 vulnerabilities resolved). See `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for detailed quality assessment.
 
 ### Testing
 
 **Test Suite Overview:**
 
 - **Total:** 4218 passing tests (plus 17 skipped, 1 xfailed) across 210 test files
-- **Coverage:** 98.75% (coverage ratchet baseline: 78.75%)
+- **Coverage:** 99% (coverage ratchet baseline: 79%)
 - **Test Categories:** by directory — `tests/adapters/` (83 files), `tests/unit/` (25), `tests/core/` (22), `tests/runtime/` (17), `tests/actions/` (11), `tests/domains/` (10), `tests/remote/` (9), `tests/integration/` (6), `tests/security/` (5), `tests/shell/` (5), `tests/cli/` (3), `tests/benchmarks/` (1)
 - **Timeout:** 600s (10 minutes) configured in `[tool.crackerjack]`
 

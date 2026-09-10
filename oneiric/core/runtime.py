@@ -91,7 +91,7 @@ class AnyioTaskGroup:
     def __init__(
         self,
         name: str,
-        task_group: anyio.abc.TaskGroup,  # type: ignore
+        task_group: anyio.abc.TaskGroup,
         cancel_scope: anyio.CancelScope,
         limiter: anyio.CapacityLimiter | None = None,
     ) -> None:

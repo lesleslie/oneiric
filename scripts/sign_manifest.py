@@ -32,7 +32,7 @@ def load_private_key(key_path: Path) -> Ed25519PrivateKey:
         )
 
         if not isinstance(private_key, Ed25519PrivateKey):
-            raise ValueError("Private key is not ED25519 type")
+            raise TypeError("Private key is not ED25519 type")
 
         return private_key
 

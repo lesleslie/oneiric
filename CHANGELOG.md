@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.3] - 2026-09-09
+
+### Documentation
+
+- audit-round1: Fix broken imports, paths, and cross-repo refs
+- audit-round2: Fix silent-breakage and Cloud Run misconfiguration
+- audit-round2: Resolve version, test-count, and roadmap drift
+- cli-reference: Fix single-line frontmatter corruption to proper YAML
+- cli-reference: Reconcile with Typer CLI implementation
+- mermaid: Modernize graph syntax to flowchart across 13 files
+- metadata: Backfill YAML frontmatter on 69 long-tail docs
+- migration-guide: Fix single-line frontmatter corruption to proper YAML
+- readme: Add CLI invocation glossary and fix stale Session-Mgmt refs
+- round2-architectural: Fix QUICKSTART.md phantom CLI commands, Druva rename, add custom-adapter guide
+- round2-mechanical: Fix CLI-form refs, refresh test numbers, fix coverage.xml pointer
+- schemas: Convert schema docs to YAML frontmatter and fix 3 broken refs
+
+### Internal
+
+- gitignore: Apply Bodai canonical snippet
+
 ## [0.21.2] - 2026-09-05
 
 ### Fixed
