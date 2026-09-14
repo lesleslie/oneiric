@@ -5,325 +5,281 @@
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![Python: 3.14+](https://img.shields.io/badge/python-3.14%2B-green)](https://www.python.org/downloads/)
 
-**Explainable component resolution, lifecycle management, and remote delivery for Python 3.14+ runtimes**
+**Explainable component resolution, lifecycle management, and remote delivery for Python 3.14+ runtimes**
 
-> **Status:** Production Ready (audit v0.20.x, current v0.21.2) — see `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for audit metrics and `coverage.xml` for the latest coverage snapshot.
-
-Oneiric extracts the resolver/lifecycle core from ACB and turns it into a stand-alone platform. Register adapters, services, tasks, events, workflows, and actions; explain every decision; hot-swap providers; stream telemetry; replay workflow notifications; and hydrate capabilities from signed remote manifests.
+Oneiric is a standalone resolver and runtime foundation. Register adapters,
+services, tasks, events, workflows, and actions; explain selection decisions;
+manage lifecycle transitions; and hydrate capabilities from remote manifests.
 
 ## Bodai Ecosystem Role
 
-Oneiric is the **resolver / runtime foundation** of the [Bodai ecosystem](https://github.com/lesleslie/bodai) — it powers the adapter system, service lifecycle, and runtime orchestration that Mahavishnu, Akosha, Dhara, Session-Buddy, and Crackerjack all depend on.
-
-Standalone, Oneiric is a deterministic component resolution library for Python 3.14+ runtimes — useful for any application that needs to register, resolve, and lifecycle adapters, services, tasks, events, and workflows. See [bodai/docs](https://github.com/lesleslie/bodai) for how Oneiric is used across the ecosystem.
+Oneiric is the shared resolver and lifecycle layer used by the [Bodai
+ecosystem](https://github.com/lesleslie/bodai). It remains usable as a
+standalone library for applications that need deterministic provider selection,
+swapping, and runtime orchestration.
 
 ## Quick Links
 
-- [Roadmap & Phase Tracking](#roadmap--phase-tracking)
-- [Why Oneiric](#why-oneiric)
-- [Domain Coverage & Built-ins](#domain-coverage--built-ins)
-- [CLI Usage](#cli-usage)
-- [Remote Manifests](#remote-manifests)
+- [Capabilities](#capabilities)
+- [Domains and built-ins](#domains-and-built-ins)
+- [Quick start](#quick-start)
+- [Configuration](#configuration)
+- [CLI map](#cli-map)
+- [Documentation](#documentation)
 
-## Quality & CI
+## Quality checks
 
-Crackerjack is used for repo-wide quality-control and CI/CD workflows around Oneiric changes. Keep local validation aligned with the documented Crackerjack path before merging.
-
-______________________________________________________________________
-
-## Roadmap & Phase Tracking
-
-- [Strategic Roadmap](docs/STRATEGIC_ROADMAP.md) — living priorities, principles, and recent decisions.
-- [Serverless & Parity Execution Plan](docs/implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md) — Cloud Run profile + adapter/action remediation blueprint.
-- [Orchestration Parity Plan](docs/implementation/ORCHESTRATION_PARITY_PLAN.md) — event dispatcher, DAG runtime, and supervisor milestones.
-- [Implementation Phase Tracker](docs/IMPLEMENTATION_PHASE_TRACKER.md) — numbered delivery phases with owners/status for every outstanding item.
+Use Crackerjack for the repository quality gate; the commands are documented
+below in [Development](#development).
 
 ______________________________________________________________________
 
-## Why Oneiric
+## Capabilities
 
-- **Deterministic resolver:** Explicit selections → stack order → priorities → registration order, with `resolver.explain` + `oneiric --demo explain …` showing every reason and shadowed candidate.
-- **Lifecycle orchestration:** `LifecycleManager` wraps activation → health → bind → cleanup plus rollback, swap latency histograms, and structured logging for every domain.
-- **Config watchers & supervisor:** `SelectionWatcher` uses watchfiles/polling to auto‑swap components, while the `ServiceSupervisor` enforces pause/drain state recorded in the SQLite `DomainActivityStore`.
-- **Remote manifests + packaging:** CDN/file manifests (ED25519 signatures + SHA256) hydrate all domains. Use `oneiric manifest pack` to emit canonical JSON and `docs/examples/FASTBLOCKS_PARITY_FIXTURE.yaml` to rehearse parity in CI.
-- **Runtime orchestration:** `RuntimeOrchestrator` wires bridges, watchers, remote sync, workflow checkpoints (`WorkflowCheckpointStore`), scheduler HTTP server hooks, and structured telemetry snapshots.
-- **Event/workflow parity:** The event dispatcher handles topics, priorities, retry policies, filters, and exclusive fan-out; workflow bridges run DAGs inline, enqueue jobs, and expose queue metadata for Cloud Tasks/Pub/Sub adapters.
-- **Observability + ChatOps:** `oneiric.core.logging` (structlog), `RuntimeTelemetryRecorder` (`.oneiric_cache/runtime_telemetry.json`), runtime health snapshots, `oneiric status/health/activity/remote-status`, and the `NotificationRouter` that forwards `workflow.notify` payloads to Slack/Teams/Webhooks from CLI or orchestrator runs. Monitoring adapters include Logfire, Sentry, OTLP, and Netdata for comprehensive system and application observability.
-- **Plugin/secrets tooling:** Entry-point discovery auto-loads adapters/services/tasks/events/workflows (`oneiric plugins`), while `SecretsHook` caches provider results and `oneiric secrets rotate` invalidates cached values.
-- **Documentation + runbooks:** `docs/README.md` indexes 40+ living documents (architecture, telemetry, deployment, observability checklists, cut-over validation) so operational workflows match the runtime.
-
-______________________________________________________________________
-
-## Domain Coverage & Built-ins
-
-```mermaid
-flowchart TB
-    subgraph "Shared Infrastructure"
-        Resolver["Resolver<br/>(4-tier precedence)"]
-        Lifecycle["LifecycleManager<br/>(swap + rollback)"]
-        Observability["Observability<br/>(structlog + OTel)"]
-        Activity["DomainActivityStore<br/>(pause/drain state)"]
-        Remote["Remote Manifests<br/>(ED25519 signed)"]
-    end
-
-    subgraph "Domain Bridges"
-        Adapter["Adapter Bridge"]
-        Service["Service Bridge"]
-        Task["Task Bridge"]
-        Event["Event Bridge"]
-        Workflow["Workflow Bridge"]
-        Action["Action Bridge"]
-    end
-
-    Resolver <-->|"resolves"| Adapter
-    Resolver <-->|"resolves"| Service
-    Resolver <-->|"resolves"| Task
-    Resolver <-->|"resolves"| Event
-    Resolver <-->|"resolves"| Workflow
-    Resolver <-->|"resolves"| Action
-
-    Lifecycle <-->|"manages"| Adapter
-    Lifecycle <-->|"manages"| Service
-    Lifecycle <-->|"manages"| Task
-    Lifecycle <-->|"manages"| Event
-    Lifecycle <-->|"manages"| Workflow
-
-    Observability -->|"instruments"| Resolver
-    Observability -->|"instruments"| Lifecycle
-    Activity -->|"enforces"| Adapter
-    Activity -->|"enforces"| Service
-    Activity -->|"enforces"| Task
-    Activity -->|"enforces"| Event
-    Activity -->|"enforces"| Workflow
-
-    Remote -->|"hydrates"| Adapter
-    Remote -->|"hydrates"| Service
-    Remote -->|"hydrates"| Task
-    Remote -->|"hydrates"| Event
-    Remote -->|"hydrates"| Workflow
-
-    style Resolver fill:#e1f5ff
-    style Lifecycle fill:#fff4e1
-    style Observability fill:#f0e1ff
-    style Activity fill:#ffe1f0
-    style Remote fill:#e1ffe1
-```
-
-**Domain Details:**
-
-| Domain | Bridge Features | Built-in Examples |
-|--------|-----------------|-------------------|
-| **Adapters** | Activity-aware swaps, pause/drain enforcement, health snapshots | Redis caches, Cloud Tasks/Pub/Sub/Kafka/RabbitMQ/NATS/Redis Streams queues, httpx/aiohttp clients, S3/GCS/Azure/local storage, Slack/Teams/Webhook/Twilio/SendGrid/Mailgun/APNS/FCM/Webpush messaging, Auth0 identity, Cloudflare/Route53/GCP DNS, FTP/SFTP/SCP/HTTPS file transfer (download + upload), Infisical/GCP/AWS secrets, Postgres/MySQL/SQLite/DuckDB DBs, MongoDB/Firestore/DynamoDB NoSQL, Neo4j/DuckDB PGQ/ArangoDB graph, Pinecone/Qdrant/pgvector vector, OpenAI/SentenceTransformers/ONNX/Anthropic embeddings + LLM, Logfire/Sentry/OTLP/Netdata monitoring |
-| **Services** | Lifecycle-managed business services with supervisor hooks | Example payment/notification services (`docs/examples/LOCAL_CLI_DEMO.md`) |
-| **Tasks** | Async runners + queue metadata and retry controls | `task.schedule`, Cloud Tasks schedulers, Pub/Sub dispatch |
-| **Events** | Dispatcher with filters, fan-out policies, retry, and observability metrics | `event.dispatch`, webhook fan-out, queue listeners |
-| **Workflows** | DAG execution/enqueueing, queue adapter selection, checkpoints, telemetry | Demo workflows + remote DAGs from manifests (`fastblocks.workflows.fulfillment`, etc.) |
-| **Actions** | Action bridge plus kits for compression encode/hash, workflow audit/orchestrate/notify/retry, http.fetch, security signature/secure, serialization encode/decode, data transform/sanitize, validation schema, task scheduling, event dispatch, automation triggers, debug console, etc. |
-| **Shell** | IPython-based admin shell for interactive debugging | `AdminShell` base class with Rich formatters, magic commands, and helper functions |
-
-All domains share the same resolver semantics, lifecycle orchestration, logging, and activity controls.
+- **Resolution:** deterministic selection by explicit configuration, stack,
+  priority, and registration order, with explainable and shadowed candidates.
+- **Lifecycle:** activation, health checks, binding, cleanup, rollback, and
+  safe provider swaps through `LifecycleManager`.
+- **Runtime orchestration:** watchers, remote refresh, workflow checkpoints,
+  event dispatch, pause/drain supervision, and optional scheduler callbacks.
+- **Remote delivery:** YAML/JSON manifests with optional digest and signature
+  verification, canonical packaging, and per-domain registration.
+- **Operations:** structured logging, runtime health and telemetry snapshots,
+  notification routing, plugin discovery, and secrets-cache management.
 
 ______________________________________________________________________
 
-## Runtime & Orchestrator Capabilities
+## Domains and built-ins
 
-- **Watchers:** `Adapter|Service|Task|Event|WorkflowConfigWatcher` reload selections via watchfiles or polling (serverless mode falls back to polling). Swaps respect activity state (paused/draining).
-- **Remote sync:** `RuntimeOrchestrator.sync_remote()` verifies signatures, registers every domain, refreshes dispatchers/DAGs, and records per-domain counts/durations.
-- **Supervisor & activity store:** `DomainActivityStore` persists pause/drain notes in SQLite; the supervisor polls it, exposes listener hooks, and ensures paused/draining components stop accepting work.
-- **Workflow checkpoints:** `WorkflowCheckpointStore` stores DAG progress per workflow so orchestrations can resume after restarts; `orchestrate` and `workflow run` expose `--workflow-checkpoints`/`--no-workflow-checkpoints`.
-- **Scheduler HTTP server:** Optional aiohttp server (`SchedulerHTTPServer`) processes Cloud Tasks callbacks via `WorkflowTaskProcessor`. CLI `--http-port/--no-http` toggles this path for serverless deployments.
-- **Telemetry + health:** `RuntimeTelemetryRecorder` tracks event dispatch + workflow execution stats; `RuntimeHealthSnapshot` writes orchestrator PID, watcher/remote state, per-domain registration counts, and activity/lifecycle snapshots to `.oneiric_cache/runtime_health.json`.
-- **Notification router:** `NotificationRouter` converts `workflow.notify` payloads into `NotificationMessage` objects and sends them through messaging adapters. CLI `action-invoke workflow.notify --workflow … --send-notification` uses the same route metadata as runtime workflows.
-- **Remote status:** `oneiric remote-status` loads cached remote telemetry (`remote_status.json`) with sync timestamps, per-domain counts, and latency budget comparisons (the manifest URL comes from settings, not the cache file).
+The resolver exposes six registered domains. Each domain uses the same
+selection and lifecycle model, while domain-specific bridges provide the
+execution behavior.
+
+| Domain | Role |
+| --- | --- |
+| **Adapters** | Providers for cache, storage, queues, HTTP, databases, NoSQL, graph, vector, embeddings, LLMs, secrets, messaging, DNS, file transfer, and monitoring. |
+| **Services** | Lifecycle-managed application services registered by the host application or a manifest. |
+| **Tasks** | Async task providers and queue metadata used by runtime workflows. |
+| **Events** | Topic dispatch with filtering, fan-out, retries, and handler inspection. |
+| **Workflows** | DAG planning, execution, enqueueing, checkpoints, and telemetry. |
+| **Actions** | Built-in kits for compression, HTTP, workflow, security, serialization, data, validation, task, event, automation, and debugging operations. |
+
+Built-in action keys include `compression.encode`, `compression.hash`,
+`compression.stream`, `workflow.audit`, `workflow.orchestrate`,
+`workflow.notify`, `workflow.retry`, `http.fetch`, `event.dispatch`, and
+`debug.console`. Use `oneiric --demo list --domain action` to inspect the
+complete registry.
 
 ______________________________________________________________________
 
-## Quick Start
+## Runtime and operations
+
+- Watchers reload selections using watchfiles or polling; serverless profiles
+  can disable remote refresh and watchers.
+- `RuntimeOrchestrator` coordinates remote sync, event dispatch, workflow
+  execution, checkpoints, notifications, and the optional scheduler HTTP
+  server for Cloud Tasks callbacks.
+- `DomainActivityStore` records pause/drain state, while the supervisor keeps
+  inactive components from accepting work.
+- Runtime health, telemetry, lifecycle, activity, and workflow checkpoint
+  artifacts are written beneath the configured cache directory.
+- `oneiric health`, `status`, `activity`, `remote-status`, and
+  `supervisor-info` expose operator-facing state.
+
+______________________________________________________________________
+
+## Configuration
+
+`load_settings()` layers project and user configuration for the selected
+`project_name`. From lowest to highest precedence, it checks:
+
+1. Code defaults
+1. `settings/<project_name>.yaml` or `.yml` at the project root
+1. `settings/local.yaml` at the project root
+1. `${XDG_CONFIG_HOME:-~/.config}/<project_name>/config.yaml`
+1. `${XDG_CONFIG_HOME:-~/.config}/<project_name>/local.yaml`
+1. Environment overrides in the form `<PROJECT_NAME>_<SETTING>__<FIELD>`
+
+For example, a project using `project_name="oneiric"` checks
+`~/.config/oneiric/config.yaml` and `~/.config/oneiric/local.yaml` when
+`XDG_CONFIG_HOME` is not set. Set `XDG_CONFIG_HOME` to relocate the user
+configuration root. Missing layered files are ignored. Project paths are
+normally anchored at the installed package/project root; an explicit
+`project_root=` can be supplied when embedding Oneiric elsewhere.
+
+An explicit `path=` argument to `load_settings()` or the corresponding
+`<PROJECT_NAME>_CONFIG` environment variable is applied last and takes
+precedence over all layered files. The CLI exposes the same override through
+`--config`.
+
+______________________________________________________________________
+
+## Quick start
+
+For repository development:
 
 ```bash
-# Install
-uv add oneiric
-
-# Demo runner (adapters/events/workflows wired with defaults)
-uv run python main.py
-
-# Inspect demo metadata
+uv sync --group dev
 uv run oneiric --demo list --domain adapter
-uv run oneiric --demo explain status --domain service --key status
+uv run oneiric --demo list --domain action
+uv run oneiric --demo explain demo --domain adapter
+uv run oneiric --demo health --probe --json
+```
 
-# Orchestrator inspectors (no long-running loop)
-uv run oneiric orchestrate --print-dag --workflow fastblocks.workflows.fulfillment --inspect-json
-uv run oneiric orchestrate --events --inspect-json
+Inspect runtime plans without starting the long-running loop:
 
-# Inspect workflow DAG plan (topology + metadata)
-uv run oneiric workflow plan \
-  --workflow fastblocks.workflows.fulfillment \
-  --json
+```bash
+uv run oneiric --demo orchestrate --print-dag --inspect-json
+uv run oneiric --demo orchestrate --events --inspect-json
+uv run oneiric workflow plan --workflow <workflow-key> --json
+```
 
-# Remote sync (file or HTTPS manifest)
-uv run oneiric remote-sync --manifest docs/sample_remote_manifest.yaml --watch --refresh-interval 120
+Run a manifest sync, event, workflow, or action explicitly:
 
-# Emit events (fan-out/filters/retry proof)
-uv run oneiric event emit \
-  --topic fastblocks.order.created \
-  --payload '{"order_id":"demo-123","region":"us"}' \
-  --json
+```bash
+uv run oneiric remote-sync --manifest docs/sample_remote_manifest.yaml
+uv run oneiric event emit demo.event --payload '{"source":"cli"}' --json
+uv run oneiric workflow run <workflow-key> --context '{"request_id":"demo"}' --json
+uv run oneiric action-invoke compression.encode --payload '{"text":"hello"}' --json
+```
 
-# Run workflows/DAGs once (without enqueueing)
-uv run oneiric workflow run \
-  --workflow fastblocks.workflows.fulfillment \
-  --context '{"order_id":"demo-123"}' \
-  --json
+Start the orchestrator when a long-running process is required:
 
-# Use stored checkpoints (or disable them) for workflow runs
-uv run oneiric workflow run \
-  --workflow fastblocks.workflows.fulfillment \
-  --workflow-checkpoints \
-  --resume-checkpoint \
-  --json
-
-# Inspect DAG plan/topology without executing
-uv run oneiric orchestrate \
-  --print-dag \
-  --workflow fastblocks.workflows.fulfillment \
-  --inspect-json
-
-# The inspector output lists node order, dependency edges, queue category/provider fallbacks,
-# retry/checkpoint metadata, and notification hints derived from the manifest. Attach this
-# JSON to parity issues alongside the CLI `status --json` snapshot before executing workflows.
-
-# Replay workflow.notify payloads through ChatOps adapters
-uv run oneiric action-invoke workflow.notify \
-  --workflow fastblocks.workflows.fulfillment \
-  --payload '{"message":"Deploy ready","channel":"deploys"}' \
-  --send-notification --json
-
-# Long-running orchestrator (with remote refresh + scheduler HTTP server)
-uv run oneiric orchestrate \
+```bash
+uv run oneiric start \
   --manifest docs/sample_remote_manifest.yaml \
   --refresh-interval 120 \
-  --http-port 8080
+  --no-http
+uv run oneiric process-status
+uv run oneiric health --probe --json
+uv run oneiric stop
 ```
 
-### Serverless Profile Quickstart (Cloud Run)
+### Serverless profile
+
+The `serverless` profile is intended for deployments such as Cloud Run. It
+can be selected through the environment or CLI and combined with explicit
+remote/HTTP settings:
 
 ```bash
-# Package the manifest that will be baked into the Cloud Run build
 uv run oneiric manifest pack \
   --input docs/sample_remote_manifest.yaml \
   --output build/serverless_manifest.json
 
-# Capture supervisor + health proofs before deploying
-ONEIRIC_PROFILE=serverless \
-  uv run oneiric supervisor-info --json
-
-ONEIRIC_PROFILE=serverless \
-  uv run oneiric health --probe --json \
-    --manifest build/serverless_manifest.json
-
-# Run the orchestrator locally with serverless defaults
-ONEIRIC_PROFILE=serverless \
-  uv run oneiric orchestrate \
-    --no-remote \
-    --health-path /tmp/runtime_health.json
+ONEIRIC_PROFILE=serverless uv run oneiric supervisor-info
+ONEIRIC_PROFILE=serverless uv run oneiric health --probe --json
+ONEIRIC_PROFILE=serverless uv run oneiric start --no-remote --no-http
 ```
 
-| Env Var | Purpose | Notes |
-|---------|---------|-------|
-| `ONEIRIC_PROFILE=serverless` | Applies watcher/remote/secrets toggles used for Cloud Run | CLI and `main.py` honor this env var automatically |
-| `ONEIRIC_CONFIG=/workspace/config/serverless.yaml` | Points to per-service serverless settings | Use with Procfile or `gcloud run deploy --set-env-vars` |
-| `ONEIRIC_RUNTIME_SUPERVISOR__ENABLED` | Overrides the Service Supervisor flag | Leave unset (`true`) unless debugging |
-| `ONEIRIC_ACTIVITY_STORE=/workspace/.oneiric_cache/domain_activity.sqlite` | Pins the activity store location | Optional; default lives under `.oneiric_cache/` |
-
-Include the `supervisor-info` and `health --probe --json` output in release notes so Cloud Run deployers can prove the serverless profile, supervisor, and Secret Manager precedence were enabled. Full build/deploy transcripts live in `docs/deployment/CLOUD_RUN_BUILD.md`.
+Deployment details are in [docs/deployment/CLOUD_RUN_BUILD.md](docs/deployment/CLOUD_RUN_BUILD.md).
 
 ______________________________________________________________________
 
-## CLI Map
+## CLI map
 
-> **Invocation:** The console script installed by `[project.scripts]` is **`oneiric`** — use `oneiric list`, `oneiric status`, etc. The module path `oneiric.cli` is also valid Python and reachable via `python -m oneiric.cli <sub>` (useful when the binary is not on `PATH`, e.g. dev installs and CI). Older docs and example transcripts occasionally write `oneiric.cli <sub>` as the CLI form; treat those as the binary form (`oneiric <sub>`) unless the line is clearly a Python invocation (`python -m oneiric.cli`, `from oneiric.cli import …`).
+The installed console script is `oneiric`. Use `oneiric --help` for the
+complete command surface; `uv run oneiric` is the repository-local form.
 
-- **Domain introspection:** `oneiric list`, `status`, `explain`, `swap`, and `--shadowed` target adapters/services/tasks/events/workflows/actions with structured JSON output.
-- **Runtime controls:** `pause`, `drain`, `activity`, `health --probe`, `supervisor-info`, and `status` manage/inspect pause-drain states, lifecycle metrics, and supervisor toggles; `activity` surfaces SQLite-backed counts for dashboards.
-- **Workflows & events:** `workflow plan`, `workflow run`, `workflow enqueue`, `event emit` interact with DAGs, queue adapters, and event dispatcher metadata; CLI accepts JSON context/metadata payloads for parity tests.
-- **Remote + manifests:** `remote-sync`, `remote-status`, `manifest pack` (YAML→JSON packaging), and `manifest` inspectors keep manifests + cached telemetry aligned. `docs/examples/FASTBLOCKS_PARITY_FIXTURE.yaml` plus `tests/integration/test_migration_parity.py` enforce parity.
-- **Observability:** `orchestrate --print-dag/--events --inspect-json`, `status --json`, `health --json`, `activity --json`, `action-invoke workflow.notify --send-notification`, and `remote-status --json` produce the artifacts referenced in `docs/examples/*_OBSERVABILITY.md`.
-- **Secrets & plugins:** `secrets rotate --keys k1,k2` invalidates cache entries, `secrets rotate --all` clears the provider cache, and `plugins` lists entry-point groups + candidate counts/errors for diagnostics.
-
-______________________________________________________________________
-
-## Observability, Telemetry & ChatOps
-
-- **Structured logging:** `oneiric.core.logging` wraps structlog with domain/key/provider context, JSON output, timestamper, optional sinks (stdout, stderr, file, HTTP), and tracer injection. See `docs/OBSERVABILITY_GUIDE.md`.
-- **Runtime telemetry:** `.oneiric_cache/runtime_telemetry.json` stores the last event dispatch + workflow execution (matched handlers, attempts, failures, per-node durations, retry counts). CLI inspectors update the same file so you can attach it to parity PRs.
-- **Health snapshots:** `.oneiric_cache/runtime_health.json` includes watcher state, orchestrator PID, remote metrics, and pause/drain snapshots for `oneiric health`.
-- **Remote telemetry:** `.oneiric_cache/remote_status.json` stores sync telemetry (duration, per-domain registrations, success/failure counters) and powers `remote-status`.
-- **Notification evidence:** `NotificationRoute` metadata can be derived from workflow definitions or CLI overrides; CLI transcripts should accompany telemetry + DAG/event payloads as documented in `docs/examples/CRACKERJACK_OBSERVABILITY.md`, `FASTBLOCKS_OBSERVABILITY.md`, and `SESSION_BUDDY_OBSERVABILITY.md`.
-- **Parity/cut-over artifacts:** `docs/implementation/CUTOVER_VALIDATION_CHECKLIST.md` enumerates manifest snapshots, DAG/event JSON, telemetry archives, and ChatOps transcripts required before flipping Crackerjack/Fastblocks/Session-Buddy to Oneiric.
+- **Inspect:** `list`, `status`, `explain`, `health`, `plugins`, and
+  `supervisor-info` expose registrations, resolution decisions, lifecycle
+  state, and runtime health.
+- **Manage lifecycle:** `swap`, `pause`, `drain`, `start`, `stop`, and
+  `process-status` control providers and the background orchestrator.
+- **Run work:** `event emit`, `workflow plan`, `workflow run`,
+  `workflow enqueue`, and `action-invoke` exercise runtime capabilities.
+- **Deliver manifests:** `remote-sync`, `remote-status`, and `manifest pack`
+  handle remote inputs and cached synchronization state.
+- **Operate integrations:** `plugins`, `secrets`, `shell`, and `load-test`
+  provide discovery, secret-cache operations, interactive administration, and
+  runtime load testing.
 
 ______________________________________________________________________
 
-## Remote Manifests & Packaging
+## Observability and state
 
-- **Schema:** `docs/REMOTE_MANIFEST_SCHEMA.md` defines v2 entries (capabilities, retry policies, DAG specs, platform constraints, documentation links).
-- **Security:** `oneiric.remote.security` enforces ED25519 signatures and SHA256 digests; manifest metadata includes ownership, secrets posture, and dependency hints.
-- **Packaging:** `oneiric manifest pack --input docs/sample_remote_manifest.yaml --output build/manifest.json` produces canonical JSON for Cloud Run / serverless deploys.
-- **Telemetry:** Remote sync writes `remote_status.json` (duration, latency budget, per-domain registrations). Pair `remote-status --json` with telemetry pipelines.
-- **Fixtures/tests:** `docs/examples/FASTBLOCKS_PARITY_FIXTURE.yaml` feeds both docs and `tests/integration/test_migration_parity.py`; update the fixture + parity guides together to keep CI evidence in sync.
+Oneiric uses structured logging and writes runtime artifacts below the
+configured `cache_dir` (the default setting is `.oneiric_cache`). The runtime
+surface includes:
 
-______________________________________________________________________
+- `runtime_health.json` for watcher, remote, supervisor, and orchestrator state
+- `runtime_telemetry.json` for event and workflow execution summaries
+- `lifecycle_status.json` for provider lifecycle snapshots
+- `domain_activity.sqlite` for pause/drain state
+- `workflow_checkpoints.sqlite` for resumable workflow execution when enabled
 
-## Documentation Map
-
-- `docs/README.md` — documentation index + navigation.
-- `docs/ONEIRIC_VS_ACB.md` — migration + comparison guide.
-- `docs/UNCOMPLETED_TASKS.md` — future enhancements (no critical blockers).
-- `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` — production readiness audit (95/100).
-- `docs/implementation/CUTOVER_VALIDATION_CHECKLIST.md` — artifact requirements for repo cut-overs.
-- `docs/examples/FASTBLOCKS_PARITY_FIXTURE.yaml` + `docs/examples/*_OBSERVABILITY.md` — parity fixtures + CLI/telemetry steps.
-- Reference specs: `docs/NEW_ARCH_SPEC.md`, `docs/RESOLUTION_LAYER_SPEC.md`, `docs/REMOTE_MANIFEST_SCHEMA.md`, `docs/SIGNATURE_VERIFICATION.md`, `docs/OBSERVABILITY_GUIDE.md`.
-- Operations: `docs/deployment/` (Cloud Run + systemd), `docs/monitoring/` (Prometheus/Grafana/Loki/alerts), `docs/runbooks/` (incidents, maintenance, troubleshooting).
+See [docs/OBSERVABILITY_GUIDE.md](docs/OBSERVABILITY_GUIDE.md) for logging,
+telemetry, and artifact-handling details. `workflow.notify` routes messages
+through the configured messaging adapter when notification delivery is enabled.
 
 ______________________________________________________________________
 
-## Testing & Quality
+## Remote manifests
+
+Remote manifests can describe adapters, services, tasks, events, workflows, and
+actions. Oneiric can load them from local paths or supported URIs, validate
+optional signatures and digests, register their domains, and refresh them on a
+schedule.
 
 ```bash
-# Full suite
-uv run pytest
-
-# Coverage
-uv run pytest --cov=oneiric --cov-report=term
-
-# Parity fixture / orchestrator integration
-uv run pytest tests/integration/test_migration_parity.py -vv
-
-# Runtime orchestrator coverage
-uv run pytest tests/runtime -vv
-
-# Repo quality gates (lint+tests+version bump)
-python -m crackerjack -a patch
+uv run oneiric manifest pack \
+  --input docs/sample_remote_manifest.yaml \
+  --output build/manifest.json
+uv run oneiric remote-sync --manifest docs/sample_remote_manifest.yaml
+uv run oneiric remote-status
 ```
 
-- Stage 5 audit (v0.20.x) recorded earlier-stage metrics; current Phase 4 plan (v0.21.0) reports **4217 tests passing, 99% coverage**, and no P0/P1 issues (live numbers refreshed as of the latest test run); see `coverage.xml` for the current coverage snapshot.
-- Runtime telemetry + notification router + supervisor paths are covered by `tests/runtime/test_telemetry.py`, `test_notifications.py`, `test_supervisor.py`, and CLI/integration suites.
-- `python -m crackerjack` mirrors the multi-repo gate used in Crackerjack/ACB/FastBlocks.
+See [docs/REMOTE_MANIFEST_SCHEMA.md](docs/REMOTE_MANIFEST_SCHEMA.md) and
+[docs/SIGNATURE_VERIFICATION.md](docs/SIGNATURE_VERIFICATION.md) for the
+manifest and verification contracts.
+
+______________________________________________________________________
+
+## Documentation
+
+- [Documentation index](docs/README.md) — navigation through architecture,
+  operations, examples, and reference material.
+- [CLI reference](docs/CLI_REFERENCE.md) — command options and operator flows.
+- [Package map](oneiric/README.md) — module layout and extension points.
+- [Custom adapters](docs/guides/custom-adapter.md) — registration and resolver
+  extension patterns.
+- [XDG configuration](docs/ONEIRIC_SHELL_QUICKREF.md) — configuration layers
+  and interactive settings inspection.
+- [Observability guide](docs/OBSERVABILITY_GUIDE.md) — logging and runtime
+  artifacts.
+- [Deployment guides](docs/deployment/) and [runbooks](docs/runbooks/) —
+  Cloud Run, systemd, maintenance, and troubleshooting.
+
+______________________________________________________________________
+
+## Development
+
+```bash
+# Fast repository checks
+python -m crackerjack run --fast
+
+# Comprehensive checks
+python -m crackerjack run --comp
+
+# Full quality run, including tests
+python -m crackerjack run --run-tests
+```
+
+Run the repository-local gate after changing runtime, adapter, action, or CLI
+behavior. Add or update tests and documentation with the same change.
 
 ______________________________________________________________________
 
 ## Contributing
 
-1. Review architecture & migration references (`docs/ONEIRIC_VS_ACB.md`, `docs/README.md`).
-1. Run `python -m crackerjack -a patch` (lint/tests/format/version bump) before opening a PR.
-1. Add or update tests for new runtime features, adapters, actions, or CLI flows.
-1. Update documentation/runbooks (especially observability guides + cut-over checklist) so reviewers can reproduce artifacts.
+1. Review the relevant architecture and operator documentation.
+1. Run `python -m crackerjack run --run-tests` before opening a PR.
+1. Add or update tests for runtime features, adapters, actions, or CLI flows.
+1. Update the README or linked documentation when the operator surface changes.
 
 ______________________________________________________________________
 
-## License & Support
+## License and support
 
 - **License:** BSD-3-Clause (see `LICENSE`).
 - **Issues:** https://github.com/lesleslie/oneiric/issues
-- **Docs:** Start with `docs/README.md` and the Stage 5 audit for readiness evidence.
-
-Oneiric builds on patterns from ACB, Crackerjack, and FastBlocks—thanks to everyone contributing adapters, action kits, runtime supervisors, telemetry, and observability tooling.
+- **Docs:** Start with [docs/README.md](docs/README.md).
