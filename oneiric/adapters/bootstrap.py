@@ -138,3 +138,24 @@ def register_builtin_adapters(resolver: Resolver) -> None:
         package_path=str(Path(__file__).parent),
         adapters=adapters,
     )
+
+
+def queued_publisher(
+    *,
+    settings: object | None = None,
+    redis_client: object | None = None,
+) -> RedisStreamsQueueAdapter:
+    """Canonical factory for the bodai.hooks.* bus channel.
+
+    Returns a RedisStreamsQueueAdapter configured with default settings
+    (or an operator-supplied override). Caller is responsible for awaiting
+    ``await adapter.init()`` before first publish/subscribe.
+
+    Per docs/superpowers/specs/2026-09-14-dhara-mcp-decomposition-design.md
+    §4.13.1 — this is the canonical entry point for hook-bus publishers
+    (Mahavishnu's ``bodai_hook_bridge._publish`` and downstream consumers).
+    Underlying adapter: ``oneiric.adapters.queue.redis_streams``.
+
+    Refs: docs/audits/2026-09-15-decomposition-final-review.md §2.1 W1
+    """
+    return RedisStreamsQueueAdapter(settings=settings, redis_client=redis_client)
