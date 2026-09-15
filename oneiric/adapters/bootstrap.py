@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from oneiric.core.resolution import Resolver
+
+if TYPE_CHECKING:
+    from coredis import Redis
 
 from .cache import MemoryCacheAdapter, RedisCacheAdapter
 from .database import (
@@ -52,6 +56,7 @@ from .queue import (
     NATSQueueAdapter,
     PubSubQueueAdapter,
     RedisStreamsQueueAdapter,
+    RedisStreamsQueueSettings,
 )
 from .secrets import (
     AWSSecretManagerAdapter,
@@ -142,8 +147,8 @@ def register_builtin_adapters(resolver: Resolver) -> None:
 
 def queued_publisher(
     *,
-    settings: object | None = None,
-    redis_client: object | None = None,
+    settings: RedisStreamsQueueSettings | None = None,
+    redis_client: Redis | None = None,
 ) -> RedisStreamsQueueAdapter:
     """Canonical factory for the bodai.hooks.* bus channel.
 
