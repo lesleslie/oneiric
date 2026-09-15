@@ -29,11 +29,11 @@ Dependencies:
   installed; Oneiric's substrate ships duckdb as an optional dep so the
   pgvector-backed production path stays the default.
 """
+
 from __future__ import annotations
 
 import asyncio
 import hashlib
-import json
 import logging
 from datetime import UTC, datetime
 from pathlib import Path
@@ -325,4 +325,4 @@ class DuckdbHotStore:
         return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
 
-__all__ = ["DuckdbHotStore", "DEFAULT_EMBEDDING_DIM"]
+__all__ = ["DEFAULT_EMBEDDING_DIM", "DuckdbHotStore"]

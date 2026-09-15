@@ -29,6 +29,7 @@ Architectural rationale:
   concrete (DuckDB-backed for development). Once Phase 6 / Phase 10
   lift pgvector into Oneiric, a Oneiric ``PgvectorHotStore`` joins.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
