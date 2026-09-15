@@ -1,27 +1,6 @@
-from oneiric.adapters.vector.agentdb import AgentDBAdapter, AgentDBSettings
-from oneiric.adapters.vector.pgvector import PgvectorAdapter, PgvectorSettings
-from oneiric.adapters.vector.pinecone import PineconeAdapter, PineconeSettings
-from oneiric.adapters.vector.qdrant import QdrantAdapter, QdrantSettings
-from oneiric.adapters.vector.vector_types import (
-    VectorBase,
-    VectorBaseSettings,
-    VectorCollection,
-    VectorDocument,
-    VectorSearchResult,
-)
+"""Vector storage adapters for Oneiric.
 
-__all__ = [
-    "AgentDBAdapter",
-    "AgentDBSettings",
-    "PgvectorAdapter",
-    "PgvectorSettings",
-    "PineconeAdapter",
-    "PineconeSettings",
-    "QdrantAdapter",
-    "QdrantSettings",
-    "VectorBase",
-    "VectorBaseSettings",
-    "VectorCollection",
-    "VectorDocument",
-    "VectorSearchResult",
-]
+Defines the contract for vector-backed hot-tier storage (HotStore Protocol)
+and ships concrete implementations (DuckDB-backed for development/test,
+pgvector-backed for production).
+"""
