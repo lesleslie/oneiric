@@ -156,6 +156,42 @@ async def test_init_busygroup_is_ignored() -> None:
 
 
 @pytest.mark.asyncio
+async def test_init_legacy_busygroup_response_error_is_ignored() -> None:
+    """Regression: coredis 5.x raises ``ResponseError("BUSYGROUP ...")``
+    rather than the dedicated ``StreamDuplicateConsumerGroupError``
+    exception type that coredis 6.x introduced. The cross-version
+    guard in ``init()`` MUST catch both forms — pinning coredis≥6
+    would be a breaking change for downstream consumers still on 5.x.
+
+    Pre-fix, the catch clause was ``except (ResponseError,
+    StreamDuplicateConsumerGroupError) as exc: if not isinstance(exc,
+    StreamDuplicateConsumerGroupError): raise`` — which re-raised
+    the legacy 5.x path (coredis 5.x has no dedicated type), silently
+    breaking every publish on the second-and-later init.
+    """
+    client = MockRedisClient()
+
+    async def busygroup_via_response_error(
+        *a: Any, **kw: Any
+    ) -> None:
+        # Simulate coredis 5.x: raises generic ResponseError whose
+        # message carries the BUSYGROUP sentinel. NOT an instance of
+        # StreamDuplicateConsumerGroupError — that's coredis 6.x only.
+        raise ResponseError("BUSYGROUP Consumer Group name already exists")
+
+    client.xgroup_create = busygroup_via_response_error  # type: ignore[method-assign]
+    adapter = RedisStreamsQueueAdapter(
+        RedisStreamsQueueSettings(
+            stream="s", group="g", consumer="c", auto_create_group=True
+        ),
+        redis_client=client,
+    )
+    # Should not raise — the legacy ResponseError("BUSYGROUP ...")
+    # form must be swallowed on par with the coredis 6.x type.
+    await adapter.init()
+
+
+@pytest.mark.asyncio
 async def test_init_pool_init_via_aenter() -> None:
     """Regression: coredis 6.x requires explicit pool init via __aenter__.
 
@@ -167,10 +203,11 @@ async def test_init_pool_init_via_aenter() -> None:
     on every publish. The fix: call ``await client.__aenter__()``
     after ``Redis.from_url(...)``.
 
-    Mock clients typically don't have ``__aenter__`` (the adapter's
-    defensive ``getattr`` handles that — the pool init is skipped
-    for mocks). This test uses a mock that DOES have ``__aenter__``
-    so we exercise the real-coredis path.
+    Pool init only runs for clients the adapter OWNS
+    (``_owns_client=True``). Injected clients have their pool
+    lifecycle managed by whoever constructed them, so the adapter
+    must not call ``__aenter__`` on them. This test sets
+    ``_owns_client=True`` explicitly to exercise the owned-client path.
     """
 
     class MockWithAenter(MockRedisClient):
@@ -195,8 +232,75 @@ async def test_init_pool_init_via_aenter() -> None:
         RedisStreamsQueueSettings(),
         redis_client=client,
     )
+    adapter._owns_client = True  # exercise owned-client pool-init path
     await adapter.init()
     assert aenter_called, "init() did not call client.__aenter__()"
+
+
+@pytest.mark.asyncio
+async def test_init_skips_aenter_for_injected_client() -> None:
+    """Pool init is gated on ``_owns_client``. An injected client
+    is the caller's lifecycle responsibility — the adapter must NOT
+    call ``__aenter__`` on it.
+
+    Without this guard, two adapters sharing an injected client
+    could race on pool init, or worse, a caller-owned client could
+    be re-initialised out from under the caller.
+    """
+
+    class MockWithAenter(MockRedisClient):
+        def __init__(self) -> None:
+            super().__init__()
+            self.aenter_calls = 0
+
+        async def __aenter__(self) -> MockWithAenter:
+            self.aenter_calls += 1
+            return self
+
+        async def __aexit__(self, *args: Any) -> None:
+            return None
+
+    client = MockWithAenter()
+    adapter = RedisStreamsQueueAdapter(
+        RedisStreamsQueueSettings(),
+        redis_client=client,
+    )
+    # _owns_client defaults to False for injected clients.
+    assert adapter._owns_client is False
+    await adapter.init()
+    assert client.aenter_calls == 0, (
+        "init() called __aenter__ on an injected client — pool "
+        "lifecycle belongs to the caller, not the adapter"
+    )
+
+
+@pytest.mark.asyncio
+async def test_init_clears_client_when_aenter_raises() -> None:
+    """Regression: if ``__aenter__`` raises mid-pool-init, drop the
+    client reference so a retry creates a fresh one. Without this
+    guard, ``self._client`` would point at a half-initialised pool
+    that raises on every subsequent publish.
+    """
+
+    class AenterRaises(MockRedisClient):
+        async def __aenter__(self) -> None:
+            raise RuntimeError("pool init boom")
+
+        async def __aexit__(self, *args: Any) -> None:
+            return None
+
+    client = AenterRaises()
+    adapter = RedisStreamsQueueAdapter(
+        RedisStreamsQueueSettings(auto_create_group=False),
+        redis_client=client,
+    )
+    adapter._owns_client = True
+    with pytest.raises(RuntimeError, match="pool init boom"):
+        await adapter.init()
+    assert adapter._client is None, (
+        "init() left a half-initialised client reference after "
+        "__aenter__ raised — next publish would explode"
+    )
 
 
 @pytest.mark.asyncio

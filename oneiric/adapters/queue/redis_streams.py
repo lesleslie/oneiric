@@ -117,14 +117,27 @@ class RedisStreamsQueueAdapter(EnsureClientMixin):
         # ``_disconnect_connection_pool()`` rather than __aexit__.
         # Without this, every publish raises
         # ``RuntimeError: Connection pool is not initialized or
-        # has exited``. Runs whether the client was created above
-        # OR injected (in case the injected client is uninitialized).
+        # has exited``.
+        #
+        # Pool init only runs for clients THIS adapter owns.
+        # Injected clients are the caller's responsibility: their
+        # pool lifecycle is managed by whoever constructed them.
         # Defensive ``getattr``: real coredis clients have
         # ``__aenter__``; injected mocks (tests) may not — in which
         # case the pool is assumed pre-initialised.
-        aenter = getattr(self._client, "__aenter__", None)
-        if aenter is not None:
-            await aenter()
+        #
+        # try/finally guard: if __aenter__ raises mid-pool-init,
+        # drop the client reference so a retry creates a fresh one
+        # rather than reusing a half-initialised pool that will
+        # raise on every subsequent publish.
+        if self._owns_client:
+            aenter = getattr(self._client, "__aenter__", None)
+            if aenter is not None:
+                try:
+                    await aenter()
+                except BaseException:
+                    self._client = None
+                    raise
         if self._settings.auto_create_group:
             try:
                 await self._client.xgroup_create(
@@ -139,18 +152,25 @@ class RedisStreamsQueueAdapter(EnsureClientMixin):
                     group=self._settings.group,
                 )
             except (ResponseError, StreamDuplicateConsumerGroupError) as exc:
-                # Type-based check across coredis versions:
-                # - coredis ≤5: ``ResponseError`` with "BUSYGROUP" in message
+                # Cross-coredis-version guard for "group already
+                # exists" — both forms are benign on re-init:
+                # - coredis ≤5: ``ResponseError`` whose message
+                #   contains the literal ``"BUSYGROUP"`` sentinel
+                #   (coredis 5.x has no dedicated exception type)
                 # - coredis ≥6: ``StreamDuplicateConsumerGroupError``
-                #   (subclass of ``StreamConsumerError`` → ``RedisError``;
-                #   NOT a subclass of ``ResponseError``, despite the name)
-                # Both indicate the same condition (group already exists,
-                # which is fine on re-init). The catch clause must include
-                # BOTH exception types — coredis 6.x's
-                # ``StreamDuplicateConsumerGroupError`` does NOT subclass
-                # ``ResponseError``.
-                if not isinstance(exc, StreamDuplicateConsumerGroupError):
-                    raise
+                #   (subclass of ``StreamConsumerError`` →
+                #   ``RedisError``; NOT a subclass of
+                #   ``ResponseError`` despite the name)
+                # Any other ResponseError (e.g. NOGROUP, WRONGTYPE)
+                # is a real failure and must propagate.
+                if isinstance(exc, StreamDuplicateConsumerGroupError):
+                    return  # coredis ≥6 — silent re-init path
+                if (
+                    isinstance(exc, ResponseError)
+                    and "BUSYGROUP" in str(exc).upper()
+                ):
+                    return  # coredis ≤5 — legacy BUSYGROUP path
+                raise
         await self._ensure_ping()
         self._logger.info("adapter-init", adapter="redis-streams-queue")
 
