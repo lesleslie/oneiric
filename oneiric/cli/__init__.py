@@ -27,6 +27,7 @@ from oneiric.adapters import AdapterBridge
 from oneiric.adapters.bootstrap import builtin_adapter_metadata
 from oneiric.adapters.metadata import AdapterMetadata, register_adapter_metadata
 from oneiric.cli.base import ExitCode, OneiricCLIBase
+from oneiric.cli.http_cli import http_app
 from oneiric.core.config import (
     OneiricSettings,
     SecretsHook,
@@ -276,6 +277,7 @@ app.add_typer(manifest_app, name="manifest")
 app.add_typer(secrets_app, name="secrets")
 app.add_typer(event_app, name="event")
 app.add_typer(workflow_app, name="workflow")
+app.add_typer(http_app, name="http")
 
 
 @dataclass
