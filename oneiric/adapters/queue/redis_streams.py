@@ -35,7 +35,7 @@ class RedisStreamsQueueSettings(BaseModel):
         default="oneiric-consumer", description="Consumer name for read operations."
     )
     url: str = Field(
-        default="redis://localhost: 6379/0", description="Redis connection URL."
+        default="redis://localhost:6379/0", description="Redis connection URL."
     )
     block_ms: int = Field(
         default=1000,

@@ -460,3 +460,18 @@ async def test_disconnect_pool_awaitable_disconnect(
     await adapter.init()
     await adapter._disconnect_connection_pool()
     assert disconnected == [True]
+
+
+def test_default_url_has_no_space() -> None:
+    """Pin the Redis URL default to NOT contain a space before the port.
+
+    Regression: pre-0.21.8 the default was ``redis://localhost: 6379/0``
+    (literal space). coredis's URL parser then raised
+    ``ValueError: Port could not be cast to integer value as ' 6379'``
+    at every publish, swallowed by the bridge's fire-and-forget catch
+    so the operator saw no events on the bus but no error either.
+    This test pins the typo-free form so future drift surfaces.
+    """
+    settings = RedisStreamsQueueSettings()
+    assert settings.url == "redis://localhost:6379/0"
+    assert " " not in settings.url  # paranoid belt-and-suspenders
