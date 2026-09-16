@@ -8,15 +8,24 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover - optional dependency typing
     from coredis import Redis
-    from coredis.exceptions import RedisError, ResponseError
+    from coredis.exceptions import (
+        RedisError,
+        ResponseError,
+        StreamDuplicateConsumerGroupError,
+    )
 else:  # pragma: no cover - runtime guard
     try:
         from coredis import Redis
-        from coredis.exceptions import RedisError, ResponseError
+        from coredis.exceptions import (
+            RedisError,
+            ResponseError,
+            StreamDuplicateConsumerGroupError,
+        )
     except ImportError:
         Redis = None
         RedisError = Exception
         ResponseError = Exception
+        StreamDuplicateConsumerGroupError = Exception
 from pydantic import BaseModel, Field
 
 from oneiric.adapters.metadata import AdapterMetadata
@@ -101,6 +110,21 @@ class RedisStreamsQueueAdapter(EnsureClientMixin):
                     "to use RedisStreamsQueueAdapter"
                 )
             self._client = Redis.from_url(self._settings.url)
+        # coredis 6.x requires explicit pool init via the async
+        # context manager protocol. We call __aenter__() directly
+        # (not ``async with self._client:``) because the adapter
+        # is long-lived — cleanup() handles pool disconnect via
+        # ``_disconnect_connection_pool()`` rather than __aexit__.
+        # Without this, every publish raises
+        # ``RuntimeError: Connection pool is not initialized or
+        # has exited``. Runs whether the client was created above
+        # OR injected (in case the injected client is uninitialized).
+        # Defensive ``getattr``: real coredis clients have
+        # ``__aenter__``; injected mocks (tests) may not — in which
+        # case the pool is assumed pre-initialised.
+        aenter = getattr(self._client, "__aenter__", None)
+        if aenter is not None:
+            await aenter()
         if self._settings.auto_create_group:
             try:
                 await self._client.xgroup_create(
@@ -114,8 +138,18 @@ class RedisStreamsQueueAdapter(EnsureClientMixin):
                     stream=self._settings.stream,
                     group=self._settings.group,
                 )
-            except ResponseError as exc:
-                if "BUSYGROUP" not in str(exc):
+            except (ResponseError, StreamDuplicateConsumerGroupError) as exc:
+                # Type-based check across coredis versions:
+                # - coredis ≤5: ``ResponseError`` with "BUSYGROUP" in message
+                # - coredis ≥6: ``StreamDuplicateConsumerGroupError``
+                #   (subclass of ``StreamConsumerError`` → ``RedisError``;
+                #   NOT a subclass of ``ResponseError``, despite the name)
+                # Both indicate the same condition (group already exists,
+                # which is fine on re-init). The catch clause must include
+                # BOTH exception types — coredis 6.x's
+                # ``StreamDuplicateConsumerGroupError`` does NOT subclass
+                # ``ResponseError``.
+                if not isinstance(exc, StreamDuplicateConsumerGroupError):
                     raise
         await self._ensure_ping()
         self._logger.info("adapter-init", adapter="redis-streams-queue")

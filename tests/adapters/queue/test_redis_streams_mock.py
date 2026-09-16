@@ -11,6 +11,11 @@ from typing import Any
 
 import pytest
 
+from coredis.exceptions import (
+    ResponseError,
+    StreamDuplicateConsumerGroupError,
+)
+
 from oneiric.adapters.queue.redis_streams import (
     RedisStreamsQueueAdapter,
     RedisStreamsQueueSettings,
@@ -45,8 +50,13 @@ class MockRedisClient:
     ) -> None:
         key = f"{stream}:{group}"
         if key in self.groups:
-            # Simulate BUSYGROUP error via a generic exception carrying that text
-            raise Exception("BUSYGROUP Consumer Group name already exists")
+            # Simulate coredis 6.x error: StreamDuplicateConsumerGroupError
+            # (the real type the production code matches via isinstance).
+            # coredis 5.x and earlier raised a ResponseError with "BUSYGROUP"
+            # in the message; coredis 6.x uses a dedicated exception type.
+            raise StreamDuplicateConsumerGroupError(
+                "Consumer Group name already exists"
+            )
         self.groups.add(key)
 
     async def xadd(self, stream: str, data: dict[str, Any], **kwargs: Any) -> str:
@@ -131,7 +141,9 @@ async def test_init_creates_group() -> None:
 @pytest.mark.asyncio
 async def test_init_busygroup_is_ignored() -> None:
     client = MockRedisClient()
-    # Pre-register group so second init raises BUSYGROUP
+    # Pre-register group so second init raises
+    # StreamDuplicateConsumerGroupError (coredis 6.x's dedicated
+    # exception type for "consumer group already exists").
     client.groups.add("s:g")
     adapter = RedisStreamsQueueAdapter(
         RedisStreamsQueueSettings(
@@ -139,8 +151,52 @@ async def test_init_busygroup_is_ignored() -> None:
         ),
         redis_client=client,
     )
-    # Should not raise — BUSYGROUP is swallowed
+    # Should not raise — the duplicate-group condition is swallowed.
     await adapter.init()
+
+
+@pytest.mark.asyncio
+async def test_init_pool_init_via_aenter() -> None:
+    """Regression: coredis 6.x requires explicit pool init via __aenter__.
+
+    Pre-fix, init() called ``await self._client.xgroup_create(...)``
+    immediately after ``Redis.from_url(...)``. coredis 6.x's connection
+    pool is not initialized until the async context manager protocol
+    runs ``__aenter__()``, so this raised
+    ``RuntimeError: Connection pool is not initialized or has exited``
+    on every publish. The fix: call ``await client.__aenter__()``
+    after ``Redis.from_url(...)``.
+
+    Mock clients typically don't have ``__aenter__`` (the adapter's
+    defensive ``getattr`` handles that — the pool init is skipped
+    for mocks). This test uses a mock that DOES have ``__aenter__``
+    so we exercise the real-coredis path.
+    """
+
+    class MockWithAenter(MockRedisClient):
+        async def __aenter__(self) -> MockWithAenter:
+            return self
+
+        async def __aexit__(self, *args: Any) -> None:
+            return None
+
+    client = MockWithAenter()
+    aenter_called = False
+
+    original_aenter = client.__aenter__
+
+    async def tracked_aenter() -> MockWithAenter:
+        nonlocal aenter_called
+        aenter_called = True
+        return await original_aenter()
+
+    client.__aenter__ = tracked_aenter  # type: ignore[method-assign]
+    adapter = RedisStreamsQueueAdapter(
+        RedisStreamsQueueSettings(),
+        redis_client=client,
+    )
+    await adapter.init()
+    assert aenter_called, "init() did not call client.__aenter__()"
 
 
 @pytest.mark.asyncio
