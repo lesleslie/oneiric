@@ -13,7 +13,7 @@ topic: lifecycle
 # Oneiric CLI Reference
 
 **Last Updated:** 2026-09-09
-**Version:** 0.21.2
+**Version:** 0.21.8
 
 Complete reference for all Oneiric CLI commands with examples, use cases, and troubleshooting tips.
 
@@ -260,7 +260,7 @@ Print the installed Oneiric version and exit with `ExitCode.SUCCESS`.
 
 ```bash
 oneiric version
-# oneiric: 0.21.2
+# oneiric: 0.21.8
 
 oneiric version --json  # (inherits the global --json flag from the root callback)
 ```

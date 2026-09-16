@@ -7,6 +7,8 @@
 
 **Explainable component resolution, lifecycle management, and remote delivery for Python 3.14+ runtimes**
 
+**current v0.21.8**
+
 Oneiric is a standalone resolver and runtime foundation. Register adapters,
 services, tasks, events, workflows, and actions; explain selection decisions;
 manage lifecycle transitions; and hydrate capabilities from remote manifests.
