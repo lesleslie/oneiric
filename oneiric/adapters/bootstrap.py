@@ -8,7 +8,11 @@ from oneiric.core.resolution import Resolver
 if TYPE_CHECKING:
     from coredis import Redis
 
-from .cache import MemoryCacheAdapter, RedisCacheAdapter
+from .cache import (
+    MemoryCacheAdapter,
+    PersistentKVCacheAdapter,
+    RedisCacheAdapter,
+)
 from .database import (
     DuckDBDatabaseAdapter,
     MySQLDatabaseAdapter,
@@ -78,6 +82,7 @@ from .vector import AgentDBAdapter, PineconeAdapter, QdrantAdapter
 def builtin_adapter_metadata() -> list[AdapterMetadata]:
     return [
         MemoryCacheAdapter.metadata,
+        PersistentKVCacheAdapter.metadata,
         RedisCacheAdapter.metadata,
         LocalStorageAdapter.metadata,
         S3StorageAdapter.metadata,
