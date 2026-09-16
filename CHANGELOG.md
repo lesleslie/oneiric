@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.8] - 2026-09-16
+
+### Fixed
+
+- oneiric: Address post-merge security review findings
+- oneiric: Coredis 6.x pool init via __aenter__ + type-based BUSYGROUP check
+- oneiric: Health() catches asyncio.TimeoutError (medium)
+- oneiric: Remove space in default Redis URL
+
 ## [0.21.7] - 2026-09-16
 
 ### Fixed

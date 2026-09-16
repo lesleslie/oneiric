@@ -165,10 +165,7 @@ class RedisStreamsQueueAdapter(EnsureClientMixin):
                 # is a real failure and must propagate.
                 if isinstance(exc, StreamDuplicateConsumerGroupError):
                     return  # coredis ≥6 — silent re-init path
-                if (
-                    isinstance(exc, ResponseError)
-                    and "BUSYGROUP" in str(exc).upper()
-                ):
+                if isinstance(exc, ResponseError) and "BUSYGROUP" in str(exc).upper():
                     return  # coredis ≤5 — legacy BUSYGROUP path
                 raise
         await self._ensure_ping()
