@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import json
 from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
@@ -162,6 +163,61 @@ class RedisStreamsQueueAdapter(EnsureClientMixin):
         client = self._ensure_client("redis-streams-client-not-initialized")
         payload = message.encode("utf-8") if isinstance(message, str) else message
         return await client.publish(channel, payload)
+
+    async def publish(
+        self,
+        channel: str,
+        payload: Mapping[str, Any],
+        *,
+        headers: Mapping[str, str] | None = None,
+    ) -> None:
+        """Publish ``payload`` to the bus channel ``channel``.
+
+        Per spec §4.13.4, Bodai hooks publish to channels like
+        ``bodai.hooks.post-tool-use``. The Redis Streams adapter uses
+        a single configured stream (default ``oneiric-queue``) and
+        embeds the channel + payload as stream-entry fields so
+        consumer groups (XREADGROUP) can filter by the ``channel``
+        field without parsing the JSON payload.
+
+        If ``channel`` starts with ``pubsub_channel_prefix`` (default
+        ``bodai:events:``), routes to Redis Pub/Sub instead for
+        ephemeral fire-and-forget delivery (no persistence, no
+        consumer groups).
+
+        Args:
+            channel: bus topic (e.g. ``bodai.hooks.post-tool-use``).
+                Starts-with match against ``pubsub_channel_prefix``
+                routes to Pub/Sub; otherwise routes to Streams.
+            payload: arbitrary JSON-serialisable mapping (e.g. the
+                ``CanonicalEnvelope.__dict__`` from
+                ``mahavishnu.bodai_hook_bridge``). Stored as the
+                stream entry's ``payload`` field, JSON-encoded.
+            headers: optional dict of message headers (e.g.
+                ``{"traceparent": "..."}`` for OTel correlation).
+                JSON-encoded into the ``headers`` stream field.
+        """
+        if channel.startswith(self._settings.pubsub_channel_prefix):
+            # Pub/Sub path — strip the prefix to get the topic name
+            # and emit the JSON-encoded payload as bytes.
+            topic = channel[len(self._settings.pubsub_channel_prefix) :]
+            body = json.dumps(dict(payload), default=str).encode("utf-8")
+            await self.pubsub_publish(topic, body)
+            return
+
+        # Streams path — XADD a single entry with three fields:
+        # - ``channel``: filter key for consumer groups
+        # - ``payload``: JSON-encoded envelope
+        # - ``headers``: JSON-encoded headers (empty dict if absent)
+        body = json.dumps(dict(payload), default=str).encode("utf-8")
+        headers_json = json.dumps(dict(headers) if headers else {}).encode("utf-8")
+        await self.enqueue(
+            {
+                "channel": channel,
+                "payload": body,
+                "headers": headers_json,
+            }
+        )
 
     async def pubsub_subscribe(
         self,
