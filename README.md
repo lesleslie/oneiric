@@ -11,13 +11,6 @@ Oneiric is a standalone resolver and runtime foundation. Register adapters,
 services, tasks, events, workflows, and actions; explain selection decisions;
 manage lifecycle transitions; and hydrate capabilities from remote manifests.
 
-## Bodai Ecosystem Role
-
-Oneiric is the shared resolver and lifecycle layer used by the [Bodai
-ecosystem](https://github.com/lesleslie/bodai). It remains usable as a
-standalone library for applications that need deterministic provider selection,
-swapping, and runtime orchestration.
-
 ## Quick Links
 
 - [Capabilities](#capabilities)
@@ -192,6 +185,17 @@ complete command surface; `uv run oneiric` is the repository-local form.
 - **Operate integrations:** `plugins`, `secrets`, `shell`, and `load-test`
   provide discovery, secret-cache operations, interactive administration, and
   runtime load testing.
+
+______________________________________________________________________
+
+## Bodai Integration
+
+When installed alongside the [Bodai ecosystem](https://github.com/lesleslie/bodai),
+Oneiric supplies the shared resolver, lifecycle manager, and adapter catalog
+used by the other Bodai components. The standalone install is identical —
+Bodai does not impose special-case overrides on Oneiric's domain model;
+consumers wire the same `load_settings()` and adapter registries they would in
+any other Python application.
 
 ______________________________________________________________________
 
