@@ -178,7 +178,15 @@ class RedisStreamsQueueAdapter(EnsureClientMixin):
         try:
             await self._ensure_ping()
             return True
-        except RedisError as exc:
+        except (RedisError, TimeoutError) as exc:
+            # TimeoutError covers both asyncio.TimeoutError (Python
+            # 3.10 rebinds them; 3.11+ unified under TimeoutError)
+            # and the ``asyncio.wait_for`` ceiling in
+            # ``_ensure_ping``. ``RedisError`` covers coredis-side
+            # transport failures (connection refused, NOPERM, etc.).
+            # The monitoring layer relies on ``health() -> bool``;
+            # raising any of these would surface as a 5xx instead
+            # of a degraded state.
             self._logger.warning("adapter-health-failed", error=str(exc))
             return False
 

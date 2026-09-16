@@ -635,3 +635,49 @@ def test_default_url_has_no_space() -> None:
     settings = RedisStreamsQueueSettings()
     assert settings.url == "redis://localhost:6379/0"
     assert " " not in settings.url  # paranoid belt-and-suspenders
+
+
+@pytest.mark.asyncio
+async def test_health_false_on_ping_timeout() -> None:
+    """Regression: ``health()`` must convert ``asyncio.TimeoutError``
+    (the ``asyncio.wait_for(..., timeout=2.0)`` ceiling in
+    ``_ensure_ping``) into a ``False`` return.
+
+    Pre-fix, ``health()`` caught only ``RedisError`` (a coredis
+    subclass). ``asyncio.TimeoutError`` is a builtin ``Exception``,
+    NOT a ``RedisError`` subclass — when the 2-second ceiling tripped
+    (network partition, Redis hung), ``TimeoutError`` propagated
+    out of ``health()`` and crashed the monitoring layer's
+    health-aggregator probe instead of surfacing a degraded state.
+
+    The whole reason ``health()`` exists is to convert failures to
+    bool; raising on timeout defeats that contract. Network-partition
+    recovery is the exact scenario monitoring must keep working
+    through.
+
+    Mocks ``ping`` to raise ``TimeoutError`` directly rather than
+    relying on ``wait_for`` to fire the ceiling — the wait_for path
+    is well-tested by the asyncio library; what we own is the
+    CATCH in ``health()``. Direct raise is the deterministic version
+    of the regression test.
+
+    ``init()`` itself calls ``_ensure_ping()`` at the end (line 174)
+    to verify connectivity on startup — so the timeout mock is
+    installed AFTER init() returns successfully. Otherwise the
+    test fails inside init() rather than at the health() assertion.
+    """
+    client = MockRedisClient()
+    adapter = RedisStreamsQueueAdapter(
+        RedisStreamsQueueSettings(healthcheck_timeout=2.0),
+        redis_client=client,
+    )
+    # init() succeeds with the original (good) ping.
+    await adapter.init()
+
+    # Now swap in the failing ping for the health() call.
+    async def timeout_ping() -> bool:
+        raise TimeoutError("simulated wait_for ceiling")
+
+    client.ping = timeout_ping  # type: ignore[method-assign]
+    # Must NOT raise — return False instead.
+    assert await adapter.health() is False
