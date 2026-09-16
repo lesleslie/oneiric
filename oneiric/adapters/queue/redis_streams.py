@@ -10,9 +10,13 @@ if TYPE_CHECKING:  # pragma: no cover - optional dependency typing
     from coredis import Redis
     from coredis.exceptions import RedisError, ResponseError
 else:  # pragma: no cover - runtime guard
-    Redis = None
-    RedisError = Exception
-    ResponseError = Exception
+    try:
+        from coredis import Redis
+        from coredis.exceptions import RedisError, ResponseError
+    except ImportError:
+        Redis = None
+        RedisError = Exception
+        ResponseError = Exception
 from pydantic import BaseModel, Field
 
 from oneiric.adapters.metadata import AdapterMetadata
