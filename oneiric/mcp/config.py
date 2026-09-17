@@ -17,7 +17,7 @@ from typing import Any, Callable
 import yaml
 
 from mcp_common.auth.config import AuthConfig
-from mcp_common.auth.identity import validate_auth_config
+from mcp_common.auth.identity import IdentityProviderSpec, validate_auth_config
 from mcp_common.auth.provider import IdentityProvider
 
 
@@ -116,6 +116,11 @@ def load_auth_config(
         enabled=cfg.enabled,
         default_provider=cfg.default_provider or "",
         trusted_issuers=frozenset(cfg.trusted_issuers),
+        identity_providers=(
+            {name: IdentityProviderSpec(type="jwt") for name in provider_factories}
+            if cfg.enabled and provider_factories
+            else None
+        ),
     )
     providers: dict[str, IdentityProvider] = {}
     if cfg.enabled:
@@ -129,7 +134,7 @@ def load_auth_config(
         for name, factory in provider_factories.items():
             providers[name] = factory(cfg.provider_configs.get(name, {}))
         # Fail-loud at startup if config is invalid (mcp-common's helper).
-        validate_auth_config(auth_config, providers=providers)
+        validate_auth_config(auth_config)
     return auth_config, providers
 
 
