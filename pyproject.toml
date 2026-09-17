@@ -26,7 +26,6 @@ dependencies = [
     "msgspec>=0.21.1",
     "networkx>=3.6.1",
     "ipython>=9.15.0",  # Admin shell support
-    "dhara>=0.11.2",
 ]
 
 
@@ -235,8 +234,6 @@ exclude-deps = [
     "google-cloud-storage",  # Lazy import in adapters/storage/gcs.py
     "keyring",  # Lazy import in adapters/secrets/keyring.py
     "watchfiles",  # Lazy import in runtime/watchers.py
-    # Dhara MCP client (httpx2 used for HTTP, dhara package not directly imported)
-    "dhara",
 ]
 
 [dependency-groups]
