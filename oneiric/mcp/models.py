@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from typing import Annotated, Any, Union
 
-from pydantic import Field, RootModel
+from pydantic import BaseModel, BeforeValidator, Field, RootModel
 
 # --- Bounded primitive + metadata types ---
 
@@ -113,9 +113,66 @@ class BoundedMetadata:
         return f"BoundedMetadata({self._root!r})"
 
 
-# --- Substrate input models (filled in by T3) ---
-
-# T3 will add: ActiveSettingsVersionIn, ContextVersionIn, ProgressSnapshotIn.
+# --- Substrate input models (T3) ---
 
 
-__all__ = ["BoundedMetadata", "BoundedPrimitive"]
+def _coerce_bounded_metadata(value: Any) -> BoundedMetadata | None:
+    """Route dict inputs through ``BoundedMetadata.model_validate``.
+
+    Pydantic v2 cannot introspect ``BoundedMetadata`` (a custom class) for
+    field validation; this BeforeValidator intercepts the value before
+    Pydantic's type machinery runs.
+    """
+    if value is None:
+        return None
+    if isinstance(value, BoundedMetadata):
+        return value
+    return BoundedMetadata.model_validate(value)
+
+
+_BoundedMetadataField = Annotated[
+    Any,
+    BeforeValidator(_coerce_bounded_metadata),
+]
+
+
+class ActiveSettingsVersionIn(BaseModel):
+    """Body for the write_settings tool."""
+
+    model_config = {"extra": "forbid"}
+
+    version: str = Field(..., min_length=1, max_length=1024)
+    source: str | None = Field(default=None, max_length=1024)
+    metadata: _BoundedMetadataField = None
+
+
+class ContextVersionIn(BaseModel):
+    """Body for the write_context tool."""
+
+    model_config = {"extra": "forbid"}
+
+    tenant_id: str = Field(..., min_length=1, max_length=256)
+    version: str = Field(..., min_length=1, max_length=1024)
+    kind: str | None = Field(default=None, max_length=256)
+    metadata: _BoundedMetadataField = None
+
+
+class ProgressSnapshotIn(BaseModel):
+    """Body for the write_progress tool."""
+
+    model_config = {"extra": "forbid"}
+
+    workflow_id: str = Field(..., min_length=1, max_length=256)
+    stage: str = Field(..., min_length=1, max_length=256)
+    percent: int = Field(..., ge=0, le=100)
+    note: str | None = Field(default=None, max_length=1024)
+    metadata: _BoundedMetadataField = None
+
+
+__all__ = [
+    "ActiveSettingsVersionIn",
+    "BoundedMetadata",
+    "BoundedPrimitive",
+    "ContextVersionIn",
+    "ProgressSnapshotIn",
+]

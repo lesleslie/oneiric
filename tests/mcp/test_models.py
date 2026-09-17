@@ -3,7 +3,13 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from oneiric.mcp.models import BoundedMetadata, BoundedPrimitive
+from oneiric.mcp.models import (
+    ActiveSettingsVersionIn,
+    BoundedMetadata,
+    BoundedPrimitive,
+    ContextVersionIn,
+    ProgressSnapshotIn,
+)
 
 
 class TestBoundedPrimitive:
@@ -82,3 +88,57 @@ class TestBoundedMetadata:
     def test_accepts_none_value(self) -> None:
         m = BoundedMetadata.model_validate({"k": None})
         assert m.root["k"] is None
+
+
+class TestActiveSettingsVersionIn:
+    def test_minimal(self) -> None:
+        m = ActiveSettingsVersionIn(version="1.0")
+        assert m.version == "1.0"
+        assert m.source is None
+        assert m.metadata is None
+
+    def test_with_metadata(self) -> None:
+        m = ActiveSettingsVersionIn(
+            version="1.0", source="test", metadata={"k": "v"}
+        )
+        assert m.metadata.root == {"k": "v"}
+
+    def test_rejects_empty_version(self) -> None:
+        with pytest.raises(ValidationError):
+            ActiveSettingsVersionIn(version="")
+
+    def test_rejects_oversize_metadata_value(self) -> None:
+        with pytest.raises(ValidationError):
+            ActiveSettingsVersionIn(version="1.0", metadata={"k": "x" * 1025})
+
+
+class TestContextVersionIn:
+    def test_minimal(self) -> None:
+        m = ContextVersionIn(tenant_id="acme", version="1.0")
+        assert m.tenant_id == "acme"
+        assert m.kind is None
+
+    def test_with_kind(self) -> None:
+        m = ContextVersionIn(tenant_id="acme", version="1.0", kind="blueprint")
+        assert m.kind == "blueprint"
+
+
+class TestProgressSnapshotIn:
+    def test_minimal(self) -> None:
+        m = ProgressSnapshotIn(workflow_id="wf-1", stage="start", percent=0)
+        assert m.workflow_id == "wf-1"
+        assert m.percent == 0
+
+    def test_rejects_negative_percent(self) -> None:
+        with pytest.raises(ValidationError):
+            ProgressSnapshotIn(workflow_id="wf-1", stage="start", percent=-1)
+
+    def test_rejects_oversized_percent(self) -> None:
+        with pytest.raises(ValidationError):
+            ProgressSnapshotIn(workflow_id="wf-1", stage="start", percent=101)
+
+    def test_accepts_note(self) -> None:
+        m = ProgressSnapshotIn(
+            workflow_id="wf-1", stage="start", percent=50, note="starting"
+        )
+        assert m.note == "starting"
