@@ -33,6 +33,220 @@ class _ConfigLike(Protocol):
     name: str
 
 
+def _resolve_store(store: SubstrateStore | None) -> SubstrateStore:
+    """Return a usable SubstrateStore, defaulting to ~/.oneiric/substrate."""
+    if store is None:
+        from pathlib import Path
+
+        from oneiric.mcp.store import SubstrateStore as _SubstrateStore
+
+        return _SubstrateStore(root=Path.home() / ".oneiric" / "substrate")
+    return store
+
+
+def _resolve_feeds(
+    feeds: dict[str, HealthFeedState] | None,
+) -> dict[str, HealthFeedState]:
+    """Return per-route HealthFeedState map (settings/context/progress)."""
+    if feeds is None:
+        from oneiric.mcp.health import HealthFeedState as _HealthFeedState
+
+        feeds = {
+            name: _HealthFeedState(name=name)
+            for name in ("settings", "context", "progress")
+        }
+    return feeds
+
+
+def _register_substrate_tools(
+    mcp: FastMCP,
+    *,
+    store: SubstrateStore,
+    feeds: dict[str, HealthFeedState],
+    service_name: str,
+) -> None:
+    """Register the 6 substrate tools (3 reads + 3 writes).
+
+    T7-T12 batch: read_settings / write_settings / read_context /
+    write_context / read_progress / write_progress. Each tool records
+    success/error on its feed and returns a dict-shaped payload.
+    """
+    # ----- T7: read_settings -----
+
+    @mcp.tool()
+    @require_auth(permission=Permission.READ, service_name=service_name)
+    async def read_settings() -> dict[str, Any]:
+        """Return the current settings record + history."""
+        feed = feeds["settings"]
+        try:
+            raw = store.read_settings()
+            current = raw.get("current")
+            history = list(raw.get("history", []))
+            payload_version = current["payload"]["version"] if current else None
+            rendered = {
+                "version": payload_version,
+                "settings_version": payload_version,
+                "current": current,
+                "history": history,
+                "history_total": len(history),
+            }
+        except (OSError, ValueError, TypeError):
+            feed.record_error()
+            raise
+        feed.record_success(entities_count=1 if current else 0)
+        return rendered
+
+    # ----- T8: write_settings -----
+
+    @mcp.tool()
+    @require_auth(permission=Permission.WRITE, service_name=service_name)
+    async def write_settings(
+        version: str,
+        source: str | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Append a new ActiveSettings version record."""
+        from oneiric.mcp.models import ActiveSettingsVersionIn
+
+        feed = feeds["settings"]
+        try:
+            parsed = ActiveSettingsVersionIn(
+                version=version, source=source, metadata=metadata
+            )
+            record = store.write_settings(parsed)
+        except (OSError, ValueError, TypeError):
+            feed.record_error()
+            raise
+        feed.record_success(entities_count=1)
+        return {"record_id": record["id"], "version": parsed.version}
+
+    # ----- T9: read_context -----
+
+    @mcp.tool()
+    @require_auth(permission=Permission.READ, service_name=service_name)
+    async def read_context() -> dict[str, Any]:
+        """Return the current ContextVersion per tenant + history."""
+        feed = feeds["context"]
+        try:
+            raw = store.read_context()
+            tenants_raw = raw.get("tenants", {}) or {}
+            tenants: list[dict[str, Any]] = []
+            for tenant_id, entry in tenants_raw.items():
+                current = entry.get("current")
+                history = list(entry.get("history", []))
+                tenants.append(
+                    {
+                        "tenant_id": tenant_id,
+                        "current": current,
+                        "history": history,
+                        "history_total": len(history),
+                    }
+                )
+            rendered = {"tenants": tenants, "tenant_total": len(tenants)}
+        except (OSError, ValueError, TypeError):
+            feed.record_error()
+            raise
+        feed.record_success(entities_count=len(tenants))
+        return rendered
+
+    # ----- T10: write_context -----
+
+    @mcp.tool()
+    @require_auth(permission=Permission.WRITE, service_name=service_name)
+    async def write_context(
+        tenant_id: str,
+        version: str,
+        kind: str | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Append a new ContextVersion record for the named tenant."""
+        from oneiric.mcp.models import ContextVersionIn
+
+        feed = feeds["context"]
+        try:
+            parsed = ContextVersionIn(
+                tenant_id=tenant_id,
+                version=version,
+                kind=kind,
+                metadata=metadata,
+            )
+            record = store.write_context(parsed.tenant_id, parsed)
+        except (OSError, ValueError, TypeError):
+            feed.record_error()
+            raise
+        feed.record_success(entities_count=1)
+        return {
+            "record_id": record["id"],
+            "tenant_id": parsed.tenant_id,
+            "version": parsed.version,
+        }
+
+    # ----- T11: read_progress -----
+
+    @mcp.tool()
+    @require_auth(permission=Permission.READ, service_name=service_name)
+    async def read_progress() -> dict[str, Any]:
+        """Return the progress snapshots per workflow."""
+        feed = feeds["progress"]
+        try:
+            raw = store.read_progress()
+            workflows_raw = raw.get("workflows", {}) or {}
+            workflows: list[dict[str, Any]] = []
+            for workflow_id, entry in workflows_raw.items():
+                snapshots = list(entry.get("snapshots", []))
+                workflows.append(
+                    {
+                        "workflow_id": workflow_id,
+                        "snapshots": snapshots,
+                        "snapshot_total": len(snapshots),
+                    }
+                )
+            rendered = {
+                "workflows": workflows,
+                "workflow_total": len(workflows),
+            }
+        except (OSError, ValueError, TypeError):
+            feed.record_error()
+            raise
+        feed.record_success(entities_count=len(workflows))
+        return rendered
+
+    # ----- T12: write_progress -----
+
+    @mcp.tool()
+    @require_auth(permission=Permission.WRITE, service_name=service_name)
+    async def write_progress(
+        workflow_id: str,
+        stage: str,
+        percent: int,
+        note: str | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Append a new progress snapshot for the named workflow."""
+        from oneiric.mcp.models import ProgressSnapshotIn
+
+        feed = feeds["progress"]
+        try:
+            parsed = ProgressSnapshotIn(
+                workflow_id=workflow_id,
+                stage=stage,
+                percent=percent,
+                note=note,
+                metadata=metadata,
+            )
+            record = store.write_progress(parsed)
+        except (OSError, ValueError, TypeError):
+            feed.record_error()
+            raise
+        feed.record_success(entities_count=1)
+        return {
+            "record_id": record["id"],
+            "workflow_id": parsed.workflow_id,
+            "stage": parsed.stage,
+            "percent": parsed.percent,
+        }
+
+
 def build_mcp_server(
     config: _ConfigLike,
     *,
@@ -70,20 +284,14 @@ def build_mcp_server(
             )
         )
 
-    # Minimal tool surface so the auth wiring is verifiable end-to-end.
-    # T7+ expands with full read/write substrate + scheduler tools. The
-    # closure captures ``store`` so the tool reads from the configured
-    # substrate; if no store is supplied, fall back to the default root.
-    if store is None:
-        from oneiric.mcp.store import SubstrateStore
-        store = SubstrateStore()
-
-    @require_auth(Permission.READ, service_name=auth_config.service_name)
-    async def read_settings() -> dict[str, Any]:
-        """Return the current settings bucket from the substrate."""
-        return store.read_settings()
-
-    mcp.tool()(read_settings)
+    resolved_store = _resolve_store(store)
+    resolved_feeds = _resolve_feeds(health_feeds)
+    _register_substrate_tools(
+        mcp,
+        store=resolved_store,
+        feeds=resolved_feeds,
+        service_name=auth_config.service_name,
+    )
 
     return mcp
 

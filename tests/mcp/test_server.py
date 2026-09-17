@@ -1,19 +1,30 @@
-"""Tests for oneiric.mcp.server — build_mcp_server() skeleton (REQ-001, REQ-002).
+"""Tests for oneiric.mcp.server — build_mcp_server() + substrate tools.
 
 Asserts behavior the user observes:
 - when auth is enabled, tools gate
 - when disabled, tools raise AuthenticationRequiredError (safe default)
+- T7-T12: read/write substrate tools register, render payloads, write records,
+  enforce input validation
 """
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
 
+from fastmcp import FastMCP
+from mcp_common.auth.context import _principal_var
+from mcp_common.auth.permissions import Permission
+from mcp_common.auth.principal import Principal
 from mcp_common.auth.provider import IdentityProvider
+from pydantic import ValidationError
 
 from oneiric.mcp.config import OneiricMCPAuthConfig, load_auth_config
+from oneiric.mcp.health import HealthFeedState
 from oneiric.mcp.server import build_mcp_server
+from oneiric.mcp.store import SubstrateStore
 
 
 class _StubConfig:
@@ -28,6 +39,22 @@ class _FakeProvider(IdentityProvider):
 
     async def verify_token(self, token: str, *, expected_audience: str | None = None) -> Any:
         raise NotImplementedError("stub")
+
+
+def _seed_readwrite_principal() -> Any:
+    """Seed a Principal with both READ+WRITE permissions for the duration of a test.
+
+    Returns the contextvars Token so callers can ``_principal_var.reset(token)``
+    after the test body to avoid leaking state across the event loop.
+    """
+    principal = Principal(
+        issuer="test",
+        subject="test-user",
+        permissions=frozenset({Permission.READ, Permission.WRITE}),
+        expires_at=datetime.now(UTC) + timedelta(hours=1),
+        raw_claims={},
+    )
+    return _principal_var.set(principal)
 
 
 @pytest.fixture
@@ -70,8 +97,8 @@ class TestBuildMcpServer:
     async def test_auth_enabled_gates_tools(
         self, auth_enabled: OneiricMCPAuthConfig, tmp_path
     ) -> None:
-        from oneiric.mcp.health import HealthFeedState
-        from oneiric.mcp.store import SubstrateStore
+        from mcp_common.auth.exceptions import AuthenticationRequiredError
+
         auth_config, providers = load_auth_config(
             auth_enabled,
             provider_factories={"stub": lambda _: _FakeProvider()},
@@ -85,7 +112,6 @@ class TestBuildMcpServer:
         tool = next(
             t for t in await mcp.list_tools() if t.name == "read_settings"
         )
-        from mcp_common.auth.exceptions import AuthenticationRequiredError
         with pytest.raises(AuthenticationRequiredError):
             await tool.fn()
 
@@ -95,8 +121,8 @@ class TestBuildMcpServer:
         """Spec §6.2 safe default: even with auth disabled, substrate
         tools refuse anonymous calls (cannot read a Principal from a
         middleware that doesn't exist)."""
-        from oneiric.mcp.health import HealthFeedState
-        from oneiric.mcp.store import SubstrateStore
+        from mcp_common.auth.exceptions import AuthenticationRequiredError
+
         auth_config, providers = load_auth_config(auth_disabled)
         store = SubstrateStore(root=tmp_path)
         feeds = {"settings": HealthFeedState(name="settings")}
@@ -107,6 +133,223 @@ class TestBuildMcpServer:
         tool = next(
             t for t in await mcp.list_tools() if t.name == "read_settings"
         )
-        from mcp_common.auth.exceptions import AuthenticationRequiredError
         with pytest.raises(AuthenticationRequiredError):
             await tool.fn()
+
+
+class TestSubstrateTools:
+    """Tests for the 6 substrate MCP tools (T7-T12).
+
+    The test builds a server with all 3 feeds (settings/context/progress)
+    and exercises the read + write paths through the registered tools.
+    Auth is disabled because we don't actually verify a token — we only
+    test the safe-default ``AuthenticationRequiredError`` for read_settings
+    once in TestBuildMcpServer above.
+    """
+
+    def _build(
+        self, tmp_path
+    ) -> tuple[FastMCP, SubstrateStore, dict[str, HealthFeedState]]:
+        auth_config, providers = load_auth_config(OneiricMCPAuthConfig(enabled=False))
+        store = SubstrateStore(root=tmp_path)
+        feeds = {
+            name: HealthFeedState(name=name)
+            for name in ("settings", "context", "progress")
+        }
+        mcp = build_mcp_server(
+            _StubConfig(),
+            auth_config=auth_config,
+            providers=providers,
+            store=store,
+            health_feeds=feeds,
+        )
+        return mcp, store, feeds
+
+    async def _tool(self, mcp: FastMCP, name: str) -> Any:
+        tools = await mcp.list_tools()
+        matches = [t for t in tools if t.name == name]
+        if not matches:
+            raise AssertionError(f"tool {name!r} not registered")
+        return matches[0].fn
+
+    async def _with_principal(self, coro):
+        """Run ``coro`` with a seeded READ+WRITE principal; reset after."""
+        token = _seed_readwrite_principal()
+        try:
+            return await coro
+        finally:
+            _principal_var.reset(token)
+
+    # ----- T7: read_settings -----
+
+    async def test_all_six_tools_registered(self, tmp_path) -> None:
+        mcp, _, _ = self._build(tmp_path)
+        names = {t.name for t in await mcp.list_tools()}
+        assert {
+            "read_settings",
+            "write_settings",
+            "read_context",
+            "write_context",
+            "read_progress",
+            "write_progress",
+        } <= names
+
+    async def test_read_settings_empty(self, tmp_path) -> None:
+        mcp, _, _ = self._build(tmp_path)
+        fn = await self._tool(mcp, "read_settings")
+        result = await self._with_principal(fn())
+        assert result["current"] is None
+        assert result["history"] == []
+        assert result["history_total"] == 0
+        assert result["version"] is None
+
+    async def test_read_settings_returns_current_and_history(self, tmp_path) -> None:
+        mcp, store, _ = self._build(tmp_path)
+        store.write_settings(
+            SimpleNamespace(model_dump=lambda: {"version": "v1", "source": None})
+        )
+        fn = await self._tool(mcp, "read_settings")
+        result = await self._with_principal(fn())
+        assert result["current"]["payload"]["version"] == "v1"
+        assert len(result["history"]) == 1
+
+    # ----- T8: write_settings -----
+
+    async def test_write_settings_appends_and_records(self, tmp_path) -> None:
+        mcp, store, feeds = self._build(tmp_path)
+        fn = await self._tool(mcp, "write_settings")
+        result = await self._with_principal(
+            fn(version="v1", source="test")
+        )
+        assert isinstance(result["record_id"], str) and result["record_id"]
+        assert result["version"] == "v1"
+        bucket = store.read_settings()
+        assert len(bucket["history"]) == 1
+        assert bucket["current"]["payload"]["version"] == "v1"
+        assert feeds["settings"].cycles_total == 1
+        assert feeds["settings"].entities_count == 1
+
+    async def test_write_settings_rejects_oversize_metadata(self, tmp_path) -> None:
+        mcp, _, _ = self._build(tmp_path)
+        fn = await self._tool(mcp, "write_settings")
+        with pytest.raises(ValidationError):
+            await self._with_principal(
+                fn(version="v1", metadata={"k": "x" * 1025})
+            )
+
+    # ----- T9: read_context -----
+
+    async def test_read_context_lists_tenants(self, tmp_path) -> None:
+        mcp, store, _ = self._build(tmp_path)
+        store.write_context(
+            "acme",
+            SimpleNamespace(
+                model_dump=lambda: {
+                    "tenant_id": "acme",
+                    "version": "v1",
+                    "kind": None,
+                }
+            ),
+        )
+        store.write_context(
+            "contoso",
+            SimpleNamespace(
+                model_dump=lambda: {
+                    "tenant_id": "contoso",
+                    "version": "v1",
+                    "kind": None,
+                }
+            ),
+        )
+        fn = await self._tool(mcp, "read_context")
+        result = await self._with_principal(fn())
+        assert result["tenant_total"] == 2
+        tenant_ids = {t["tenant_id"] for t in result["tenants"]}
+        assert tenant_ids == {"acme", "contoso"}
+
+    async def test_read_context_empty(self, tmp_path) -> None:
+        mcp, _, _ = self._build(tmp_path)
+        fn = await self._tool(mcp, "read_context")
+        result = await self._with_principal(fn())
+        assert result["tenant_total"] == 0
+        assert result["tenants"] == []
+
+    # ----- T10: write_context -----
+
+    async def test_write_context_appends_to_tenant(self, tmp_path) -> None:
+        mcp, store, feeds = self._build(tmp_path)
+        fn = await self._tool(mcp, "write_context")
+        await self._with_principal(
+            fn(tenant_id="acme", version="v1")
+        )
+        await self._with_principal(
+            fn(tenant_id="acme", version="v2", kind="blueprint")
+        )
+        bucket = store.read_context()
+        tenant = bucket["tenants"]["acme"]
+        assert len(tenant["history"]) == 2
+        assert tenant["current"]["payload"]["version"] == "v2"
+        assert feeds["context"].cycles_total == 2
+
+    # ----- T11: read_progress -----
+
+    async def test_read_progress_lists_workflows(self, tmp_path) -> None:
+        mcp, store, _ = self._build(tmp_path)
+        store.write_progress(
+            SimpleNamespace(
+                model_dump=lambda: {
+                    "workflow_id": "wf-1",
+                    "stage": "start",
+                    "percent": 0,
+                }
+            )
+        )
+        store.write_progress(
+            SimpleNamespace(
+                model_dump=lambda: {
+                    "workflow_id": "wf-2",
+                    "stage": "start",
+                    "percent": 0,
+                }
+            )
+        )
+        store.write_progress(
+            SimpleNamespace(
+                model_dump=lambda: {
+                    "workflow_id": "wf-1",
+                    "stage": "middle",
+                    "percent": 50,
+                }
+            )
+        )
+        fn = await self._tool(mcp, "read_progress")
+        result = await self._with_principal(fn())
+        assert result["workflow_total"] == 2
+        wf_ids = {wf["workflow_id"] for wf in result["workflows"]}
+        assert wf_ids == {"wf-1", "wf-2"}
+
+    # ----- T12: write_progress -----
+
+    async def test_write_progress_appends_snapshots(self, tmp_path) -> None:
+        mcp, store, feeds = self._build(tmp_path)
+        fn = await self._tool(mcp, "write_progress")
+        r1 = await self._with_principal(
+            fn(workflow_id="wf-1", stage="start", percent=10)
+        )
+        r2 = await self._with_principal(
+            fn(workflow_id="wf-1", stage="middle", percent=50, note="halfway")
+        )
+        assert isinstance(r1["record_id"], str) and r1["record_id"]
+        assert r2["percent"] == 50
+        bucket = store.read_progress()
+        wf = bucket["workflows"]["wf-1"]
+        assert len(wf["snapshots"]) == 2
+        assert feeds["progress"].cycles_total == 2
+
+    async def test_write_progress_rejects_out_of_range_percent(self, tmp_path) -> None:
+        mcp, _, _ = self._build(tmp_path)
+        fn = await self._tool(mcp, "write_progress")
+        with pytest.raises(ValidationError):
+            await self._with_principal(
+                fn(workflow_id="wf-1", stage="start", percent=150)
+            )
