@@ -41,6 +41,24 @@ class _FakeProvider(IdentityProvider):
         raise NotImplementedError("stub")
 
 
+class _FakeProcessor:
+    """Scheduler processor stub — records each ``process(payload)`` call."""
+
+    def __init__(self) -> None:
+        self.calls: list[dict[str, Any]] = []
+
+    async def process(self, payload: dict[str, Any]) -> dict[str, Any]:
+        self.calls.append(payload)
+        return {
+            "workflow": payload["workflow"],
+            "run_id": "run-xyz",
+            "workflow_provider": payload.get("workflow_provider"),
+            "metadata": payload.get("metadata") or {},
+            "results": {"ok": True},
+            "processed_at": "2026-09-16T22:00:00+00:00",
+        }
+
+
 def _seed_readwrite_principal() -> Any:
     """Seed a Principal with both READ+WRITE permissions for the duration of a test.
 
@@ -90,7 +108,12 @@ class TestBuildMcpServer:
 
     def test_returns_fastmcp_instance(self, auth_disabled: OneiricMCPAuthConfig) -> None:
         auth_config, providers = load_auth_config(auth_disabled)
-        mcp = build_mcp_server(_StubConfig(), auth_config=auth_config, providers=providers)
+        mcp = build_mcp_server(
+            _StubConfig(),
+            auth_config=auth_config,
+            providers=providers,
+            processor=_FakeProcessor(),
+        )
         # fastmcp.FastMCP exposes a `.name` attribute.
         assert mcp.name == "oneiric"
 
@@ -107,7 +130,7 @@ class TestBuildMcpServer:
         feeds = {"settings": HealthFeedState(name="settings")}
         mcp = build_mcp_server(
             _StubConfig(), auth_config=auth_config, providers=providers,
-            store=store, health_feeds=feeds,
+            store=store, processor=_FakeProcessor(), health_feeds=feeds,
         )
         tool = next(
             t for t in await mcp.list_tools() if t.name == "read_settings"
@@ -128,7 +151,7 @@ class TestBuildMcpServer:
         feeds = {"settings": HealthFeedState(name="settings")}
         mcp = build_mcp_server(
             _StubConfig(), auth_config=auth_config, providers=providers,
-            store=store, health_feeds=feeds,
+            store=store, processor=_FakeProcessor(), health_feeds=feeds,
         )
         tool = next(
             t for t in await mcp.list_tools() if t.name == "read_settings"
@@ -148,7 +171,7 @@ class TestSubstrateTools:
     """
 
     def _build(
-        self, tmp_path
+        self, tmp_path, *, processor: _FakeProcessor | None = None
     ) -> tuple[FastMCP, SubstrateStore, dict[str, HealthFeedState]]:
         auth_config, providers = load_auth_config(OneiricMCPAuthConfig(enabled=False))
         store = SubstrateStore(root=tmp_path)
@@ -161,6 +184,7 @@ class TestSubstrateTools:
             auth_config=auth_config,
             providers=providers,
             store=store,
+            processor=processor or _FakeProcessor(),
             health_feeds=feeds,
         )
         return mcp, store, feeds
@@ -352,4 +376,75 @@ class TestSubstrateTools:
         with pytest.raises(ValidationError):
             await self._with_principal(
                 fn(workflow_id="wf-1", stage="start", percent=150)
+            )
+
+
+class TestSchedulerTool:
+    """Tests for the ``schedule_task`` MCP tool (T13).
+
+    Auth is disabled in the build but ``@require_auth`` still demands a
+    Principal on the call (safe default — see TestBuildMcpServer). Use
+    ``_seed_readwrite_principal`` via ``_with_principal`` to seed the
+    WRITE permission required by the schedule_task decorator.
+    """
+
+    def _build_with_processor(
+        self, tmp_path, *, processor: _FakeProcessor | None
+    ) -> FastMCP:
+        auth_config, providers = load_auth_config(OneiricMCPAuthConfig(enabled=False))
+        store = SubstrateStore(root=tmp_path)
+        feeds = {
+            name: HealthFeedState(name=name)
+            for name in ("settings", "context", "progress")
+        }
+        return build_mcp_server(
+            _StubConfig(),
+            auth_config=auth_config,
+            providers=providers,
+            store=store,
+            processor=processor,
+            health_feeds=feeds,
+        )
+
+    async def _tool(self, mcp: FastMCP, name: str) -> Any:
+        tools = await mcp.list_tools()
+        matches = [t for t in tools if t.name == name]
+        if not matches:
+            raise AssertionError(f"tool {name!r} not registered")
+        return matches[0].fn
+
+    async def _with_principal(self, coro):
+        token = _seed_readwrite_principal()
+        try:
+            return await coro
+        finally:
+            _principal_var.reset(token)
+
+    async def test_schedule_task_invokes_processor(self, tmp_path) -> None:
+        """schedule_task should hand the assembled payload to processor.process."""
+        processor = _FakeProcessor()
+        mcp = self._build_with_processor(tmp_path, processor=processor)
+        fn = await self._tool(mcp, "schedule_task")
+        result = await self._with_principal(
+            fn(workflow="my-workflow", context={"k": "v"})
+        )
+        assert result["run_id"] == "run-xyz"
+        assert processor.calls[0]["workflow"] == "my-workflow"
+        assert processor.calls[0]["context"] == {"k": "v"}
+
+    def test_build_mcp_server_raises_when_processor_missing(self, tmp_path) -> None:
+        """silent-failure-hunter #1: explicit None processor must raise at
+        startup rather than silently registering a tool that would 404
+        at first call."""
+        auth_config, providers = load_auth_config(OneiricMCPAuthConfig(enabled=False))
+        store = SubstrateStore(root=tmp_path)
+        feeds = {"settings": HealthFeedState(name="settings")}
+        with pytest.raises(RuntimeError, match="schedule_task requires a processor"):
+            build_mcp_server(
+                _StubConfig(),
+                auth_config=auth_config,
+                providers=providers,
+                store=store,
+                processor=None,
+                health_feeds=feeds,
             )

@@ -26,11 +26,21 @@ if TYPE_CHECKING:  # pragma: no cover - guarded import
     from oneiric.core.config import OneiricMCPConfig
     from oneiric.mcp.health import HealthFeedState
     from oneiric.mcp.store import SubstrateStore
-    from oneiric.runtime.scheduler import WorkflowTaskProcessor
 
 
 class _ConfigLike(Protocol):
     name: str
+
+
+class _ProcessorLike(Protocol):
+    """Structural type for any scheduler-side task processor.
+
+    Production uses ``oneiric.runtime.scheduler.WorkflowTaskProcessor`` (until
+    T18 deletes that file). The protocol lets tests inject a lightweight fake
+    without inheriting from the production class.
+    """
+
+    async def process(self, payload: dict[str, Any]) -> dict[str, Any]: ...
 
 
 def _resolve_store(store: SubstrateStore | None) -> SubstrateStore:
@@ -42,6 +52,17 @@ def _resolve_store(store: SubstrateStore | None) -> SubstrateStore:
 
         return _SubstrateStore(root=Path.home() / ".oneiric" / "substrate")
     return store
+
+
+def _resolve_processor(processor: _ProcessorLike | None) -> _ProcessorLike | None:
+    """Return the scheduler processor, preserving explicit None for the
+    misconfiguration guard in :func:`_register_scheduler_tools`.
+
+    The current resolver is a pass-through; future production loaders will
+    build a processor from a :class:`WorkflowBridge` when ``processor`` is
+    not supplied.
+    """
+    return processor
 
 
 def _resolve_feeds(
@@ -247,13 +268,69 @@ def _register_substrate_tools(
         }
 
 
+def _register_scheduler_tools(
+    mcp: FastMCP,
+    *,
+    processor: _ProcessorLike | None,
+    service_name: str,
+) -> None:
+    """Register the ``schedule_task`` MCP tool (T13).
+
+    The scheduler tool dispatches a workflow task by handing the assembled
+    payload to ``processor.process(...)``. ``processor`` is mandatory: a
+    None value is treated as a wiring error and raised loudly so the
+    misconfiguration is observable at startup instead of silently surfacing
+    as "tool not found" on the first call.
+    """
+    if processor is None:
+        # silent-failure-hunter finding #1: silent skip → "tool not found"
+        # at first call is unobservable at startup. Log loudly and raise
+        # so the operator learns about the misconfiguration before the
+        # first tool call.
+        from oneiric.core.logging import get_logger
+
+        logger = get_logger("oneiric.mcp.server")
+        logger.error(
+            "scheduler-processor-missing",
+            extra={
+                "component": "oneiric.mcp",
+                "tool": "schedule_task",
+                "remediation": (
+                    "Wire a WorkflowTaskProcessor in the production loader "
+                    "before calling build_mcp_server()."
+                ),
+            },
+        )
+        raise RuntimeError(
+            "schedule_task requires a processor; none supplied. "
+            "Wire a WorkflowTaskProcessor before calling build_mcp_server()."
+        )
+
+    @mcp.tool()
+    @require_auth(permission=Permission.WRITE, service_name=service_name)
+    async def schedule_task(
+        workflow: str,
+        context: dict[str, Any] | None = None,
+        checkpoint: dict[str, Any] | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Dispatch a workflow task to the scheduler."""
+        payload: dict[str, Any] = {
+            "workflow": workflow,
+            "context": context or {},
+            "checkpoint": checkpoint or {},
+            "metadata": metadata or {},
+        }
+        return await processor.process(payload)
+
+
 def build_mcp_server(
     config: _ConfigLike,
     *,
     auth_config: AuthConfig,
     providers: dict[str, IdentityProvider],
     store: SubstrateStore | None = None,
-    processor: WorkflowTaskProcessor | None = None,
+    processor: _ProcessorLike | None = None,
     health_feeds: dict[str, HealthFeedState] | None = None,
 ) -> FastMCP:
     """Construct the FastMCP server with the substrate + scheduler tool surface.
@@ -269,8 +346,9 @@ def build_mcp_server(
             auth_config.enabled is False.
         store: SubstrateStore instance. Created lazily here if not
             supplied.
-        processor: WorkflowTaskProcessor instance. Created lazily here
-            if not supplied.
+        processor: scheduler processor. None is a wiring error and
+            raises ``RuntimeError`` at startup so the misconfiguration is
+            observable before the first ``schedule_task`` call.
         health_feeds: injectable per-route HealthFeedState map for
             the /health route. Created lazily here if not supplied.
     """
@@ -286,10 +364,16 @@ def build_mcp_server(
 
     resolved_store = _resolve_store(store)
     resolved_feeds = _resolve_feeds(health_feeds)
+    resolved_processor = _resolve_processor(processor)
     _register_substrate_tools(
         mcp,
         store=resolved_store,
         feeds=resolved_feeds,
+        service_name=auth_config.service_name,
+    )
+    _register_scheduler_tools(
+        mcp,
+        processor=resolved_processor,
         service_name=auth_config.service_name,
     )
 
