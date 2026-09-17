@@ -21,6 +21,8 @@ from mcp_common.auth.decorator import require_auth
 from mcp_common.auth.middleware import BearerTokenMiddleware
 from mcp_common.auth.permissions import Permission
 from mcp_common.auth.provider import IdentityProvider
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 if TYPE_CHECKING:  # pragma: no cover - guarded import
     from oneiric.core.config import OneiricMCPConfig
@@ -324,6 +326,25 @@ def _register_scheduler_tools(
         return await processor.process(payload)
 
 
+def _register_health_route(
+    mcp: FastMCP, *, feeds: dict[str, HealthFeedState]
+) -> None:
+    """Register ``GET /health`` as a public HTTP route (REQ-004, T14).
+
+    Uses FastMCP's ``@mcp.custom_route`` decorator which adds a route to
+    the underlying Starlette app, bypassing the MCP tool layer. The route
+    is therefore exempt from ``@require_auth`` and can be hit by k8s
+    probes / load balancers without a bearer token.
+    """
+
+    @mcp.custom_route("/health", methods=["GET"])
+    async def health(_request: Request) -> JSONResponse:  # type: ignore[no-untyped-def]
+        from oneiric.mcp.health import aggregate_health
+
+        status_code, body = aggregate_health(feeds)
+        return JSONResponse(content=body, status_code=status_code)
+
+
 def build_mcp_server(
     config: _ConfigLike,
     *,
@@ -376,6 +397,7 @@ def build_mcp_server(
         processor=resolved_processor,
         service_name=auth_config.service_name,
     )
+    _register_health_route(mcp, feeds=resolved_feeds)
 
     return mcp
 

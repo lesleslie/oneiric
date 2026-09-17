@@ -448,3 +448,47 @@ class TestSchedulerTool:
                 processor=None,
                 health_feeds=feeds,
             )
+
+
+class TestHealthRoute:
+    """Tests for the public ``GET /health`` route (T14).
+
+    The route is registered via ``@mcp.custom_route`` so it bypasses the
+    MCP tool layer and is exempt from ``@require_auth`` — k8s/LB health
+    probes can hit it without a bearer token.
+
+    A ``_FakeProcessor`` is supplied because ``build_mcp_server`` raises
+    when ``processor is None`` (T13 silent-failure-hunter guard); passing
+    a processor lets the test isolate the missing-route failure mode.
+    """
+
+    async def test_health_returns_200_when_all_feeds_healthy(
+        self, tmp_path
+    ) -> None:
+        from starlette.testclient import TestClient
+
+        auth_config, providers = load_auth_config(OneiricMCPAuthConfig(enabled=False))
+        store = SubstrateStore(root=tmp_path)
+        feeds = {"settings": HealthFeedState(name="settings")}
+        # A feed with cycles_total == 0 reports unhealthy (uninitialized).
+        # Record one successful cycle so the feed is "healthy" by T4's
+        # semantics: cycles > 0 AND errors == 0.
+        feeds["settings"].record_success(entities_count=0)
+        mcp = build_mcp_server(
+            _StubConfig(),
+            auth_config=auth_config,
+            providers=providers,
+            store=store,
+            processor=_FakeProcessor(),
+            health_feeds=feeds,
+        )
+        # FastMCP exposes the underlying Starlette ASGI app via .http_app().
+        # custom_route() decorators add routes to that app, bypassing the
+        # MCP tool layer, so the /health route is reachable via plain HTTP.
+        app = mcp.http_app()
+        client = TestClient(app)
+        resp = client.get("/health")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["status"] == "healthy"
+        assert "settings" in body["routes"]
