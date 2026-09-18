@@ -11,31 +11,25 @@ implementation.
 """
 from __future__ import annotations
 
-from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from typing import Any
 
 import pytest
-from starlette.testclient import TestClient
-
-from mcp_common.auth.config import AuthConfig
 from mcp_common.auth.context import seed_principal
 from mcp_common.auth.exceptions import (
-    AuthenticationRequiredError,
     InsufficientPermissionError,
     TokenInvalidError,
-    UnknownIssuerError,
 )
 from mcp_common.auth.permissions import Permission
 from mcp_common.auth.principal import Principal
 from mcp_common.auth.provider import IdentityProvider
+from starlette.testclient import TestClient
 
 from oneiric.mcp.config import OneiricMCPAuthConfig, load_auth_config
 from oneiric.mcp.health import HealthFeedState
 from oneiric.mcp.server import build_mcp_server
 from oneiric.mcp.store import SubstrateStore
-
 
 # 32+ chars; not a placeholder. Satisfies AuthConfig's _resolve_secret
 # validator when no explicit ``secret=`` is supplied to AuthConfig.
@@ -149,18 +143,71 @@ class TestHealthIsPublic:
 class TestSubstrateReadsRequireReadPermission:
     """REQ-003: reads require READ permission."""
 
-    async def test_no_token_returns_401(self, tmp_path: Any) -> None:
-        """No Principal in context → AuthenticationRequiredError.
+    def test_no_authorization_header_returns_auth_error(
+        self, tmp_path: Any
+    ) -> None:
+        """REQ-003 transport-boundary proof: an unauthenticated tools/call
+        over HTTP MUST be rejected before the tool function executes.
 
-        Replaces the pr-test-analyzer-flagged ``__import__("asyncio")``
-        pattern with a clean async test (pytest-asyncio mode=auto).
+        With mcp-common's ``include={'authorization'}`` fix in place,
+        ``BearerTokenMiddleware`` actually fires on HTTP. When no
+        Authorization header is present, the middleware passes through
+        (per its design — anonymous requests are the decorator's
+        responsibility). The ``@require_auth`` decorator then raises
+        ``AuthenticationRequiredError``, which FastMCP's streamable-HTTP
+        transport wraps as ``ToolError`` and surfaces as a JSON-RPC
+        ``isError: true`` envelope.
+
+        Important: FastMCP streamable-HTTP always returns HTTP 200 (the
+        JSON-RPC error lives in the response body). The middleware-layer
+        rejection signal is therefore the body content — the decorator's
+        safe-default ``Authentication required for <tool>`` message — NOT
+        an HTTP 401 status code. A future FastMCP change that surfaces
+        AuthError as a real 401 would surface as a status-code test
+        failure, which is the regression signal we want.
         """
         mcp = _build_with_auth(tmp_path)
-        tool = next(
-            t for t in await mcp.list_tools() if t.name == "read_settings"
-        )
-        with pytest.raises(AuthenticationRequiredError):
-            await tool.fn()
+        with TestClient(mcp.http_app()) as client:
+            init = client.post(
+                "/mcp/",
+                headers={
+                    "Accept": "application/json, text/event-stream",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "jsonrpc": "2.0",
+                    "method": "initialize",
+                    "params": {
+                        "protocolVersion": "2024-11-05",
+                        "capabilities": {},
+                        "clientInfo": {"name": "t", "version": "0"},
+                    },
+                    "id": 1,
+                },
+            )
+            session_id = init.headers.get("mcp-session-id", "")
+            resp = client.post(
+                "/mcp/",
+                headers={
+                    "mcp-session-id": session_id,
+                    "Accept": "application/json, text/event-stream",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "jsonrpc": "2.0",
+                    "method": "tools/call",
+                    "params": {"name": "read_settings", "arguments": {}},
+                    "id": 2,
+                },
+            )
+        # FastMCP streamable-HTTP returns 200; the rejection is in the body.
+        assert resp.status_code == 200
+        body = resp.text
+        # Decorator's safe-default message proves @require_auth fired.
+        # NOT a middleware AuthError (those carry their own specific
+        # message; see test_invalid_token_rejected below).
+        assert "Authentication required for read_settings" in body
+        assert '"isError":true' in body
 
 
 class TestSubstrateWritesRequireWritePermission:
@@ -262,16 +309,30 @@ class TestTokenValidation:
     """Spec §7.1: cover missing/invalid/expired/wrong-issuer tokens."""
 
     async def test_invalid_token_rejected(self, tmp_path: Any) -> None:
-        """Malformed token (no 'good-' prefix) is rejected.
+        """Malformed token (no 'good-' prefix) is rejected by
+        ``BearerTokenMiddleware``, NOT by the per-tool decorator.
 
-        BearerTokenMiddleware fires on_request → verify_token raises
-        TokenInvalidError → AuthError propagates. The test asserts the
-        request is NOT silently accepted — the JSON-RPC envelope must
-        carry an error, either as an HTTP 401 (middleware layer) or as
-        ``isError: true`` with an ``AuthenticationRequiredError`` from
-        the @require_auth decorator (when the streamable-HTTP transport
-        bypasses the middleware and the safe-default decorator catches
-        the missing Principal).
+        This is the REQ-002 / REQ-003 transport-boundary proof: with
+        mcp-common's ``include={'authorization'}`` fix in place, the
+        middleware actually fires on HTTP requests. ``verify_token``
+        raises ``TokenInvalidError`` and the middleware re-raises; FastMCP
+        wraps it as a ``ToolError`` that surfaces in the JSON-RPC body
+        with ``isError: true``.
+
+        Crucially, the body MUST contain the middleware's specific error
+        message (``"bad token prefix"`` — the ``str(exc)`` from
+        ``TokenInvalidError``), NOT the decorator's safe-default message
+        (``"Authentication required for <tool>"``). If we ever see the
+        decorator message in this test, the middleware has been
+        bypassed (e.g. a future FastMCP change that strips
+        ``on_request``) and REQ-003 enforcement has silently degraded
+        to the decorator fallback — which means the transport boundary
+        is no longer guarded.
+
+        Note: FastMCP streamable-HTTP returns HTTP 200 even when the
+        middleware rejects; the rejection lives in the JSON-RPC body.
+        A future FastMCP change that surfaces AuthError as a real 401
+        would surface here as a status-code assertion failure.
         """
         mcp = _build_with_auth(tmp_path)
         # `with` activates FastMCP's lifespan so the StreamableHTTPSessionManager
@@ -311,16 +372,18 @@ class TestTokenValidation:
                     "id": 2,
                 },
             )
-        # Either 401 (middleware rejection) or 200 with isError=True
-        # (decorator fallback). Both demonstrate the token is rejected.
-        assert resp.status_code in (200, 401)
-        body = resp.text.lower()
-        assert (
-            "auth" in body
-            or "token" in body
-            or "iserror" in body
-            or "missing" in body
+        # FastMCP streamable-HTTP returns 200; the rejection is in the body.
+        assert resp.status_code == 200
+        body = resp.text
+        # Middleware-layer signal: the TokenInvalidError message, NOT
+        # the decorator's "Authentication required for ..." fallback.
+        assert "bad token prefix" in body, (
+            f"expected TokenInvalidError message in body, got: {body!r}"
         )
+        assert "Authentication required for read_settings" not in body, (
+            f"middleware should have fired, but decorator fallback ran: {body!r}"
+        )
+        assert '"isError":true' in body
 
     async def test_expired_token_accepted_documented_gap(
         self, tmp_path: Any
@@ -359,16 +422,24 @@ class TestTokenValidation:
 
     async def test_wrong_issuer_rejected(self, tmp_path: Any) -> None:
         """Provider returns a Principal whose issuer is NOT in
-        ``trusted_issuers`` → BearerTokenMiddleware's
+        ``trusted_issuers`` → ``BearerTokenMiddleware``'s
         ``_enforce_trusted_issuers`` gate raises ``UnknownIssuerError``.
 
         This test goes through the HTTP path so the middleware actually
         fires ``on_request`` (calling ``seed_principal`` directly would
         bypass the middleware and skip this gate — that's why the test
-        uses TestClient + Authorization header). The test accepts any
-        rejection — either the middleware's UnknownIssuerError (HTTP
-        401) or the decorator's AuthenticationRequiredError fallback
-        (when the streamable-HTTP transport bypasses the middleware).
+        uses TestClient + Authorization header).
+
+        The body MUST carry the ``UnknownIssuerError`` message —
+        ``"Issuer 'other' not in auth_config.trusted_issuers: ['acme']"``
+        — NOT the decorator's ``Authentication required for <tool>``
+        fallback. If we see the decorator message, the
+        ``_enforce_trusted_issuers`` gate has been bypassed (e.g. a
+        refactor that drops it) and any signature-valid token from an
+        untrusted issuer would slip through.
+
+        Note: FastMCP streamable-HTTP returns HTTP 200 even when the
+        middleware rejects; the rejection lives in the JSON-RPC body.
         """
         cfg = OneiricMCPAuthConfig(
             enabled=True,
@@ -426,14 +497,159 @@ class TestTokenValidation:
                     "id": 2,
                 },
             )
-        # Either a 401 (middleware rejection) or a 200 with isError=True
-        # (decorator fallback). Both demonstrate the request is rejected.
-        assert resp.status_code in (200, 401)
-        body = resp.text.lower()
-        assert (
-            "auth" in body
-            or "issuer" in body
-            or "trust" in body
-            or "not in" in body
-            or "iserror" in body
+        assert resp.status_code == 200
+        body = resp.text
+        # Middleware-layer signal: UnknownIssuerError carries this exact
+        # message format. NOT the decorator's "Authentication required" string.
+        assert "Issuer 'other' not in auth_config.trusted_issuers" in body, (
+            f"expected UnknownIssuerError message in body, got: {body!r}"
         )
+        assert "Authentication required for read_settings" not in body, (
+            f"middleware should have fired, but decorator fallback ran: {body!r}"
+        )
+        assert '"isError":true' in body
+
+    def test_tools_list_without_auth_rejected_by_middleware(
+        self, tmp_path: Any
+    ) -> None:
+        """REQ-003 transport-boundary proof for ``tools/list``.
+
+        An unauthenticated ``tools/list`` request carrying a bad bearer
+        token MUST be rejected by ``BearerTokenMiddleware`` at the
+        transport boundary. FastMCP's streamable-HTTP transport surfaces
+        the resulting ``AuthError`` as a JSON-RPC ``error`` envelope
+        (note: ``error``, not ``isError: true`` — tools/list is a
+        session-level method, not a tool invocation).
+
+        If the middleware stops firing for tools/list, an unauthenticated
+        caller would receive the full tool inventory — exposing the
+        tool surface to anonymous probes. This test would surface that
+        regression as either (a) the body contains the full ``tools``
+        array, or (b) the JSON-RPC ``error`` envelope is absent.
+
+        Known gap surfaced by this test: ``tools/list`` WITHOUT an
+        Authorization header is NOT rejected — ``BearerTokenMiddleware``
+        passes through (per design; anonymous is the decorator's
+        concern) and tools/list has no ``@require_auth`` decorator
+        (listing is not a tool call). That gap is documented in
+        Task 16 / T17 follow-up.
+        """
+        mcp = _build_with_auth(tmp_path)
+        with TestClient(mcp.http_app()) as client:
+            init = client.post(
+                "/mcp/",
+                headers={
+                    "Accept": "application/json, text/event-stream",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "jsonrpc": "2.0",
+                    "method": "initialize",
+                    "params": {
+                        "protocolVersion": "2024-11-05",
+                        "capabilities": {},
+                        "clientInfo": {"name": "t", "version": "0"},
+                    },
+                    "id": 1,
+                },
+            )
+            session_id = init.headers.get("mcp-session-id", "")
+            resp = client.post(
+                "/mcp/",
+                headers={
+                    "Authorization": "Bearer bad-format-token",
+                    "mcp-session-id": session_id,
+                    "Accept": "application/json, text/event-stream",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "jsonrpc": "2.0",
+                    "method": "tools/list",
+                    "id": 2,
+                },
+            )
+        # FastMCP streamable-HTTP returns 200; rejection is in the body.
+        assert resp.status_code == 200
+        body = resp.text
+        # TokenInvalidError message — same as test_invalid_token_rejected.
+        assert "bad token prefix" in body, (
+            f"expected TokenInvalidError message in body, got: {body!r}"
+        )
+        # The tool inventory MUST NOT be present (the middleware
+        # rejected before tools/list could execute).
+        assert '"tools"' not in body, (
+            f"middleware should have rejected before tools/list executed; "
+            f"tool inventory leaked: {body[:500]!r}"
+        )
+        # FastMCP surfaces middleware errors on session-level methods
+        # as a JSON-RPC ``error`` envelope (not ``isError: true``).
+        assert '"error"' in body
+
+    def test_tools_list_with_valid_token_succeeds(self, tmp_path: Any) -> None:
+        """Positive proof: a valid bearer token authorizes ``tools/list``.
+
+        After the mcp-common ``include={'authorization'}`` fix, a valid
+        ``good-<sub>:<role>`` token is verified by the JWT provider,
+        seeded into the request context, and the middleware passes
+        through to ``tools/list``. The response body MUST carry the
+        full tool inventory (``"tools"`` array). This is the inverse
+        of ``test_tools_list_without_auth_rejected_by_middleware`` and
+        pins the success path that the middleware is wired correctly.
+        """
+        mcp = _build_with_auth(tmp_path)
+        with TestClient(mcp.http_app()) as client:
+            init = client.post(
+                "/mcp/",
+                headers={
+                    "Accept": "application/json, text/event-stream",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "jsonrpc": "2.0",
+                    "method": "initialize",
+                    "params": {
+                        "protocolVersion": "2024-11-05",
+                        "capabilities": {},
+                        "clientInfo": {"name": "t", "version": "0"},
+                    },
+                    "id": 1,
+                },
+            )
+            session_id = init.headers.get("mcp-session-id", "")
+            resp = client.post(
+                "/mcp/",
+                headers={
+                    "Authorization": "Bearer good-alice:reader",
+                    "mcp-session-id": session_id,
+                    "Accept": "application/json, text/event-stream",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "jsonrpc": "2.0",
+                    "method": "tools/list",
+                    "id": 2,
+                },
+            )
+        assert resp.status_code == 200
+        body = resp.text
+        # Positive proof: tool inventory is present and not an error.
+        assert '"tools"' in body, (
+            f"expected tool inventory in body, got: {body[:500]!r}"
+        )
+        assert '"isError":true' not in body
+        assert '"error"' not in body
+        # Sanity: all 7 substrate/scheduler tools are exposed.
+        # (read_settings + write_settings + read_context + write_context +
+        #  read_progress + write_progress + schedule_task = 7.)
+        for tool_name in (
+            "read_settings",
+            "write_settings",
+            "read_context",
+            "write_context",
+            "read_progress",
+            "write_progress",
+            "schedule_task",
+        ):
+            assert f'"name":"{tool_name}"' in body, (
+                f"tool {tool_name!r} missing from inventory: {body[:500]!r}"
+            )
