@@ -37,9 +37,10 @@ class _ConfigLike(Protocol):
 class _ProcessorLike(Protocol):
     """Structural type for any scheduler-side task processor.
 
-    Production uses ``oneiric.runtime.scheduler.WorkflowTaskProcessor`` (until
-    T18 deletes that file). The protocol lets tests inject a lightweight fake
-    without inheriting from the production class.
+    Production uses ``oneiric.mcp.scheduler.WorkflowTaskProcessor`` (T19
+    migrated it from ``oneiric.runtime.scheduler``). The protocol lets
+    tests inject a lightweight fake without inheriting from the
+    production class.
     """
 
     async def process(self, payload: dict[str, Any]) -> dict[str, Any]: ...

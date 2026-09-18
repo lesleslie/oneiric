@@ -1,14 +1,18 @@
-"""Tests for the scheduler HTTP helpers."""
+"""WorkflowTaskProcessor behavioral tests (legacy file).
 
+T19 migrated ``WorkflowTaskProcessor`` to ``oneiric.mcp.scheduler`` and
+deleted the aiohttp :class:`SchedulerHTTPServer`. This file retains only
+the pre-existing ``WorkflowTaskProcessor`` smoke test for backward
+compatibility with the original ``tests/runtime/`` import path; the
+behavioral-equivalence suite lives in ``tests/mcp/test_scheduler.py``.
+"""
 from __future__ import annotations
 
-import socket
 from typing import Any
 
-import aiohttp
 import pytest
 
-from oneiric.runtime.scheduler import SchedulerHTTPServer, WorkflowTaskProcessor
+from oneiric.mcp.scheduler import WorkflowTaskProcessor
 
 
 class FakeWorkflowBridge:
@@ -43,18 +47,6 @@ class FakeWorkflowBridge:
         }
 
 
-@pytest.fixture()
-def unused_tcp_port() -> int:
-    try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.bind(("127.0.0.1", 0))
-        _, port = sock.getsockname()
-        sock.close()
-        return port
-    except PermissionError:
-        pytest.skip("Unable to bind local test port in this environment")
-
-
 @pytest.mark.asyncio
 async def test_workflow_task_processor_executes_workflow():
     bridge = FakeWorkflowBridge()
@@ -73,118 +65,3 @@ async def test_workflow_task_processor_executes_workflow():
     assert bridge.calls == [
         ("demo", {"tenant": "demo"}, {"step": "extract"}, "abc123"),
     ]
-
-
-@pytest.mark.asyncio
-async def test_scheduler_http_server_handles_request(unused_tcp_port: int):
-    bridge = FakeWorkflowBridge()
-    processor = WorkflowTaskProcessor(bridge)  # type: ignore[arg-type]
-    server = SchedulerHTTPServer(
-        processor,
-        host="127.0.0.1",
-        port=unused_tcp_port,
-    )
-    await server.start()
-    try:
-        async with aiohttp.ClientSession() as session:
-            resp = await session.post(
-                f"http://127.0.0.1:{unused_tcp_port}/tasks/workflow",
-                json={"workflow": "demo", "context": {"tenant": "cloud"}},
-            )
-            assert resp.status == 200
-            payload = await resp.json()
-            assert payload["status"] == "completed"
-            assert payload["result"]["results"]["workflow"] == "demo"
-    finally:
-        await server.stop()
-
-
-@pytest.mark.asyncio
-async def test_scheduler_http_server_validates_payload(unused_tcp_port: int):
-    bridge = FakeWorkflowBridge()
-    processor = WorkflowTaskProcessor(bridge)  # type: ignore[arg-type]
-    server = SchedulerHTTPServer(
-        processor,
-        host="127.0.0.1",
-        port=unused_tcp_port,
-    )
-    await server.start()
-    try:
-        async with aiohttp.ClientSession() as session:
-            resp = await session.post(
-                f"http://127.0.0.1:{unused_tcp_port}/tasks/workflow",
-                json={"invalid": True},
-            )
-            assert resp.status == 400
-    finally:
-        await server.stop()
-
-
-@pytest.mark.asyncio
-async def test_scheduler_http_server_rejects_invalid_json():
-    bridge = FakeWorkflowBridge()
-    processor = WorkflowTaskProcessor(bridge)  # type: ignore[arg-type]
-    server = SchedulerHTTPServer(processor)
-
-    class BadRequest:
-        async def json(self):
-            raise ValueError("bad json")
-
-    response = await server._handle_workflow_task(BadRequest())  # type: ignore[arg-type]
-
-    assert response.status == 400
-
-
-@pytest.mark.asyncio
-async def test_scheduler_http_server_rejects_non_object_payload():
-    bridge = FakeWorkflowBridge()
-    processor = WorkflowTaskProcessor(bridge)  # type: ignore[arg-type]
-    server = SchedulerHTTPServer(processor)
-
-    class ListRequest:
-        async def json(self):
-            return []
-
-    response = await server._handle_workflow_task(ListRequest())  # type: ignore[arg-type]
-
-    assert response.status == 400
-
-
-@pytest.mark.asyncio
-async def test_scheduler_http_health_endpoint():
-    bridge = FakeWorkflowBridge()
-    processor = WorkflowTaskProcessor(bridge)  # type: ignore[arg-type]
-    server = SchedulerHTTPServer(processor)
-
-    class DummyRequest:
-        pass
-
-    response = await server._handle_health(DummyRequest())  # type: ignore[arg-type]
-
-    assert response.status == 200
-
-
-@pytest.mark.asyncio
-async def test_scheduler_http_server_returns_processor_error():
-    class BrokenWorkflowBridge(FakeWorkflowBridge):
-        async def execute_dag(
-            self,
-            workflow_key: str,
-            *,
-            context: dict[str, Any] | None,
-            checkpoint: dict[str, Any] | None,
-            run_id: str | None = None,
-        ) -> dict[str, Any]:
-            raise RuntimeError("broken")
-
-    bridge = BrokenWorkflowBridge()
-    processor = WorkflowTaskProcessor(bridge)  # type: ignore[arg-type]
-    server = SchedulerHTTPServer(processor)
-
-    class Request:
-        async def json(self):
-            return {"workflow": "demo"}
-
-    response = await server._handle_workflow_task(Request())  # type: ignore[arg-type]
-
-    assert response.status == 500

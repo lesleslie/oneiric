@@ -2181,52 +2181,10 @@ def test_shell_command_inner_body() -> None:
 
 
 # ---------------------------------------------------------------------------
-# _handle_orchestrate — enable_http=True path (lines 880-886, 899)
+# _handle_orchestrate — HTTP server path removed in T19.
+#
+# T19 migrated WorkflowTaskProcessor out of oneiric.runtime.scheduler and
+# deleted the aiohttp SchedulerHTTPServer. The CLI's `enable_http=True`
+# path no longer starts an HTTP server, so the prior coverage test was
+# removed along with the deleted code.
 # ---------------------------------------------------------------------------
-
-
-async def test_handle_orchestrate_with_http_server() -> None:
-    from oneiric.cli import _handle_orchestrate
-
-    settings = MagicMock()
-    settings.remote.refresh_interval = None
-
-    mock_orchestrator = MagicMock()
-    mock_orchestrator.start = AsyncMock()
-    mock_orchestrator.stop = AsyncMock()
-    mock_orchestrator.workflow_bridge = MagicMock()
-    mock_orchestrator.event_bridge = MagicMock()
-
-    mock_http_server = MagicMock()
-    mock_http_server.start = AsyncMock()
-    mock_http_server.stop = AsyncMock()
-
-    with (
-        patch("oneiric.cli.RuntimeOrchestrator", return_value=mock_orchestrator),
-        patch(
-            "oneiric.cli._wait_forever", new=AsyncMock(side_effect=KeyboardInterrupt)
-        ),
-        patch("oneiric.cli._resolve_http_port", return_value=8080),
-        patch("oneiric.cli.WorkflowTaskProcessor", return_value=MagicMock()),
-        patch("oneiric.cli.SchedulerHTTPServer", return_value=mock_http_server),
-    ):
-        await _handle_orchestrate(
-            settings,
-            MagicMock(),
-            MagicMock(),
-            MagicMock(),
-            manifest_override=None,
-            refresh_interval=None,
-            disable_remote=False,
-            workflow_checkpoint_override=None,
-            disable_workflow_checkpoints=False,
-            http_port=8080,
-            http_host="127.0.0.1",
-            enable_http=True,
-            print_dag=False,
-            workflow_filters=[],
-            inspect_events=False,
-            inspect_json=False,
-        )
-    mock_http_server.start.assert_called_once()
-    mock_http_server.stop.assert_called_once()

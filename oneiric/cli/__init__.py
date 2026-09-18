@@ -77,7 +77,7 @@ from oneiric.runtime.load_testing import LoadTestProfile, LoadTestResult, run_lo
 from oneiric.runtime.notifications import NotificationRoute, NotificationRouter
 from oneiric.runtime.orchestrator import RuntimeOrchestrator
 from oneiric.runtime.process_manager import ProcessManager
-from oneiric.runtime.scheduler import SchedulerHTTPServer, WorkflowTaskProcessor
+from oneiric.mcp.scheduler import WorkflowTaskProcessor  # noqa: F401  # re-exported for oneiric.cli.test_cli_coverage patches
 from oneiric.runtime.telemetry import load_runtime_telemetry
 
 logger = get_logger("cli")
@@ -1091,34 +1091,23 @@ async def _handle_orchestrate(
             )
         _emit_inspector_payload(payload, inspect_json)
         return
-    http_server: SchedulerHTTPServer | None = None
     try:
         await orchestrator.start(
             manifest_url=manifest_override,
             refresh_interval_override=refresh_interval,
             enable_remote=not disable_remote,
         )
-        if enable_http and resolved_http_port is not None:
-            processor = WorkflowTaskProcessor(orchestrator.workflow_bridge)
-            http_server = SchedulerHTTPServer(
-                processor,
-                host=http_host,
-                port=resolved_http_port,
-            )
-            await http_server.start()
         logger.info(
             "orchestrator-running",
             remote_enabled=not disable_remote,
             refresh_interval=refresh_interval or settings.remote.refresh_interval,
-            http_enabled=enable_http,
+            http_enabled=False,
             http_port=resolved_http_port,
         )
         await _wait_forever()
     except KeyboardInterrupt:
         logger.info("orchestrator-shutdown-requested")
     finally:
-        if http_server:
-            await http_server.stop()
         await orchestrator.stop()
         logger.info("orchestrator-stopped")
 
