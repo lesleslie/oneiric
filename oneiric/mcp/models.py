@@ -10,9 +10,10 @@ Pydantic v2 note: we use ``RootModel`` (the canonical v2 way to express
 class is a thin wrapper that lets ``model_validate(None)`` return
 ``None`` at input boundaries, which the tests expect.
 """
+
 from __future__ import annotations
 
-from typing import Annotated, Any, Union
+from typing import Annotated, Any
 
 from pydantic import BaseModel, BeforeValidator, Field, RootModel
 
@@ -31,9 +32,7 @@ _BoundedKey = Annotated[
     Field(min_length=1, max_length=256),
 ]
 
-BoundedPrimitive = RootModel[
-    Union[_BoundedStr, int, float, bool, None]
-]
+BoundedPrimitive = RootModel[_BoundedStr | int | float | bool | None]
 """Metadata value: primitive only, no nested collections."""
 
 
@@ -75,8 +74,7 @@ class BoundedMetadata:
             self._root: dict[str, Any] = {}
         else:
             self._root = {
-                k: (v.root if isinstance(v, RootModel) else v)
-                for k, v in value.items()
+                k: (v.root if isinstance(v, RootModel) else v) for k, v in value.items()
             }
 
     @property
@@ -127,7 +125,7 @@ class BoundedMetadata:
         with Pydantic's ``BaseModel.model_dump`` but are intentionally
         ignored — this wrapper is intentionally NOT a Pydantic model.
         """
-        return dict(self._root)
+        return self._root.copy()
 
 
 # --- Substrate input models (T3) ---

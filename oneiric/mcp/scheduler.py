@@ -8,6 +8,7 @@ itself was self-contained: it has no aiohttp dependencies, only a single
 behavior verbatim; tests in ``tests/mcp/test_scheduler.py`` pin the
 documented contract.
 """
+
 from __future__ import annotations
 
 from collections.abc import Mapping

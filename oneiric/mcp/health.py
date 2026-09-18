@@ -3,6 +3,7 @@
 Migrated from oneiric/http/routes/substrate.py. The shape and semantics
 are unchanged; only the location moved.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass

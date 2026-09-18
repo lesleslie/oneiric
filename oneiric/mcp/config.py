@@ -7,15 +7,16 @@ env vars and converts it into mcp-common's ``AuthConfig`` + a map of
 REQ-006: settings file with env-var override, per oneiric's existing
 layered-config convention.
 """
+
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import yaml
-
 from mcp_common.auth.config import AuthConfig
 from mcp_common.auth.identity import IdentityProviderSpec, validate_auth_config
 from mcp_common.auth.provider import IdentityProvider
@@ -36,13 +37,12 @@ def load_yaml_auth_section(yaml_path: Path) -> dict[str, Any]:
         data = yaml.safe_load(yaml_path.read_text())
     except yaml.YAMLError as exc:
         raise RuntimeError(
-            f"Failed to parse {yaml_path}: {exc}. "
-            "Fix the YAML or unset the env var."
+            f"Failed to parse {yaml_path}: {exc}. Fix the YAML or unset the env var."
         ) from exc
     if data is None:
         return {}
     if not isinstance(data, dict):
-        raise RuntimeError(
+        raise TypeError(
             f"{yaml_path} must contain a YAML mapping at the top level "
             f"(got {type(data).__name__})."
         )
@@ -50,7 +50,7 @@ def load_yaml_auth_section(yaml_path: Path) -> dict[str, Any]:
     if auth is None:
         return {}
     if not isinstance(auth, dict):
-        raise RuntimeError(
+        raise TypeError(
             f"{yaml_path}'s 'auth:' section must be a mapping "
             f"(got {type(auth).__name__})."
         )
@@ -101,7 +101,8 @@ class OneiricMCPAuthConfig:
 def load_auth_config(
     cfg: OneiricMCPAuthConfig,
     *,
-    provider_factories: dict[str, Callable[[dict[str, Any]], IdentityProvider]] | None = None,
+    provider_factories: dict[str, Callable[[dict[str, Any]], IdentityProvider]]
+    | None = None,
 ) -> tuple[AuthConfig, dict[str, IdentityProvider]]:
     """Build mcp-common's AuthConfig + provider map from the resolved config.
 
@@ -115,7 +116,7 @@ def load_auth_config(
         service_name="oneiric",
         enabled=cfg.enabled,
         default_provider=cfg.default_provider or "",
-        trusted_issuers=frozenset(cfg.trusted_issuers),
+        trusted_issuers=cfg.trusted_issuers.copy(),
         identity_providers=(
             {name: IdentityProviderSpec(type="jwt") for name in provider_factories}
             if cfg.enabled and provider_factories

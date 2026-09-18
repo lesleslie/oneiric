@@ -1,6 +1,10 @@
 ---
 title: Oneiric FastMCP Pivot + Auth Integration Implementation Plan
 status: draft
+role: implementation
+date: 2026-09-16
+last_reviewed: 2026-09-18
+topic: mcp-design
 created: 2026-09-16
 spec: docs/superpowers/specs/2026-09-16-oneiric-fastmcp-pivot-design.md
 ---
@@ -3418,6 +3422,3 @@ No "TBD", "TODO", "FIXME", "XXX", or stream-of-consciousness fragments in this p
 ## Execution
 
 The plan is saved at `/Users/les/Projects/oneiric/docs/plans/2026-09-16-oneiric-fastmcp-pivot-implementation.md`. Two execution options:
-
-
-

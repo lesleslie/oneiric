@@ -89,15 +89,13 @@ should understand the blast radius before exposing the server.
 **Upstream component:** `mcp-common.auth.middleware.BearerTokenMiddleware`.
 
 **Symptom:** Under specific async-boundary conditions, `Principal.current()`
-returns `None` inside tool handlers even when the inbound `Authorization:
-Bearer <token>` header was successfully verified. Practical effect: a caller
+returns `None` inside tool handlers even when the inbound `Authorization: Bearer <token>` header was successfully verified. Practical effect: a caller
 holding a valid token sees `tools/list` return 200 (no `@require_auth` on
 that framework-level path), but `tools/call` on a gated tool raises
 `AuthenticationRequiredError` from the `@require_auth` decorator because the
 principal contextvar reads empty.
 
-**Tracked under:** mcp-common issue tracker — search `BearerTokenMiddleware
-contextvar propagation`. Until a fix lands, operators running oneiric with
+**Tracked under:** mcp-common issue tracker — search `BearerTokenMiddleware contextvar propagation`. Until a fix lands, operators running oneiric with
 `auth.enabled=true` should expect intermittent 401s on `tools/call` even
 with a known-good token; the workaround is to retry the call once (the
 middleware re-seeds on each request).
@@ -123,8 +121,7 @@ default) but must not be combined with a public-network deployment of
 
 ## CLI surface
 
-The `oneiric mcp` lifecycle CLI mirrors the legacy `oneiric http start|stop|
-status|health` shape so operators already familiar with the HTTP server can
+The `oneiric mcp` lifecycle CLI mirrors the legacy `oneiric http start|stop| status|health` shape so operators already familiar with the HTTP server can
 operate the FastMCP server the same way. All four subcommands live under
 `oneiric.cli.mcp.mcp_app` and are registered on the top-level `oneiric` CLI
 via `mcp_app` in `oneiric/cli/__init__.py`.

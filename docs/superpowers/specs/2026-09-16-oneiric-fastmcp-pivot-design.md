@@ -1,6 +1,10 @@
 ---
 title: Oneiric FastMCP Pivot + Auth Integration
 status: draft
+role: canonical
+date: 2026-09-16
+last_reviewed: 2026-09-18
+topic: mcp-design
 created: 2026-09-16
 owner: les
 priority: high
@@ -109,7 +113,7 @@ if TYPE_CHECKING:
     from oneiric.core.config import OneiricMCPConfig
 
 
-# Permission tiers — re-use the mcp-common Permission enum (READ / WRITE /
+# Permission tiers — reuse the mcp-common Permission enum (READ / WRITE /
 # DELETE / ADMIN). Coarse granularity is acceptable per trusted-network
 # posture; fine-grained per-tool permissions are not required. Operators
 # map roles to these via AuthConfig + Principal.roles.

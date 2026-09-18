@@ -20,7 +20,9 @@ import json
 import os
 import socket
 from collections.abc import Callable
+from contextlib import suppress
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import typer
@@ -113,7 +115,9 @@ def _load_auth_from_settings(settings_path: Path | None = None) -> OneiricMCPAut
     return OneiricMCPAuthConfig.from_env(raw)
 
 
-def _build_provider_factories() -> dict[str, Callable[[dict[str, Any]], IdentityProvider]]:
+def _build_provider_factories() -> dict[
+    str, Callable[[dict[str, Any]], IdentityProvider]
+]:
     """Return the provider factory map wired into ``load_auth_config``.
 
     Extension point: this stub returns ``{}`` so the ``start`` command
@@ -193,7 +197,7 @@ def mcp_start(
         auth_config, provider_factories=provider_factories
     )
     server = build_mcp_server(
-        config=None,  # type: ignore[arg-type]
+        config=SimpleNamespace(name="oneiric"),
         auth_config=mcp_auth_config,
         providers=mcp_providers,
     )
@@ -298,10 +302,8 @@ def mcp_stop(
         time.sleep(0.1)
     else:
         # Still alive after timeout — escalate.
-        try:
+        with suppress(OSError):
             os.kill(pid, signal.SIGKILL)
-        except OSError:
-            pass
 
     _clear_pid_file(resolved_pid)
     typer.echo(f"MCP server stopped (pid={pid})")
@@ -324,9 +326,7 @@ def mcp_status(
     cache_dir: str | None = typer.Option(
         None, "--cache-dir", metavar="PATH", help="Cache directory override."
     ),
-    json_output: bool = typer.Option(
-        False, "--json", help="Emit status as JSON."
-    ),
+    json_output: bool = typer.Option(False, "--json", help="Emit status as JSON."),
 ) -> None:
     """Show whether the FastMCP server is running."""
     resolved_port = _resolve_port(port)
@@ -372,9 +372,7 @@ def mcp_health(
         metavar="PORT",
         help="Port to probe (defaults to $ONEIRIC_MCP_PORT or 8765).",
     ),
-    json_output: bool = typer.Option(
-        False, "--json", help="Emit health as JSON."
-    ),
+    json_output: bool = typer.Option(False, "--json", help="Emit health as JSON."),
 ) -> None:
     """Probe the FastMCP server's /health endpoint."""
     import httpx2 as httpx
@@ -390,7 +388,7 @@ def mcp_health(
     body: dict[str, object] = {}
     try:
         body = response.json()
-    except (ValueError, json.JSONDecodeError):
+    except ValueError, json.JSONDecodeError:
         body = {"raw": response.text}
 
     if json_output:

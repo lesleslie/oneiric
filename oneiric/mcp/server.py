@@ -11,6 +11,7 @@ store=None, processor=None) -> fastmcp.FastMCP.
 The CLI (``oneiric mcp``) wires the auth config + store + processor
 into this entrypoint at startup.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Protocol
@@ -25,7 +26,6 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 if TYPE_CHECKING:  # pragma: no cover - guarded import
-    from oneiric.core.config import OneiricMCPConfig
     from oneiric.mcp.health import HealthFeedState
     from oneiric.mcp.store import SubstrateStore
 
@@ -114,7 +114,7 @@ def _register_substrate_tools(
                 "history": history,
                 "history_total": len(history),
             }
-        except (OSError, ValueError, TypeError):
+        except OSError, ValueError, TypeError:
             feed.record_error()
             raise
         feed.record_success(entities_count=1 if current else 0)
@@ -138,7 +138,7 @@ def _register_substrate_tools(
                 version=version, source=source, metadata=metadata
             )
             record = store.write_settings(parsed)
-        except (OSError, ValueError, TypeError):
+        except OSError, ValueError, TypeError:
             feed.record_error()
             raise
         feed.record_success(entities_count=1)
@@ -167,7 +167,7 @@ def _register_substrate_tools(
                     }
                 )
             rendered = {"tenants": tenants, "tenant_total": len(tenants)}
-        except (OSError, ValueError, TypeError):
+        except OSError, ValueError, TypeError:
             feed.record_error()
             raise
         feed.record_success(entities_count=len(tenants))
@@ -195,7 +195,7 @@ def _register_substrate_tools(
                 metadata=metadata,
             )
             record = store.write_context(parsed.tenant_id, parsed)
-        except (OSError, ValueError, TypeError):
+        except OSError, ValueError, TypeError:
             feed.record_error()
             raise
         feed.record_success(entities_count=1)
@@ -229,7 +229,7 @@ def _register_substrate_tools(
                 "workflows": workflows,
                 "workflow_total": len(workflows),
             }
-        except (OSError, ValueError, TypeError):
+        except OSError, ValueError, TypeError:
             feed.record_error()
             raise
         feed.record_success(entities_count=len(workflows))
@@ -259,7 +259,7 @@ def _register_substrate_tools(
                 metadata=metadata,
             )
             record = store.write_progress(parsed)
-        except (OSError, ValueError, TypeError):
+        except OSError, ValueError, TypeError:
             feed.record_error()
             raise
         feed.record_success(entities_count=1)
@@ -327,9 +327,7 @@ def _register_scheduler_tools(
         return await processor.process(payload)
 
 
-def _register_health_route(
-    mcp: FastMCP, *, feeds: dict[str, HealthFeedState]
-) -> None:
+def _register_health_route(mcp: FastMCP, *, feeds: dict[str, HealthFeedState]) -> None:
     """Register ``GET /health`` as a public HTTP route (REQ-004, T14).
 
     Uses FastMCP's ``@mcp.custom_route`` decorator which adds a route to

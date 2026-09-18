@@ -12,6 +12,7 @@ The on-disk JSON shape is preserved verbatim so existing
 ``~/.oneiric/substrate/{settings,context,progress}.json`` files from
 legacy oneiric installations continue to load unchanged.
 """
+
 from __future__ import annotations
 
 import json
@@ -91,7 +92,7 @@ class SubstrateStore:
 
     @property
     def paths(self) -> dict[str, Path]:
-        return dict(self._paths)
+        return self._paths.copy()
 
     # ----- read -----
 
@@ -119,9 +120,7 @@ class SubstrateStore:
             _write_json_atomic(self._paths["settings"], bucket)
         return record
 
-    def write_context(
-        self, tenant_id: str, payload: _PayloadLike
-    ) -> dict[str, Any]:
+    def write_context(self, tenant_id: str, payload: _PayloadLike) -> dict[str, Any]:
         record: dict[str, Any] = {
             "id": uuid4().hex,
             "tenant_id": tenant_id,

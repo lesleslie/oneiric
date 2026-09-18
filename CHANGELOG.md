@@ -5,6 +5,55 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.0] - 2026-09-18
+
+### Added
+
+- oneiric/cli: Add oneiric mcp subcommand (REQ-007)
+- oneiric/mcp: Add BoundedMetadata + BoundedPrimitive Pydantic models (REQ-005)
+- oneiric/mcp: Add OneiricMCPAuthConfig + loader (REQ-006)
+- oneiric/mcp: Add public /health HTTP route via custom_route (REQ-004)
+- oneiric/mcp: Add schedule_task MCP tool (REQ-001, REQ-003)
+- oneiric/mcp: Add substrate input models with BoundedMetadata (REQ-005)
+- oneiric/mcp: Add substrate tools read/write_settings/context/progress (REQ-001, REQ-003)
+- oneiric/mcp: FastMCP server skeleton with build_mcp_server() (REQ-001, REQ-002)
+- oneiric/mcp: Migrate HealthFeedState + aggregate_health (REQ-004)
+- oneiric/mcp: Migrate SubstrateStore with threading.Lock (REQ-009)
+- oneiric: Port dhara substrate_routes.py to aiohttp HTTP server
+- oneiric: Port dhara.mcp.kv_timeseries to file-backed PersistentKVCacheAdapter
+
+### Changed
+
+- oneiric: Migrate WorkflowTaskProcessor + add behavioral-equivalence tests; delete aiohttp SchedulerHTTPServer (REQ-008)
+
+### Fixed
+
+- oneiric/mcp: Add BoundedMetadata.model_dump + tighten xfail to strict=True
+- oneiric: Sync doc version stamps to 0.21.8
+
+### Documentation
+
+- Add known limitations, CLI surface, and provider factory sections to oneiric-auth.md
+- Operator guide for oneiric mcp auth (REQ-011)
+
+### Testing
+
+- e2e: Flip T22 auth-propagation xfail markers to real assertions
+- oneiric/mcp: Pin auth-config error paths (REQ-006)
+- oneiric/mcp: Tighten cross-tool auth tests to pin middleware-layer enforcement
+- oneiric/mcp: Verify BearerTokenMiddleware gating across all 7 tools + /health public (REQ-002, REQ-003, REQ-004)
+- oneiric: End-to-end integration test for FastMCP server + auth (REQ-001..REQ-005)
+
+### Build
+
+- deps: Drop dhara dep (Phase 8 — root cause of consumer transitive pollution)
+- oneiric: Drop aiohttp + http-aiohttp extra; add fastmcp dependency (REQ-008)
+
+### Internal
+
+- oneiric: Delete legacy aiohttp substrate server (REQ-008)
+- oneiric: Delete legacy http_cli.py (REQ-007, REQ-008)
+
 ## [0.21.8] - 2026-09-16
 
 ### Fixed

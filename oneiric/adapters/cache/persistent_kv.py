@@ -35,7 +35,7 @@ import os
 import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from pydantic import BaseModel, Field
 
@@ -84,11 +84,13 @@ def _parse_iso(ts: str | None) -> datetime | None:
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=UTC)
         return dt.astimezone(UTC)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return None
 
 
-def _purge_ts_list(entries: list[dict[str, Any]], cutoff: datetime) -> list[dict[str, Any]]:
+def _purge_ts_list(
+    entries: list[dict[str, Any]], cutoff: datetime
+) -> list[dict[str, Any]]:
     if not entries:
         return entries
     kept: list[dict[str, Any]] = []
@@ -208,10 +210,13 @@ class PersistentKVCacheAdapter:
         }
         raw_ts = payload.get(self._TS_KEY) or {}
         if isinstance(raw_ts, dict):
-            self._time_series = {
-                str(k): list(v) if isinstance(v, list) else []
-                for k, v in raw_ts.items()
-            }
+            self._time_series = cast(
+                dict[str, list[dict[str, Any]]],
+                {
+                    str(k): list(v) if isinstance(v, list) else []
+                    for k, v in raw_ts.items()
+                },
+            )
         else:
             self._time_series = {}
 
