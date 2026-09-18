@@ -260,6 +260,7 @@ class TestSubstrateE2E:
     bug. The xfail markers document that without breaking the test run.
     """
 
+    @pytest.mark.xfail(reason=CONTEXTVAR_PROPAGATION_BUG, strict=True)
     def test_read_settings_with_operator_token(
         self, oneiric_mcp: Any
     ) -> None:
@@ -277,13 +278,10 @@ class TestSubstrateE2E:
         assert status == 200
         assert "result" in body
         result = body["result"]
-        # Either isError=False (success path) or isError=True with the
-        # middleware propagation failure surfaced in content[0].text.
-        if result.get("isError"):
-            pytest.xfail(CONTEXTVAR_PROPAGATION_BUG)
         assert result.get("content") or result.get("current") is None
         assert result["current"] is None
 
+    @pytest.mark.xfail(reason=CONTEXTVAR_PROPAGATION_BUG, strict=True)
     def test_write_settings_with_operator_token(
         self, oneiric_mcp: Any
     ) -> None:
@@ -298,8 +296,6 @@ class TestSubstrateE2E:
             )
         assert status == 200
         result = body.get("result", {})
-        if result.get("isError"):
-            pytest.xfail(CONTEXTVAR_PROPAGATION_BUG)
         assert "record_id" in result
 
     def test_writer_without_permission_returns_auth_error(

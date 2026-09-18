@@ -112,6 +112,23 @@ class BoundedMetadata:
     def __repr__(self) -> str:
         return f"BoundedMetadata({self._root!r})"
 
+    def model_dump(self, **kwargs: Any) -> dict[str, Any]:
+        """Pydantic-shaped serializer for substrate storage.
+
+        SubstrateStore.write_*() calls ``payload.model_dump()`` on the parsed
+        Pydantic input model. The ``metadata`` field is a ``BoundedMetadata``
+        instance (not a plain dict); without this method the wrapper falls
+        through to its ``__repr__`` and the on-disk JSON becomes a quoted
+        string instead of a nested dict — silently breaking REQ-005's
+        unbounded-DOS protection.
+
+        Returns the validated dict (the same shape ``BoundedMetadata`` was
+        constructed from). Extra kwargs are accepted for API compatibility
+        with Pydantic's ``BaseModel.model_dump`` but are intentionally
+        ignored — this wrapper is intentionally NOT a Pydantic model.
+        """
+        return dict(self._root)
+
 
 # --- Substrate input models (T3) ---
 

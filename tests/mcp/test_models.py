@@ -89,6 +89,17 @@ class TestBoundedMetadata:
         m = BoundedMetadata.model_validate({"k": None})
         assert m.root["k"] is None
 
+    def test_model_dump_returns_underlying_dict(self) -> None:
+        """The substrate store calls payload.model_dump() on parsed Pydantic
+        input models. When the metadata field is a BoundedMetadata, the
+        serialised value MUST be the underlying dict (not a stringified
+        wrapper repr). This pins the on-disk shape contract for real
+        Pydantic writes."""
+        m = BoundedMetadata.model_validate({"k": "v", "n": 42})
+        dumped = m.model_dump()
+        assert dumped == {"k": "v", "n": 42}
+        assert isinstance(dumped, dict)
+
 
 class TestActiveSettingsVersionIn:
     def test_minimal(self) -> None:
