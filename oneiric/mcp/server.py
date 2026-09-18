@@ -26,6 +26,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 if TYPE_CHECKING:  # pragma: no cover - guarded import
+    from oneiric.mcp.adapter_registry import OneiricAdapterRegistry
     from oneiric.mcp.health import HealthFeedState
     from oneiric.mcp.store import SubstrateStore
 
@@ -66,6 +67,17 @@ def _resolve_processor(processor: _ProcessorLike | None) -> _ProcessorLike | Non
     not supplied.
     """
     return processor
+
+
+def _resolve_adapter_registry(
+    registry: OneiricAdapterRegistry | None,
+) -> OneiricAdapterRegistry:
+    """Return a usable OneiricAdapterRegistry (default ~/.oneiric/)."""
+    if registry is None:
+        from oneiric.mcp.adapter_registry import OneiricAdapterRegistry as _Reg
+
+        return _Reg()
+    return registry
 
 
 def _resolve_feeds(
@@ -327,6 +339,205 @@ def _register_scheduler_tools(
         return await processor.process(payload)
 
 
+def _register_adapter_tools(
+    mcp: FastMCP,
+    *,
+    registry: OneiricAdapterRegistry,
+    service_name: str,
+) -> None:
+    """Register the 7 ``adapter_registry`` tools (Phase 1 of Dhara decomposition).
+
+    Ported from ``dhara.mcp.tools.group_registers.register_adapter_registry_group``
+    but rewired to use Oneiric's local JSON-backed registry instead of
+    Dhara's PersistentDict shelve. Permissions follow Oneiric's existing
+    convention (READ / WRITE only — Dhara used ``auth("list")`` which is
+    not a valid mcp-common Permission enum member).
+
+    Per-tool HealthFeedState aggregation is DEFERRED to a follow-up; the
+    7 tools do not write to the existing ``settings`` / ``context`` /
+    ``progress`` feeds (consistent with ``schedule_task``, which also
+    lacks a per-tool feed). The aggregate /health endpoint continues to
+    surface those 3 substrate feeds; adapter health is observable through
+    the ``oneiric_get_adapter_health`` tool itself.
+    """
+
+    @mcp.tool()
+    @require_auth(permission=Permission.WRITE, service_name=service_name)
+    async def oneiric_store_adapter(
+        domain: str,
+        key: str,
+        provider: str,
+        version: str,
+        factory_path: str,
+        config: dict[str, Any] | None = None,
+        dependencies: list[str] | None = None,
+        capabilities: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Store or update an adapter record in the local registry."""
+        try:
+            adapter_id = await registry.store_adapter_async(
+                domain=domain,
+                key=key,
+                provider=provider,
+                version=version,
+                factory_path=factory_path,
+                config=config or {},
+                dependencies=dependencies or [],
+                capabilities=capabilities or [],
+                metadata=metadata or {},
+            )
+        except (OSError, TypeError, ValueError) as exc:
+            return {"success": False, "error": str(exc)}
+        return {
+            "success": True,
+            "adapter_id": adapter_id,
+            "version": version,
+            "message": f"Stored adapter {adapter_id} @ {version}",
+        }
+
+    @mcp.tool()
+    @require_auth(permission=Permission.READ, service_name=service_name)
+    async def oneiric_get_contract_info() -> dict[str, Any]:
+        """Return the Oneiric MCP contract summary."""
+        return {
+            "ok": True,
+            "server": {
+                "name": service_name,
+                "transport": "FastMCP HTTP",
+                "http_endpoints": [
+                    "/health",
+                    "/healthz",
+                    "/ready",
+                    "/readyz",
+                    "/metrics",
+                ],
+            },
+            "tool_groups": {
+                "substrate_state": [
+                    "read_settings",
+                    "write_settings",
+                    "read_context",
+                    "write_context",
+                    "read_progress",
+                    "write_progress",
+                ],
+                "scheduler": ["schedule_task"],
+                "adapter_registry": [
+                    "store_adapter",
+                    "get_adapter",
+                    "list_adapters",
+                    "list_adapter_versions",
+                    "validate_adapter",
+                    "get_adapter_health",
+                ],
+                "health": ["mcp-common health tools"],
+            },
+            "schema_versions": {
+                "substrate": 1,
+                "adapter_registry": 1,
+            },
+        }
+
+    @mcp.tool()
+    @require_auth(permission=Permission.READ, service_name=service_name)
+    async def oneiric_get_adapter(
+        domain: str,
+        key: str,
+        provider: str | None = None,
+        version: str | None = None,
+    ) -> dict[str, Any]:
+        """Retrieve an adapter record from the local registry."""
+        try:
+            adapter = await registry.get_adapter_async(
+                domain=domain, key=key, provider=provider, version=version
+            )
+        except (OSError, TypeError, ValueError) as exc:
+            return {"success": False, "error": str(exc)}
+        if adapter is None:
+            return {"success": False, "error": f"Adapter not found: {domain}:{key}"}
+        return {"success": True, "adapter": adapter}
+
+    @mcp.tool()
+    @require_auth(permission=Permission.READ, service_name=service_name)
+    async def oneiric_list_adapters(
+        domain: str | None = None,
+        category: str | None = None,
+    ) -> dict[str, Any]:
+        """List adapter records with optional domain/category filters."""
+        try:
+            adapters = await registry.list_adapters_async(
+                domain=domain, category=category
+            )
+        except (OSError, TypeError, ValueError) as exc:
+            return {
+                "success": False,
+                "error": str(exc),
+                "count": 0,
+                "adapters": [],
+            }
+        return {
+            "success": True,
+            "count": len(adapters),
+            "filters": {"domain": domain, "category": category},
+            "adapters": adapters,
+        }
+
+    @mcp.tool()
+    @require_auth(permission=Permission.READ, service_name=service_name)
+    async def oneiric_list_adapter_versions(
+        domain: str,
+        key: str,
+        provider: str,
+    ) -> dict[str, Any]:
+        """List version history + current version for a single adapter."""
+        try:
+            versions = await registry.list_adapter_versions_async(
+                domain=domain, key=key, provider=provider
+            )
+        except (OSError, TypeError, ValueError) as exc:
+            return {
+                "success": False,
+                "error": str(exc),
+                "count": 0,
+                "versions": [],
+            }
+        return {"success": True, "count": len(versions), "versions": versions}
+
+    @mcp.tool()
+    @require_auth(permission=Permission.READ, service_name=service_name)
+    async def oneiric_validate_adapter(
+        domain: str,
+        key: str,
+        provider: str,
+        version: str | None = None,
+    ) -> dict[str, Any]:
+        """Validate an adapter record (factory import + deps + capabilities)."""
+        try:
+            result = await registry.validate_adapter_async(
+                domain=domain, key=key, provider=provider, version=version
+            )
+        except (OSError, TypeError, ValueError) as exc:
+            return {"success": False, "error": str(exc)}
+        return {"success": True, "validation": result}
+
+    @mcp.tool()
+    @require_auth(permission=Permission.READ, service_name=service_name)
+    async def oneiric_get_adapter_health(
+        domain: str,
+        key: str,
+        provider: str,
+    ) -> dict[str, Any]:
+        """Probe adapter health via factory import; records last_check."""
+        try:
+            health = await registry.check_adapter_health_async(
+                domain=domain, key=key, provider=provider
+            )
+        except (OSError, TypeError, ValueError) as exc:
+            return {"success": False, "error": str(exc)}
+        return {"success": True, "health": health}
+
+
 def _register_health_route(mcp: FastMCP, *, feeds: dict[str, HealthFeedState]) -> None:
     """Register ``GET /health`` as a public HTTP route (REQ-004, T14).
 
@@ -352,8 +563,9 @@ def build_mcp_server(
     store: SubstrateStore | None = None,
     processor: _ProcessorLike | None = None,
     health_feeds: dict[str, HealthFeedState] | None = None,
+    adapter_registry: OneiricAdapterRegistry | None = None,
 ) -> FastMCP:
-    """Construct the FastMCP server with the substrate + scheduler tool surface.
+    """Construct the FastMCP server with the substrate + scheduler + adapter_registry tool surface.
 
     Args:
         config: OneiricMCPConfig (or any object with a .name attribute).
@@ -371,6 +583,9 @@ def build_mcp_server(
             observable before the first ``schedule_task`` call.
         health_feeds: injectable per-route HealthFeedState map for
             the /health route. Created lazily here if not supplied.
+        adapter_registry: OneiricAdapterRegistry instance for the
+            adapter_registry tool group. Created lazily here if not
+            supplied (defaults to ``~/.oneiric/adapter_registry.json``).
     """
     mcp = FastMCP(name=config.name)
 
@@ -385,6 +600,7 @@ def build_mcp_server(
     resolved_store = _resolve_store(store)
     resolved_feeds = _resolve_feeds(health_feeds)
     resolved_processor = _resolve_processor(processor)
+    resolved_adapter_registry = _resolve_adapter_registry(adapter_registry)
     _register_substrate_tools(
         mcp,
         store=resolved_store,
@@ -394,6 +610,11 @@ def build_mcp_server(
     _register_scheduler_tools(
         mcp,
         processor=resolved_processor,
+        service_name=auth_config.service_name,
+    )
+    _register_adapter_tools(
+        mcp,
+        registry=resolved_adapter_registry,
         service_name=auth_config.service_name,
     )
     _register_health_route(mcp, feeds=resolved_feeds)
