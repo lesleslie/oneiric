@@ -254,13 +254,30 @@ class TestHealthEndpoint:
 class TestSubstrateE2E:
     """REQ-001 + REQ-003: substrate round-trip through the JSON-RPC layer.
 
-    The two positive cases (``read_settings`` and ``write_settings`` with
-    an operator token) are expected to FAIL on the current codebase due
-    to the BearerTokenMiddleware -> @require_auth contextvar propagation
-    bug. The xfail markers document that without breaking the test run.
+    FastMCP streamable-HTTP returns HTTP 200 for all JSON-RPC exchanges;
+    success/error distinction lives in the body shape:
+    - success: ``result.content`` is a list with a text part AND
+      ``result.structuredContent`` carries the typed return value
+      (a dict for the substrate tools since they declare
+      ``-> dict[str, Any]``).
+    - rejection: ``error`` is present, OR ``result.isError`` is True with
+      a tool-side rejection message in the text part.
+
+    The positive cases ``read_settings`` / ``write_settings`` with an
+    operator token were previously xfail because the BearerTokenMiddleware
+    seeded the Principal into a ContextVar that did not propagate from
+    the ASGI request task into the tool body's anyio worker task. The
+    mcp-common fix (Principal serialized to dict, written via
+    ``await Context.set_state(serializable=True)`` to the session-scoped
+    state store, read back in the tool body via ``await
+    Context.get_state``) closes that gap — so these tests now assert
+    success rather than xfail.
+
+    See: mcp_common/auth/decorator.py::_resolve_principal (fallback to
+    session state) and mcp_common/auth/middleware.py::on_request
+    (serializable=True storage).
     """
 
-    @pytest.mark.xfail(reason=CONTEXTVAR_PROPAGATION_BUG, strict=True)
     def test_read_settings_with_operator_token(
         self, oneiric_mcp: Any
     ) -> None:
@@ -273,15 +290,30 @@ class TestSubstrateE2E:
                 bearer="operator:alice",
                 session_id=session_id,
             )
-        # FastMCP streamable-HTTP returns HTTP 200 for JSON-RPC errors;
-        # the rejection lives in the body. Inspect the body shape.
+        # FastMCP streamable-HTTP returns HTTP 200 for both success and
+        # JSON-RPC errors. Inspect the body shape.
         assert status == 200
-        assert "result" in body
+        assert "result" in body, f"missing 'result' in body={body!r}"
         result = body["result"]
-        assert result.get("content") or result.get("current") is None
-        assert result["current"] is None
+        assert not result.get("isError"), (
+            f"read_settings returned isError=True: {_text_of(result)!r}"
+        )
+        # FastMCP wraps tool returns in content envelope: the typed return
+        # (``dict[str, Any]``) lands in ``structuredContent`` and a JSON
+        # string copy lands in ``content[0].text``. Either is acceptable
+        # for the assertion; we check both.
+        assert "structuredContent" in result or result.get("content"), (
+            f"missing structuredContent and content in result={result!r}"
+        )
+        if "structuredContent" in result:
+            payload = result["structuredContent"]
+        else:
+            import json as _json
+            payload = _json.loads(result["content"][0]["text"])
+        assert payload["current"] is None, (
+            f"expected current=None (no settings written yet); got {payload!r}"
+        )
 
-    @pytest.mark.xfail(reason=CONTEXTVAR_PROPAGATION_BUG, strict=True)
     def test_write_settings_with_operator_token(
         self, oneiric_mcp: Any
     ) -> None:
@@ -295,8 +327,20 @@ class TestSubstrateE2E:
                 session_id=session_id,
             )
         assert status == 200
-        result = body.get("result", {})
-        assert "record_id" in result
+        assert "result" in body, f"missing 'result' in body={body!r}"
+        result = body["result"]
+        assert not result.get("isError"), (
+            f"write_settings returned isError=True: {_text_of(result)!r}"
+        )
+        if "structuredContent" in result:
+            payload = result["structuredContent"]
+        else:
+            import json as _json
+            payload = _json.loads(result["content"][0]["text"])
+        assert "record_id" in payload, (
+            f"missing 'record_id' in payload={payload!r}"
+        )
+        assert payload.get("version") == "v1"
 
     def test_writer_without_permission_returns_auth_error(
         self, oneiric_mcp: Any
