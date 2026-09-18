@@ -340,7 +340,7 @@ Single release (no deprecation shim, per project policy):
 
 - **Q1**: What transport does the FastMCP server speak? **A1**: Both stdio (default) and HTTP/SSE (when `--transport http` is passed to `oneiric mcp start`). FastMCP supports both natively.
 - **Q2**: What happens to `substrate` state on disk when the FastMCP server loads? **A2**: Unchanged. The on-disk JSON files (`~/.oneiric/substrate/{settings,context,progress}.json`) are read/written via the same `SubstrateStore` class (relocated to `oneiric/mcp/store.py`).
-- **Q3**: Does the FastMCP server bind to `0.0.0.0`? **A3**: FastMCP's HTTP transport defaults to `127.0.0.1`. External bind requires explicit `--host 0.0.0.0`. This eliminates the missing-auth-network-exposure finding by default.
+- **Q3**: Does the FastMCP server bind to `0.0.0.0`? **A3**: FastMCP's HTTP transport defaults to `127.0.0.1`. External bind requires explicit `--host 0.0.0.0`. This eliminates the missing-auth-network-exposure finding by default. **Enforcement**: `oneiric/cli/mcp.py::_enforce_public_network_auth_safety` raises `typer.BadParameter` when the resolved bind host is non-loopback AND `mcp_auth_config.enabled` (post-`load_auth_config`) is False. The check resolves every address for the host via `socket.getaddrinfo` (so dual-stack records and symbolic names are checked against every concrete address) and uses the resolved auth config — not the raw `OneiricMCPAuthConfig` — because the resolved value drives whether `build_mcp_server()` actually wires `BearerTokenMiddleware`. The Starlette-level `/mcp/` middleware that hardens the path even when auth is enabled remains as a follow-up (Option A from the 2026-09-18 trade-off review).
 
 ## 9. Out-of-scope follow-ons
 

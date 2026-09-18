@@ -16,6 +16,7 @@ standalone; production environments wire their provider constructors
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import json
 import os
 import socket
@@ -139,6 +140,69 @@ def _probe_port(host: str, port: int) -> bool:
         return False
 
 
+def _is_loopback_host(host: str) -> bool:
+    """Return True iff every resolved address for ``host`` is a loopback address.
+
+    Used by :func:`_enforce_public_network_auth_safety` to gate non-loopback
+    binds on auth being enabled. Resolves the host via
+    :func:`socket.getaddrinfo` so symbolic names (e.g. ``localhost``,
+    ``myhost.local``) and dual-stack records are checked against every
+    concrete address, not just the textual representation. Returns False on
+    resolution failure (defensive — a host we cannot resolve is not safe to
+    assume is loopback).
+    """
+    try:
+        infos = socket.getaddrinfo(host, None, type=socket.SOCK_STREAM)
+    except socket.gaierror:
+        return False
+    if not infos:
+        return False
+    for info in infos:
+        sockaddr = info[4]
+        if not sockaddr:
+            return False
+        ip_text = sockaddr[0]
+        try:
+            ip = ipaddress.ip_address(ip_text)
+        except ValueError:
+            return False
+        if not ip.is_loopback:
+            return False
+    return True
+
+
+def _enforce_public_network_auth_safety(host: str, auth_enabled: bool) -> None:
+    """Refuse to bind a FastMCP server to a non-loopback interface with auth disabled.
+
+    Spec ruling (docs/superpowers/specs/2026-09-16-oneiric-fastmcp-pivot-design.md §8 Q3):
+    FastMCP defaults to 127.0.0.1 so the missing-auth-network-exposure finding is
+    eliminated by default. Operators who opt in to a public bind MUST also enable
+    auth — the BearerTokenMiddleware is the only thing keeping the substrate
+    tools from accepting anonymous writes over the network.
+
+    Raises :class:`typer.BadParameter` (so the operator sees a usage-shaped
+    error) when both: (a) ``host`` is non-loopback and (b) ``auth_enabled``
+    is False. The check intentionally uses the *resolved* auth config
+    (``mcp_auth_config.enabled`` post-``load_auth_config``), not the raw
+    OneiricMCPAuthConfig — the resolved value drives whether
+    ``build_mcp_server`` actually wires :class:`BearerTokenMiddleware`.
+    """
+    if auth_enabled:
+        return
+    if _is_loopback_host(host):
+        return
+    raise typer.BadParameter(
+        f"refusing to bind FastMCP to non-loopback interface {host!r} with "
+        "auth disabled. The substrate tools (read_settings, write_settings, "
+        "schedule_task, etc.) would accept anonymous network writes. "
+        "Either bind to a loopback address (127.0.0.1, ::1, localhost) OR "
+        "enable auth: set auth.enabled=true in settings.yaml "
+        "($ONEIRIC_SETTINGS_PATH) or set env var ONEIRIC_AUTH_ENABLED=1, "
+        "and configure at least one provider in auth.providers.<name>.",
+        param_hint="--host",
+    )
+
+
 mcp_app = typer.Typer(help="FastMCP server lifecycle (REQ-007).")
 
 
@@ -195,6 +259,16 @@ def mcp_start(
     provider_factories = _build_provider_factories()
     mcp_auth_config, mcp_providers = load_auth_config(
         auth_config, provider_factories=provider_factories
+    )
+
+    # Guard spec §8 Q3: refuse to bind a non-loopback interface when auth is
+    # disabled. Runs *after* load_auth_config so the resolved
+    # ``mcp_auth_config.enabled`` is what ``build_mcp_server`` will act on;
+    # runs *before* both the foreground run_async path and the detached
+    # subprocess spawn, so the unauthorized child is never created.
+    _enforce_public_network_auth_safety(
+        host=host,
+        auth_enabled=bool(mcp_auth_config.enabled),
     )
     server = build_mcp_server(
         config=SimpleNamespace(name="oneiric"),
@@ -414,6 +488,8 @@ __all__ = [
     "IdentityProviderSpec",
     "_build_provider_factories",
     "_clear_pid_file",
+    "_enforce_public_network_auth_safety",
+    "_is_loopback_host",
     "_is_pid_alive",
     "_load_auth_from_settings",
     "_read_pid_file",

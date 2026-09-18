@@ -423,6 +423,15 @@ async with watcher:
    - Configurable timeouts in `remote/loader.py` (default: 30s)
    - Circuit breaker + retry logic in `core/resiliency.py`
 
+1. ✅ **Public-network auth gap (FastMCP transport)** - **RESOLVED** (2026-09-18)
+
+   - FastMCP's HTTP transport defaults to `127.0.0.1`, eliminating the missing-auth-network-exposure finding by default (spec §8 Q3).
+   - **Operator guard**: `oneiric/cli/mcp.py::_enforce_public_network_auth_safety` raises `typer.BadParameter` when `--host` is non-loopback AND the resolved `mcp_auth_config.enabled` is False. Refuses to start before either path (foreground `run_async` or detached subprocess) can bind the unauthorized socket.
+   - **Loopback detection**: `socket.getaddrinfo` resolves every address for the host and verifies each is in `127.0.0.0/8` or `::1`. Symbolic names (`localhost`) and dual-stack records are checked per-address, not per-text. Wildcards (`0.0.0.0`, `::`) are correctly classified as non-loopback.
+   - **Auth source**: uses the *resolved* `mcp_auth_config.enabled` (post-`load_auth_config`), not the raw `OneiricMCPAuthConfig` — the resolved value drives whether `BearerTokenMiddleware` is actually wired.
+   - **Tests**: `tests/cli/test_mcp_cli.py::TestIsLoopbackHost` (6 cases) + `TestEnforcePublicNetworkAuthSafety` (6 cases, covering the four-cell matrix).
+   - **Follow-up**: Starlette-level `/mcp/` middleware that hardens the path even when auth is already enabled remains as a separate task (Spec §8 Q3 addendum).
+
 1. ✅ **Thread safety** - **RESOLVED**
 
    - RLock added to resolver registry
