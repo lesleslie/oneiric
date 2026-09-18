@@ -277,9 +277,6 @@ database = [
 "database-sqlite" = [
     "aiosqlite>=0.22.1",
 ]
-"http-aiohttp" = [
-    "aiohttp>=3.14.1",
-]
 "identity-auth0" = [
     "PyJWT>=2.8",
 ]

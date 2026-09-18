@@ -3272,9 +3272,6 @@ graph-duckdb-pgq = [
 graph-neo4j = [
     { name = "neo4j" },
 ]
-http-aiohttp = [
-    { name = "aiohttp" },
-]
 identity-auth0 = [
     { name = "pyjwt" },
 ]
@@ -3459,7 +3456,6 @@ file-transfer = [
 graph-arangodb = [{ name = "python-arango", specifier = ">=8.3.3" }]
 graph-duckdb-pgq = [{ name = "duckdb", specifier = ">=1.6.0.dev211" }]
 graph-neo4j = [{ name = "neo4j", specifier = ">=6.2.0" }]
-http-aiohttp = [{ name = "aiohttp", specifier = ">=3.14.1" }]
 identity-auth0 = [{ name = "pyjwt", specifier = ">=2.8" }]
 llm = [
     { name = "anthropic", specifier = ">=0.113.0" },
