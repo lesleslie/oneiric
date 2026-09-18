@@ -27,8 +27,20 @@ from oneiric.adapters import AdapterBridge
 from oneiric.adapters.bootstrap import builtin_adapter_metadata
 from oneiric.adapters.metadata import AdapterMetadata, register_adapter_metadata
 from oneiric.cli.base import ExitCode, OneiricCLIBase
-from oneiric.cli.http_cli import http_app
 from oneiric.cli.mcp import mcp_app
+
+# ``oneiric.cli.http_cli`` imports the legacy aiohttp substrate server
+# (``oneiric.http.server``). The substrate server is being phased out in
+# favor of the FastMCP implementation under ``oneiric/mcp/``; T20 deletes
+# ``http_cli.py`` entirely. Until then, import the http sub-app lazily so
+# ``oneiric.cli`` remains importable while the legacy substrate is gone.
+try:
+    from oneiric.cli.http_cli import http_app  # type: ignore[deprecated]
+
+    _HTTP_CLI_AVAILABLE = True
+except ImportError:
+    http_app = None  # type: ignore[assignment]
+    _HTTP_CLI_AVAILABLE = False
 from oneiric.core.config import (
     OneiricSettings,
     SecretsHook,
@@ -278,8 +290,9 @@ app.add_typer(manifest_app, name="manifest")
 app.add_typer(secrets_app, name="secrets")
 app.add_typer(event_app, name="event")
 app.add_typer(workflow_app, name="workflow")
-app.add_typer(http_app, name="http")
 app.add_typer(mcp_app, name="mcp")
+if _HTTP_CLI_AVAILABLE:
+    app.add_typer(http_app, name="http")
 
 
 @dataclass
