@@ -95,9 +95,9 @@ class AdapterRecord:
                 "changelog": changelog,
                 "state": {
                     "factory_path": self.factory_path,
-                    "config": dict(self.config),
-                    "capabilities": list(self.capabilities),
-                    "dependencies": list(self.dependencies),
+                    "config": self.config.copy(),
+                    "capabilities": self.capabilities.copy(),
+                    "dependencies": self.dependencies.copy(),
                 },
             }
         )
@@ -106,11 +106,11 @@ class AdapterRecord:
             self.version_history.pop(0)
         self.version = new_version
         self.factory_path = factory_path
-        self.config = dict(config)
-        self.dependencies = list(dependencies)
-        self.capabilities = list(capabilities)
+        self.config = config.copy()
+        self.dependencies = dependencies.copy()
+        self.capabilities = capabilities.copy()
         if metadata_updates:
-            self.metadata = {**self.metadata, **metadata_updates}
+            self.metadata = self.metadata | metadata_updates
         self.updated_at = _now_iso()
 
     def to_dict(self) -> dict[str, Any]:
@@ -268,10 +268,10 @@ class OneiricAdapterRegistry:
                         provider=provider,
                         version=version,
                         factory_path=factory_path,
-                        config=dict(config),
-                        dependencies=list(dependencies),
-                        capabilities=list(capabilities),
-                        metadata=dict(metadata) if metadata else {},
+                        config=config.copy(),
+                        dependencies=dependencies.copy(),
+                        capabilities=capabilities.copy(),
+                        metadata=metadata.copy() if metadata else {},
                     )
                 self._save()
                 return adapter_id
