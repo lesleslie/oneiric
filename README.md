@@ -20,6 +20,7 @@ manage lifecycle transitions; and hydrate capabilities from remote manifests.
 - [Quick start](#quick-start)
 - [Configuration](#configuration)
 - [CLI map](#cli-map)
+- [MCP server](#mcp-server)
 - [Documentation](#documentation)
 
 ## Quality checks
@@ -64,6 +65,36 @@ Built-in action keys include `compression.encode`, `compression.hash`,
 `workflow.notify`, `workflow.retry`, `http.fetch`, `event.dispatch`, and
 `debug.console`. Use `oneiric --demo list --domain action` to inspect the
 complete registry.
+
+______________________________________________________________________
+
+## MCP server
+
+Oneiric exposes a FastMCP server (substrate state + workflow task scheduling) that replaces the legacy aiohttp SubstrateHTTPServer and SchedulerHTTPServer. The server speaks JSON-RPC over HTTP on **port 8681** (configurable via `$ONEIRIC_MCP_PORT`) and binds to `127.0.0.1` by default — non-loopback binds require auth to be enabled. Auth itself is delegated to mcp-common's `BearerTokenMiddleware`; configure providers via the `auth:` section in `~/.oneiric/settings.yaml` (or the path passed via `$ONEIRIC_SETTINGS_PATH`).
+
+### Tool surface (14 tools across 3 groups)
+
+| Group | Count | Purpose |
+|-------|-------|---------|
+| Substrate | 6 | 3 reads + 3 writes against the substrate (settings, context, progress records) |
+| Scheduler | 1 | `schedule_task` — dispatch a workflow task via the scheduler processor |
+| Adapter registry | 7 | OneiricAdapterRegistry read/list/state/refresh/clear/diagnose/health (ported from `dhara.mcp.tools.group_registers.register_adapter_registry_group` during the Phase 1 Dhara decomposition) |
+
+Plus the 4 mcp-common baseline tools (`discover_tools`, `get_liveness`, `get_readiness`, `health_check_all`) for a 18-tool total MCP surface.
+
+### CLI lifecycle
+
+```bash
+# Start (detached by default; --foreground for blocking)
+oneiric mcp start --port 8681
+
+# Probe
+oneiric mcp status
+oneiric mcp health
+
+# Stop
+oneiric mcp stop
+```
 
 ______________________________________________________________________
 

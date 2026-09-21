@@ -40,7 +40,7 @@ from oneiric.mcp.config import (
 
 logger = get_logger("cli.mcp")
 
-DEFAULT_MCP_PORT = 8765
+DEFAULT_MCP_PORT = 8681
 DEFAULT_PID_FILE = Path(".oneiric_cache") / "mcp.pid"
 DEFAULT_SETTINGS_PATH = Path.home() / ".oneiric" / "settings.yaml"
 
@@ -215,7 +215,7 @@ def mcp_start(
         None,
         "--port",
         metavar="PORT",
-        help="TCP port (defaults to $ONEIRIC_MCP_PORT or 8765).",
+        help="TCP port (defaults to $ONEIRIC_MCP_PORT or 8681).",
     ),
     settings_path: Path | None = typer.Option(
         None,
@@ -392,7 +392,7 @@ def mcp_status(
         None,
         "--port",
         metavar="PORT",
-        help="Port to probe (defaults to $ONEIRIC_MCP_PORT or 8765).",
+        help="Port to probe (defaults to $ONEIRIC_MCP_PORT or 8681).",
     ),
     pid_file: Path | None = typer.Option(
         None, "--pid-file", metavar="PATH", help="Path to PID file."
@@ -444,7 +444,7 @@ def mcp_health(
         None,
         "--port",
         metavar="PORT",
-        help="Port to probe (defaults to $ONEIRIC_MCP_PORT or 8765).",
+        help="Port to probe (defaults to $ONEIRIC_MCP_PORT or 8681).",
     ),
     json_output: bool = typer.Option(False, "--json", help="Emit health as JSON."),
 ) -> None:
