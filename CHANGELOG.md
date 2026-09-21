@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.0] - 2026-09-21
+
+### Added
+
+- oneiric/mcp: Add 7 adapter_registry tools (Phase 1 of Dhara decomposition)
+- Re-introduce FastMCP server on port 8681
+
+### Fixed
+
+- lint: Clear refurb FURB123/FURB173 in adapter_registry
+- mcp/cli: Refuse non-loopback bind when auth disabled (spec §8 Q3)
+
 ## [0.22.0] - 2026-09-18
 
 ### Added

@@ -162,7 +162,7 @@ class OneiricAdapterRegistry:
             return {}
         try:
             raw = json.loads(self._path.read_text())
-        except (OSError, json.JSONDecodeError):
+        except OSError, json.JSONDecodeError:
             return {}
         if not isinstance(raw, dict):
             return {}
@@ -327,9 +327,7 @@ class OneiricAdapterRegistry:
                     if domain and payload["domain"] != domain:
                         continue
                     if category:
-                        rec_category = (payload.get("metadata") or {}).get(
-                            "category"
-                        )
+                        rec_category = (payload.get("metadata") or {}).get("category")
                         if rec_category != category:
                             continue
                     results.append(payload)
