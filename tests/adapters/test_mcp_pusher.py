@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from oneiric.adapters.dhara_pusher import DharaAdapterPusher, push_adapters_on_startup
+from oneiric.adapters.mcp_pusher import MCPAdapterPusher, push_adapters_on_startup
 
 
 def _make_metadata(
@@ -51,9 +51,9 @@ class _FakeResponse:
 
 def _make_pusher(
     response: dict[str, Any] | None = None, raise_http: bool = False
-) -> tuple[DharaAdapterPusher, list[dict[str, Any]]]:
+) -> tuple[MCPAdapterPusher, list[dict[str, Any]]]:
     calls: list[dict[str, Any]] = []
-    pusher = DharaAdapterPusher()
+    pusher = MCPAdapterPusher()
 
     def fake_post(url: str, json: dict[str, Any]) -> _FakeResponse:
         calls.append({"url": url, "json": json})
@@ -68,13 +68,13 @@ def _make_pusher(
 
 
 # ---------------------------------------------------------------------------
-# DharaAdapterPusher tests
+# MCPAdapterPusher tests
 # ---------------------------------------------------------------------------
 
 
 def test_pusher_init_defaults() -> None:
     """__init__() sets dhara_url and timeout and creates httpx.Client."""
-    pusher = DharaAdapterPusher()
+    pusher = MCPAdapterPusher()
     assert pusher.dhara_url == "http://127.0.0.1:8683"
     assert pusher.timeout == 30.0
     pusher.close()
@@ -82,7 +82,7 @@ def test_pusher_init_defaults() -> None:
 
 def test_pusher_init_strips_trailing_slash() -> None:
     """__init__() strips trailing slash from dhara_url."""
-    pusher = DharaAdapterPusher(dhara_url="http://localhost:8683/")
+    pusher = MCPAdapterPusher(dhara_url="http://localhost:8683/")
     assert pusher.dhara_url == "http://localhost:8683"
     pusher.close()
 
@@ -177,7 +177,7 @@ def test_push_builtin_adapters_exception_path(monkeypatch: pytest.MonkeyPatch) -
     def explode(self: Any, metadata: Any) -> dict[str, Any]:
         raise RuntimeError("network down")
 
-    monkeypatch.setattr(DharaAdapterPusher, "_push_single_adapter", explode)
+    monkeypatch.setattr(MCPAdapterPusher, "_push_single_adapter", explode)
     adapters = [_make_metadata()]
     results = pusher.push_builtin_adapters(adapters)
     assert results["errors"] == 1
@@ -187,7 +187,7 @@ def test_push_builtin_adapters_exception_path(monkeypatch: pytest.MonkeyPatch) -
 
 def test_pusher_close() -> None:
     """close() closes the httpx client without raising."""
-    pusher = DharaAdapterPusher()
+    pusher = MCPAdapterPusher()
     pusher.close()  # must not raise
 
 
@@ -195,7 +195,7 @@ def test_push_adapters_on_startup(monkeypatch: pytest.MonkeyPatch) -> None:
     """push_adapters_on_startup() calls builtin_adapter_metadata and push_builtin_adapters."""
     meta = _make_metadata()
     monkeypatch.setattr(
-        "oneiric.adapters.dhara_pusher.DharaAdapterPusher._push_single_adapter",
+        "oneiric.adapters.mcp_pusher.MCPAdapterPusher._push_single_adapter",
         lambda self, m: {"success": True},
     )
     with patch(
@@ -207,10 +207,10 @@ def test_push_adapters_on_startup(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_main_success(monkeypatch: pytest.MonkeyPatch) -> None:
     """main() returns 0 when all adapters push successfully."""
-    from oneiric.adapters.dhara_pusher import main
+    from oneiric.adapters.mcp_pusher import main
 
     monkeypatch.setattr(
-        "oneiric.adapters.dhara_pusher.push_adapters_on_startup",
+        "oneiric.adapters.mcp_pusher.push_adapters_on_startup",
         lambda **_: {"success": 2, "total": 2, "errors": 0, "details": []},
     )
     monkeypatch.setattr("sys.argv", ["dhara_pusher"])
@@ -222,13 +222,13 @@ def test_main_with_errors(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     """main() returns 1 and prints errors when pushes fail."""
-    from oneiric.adapters.dhara_pusher import main
+    from oneiric.adapters.mcp_pusher import main
 
     details = [
         {"adapter_id": "adapter:cache:broken", "status": "error", "error": "timeout"},
     ]
     monkeypatch.setattr(
-        "oneiric.adapters.dhara_pusher.push_adapters_on_startup",
+        "oneiric.adapters.mcp_pusher.push_adapters_on_startup",
         lambda **_: {"success": 0, "total": 1, "errors": 1, "details": details},
     )
     monkeypatch.setattr("sys.argv", ["dhara_pusher", "--dhara-url", "http://test:8683"])

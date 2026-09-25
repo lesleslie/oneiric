@@ -25,7 +25,7 @@ What it provides is the substrate every other component relies on:
 - A **six-domain bridge layer** (`adapter`, `service`, `task`, `event`, `workflow`, `action`) that wraps resolution + lifecycle into a single `use(key)` call (`oneiric/domains/base.py::DomainBridge`).
 - A **runtime orchestrator** that wires all six bridges together with a `ServiceSupervisor`, watchers, and optional workflow checkpoints (`oneiric/runtime/orchestrator.py`).
 - A **persistent state surface** under `.oneiric_cache/` (lifecycle status JSON, domain activity SQLite, workflow checkpoints SQLite, runtime health JSON, runtime telemetry JSON) — not an MCP database, but the on-disk state every component reads at startup.
-- A **Dhara distribution bridge** (`oneiric/adapters/dhara_pusher.py`) that registers built-in adapters with the rest of the ecosystem.
+- A **Dhara distribution bridge** (`oneiric/adapters/mcp_pusher.py`) that registers built-in adapters with the rest of the ecosystem.
 
 This document describes what Oneiric stores, who reads and writes it, and
 the integration contracts the rest of the ecosystem depends on. The two
@@ -266,7 +266,7 @@ POST endpoint, and no CLI daemon. The "write surface" is the set of
 | `RuntimeTelemetryRecorder.record_event_dispatch` / `record_workflow_execution` | `oneiric/runtime/telemetry.py:55,67` | `EventBridge.emit`, `WorkflowBridge.execute_dag` | Atomic tmp-write of `runtime_telemetry.json` |
 | `TrackedSettings.__setattr__` (intercepted) | `oneiric/adapters/tracked_settings.py:177` | Every adapter settings mutation | Records change; debounces + POSTs to Dhara `/tools/store_config_events`; on HTTP failure writes `~/.cache/oneiric/pending_snapshots/<id>-change_batch-<ts>.json` (mode 0600) |
 | `TrackedSettings.on_startup` / `on_stop` / `on_restart` | `oneiric/adapters/tracked_settings.py:346-356` | Adapter lifecycle hooks | Immediate POST to Dhara `/tools/store_config_snapshot` (no debounce) |
-| `DharaAdapterPusher.push_builtin_adapters` | `oneiric/adapters/dhara_pusher.py:68` | `oneiric.adapters.dhara_pusher.main` CLI, `push_adapters_on_startup` hook | HTTP POST `http://127.0.0.1:8683/tools/store_adapter` for every built-in adapter |
+| `MCPAdapterPusher.push_builtin_adapters` | `oneiric/adapters/mcp_pusher.py:68` | `oneiric.adapters.mcp_pusher.main` CLI, `push_adapters_on_startup` hook | HTTP POST `http://127.0.0.1:8683/tools/store_adapter` for every built-in adapter |
 | `load_settings` | `oneiric/core/config.py:250` | Every Bodai component's `*_settings.py` (session_buddy, mahavishnu, crackerjack, akosha, dhara) | Resolves layered config → returns `OneiricSettings` instance; no on-disk write |
 | `_load_layer_file` (nested in `load_settings`) | `oneiric/core/config.py:289` | `load_settings` | Read-only on disk; merges into the running dict |
 
@@ -467,7 +467,7 @@ initialization** (each component's startup registers its candidates).
 | **Dhara** | `oneiric.adapters.storage.S3StorageAdapter` for backup targets; `load_settings(project_name="dhara")` for cache + remote config; `SecretsHook` (`oneiric.core.config.SecretsHook`); `from oneiric.core.ulid import generate_config_id, is_config_ulid` | Settings, S3/GCS/Azure adapters for cloud backup writes, ULID generators for the substrate `version_id` PKs | Dhara's MCP server registers `DharaMCPServer.__init__` which does not call into Oneiric writes |
 | **Mahavishnu** | `load_settings(project_name="mahavishnu")` + `MahavishnuSettings` (extends `OneiricMCPConfig`); `LifecycleError`; `LifecycleManager` (used by `oneiric_client.py`); `Candidate`, `Resolver` (used in `core/adapter_discovery.py`); `PgvectorAdapter` for OTel storage; `VectorDocument` from `oneiric.adapters.vector.vector_types`; `HTTPXClientMixin` from `oneiric.adapters.httpx_base`; `S3StorageAdapter` for backup; `MemoryCacheAdapter`, `RedisCacheAdapter`; `RedisCacheSettings`, `MemoryCacheSettings`; `HTTPXClientMixin` | The biggest consumer: settings (`MahavishnuSettings` extends `OneiricMCPConfig`), all `*StorageAdapter` cloud adapters, cache adapters, `LifecycleManager` for `adapter_resolve`, `VectorDocument` for OTel ingester, `pgvector` adapter. Also pulls `oneiric.core.resiliency.CircuitBreaker` (used in pools) | Mahavishnu's MCP server does NOT register new Oneiric candidates at runtime; it relies on the built-in + entry-point candidates loaded at startup |
 | **Crackerjack** | `oneiric.core.config.load_settings` (`project_name="crackerjack"`); `oneiric.core.config.OneiricMCPConfig` (extends `CrackerjackSettings`); `oneiric.core.logging.{get_logger, configure_logging, LoggingConfig, LoggingSinkConfig}`; `oneiric.runtime.workflow` (the actual `crackerjack/runtime/oneiric_workflow.py`); `oneiric.runtime.dag.DAGExecutionHooks`; `oneiric.runtime.checkpoints.WorkflowCheckpointStore` (under `.crackerjack/oneiric_cache/workflow_checkpoints.sqlite`); `oneiric.runtime.notifications.NotificationRouter` | Settings; the `WorkflowCheckpointStore` cache that backs `crackerjack/oneiric_cache/workflow_checkpoints.sqlite`; `DAGExecutionHooks` for the `crackerjack` phase DAG | Crackerjack calls `WorkflowCheckpointStore.save` from its own pipeline; `_clear_oneiric_cache` wipes the `crackerjack` workflow key at the start of every `run_complete_workflow` |
-| **Dhara (cross)** | `oneiric.adapters.dhara_pusher.push_adapters_on_startup` — Oneiric's built-in adapter distribution | Receives one `POST /tools/store_adapter` per built-in adapter (cache, storage, queue, http, database, vector, embedding, llm, identity, secrets, messaging, monitoring, graph, dns, file_transfer, observability) | Writes one `Adapter` row per built-in adapter into `dhara.adapters[adapter:<domain>:<key>:<provider>]` (87+ adapters by `oneiric/adapters/bootstrap.py::builtin_adapter_metadata`) |
+| **Dhara (cross)** | `oneiric.adapters.mcp_pusher.push_adapters_on_startup` — Oneiric's built-in adapter distribution | Receives one `POST /tools/store_adapter` per built-in adapter (cache, storage, queue, http, database, vector, embedding, llm, identity, secrets, messaging, monitoring, graph, dns, file_transfer, observability) | Writes one `Adapter` row per built-in adapter into `dhara.adapters[adapter:<domain>:<key>:<provider>]` (87+ adapters by `oneiric/adapters/bootstrap.py::builtin_adapter_metadata`) |
 | **Claude Code** | Direct Python imports (no MCP) — Oneiric is library-first | The whole `oneiric` package | No write surface; CC uses Oneiric via the parent component it is driving (e.g., Mahavishnu worker → Oneiric adapter activation) |
 
 ### What Oneiric does NOT store
@@ -851,7 +851,7 @@ async with httpx.AsyncClient() as mock_client:
 **Goal**: Oneiric startup publishes its 87+ built-in adapters to Dhara.
 
 ```python
-from oneiric.adapters.dhara_pusher import push_adapters_on_startup
+from oneiric.adapters.mcp_pusher import push_adapters_on_startup
 
 result = push_adapters_on_startup(dhara_url="http://127.0.0.1:8683")
 print(f"Pushed {result['success']}/{result['total']} adapters")
@@ -859,7 +859,7 @@ print(f"Errors: {result['errors']}")
 # details: [{"adapter_id": "adapter:cache:memory", "status": "success"}, ...]
 ```
 
-Equivalent CLI: `python -m oneiric.adapters.dhara_pusher --dhara-url http://localhost:8683`.
+Equivalent CLI: `python -m oneiric.adapters.mcp_pusher --dhara-url http://localhost:8683`.
 
 ### Q8 — CLI: list active adapters and explain resolution
 
@@ -1088,7 +1088,7 @@ Three patterns are in production today:
 1. **Built-in adapter via Dhara push** (default for the 87+ built-ins):
 
    ```bash
-   python -m oneiric.adapters.dhara_pusher --dhara-url http://localhost:8683
+   python -m oneiric.adapters.mcp_pusher --dhara-url http://localhost:8683
    ```
 
    Posts one `Adapter` row per built-in to Dhara `adapters[adapter:<domain>:<key>:<provider>]`.
@@ -1221,7 +1221,7 @@ ______________________________________________________________________
 - `oneiric/adapters/__init__.py` — `AdapterBridge`, `AdapterConfigWatcher`, `AdapterHandle`, `AdapterMetadata`, `TrackedSettings`, `builtin_adapter_metadata`, `register_adapter_metadata`, `register_builtin_adapters`.
 - `oneiric/adapters/bootstrap.py` — 87+ built-in `AdapterMetadata` registrations (cache, storage, queue, http, database, vector, embedding, llm, identity, secrets, messaging, monitoring, graph, dns, file_transfer, observability).
 - `oneiric/adapters/tracked_settings.py` — `TrackedSettings` wrapper + FNV-1a 64-bit hashing + Dhara push + fallback file pattern.
-- `oneiric/adapters/dhara_pusher.py` — `DharaAdapterPusher`, `push_adapters_on_startup`, CLI `python -m oneiric.adapters.dhara_pusher`.
+- `oneiric/adapters/mcp_pusher.py` — `MCPAdapterPusher`, `push_adapters_on_startup`, CLI `python -m oneiric.adapters.mcp_pusher`.
 - `oneiric/domains/base.py` — `DomainBridge`, `DomainHandle` (the consumer-facing `bridge.use(key)` API).
 - `oneiric/domains/{events,services,tasks,workflows}.py` — The four non-adapter domain bridges.
 - `oneiric/runtime/orchestrator.py` — `RuntimeOrchestrator` (the `RuntimeOrchestrator.__init__` that wires all six bridges + supervisor + watchers).

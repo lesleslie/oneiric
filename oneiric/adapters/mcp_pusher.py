@@ -38,7 +38,7 @@ class PushResult(TypedDict):
     details: list[dict[str, object]]
 
 
-class DharaAdapterPusher:
+class MCPAdapterPusher:
     """Push Oneiric adapters to Dhara MCP server.
 
     Provides automatic adapter registration on Oneiric startup with
@@ -235,7 +235,7 @@ def push_adapters_on_startup(
     """
     from .bootstrap import builtin_adapter_metadata
 
-    pusher = DharaAdapterPusher(dhara_url=dhara_url)
+    pusher = MCPAdapterPusher(dhara_url=dhara_url)
 
     try:
         adapters = builtin_adapter_metadata()
@@ -249,8 +249,8 @@ def main() -> int:
     """CLI entry point for manually pushing adapters.
 
     Usage:
-        python -m oneiric.adapters.dhara_pusher
-        python -m oneiric.adapters.dhara_pusher --dhara-url http://localhost:8683
+        python -m oneiric.adapters.mcp_pusher
+        python -m oneiric.adapters.mcp_pusher --dhara-url http://localhost:8683
 
     Returns:
         Exit code (0 for success, 1 for errors)
