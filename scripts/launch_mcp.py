@@ -108,29 +108,43 @@ def _build_processor():
     return WorkflowTaskProcessor(workflow_bridge)
 
 
-def _build_warm_settings_feed():
-    """Pre-warm oneiric's ``settings`` HealthFeedState.
+def _build_warm_feeds() -> dict[str, "HealthFeedState"]:
+    """Pre-warm every oneiric HealthFeedState with a 'ready to serve' baseline.
 
-    The launcher's ``warm_settings_feed()`` creates an
-    ``mcp_common.health.feed.HealthFeedState`` instance — a different class
-    from oneiric's own ``oneiric.mcp.health.HealthFeedState``. oneiric's
-    ``/health`` route aggregates the oneiric feeds, so the launcher's warm
-    has no observable effect on this server. This helper builds the
-    equivalent oneiric-shaped feed (cycles_total=1, entities_count=1) so
-    the first probe returns 200 instead of 503.
+    The launcher's ``warm_settings_feed()`` constructs an
+    ``mcp_common.health.feed.HealthFeedState`` — a different class
+    from oneiric's own ``oneiric.mcp.health.HealthFeedState``, so
+    oneiric's ``/health`` aggregator never sees the launcher's warm.
+    This helper builds the consumer-shaped feeds directly so the
+    aggregator's per-feed ``is_healthy()`` predicate sees a real warm.
 
-    Per REQ-004, only ``settings`` is pre-warmed. ``context`` and
-    ``progress`` start unhealthy and populate via tool calls.
+    Oneiric's ``HealthFeedState.is_healthy()`` returns False when
+    ``cycles_total == 0`` (no cycles = never warmed = degraded). With
+    three substrate feeds (settings/context/progress) all keyed into
+    the same ``/health`` body, an unwarmed ``context`` or ``progress``
+    feed forces the aggregate to 503 even on a freshly-booted server.
+    That cascades: ``launch_with_healthcheck.sh`` uses ``curl -fsS``,
+    which exits non-zero on 4xx/5xx, the wrapper kills the Python
+    process, launchd sees ``KeepAlive.Crashed=true``, and the server
+    restart-loops forever (see
+    ``feedback-oneiric-mcp-health-feed-warmup``).
+
+    Each feed starts with ``record_success(entities_count=0)`` —
+    ``cycles_total=1`` (warmed), ``errors_total=0`` (clean),
+    ``entities_count=0`` (no real data yet). Subsequent tool calls
+    overwrite with the actual entity count via
+    ``feed.record_success(N)``. REQ-004 governs ``/health`` public
+    access; this pre-warm is orthogonal — see cookbook Trap K for the
+    full rationale.
     """
     from oneiric.mcp.health import HealthFeedState
 
-    feed = HealthFeedState(name="settings")
-    feed.record_success(entities_count=1)
-    return {
-        "settings": feed,
-        "context": HealthFeedState(name="context"),
-        "progress": HealthFeedState(name="progress"),
-    }
+    feeds = {}
+    for name in ("settings", "context", "progress"):
+        feed = HealthFeedState(name=name)
+        feed.record_success(entities_count=0)
+        feeds[name] = feed
+    return feeds
 
 
 def build_server(settings_path: Path):
@@ -155,7 +169,7 @@ def build_server(settings_path: Path):
         provider_factories={},
     )
     processor = _build_processor()
-    health_feeds = _build_warm_settings_feed()
+    health_feeds = _build_warm_feeds()
 
     def _build():
         return build_mcp_server(
