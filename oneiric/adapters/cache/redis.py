@@ -21,7 +21,7 @@ try:
 
     _COREDIS_AVAILABLE = True  # pragma: no cover
 except ImportError:  # pragma: no cover - exercised when extras missing
-    Redis = LRUCache = None  # type: ignore
+    Redis = LRUCache = None
 
     class _AbstractTrackingCache:  # type: ignore[no-redef]
         pass

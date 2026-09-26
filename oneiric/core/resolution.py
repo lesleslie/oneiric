@@ -436,7 +436,8 @@ def _candidate_capabilities(candidate: Candidate) -> set[str]:
 
 
 def _capability_match_score(candidate: Candidate, required: Iterable[str]) -> int:
-    if not required:
+    required_list = list(required)
+    if not required_list:
         return 0
     available = _candidate_capabilities(candidate)
-    return sum(1 for cap in required if cap in available)
+    return sum(1 for cap in required_list if cap in available)

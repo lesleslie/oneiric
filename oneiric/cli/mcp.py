@@ -159,8 +159,8 @@ def _is_loopback_host(host: str) -> bool:
         return False
     for info in infos:
         sockaddr = info[4]
-        if not sockaddr:
-            return False
+        # sockaddr is `tuple | tuple | tuple` — always truthy; ty flags `if not sockaddr`
+        # as redundant. Skip the redundant check and unpack directly.
         ip_text = sockaddr[0]
         try:
             ip = ipaddress.ip_address(ip_text)
