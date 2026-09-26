@@ -42,11 +42,10 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
-from starlette.testclient import TestClient
-
 from mcp_common.auth.permissions import Permission
 from mcp_common.auth.principal import Principal
 from mcp_common.auth.provider import IdentityProvider
+from starlette.testclient import TestClient
 
 from oneiric.mcp.adapter_registry import OneiricAdapterRegistry
 from oneiric.mcp.config import OneiricMCPAuthConfig, load_auth_config
@@ -237,7 +236,7 @@ def oneiric_mcp(tmp_path: Path) -> Any:
             self._client = TestClient(mcp.http_app())
             return self._client.__enter__()
 
-        def __exit__(self, *exc: Any) -> Any:
+        def __exit__(self, *exc: object) -> Any:
             return self._client.__exit__(*exc)
 
     return _EnteredClient()
@@ -876,7 +875,6 @@ class TestAdapterRegistryE2E:
         from datetime import UTC, datetime, timedelta
 
         from fastmcp import FastMCP
-
         from mcp_common.auth.context import seed_principal
         from mcp_common.auth.permissions import Permission
         from mcp_common.auth.principal import Principal

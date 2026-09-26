@@ -27,9 +27,13 @@ from typing import Any
 from pydantic import BaseModel, Field, RedisDsn
 
 try:
-    from coredis import Redis
-    from coredis.exceptions import RedisError  # pragma: no cover
-    from coredis.patterns.cache import TrackingCache  # pragma: no cover
+    from coredis import Redis  # ty: ignore[unresolved-import]
+    from coredis.exceptions import (  # ty: ignore[unresolved-import]
+        RedisError,  # pragma: no cover  # ty: ignore[unresolved-import]
+    )
+    from coredis.patterns.cache import (  # ty: ignore[unresolved-import]
+        TrackingCache,  # pragma: no cover  # ty: ignore[unresolved-import]
+    )
 
     _COREDIS_AVAILABLE = True  # pragma: no cover
 except ImportError:  # pragma: no cover

@@ -2115,14 +2115,14 @@ class TestPineconePrepareVectors:
 
     def test_prepare_vector_without_id(self) -> None:
         adapter = PineconeAdapter(PineconeSettings(api_key=SecretStr("key")))
-        doc_id, data = adapter._prepare_pinecone_vector(
+        doc_id, _data = adapter._prepare_pinecone_vector(
             VectorDocument(id=None, vector=[0.1]), 3
         )
         assert doc_id == "vec_3"
 
     def test_prepare_vector_no_metadata(self) -> None:
         adapter = PineconeAdapter(PineconeSettings(api_key=SecretStr("key")))
-        doc_id, data = adapter._prepare_pinecone_vector(
+        _doc_id, data = adapter._prepare_pinecone_vector(
             VectorDocument(id="myid", vector=[0.1], metadata={}), 0
         )
         assert "metadata" not in data

@@ -74,7 +74,7 @@ class AWSSecretManagerAdapter:
             self._client = await self._client_factory()
             return
         try:
-            import aioboto3
+            import aioboto3  # ty: ignore[unresolved-import]
         except ModuleNotFoundError as exc:  # pragma: no cover - optional dependency
             raise LifecycleError("aioboto3-missing") from exc
 

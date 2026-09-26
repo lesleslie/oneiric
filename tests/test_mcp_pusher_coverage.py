@@ -241,9 +241,8 @@ class TestPushAdaptersOnStartup:
         with patch(
             "oneiric.adapters.bootstrap.builtin_adapter_metadata",
             side_effect=RuntimeError("bootstrap failed"),
-        ):
-            with pytest.raises(RuntimeError):
-                push_adapters_on_startup()
+        ), pytest.raises(RuntimeError):
+            push_adapters_on_startup()
 
 
 # ---------------------------------------------------------------------------
@@ -256,9 +255,8 @@ class TestMain:
         with patch(
             "oneiric.adapters.mcp_pusher.push_adapters_on_startup",
             return_value={"total": 2, "success": 2, "errors": 0, "details": []},
-        ):
-            with patch("sys.argv", ["dhara_pusher"]):
-                result = main()
+        ), patch("sys.argv", ["dhara_pusher"]):
+            result = main()
         assert result == 0
 
     def test_main_with_errors(self):
@@ -273,20 +271,18 @@ class TestMain:
                     {"adapter_id": "b", "status": "error", "error": "fail"},
                 ],
             },
-        ):
-            with patch("sys.argv", ["dhara_pusher"]):
-                result = main()
+        ), patch("sys.argv", ["dhara_pusher"]):
+            result = main()
         assert result == 1
 
     def test_main_custom_url(self):
         with patch(
             "oneiric.adapters.mcp_pusher.push_adapters_on_startup",
             return_value={"total": 0, "success": 0, "errors": 0, "details": []},
-        ) as mock_push:
-            with patch(
-                "sys.argv", ["dhara_pusher", "--dhara-url", "http://custom:9999"]
-            ):
-                main()
+        ) as mock_push, patch(
+            "sys.argv", ["dhara_pusher", "--dhara-url", "http://custom:9999"]
+        ):
+            main()
         mock_push.assert_called_once_with(dhara_url="http://custom:9999")
 
 

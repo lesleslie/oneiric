@@ -7,8 +7,8 @@ from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover - optional dependency typing
-    from coredis import Redis
-    from coredis.exceptions import (
+    from coredis import Redis  # ty: ignore[unresolved-import]
+    from coredis.exceptions import (  # ty: ignore[unresolved-import]
         RedisError,
         ResponseError,
         StreamDuplicateConsumerGroupError,

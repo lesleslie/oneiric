@@ -31,7 +31,6 @@ class MockCache:
 
     async def set(self, key: str, value: str) -> None:
         """Set value in cache."""
-        pass
 
 
 async def main() -> None:

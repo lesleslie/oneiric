@@ -83,7 +83,7 @@ class TestLayerSelectorAndWatcherInits:
             bridge = MagicMock()
             ServiceConfigWatcher(bridge)
 
-        args, kwargs = mock_init.call_args
+        args, _kwargs = mock_init.call_args
         assert args[0] == "service"
         assert args[1] is bridge
 

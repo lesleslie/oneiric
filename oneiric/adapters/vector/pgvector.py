@@ -293,7 +293,7 @@ class PgvectorAdapter(VectorBase[PgvectorSettings]):
         factory = self._pool_factory
         if factory is None:
             try:
-                import asyncpg
+                import asyncpg  # ty: ignore[unresolved-import]
             except ModuleNotFoundError as exc:  # pragma: no cover - optional dependency
                 raise LifecycleError(
                     "asyncpg-missing: install oneiric[vector-pgvector] or oneiric[database]"

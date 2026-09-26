@@ -120,6 +120,5 @@ class TestSecretsHookGetBranches:
         bad_provider = object()  # has no get_secret attribute
         with patch.object(
             hook, "_ensure_provider", new=AsyncMock(return_value=bad_provider)
-        ):
-            with pytest.raises(LifecycleError, match="get_secret"):
-                await hook.get("some-key")
+        ), pytest.raises(LifecycleError, match="get_secret"):
+            await hook.get("some-key")

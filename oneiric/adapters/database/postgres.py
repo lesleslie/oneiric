@@ -62,7 +62,7 @@ class PostgresDatabaseAdapter:
         factory = self._pool_factory
         if factory is None:
             try:
-                import asyncpg
+                import asyncpg  # ty: ignore[unresolved-import]
             except ModuleNotFoundError as exc:  # pragma: no cover - defensive
                 raise LifecycleError("asyncpg-missing") from exc
             factory = asyncpg.create_pool

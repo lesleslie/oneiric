@@ -115,7 +115,7 @@ class AnthropicLLM(LLMBase):
 
     async def _create_client(self) -> Any:
         try:
-            import anthropic
+            import anthropic  # ty: ignore[unresolved-import]
         except ImportError as exc:
             raise LifecycleError(
                 "anthropic package required. Install with: pip install anthropic"

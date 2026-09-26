@@ -149,7 +149,9 @@ class FirestoreAdapter(NoSQLAdapterBase):
 
     def _default_client_factory(self) -> Any:
         try:
-            from google.cloud.firestore_v1.async_client import AsyncClient
+            from google.cloud.firestore_v1.async_client import (  # ty: ignore[unresolved-import]
+                AsyncClient,  # ty: ignore[unresolved-import]
+            )
         except ModuleNotFoundError as exc:  # pragma: no cover - optional dep
             raise LifecycleError(
                 "firestore-extra-missing: install 'oneiric[nosql-firestore]' to use FirestoreAdapter"

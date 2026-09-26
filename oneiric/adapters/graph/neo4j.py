@@ -149,7 +149,7 @@ class Neo4jGraphAdapter:
 
     def _default_driver_factory(self) -> Any:
         try:
-            from neo4j import AsyncGraphDatabase
+            from neo4j import AsyncGraphDatabase  # ty: ignore[unresolved-import]
         except ModuleNotFoundError as exc:  # pragma: no cover - optional dep
             raise LifecycleError(
                 "neo4j-driver-not-installed: install optional extra 'oneiric[graph-neo4j]' to use Neo4jGraphAdapter"

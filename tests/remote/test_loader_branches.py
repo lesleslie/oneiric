@@ -457,7 +457,7 @@ def test_parse_manifest_signature_failure_raises() -> None:
 
 
 def test_extract_signatures_skips_non_dict_non_str_entries() -> None:
-    signatures, algorithms = _extract_signatures(
+    signatures, _algorithms = _extract_signatures(
         {"signatures": [42, None, {"signature": "abc"}]}
     )
     assert signatures == ["abc"]

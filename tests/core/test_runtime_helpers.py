@@ -1,4 +1,5 @@
 import anyio
+import anyio.lowlevel
 import pytest
 
 from oneiric.core.runtime import (
@@ -17,7 +18,7 @@ async def test_anyio_nursery_runs_tasks() -> None:
     results: list[int] = []
 
     async def _task(value: int) -> None:
-        await anyio.sleep(0)
+        await anyio.lowlevel.checkpoint()
         results.append(value)
 
     async with anyio_nursery(name="test.nursery", limit=2) as nursery:
@@ -30,7 +31,7 @@ async def test_anyio_nursery_runs_tasks() -> None:
 @pytest.mark.anyio
 async def test_run_with_anyio_taskgroup_returns_ordered_results() -> None:
     async def _make(value: int) -> int:
-        await anyio.sleep(0)
+        await anyio.lowlevel.checkpoint()
         return value
 
     tasks = [lambda value=idx: _make(value) for idx in range(4)]
@@ -44,13 +45,13 @@ async def test_runtime_taskgroup_rejects_uninitialized_start() -> None:
     group = RuntimeTaskGroup(name="test.group")
 
     with pytest.raises(TaskGroupError, match="TaskGroup not initialized"):
-        group.start_soon(lambda: anyio.sleep(0))
+        group.start_soon(lambda: anyio.lowlevel.checkpoint())
 
 
 @pytest.mark.asyncio
 async def test_run_with_taskgroup_collects_results() -> None:
     async def _make(value: int) -> int:
-        await anyio.sleep(0)
+        await anyio.lowlevel.checkpoint()
         return value
 
     results = await run_with_taskgroup(_make(1), _make(2), name="test.group")
@@ -91,7 +92,7 @@ async def test_runtime_taskgroup_accepts_coroutine_factory() -> None:
     results: list[str] = []
 
     async def _make(value: str) -> str:
-        await anyio.sleep(0)
+        await anyio.lowlevel.checkpoint()
         results.append(value)
         return value
 
@@ -109,11 +110,11 @@ async def test_anyio_nursery_timeout_and_cancel_branch() -> None:
 
     async def _task(label: str) -> None:
         started.append(label)
-        await anyio.sleep(0)
+        await anyio.lowlevel.checkpoint()
 
     async with anyio_nursery(name="test.nursery", limit=1, timeout=0.01) as nursery:
         nursery.start_soon(_task, "one", task_name="task.one")
-        await anyio.sleep(0)
+        await anyio.lowlevel.checkpoint()
         nursery.cancel()
 
     assert started == ["one"]

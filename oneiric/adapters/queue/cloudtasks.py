@@ -66,7 +66,7 @@ class CloudTasksQueueAdapter(EnsureClientMixin):
     async def init(self) -> None:
         if self._client is None:
             try:
-                from google.cloud import tasks_v2
+                from google.cloud import tasks_v2  # ty: ignore[unresolved-import]
             except ModuleNotFoundError as exc:  # pragma: no cover - dependency guard
                 raise LifecycleError("google-cloud-tasks-missing") from exc
             self._client = tasks_v2.CloudTasksAsyncClient()

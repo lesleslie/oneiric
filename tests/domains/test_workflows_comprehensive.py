@@ -1019,7 +1019,7 @@ class TestEnqueuePayload:
         # queued_at: ISO 8601 UTC (ends with +00:00)
         queued_at = payload["queued_at"]
         assert isinstance(queued_at, str)
-        assert queued_at.endswith("+00:00") or queued_at.endswith("Z")
+        assert queued_at.endswith(("+00:00", "Z"))
 
     async def test_payload_contains_task_name_and_queue_category(
         self,

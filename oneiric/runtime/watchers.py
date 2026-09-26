@@ -118,7 +118,7 @@ class SelectionWatcher:
             await self._run_poll_loop()
             return
         await self._tick()
-        async for _changes in awatch(self._watch_path, stop_event=self._stop_event):
+        async for _changes in awatch(self._watch_path, stop_event=self._stop_event):  # ty: ignore[call-non-callable]
             if self._stop_event.is_set():
                 break
             await self._tick()

@@ -143,7 +143,7 @@ class TestTuneBackoff:
         # Record one failure
         _update_retry_state(key, success=False, latency_ms=100)
 
-        base, max_delay, jitter = _tune_backoff(
+        base, _max_delay, _jitter = _tune_backoff(
             adaptive_key=key,
             base_delay=1.0,
             max_delay=30.0,
@@ -162,7 +162,7 @@ class TestTuneBackoff:
         for _ in range(5):
             _update_retry_state(key, success=False, latency_ms=100)
 
-        base, max_delay, jitter = _tune_backoff(
+        base, _max_delay, _jitter = _tune_backoff(
             adaptive_key=key,
             base_delay=1.0,
             max_delay=30.0,
@@ -179,7 +179,7 @@ class TestTuneBackoff:
         # Record failure with high latency
         _update_retry_state(key, success=False, latency_ms=3000)
 
-        base, max_delay, jitter = _tune_backoff(
+        base, _max_delay, _jitter = _tune_backoff(
             adaptive_key=key,
             base_delay=1.0,
             max_delay=30.0,
@@ -197,7 +197,7 @@ class TestTuneBackoff:
         for _ in range(10):
             _update_retry_state(key, success=False, latency_ms=100)
 
-        base, max_delay, jitter = _tune_backoff(
+        _base, max_delay, _jitter = _tune_backoff(
             adaptive_key=key,
             base_delay=1.0,
             max_delay=5.0,
@@ -318,7 +318,7 @@ class TestResiliencyEdgeCases:
         # Create state without failures
         _ADAPTIVE_RETRY_STATE[key] = AdaptiveRetryState()
 
-        base, max_delay, jitter = _tune_backoff(
+        base, _max_delay, _jitter = _tune_backoff(
             adaptive_key=key,
             base_delay=1.0,
             max_delay=30.0,

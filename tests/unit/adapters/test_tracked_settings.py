@@ -19,6 +19,7 @@ import asyncio
 import json
 import os
 import stat
+from typing import Self
 from unittest.mock import patch
 
 import httpx2 as httpx
@@ -501,7 +502,7 @@ class TestOTelAttributes:
                 for k, v in attrs.items():
                     captured[k] = v
 
-            def __enter__(self) -> _Span:
+            def __enter__(self) -> Self:
                 return self
 
             def __exit__(self, *_: object) -> None:
@@ -555,7 +556,7 @@ class TestOTelAttributes:
                 for k, v in attrs.items():
                     captured[k] = v
 
-            def __enter__(self) -> _Span:
+            def __enter__(self) -> Self:
                 return self
 
             def __exit__(self, *_: object) -> None:

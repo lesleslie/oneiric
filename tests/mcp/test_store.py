@@ -45,7 +45,6 @@ class TestSubstrateStoreThreadSafety:
     def test_locks_are_threading_lock(self, store: SubstrateStore) -> None:
         """Pin the lock type — a regression to asyncio.Lock would fail this
         with a clear assertion failure rather than via ambiguous write race."""
-        import threading
 
         for name, lock in store._locks.items():
             assert isinstance(lock, threading.Lock), (
@@ -56,7 +55,6 @@ class TestSubstrateStoreThreadSafety:
     def test_concurrent_writes_do_not_corrupt(
         self, store: SubstrateStore
     ) -> None:
-        import threading
         from types import SimpleNamespace
 
         # Use a barrier so all worker threads collide in the critical

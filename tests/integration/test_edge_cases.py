@@ -193,7 +193,6 @@ class TestNetworkFailures:
     )
     async def test_remote_fetch_timeout(self, tmp_path):
         """Remote fetch should timeout gracefully."""
-        pass
 
     @pytest.mark.asyncio
     @pytest.mark.skip(
@@ -201,7 +200,6 @@ class TestNetworkFailures:
     )
     async def test_remote_fetch_network_error(self, tmp_path):
         """Remote fetch should handle network errors."""
-        pass
 
 
 class TestInvalidConfiguration:
@@ -295,7 +293,6 @@ class TestMaliciousInput:
         # "oneiric.adapters:AdapterBridge"
 
         # For now, just pass (security not implemented)
-        pass
 
     def test_command_injection_in_factory(self):
         """Factory strings with command injection attempts should be rejected."""
@@ -309,7 +306,6 @@ class TestMaliciousInput:
         # "module:Class`whoami`"
 
         # For now, just pass (security not implemented)
-        pass
 
     @pytest.mark.slow
     @pytest.mark.integration

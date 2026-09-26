@@ -9,7 +9,7 @@ from __future__ import annotations
 import asyncio
 import sys
 import types
-from typing import Any
+from typing import Any, Self
 
 import pytest
 
@@ -394,7 +394,7 @@ async def test_mqtt_consume_timeout() -> None:
 
 @pytest.mark.asyncio
 async def test_mqtt_cleanup() -> None:
-    adapter, mqtt_client = _mqtt_adapter()
+    adapter, _mqtt_client = _mqtt_adapter()
     await adapter.init()
     await adapter.cleanup()
     assert adapter._mqtt_client is None
@@ -512,7 +512,7 @@ async def test_health_no_active_protocols() -> None:
 
 @pytest.mark.asyncio
 async def test_health_mqtt_client_connected() -> None:
-    adapter, mqtt_client = _mqtt_adapter()
+    adapter, _mqtt_client = _mqtt_adapter()
     await adapter.init()
     # MQTT adapter without aiomqtt — falls through to len(active_protocols) > 0
     result = await adapter.health()
@@ -897,10 +897,10 @@ async def test_mqtt_subscriber_processes_message() -> None:
                 )
             ]
 
-        async def __aenter__(self) -> _FakeCtxMessages:
+        async def __aenter__(self) -> Self:
             return self
 
-        async def __aexit__(self, *a: Any) -> None:
+        async def __aexit__(self, *a: object) -> None:
             pass
 
         async def subscribe(self, topic: str, qos: int) -> None:

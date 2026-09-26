@@ -77,7 +77,7 @@ class TestKeyFormatValidation:
 
     def test_key_with_dots_accepted(self):
         """Keys with dots accepted by default."""
-        is_valid, error = validate_key_format("my.component.v1")
+        is_valid, _error = validate_key_format("my.component.v1")
         assert is_valid
 
     def test_key_with_dots_rejected_when_disabled(self):
@@ -128,7 +128,7 @@ class TestKeyFormatValidation:
         """Special characters in keys rejected."""
         invalid_keys = ["key@name", "key#name", "key$name", "key%name", "key*name"]
         for key in invalid_keys:
-            is_valid, error = validate_key_format(key)
+            is_valid, _error = validate_key_format(key)
             assert not is_valid, f"Should reject: {key}"
 
 

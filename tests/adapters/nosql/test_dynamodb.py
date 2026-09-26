@@ -258,7 +258,7 @@ async def test_table_via_session_path() -> None:
         async def __aenter__(self) -> FakeDynamoDB:
             return FakeDynamoDB()
 
-        async def __aexit__(self, *_: Any) -> None:
+        async def __aexit__(self, *_: object) -> None:
             pass
 
     class FakeSession:
@@ -286,7 +286,7 @@ async def test_table_via_session_with_credentials() -> None:
         async def __aenter__(self) -> FakeDynamoDB:
             return FakeDynamoDB()
 
-        async def __aexit__(self, *_: Any) -> None:
+        async def __aexit__(self, *_: object) -> None:
             pass
 
     class FakeSession:

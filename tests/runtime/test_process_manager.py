@@ -233,10 +233,10 @@ class TestStopProcess:
             nonlocal kill_count
             kill_count += 1
             if sig == signal.SIGTERM:
-                return None
+                return
             elif sig == 0:
                 if kill_count < 12:
-                    return None
+                    return
                 raise OSError("dead")
             elif sig == signal.SIGKILL:
                 raise OSError("already dead")

@@ -7,10 +7,7 @@ schedule_task (REQ-008 + pr-test-analyzer finding).
 """
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
-from types import SimpleNamespace
 from typing import Any
-from unittest.mock import AsyncMock
 
 import pytest
 
@@ -34,7 +31,7 @@ class TestWorkflowTaskProcessor:
     def test_constructor_accepts_workflow_bridge(self) -> None:
         bridge = _FakeBridge()
         proc = WorkflowTaskProcessor(workflow_bridge=bridge)  # type: ignore[arg-type]
-        assert proc._workflow_bridge is bridge  # noqa: SLF001 — internal check
+        assert proc._workflow_bridge is bridge
 
     async def test_process_returns_documented_shape(self) -> None:
         bridge = _FakeBridge(run_id="run-42", results={"step1": "ok"})

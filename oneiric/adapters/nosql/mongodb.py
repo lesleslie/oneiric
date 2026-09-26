@@ -13,7 +13,7 @@ from oneiric.core.resolution import CandidateSource
 from .nosql_types import NoSQLAdapterBase, NoSQLBaseSettings, NoSQLDocument, NoSQLQuery
 
 if TYPE_CHECKING:  # pragma: no cover - optional dependency typing
-    from motor.motor_asyncio import (
+    from motor.motor_asyncio import (  # ty: ignore[unresolved-import]
         AsyncIOMotorClient,
         AsyncIOMotorCollection,
         AsyncIOMotorDatabase,
@@ -238,7 +238,9 @@ class MongoDBAdapter(NoSQLAdapterBase[MongoDBSettings]):
 
     def _default_client_factory(self, **kwargs: Any) -> AsyncIOMotorClient:
         try:
-            from motor.motor_asyncio import AsyncIOMotorClient as MotorClient
+            from motor.motor_asyncio import (  # ty: ignore[unresolved-import]
+                AsyncIOMotorClient as MotorClient,  # ty: ignore[unresolved-import]
+            )
         except ModuleNotFoundError as exc:  # pragma: no cover - optional dep
             raise LifecycleError(
                 "motor-not-installed: install optional extra 'oneiric[nosql-mongo]' to use MongoDBAdapter"

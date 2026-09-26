@@ -102,7 +102,6 @@ async def test_embedding_service_branches(monkeypatch) -> None:
     )
     # Mock fallback is L2-normalized at the configured dimension.
     assert len(service._generate_fallback_embedding("x")) == 384
-    import numpy as np
 
     assert abs(float(np.linalg.norm(service._generate_fallback_embedding("x"))) - 1.0) < 1e-5
 

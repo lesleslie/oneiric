@@ -23,6 +23,7 @@ The vendored ``oneiric mcp start`` CLI (oneiric/cli/mcp.py) has a
 dormant gap (no ``WorkflowTaskProcessor`` wiring, stdio transport); that
 fix lands in Phase 2 commits 2.5b / 2.5c.
 """
+
 from __future__ import annotations
 
 import site
@@ -43,7 +44,12 @@ from pathlib import Path
 # venv is already active (sys.prefix is already under `_REPO_ROOT/.venv`).
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _VENV_ROOT = _REPO_ROOT / ".venv"
-_VENV_SITE_PACKAGES = _VENV_ROOT / "lib" / f"python{sys.version_info.major}.{sys.version_info.minor}" / "site-packages"
+_VENV_SITE_PACKAGES = (
+    _VENV_ROOT
+    / "lib"
+    / f"python{sys.version_info.major}.{sys.version_info.minor}"
+    / "site-packages"
+)
 try:
     _VENV_SITE_PACKAGES.relative_to(Path(sys.prefix))
     _IN_VENV = True
@@ -145,7 +151,8 @@ def build_server(settings_path: Path):
 
     auth_config = _load_auth_from_settings(settings_path)
     mcp_auth_config, mcp_providers = load_auth_config(
-        auth_config, provider_factories={},
+        auth_config,
+        provider_factories={},
     )
     processor = _build_processor()
     health_feeds = _build_warm_settings_feed()
@@ -170,8 +177,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         "settings",
         nargs="?",
         default=str(Path.home() / ".oneiric" / "settings.yaml"),
-        help="Path to oneiric settings.yaml "
-        "(defaults to ~/.oneiric/settings.yaml).",
+        help="Path to oneiric settings.yaml (defaults to ~/.oneiric/settings.yaml).",
     )
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8681)

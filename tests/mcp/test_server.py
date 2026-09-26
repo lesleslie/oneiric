@@ -13,7 +13,6 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
-
 from fastmcp import FastMCP
 from mcp_common.auth.context import _principal_var
 from mcp_common.auth.permissions import Permission

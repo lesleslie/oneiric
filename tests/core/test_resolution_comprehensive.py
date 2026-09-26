@@ -9,6 +9,7 @@ helper, integration scenarios, and three property-based invariants.
 
 from __future__ import annotations
 
+import itertools
 import json
 import threading
 from copy import deepcopy
@@ -401,7 +402,7 @@ class TestCandidateRegistry:
             registry.resolve("adapter", f"k-{i}").registry_sequence for i in range(5)
         ]
         # Strictly increasing
-        for prev, curr in zip(sequences, sequences[1:], strict=False):
+        for prev, curr in itertools.pairwise(sequences):
             assert curr > prev
         # Starting at 1
         assert sequences[0] == 1

@@ -99,8 +99,8 @@ class FCMPushAdapter:
 
     def _default_app_factory(self) -> Any:
         try:
-            import firebase_admin
-            from firebase_admin import credentials
+            import firebase_admin  # ty: ignore[unresolved-import]
+            from firebase_admin import credentials  # ty: ignore[unresolved-import]
         except ModuleNotFoundError as exc:  # pragma: no cover - optional dep
             raise LifecycleError(
                 "firebase-admin-not-installed: install 'oneiric[messaging-fcm]' to use FCMPushAdapter"

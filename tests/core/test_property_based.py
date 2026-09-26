@@ -82,7 +82,7 @@ class TestCandidateProperties:
             registry.register_candidate(candidate)
 
         # Count unique (domain, key) pairs
-        set((c.domain, c.key) for c in candidates)
+        {(c.domain, c.key) for c in candidates}
 
         # Should have at least as many active as unique keys
         active = registry.list_active("adapter")

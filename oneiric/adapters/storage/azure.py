@@ -68,7 +68,9 @@ class AzureBlobStorageAdapter:
             account_url = self._settings.account_url
             credential = self._settings.credential
             try:
-                from azure.storage.blob.aio import BlobServiceClient
+                from azure.storage.blob.aio import (  # ty: ignore[unresolved-import]
+                    BlobServiceClient,  # ty: ignore[unresolved-import]
+                )
             except ModuleNotFoundError as exc:  # pragma: no cover - optional dependency
                 raise LifecycleError("azure-storage-blob-missing") from exc
 
@@ -173,7 +175,9 @@ class AzureBlobStorageAdapter:
         storage ``key``.
         """
         try:
-            from azure.storage.blob import ContentSettings
+            from azure.storage.blob import (  # ty: ignore[unresolved-import]
+                ContentSettings,  # ty: ignore[unresolved-import]
+            )
         except ModuleNotFoundError as exc:  # pragma: no cover - defensive
             raise LifecycleError("azure-storage-blob-missing") from exc
 
@@ -268,7 +272,9 @@ class AzureBlobStorageAdapter:
         if cached is not None:
             return cached
         try:
-            from azure.storage.blob import BlobServiceClient
+            from azure.storage.blob import (  # ty: ignore[unresolved-import]
+                BlobServiceClient,  # ty: ignore[unresolved-import]
+            )
         except ModuleNotFoundError as exc:  # pragma: no cover - defensive
             raise LifecycleError("azure-storage-blob-missing") from exc
 

@@ -62,7 +62,7 @@ class Route53DNSAdapter:
             return
 
         try:
-            import aioboto3
+            import aioboto3  # ty: ignore[unresolved-import]
         except ModuleNotFoundError as exc:  # pragma: no cover - optional path
             raise LifecycleError(
                 "aioboto3-is-required: install aioboto3 to use Route53DNSAdapter"

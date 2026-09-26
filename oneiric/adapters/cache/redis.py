@@ -8,12 +8,14 @@ from typing import Any
 from pydantic import BaseModel, Field, RedisDsn
 
 try:
-    from coredis import Redis
-    from coredis.exceptions import RedisError  # pragma: no cover
-    from coredis.patterns.cache import (  # pragma: no cover
+    from coredis import Redis  # ty: ignore[unresolved-import]
+    from coredis.exceptions import (  # ty: ignore[unresolved-import]
+        RedisError,  # pragma: no cover  # ty: ignore[unresolved-import]
+    )
+    from coredis.patterns.cache import (  # pragma: no cover  # ty: ignore[unresolved-import]
         LRUCache,
     )
-    from coredis.patterns.cache import (
+    from coredis.patterns.cache import (  # ty: ignore[unresolved-import]
         TrackingCache as _AbstractTrackingCache,
     )
 
@@ -60,7 +62,7 @@ class _TrackingCacheImpl(
         # not accept on LRUCache, so we drop it silently.
         kwargs.pop("max_size_bytes", None)
         self._max_idle_seconds = kwargs.pop("max_idle_seconds", 60)
-        self._cache = LRUCache(max_keys=max_keys)
+        self._cache = LRUCache(max_keys=max_keys)  # ty: ignore[call-non-callable]
         self._retry_policy = None
         # ``_connection_pool`` is unused because ``run()`` is a no-op below.
         self._connection_pool = None  # type: ignore[assignment]
@@ -193,7 +195,7 @@ class RedisCacheAdapter(EnsureClientMixin):
             self._client = self._create_client()
         try:
             await asyncio.wait_for(
-                self._client.ping(), timeout=self._settings.healthcheck_timeout
+                self._client.ping(), timeout=self._settings.healthcheck_timeout  # ty: ignore[unresolved-attribute]
             )
         except RedisError as exc:  # pragma: no cover - defensive log path
             self._logger.error("adapter-init-failed", error=str(exc))
@@ -339,8 +341,8 @@ class RedisCacheAdapter(EnsureClientMixin):
         if self._settings.ssl:
             kwargs["ssl"] = True
         if self._settings.url:
-            return Redis.from_url(str(self._settings.url), **kwargs)
-        return Redis(
+            return Redis.from_url(str(self._settings.url), **kwargs)  # ty: ignore[unresolved-attribute]
+        return Redis(  # ty: ignore[call-non-callable]
             host=self._settings.host,
             port=self._settings.port,
             db=self._settings.db,

@@ -292,7 +292,7 @@ class TestULIDFallbackCoverage:
 
         ulid = ULID()
         assert ulid != 42
-        assert ulid != None  # noqa: E711
+        assert ulid != None
 
 
 # ---------------------------------------------------------------------------
@@ -673,9 +673,8 @@ class TestLifecycleCoverageGaps:
         with patch(
             "oneiric.core.lifecycle.validate_factory_string",
             return_value=(True, None),
-        ):
-            with pytest.raises(LifecycleError, match="Cannot import"):
-                resolve_factory(":attr_only")
+        ), pytest.raises(LifecycleError, match="Cannot import"):
+            resolve_factory(":attr_only")
 
     def test_resolve_factory_dot_notation_after_security_bypass(self):
         """Lines 68-70: resolve_factory with dot notation (no colon).

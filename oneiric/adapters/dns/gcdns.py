@@ -169,7 +169,7 @@ class GCDNSAdapter:
 
     def _create_client(self) -> Any:
         try:
-            from google.cloud import dns
+            from google.cloud import dns  # ty: ignore[unresolved-import]
         except ModuleNotFoundError as exc:  # pragma: no cover - optional dep
             raise LifecycleError(
                 "google-cloud-dns-missing: install 'oneiric[dns-gcdns]' to use GCDNSAdapter"

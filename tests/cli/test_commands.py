@@ -1015,7 +1015,6 @@ class TestOrchestrateCommand:
         """orchestrate command accepts options."""
         # Just verify command parsing - don't actually run orchestrator
         # (would run forever)
-        pass
 
     @staticmethod
     def _write_runtime_config(tmp_path):

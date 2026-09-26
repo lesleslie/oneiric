@@ -64,13 +64,13 @@ class PubSubQueueAdapter:
     async def init(self) -> None:
         if self._publisher_client is None:
             try:
-                from google.cloud import pubsub_v1
+                from google.cloud import pubsub_v1  # ty: ignore[unresolved-import]
             except ModuleNotFoundError as exc:  # pragma: no cover - dependency guard
                 raise LifecycleError("google-cloud-pubsub-missing") from exc
             self._publisher_client = pubsub_v1.PublisherClient()
         if self._subscriber_client is None and self._settings.subscription:
             try:
-                from google.cloud import pubsub_v1
+                from google.cloud import pubsub_v1  # ty: ignore[unresolved-import]
             except ModuleNotFoundError as exc:  # pragma: no cover - dependency guard
                 raise LifecycleError("google-cloud-pubsub-missing") from exc
             self._subscriber_client = pubsub_v1.SubscriberClient()

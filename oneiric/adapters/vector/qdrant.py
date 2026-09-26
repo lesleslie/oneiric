@@ -86,7 +86,7 @@ class QdrantAdapter(VectorBase[QdrantSettings]):
 
     async def _create_client(self) -> Any:
         try:
-            from qdrant_client import AsyncQdrantClient
+            from qdrant_client import AsyncQdrantClient  # ty: ignore[unresolved-import]
 
             connection_params: dict[str, Any] = {
                 "url": self._settings.url,
@@ -151,7 +151,10 @@ class QdrantAdapter(VectorBase[QdrantSettings]):
             if dimension is None:
                 dimension = self._settings.default_dimension
 
-            from qdrant_client.models import Distance, VectorParams
+            from qdrant_client.models import (  # ty: ignore[unresolved-import]
+                Distance,
+                VectorParams,
+            )
 
             distance_map = {
                 "cosine": Distance.COSINE,
@@ -168,7 +171,9 @@ class QdrantAdapter(VectorBase[QdrantSettings]):
                 on_disk=self._settings.on_disk_vectors,
             )
 
-            from qdrant_client.models import HnswConfigDiff
+            from qdrant_client.models import (  # ty: ignore[unresolved-import]
+                HnswConfigDiff,  # ty: ignore[unresolved-import]
+            )
 
             hnsw_config = HnswConfigDiff(
                 m=self._settings.hnsw_config.get("m", 16),
@@ -185,7 +190,7 @@ class QdrantAdapter(VectorBase[QdrantSettings]):
 
             quantization_config = None
             if self._settings.enable_quantization:
-                from qdrant_client.models import (
+                from qdrant_client.models import (  # ty: ignore[unresolved-import]
                     ScalarQuantization,
                     ScalarQuantizationConfig,
                     ScalarType,
@@ -290,7 +295,7 @@ class QdrantAdapter(VectorBase[QdrantSettings]):
 
     def _build_qdrant_filter(self, filter_expr: dict[str, Any]) -> Any | None:
         try:
-            from qdrant_client.models import (
+            from qdrant_client.models import (  # ty: ignore[unresolved-import]
                 FieldCondition,
                 Filter,
                 MatchAny,
@@ -338,7 +343,9 @@ class QdrantAdapter(VectorBase[QdrantSettings]):
         await self._ensure_collection_exists(collection_name, dimension)
 
         try:
-            from qdrant_client.models import PointStruct
+            from qdrant_client.models import (  # ty: ignore[unresolved-import]
+                PointStruct,  # ty: ignore[unresolved-import]
+            )
 
             points = []
             document_ids = []
@@ -390,7 +397,9 @@ class QdrantAdapter(VectorBase[QdrantSettings]):
         collection_name = collection or self._settings.default_collection
 
         try:
-            from qdrant_client.models import PointIdsList
+            from qdrant_client.models import (  # ty: ignore[unresolved-import]
+                PointIdsList,  # ty: ignore[unresolved-import]
+            )
 
             operation_info = await client.delete(
                 collection_name=collection_name,

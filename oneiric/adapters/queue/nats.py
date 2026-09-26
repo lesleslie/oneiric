@@ -4,7 +4,7 @@ from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover - optional dependency typing
-    from nats.aio.msg import Msg
+    from nats.aio.msg import Msg  # ty: ignore[unresolved-import]
 else:  # pragma: no cover - runtime guard
     Msg = Any
 from pydantic import BaseModel, Field
@@ -20,7 +20,7 @@ MessageHandler = Callable[[Msg], Awaitable[None]]
 
 def _load_nats() -> Any:
     try:
-        import nats as nats_lib
+        import nats as nats_lib  # ty: ignore[unresolved-import]
     except ModuleNotFoundError as exc:  # pragma: no cover - optional dependency
         raise LifecycleError(
             "nats-not-installed: install optional extra 'oneiric[queue-nats]' to use "

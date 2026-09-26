@@ -2569,14 +2569,13 @@ class TestOTelFlushBufferPeriodically:
                 return
             raise asyncio.CancelledError()
 
-        with patch("asyncio.sleep", side_effect=_mock_sleep):
-            with patch.object(
-                adapter,
-                "_flush_buffer",
-                new_callable=AsyncMock,
-                side_effect=Exception("Flush error"),
-            ):
-                await adapter._flush_buffer_periodically()
+        with patch("asyncio.sleep", side_effect=_mock_sleep), patch.object(
+            adapter,
+            "_flush_buffer",
+            new_callable=AsyncMock,
+            side_effect=Exception("Flush error"),
+        ):
+            await adapter._flush_buffer_periodically()
 
 
 # ---------------------------------------------------------------------------

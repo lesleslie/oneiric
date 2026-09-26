@@ -15,7 +15,7 @@ except ImportError:
         pytrace=False,
     )
 
-from oneiric.actions.streaming_compression import (  # noqa: E402
+from oneiric.actions.streaming_compression import (
     StreamingCompressionAction,
 )
 
@@ -86,8 +86,7 @@ def test_chunk_reader_is_called_fresh_per_stream() -> None:
 
     def decompress_reader() -> Iterator[bytes]:
         calls["decompress"] += 1
-        for chunk in compressed:
-            yield chunk
+        yield from compressed
 
     restored = b"".join(action.decompress(decompress_reader))
     assert calls["decompress"] == 1

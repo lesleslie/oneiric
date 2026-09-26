@@ -12,7 +12,7 @@ from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
 
 try:  # pragma: no cover - optional dependency
-    import logfire  # type: ignore[import-untyped]
+    import logfire  # type: ignore[import-untyped]  # ty: ignore[unresolved-import]
 except ImportError:  # pragma: no cover - optional dependency
     logfire: Any = None
 

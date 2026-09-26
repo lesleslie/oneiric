@@ -104,7 +104,7 @@ def _make_adapter(
 @pytest.mark.asyncio
 async def test_pubsub_cleanup() -> None:
     """cleanup() nils publisher and subscriber clients (lines 92-101)."""
-    adapter, publisher, subscriber = _make_adapter()
+    adapter, _publisher, _subscriber = _make_adapter()
     await adapter.init()
     await adapter.cleanup()
     assert adapter._publisher_client is None

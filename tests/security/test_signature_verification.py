@@ -392,7 +392,7 @@ class TestManifestSigningUtility:
 
         # Verify by extracting canonical form
         canonical = get_canonical_manifest_for_signing(manifest)
-        is_valid, error = verify_manifest_signature(
+        is_valid, _error = verify_manifest_signature(
             canonical, signature, trusted_keys=[public_key]
         )
         assert is_valid

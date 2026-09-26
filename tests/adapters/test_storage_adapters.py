@@ -63,7 +63,7 @@ class _FakeS3Client:
     ) -> None:
         assert Bucket == self.bucket
         self.objects[Key] = Body
-        if "Metadata" in kwargs and kwargs["Metadata"]:
+        if kwargs.get("Metadata"):
             self.metadata[Key] = dict(kwargs["Metadata"])
 
     async def get_object(self, Bucket: str, Key: str) -> dict[str, Any]:
@@ -1063,7 +1063,7 @@ async def test_azure_exists_returns_true_and_false() -> None:
         "integration tests."
     )
     # The code below would run if the import chain were clean.
-    from oneiric.adapters.storage.azure import AzureBlobStorageAdapter  # noqa: F401
+    from oneiric.adapters.storage.azure import AzureBlobStorageAdapter
 
     class _NotFound404(Exception):
         status_code = 404

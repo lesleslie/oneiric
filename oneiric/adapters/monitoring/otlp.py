@@ -160,23 +160,33 @@ class OTLPObservabilityAdapter:
         try:  # pragma: no cover - depends on optional OTLP install
             from opentelemetry import metrics as metrics_api
             from opentelemetry import trace as trace_api
-            from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import (
+            from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import (  # ty: ignore[unresolved-import]
                 OTLPMetricExporter as GrpcMetricExporter,
             )
-            from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+            from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (  # ty: ignore[unresolved-import]
                 OTLPSpanExporter as GrpcSpanExporter,
             )
-            from opentelemetry.exporter.otlp.proto.http.metric_exporter import (
+            from opentelemetry.exporter.otlp.proto.http.metric_exporter import (  # ty: ignore[unresolved-import]
                 OTLPMetricExporter as HttpMetricExporter,
             )
-            from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
+            from opentelemetry.exporter.otlp.proto.http.trace_exporter import (  # ty: ignore[unresolved-import]
                 OTLPSpanExporter as HttpSpanExporter,
             )
-            from opentelemetry.sdk.metrics import MeterProvider
-            from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
-            from opentelemetry.sdk.resources import Resource
-            from opentelemetry.sdk.trace import TracerProvider
-            from opentelemetry.sdk.trace.export import BatchSpanProcessor
+            from opentelemetry.sdk.metrics import (  # ty: ignore[unresolved-import]
+                MeterProvider,  # ty: ignore[unresolved-import]
+            )
+            from opentelemetry.sdk.metrics.export import (  # ty: ignore[unresolved-import]
+                PeriodicExportingMetricReader,  # ty: ignore[unresolved-import]
+            )
+            from opentelemetry.sdk.resources import (  # ty: ignore[unresolved-import]
+                Resource,  # ty: ignore[unresolved-import]
+            )
+            from opentelemetry.sdk.trace import (  # ty: ignore[unresolved-import]
+                TracerProvider,  # ty: ignore[unresolved-import]
+            )
+            from opentelemetry.sdk.trace.export import (  # ty: ignore[unresolved-import]
+                BatchSpanProcessor,  # ty: ignore[unresolved-import]
+            )
         except ModuleNotFoundError as exc:  # pragma: no cover - optional dependency
             raise LifecycleError("opentelemetry-sdk-missing") from exc
 

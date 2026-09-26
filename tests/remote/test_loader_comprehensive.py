@@ -808,9 +808,8 @@ class TestSyncRemoteManifest:
             rl,
             "record_remote_failure",
             side_effect=lambda *a, **kw: calls.append((a, kw)),
-        ):
-            with pytest.raises(Exception):
-                await sync_remote_manifest(resolver, cfg)
+        ), pytest.raises(Exception):
+            await sync_remote_manifest(resolver, cfg)
         assert len(calls) >= 1
 
     async def test_per_domain_counts_aggregated(

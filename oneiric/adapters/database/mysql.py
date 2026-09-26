@@ -59,7 +59,7 @@ class MySQLDatabaseAdapter:
         factory = self._pool_factory
         if factory is None:
             try:
-                import aiomysql
+                import aiomysql  # ty: ignore[unresolved-import]
             except ModuleNotFoundError as exc:  # pragma: no cover - defensive
                 raise LifecycleError("aiomysql-missing") from exc
             factory = aiomysql.create_pool

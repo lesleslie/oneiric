@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 import anyio
+import anyio.lowlevel
 import pytest
 
 from oneiric.runtime.load_testing import (
@@ -37,7 +38,7 @@ async def test_run_load_test_handles_payload_and_errors() -> None:
         seen_payload_lengths.append(len(payload) if payload is not None else None)
         if task_id == 1:
             raise ValueError("boom")
-        await anyio.sleep(0)
+        await anyio.lowlevel.checkpoint()
 
     profile = LoadTestProfile(
         total_tasks=3,
@@ -77,9 +78,8 @@ async def test_run_tasks_reraises_cancellation() -> None:
     with patch(
         "oneiric.runtime.load_testing.anyio.get_cancelled_exc_class",
         return_value=SentinelCancelled,
-    ):
-        with pytest.raises(BaseExceptionGroup) as excinfo:
-            await run_load_test(profile, workload=workload)  # type: ignore[arg-type]
+    ), pytest.raises(BaseExceptionGroup) as excinfo:
+        await run_load_test(profile, workload=workload)  # type: ignore[arg-type]
 
     assert any(isinstance(exc, SentinelCancelled) for exc in excinfo.value.exceptions)
 

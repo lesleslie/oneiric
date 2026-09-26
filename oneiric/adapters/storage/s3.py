@@ -108,8 +108,8 @@ class S3StorageAdapter(EnsureClientMixin):
             self._client = await self._client_factory()
             return
         try:
-            import aioboto3
-            from botocore.config import Config
+            import aioboto3  # ty: ignore[unresolved-import]
+            from botocore.config import Config  # ty: ignore[unresolved-import]
         except ModuleNotFoundError as exc:  # pragma: no cover - defensive
             raise LifecycleError("aioboto3-missing") from exc
 
@@ -414,8 +414,8 @@ class S3StorageAdapter(EnsureClientMixin):
         if cached is not None:
             return cached
         try:
-            import boto3
-            from botocore.config import Config
+            import boto3  # ty: ignore[unresolved-import]
+            from botocore.config import Config  # ty: ignore[unresolved-import]
         except ModuleNotFoundError as exc:  # pragma: no cover - defensive
             raise LifecycleError("boto3-missing") from exc
 

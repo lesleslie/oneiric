@@ -17,11 +17,9 @@ class ConcreteOTelStorageAdapter(OTelStorageAdapter):
 
     async def store_metrics(self, metrics: list[dict]) -> None:
         """Store metrics - stub for testing."""
-        pass
 
     async def store_log(self, log: dict) -> None:
         """Store log - stub for testing."""
-        pass
 
     async def find_similar_traces(
         self, embedding: list[float], threshold: float = 0.85

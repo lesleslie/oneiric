@@ -251,12 +251,12 @@ class TestStackLevelBoundsValidation:
 
     def test_stack_level_at_max_bound_accepted(self):
         """Stack level at maximum bound accepted."""
-        is_valid, error = validate_stack_level_bounds(100)
+        is_valid, _error = validate_stack_level_bounds(100)
         assert is_valid
 
     def test_stack_level_at_min_bound_accepted(self):
         """Stack level at minimum bound accepted."""
-        is_valid, error = validate_stack_level_bounds(-100)
+        is_valid, _error = validate_stack_level_bounds(-100)
         assert is_valid
 
     def test_stack_level_exceeds_max_rejected(self):

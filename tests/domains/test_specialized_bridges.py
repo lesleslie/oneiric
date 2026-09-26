@@ -1072,7 +1072,7 @@ class TestWorkflowBridgeUncoveredPaths:
         )
 
     def test_dag_specs_returns_copy(self) -> None:
-        resolver, lifecycle, settings, bridge = self._make_bridge()
+        resolver, _lifecycle, _settings, bridge = self._make_bridge()
         resolver.register(
             Candidate(
                 domain="workflow",
@@ -1088,13 +1088,13 @@ class TestWorkflowBridgeUncoveredPaths:
         assert "wf" in specs
 
     def test_update_settings_refreshes_queue_category_when_no_override(self) -> None:
-        resolver, lifecycle, settings, bridge = self._make_bridge(queue_category=None)
+        _resolver, _lifecycle, _settings, bridge = self._make_bridge(queue_category=None)
         new_settings = LayerSettings(options={"queue_category": "queue.new"})
         bridge.update_settings(new_settings)
         assert bridge._queue_category == "queue.new"
 
     def test_update_settings_preserves_override_queue_category(self) -> None:
-        resolver, lifecycle, settings, bridge = self._make_bridge(
+        _resolver, _lifecycle, _settings, bridge = self._make_bridge(
             queue_category="queue.fixed"
         )
         new_settings = LayerSettings(options={"queue_category": "queue.new"})
@@ -1103,7 +1103,7 @@ class TestWorkflowBridgeUncoveredPaths:
 
     @pytest.mark.asyncio
     async def test_execute_dag_raises_without_task_bridge(self) -> None:
-        resolver, lifecycle, settings, bridge = self._make_bridge()
+        resolver, _lifecycle, _settings, bridge = self._make_bridge()
         resolver.register(
             Candidate(
                 domain="workflow",
@@ -1157,7 +1157,7 @@ class TestWorkflowBridgeUncoveredPaths:
 
     @pytest.mark.asyncio
     async def test_enqueue_workflow_raises_without_queue_bridge(self) -> None:
-        resolver, lifecycle, settings, bridge = self._make_bridge()
+        resolver, _lifecycle, _settings, bridge = self._make_bridge()
         resolver.register(
             Candidate(
                 domain="workflow",
@@ -1173,7 +1173,7 @@ class TestWorkflowBridgeUncoveredPaths:
     @pytest.mark.asyncio
     async def test_enqueue_workflow_raises_for_missing_workflow(self) -> None:
         queue_bridge = FakeQueueBridge()
-        resolver, lifecycle, settings, bridge = self._make_bridge(
+        _resolver, _lifecycle, _settings, bridge = self._make_bridge(
             queue_bridge=queue_bridge
         )
         with pytest.raises(Exception, match="workflow-missing"):
@@ -1213,17 +1213,17 @@ class TestWorkflowBridgeUncoveredPaths:
             await bridge.enqueue_workflow("broken-wf")
 
     def test_get_dag_spec_raises_for_missing_key(self) -> None:
-        resolver, lifecycle, settings, bridge = self._make_bridge()
+        _resolver, _lifecycle, _settings, bridge = self._make_bridge()
         with pytest.raises(Exception, match="workflow-dag-missing"):
             bridge._get_dag_spec("nonexistent")
 
     def test_build_task_definitions_raises_for_missing_fields(self) -> None:
-        resolver, lifecycle, settings, bridge = self._make_bridge()
+        _resolver, _lifecycle, _settings, bridge = self._make_bridge()
         with pytest.raises(Exception, match="workflow-dag-node-missing-fields"):
             bridge._build_task_definitions({"nodes": [{"task": "t1"}]}, None)
 
     def test_load_checkpoint_data_returns_passed_checkpoint(self) -> None:
-        resolver, lifecycle, settings, bridge = self._make_bridge()
+        _resolver, _lifecycle, _settings, bridge = self._make_bridge()
         data = {"step1": "done"}
         result = bridge._load_checkpoint_data(
             "wf", data, use_checkpoint_store=True, resume_from_checkpoint=True
@@ -1231,7 +1231,7 @@ class TestWorkflowBridgeUncoveredPaths:
         assert result == {"step1": "done"}
 
     def test_load_checkpoint_data_returns_empty_when_store_disabled(self) -> None:
-        resolver, lifecycle, settings, bridge = self._make_bridge()
+        _resolver, _lifecycle, _settings, bridge = self._make_bridge()
         result = bridge._load_checkpoint_data(
             "wf", None, use_checkpoint_store=False, resume_from_checkpoint=True
         )
@@ -1242,7 +1242,7 @@ class TestWorkflowBridgeUncoveredPaths:
 
         store = WorkflowCheckpointStore(tmp_path / "ckpt.sqlite")
         store.save("wf", {"step1": "ok"})
-        resolver, lifecycle, settings, bridge = self._make_bridge(
+        _resolver, _lifecycle, _settings, bridge = self._make_bridge(
             checkpoint_store=store
         )
         result = bridge._load_checkpoint_data(
@@ -1251,7 +1251,7 @@ class TestWorkflowBridgeUncoveredPaths:
         assert result == {"step1": "ok"}
 
     def test_resolve_scheduler_details_handles_non_dict_metadata(self) -> None:
-        resolver, lifecycle, settings, bridge = self._make_bridge()
+        _resolver, _lifecycle, _settings, bridge = self._make_bridge()
         candidate = Candidate(
             domain="workflow",
             key="wf",

@@ -208,7 +208,7 @@ async def test_search_no_filter(
     """search() uses $2 as limit param when no filter_expr (line 132)."""
     adapter, conn = pool_adapter
     await adapter.search("items", [0.1, 0.2], limit=5)
-    sql, params = conn.fetch_calls[-1]
+    sql, _params = conn.fetch_calls[-1]
     assert "$2" in sql
     assert "metadata @> $2::jsonb" not in sql
 

@@ -39,7 +39,6 @@ class MockRefreshingSecrets(MockSecrets):
 
     async def rotate(self, include_provider_cache: bool = False) -> None:
         self.rotate_calls += 1
-        return None
 
 
 # RuntimeOrchestrator Tests
@@ -742,7 +741,7 @@ class TestRuntimeOrchestratorHealthSnapshot:
         )
         resolver = Resolver()
         lifecycle = LifecycleManager(resolver)
-        lifecycle.all_statuses = lambda: []  # type: ignore[assignment]
+        lifecycle.all_statuses = list  # type: ignore[assignment]
         secrets = MockSecrets()
         health_path = tmp_path / "health.json"
 

@@ -16,7 +16,7 @@ import pytest
 import typer
 from typer.testing import CliRunner
 
-from oneiric.cli.base import OneiricCLIBase, ExitCode
+from oneiric.cli.base import ExitCode, OneiricCLIBase
 
 # ---------------------------------------------------------------------------
 # Fixtures

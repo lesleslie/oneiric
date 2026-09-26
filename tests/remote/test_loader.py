@@ -343,13 +343,12 @@ class TestManifestParsing:
         with patch(
             "oneiric.remote.loader.verify_manifest_signatures",
             return_value=(True, None, 1),
-        ):
-            with pytest.raises(ValueError, match="expired"):
-                _parse_manifest(
-                    json.dumps(manifest_dict),
-                    verify_signature=True,
-                    signature_policy=policy,
-                )
+        ), pytest.raises(ValueError, match="expired"):
+            _parse_manifest(
+                json.dumps(manifest_dict),
+                verify_signature=True,
+                signature_policy=policy,
+            )
 
     def test_parse_manifest_max_age_enforced(self):
         """Max age policy rejects stale signatures."""
@@ -367,13 +366,12 @@ class TestManifestParsing:
         with patch(
             "oneiric.remote.loader.verify_manifest_signatures",
             return_value=(True, None, 1),
-        ):
-            with pytest.raises(ValueError, match="maximum age"):
-                _parse_manifest(
-                    json.dumps(manifest_dict),
-                    verify_signature=True,
-                    signature_policy=policy,
-                )
+        ), pytest.raises(ValueError, match="maximum age"):
+            _parse_manifest(
+                json.dumps(manifest_dict),
+                verify_signature=True,
+                signature_policy=policy,
+            )
 
 
 # Entry Validation Tests

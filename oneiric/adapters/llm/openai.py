@@ -116,7 +116,7 @@ class OpenAILLMAdapter(LLMBase):
             return self._client
 
         try:
-            import openai
+            import openai  # ty: ignore[unresolved-import]
         except ImportError as e:
             msg = "openai package required for OpenAI LLM adapter"
             raise ImportError(msg) from e

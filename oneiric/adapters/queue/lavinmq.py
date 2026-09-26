@@ -255,7 +255,9 @@ class LavinMQQueueAdapter:
                 return False
             # Check if client has active connection
             try:
-                from aiomqtt import Client as MqttClient
+                from aiomqtt import (  # ty: ignore[unresolved-import]
+                    Client as MqttClient,  # ty: ignore[unresolved-import]
+                )
 
                 if isinstance(self._mqtt_client, MqttClient):
                     return True
@@ -423,7 +425,7 @@ class LavinMQQueueAdapter:
             connection = self._amqp_connection_factory(self._amqp_connection_kwargs())
         else:
             try:
-                import aio_pika
+                import aio_pika  # ty: ignore[unresolved-import]
             except ModuleNotFoundError as exc:
                 raise LifecycleError(
                     "aio-pika-not-installed: install optional extra "
@@ -483,7 +485,7 @@ class LavinMQQueueAdapter:
         if self._amqp_channel_factory:
             return type("Message", (), {"body": body, "headers": headers})()
         try:
-            from aio_pika import Message
+            from aio_pika import Message  # ty: ignore[unresolved-import]
         except ModuleNotFoundError as exc:
             raise LifecycleError(
                 "aio-pika-not-installed: install optional extra 'oneiric[queue-rabbitmq]'"
@@ -515,7 +517,7 @@ class LavinMQQueueAdapter:
     async def _init_mqtt(self) -> None:
         """Initialize MQTT client and subscription."""
         try:
-            import aiomqtt
+            import aiomqtt  # ty: ignore[unresolved-import]
         except ModuleNotFoundError as exc:
             raise LifecycleError(
                 "aiomqtt-not-installed: install 'aiomqtt' for MQTT support"

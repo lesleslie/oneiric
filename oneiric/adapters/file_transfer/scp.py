@@ -75,7 +75,7 @@ class SCPFileTransferAdapter:
 
         if self._asyncssh is None:
             try:
-                import asyncssh
+                import asyncssh  # ty: ignore[unresolved-import]
             except ModuleNotFoundError as exc:  # pragma: no cover - optional dependency
                 raise LifecycleError(
                     "asyncssh-required: install asyncssh to use SCPFileTransferAdapter"

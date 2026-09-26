@@ -7,10 +7,9 @@ paths by injecting a minimal in-memory client via the redis_client parameter.
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any
+from typing import Any, Self
 
 import pytest
-
 from coredis.exceptions import (
     ResponseError,
     StreamDuplicateConsumerGroupError,
@@ -211,10 +210,10 @@ async def test_init_pool_init_via_aenter() -> None:
     """
 
     class MockWithAenter(MockRedisClient):
-        async def __aenter__(self) -> MockWithAenter:
+        async def __aenter__(self) -> Self:
             return self
 
-        async def __aexit__(self, *args: Any) -> None:
+        async def __aexit__(self, *args: object) -> None:
             return None
 
     client = MockWithAenter()
@@ -253,11 +252,11 @@ async def test_init_skips_aenter_for_injected_client() -> None:
             super().__init__()
             self.aenter_calls = 0
 
-        async def __aenter__(self) -> MockWithAenter:
+        async def __aenter__(self) -> Self:
             self.aenter_calls += 1
             return self
 
-        async def __aexit__(self, *args: Any) -> None:
+        async def __aexit__(self, *args: object) -> None:
             return None
 
     client = MockWithAenter()
@@ -286,7 +285,7 @@ async def test_init_clears_client_when_aenter_raises() -> None:
         async def __aenter__(self) -> None:
             raise RuntimeError("pool init boom")
 
-        async def __aexit__(self, *args: Any) -> None:
+        async def __aexit__(self, *args: object) -> None:
             return None
 
     client = AenterRaises()
