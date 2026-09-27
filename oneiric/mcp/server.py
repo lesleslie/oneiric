@@ -14,6 +14,9 @@ into this entrypoint at startup.
 
 from __future__ import annotations
 
+import hashlib
+import json
+import os
 from typing import TYPE_CHECKING, Any, Protocol
 
 from fastmcp import FastMCP
@@ -25,10 +28,16 @@ from mcp_common.auth.provider import IdentityProvider
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+from oneiric.core.logging import get_logger as _oneiric_get_logger
+
 if TYPE_CHECKING:  # pragma: no cover - guarded import
     from oneiric.mcp.adapter_registry import OneiricAdapterRegistry
     from oneiric.mcp.health import HealthFeedState
     from oneiric.mcp.store import SubstrateStore
+
+# REQ-RCR-008: per-call audit log for every oneiric_report_runtime call.
+# Structured log fields are picked up by Oneiric's JSON logger formatter.
+_runtime_audit_logger = _oneiric_get_logger("oneiric.mcp.runtime_registry.audit")
 
 
 class _ConfigLike(Protocol):
@@ -89,7 +98,10 @@ def _resolve_feeds(
 
         feeds = {
             name: _HealthFeedState(name=name)
-            for name in ("settings", "context", "progress")
+            # REQ-RCR-011: runtime_registry feed participates in /health
+            # aggregator (R3 wiring-discipline fix). Without this entry
+            # the new feed exists but doesn't surface in the aggregate.
+            for name in ("settings", "context", "progress", "runtime_registry")
         }
     return feeds
 
@@ -100,6 +112,7 @@ def _register_substrate_tools(
     store: SubstrateStore,
     feeds: dict[str, HealthFeedState],
     service_name: str,
+    auth_enabled: bool,
 ) -> None:
     """Register the 6 substrate tools (3 reads + 3 writes).
 
@@ -110,7 +123,11 @@ def _register_substrate_tools(
     # ----- T7: read_settings -----
 
     @mcp.tool()
-    @require_auth(permission=Permission.READ, service_name=service_name)
+    @require_auth(
+        permission=Permission.READ,
+        service_name=service_name,
+        allow_anonymous=not auth_enabled,
+    )
     async def read_settings() -> dict[str, Any]:
         """Return the current settings record + history."""
         feed = feeds["settings"]
@@ -135,7 +152,11 @@ def _register_substrate_tools(
     # ----- T8: write_settings -----
 
     @mcp.tool()
-    @require_auth(permission=Permission.WRITE, service_name=service_name)
+    @require_auth(
+        permission=Permission.WRITE,
+        service_name=service_name,
+        allow_anonymous=not auth_enabled,
+    )
     async def write_settings(
         version: str,
         source: str | None = None,
@@ -159,7 +180,11 @@ def _register_substrate_tools(
     # ----- T9: read_context -----
 
     @mcp.tool()
-    @require_auth(permission=Permission.READ, service_name=service_name)
+    @require_auth(
+        permission=Permission.READ,
+        service_name=service_name,
+        allow_anonymous=not auth_enabled,
+    )
     async def read_context() -> dict[str, Any]:
         """Return the current ContextVersion per tenant + history."""
         feed = feeds["context"]
@@ -188,7 +213,11 @@ def _register_substrate_tools(
     # ----- T10: write_context -----
 
     @mcp.tool()
-    @require_auth(permission=Permission.WRITE, service_name=service_name)
+    @require_auth(
+        permission=Permission.WRITE,
+        service_name=service_name,
+        allow_anonymous=not auth_enabled,
+    )
     async def write_context(
         tenant_id: str,
         version: str,
@@ -220,7 +249,11 @@ def _register_substrate_tools(
     # ----- T11: read_progress -----
 
     @mcp.tool()
-    @require_auth(permission=Permission.READ, service_name=service_name)
+    @require_auth(
+        permission=Permission.READ,
+        service_name=service_name,
+        allow_anonymous=not auth_enabled,
+    )
     async def read_progress() -> dict[str, Any]:
         """Return the progress snapshots per workflow."""
         feed = feeds["progress"]
@@ -250,7 +283,11 @@ def _register_substrate_tools(
     # ----- T12: write_progress -----
 
     @mcp.tool()
-    @require_auth(permission=Permission.WRITE, service_name=service_name)
+    @require_auth(
+        permission=Permission.WRITE,
+        service_name=service_name,
+        allow_anonymous=not auth_enabled,
+    )
     async def write_progress(
         workflow_id: str,
         stage: str,
@@ -288,6 +325,7 @@ def _register_scheduler_tools(
     *,
     processor: _ProcessorLike | None,
     service_name: str,
+    auth_enabled: bool,
 ) -> None:
     """Register the ``schedule_task`` MCP tool (T13).
 
@@ -322,7 +360,11 @@ def _register_scheduler_tools(
         )
 
     @mcp.tool()
-    @require_auth(permission=Permission.WRITE, service_name=service_name)
+    @require_auth(
+        permission=Permission.WRITE,
+        service_name=service_name,
+        allow_anonymous=not auth_enabled,
+    )
     async def schedule_task(
         workflow: str,
         context: dict[str, Any] | None = None,
@@ -344,8 +386,9 @@ def _register_adapter_tools(
     *,
     registry: OneiricAdapterRegistry,
     service_name: str,
+    auth_enabled: bool,
 ) -> None:
-    """Register the 7 ``adapter_registry`` tools (Phase 1 of Dhara decomposition).
+    """Register the 8 ``adapter_registry`` + contract-info tools.
 
     Ported from ``dhara.mcp.tools.group_registers.register_adapter_registry_group``
     but rewired to use Oneiric's local JSON-backed registry instead of
@@ -353,16 +396,136 @@ def _register_adapter_tools(
     convention (READ / WRITE only — Dhara used ``auth("list")`` which is
     not a valid mcp-common Permission enum member).
 
+    The registration is split across per-tool helpers so each helper
+    stays under the project's ruff ``max-branches = 15`` ceiling
+    (C901). The 8 helpers collectively register:
+
+    - ``oneiric_get_contract_info`` (static contract payload)
+    - 2 WRITE tools: ``oneiric_store_adapter``, ``oneiric_report_runtime``
+    - 5 READ tools: ``oneiric_get_adapter``, ``oneiric_list_adapters``,
+      ``oneiric_list_adapter_versions``, ``oneiric_validate_adapter``,
+      ``oneiric_get_adapter_health``
+
     Per-tool HealthFeedState aggregation is DEFERRED to a follow-up; the
-    7 tools do not write to the existing ``settings`` / ``context`` /
+    tools do not write to the existing ``settings`` / ``context`` /
     ``progress`` feeds (consistent with ``schedule_task``, which also
     lacks a per-tool feed). The aggregate /health endpoint continues to
     surface those 3 substrate feeds; adapter health is observable through
     the ``oneiric_get_adapter_health`` tool itself.
     """
+    _register_contract_info_tool(
+        mcp, service_name=service_name, auth_enabled=auth_enabled
+    )
+    _register_store_adapter_tool(
+        mcp,
+        registry=registry,
+        service_name=service_name,
+        auth_enabled=auth_enabled,
+    )
+    _register_report_runtime_tool(
+        mcp,
+        registry=registry,
+        service_name=service_name,
+        auth_enabled=auth_enabled,
+    )
+    _register_get_adapter_tool(
+        mcp,
+        registry=registry,
+        service_name=service_name,
+        auth_enabled=auth_enabled,
+    )
+    _register_list_adapters_tool(
+        mcp,
+        registry=registry,
+        service_name=service_name,
+        auth_enabled=auth_enabled,
+    )
+    _register_list_adapter_versions_tool(
+        mcp,
+        registry=registry,
+        service_name=service_name,
+        auth_enabled=auth_enabled,
+    )
+    _register_validate_adapter_tool(
+        mcp,
+        registry=registry,
+        service_name=service_name,
+        auth_enabled=auth_enabled,
+    )
+    _register_get_adapter_health_tool(
+        mcp,
+        registry=registry,
+        service_name=service_name,
+        auth_enabled=auth_enabled,
+    )
+
+
+def _register_contract_info_tool(
+    mcp: FastMCP, *, service_name: str, auth_enabled: bool
+) -> None:
+    """Register ``oneiric_get_contract_info`` (static contract payload)."""
 
     @mcp.tool()
-    @require_auth(permission=Permission.WRITE, service_name=service_name)
+    @require_auth(
+        permission=Permission.READ,
+        service_name=service_name,
+        allow_anonymous=not auth_enabled,
+    )
+    async def oneiric_get_contract_info() -> dict[str, Any]:
+        """Return the Oneiric MCP contract summary."""
+        return {
+            "ok": True,
+            "server": {
+                "name": service_name,
+                "transport": "FastMCP HTTP",
+                "http_endpoints": [
+                    "/health",
+                    "/metrics",
+                ],
+            },
+            "tool_groups": {
+                "substrate_state": [
+                    "read_settings",
+                    "write_settings",
+                    "read_context",
+                    "write_context",
+                    "read_progress",
+                    "write_progress",
+                ],
+                "scheduler": ["schedule_task"],
+                "adapter_registry": [
+                    "store_adapter",
+                    "get_adapter",
+                    "list_adapters",
+                    "list_adapter_versions",
+                    "validate_adapter",
+                    "get_adapter_health",
+                    "report_runtime",
+                ],
+                "health": ["mcp-common health tools"],
+            },
+            "schema_versions": {
+                "substrate": 1,
+                "adapter_registry": 1,
+            },
+        }
+
+
+def _register_store_adapter_tool(
+    mcp: FastMCP,
+    *,
+    registry: OneiricAdapterRegistry,
+    service_name: str,
+    auth_enabled: bool,
+) -> None:
+    """Register ``oneiric_store_adapter`` (catalog write)."""
+
+    @mcp.tool()
+    @require_auth(
+        permission=Permission.WRITE,
+        service_name=service_name,
+        allow_anonymous=not auth_enabled,
+    )
     async def oneiric_store_adapter(
         domain: str,
         key: str,
@@ -396,51 +559,114 @@ def _register_adapter_tools(
             "message": f"Stored adapter {adapter_id} @ {version}",
         }
 
-    @mcp.tool()
-    @require_auth(permission=Permission.READ, service_name=service_name)
-    async def oneiric_get_contract_info() -> dict[str, Any]:
-        """Return the Oneiric MCP contract summary."""
-        return {
-            "ok": True,
-            "server": {
-                "name": service_name,
-                "transport": "FastMCP HTTP",
-                "http_endpoints": [
-                    "/health",
-                    "/healthz",
-                    "/ready",
-                    "/readyz",
-                    "/metrics",
-                ],
-            },
-            "tool_groups": {
-                "substrate_state": [
-                    "read_settings",
-                    "write_settings",
-                    "read_context",
-                    "write_context",
-                    "read_progress",
-                    "write_progress",
-                ],
-                "scheduler": ["schedule_task"],
-                "adapter_registry": [
-                    "store_adapter",
-                    "get_adapter",
-                    "list_adapters",
-                    "list_adapter_versions",
-                    "validate_adapter",
-                    "get_adapter_health",
-                ],
-                "health": ["mcp-common health tools"],
-            },
-            "schema_versions": {
-                "substrate": 1,
-                "adapter_registry": 1,
-            },
-        }
+
+def _register_report_runtime_tool(
+    mcp: FastMCP,
+    *,
+    registry: OneiricAdapterRegistry,
+    service_name: str,
+    auth_enabled: bool,
+) -> None:
+    """Register ``oneiric_report_runtime`` (runtime facts publisher).
+
+    REQ-RCR-007: this is the ONE write tool that requires auth even on
+    loopback. R5's reasoning: read-only probes (oneiric_get_adapter_health
+    etc.) are loopback-trusted because worst case is a malicious local
+    process reading the registry. A write tool that mutates the
+    catalog-of-truth is different — a malicious local process can poison
+    every component's runtime facts. Allow_anonymous=False overrides the
+    loopback-bypass that other tools inherit from allow_anonymous=not
+    auth_enabled.
+    """
 
     @mcp.tool()
-    @require_auth(permission=Permission.READ, service_name=service_name)
+    @require_auth(
+        permission=Permission.WRITE, service_name=service_name, allow_anonymous=False
+    )
+    async def oneiric_report_runtime(
+        domain: str,
+        key: str,
+        provider: str,
+        runtime_facts: dict[str, Any],
+        caller_component: str,
+    ) -> dict[str, Any]:
+        """Publish runtime facts for one adapter.
+
+        The caller MUST have an existing catalog entry (call
+        oneiric_store_adapter first) — this tool does NOT auto-create
+        catalog entries (would pollute the catalog with unsourced
+        runtime facts).
+
+        Server-side sanitization is applied BEFORE persistence (see
+        oneiric.mcp.adapter_registry._sanitize_runtime_facts): secret-
+        shaped keys are replaced with "<redacted>" and URL userinfo is
+        scrubbed. The list of redacted key paths is stored in
+        runtime_facts.redacted_secrets.
+
+        An audit record is emitted per call (REQ-RCR-008):
+        ``runtime-audit caller_pid=<pid> caller_component=<str> domain=<d>
+        key=<k> provider=<p> fact_count=<n> payload_sha256=<hex12>
+        status=ok|fail reason=<str>``.
+
+        Returns the adapter_id + fact_count + payload_sha256 (so the
+        caller can correlate the audit log entry).
+        """
+        adapter_id = f"{domain}:{key}:{provider}"
+        payload_bytes = json.dumps(runtime_facts, sort_keys=True).encode()
+        payload_sha256 = hashlib.sha256(payload_bytes).hexdigest()[:12]
+        fact_count = len(runtime_facts)
+        caller_pid = os.getpid()
+        audit_extra: dict[str, Any] = {
+            "caller_pid": caller_pid,
+            "caller_component": caller_component,
+            "domain": domain,
+            "key": key,
+            "provider": provider,
+            "fact_count": fact_count,
+            "payload_sha256": payload_sha256,
+        }
+        try:
+            await registry.set_runtime_facts_async(
+                domain=domain,
+                key=key,
+                provider=provider,
+                runtime_facts=runtime_facts,
+            )
+        except KeyError as exc:
+            audit_extra["status"] = "fail"
+            audit_extra["reason"] = str(exc)
+            _runtime_audit_logger.error("runtime-audit", extra=audit_extra)
+            return {"success": False, "error": str(exc)}
+        except (OSError, TypeError, ValueError) as exc:
+            audit_extra["status"] = "fail"
+            audit_extra["reason"] = str(exc)
+            _runtime_audit_logger.error("runtime-audit", extra=audit_extra)
+            return {"success": False, "error": str(exc)}
+        audit_extra["status"] = "ok"
+        _runtime_audit_logger.info("runtime-audit", extra=audit_extra)
+        return {
+            "success": True,
+            "adapter_id": adapter_id,
+            "fact_count": fact_count,
+            "payload_sha256": payload_sha256,
+        }
+
+
+def _register_get_adapter_tool(
+    mcp: FastMCP,
+    *,
+    registry: OneiricAdapterRegistry,
+    service_name: str,
+    auth_enabled: bool,
+) -> None:
+    """Register ``oneiric_get_adapter`` (catalog lookup)."""
+
+    @mcp.tool()
+    @require_auth(
+        permission=Permission.READ,
+        service_name=service_name,
+        allow_anonymous=not auth_enabled,
+    )
     async def oneiric_get_adapter(
         domain: str,
         key: str,
@@ -458,8 +684,22 @@ def _register_adapter_tools(
             return {"success": False, "error": f"Adapter not found: {domain}:{key}"}
         return {"success": True, "adapter": adapter}
 
+
+def _register_list_adapters_tool(
+    mcp: FastMCP,
+    *,
+    registry: OneiricAdapterRegistry,
+    service_name: str,
+    auth_enabled: bool,
+) -> None:
+    """Register ``oneiric_list_adapters`` (catalog enumeration with filters)."""
+
     @mcp.tool()
-    @require_auth(permission=Permission.READ, service_name=service_name)
+    @require_auth(
+        permission=Permission.READ,
+        service_name=service_name,
+        allow_anonymous=not auth_enabled,
+    )
     async def oneiric_list_adapters(
         domain: str | None = None,
         category: str | None = None,
@@ -483,8 +723,22 @@ def _register_adapter_tools(
             "adapters": adapters,
         }
 
+
+def _register_list_adapter_versions_tool(
+    mcp: FastMCP,
+    *,
+    registry: OneiricAdapterRegistry,
+    service_name: str,
+    auth_enabled: bool,
+) -> None:
+    """Register ``oneiric_list_adapter_versions`` (version history)."""
+
     @mcp.tool()
-    @require_auth(permission=Permission.READ, service_name=service_name)
+    @require_auth(
+        permission=Permission.READ,
+        service_name=service_name,
+        allow_anonymous=not auth_enabled,
+    )
     async def oneiric_list_adapter_versions(
         domain: str,
         key: str,
@@ -504,8 +758,22 @@ def _register_adapter_tools(
             }
         return {"success": True, "count": len(versions), "versions": versions}
 
+
+def _register_validate_adapter_tool(
+    mcp: FastMCP,
+    *,
+    registry: OneiricAdapterRegistry,
+    service_name: str,
+    auth_enabled: bool,
+) -> None:
+    """Register ``oneiric_validate_adapter`` (factory + deps validation)."""
+
     @mcp.tool()
-    @require_auth(permission=Permission.READ, service_name=service_name)
+    @require_auth(
+        permission=Permission.READ,
+        service_name=service_name,
+        allow_anonymous=not auth_enabled,
+    )
     async def oneiric_validate_adapter(
         domain: str,
         key: str,
@@ -521,21 +789,63 @@ def _register_adapter_tools(
             return {"success": False, "error": str(exc)}
         return {"success": True, "validation": result}
 
+
+def _register_get_adapter_health_tool(
+    mcp: FastMCP,
+    *,
+    registry: OneiricAdapterRegistry,
+    service_name: str,
+    auth_enabled: bool,
+) -> None:
+    """Register ``oneiric_get_adapter_health`` (probe + merge registry/runtime/health)."""
+
     @mcp.tool()
-    @require_auth(permission=Permission.READ, service_name=service_name)
+    @require_auth(
+        permission=Permission.READ,
+        service_name=service_name,
+        allow_anonymous=not auth_enabled,
+    )
     async def oneiric_get_adapter_health(
         domain: str,
         key: str,
         provider: str,
     ) -> dict[str, Any]:
-        """Probe adapter health via factory import; records last_check."""
+        """Probe adapter health; merge catalog + runtime facts in response.
+
+        Wire-shape change (Phase 1.6 of 2026-09-26 plan): response moves
+        from {success, health: {…}} to {success, registry: {…}|null,
+        runtime: {…}|null, health: {…}}. Additive — the existing
+        ``health`` key is preserved (factory-import probe), and the
+        ``registry`` (catalog record) + ``runtime`` (last pushed runtime
+        facts) are new. Per pre-1.0 backcompat policy, existing
+        consumers that read ``health`` keep working.
+        """
+        adapter = await registry.get_adapter_async(
+            domain=domain, key=key, provider=provider
+        )
+        if adapter is None:
+            return {
+                "success": True,
+                "registry": None,
+                "runtime": None,
+                "health": {
+                    "healthy": False,
+                    "error": f"Adapter not found: {domain}:{key}:{provider}",
+                    "last_check": None,
+                },
+            }
         try:
             health = await registry.check_adapter_health_async(
                 domain=domain, key=key, provider=provider
             )
         except (OSError, TypeError, ValueError) as exc:
             return {"success": False, "error": str(exc)}
-        return {"success": True, "health": health}
+        return {
+            "success": True,
+            "registry": adapter,
+            "runtime": adapter.get("runtime_facts"),
+            "health": health,
+        }
 
 
 def _register_health_route(mcp: FastMCP, *, feeds: dict[str, HealthFeedState]) -> None:
@@ -570,10 +880,12 @@ def build_mcp_server(
     Args:
         config: OneiricMCPConfig (or any object with a .name attribute).
         auth_config: mcp-common AuthConfig. When auth_config.enabled is
-            False, no BearerTokenMiddleware is installed; tools with
-            @require_auth still raise AuthenticationRequiredError at
-            call time (safe default — substrate tools refuse anonymous
-            calls).
+            False, no BearerTokenMiddleware is installed AND every
+            ``@require_auth`` decorator is given
+            ``allow_anonymous=True`` so substrate tools accept calls
+            without a Principal (loopback-trusted deployment model).
+            When ``True``, the middleware is wired and the decorators
+            reject anonymous callers via ``AuthenticationRequiredError``.
         providers: provider name -> IdentityProvider map. Empty when
             auth_config.enabled is False.
         store: SubstrateStore instance. Created lazily here if not
@@ -606,16 +918,19 @@ def build_mcp_server(
         store=resolved_store,
         feeds=resolved_feeds,
         service_name=auth_config.service_name,
+        auth_enabled=auth_config.enabled,
     )
     _register_scheduler_tools(
         mcp,
         processor=resolved_processor,
         service_name=auth_config.service_name,
+        auth_enabled=auth_config.enabled,
     )
     _register_adapter_tools(
         mcp,
         registry=resolved_adapter_registry,
         service_name=auth_config.service_name,
+        auth_enabled=auth_config.enabled,
     )
     _register_health_route(mcp, feeds=resolved_feeds)
 
