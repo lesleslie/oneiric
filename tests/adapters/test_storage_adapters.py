@@ -290,12 +290,26 @@ async def test_gcs_init_without_client_uses_google_cloud_storage(monkeypatch) ->
     fake_google_cloud.storage = fake_storage  # type: ignore[attr-defined]
     fake_google = types.ModuleType("google")
 
+    class FakeClientOptions:
+        """Minimal stand-in for google.api_core.client_options.ClientOptions."""
+
+        def __init__(self, api_endpoint: str | None = None, **_kwargs: Any) -> None:
+            self.api_endpoint = api_endpoint
+
+    fake_api_core = types.ModuleType("google.api_core")
+    fake_api_core_client_options = types.ModuleType("google.api_core.client_options")
+    fake_api_core_client_options.ClientOptions = FakeClientOptions  # type: ignore[attr-defined]
+
     monkeypatch.setitem(sys.modules, "google", fake_google)
     monkeypatch.setitem(sys.modules, "google.cloud", fake_google_cloud)
     monkeypatch.setitem(sys.modules, "google.cloud.storage", fake_storage)
     monkeypatch.setitem(sys.modules, "google.oauth2", fake_oauth2)
     monkeypatch.setitem(
         sys.modules, "google.oauth2.service_account", fake_service_account
+    )
+    monkeypatch.setitem(sys.modules, "google.api_core", fake_api_core)
+    monkeypatch.setitem(
+        sys.modules, "google.api_core.client_options", fake_api_core_client_options
     )
 
     adapter = GCSStorageAdapter(GCSStorageSettings(bucket="demo", project="my-project"))
@@ -380,12 +394,26 @@ async def test_gcs_init_with_endpoint_url_passes_client_options(monkeypatch) -> 
     fake_google_cloud.storage = fake_storage  # type: ignore[attr-defined]
     fake_google = types.ModuleType("google")
 
+    class FakeClientOptions:
+        """Minimal stand-in for google.api_core.client_options.ClientOptions."""
+
+        def __init__(self, api_endpoint: str | None = None, **_kwargs: Any) -> None:
+            self.api_endpoint = api_endpoint
+
+    fake_api_core = types.ModuleType("google.api_core")
+    fake_api_core_client_options = types.ModuleType("google.api_core.client_options")
+    fake_api_core_client_options.ClientOptions = FakeClientOptions  # type: ignore[attr-defined]
+
     monkeypatch.setitem(sys.modules, "google", fake_google)
     monkeypatch.setitem(sys.modules, "google.cloud", fake_google_cloud)
     monkeypatch.setitem(sys.modules, "google.cloud.storage", fake_storage)
     monkeypatch.setitem(sys.modules, "google.oauth2", fake_oauth2)
     monkeypatch.setitem(
         sys.modules, "google.oauth2.service_account", fake_service_account
+    )
+    monkeypatch.setitem(sys.modules, "google.api_core", fake_api_core)
+    monkeypatch.setitem(
+        sys.modules, "google.api_core.client_options", fake_api_core_client_options
     )
 
     adapter = GCSStorageAdapter(
@@ -398,8 +426,8 @@ async def test_gcs_init_with_endpoint_url_passes_client_options(monkeypatch) -> 
     await adapter.init()
     assert adapter._bucket is not None
     client_options = created[0]["client_options"]
-    assert client_options["api_endpoint"] == "http://127.0.0.1:4443"
-    assert client_options["use_auth_w_custom_endpoint"] is False
+    assert client_options.api_endpoint == "http://127.0.0.1:4443"
+    assert created[0]["use_auth_w_custom_endpoint"] is False
     await adapter.cleanup()
 
 

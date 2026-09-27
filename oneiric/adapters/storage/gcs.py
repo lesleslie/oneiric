@@ -71,12 +71,21 @@ class GCSStorageAdapter:
             except ModuleNotFoundError as exc:  # pragma: no cover - defensive
                 raise LifecycleError("google-cloud-storage-missing") from exc
             client_kwargs: dict[str, Any] = {}
-            client_options: dict[str, Any] = {}
             if self._settings.endpoint_url:
-                client_options["api_endpoint"] = self._settings.endpoint_url
-                client_options["use_auth_w_custom_endpoint"] = False
-            if client_options:
-                client_kwargs["client_options"] = client_options
+                # Per the official google-cloud-storage SDK: pass api_endpoint via
+                # ClientOptions AND set use_auth_w_custom_endpoint=False as a
+                # top-level storage.Client kwarg (NOT inside client_options —
+                # that would raise "ClientOptions does not accept an option").
+                # use_auth_w_custom_endpoint=False tells the SDK to use
+                # AnonymousCredentials when api_endpoint is custom.
+                try:
+                    from google.api_core.client_options import ClientOptions
+                except ModuleNotFoundError as exc:  # pragma: no cover - defensive
+                    raise LifecycleError("google-api-core-missing") from exc
+                client_kwargs["client_options"] = ClientOptions(
+                    api_endpoint=self._settings.endpoint_url
+                )
+                client_kwargs["use_auth_w_custom_endpoint"] = False
             if self._settings.credentials_file:
                 credentials: Any = (
                     service_account.Credentials.from_service_account_file(
