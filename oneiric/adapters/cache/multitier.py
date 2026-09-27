@@ -37,7 +37,8 @@ try:
 
     _COREDIS_AVAILABLE = True  # pragma: no cover
 except ImportError:  # pragma: no cover
-    Redis = TrackingCache = None
+    Redis: Any = None
+    TrackingCache: Any = None
 
     class RedisError(Exception):
         pass

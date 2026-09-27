@@ -918,19 +918,19 @@ def build_mcp_server(
         store=resolved_store,
         feeds=resolved_feeds,
         service_name=auth_config.service_name,
-        auth_enabled=auth_config.enabled,
+        auth_enabled=bool(auth_config.enabled),
     )
     _register_scheduler_tools(
         mcp,
         processor=resolved_processor,
         service_name=auth_config.service_name,
-        auth_enabled=auth_config.enabled,
+        auth_enabled=bool(auth_config.enabled),
     )
     _register_adapter_tools(
         mcp,
         registry=resolved_adapter_registry,
         service_name=auth_config.service_name,
-        auth_enabled=auth_config.enabled,
+        auth_enabled=bool(auth_config.enabled),
     )
     _register_health_route(mcp, feeds=resolved_feeds)
 

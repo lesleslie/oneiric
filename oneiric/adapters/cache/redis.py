@@ -21,7 +21,8 @@ try:
 
     _COREDIS_AVAILABLE = True  # pragma: no cover
 except ImportError:  # pragma: no cover - exercised when extras missing
-    Redis = LRUCache = None
+    Redis: Any = None
+    LRUCache: Any = None
 
     class _AbstractTrackingCache:  # type: ignore[no-redef]
         pass
@@ -195,7 +196,8 @@ class RedisCacheAdapter(EnsureClientMixin):
             self._client = self._create_client()
         try:
             await asyncio.wait_for(
-                self._client.ping(), timeout=self._settings.healthcheck_timeout  # ty: ignore[unresolved-attribute]
+                self._client.ping(),
+                timeout=self._settings.healthcheck_timeout,  # ty: ignore[unresolved-attribute]
             )
         except RedisError as exc:  # pragma: no cover - defensive log path
             self._logger.error("adapter-init-failed", error=str(exc))
