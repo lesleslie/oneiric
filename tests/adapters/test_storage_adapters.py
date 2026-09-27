@@ -348,6 +348,61 @@ async def test_gcs_init_with_credentials_file(monkeypatch, tmp_path) -> None:
     await adapter.cleanup()
 
 
+async def test_gcs_init_with_endpoint_url_passes_client_options(monkeypatch) -> None:
+    """init() wires endpoint_url into client_options={api_endpoint, use_auth_w_custom_endpoint=False}.
+
+    Per the official google-cloud-storage SDK contract, the api_endpoint override
+    travels via client_options (NOT as a top-level Client kwarg) and the SDK's
+    built-in use_auth_w_custom_endpoint=False flag auto-wires AnonymousCredentials
+    so we don't need to import google.auth.credentials.AnonymousCredentials.
+    """
+    import sys
+    import types
+
+    created: list[dict] = []
+
+    class FakeStorageClient:
+        def __init__(self, **kwargs: Any) -> None:
+            created.append(kwargs)
+            self._bucket = _FakeGCSBucket()
+
+        def bucket(self, name: str) -> _FakeGCSBucket:
+            return self._bucket
+
+    fake_storage = types.ModuleType("google.cloud.storage")
+    fake_storage.Client = FakeStorageClient  # type: ignore[attr-defined]
+
+    fake_service_account = types.ModuleType("google.oauth2.service_account")
+    fake_service_account.Credentials = object  # type: ignore[attr-defined]
+
+    fake_oauth2 = types.ModuleType("google.oauth2")
+    fake_google_cloud = types.ModuleType("google.cloud")
+    fake_google_cloud.storage = fake_storage  # type: ignore[attr-defined]
+    fake_google = types.ModuleType("google")
+
+    monkeypatch.setitem(sys.modules, "google", fake_google)
+    monkeypatch.setitem(sys.modules, "google.cloud", fake_google_cloud)
+    monkeypatch.setitem(sys.modules, "google.cloud.storage", fake_storage)
+    monkeypatch.setitem(sys.modules, "google.oauth2", fake_oauth2)
+    monkeypatch.setitem(
+        sys.modules, "google.oauth2.service_account", fake_service_account
+    )
+
+    adapter = GCSStorageAdapter(
+        GCSStorageSettings(
+            bucket="demo",
+            project="my-project",
+            endpoint_url="http://127.0.0.1:4443",
+        )
+    )
+    await adapter.init()
+    assert adapter._bucket is not None
+    client_options = created[0]["client_options"]
+    assert client_options["api_endpoint"] == "http://127.0.0.1:4443"
+    assert client_options["use_auth_w_custom_endpoint"] is False
+    await adapter.cleanup()
+
+
 class _AzureNotFound(Exception):
     status_code = 404
     error_code = "BlobNotFound"
