@@ -1,7 +1,7 @@
 # Bodai Deployability Rule 1 — Cross-Repo Audit & Migration Plan
 
 **Date:** 2026-09-26
-**Status:** Proposed
+**Status:** Audit Complete; Migration Phase not required
 **Owner:** @les
 **References:** [`oneiric/docs/adr/0001-deployability-discipline.md`](../adr/0001-deployability-discipline.md)
 
@@ -109,15 +109,15 @@ This catches regressions of Rule 3 (serverless-deployable cold-boot budget).
 
 | repo | est. violations | est. effort |
 |---|---|---|
-| oneiric | 0 (sanity check) | 0 days |
-| mcp-common | TBD after audit | 0.5-1 day |
-| akosha | TBD after audit | 1-2 days |
-| session-buddy | TBD after audit | 1-2 days |
-| crackerjack | TBD after audit | 0.5-1 day |
-| mahavishnu | TBD after audit | 2-4 days |
-| **total** | | **~1-2 weeks** |
+| oneiric | 0 | 0 days |
+| mcp-common | 0 | 0 days |
+| akosha | 0 | 0 days |
+| session-buddy | 0 | 0 days |
+| crackerjack | 0 | 0 days |
+| mahavishnu | 0 | 0 days |
+| **total** | **0** | **0 days** |
 
-Audit phase parallelizable across all 6 repos (different worktrees). Migration phase sequential within each repo, sequential across repos in dependency order.
+Audit phase complete (see results below). Migration phase not required.
 
 ## Success Criteria
 
@@ -137,6 +137,8 @@ For each repo:
 - **`__init__.py` re-exports.** If `mahavishnu/__init__.py` does `from .pool import PoolManager`, that's a Bodai-internal import, not a violation. The grep pattern matches on the package names, so internal re-exports are correctly excluded.
 
 ## Per-Repo Audit Kickoff Commands
+
+The following commands were run 2026-09-26. See the Audit Results section below for actual findings.
 
 ```bash
 # oneiric
@@ -172,6 +174,49 @@ git -C /Users/les/Projects/mcp-common grep -nE \
 
 The first run should be done immediately (parallel across repos) to populate the "TBD after audit" cells in the effort table above.
 
+## Audit Results (2026-09-26)
+
+Ran the kickoff commands above plus three additional patterns (`importlib.import_module(...)`, `importlib.util.find_spec(...)`, `sys.modules[...]`) across all 6 repos. Results:
+
+### Top-level audit (Rule 1 strict reading)
+
+| repo | `^from X` | `^import X` | total | status |
+|---|---|---|---|---|
+| oneiric | 0 | 0 | 0 | ✓ clean |
+| mahavishnu | 0 | 0 | 0 | ✓ clean |
+| akosha | 0 | 0 | 0 | ✓ clean |
+| session-buddy | 0 | 0 | 0 | ✓ clean |
+| crackerjack | 0 | 0 | 0 | ✓ clean |
+| mcp-common | 0 | 0 | 0 | ✓ clean |
+
+### Dynamic import audit (lazy + capability-detected patterns)
+
+| repo | `importlib.import_module` | `importlib.util.find_spec` (cross-Bodai only) | total | all acceptable under Rule 1? |
+|---|---|---|---|---|
+| oneiric | 1 (mcp_common.client — adapter integration) | 1 (keyring, non-Bodai) | 2 | ✓ yes (adapter + optional-dep) |
+| mahavishnu | 0 | 4 (akosha.storage×2, trafilatura, textual) | 4 | ✓ yes (capability detection + optional) |
+| akosha | 0 | 3 (mcp_common.server, mcp_common.ui, fastmcp) | 3 | ✓ yes (capability detection + optional) |
+| session-buddy | 1 (akosha.processing.embeddings — optional peer) | 0 cross-Bodai (rest are internal) | 1 | ✓ yes (optional peer with install guidance) |
+| crackerjack | 0 | 0 cross-Bodai | 0 | ✓ clean |
+| mcp-common | 0 | 0 cross-Bodai (rest are internal) | 0 | ✓ clean |
+
+### Three accepted patterns
+
+The audit revealed three legitimate patterns that Rule 1 endorses (each becomes an enumerated exception in [ADR 0001](../adr/0001-deployability-discipline.md#exceptions)):
+
+1. **Adapter integration** (`oneiric/adapters/vector/agentdb.py:76`) — when a module's purpose is to integrate with a peer, lazy import + try/except + raise a specific integration exception (e.g., `LifecycleError`) is the right pattern. Adapter cannot function without the peer; raising is correct.
+
+2. **Optional-peer with install guidance** (`session_buddy/sync.py:608`) — when the dep is OPTIONAL for the package but REQUIRED for a specific function, lazy import + try/except + raise a friendly `ImportError` with install guidance (e.g., `"Install with: uv add akosha"`) is the right pattern. General-case consumer is unaffected; only the specific feature surfaces the dependency.
+
+3. **Module-level capability detection** (`akosha/mcp/server.py:35, 39`) — `FOO_AVAILABLE = importlib.util.find_spec("peer")` at module scope is acceptable. `find_spec` checks if the peer CAN be imported without actually loading it; it's the install-time counterpart to `peer_reachable()` (which is the runtime health check). Use to gate optional integration paths.
+
+### Verdict
+
+All 6 Bodai cores satisfy Rule 1 as written (no top-level cross-Bodai imports). The two dynamic `importlib.import_module` calls and the dozens of `find_spec` calls are all in the endorsed patterns above. **No migration work is required.** This plan's success criteria are met.
+
+The migration recipe and per-repo kickoff commands above are kept as documentation for future audits (e.g., when a new Bodai component is added, or when peers change).
+
 ## Revision History
 
 - 2026-09-26 — Proposed. Drafted alongside oneiric ADR 0001.
+- 2026-09-26 — Audit Complete. Ran the 6-repo audit (top-level + dynamic patterns). Zero violations. Migration phase not required. Three accepted patterns identified and enumerated in ADR 0001 Exceptions section.
