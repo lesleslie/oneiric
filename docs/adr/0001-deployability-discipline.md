@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: active
 role: canonical
 kind: decision
 date: 2026-09-26
