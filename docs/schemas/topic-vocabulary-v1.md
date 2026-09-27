@@ -52,6 +52,7 @@ contribution workflow below.
 | `resolver` | Oneiric candidate discovery, precedence, explainability, and universal component resolution. |
 | `lifecycle-hooks` | Oneiric activation, health-check, hot-swap, rollback, and cleanup hook contracts. |
 | `decision-index` | `.claude/decisions/` README index file (canonical decision inventory). |
+| `deployability-discipline` | Bodai deployability rule: standalone-by-default, harness-agnostic interface, serverless-deployable runtime. See `oneiric/docs/adr/0001-deployability-discipline.md` (proposed 2026-09-26). |
 
 ## Contribution Workflow
 
