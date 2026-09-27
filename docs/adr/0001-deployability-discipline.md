@@ -159,9 +159,28 @@ For each existing Bodai core (mahavishnu, akosha, session-buddy, crackerjack):
 
 ## Exceptions
 
-Explicit, time-bounded exceptions MUST be enumerated in the consuming component's ADR (or a dedicated `docs/adr/XXXX-<reason>.md`) and reviewed annually. Known acceptable exceptions at the time of this writing:
+Explicit, time-bounded exceptions MUST be enumerated in the consuming component's ADR (or a dedicated `docs/adr/XXXX-<reason>.md`) and reviewed annually. Known acceptable patterns at the time of this writing:
+
+### Intentional couplings (raise when peer unreachable)
 
 - **MahavishnuPool + Session-Buddy delegation** — the `session_buddy` pool type is *defined* by coupling to Session-Buddy; it must raise `PoolConfigError` if Session-Buddy is unreachable, because the pool type has no baseline. This is the *only* currently-known intentional coupling; it is documented in `mahavishnu/docs/adr/004-adapter-architecture.md`.
+
+### Lazy import patterns (raise when peer unavailable for a specific feature)
+
+These three patterns emerged from the 2026-09-26 cross-repo audit (see [`docs/plans/2026-09-26-bodai-deployability-rule1-audit.md`](../plans/2026-09-26-bodai-deployability-rule1-audit.md)). All three are *compatible with* Rule 1 — Rule 1 prohibits top-level imports, not these structured lazy patterns.
+
+1. **Adapter integration** — when a module's purpose is to integrate with a peer (e.g., `oneiric/adapters/vector/agentdb.py:76` integrating with `mcp_common`), the lazy import is acceptable as long as the import failure surfaces a specific exception class (`LifecycleError`, `IntegrationError`, etc.) with clear context about which peer was missing. Adapter cannot function without the peer; raising is correct. *Do NOT* silently degrade to a no-op — that's misleading for an adapter whose entire job is to provide that integration.
+
+2. **Optional-peer with install guidance** — when the dep is OPTIONAL for the package but REQUIRED for a specific function (e.g., `session_buddy/sync.py:608` calling `akosha.processing.embeddings`), the lazy import is acceptable as long as the failure surfaces a friendly `ImportError` with install guidance (e.g., `"Install with: uv add akosha"`). The general-case consumer of the package is unaffected; only the specific feature that needs the peer surfaces the dependency. *Do NOT* swallow the error — the user explicitly opted into the feature and needs clear next steps.
+
+3. **Module-level capability detection** — `FOO_AVAILABLE = importlib.util.find_spec("peer")` at module scope (e.g., `akosha/mcp/server.py:35` checking for `mcp_common.server`) is acceptable. `find_spec` checks if a module *can* be imported without actually loading it; it's the install-time counterpart to `peer_reachable()` (which is the runtime health check). Use to gate optional integration paths at module load, so a missing peer causes a graceful degradation rather than an `ImportError` mid-operation.
+
+### Anti-patterns (still violations, even if lazy)
+
+- **Lazy import inside a function that silently swallows `ImportError`** and returns a sentinel value — hides the dependency from the user. Use pattern 2 above instead (raise with install guidance).
+- **`peer_reachable()` probe that raises `ConnectionError`** to the caller when the peer is unreachable — violates the "never raise for missing peer" rule of this ADR.
+- **`try: import peer / except: pass` at module scope** — equivalent to a top-level import; if the import succeeds at module load it has the same effect. Use pattern 3 above if the goal is to skip optional integration.
+- **Bare `import peer` in a class `__init__`** that doesn't gate behavior on success/failure — defeats the lazy-import benefit. Either raise with context (pattern 1) or check with `find_spec` first (pattern 3).
 
 ## Sign-offs
 
