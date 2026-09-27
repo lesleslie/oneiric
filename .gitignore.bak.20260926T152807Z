@@ -48,19 +48,6 @@ crackerjack-debug-*.log
 
 # XDG - State directories
 .claude/
-# Shared team content (whitelisted — decisions, agents, workflows, skills).
-# Directory entries MUST come before the `**` recursive entries so git's
-# pattern matching re-includes the directory before evaluating the recursive
-# pattern. Pattern matches mahavishnu's allowlist style. Per
-# oneiric/docs/adr/0001-deployability-discipline.md.
-!.claude/decisions/
-!.claude/decisions/**
-!.claude/agents/
-!.claude/agents/**
-!.claude/workflows/
-!.claude/workflows/**
-!.claude/skills/
-!.claude/skills/**
 .session-buddy/
 
 # XDG - DELETE candidates
@@ -147,4 +134,14 @@ playwright-junit.xml
 playwright-report/
 playwright-results.json
 test-results/
+
+# ============================================================================
+# Documentation — image assets
+# ============================================================================
+# Tracked images live under docs/assets/images/. Session scratch outputs
+# (named like "*-v4.png", "*-window.png", or anything dropped in
+# .scratch/) are local-only and must not be committed. The dot-prefix on
+# `.scratch` is load-bearing — the gitignore rule only matches with it.
+docs/assets/images/.scratch/
+docs/assets/images/.scratch/**
 # <<< bodai-shared-gitignore <<<

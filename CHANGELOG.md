@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.0] - 2026-09-27
+
+### Fixed
+
+- oneiric: Pre-warm every substrate feed to /health=200
+- oneiric: Resolve 7 ty errors in cache adapters + server auth wiring
+- oneiric: Split _register_adapter_tools to pass ruff C901
+
+### Documentation
+
+- oneiric: Accept ADR 0001 — all 6 Bodai core components signed off
+- oneiric: Add ADR 0001 — Bodai deployability discipline
+- oneiric: Add deployability-discipline pointer + register topic in vocab
+- oneiric: Add plan for Bodai deployability Rule 1 cross-repo audit
+- oneiric: Enumerate three lazy-import patterns accepted under Rule 1
+- oneiric: Fix ADR 0001 status from legacy 'accepted' to canonical 'active'
+- oneiric: Mark deployability Rule 1 audit complete
+
+### Internal
+
+- oneiric: Apply Bodai .claude/ standard allowlist in .gitignore
+- oneiric: Remove 54 tracked runtime artifacts + extend gitignore
+
 ## [0.24.0] - 2026-09-26
 
 ### Added
