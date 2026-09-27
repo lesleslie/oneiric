@@ -403,6 +403,44 @@ async def test_gcs_init_with_endpoint_url_passes_client_options(monkeypatch) -> 
     await adapter.cleanup()
 
 
+async def test_gcs_init_without_endpoint_url_omits_client_options(monkeypatch) -> None:
+    """Regression: init() must not pass an empty client_options dict when endpoint_url is unset."""
+    import sys
+    import types
+
+    created: list[dict] = []
+
+    class FakeStorageClient:
+        def __init__(self, **kwargs: Any) -> None:
+            created.append(kwargs)
+            self._bucket = _FakeGCSBucket()
+
+        def bucket(self, name: str) -> _FakeGCSBucket:
+            return self._bucket
+
+    fake_storage = types.ModuleType("google.cloud.storage")
+    fake_storage.Client = FakeStorageClient  # type: ignore[attr-defined]
+    fake_service_account = types.ModuleType("google.oauth2.service_account")
+    fake_service_account.Credentials = object  # type: ignore[attr-defined]
+    fake_oauth2 = types.ModuleType("google.oauth2")
+    fake_google_cloud = types.ModuleType("google.cloud")
+    fake_google_cloud.storage = fake_storage  # type: ignore[attr-defined]
+    fake_google = types.ModuleType("google")
+
+    monkeypatch.setitem(sys.modules, "google", fake_google)
+    monkeypatch.setitem(sys.modules, "google.cloud", fake_google_cloud)
+    monkeypatch.setitem(sys.modules, "google.cloud.storage", fake_storage)
+    monkeypatch.setitem(sys.modules, "google.oauth2", fake_oauth2)
+    monkeypatch.setitem(
+        sys.modules, "google.oauth2.service_account", fake_service_account
+    )
+
+    adapter = GCSStorageAdapter(GCSStorageSettings(bucket="demo"))
+    await adapter.init()
+    assert "client_options" not in created[0]
+    await adapter.cleanup()
+
+
 class _AzureNotFound(Exception):
     status_code = 404
     error_code = "BlobNotFound"

@@ -26,6 +26,14 @@ class GCSStorageSettings(BaseModel):
         default="application/octet-stream",
         description="Fallback content type used when uploads omit content_type.",
     )
+    endpoint_url: str | None = Field(
+        default=None,
+        description=(
+            "Override the GCS API endpoint. Required for non-Google emulators "
+            "such as fake-gcs-server. Pass http://127.0.0.1:4443 in dev; "
+            "leave None for real GCS."
+        ),
+    )
 
 
 class GCSStorageAdapter:
@@ -63,6 +71,12 @@ class GCSStorageAdapter:
             except ModuleNotFoundError as exc:  # pragma: no cover - defensive
                 raise LifecycleError("google-cloud-storage-missing") from exc
             client_kwargs: dict[str, Any] = {}
+            client_options: dict[str, Any] = {}
+            if self._settings.endpoint_url:
+                client_options["api_endpoint"] = self._settings.endpoint_url
+                client_options["use_auth_w_custom_endpoint"] = False
+            if client_options:
+                client_kwargs["client_options"] = client_options
             if self._settings.credentials_file:
                 credentials: Any = (
                     service_account.Credentials.from_service_account_file(
@@ -74,6 +88,10 @@ class GCSStorageAdapter:
                 client_kwargs["project"] = self._settings.project
             self._client = storage.Client(**client_kwargs)
         self._bucket = self._client.bucket(self._settings.bucket)
+        if self._settings.endpoint_url:
+            self._logger.info(
+                "gcs-endpoint-override", endpoint=self._settings.endpoint_url
+            )
         self._logger.info("adapter-init", adapter="gcs-storage")
 
     async def health(self) -> bool:
