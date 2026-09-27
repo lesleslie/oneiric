@@ -1,5 +1,5 @@
 ---
-status: active
+status: accepted
 role: canonical
 kind: decision
 date: 2026-09-26
@@ -189,13 +189,13 @@ The discipline applies to every Bodai core component. Each component's maintaine
 | Component | Maintainer | Status | Date |
 |-----------|------------|--------|------|
 | oneiric | @les (self) | Active | 2026-09-26 |
-| mahavishnu | @les | Pending | — |
-| akosha | @les | Pending | — |
-| session-buddy | @les | Pending | — |
-| crackerjack | @les | Pending | — |
-| mcp-common | @les | Pending | — |
+| mahavishnu | @les | Active | 2026-09-26 |
+| akosha | @les | Active | 2026-09-26 |
+| session-buddy | @les | Active | 2026-09-26 |
+| crackerjack | @les | Active | 2026-09-26 |
+| mcp-common | @les | Active | 2026-09-26 |
 
-When all rows are checked, the frontmatter `status` MAY be promoted to `accepted` (full cross-repo ratification) and `last_reviewed` updated.
+All 6 Bodai core components have signed off on 2026-09-26. Combined with the same-day audit (zero Rule 1 violations), the discipline is fully ratified.
 
 ## References
 
