@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.26.0] - 2026-09-27
+
+### Added
+
+- oneiric: GCSStorageAdapter accepts endpoint_url
+- oneiric: PgvectorAdapter namespace assertion API
+
+### Fixed
+
+- oneiric: Wire use_auth_w_custom_endpoint correctly + add fakes
+
+### Testing
+
+- oneiric: Cover GCSStorageAdapter endpoint_url passthrough
+
 ## [0.25.0] - 2026-09-27
 
 ### Fixed
