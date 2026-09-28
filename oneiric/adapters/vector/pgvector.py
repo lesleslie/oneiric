@@ -12,6 +12,7 @@ from pydantic import Field, SecretStr
 from oneiric.adapters.metadata import AdapterMetadata
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
+from oneiric.core.observability import observed_span
 from oneiric.core.resolution import CandidateSource
 
 from .vector_types import (
@@ -43,6 +44,21 @@ class PgvectorSettings(VectorBaseSettings):
         default=100,
         ge=1,
         description="Number of IVF lists to use when creating indexes.",
+    )
+    caller_namespace: str = Field(
+        default="public",
+        description=(
+            "Namespace identifier for the calling service (e.g., 'sb', 'akosha'). "
+            "Owns its own data and must hold cross_namespace_grant to read another "
+            "service's namespace. Matches REQ-OSUB-B-004."
+        ),
+    )
+    cross_namespace_grant: bool = Field(
+        default=False,
+        description=(
+            "Admin opt-in that allows this adapter to read collections owned by a "
+            "different caller_namespace. Default is False (default-deny)."
+        ),
     )
 
 
@@ -113,9 +129,12 @@ class PgvectorAdapter(VectorBase[PgvectorSettings]):
         limit: int = 10,
         filter_expr: dict[str, Any] | None = None,
         include_vectors: bool = False,
+        *,
+        namespace: str | None = None,
         **_: Any,
     ) -> list[VectorSearchResult]:
-        table = self._qualified_collection(collection)
+        target_namespace = self.assert_caller_namespace_allowed(namespace)
+        table = self._qualified_collection_for_namespace(collection, target_namespace)
         operator = self._distance_operator()
         params: list[Any] = []
         sql_parts = [
@@ -363,6 +382,79 @@ class PgvectorAdapter(VectorBase[PgvectorSettings]):
         if metric in {"dot_product", "inner_product"}:
             return "vector_ip_ops"
         return "vector_cosine_ops"
+
+    def assert_caller_namespace_allowed(self, target_namespace: str | None) -> str:
+        """Enforce REQ-OSUB-B-004 default-deny across caller namespaces.
+
+        Args:
+            target_namespace: Namespace whose data the caller wants to read. When
+                ``None``, the caller's own ``caller_namespace`` is assumed (always
+                allowed).
+
+        Returns:
+            The resolved target namespace string (always non-empty).
+
+        Raises:
+            PermissionError: When ``target_namespace`` differs from the adapter's
+                ``caller_namespace`` AND ``cross_namespace_grant`` is ``False``.
+
+        Notes:
+            Emits OTel span ``warm.pgvector.acl.assert`` with
+            ``caller_namespace``, ``target_namespace``, and ``decision`` attributes
+            per ``mcp-backend-wiring-discipline.md §3``.
+        """
+        caller = self._settings.caller_namespace
+        resolved = target_namespace or caller
+        granted = (
+            resolved == caller or self._settings.cross_namespace_grant
+        )
+        decision = "allow" if granted else "deny"
+        with observed_span(
+            "warm.pgvector.acl.assert",
+            component="adapter.vector.pgvector",
+            attributes={
+                "caller_namespace": caller,
+                "target_namespace": resolved,
+                "decision": decision,
+            },
+            log_context={
+                "caller_namespace": caller,
+                "target_namespace": resolved,
+                "decision": decision,
+            },
+        ):
+            if not granted:
+                self._logger.warning(
+                    "pgvector-acl-denied",
+                    caller_namespace=caller,
+                    target_namespace=resolved,
+                )
+                raise PermissionError(
+                    f"pgvector-acl: caller_namespace={caller!r} cannot read "
+                    f"target_namespace={resolved!r} without cross_namespace_grant"
+                )
+            self._logger.debug(
+                "pgvector-acl-allowed",
+                caller_namespace=caller,
+                target_namespace=resolved,
+            )
+        return resolved
+
+    def _qualified_collection_for_namespace(
+        self, collection: str, namespace: str
+    ) -> str:
+        """Resolve a fully-qualified table name for the given namespace.
+
+        Same-namespace callers share the configured ``db_schema``; cross-namespace
+        reads (admin-granted) are namespaced via the collection-name prefix so
+        they cannot collide with the caller's own tables.
+        """
+        schema = self._sanitize_identifier(self._settings.db_schema)
+        if namespace == self._settings.caller_namespace:
+            name = self._normalize_collection_name(collection)
+        else:
+            name = self._normalize_collection_name(f"{namespace}_{collection}")
+        return f"{self._quote_ident(schema)}.{self._quote_ident(name)}"
 
     def _qualified_collection(self, collection: str) -> str:
         schema = self._sanitize_identifier(self._settings.db_schema)

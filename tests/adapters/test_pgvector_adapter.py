@@ -123,3 +123,31 @@ async def test_pgvector_adapter_roundtrip() -> None:
     assert await adapter.delete_collection("demo")
     await adapter.cleanup()
     assert pool.closed
+
+
+@pytest.mark.asyncio
+async def test_pgvector_namespace_acl_default_deny() -> None:
+    """REGRESSION: caller_namespace != target_namespace without grant raises PermissionError."""
+    adapter = PgvectorAdapter(
+        PgvectorSettings(caller_namespace="akosha", cross_namespace_grant=False)
+    )
+    with pytest.raises(PermissionError, match="cannot read target_namespace='sb'"):
+        adapter.assert_caller_namespace_allowed("sb")
+
+
+@pytest.mark.asyncio
+async def test_pgvector_namespace_acl_same_namespace_allowed() -> None:
+    """Same-namespace access is always allowed (no grant required)."""
+    adapter = PgvectorAdapter(PgvectorSettings(caller_namespace="akosha"))
+    assert adapter.assert_caller_namespace_allowed("akosha") == "akosha"
+    # None defaults to caller's own namespace.
+    assert adapter.assert_caller_namespace_allowed(None) == "akosha"
+
+
+@pytest.mark.asyncio
+async def test_pgvector_namespace_acl_admin_grant_allows_cross_namespace() -> None:
+    """With cross_namespace_grant=True, the admin can read other namespaces."""
+    adapter = PgvectorAdapter(
+        PgvectorSettings(caller_namespace="akosha", cross_namespace_grant=True)
+    )
+    assert adapter.assert_caller_namespace_allowed("sb") == "sb"
