@@ -31,6 +31,7 @@ import importlib
 import json
 import logging
 import operator
+import re
 import threading
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -38,6 +39,69 @@ from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+
+_REDACTED = "<redacted>"
+_SECRET_KEY_RE = re.compile(
+    r"(?i)(?:password|passwd|secret|token|api[_-]?key|credential|auth)"
+)
+# Captures the scheme + "://" so we can strip ``userinfo@`` from URLs.
+_URL_USERINFO_RE = re.compile(
+    r"^([a-z][a-z0-9+.\-]*://)[^@/\s]+@", re.IGNORECASE
+)
+
+
+def _scrub_value(value: Any, path: str) -> Any:
+    """Walk ``value`` (dict/list/str) and return a sanitized copy.
+
+    The same shape is preserved. Strings have URL userinfo stripped;
+    dict keys matching the secret pattern have their value replaced
+    with :data:`_REDACTED`. Lists are walked element-by-element with
+    indexed paths (``items[0]``). Non-string scalars are returned as-is.
+    """
+    if isinstance(value, dict):
+        return {
+            k: (_REDACTED if _SECRET_KEY_RE.search(k) else _scrub_value(v, f"{path}.{k}" if path else k))
+            for k, v in value.items()
+        }
+    if isinstance(value, list):
+        return [_scrub_value(item, f"{path}[{i}]") for i, item in enumerate(value)]
+    if isinstance(value, str):
+        return _URL_USERINFO_RE.sub(r"\1***@", value)
+    return value
+
+
+def _collect_redacted_paths(value: Any, path: str, out: list[str]) -> None:
+    """Recursively record dotted paths whose key matches the secret pattern."""
+    if isinstance(value, dict):
+        for k, v in value.items():
+            child = f"{path}.{k}" if path else k
+            if _SECRET_KEY_RE.search(k):
+                out.append(child)
+            else:
+                _collect_redacted_paths(v, child, out)
+    elif isinstance(value, list):
+        for i, item in enumerate(value):
+            _collect_redacted_paths(item, f"{path}[{i}]", out)
+
+
+def _sanitize_runtime_facts(runtime_facts: dict[str, Any]) -> dict[str, Any]:
+    """Replace secret-shaped values with ``"<redacted>"``; scrub URL userinfo.
+
+    REQ-RCR-008 contract: the caller (oneiric_report_runtime MCP tool)
+    passes runtime_facts straight through; this function runs BEFORE
+    persistence on the registry side so callers cannot bypass it. The
+    list of dotted paths whose values were redacted is attached to
+    the returned dict under ``redacted_secrets``.
+
+    The input dict is NOT mutated; a new sanitized copy is returned.
+    """
+    redacted: list[str] = []
+    _collect_redacted_paths(runtime_facts, "", redacted)
+    sanitized = _scrub_value(runtime_facts, "")
+    if redacted:
+        sanitized["redacted_secrets"] = redacted
+    return sanitized
 
 
 def _now_iso() -> str:
@@ -69,6 +133,7 @@ class AdapterRecord:
     version_history: list[dict[str, Any]] = field(default_factory=list)
     health_status: str = "unknown"
     last_health_check: str | None = None
+    runtime_facts: dict[str, Any] = field(default_factory=dict)
     created_at: str = field(default_factory=_now_iso)
     updated_at: str = field(default_factory=_now_iso)
 
@@ -132,6 +197,7 @@ class AdapterRecord:
             "updated_at": self.updated_at,
             "health_status": self.health_status,
             "last_health_check": self.last_health_check,
+            "runtime_facts": self.runtime_facts,
         }
 
 
@@ -185,6 +251,7 @@ class OneiricAdapterRegistry:
                     version_history=entry.get("version_history", []),
                     health_status=entry.get("health_status", "unknown"),
                     last_health_check=entry.get("last_health_check"),
+                    runtime_facts=entry.get("runtime_facts", {}),
                     created_at=entry.get("created_at", _now_iso()),
                     updated_at=entry.get("updated_at", _now_iso()),
                 )
@@ -210,6 +277,7 @@ class OneiricAdapterRegistry:
                 "version_history": rec.version_history,
                 "health_status": rec.health_status,
                 "last_health_check": rec.last_health_check,
+                "runtime_facts": rec.runtime_facts,
                 "created_at": rec.created_at,
                 "updated_at": rec.updated_at,
             }
@@ -469,5 +537,48 @@ class OneiricAdapterRegistry:
 
         return await asyncio.to_thread(_do)
 
+    async def set_runtime_facts_async(
+        self,
+        *,
+        domain: str,
+        key: str,
+        provider: str,
+        runtime_facts: dict[str, Any],
+    ) -> str:
+        """Persist runtime facts on an existing adapter; return adapter_id.
 
-__all__ = ["AdapterRecord", "OneiricAdapterRegistry"]
+        REQ-RCR-008: caller MUST have a catalog entry first (call
+        :meth:`store_adapter_async` before this tool). The
+        ``runtime_facts`` dict is sanitized server-side via
+        :func:`_sanitize_runtime_facts` BEFORE persistence — secret-
+        shaped keys are replaced with ``"<redacted>"`` and URL userinfo
+        is scrubbed. The list of redacted paths is attached at
+        ``runtime_facts["redacted_secrets"]``.
+
+        An audit record is emitted by the caller (oneiric_report_runtime
+        MCP tool) per REQ-RCR-008 — see ``_register_report_runtime_tool``.
+
+        Raises:
+            KeyError: no catalog entry exists for
+                ``(domain, key, provider)``. The caller converts this
+                into ``{"success": False, "error": ...}``.
+        """
+        import asyncio
+
+        sanitized = _sanitize_runtime_facts(runtime_facts)
+
+        def _do() -> str:
+            with self._lock:
+                adapter_id = f"{domain}:{key}:{provider}"
+                rec = self._adapters.get(adapter_id)
+                if rec is None:
+                    raise KeyError(f"Adapter not found: {adapter_id}")
+                rec.runtime_facts = sanitized
+                rec.updated_at = _now_iso()
+                self._save()
+                return adapter_id
+
+        return await asyncio.to_thread(_do)
+
+
+__all__ = ["AdapterRecord", "OneiricAdapterRegistry", "_sanitize_runtime_facts"]
