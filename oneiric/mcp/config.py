@@ -42,7 +42,7 @@ def load_yaml_auth_section(yaml_path: Path) -> dict[str, Any]:
     if data is None:
         return {}
     if not isinstance(data, dict):
-        raise RuntimeError(
+        raise TypeError(
             f"{yaml_path} must contain a YAML mapping at the top level "
             f"(got {type(data).__name__})."
         )
@@ -50,7 +50,7 @@ def load_yaml_auth_section(yaml_path: Path) -> dict[str, Any]:
     if auth is None:
         return {}
     if not isinstance(auth, dict):
-        raise RuntimeError(
+        raise TypeError(
             f"{yaml_path}'s 'auth:' section must be a mapping "
             f"(got {type(auth).__name__})."
         )
