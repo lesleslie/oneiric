@@ -9,13 +9,40 @@ import tomllib
 import warnings
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import yaml
 from pydantic import AliasChoices, BaseModel, Field
 from pydantic_settings import SettingsConfigDict
 
 from oneiric.runtime.health import default_runtime_health_path
+
+if TYPE_CHECKING:
+    # Used as a string forward-ref on ``OneiricSettings.observability`` to
+    # break the eager import cycle (see the docstring on
+    # ``_default_otel_storage_settings`` below).
+    from oneiric.adapters.observability.settings import OTelStorageSettings
+
+
+def _default_otel_storage_settings() -> OTelStorageSettings:
+    """Lazy factory for ``OneiricSettings.observability``.
+
+    Defers the import of ``OTelStorageSettings`` until the field is first
+    materialised (i.e. when an actual ``OneiricSettings`` instance is
+    built). The eager import path would create a cycle:
+
+        oneiric.core.config
+          -> oneiric.adapters.observability.settings
+          -> oneiric.adapters.__init__
+          -> oneiric.adapters.bridge
+          -> oneiric.core.config.LayerSettings   (still loading)
+
+    The deferred import breaks the cycle because by the time
+    ``default_factory`` runs, ``oneiric.core.config`` is fully loaded.
+    """
+    from oneiric.adapters.observability.settings import OTelStorageSettings
+
+    return OTelStorageSettings()
 
 from .lifecycle import LifecycleError, LifecycleManager
 from .logging import LoggingConfig, get_logger
@@ -268,6 +295,20 @@ class OneiricSettings(BaseModel):
     runtime_paths: RuntimePathsConfig = Field(default_factory=RuntimePathsConfig)
     runtime_supervisor: RuntimeSupervisorConfig = Field(
         default_factory=RuntimeSupervisorConfig
+    )
+    # 2026-09-29: nested OTelStorageSettings so XDG/env-var overrides on
+    # ``observability.<field>`` (e.g. ``observability.connection_string``)
+    # route directly to the OTel storage adapter. Without this field the
+    # OneiricSettings model would silently drop those overrides via
+    # ``extra="allow"`` storage in ``__pydantic_extra__``, leaving consumers
+    # to fall back to ``OTelStorageSettings()`` defaults. The sub-model
+    # already declares ``env_prefix="ONEIRIC_OTEL_STORAGE_"`` on its own
+    # model_config, but those env vars only fire when ``OTelStorageSettings``
+    # is constructed standalone; nesting it here lets ``ONEIRIC_OBSERVABILITY__
+    # CONNECTION_STRING=...`` work via pydantic-settings' nested-delimiter.
+    observability: "OTelStorageSettings" = Field(  # noqa: F821 — forward ref resolved via model_rebuild below
+        default_factory=_default_otel_storage_settings,
+        description="OpenTelemetry storage settings (pgvector-backed).",
     )
 
 
@@ -822,3 +863,18 @@ async def _maybe_await(value: Any) -> Any:
     if inspect.isawaitable(value):
         return await value
     return value
+
+
+# Rebuild OneiricSettings so the ``observability: "OTelStorageSettings"``
+# string forward-ref resolves to the real class. The eager import would
+# cycle (see ``_default_otel_storage_settings`` docstring); the lazy
+# ``default_factory`` lets the class definition succeed, but Pydantic
+# needs ``model_rebuild`` to link the string annotation to the type.
+# Importing ``OTelStorageSettings`` here is safe — by the time module
+# load reaches this line, ``oneiric.core.config`` is fully resolved and
+# the only thing preventing the eager import was the *eager evaluation
+# during class body definition*. The eager evaluation at module-bottom
+# runs after the class body completes, so the cycle doesn't fire.
+from oneiric.adapters.observability.settings import OTelStorageSettings  # noqa: E402
+
+OneiricSettings.model_rebuild()
