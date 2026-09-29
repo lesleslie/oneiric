@@ -44,6 +44,7 @@ def _default_otel_storage_settings() -> OTelStorageSettings:
 
     return OTelStorageSettings()
 
+
 from .lifecycle import LifecycleError, LifecycleManager
 from .logging import LoggingConfig, get_logger
 from .protocols import SecretsCacheProtocol, SecretsProviderProtocol
@@ -306,7 +307,7 @@ class OneiricSettings(BaseModel):
     # model_config, but those env vars only fire when ``OTelStorageSettings``
     # is constructed standalone; nesting it here lets ``ONEIRIC_OBSERVABILITY__
     # CONNECTION_STRING=...`` work via pydantic-settings' nested-delimiter.
-    observability: "OTelStorageSettings" = Field(  # noqa: F821 — forward ref resolved via model_rebuild below
+    observability: OTelStorageSettings = Field(
         default_factory=_default_otel_storage_settings,
         description="OpenTelemetry storage settings (pgvector-backed).",
     )
@@ -875,6 +876,6 @@ async def _maybe_await(value: Any) -> Any:
 # the only thing preventing the eager import was the *eager evaluation
 # during class body definition*. The eager evaluation at module-bottom
 # runs after the class body completes, so the cycle doesn't fire.
-from oneiric.adapters.observability.settings import OTelStorageSettings  # noqa: E402
+from oneiric.adapters.observability.settings import OTelStorageSettings
 
 OneiricSettings.model_rebuild()

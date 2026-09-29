@@ -108,7 +108,7 @@ def _build_processor():
     return WorkflowTaskProcessor(workflow_bridge)
 
 
-def _build_warm_feeds() -> dict[str, "HealthFeedState"]:
+def _build_warm_feeds() -> dict[str, HealthFeedState]:
     """Pre-warm every oneiric HealthFeedState with a 'ready to serve' baseline.
 
     The launcher's ``warm_settings_feed()`` constructs an

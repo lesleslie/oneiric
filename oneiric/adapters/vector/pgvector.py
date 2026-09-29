@@ -405,9 +405,7 @@ class PgvectorAdapter(VectorBase[PgvectorSettings]):
         """
         caller = self._settings.caller_namespace
         resolved = target_namespace or caller
-        granted = (
-            resolved == caller or self._settings.cross_namespace_grant
-        )
+        granted = resolved == caller or self._settings.cross_namespace_grant
         decision = "allow" if granted else "deny"
         with observed_span(
             "warm.pgvector.acl.assert",

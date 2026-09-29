@@ -59,11 +59,11 @@ $repo: 12 total hits
 For each top-level violation:
 
 1. **Move the import** inside the smallest enclosing function/method that actually uses the symbol.
-2. **Refactor module-scope references** (class attributes, default args) — wrap in `__init__`, use lazy `@property`, or default to `None` then populate on first use.
-3. **Add `peer_reachable(<peer_name>)` guard** before any call into the peer (use the reference sketch from the ADR).
-4. **Replace raise-on-unreachable** with a documented fallback (the ADR says: never raise `ConnectionError` to the caller for a missing peer). If the calling code genuinely needs the peer's data, document the explicit exception in the function's docstring.
-5. **Add a unit test** that mocks the peer import at `sys.modules["<peer>"] = None` and verifies the function either degrades gracefully or raises a documented specific exception (not `ImportError` / `ConnectionError`).
-6. **Add an integration test** `tests/integration/test_<peer>_unreachable.py` that runs the call against a peer with port closed; assert graceful behavior.
+1. **Refactor module-scope references** (class attributes, default args) — wrap in `__init__`, use lazy `@property`, or default to `None` then populate on first use.
+1. **Add `peer_reachable(<peer_name>)` guard** before any call into the peer (use the reference sketch from the ADR).
+1. **Replace raise-on-unreachable** with a documented fallback (the ADR says: never raise `ConnectionError` to the caller for a missing peer). If the calling code genuinely needs the peer's data, document the explicit exception in the function's docstring.
+1. **Add a unit test** that mocks the peer import at `sys.modules["<peer>"] = None` and verifies the function either degrades gracefully or raises a documented specific exception (not `ImportError` / `ConnectionError`).
+1. **Add an integration test** `tests/integration/test_<peer>_unreachable.py` that runs the call against a peer with port closed; assert graceful behavior.
 
 ### 3. Enforcement (CI gate)
 
@@ -101,9 +101,9 @@ This catches regressions of Rule 3 (serverless-deployable cold-boot budget).
 **Cross-repo ordering:** do repos in dependency order to minimize churn:
 
 1. **oneiric** — foundation; imports nothing from Bodai cores (should be a no-op)
-2. **mcp-common** — supporting library; same
-3. **session-buddy, akosha, crackerjack** — peer-level; can be done in parallel branches
-4. **mahavishnu** — orchestrator; depends on all of the above; do last
+1. **mcp-common** — supporting library; same
+1. **session-buddy, akosha, crackerjack** — peer-level; can be done in parallel branches
+1. **mahavishnu** — orchestrator; depends on all of the above; do last
 
 ## Estimated Effort
 
@@ -206,9 +206,9 @@ The audit revealed three legitimate patterns that Rule 1 endorses (each becomes 
 
 1. **Adapter integration** (`oneiric/adapters/vector/agentdb.py:76`) — when a module's purpose is to integrate with a peer, lazy import + try/except + raise a specific integration exception (e.g., `LifecycleError`) is the right pattern. Adapter cannot function without the peer; raising is correct.
 
-2. **Optional-peer with install guidance** (`session_buddy/sync.py:608`) — when the dep is OPTIONAL for the package but REQUIRED for a specific function, lazy import + try/except + raise a friendly `ImportError` with install guidance (e.g., `"Install with: uv add akosha"`) is the right pattern. General-case consumer is unaffected; only the specific feature surfaces the dependency.
+1. **Optional-peer with install guidance** (`session_buddy/sync.py:608`) — when the dep is OPTIONAL for the package but REQUIRED for a specific function, lazy import + try/except + raise a friendly `ImportError` with install guidance (e.g., `"Install with: uv add akosha"`) is the right pattern. General-case consumer is unaffected; only the specific feature surfaces the dependency.
 
-3. **Module-level capability detection** (`akosha/mcp/server.py:35, 39`) — `FOO_AVAILABLE = importlib.util.find_spec("peer")` at module scope is acceptable. `find_spec` checks if the peer CAN be imported without actually loading it; it's the install-time counterpart to `peer_reachable()` (which is the runtime health check). Use to gate optional integration paths.
+1. **Module-level capability detection** (`akosha/mcp/server.py:35, 39`) — `FOO_AVAILABLE = importlib.util.find_spec("peer")` at module scope is acceptable. `find_spec` checks if the peer CAN be imported without actually loading it; it's the install-time counterpart to `peer_reachable()` (which is the runtime health check). Use to gate optional integration paths.
 
 ### Verdict
 

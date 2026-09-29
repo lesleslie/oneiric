@@ -46,9 +46,7 @@ _SECRET_KEY_RE = re.compile(
     r"(?i)(?:password|passwd|secret|token|api[_-]?key|credential|auth)"
 )
 # Captures the scheme + "://" so we can strip ``userinfo@`` from URLs.
-_URL_USERINFO_RE = re.compile(
-    r"^([a-z][a-z0-9+.\-]*://)[^@/\s]+@", re.IGNORECASE
-)
+_URL_USERINFO_RE = re.compile(r"^([a-z][a-z0-9+.\-]*://)[^@/\s]+@", re.IGNORECASE)
 
 
 def _scrub_value(value: Any, path: str) -> Any:
@@ -61,7 +59,11 @@ def _scrub_value(value: Any, path: str) -> Any:
     """
     if isinstance(value, dict):
         return {
-            k: (_REDACTED if _SECRET_KEY_RE.search(k) else _scrub_value(v, f"{path}.{k}" if path else k))
+            k: (
+                _REDACTED
+                if _SECRET_KEY_RE.search(k)
+                else _scrub_value(v, f"{path}.{k}" if path else k)
+            )
             for k, v in value.items()
         }
     if isinstance(value, list):

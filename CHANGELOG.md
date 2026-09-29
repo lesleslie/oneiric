@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.26.2] - 2026-09-29
+
+### Added
+
+- Nest OTelStorageSettings under OneiricSettings for XDG activation
+
+### Fixed
+
+- oneiric: Use TypeError for invalid YAML shape (TRY004)
+
 ## [0.26.1] - 2026-09-29
 
 ### Fixed
@@ -37,7 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - oneiric: Pre-warm every substrate feed to /health=200
 - oneiric: Resolve 7 ty errors in cache adapters + server auth wiring
-- oneiric: Split _register_adapter_tools to pass ruff C901
+- oneiric: Split \_register_adapter_tools to pass ruff C901
 
 ### Documentation
 
