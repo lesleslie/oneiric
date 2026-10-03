@@ -13,7 +13,7 @@ Refactor context (2026-09-15):
   was a cross-component forward-reference violation by the spirit of
   ADR 017 even if not technically runtime-coupled (forward references
   are read by type-checkers only).
-- Phase 5 task 8 of docs/superpowers/specs/2026-09-14-dhara-mcp-decomposition-design.md
+- Phase 5 task 8 of docs/specs/2026-09-14-dhara-mcp-decomposition-design.md
   lifts this contract here. Akosha's concrete ``HotStore`` and
   ``PgvectorHotStore`` classes continue to live in Akosha and conform to
   this Protocol via structural (duck) typing — no inheritance required.

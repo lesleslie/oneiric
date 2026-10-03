@@ -174,7 +174,7 @@ def _is_loopback_host(host: str) -> bool:
 def _enforce_public_network_auth_safety(host: str, auth_enabled: bool) -> None:
     """Refuse to bind a FastMCP server to a non-loopback interface with auth disabled.
 
-    Spec ruling (docs/superpowers/specs/2026-09-16-oneiric-fastmcp-pivot-design.md §8 Q3):
+    Spec ruling (docs/specs/2026-09-16-oneiric-fastmcp-pivot-design.md §8 Q3):
     FastMCP defaults to 127.0.0.1 so the missing-auth-network-exposure finding is
     eliminated by default. Operators who opt in to a public bind MUST also enable
     auth — the BearerTokenMiddleware is the only thing keeping the substrate

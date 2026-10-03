@@ -14,7 +14,7 @@ topic: lifecycle
 **Project Version:** 0.3.3 (Audit: 95/100 at v0.2.0)
 **Status:** Production-ready with planned enhancements <!-- legacy status — see YAML frontmatter -->
 
-> **Test count consolidation (2026-09-09):** Earlier sections of this document reference a stale snapshot (705 tests / 79.4% coverage from 2025-12-19). Per the Phase 4 plan (`docs/superpowers/plans/2026-09-05-oneiric-phase4.md`), the canonical figures are **4217 tests passing, 98.75% coverage** (a +20pp margin over the 78.75% ratchet baseline; live numbers refreshed as of the latest test run).
+> **Test count consolidation (2026-09-09):** Earlier sections of this document reference a stale snapshot (705 tests / 79.4% coverage from 2025-12-19). Per the Phase 4 plan (`docs/plans/2026-09-05-oneiric-phase4.md`), the canonical figures are **4217 tests passing, 98.75% coverage** (a +20pp margin over the 78.75% ratchet baseline; live numbers refreshed as of the latest test run).
 
 ______________________________________________________________________
 
@@ -73,7 +73,7 @@ ______________________________________________________________________
 
 ### Priority: MEDIUM (Non-Blocking Issues)
 
-**Overall Test Status:** Phase 4 plan (v0.21.0) reports **4217 tests passing**, 16 skipped, 2 deselected, 1 xfailed; coverage is **98.75%** (a +20pp margin over the 78.75% ratchet baseline). See `docs/superpowers/plans/2026-09-05-oneiric-phase4.md` for the consolidated metric and `coverage.xml` for the latest snapshot. An older 2025-12-19 run recorded 705 passing tests at 79.4% coverage and is preserved below for historical context.
+**Overall Test Status:** Phase 4 plan (v0.21.0) reports **4217 tests passing**, 16 skipped, 2 deselected, 1 xfailed; coverage is **98.75%** (a +20pp margin over the 78.75% ratchet baseline). See `docs/plans/2026-09-05-oneiric-phase4.md` for the consolidated metric and `coverage.xml` for the latest snapshot. An older 2025-12-19 run recorded 705 passing tests at 79.4% coverage and is preserved below for historical context.
 
 **Known Issues:** No active test failures observed in the latest run; validate in CI for environment-specific adapters.
 

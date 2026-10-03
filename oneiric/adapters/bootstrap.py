@@ -161,7 +161,7 @@ def queued_publisher(
     (or an operator-supplied override). Caller is responsible for awaiting
     ``await adapter.init()`` before first publish/subscribe.
 
-    Per docs/superpowers/specs/2026-09-14-dhara-mcp-decomposition-design.md
+    Per docs/specs/2026-09-14-dhara-mcp-decomposition-design.md
     §4.13.1 — this is the canonical entry point for hook-bus publishers
     (Mahavishnu's ``bodai_hook_bridge._publish`` and downstream consumers).
     Underlying adapter: ``oneiric.adapters.queue.redis_streams``.

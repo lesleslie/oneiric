@@ -673,7 +673,7 @@ ______________________________________________________________________
 - Keep ACB events (if using FastBlocks)
 - **Result:** Best of both worlds
 
-**Q2 2025 (completed):** Evaluation completed; outcomes recorded in the Migration Track sections of this document and the Phase 4 plan (`docs/superpowers/plans/2026-09-05-oneiric-phase4.md`).
+**Q2 2025 (completed):** Evaluation completed; outcomes recorded in the Migration Track sections of this document and the Phase 4 plan (`docs/plans/2026-09-05-oneiric-phase4.md`).
 
 - If successful: Expand to more projects
 - If issues: Revert and wait for Oneiric 1.0
