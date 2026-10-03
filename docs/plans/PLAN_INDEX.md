@@ -49,7 +49,7 @@ and reproduced here for index readability.
 | Bodai-wide observability surface | `docs/plans/2026-07-11-phase-6-bodai-observability.md` |
 | Repo-local decisions index | `.claude/decisions/README.md` |
 | Follow-up tracker index | `docs/followups/README.md` |
-| Source plan defining this index | `docs/superpowers/plans/2026-07-16-plan-lifecycle-unification.md` |
+| Source plan defining this index | `docs/plans/2026-07-16-plan-lifecycle-unification.md` |
 
 ## Review Entry Points
 
@@ -96,13 +96,13 @@ One table per store. Entries are sorted by `date` DESC, with ties broken by path
 | [`docs/plans/2025-01-27-phase4-mahavishnu-integration-implementation.md`](2025-01-27-phase4-mahavishnu-integration-implementation.md) | 2025-01-27 | `complete` | `implementation` | `routing-composition` | Phase 4: Mahavishnu Integration Implementation Plan |
 | [`docs/plans/2025-01-26-otel-storage-adapter-design.md`](2025-01-26-otel-storage-adapter-design.md) | 2025-01-26 | `complete` | `implementation` | `observability` | Oneiric OTel Storage Adapter Design |
 
-### Superpowers Specs (`docs/superpowers/specs/`)
+### Superpowers Specs (`docs/specs/`)
 
 | Path | Date | Status | Role | Topic | Title |
 |---|---|---|---|---|---|
 | _no entries with valid frontmatter_ | | | | | |
 
-### Superpowers Plans (`docs/superpowers/plans/`)
+### Superpowers Plans (`docs/plans/`)
 
 | Path | Date | Status | Role | Topic | Title |
 |---|---|---|---|---|---|

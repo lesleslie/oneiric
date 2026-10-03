@@ -10,7 +10,7 @@ owner: les
 priority: high
 related:
   - docs/plans/2026-09-16-dhara-mcp-retirement-plan.md
-  - docs/superpowers/specs/2026-09-14-dhara-mcp-decomposition-design.md
+  - docs/specs/2026-09-14-dhara-mcp-decomposition-design.md
 ---
 
 # Oneiric FastMCP Pivot + Auth Integration

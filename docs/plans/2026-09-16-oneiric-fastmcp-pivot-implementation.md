@@ -6,7 +6,7 @@ date: 2026-09-16
 last_reviewed: 2026-09-18
 topic: mcp-design
 created: 2026-09-16
-spec: docs/superpowers/specs/2026-09-16-oneiric-fastmcp-pivot-design.md
+spec: docs/specs/2026-09-16-oneiric-fastmcp-pivot-design.md
 ---
 
 # Oneiric FastMCP Pivot + Auth Integration — Implementation Plan
@@ -19,7 +19,7 @@ spec: docs/superpowers/specs/2026-09-16-oneiric-fastmcp-pivot-design.md
 
 **Tech Stack:** FastMCP, mcp-common (`BearerTokenMiddleware`, `AuthConfig`, `IdentityProvider`, `@require_auth`, `Permission`), Pydantic v2, pytest.
 
-**Spec:** [docs/superpowers/specs/2026-09-16-oneiric-fastmcp-pivot-design.md](../superpowers/specs/2026-09-16-oneiric-fastmcp-pivot-design.md)
+**Spec:** [docs/specs/2026-09-16-oneiric-fastmcp-pivot-design.md](../superpowers/specs/2026-09-16-oneiric-fastmcp-pivot-design.md)
 
 **Related security findings** (root cause addressed by this plan): `missing-auth-network-exposure`, `unbounded-input-disk-fill-dos`, `broken-sync-async-lock` flagged against `oneiric/http/server.py` and `oneiric/http/routes/substrate.py` in the 2026-09-16 push-time security review.
 

@@ -16,7 +16,7 @@ topic: convergence-control-plane
 **Status:** <!-- legacy status: draft — moved to YAML frontmatter -->
 **Role:** <!-- legacy role: implementation — moved to YAML frontmatter -->
 
-**Goal:** Replace the eight ad-hoc status conventions currently scattered across `.claude/decisions/`, `docs/followups/`, `docs/adr/`, `docs/superpowers/specs/`, `docs/superpowers/plans/`, and `docs/plans/` with a single YAML frontmatter contract — five lifecycle values, five role values, and a small set of metadata fields — then mechanically validate the 178 in-scope files in Mahavishnu so PLAN_INDEX.md, the decision README, and discovery tools can read one source of truth.
+**Goal:** Replace the eight ad-hoc status conventions currently scattered across `.claude/decisions/`, `docs/followups/`, `docs/adr/`, `docs/specs/`, `docs/plans/`, and `docs/plans/` with a single YAML frontmatter contract — five lifecycle values, five role values, and a small set of metadata fields — then mechanically validate the 178 in-scope files in Mahavishnu so PLAN_INDEX.md, the decision README, and discovery tools can read one source of truth.
 
 **Architecture:** Two coordinated work tracks. Track A defines the contract (schema doc, validator, dry-run audit). Track B applies frontmatter to the 178 inventoried files in store-by-store waves (P1 ADRs → P2 plans → P3 superpowers specs → P4 superpowers plans → P5 decisions/followups), then regenerates PLAN_INDEX.md from frontmatter in P6. No new tooling; existing YAML/grep is enough. P7 cross-repository expansion is gated on each repo first producing its own inventory.
 
@@ -193,101 +193,101 @@ The File Map covers all 178 in-scope files. Counts reflect Phase deliverables; c
 | `docs/plans/TLS_IMPLEMENTATION_SUMMARY.md` | (summary) | complete | historical | — |
 | `docs/plans/tensorzero-gateway-plan.md` | SUPERSEDED | complete | historical | superseded_by: `2026-05-16-llm-routing-plan1-mcp-common.md` |
 
-### Store: docs/superpowers/specs/ (32 files, Phase P3)
+### Store: docs/specs/ (32 files, Phase P3)
 
 | Path | Current Status | Proposed Status | Proposed Role | Topic |
 |---|---|---|---|---|
-| `docs/superpowers/specs/2026-04-09-tui-design.md` | (marker file) | complete | historical | tui — superseded_by: `docs/plans/2026-04-16-bodai-agent-platform-master-spec.md` |
-| `docs/superpowers/specs/2026-04-14-akosha-skills-design.md` | (no frontmatter) | draft | implementation | akosha-skills |
-| `docs/superpowers/specs/2026-04-14-bodai-radar-design.md` | (no frontmatter) | draft | implementation | bodai-radar |
-| `docs/superpowers/specs/2026-04-14-session-archaeologist-design.md` | (no frontmatter) | draft | implementation | session-archaeologist |
-| `docs/superpowers/specs/2026-04-26-agent-skill-modernization-design.md` | Draft | draft | implementation | agent-skill-modernization |
-| `docs/superpowers/specs/2026-04-26-code-indexing-integration-design.md` | Draft | draft | implementation | code-indexing-integration |
-| `docs/superpowers/specs/2026-04-26-config-consolidation-design.md` | Draft | draft | implementation | config-consolidation |
-| `docs/superpowers/specs/2026-04-26-pattern-learning-scaffolding-design.md` | Draft | draft | implementation | pattern-learning-scaffolding |
-| `docs/superpowers/specs/2026-04-26-splashstand-oneiric-migration-design.md` | Draft | draft | implementation | splashstand-oneiric |
-| `docs/superpowers/specs/2026-04-27-bodai-auth-standardization-design.md` | Approved | active | implementation | bodai-auth |
-| `docs/superpowers/specs/2026-05-16-llm-routing-standardization-design.md` | Approved (rev 2) | active | implementation | llm-routing |
-| `docs/superpowers/specs/2026-05-22-terminal-grid-design.md` | Approved for implementation | active | implementation | terminal-grid |
-| `docs/superpowers/specs/2026-05-23-unified-iterm2-applescript-design.md` | Draft for review | draft | implementation | unified-iterm2-applescript |
-| `docs/superpowers/specs/2026-05-24-dhara-serverless-design.md` | draft | draft | implementation | dhara-serverless |
-| `docs/superpowers/specs/2026-06-19-external-integrations-design.md` | Approved rev 3 | active | implementation | external-integrations |
-| `docs/superpowers/specs/2026-06-19-wave2a-chaos-hardening-design.md` | Approved | active | implementation | chaos-hardening |
-| `docs/superpowers/specs/2026-06-19-wave2b-a2a-worker-design.md` | Approved | active | implementation | a2a-worker |
-| `docs/superpowers/specs/2026-06-21-bodai-crow-server-design.md` | Draft (v5) | draft | implementation | bodai-crow-server |
-| `docs/superpowers/specs/2026-06-22-adapter-runtime-observability-design.md` | DEFERRED | draft | implementation | adapter-runtime-observability — blocks_on: `dhara-http-api-surface` |
-| `docs/superpowers/specs/2026-06-22-anti-ai-flavor-style-sop-design.md` | Draft | draft | implementation | style-sop |
-| `docs/superpowers/specs/2026-06-22-completion-report-schema-v1-design.md` | Draft | draft | implementation | completion-report-schema |
-| `docs/superpowers/specs/2026-06-22-confidence-ceiling-gate-design.md` | Draft | draft | implementation | confidence-ceiling-gate |
-| `docs/superpowers/specs/2026-06-22-live-observe-presence-over-gate-design.md` | DEFERRED | draft | implementation | live-observe-presence — blocks_on: `dhara-http-api-surface` |
-| `docs/superpowers/specs/2026-06-22-multi-tenant-context-packs-design.md` | DEFERRED | draft | implementation | multi-tenant-context-packs — blocks_on: `dhara-http-api-surface` |
-| `docs/superpowers/specs/2026-06-22-precommitment-hypothesis-lock-design.md` | Draft | draft | implementation | precommitment-hypothesis-lock |
-| `docs/superpowers/specs/2026-06-22-project-scoped-sop-evolution-design.md` | DEFERRED | draft | implementation | project-scoped-sop-evolution — blocks_on: `dhara-sql-execute-query` |
-| `docs/superpowers/specs/2026-06-22-three-layer-self-heal-design.md` | Draft | draft | implementation | three-layer-self-heal |
-| `docs/superpowers/specs/2026-06-22-three-zone-skill-pipeline-design.md` | Draft | draft | implementation | three-zone-skill-pipeline |
-| `docs/superpowers/specs/2026-07-14-multi-backend-pty-design.md` | Approved (awaiting plan) | active | implementation | multi-backend-pty |
-| `docs/superpowers/specs/2026-07-15-constellation-tui-design.md` | Approved | active | implementation | constellation-tui |
-| `docs/superpowers/specs/2026-07-15-mahavishnu-acp-server-design.md` | Approved | active | implementation | mahavishnu-acp-server |
-| `docs/superpowers/specs/2026-07-15-sb-checkpoint-stash-clobber-fix-design.md` | approved (pending code) | active | implementation | sb-checkpoint-stash-clobber-fix |
+| `docs/specs/2026-04-09-tui-design.md` | (marker file) | complete | historical | tui — superseded_by: `docs/plans/2026-04-16-bodai-agent-platform-master-spec.md` |
+| `docs/specs/2026-04-14-akosha-skills-design.md` | (no frontmatter) | draft | implementation | akosha-skills |
+| `docs/specs/2026-04-14-bodai-radar-design.md` | (no frontmatter) | draft | implementation | bodai-radar |
+| `docs/specs/2026-04-14-session-archaeologist-design.md` | (no frontmatter) | draft | implementation | session-archaeologist |
+| `docs/specs/2026-04-26-agent-skill-modernization-design.md` | Draft | draft | implementation | agent-skill-modernization |
+| `docs/specs/2026-04-26-code-indexing-integration-design.md` | Draft | draft | implementation | code-indexing-integration |
+| `docs/specs/2026-04-26-config-consolidation-design.md` | Draft | draft | implementation | config-consolidation |
+| `docs/specs/2026-04-26-pattern-learning-scaffolding-design.md` | Draft | draft | implementation | pattern-learning-scaffolding |
+| `docs/specs/2026-04-26-splashstand-oneiric-migration-design.md` | Draft | draft | implementation | splashstand-oneiric |
+| `docs/specs/2026-04-27-bodai-auth-standardization-design.md` | Approved | active | implementation | bodai-auth |
+| `docs/specs/2026-05-16-llm-routing-standardization-design.md` | Approved (rev 2) | active | implementation | llm-routing |
+| `docs/specs/2026-05-22-terminal-grid-design.md` | Approved for implementation | active | implementation | terminal-grid |
+| `docs/specs/2026-05-23-unified-iterm2-applescript-design.md` | Draft for review | draft | implementation | unified-iterm2-applescript |
+| `docs/specs/2026-05-24-dhara-serverless-design.md` | draft | draft | implementation | dhara-serverless |
+| `docs/specs/2026-06-19-external-integrations-design.md` | Approved rev 3 | active | implementation | external-integrations |
+| `docs/specs/2026-06-19-wave2a-chaos-hardening-design.md` | Approved | active | implementation | chaos-hardening |
+| `docs/specs/2026-06-19-wave2b-a2a-worker-design.md` | Approved | active | implementation | a2a-worker |
+| `docs/specs/2026-06-21-bodai-crow-server-design.md` | Draft (v5) | draft | implementation | bodai-crow-server |
+| `docs/specs/2026-06-22-adapter-runtime-observability-design.md` | DEFERRED | draft | implementation | adapter-runtime-observability — blocks_on: `dhara-http-api-surface` |
+| `docs/specs/2026-06-22-anti-ai-flavor-style-sop-design.md` | Draft | draft | implementation | style-sop |
+| `docs/specs/2026-06-22-completion-report-schema-v1-design.md` | Draft | draft | implementation | completion-report-schema |
+| `docs/specs/2026-06-22-confidence-ceiling-gate-design.md` | Draft | draft | implementation | confidence-ceiling-gate |
+| `docs/specs/2026-06-22-live-observe-presence-over-gate-design.md` | DEFERRED | draft | implementation | live-observe-presence — blocks_on: `dhara-http-api-surface` |
+| `docs/specs/2026-06-22-multi-tenant-context-packs-design.md` | DEFERRED | draft | implementation | multi-tenant-context-packs — blocks_on: `dhara-http-api-surface` |
+| `docs/specs/2026-06-22-precommitment-hypothesis-lock-design.md` | Draft | draft | implementation | precommitment-hypothesis-lock |
+| `docs/specs/2026-06-22-project-scoped-sop-evolution-design.md` | DEFERRED | draft | implementation | project-scoped-sop-evolution — blocks_on: `dhara-sql-execute-query` |
+| `docs/specs/2026-06-22-three-layer-self-heal-design.md` | Draft | draft | implementation | three-layer-self-heal |
+| `docs/specs/2026-06-22-three-zone-skill-pipeline-design.md` | Draft | draft | implementation | three-zone-skill-pipeline |
+| `docs/specs/2026-07-14-multi-backend-pty-design.md` | Approved (awaiting plan) | active | implementation | multi-backend-pty |
+| `docs/specs/2026-07-15-constellation-tui-design.md` | Approved | active | implementation | constellation-tui |
+| `docs/specs/2026-07-15-mahavishnu-acp-server-design.md` | Approved | active | implementation | mahavishnu-acp-server |
+| `docs/specs/2026-07-15-sb-checkpoint-stash-clobber-fix-design.md` | approved (pending code) | active | implementation | sb-checkpoint-stash-clobber-fix |
 
-### Store: docs/superpowers/plans/ (47 files, Phase P4)
+### Store: docs/plans/ (47 files, Phase P4)
 
 **Active / shipped / complete (Phase P4 task 1):**
 
 | Path | Current Status | Proposed Status | Proposed Role |
 |---|---|---|---|
-| `docs/superpowers/plans/2026-04-26-code-indexing-integration.md` | COMPLETE 2026-04-30 | complete | implementation |
-| `docs/superpowers/plans/2026-04-26-config-consolidation.md` | delivered 2026-05-14 | shipped | implementation |
-| `docs/superpowers/plans/2026-04-26-pattern-learning-scaffolding.md` | COMPLETE | complete | implementation |
-| `docs/superpowers/plans/2026-04-26-splashstand-oneiric-migration.md` | COMPLETE | complete | implementation |
-| `docs/superpowers/plans/2026-05-07-bodai-phase1-harden-control-plane.md` | COMPLETE | shipped | implementation |
-| `docs/superpowers/plans/2026-05-07-bodai-phase3-cross-repo-coordination.md` | COMPLETE | shipped | implementation |
-| `docs/superpowers/plans/2026-05-14-doc-sync-and-channel-phase2.md` | (this plan's predecessor) | shipped | implementation |
-| `docs/superpowers/plans/2026-07-15-sb-checkpoint-stash-clobber-fix.md` | (no frontmatter) | draft | implementation |
+| `docs/plans/2026-04-26-code-indexing-integration.md` | COMPLETE 2026-04-30 | complete | implementation |
+| `docs/plans/2026-04-26-config-consolidation.md` | delivered 2026-05-14 | shipped | implementation |
+| `docs/plans/2026-04-26-pattern-learning-scaffolding.md` | COMPLETE | complete | implementation |
+| `docs/plans/2026-04-26-splashstand-oneiric-migration.md` | COMPLETE | complete | implementation |
+| `docs/plans/2026-05-07-bodai-phase1-harden-control-plane.md` | COMPLETE | shipped | implementation |
+| `docs/plans/2026-05-07-bodai-phase3-cross-repo-coordination.md` | COMPLETE | shipped | implementation |
+| `docs/plans/2026-05-14-doc-sync-and-channel-phase2.md` | (this plan's predecessor) | shipped | implementation |
+| `docs/plans/2026-07-15-sb-checkpoint-stash-clobber-fix.md` | (no frontmatter) | draft | implementation |
 
-**Drafts / no status (Phase P4 task 2):** the remaining 39 files in `docs/superpowers/plans/` carry no canonical Status marker. They are prepended with `status: draft` and `role: implementation` and are tagged with their existing topic. The exhaustive list is the inverse of the eight listed above. Examples:
+**Drafts / no status (Phase P4 task 2):** the remaining 39 files in `docs/plans/` carry no canonical Status marker. They are prepended with `status: draft` and `role: implementation` and are tagged with their existing topic. The exhaustive list is the inverse of the eight listed above. Examples:
 
 | Path | Proposed Status | Proposed Role | Topic |
 |---|---|---|---|
-| `docs/superpowers/plans/2026-04-14-akosha-skills.md` | draft | implementation | akosha-skills |
-| `docs/superpowers/plans/2026-04-14-bodai-radar.md` | draft | implementation | bodai-radar |
-| `docs/superpowers/plans/2026-04-14-session-archaeologist.md` | draft | implementation | session-archaeologist |
-| `docs/superpowers/plans/2026-04-26-agent-skill-modernization.md` | draft | implementation | agent-skill-modernization |
-| `docs/superpowers/plans/2026-04-27-bodai-auth-standardization.md` | draft | implementation | bodai-auth |
-| `docs/superpowers/plans/2026-05-01-runpod-flash-pool.md` | draft | implementation | runpod-flash-pool |
-| `docs/superpowers/plans/2026-05-08-hatchet-adapter.md` | draft | implementation | hatchet-adapter |
-| `docs/superpowers/plans/2026-05-16-llm-routing-plan1-mcp-common.md` | draft | implementation | llm-routing-plan1 |
-| `docs/superpowers/plans/2026-05-16-llm-routing-plan2-downstream-migration.md` | draft | implementation | llm-routing-plan2 |
-| `docs/superpowers/plans/2026-05-22-terminal-grid-plan.md` | draft | implementation | terminal-grid |
-| `docs/superpowers/plans/2026-05-23-unified-iterm2-applescript-plan.md` | draft | implementation | unified-iterm2-applescript |
-| `docs/superpowers/plans/2026-05-25-dhara-serverless-implementation-plan.md` | draft | implementation | dhara-serverless |
-| `docs/superpowers/plans/2026-06-01-dhara-crackerjack-critical-bug-fixes.md` | draft | implementation | dhara-crackerjack-bug-fixes |
-| `docs/superpowers/plans/2026-06-19-track1-terminal-gap.md` | draft | implementation | track1-terminal-gap |
-| `docs/superpowers/plans/2026-06-19-track2-openhands.md` | draft | implementation | track2-openhands |
-| `docs/superpowers/plans/2026-06-19-track3-toad-tui.md` | draft | implementation | track3-toad-tui |
-| `docs/superpowers/plans/2026-06-19-track4-turbovec.md` | draft | implementation | track4-turbovec |
-| `docs/superpowers/plans/2026-06-19-wave2b-a2a-worker.md` | draft | implementation | wave2b-a2a-worker |
-| `docs/superpowers/plans/2026-06-22-adapter-runtime-observability.md` | draft | implementation | adapter-runtime-observability |
-| `docs/superpowers/plans/2026-06-22-anti-ai-flavor-style-sop.md` | draft | implementation | style-sop |
-| `docs/superpowers/plans/2026-06-22-bodai-crow-http-server.md` | draft | implementation | bodai-crow-http-server |
-| `docs/superpowers/plans/2026-06-22-completion-report-schema-v1.md` | draft | implementation | completion-report-schema |
-| `docs/superpowers/plans/2026-06-22-confidence-ceiling-gate.md` | draft | implementation | confidence-ceiling-gate |
-| `docs/superpowers/plans/2026-06-22-live-observe-presence-over-gate.md` | draft | implementation | live-observe-presence |
-| `docs/superpowers/plans/2026-06-22-multi-tenant-context-packs.md` | draft | implementation | multi-tenant-context-packs |
-| `docs/superpowers/plans/2026-06-22-precommitment-hypothesis-lock.md` | draft | implementation | precommitment-hypothesis-lock |
-| `docs/superpowers/plans/2026-06-22-project-scoped-sop-evolution.md` | draft | implementation | project-scoped-sop-evolution |
-| `docs/superpowers/plans/2026-06-22-three-layer-self-heal.md` | draft | implementation | three-layer-self-heal |
-| `docs/superpowers/plans/2026-06-22-three-zone-skill-pipeline.md` | draft | implementation | three-zone-skill-pipeline |
-| `docs/superpowers/plans/2026-06-23-remove-vestigial-bs4-from-mahavishnu.md` | draft | implementation | vestigial-bs4-removal |
-| `docs/superpowers/plans/2026-06-26-dhara-substrate-extension.md` | Drafted 2026-06-26 | draft | implementation | dhara-substrate-extension |
-| `docs/superpowers/plans/2026-06-26-fastmcp-3-upgrade-inventory.md` | Read-only audit complete | complete | record |
-| `docs/superpowers/plans/2026-06-26-fastmcp-3-upgrade.md` | Drafted 2026-06-26 | draft | implementation | fastmcp-3-upgrade |
-| `docs/superpowers/plans/2026-06-26-mcpserver-settings-convention.md` | Drafted 2026-06-26 | draft | implementation | mcpserver-settings-convention |
-| `docs/superpowers/plans/2026-06-26-session-buddy-schema-alignment.md` | Drafted 2026-06-26 | draft | implementation | session-buddy-schema-alignment |
-| `docs/superpowers/plans/2026-06-27-dhara-substrate-implementation.md` | (no frontmatter) | draft | implementation | dhara-substrate-implementation |
-| `docs/superpowers/plans/2026-07-13-mcp-server-family-mcpbase-migration.md` | (no frontmatter) | draft | implementation | mcpbase-migration |
-| `docs/superpowers/plans/2026-07-14-multi-backend-pty.md` | (no frontmatter) | draft | implementation | multi-backend-pty |
-| `docs/superpowers/plans/2026-07-15-constellation-tui.md` | (no frontmatter) | draft | implementation | constellation-tui |
+| `docs/plans/2026-04-14-akosha-skills.md` | draft | implementation | akosha-skills |
+| `docs/plans/2026-04-14-bodai-radar.md` | draft | implementation | bodai-radar |
+| `docs/plans/2026-04-14-session-archaeologist.md` | draft | implementation | session-archaeologist |
+| `docs/plans/2026-04-26-agent-skill-modernization.md` | draft | implementation | agent-skill-modernization |
+| `docs/plans/2026-04-27-bodai-auth-standardization.md` | draft | implementation | bodai-auth |
+| `docs/plans/2026-05-01-runpod-flash-pool.md` | draft | implementation | runpod-flash-pool |
+| `docs/plans/2026-05-08-hatchet-adapter.md` | draft | implementation | hatchet-adapter |
+| `docs/plans/2026-05-16-llm-routing-plan1-mcp-common.md` | draft | implementation | llm-routing-plan1 |
+| `docs/plans/2026-05-16-llm-routing-plan2-downstream-migration.md` | draft | implementation | llm-routing-plan2 |
+| `docs/plans/2026-05-22-terminal-grid-plan.md` | draft | implementation | terminal-grid |
+| `docs/plans/2026-05-23-unified-iterm2-applescript-plan.md` | draft | implementation | unified-iterm2-applescript |
+| `docs/plans/2026-05-25-dhara-serverless-implementation-plan.md` | draft | implementation | dhara-serverless |
+| `docs/plans/2026-06-01-dhara-crackerjack-critical-bug-fixes.md` | draft | implementation | dhara-crackerjack-bug-fixes |
+| `docs/plans/2026-06-19-track1-terminal-gap.md` | draft | implementation | track1-terminal-gap |
+| `docs/plans/2026-06-19-track2-openhands.md` | draft | implementation | track2-openhands |
+| `docs/plans/2026-06-19-track3-toad-tui.md` | draft | implementation | track3-toad-tui |
+| `docs/plans/2026-06-19-track4-turbovec.md` | draft | implementation | track4-turbovec |
+| `docs/plans/2026-06-19-wave2b-a2a-worker.md` | draft | implementation | wave2b-a2a-worker |
+| `docs/plans/2026-06-22-adapter-runtime-observability.md` | draft | implementation | adapter-runtime-observability |
+| `docs/plans/2026-06-22-anti-ai-flavor-style-sop.md` | draft | implementation | style-sop |
+| `docs/plans/2026-06-22-bodai-crow-http-server.md` | draft | implementation | bodai-crow-http-server |
+| `docs/plans/2026-06-22-completion-report-schema-v1.md` | draft | implementation | completion-report-schema |
+| `docs/plans/2026-06-22-confidence-ceiling-gate.md` | draft | implementation | confidence-ceiling-gate |
+| `docs/plans/2026-06-22-live-observe-presence-over-gate.md` | draft | implementation | live-observe-presence |
+| `docs/plans/2026-06-22-multi-tenant-context-packs.md` | draft | implementation | multi-tenant-context-packs |
+| `docs/plans/2026-06-22-precommitment-hypothesis-lock.md` | draft | implementation | precommitment-hypothesis-lock |
+| `docs/plans/2026-06-22-project-scoped-sop-evolution.md` | draft | implementation | project-scoped-sop-evolution |
+| `docs/plans/2026-06-22-three-layer-self-heal.md` | draft | implementation | three-layer-self-heal |
+| `docs/plans/2026-06-22-three-zone-skill-pipeline.md` | draft | implementation | three-zone-skill-pipeline |
+| `docs/plans/2026-06-23-remove-vestigial-bs4-from-mahavishnu.md` | draft | implementation | vestigial-bs4-removal |
+| `docs/plans/2026-06-26-dhara-substrate-extension.md` | Drafted 2026-06-26 | draft | implementation | dhara-substrate-extension |
+| `docs/plans/2026-06-26-fastmcp-3-upgrade-inventory.md` | Read-only audit complete | complete | record |
+| `docs/plans/2026-06-26-fastmcp-3-upgrade.md` | Drafted 2026-06-26 | draft | implementation | fastmcp-3-upgrade |
+| `docs/plans/2026-06-26-mcpserver-settings-convention.md` | Drafted 2026-06-26 | draft | implementation | mcpserver-settings-convention |
+| `docs/plans/2026-06-26-session-buddy-schema-alignment.md` | Drafted 2026-06-26 | draft | implementation | session-buddy-schema-alignment |
+| `docs/plans/2026-06-27-dhara-substrate-implementation.md` | (no frontmatter) | draft | implementation | dhara-substrate-implementation |
+| `docs/plans/2026-07-13-mcp-server-family-mcpbase-migration.md` | (no frontmatter) | draft | implementation | mcpbase-migration |
+| `docs/plans/2026-07-14-multi-backend-pty.md` | (no frontmatter) | draft | implementation | multi-backend-pty |
+| `docs/plans/2026-07-15-constellation-tui.md` | (no frontmatter) | draft | implementation | constellation-tui |
 
 ### Store: .claude/decisions/ (11 files, Phase P5 — lighter schema)
 
@@ -481,7 +481,7 @@ Four files in this store are explicitly superseded:
 - `docs/plans/2026-05-23-bodai-routing-feedback-loop-v2.md` → `superseded_by: docs/plans/2026-05-23-bodai-routing-feedback-loop-v4.md`
 - `docs/plans/2026-05-23-bodai-routing-feedback-loop-v3.md` → `superseded_by: docs/plans/2026-05-23-bodai-routing-feedback-loop-v4.md`
 - `docs/plans/claw-inspired-orchestration-proposal.md` → `superseded_by: docs/plans/2026-04-25-mahavishnu-ecosystem-control-plane-update-plan.md`
-- `docs/plans/tensorzero-gateway-plan.md` → `superseded_by: docs/superpowers/plans/2026-05-16-llm-routing-plan1-mcp-common.md`
+- `docs/plans/tensorzero-gateway-plan.md` → `superseded_by: docs/plans/2026-05-16-llm-routing-plan1-mcp-common.md`
 
 All five receive `role: historical`. The successor files are validated to exist before commit.
 
@@ -502,22 +502,22 @@ git commit -m "docs(plans): normalize 65 files to unified frontmatter; wire supe
 
 ### Phase P3: Normalize 32 specs
 
-**Goal:** Migrate `docs/superpowers/specs/` and make spec→plan relationships machine-readable.
+**Goal:** Migrate `docs/specs/` and make spec→plan relationships machine-readable.
 
-**Files:** 32 files under `docs/superpowers/specs/`.
+**Files:** 32 files under `docs/specs/`.
 
 - [ ] **Step 1: Apply full frontmatter to all 32 specs**
 
-Each spec receives `status: draft` or `active` per File Map. All four `DEFERRED` specs receive `status: draft` and populate `blocks_on` with the named dependency (e.g., `blocks_on: [ext:dhara-http-api-surface]`). The marker file `docs/superpowers/specs/2026-04-09-tui-design.md` receives `status: complete`, `role: historical`, and `superseded_by: docs/plans/2026-04-16-bodai-agent-platform-master-spec.md`.
+Each spec receives `status: draft` or `active` per File Map. All four `DEFERRED` specs receive `status: draft` and populate `blocks_on` with the named dependency (e.g., `blocks_on: [ext:dhara-http-api-surface]`). The marker file `docs/specs/2026-04-09-tui-design.md` receives `status: complete`, `role: historical`, and `superseded_by: docs/plans/2026-04-16-bodai-agent-platform-master-spec.md`.
 
 - [ ] **Step 2: Match spec/plan topic pairs**
 
-Every spec's `topic` matches the topic of its paired plan in `docs/superpowers/plans/` (or its `docs/plans/` supersession target). Mismatches are listed in the validator report and corrected before commit.
+Every spec's `topic` matches the topic of its paired plan in `docs/plans/` (or its `docs/plans/` supersession target). Mismatches are listed in the validator report and corrected before commit.
 
 - [ ] **Step 3: Run validator**
 
 ```bash
-uv run python scripts/validate_document_frontmatter.py docs/superpowers/specs/
+uv run python scripts/validate_document_frontmatter.py docs/specs/
 ```
 
 Expected: 32 files pass. Every `blocks_on` entry either resolves to an existing file or starts with `ext:`.
@@ -525,15 +525,15 @@ Expected: 32 files pass. Every `blocks_on` entry either resolves to an existing 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add docs/superpowers/specs/
+git add docs/specs/
 git commit -m "docs(specs): normalize 32 specs to unified frontmatter; defer blocks_on"
 ```
 
 ### Phase P4: Normalize 47 superpowers plans
 
-**Goal:** Migrate `docs/superpowers/plans/`; finalize spec/plan pairing.
+**Goal:** Migrate `docs/plans/`; finalize spec/plan pairing.
 
-**Files:** 47 files under `docs/superpowers/plans/`.
+**Files:** 47 files under `docs/plans/`.
 
 - [ ] **Step 1: Apply complete/shipped frontmatter to the eight closed plans**
 
@@ -546,7 +546,7 @@ The 39 plans lacking a canonical Status line receive `status: draft` and `role: 
 - [ ] **Step 3: Run validator**
 
 ```bash
-uv run python scripts/validate_document_frontmatter.py docs/superpowers/plans/
+uv run python scripts/validate_document_frontmatter.py docs/plans/
 ```
 
 Expected: 47 files pass.
@@ -554,7 +554,7 @@ Expected: 47 files pass.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add docs/superpowers/plans/
+git add docs/plans/
 git commit -m "docs(superpowers-plans): normalize 47 plans to unified frontmatter"
 ```
 
@@ -664,7 +664,7 @@ ______________________________________________________________________
   Expected exit code 0; 178 in-scope files validated; 0 errors.
 
   ```bash
-  grep -L '^status:' docs/plans/*.md docs/superpowers/plans/*.md docs/superpowers/specs/*.md docs/adr/*.md .claude/decisions/*.md docs/followups/*.md
+  grep -L '^status:' docs/plans/*.md docs/plans/*.md docs/specs/*.md docs/adr/*.md .claude/decisions/*.md docs/followups/*.md
   ```
 
   Expected: empty output (every in-scope file carries a `status:` line).
@@ -685,7 +685,7 @@ uv run python scripts/validate_document_frontmatter.py
 # Expected: "178 files validated, 0 errors, 0 warnings"
 
 # 2. Every in-scope file carries frontmatter
-grep -L '^status:' docs/plans/*.md docs/superpowers/plans/*.md docs/superpowers/specs/*.md docs/adr/*.md .claude/decisions/*.md docs/followups/*.md
+grep -L '^status:' docs/plans/*.md docs/plans/*.md docs/specs/*.md docs/adr/*.md .claude/decisions/*.md docs/followups/*.md
 # Expected: empty output
 
 # 3. No legacy status strings remain
@@ -693,7 +693,7 @@ grep -rE '^\*\*Status\*\*: (Accepted|Approved|Proposed|Draft|Resolved)' docs/adr
 # Expected: empty output
 
 # 4. All superseded_by targets resolve
-grep -h '^superseded_by:' docs/plans/*.md docs/superpowers/specs/*.md | grep -v 'null' | awk -F': ' '{print $2}' | while read path; do
+grep -h '^superseded_by:' docs/plans/*.md docs/specs/*.md | grep -v 'null' | awk -F': ' '{print $2}' | while read path; do
   test -f "$path" || echo "broken link: $path"
 done
 # Expected: empty output
@@ -704,7 +704,7 @@ git diff --stat docs/plans/PLAN_INDEX.md
 # Expected: no diff on second run
 
 # 6. Spec/plan topic pairs match
-for spec in docs/superpowers/specs/*.md; do
+for spec in docs/specs/*.md; do
   topic=$(grep '^topic:' "$spec" | awk '{print $2}')
   plan="${spec//specs/plans}"
   if [ -f "$plan" ]; then
