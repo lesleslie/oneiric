@@ -64,7 +64,7 @@ class InMemoryRedisStreamsClient:
         streams: dict[str, str],
         count: int,
         block: int,
-    ) -> list[Any]:
+    ) -> dict[str, list[tuple[str, dict[str, Any]]]]:
         stream = next(iter(streams.keys()))
         available = [
             entry
@@ -72,7 +72,9 @@ class InMemoryRedisStreamsClient:
             if not self.pending[entry[0]]["acked"]
         ]
         selection = available[:count]
-        results = [(stream, selection)] if selection else []
+        results: dict[str, list[tuple[str, dict[str, Any]]]] = (
+            {stream: selection} if selection else {}
+        )
         for message_id, _ in selection:
             meta = self.pending[message_id]
             meta["consumer"] = consumer
@@ -213,3 +215,73 @@ async def test_pubsub_publish_and_subscribe_flow() -> None:
         ("bodai:events:workflow.completed", b'{"done":true}'),
     ]
     await adapter.cleanup()
+
+
+# ----------------------------------------------------------------------------
+# _format_entries regression tests (pin coredis 6.x dict-shaped response)
+# ----------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_format_entries_dict_shape_coredis_6x() -> None:
+    """_format_entries must accept coredis 6.x's dict-shaped xreadgroup response.
+
+    coredis 6.x returns ``{stream_key: list[StreamEntry]}`` rather than the
+    pre-6 list of tuples. Iterating a dict as `for stream_key, messages in
+    entries` gives just the keys — unpacking would raise
+    ``too many values to unpack (expected 2)``. The adapter MUST call
+    ``entries.items()`` for the dict shape. Pre-1.0 — replace, not extend.
+    """
+    adapter = RedisStreamsQueueAdapter(
+        RedisStreamsQueueSettings(stream="jobs", group="workers", consumer="c1"),
+        redis_client=InMemoryRedisStreamsClient(),
+    )
+    await adapter.init()
+    try:
+        entries: dict[str, list[tuple[str, dict[str, Any]]]] = {
+            "jobs": [
+                ("1-0", {"task": "alpha"}),
+                ("1-1", {"task": "beta"}),
+            ],
+        }
+        formatted = adapter._format_entries(entries)
+        assert formatted == [
+            {"message_id": "1-0", "payload": {"task": "alpha"}},
+            {"message_id": "1-1", "payload": {"task": "beta"}},
+        ]
+    finally:
+        await adapter.cleanup()
+
+
+@pytest.mark.asyncio
+async def test_format_entries_none_input_returns_empty() -> None:
+    """None input (e.g., coredis block-timeout with no messages) returns []."""
+    adapter = RedisStreamsQueueAdapter(
+        RedisStreamsQueueSettings(stream="jobs", group="workers", consumer="c1"),
+        redis_client=InMemoryRedisStreamsClient(),
+    )
+    await adapter.init()
+    try:
+        assert adapter._format_entries(None) == []
+        assert adapter._format_entries({}) == []
+    finally:
+        await adapter.cleanup()
+
+
+@pytest.mark.asyncio
+async def test_format_entries_filters_other_streams() -> None:
+    """Multi-stream dict input — only the configured stream's entries pass."""
+    adapter = RedisStreamsQueueAdapter(
+        RedisStreamsQueueSettings(stream="jobs", group="workers", consumer="c1"),
+        redis_client=InMemoryRedisStreamsClient(),
+    )
+    await adapter.init()
+    try:
+        entries: dict[str, list[tuple[str, dict[str, Any]]]] = {
+            "jobs": [("1-0", {"task": "wanted"})],
+            "audit": [("2-0", {"task": "skipped"})],
+        }
+        formatted = adapter._format_entries(entries)
+        assert formatted == [{"message_id": "1-0", "payload": {"task": "wanted"}}]
+    finally:
+        await adapter.cleanup()

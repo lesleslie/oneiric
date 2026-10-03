@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import inspect
 import json
-from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover - optional dependency typing
@@ -367,9 +367,11 @@ class RedisStreamsQueueAdapter(EnsureClientMixin):
             client.ping(), timeout=self._settings.healthcheck_timeout
         )
 
-    def _format_entries(self, entries: Iterable[Any]) -> list[dict[str, Any]]:
+    def _format_entries(
+        self, entries: dict[str, Any] | None
+    ) -> list[dict[str, Any]]:
         formatted: list[dict[str, Any]] = []
-        for stream_key, messages in entries or []:
+        for stream_key, messages in (entries or {}).items():
             if stream_key != self._settings.stream:
                 continue
             for message_id, payload in messages:
