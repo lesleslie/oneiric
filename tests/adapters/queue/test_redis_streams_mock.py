@@ -11,6 +11,7 @@ from typing import Any, Self
 
 import pytest
 from coredis.exceptions import (
+    ConnectionError,
     ResponseError,
     StreamDuplicateConsumerGroupError,
 )
@@ -402,7 +403,13 @@ async def test_health_false_on_ping_failure() -> None:
     await adapter.init()
 
     async def bad_ping() -> bool:
-        raise Exception("connection refused")
+        # Use coredis's typed ConnectionError, not bare Exception: the
+        # production health() method catches (RedisError, TimeoutError)
+        # and a real failing ping surfaces as a typed coredis exception,
+        # not a bare Exception. ConnectionError is a RedisError subclass
+        # (verified via coredis.exceptions.ConnectionError.__mro__), so
+        # the existing except clause catches it.
+        raise ConnectionError("connection refused")
 
     client.ping = bad_ping  # type: ignore[method-assign]
     assert await adapter.health() is False
