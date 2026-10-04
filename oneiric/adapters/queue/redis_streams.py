@@ -368,10 +368,18 @@ class RedisStreamsQueueAdapter(EnsureClientMixin):
         )
 
     def _format_entries(
-        self, entries: dict[str, Any] | None
+        self, entries: dict[str, Any] | Sequence[Any] | None
     ) -> list[dict[str, Any]]:
         formatted: list[dict[str, Any]] = []
-        for stream_key, messages in (entries or {}).items():
+        # coredis 6.x returns xreadgroup as a dict keyed by stream name;
+        # earlier coredis and in-memory fixtures return a list of
+        # ``(stream_key, messages)`` tuples. Normalise to pairs before the
+        # stream filter so both shapes are accepted.
+        if isinstance(entries, dict):
+            pairs = entries.items()
+        else:
+            pairs = entries or ()
+        for stream_key, messages in pairs:
             if stream_key != self._settings.stream:
                 continue
             for message_id, payload in messages:
