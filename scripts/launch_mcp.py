@@ -155,13 +155,12 @@ def _build_warm_feeds() -> dict[str, HealthFeedState]:
 
 
 def build_server():
-    """Closure factory: the inner closure takes no args.
+    """Closure factory: returns the configured Oneiric FastMCP server.
 
-    The variadic ``Callable[..., Any]`` contract (REQ-003) lets the
-    launcher call ``build_server()`` with no positional args. Two-stage
-    capture is the canonical pattern (cookbook Example 4 — crackerjack):
-    the factory binds the heavy deps (auth load + processor) so the
-    inner closure is a trivial ``return build_mcp_server(...)``.
+    ``FastMCPServer.run_async(...)`` satisfies the launcher's duck-typed
+    contract (variadic ``Callable[..., Any]`` — REQ-003), so the wrapper
+    can be returned directly. The launcher calls ``build_server()`` with
+    no args and gets the FastMCP server back.
 
     The launcher warms only the ``settings`` feed (REQ-004) for the
     generic HealthFeedState. ``context`` and ``progress`` start unhealthy
@@ -181,16 +180,13 @@ def build_server():
     processor = _build_processor()
     health_feeds = _build_warm_feeds()
 
-    def _build():
-        return build_mcp_server(
-            config=SimpleNamespace(name="oneiric"),
-            auth_config=mcp_auth_config,
-            providers=mcp_providers,
-            processor=processor,
-            health_feeds=health_feeds,
-        )
-
-    return _build
+    return build_mcp_server(
+        config=SimpleNamespace(name="oneiric"),
+        auth_config=mcp_auth_config,
+        providers=mcp_providers,
+        processor=processor,
+        health_feeds=health_feeds,
+    )
 
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
