@@ -160,7 +160,7 @@ class PgvectorAdapter(VectorBase[PgvectorSettings]):
             VectorSearchResult(
                 id=record["id"],
                 score=float(record["distance"]),
-                metadata=record["metadata"] or {},
+                metadata=self._decode_metadata(record["metadata"]),
                 vector=record["embedding"] if include_vectors else None,
             )
             for record in records
@@ -217,7 +217,7 @@ class PgvectorAdapter(VectorBase[PgvectorSettings]):
         return [
             VectorDocument(
                 id=record["id"],
-                metadata=record["metadata"] or {},
+                metadata=self._decode_metadata(record["metadata"]),
                 vector=record["embedding"] if include_vectors else [],
             )
             for record in records
@@ -483,6 +483,23 @@ class PgvectorAdapter(VectorBase[PgvectorSettings]):
 
     def _quote_ident(self, identifier: str) -> str:
         return f'"{identifier}"'
+
+    @staticmethod
+    def _decode_metadata(value: Any) -> dict[str, Any]:
+        """Normalize a JSONB column read from asyncpg into a dict.
+
+        asyncpg returns JSONB columns as ``str`` by default. The test fixtures
+        (and any caller that wires its own connection) may already have
+        registered a JSONB codec, so we accept both shapes plus ``None`` and
+        return an empty dict for missing values. ``VectorSearchResult.metadata``
+        and ``VectorDocument.metadata`` are typed as ``dict`` and Pydantic
+        rejects a raw JSON string — this helper is the single chokepoint.
+        """
+        if value is None:
+            return {}
+        if isinstance(value, dict):
+            return value
+        return json.loads(value)
 
     async def _write_documents(
         self,

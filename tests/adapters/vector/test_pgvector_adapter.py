@@ -460,3 +460,133 @@ def test_normalize_collection_digit_prefix() -> None:
     result = adapter._normalize_collection_name("9things")
     assert result.startswith("v_")
     assert "9things" in result
+
+
+# ---------------------------------------------------------------------------
+# Tests — JSONB metadata round-trip (regression guard for asyncpg JSONB-as-str)
+# ---------------------------------------------------------------------------
+
+
+class JsonbStringConnection(FakeConnection):
+    """FakeConnection that returns the ``metadata`` column as a JSON-encoded str.
+
+    This mirrors the real asyncpg default: JSONB columns are decoded as ``str``
+    unless the caller has registered a JSONB codec. Regression guard for the
+    ValidationError that surfaced when ``VectorSearchResult.metadata`` received
+    a raw JSON string instead of a dict.
+    """
+
+    async def fetch(self, sql: str, *params: object) -> list[dict[str, object]]:
+        self.fetch_calls.append((sql, params))
+        return [
+            {
+                "id": "doc-1",
+                "metadata": json.dumps({"k": "v", "nested": {"n": 1}}),
+                "embedding": [0.1, 0.2],
+                "distance": 0.25,
+            },
+        ]
+
+
+class JsonbStringWithNullConnection(FakeConnection):
+    async def fetch(self, sql: str, *params: object) -> list[dict[str, object]]:
+        self.fetch_calls.append((sql, params))
+        return [
+            {
+                "id": "doc-1",
+                "metadata": None,
+                "embedding": [0.1, 0.2],
+                "distance": 0.1,
+            },
+        ]
+
+
+@pytest.mark.asyncio
+async def test_search_decodes_jsonb_string_from_asyncpg() -> None:
+    """Regression: search() must json.loads() the JSONB column read by asyncpg.
+
+    Pre-fix, this raised ``ValidationError: metadata Input should be a valid
+    dictionary [type=dict_type, input_value='{"k": "v", ...}', input_type=str]``.
+    """
+    conn = JsonbStringConnection()
+    pool = FakePool(conn)
+    settings = PgvectorSettings(
+        database="app",
+        db_schema="public",
+        collection_prefix="vec_",
+        ensure_extension=False,
+    )
+
+    async def _pool_factory(**_kwargs: object) -> FakePool:
+        return pool
+
+    adapter = PgvectorAdapter(settings, pool_factory=_pool_factory)
+    results = await adapter.search("items", [0.1, 0.2], limit=3)
+
+    assert len(results) == 1
+    assert results[0].id == "doc-1"
+    assert results[0].metadata == {"k": "v", "nested": {"n": 1}}
+
+
+@pytest.mark.asyncio
+async def test_get_decodes_jsonb_string_from_asyncpg() -> None:
+    """Regression: get() must json.loads() the JSONB column read by asyncpg.
+
+    Same root cause as search(); both are exercised by akosha's warm-store path.
+    """
+    conn = JsonbStringConnection()
+    pool = FakePool(conn)
+    settings = PgvectorSettings(
+        database="app",
+        db_schema="public",
+        collection_prefix="vec_",
+        ensure_extension=False,
+    )
+
+    async def _pool_factory(**_kwargs: object) -> FakePool:
+        return pool
+
+    adapter = PgvectorAdapter(settings, pool_factory=_pool_factory)
+    docs = await adapter.get("items", ["doc-1"])
+
+    assert len(docs) == 1
+    assert docs[0].id == "doc-1"
+    assert docs[0].metadata == {"k": "v", "nested": {"n": 1}}
+
+
+@pytest.mark.asyncio
+async def test_search_with_null_jsonb_returns_empty_metadata() -> None:
+    """search() with a NULL metadata column returns an empty dict, not None."""
+    conn = JsonbStringWithNullConnection()
+    pool = FakePool(conn)
+    settings = PgvectorSettings(
+        database="app",
+        db_schema="public",
+        collection_prefix="vec_",
+        ensure_extension=False,
+    )
+
+    async def _pool_factory(**_kwargs: object) -> FakePool:
+        return pool
+
+    adapter = PgvectorAdapter(settings, pool_factory=_pool_factory)
+    results = await adapter.search("items", [0.1, 0.2], limit=1)
+
+    assert len(results) == 1
+    assert results[0].metadata == {}
+
+
+def test_decode_metadata_passes_through_dict() -> None:
+    """_decode_metadata passes a dict through unchanged (already-decoded codec)."""
+    result = PgvectorAdapter._decode_metadata({"k": "v"})
+    assert result == {"k": "v"}
+
+
+def test_decode_metadata_handles_none() -> None:
+    """_decode_metadata returns an empty dict for None (NULL JSONB column)."""
+    assert PgvectorAdapter._decode_metadata(None) == {}
+
+
+def test_decode_metadata_loads_json_string() -> None:
+    """_decode_metadata json.loads() a JSON string (asyncpg default)."""
+    assert PgvectorAdapter._decode_metadata('{"k": "v"}') == {"k": "v"}
