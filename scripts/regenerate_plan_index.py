@@ -80,7 +80,7 @@ STORE_LABELS: dict[str, str] = {
     "docs/adr/": "Architecture Decision Records (`docs/adr/`)",
     "docs/plans/": "Plans & Specifications (`docs/plans/`)",
     "docs/specs/": "Superpowers Specs (`docs/specs/`)",
-    "docs/plans/": "Superpowers Plans (`docs/plans/`)",
+    "docs/superpowers/plans/": "Superpowers Plans (`docs/superpowers/plans/`)",
     ".claude/decisions/": "Repo-local Decisions (`.claude/decisions/`)",
     "docs/followups/": "Follow-up Notes (`docs/followups/`)",
 }

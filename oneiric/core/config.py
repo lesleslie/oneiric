@@ -23,6 +23,15 @@ if TYPE_CHECKING:
     # ``_default_otel_storage_settings`` below).
     from oneiric.adapters.observability.settings import OTelStorageSettings
 
+    # 2026-10-05: same lazy-forward pattern for ``OneiricSettings.auth`` —
+    # eager import of oneiric.mcp.config pulls in oneiric.mcp.__init__, which
+    # transitively imports mcp_common → oneiric.runtime.cache → this module
+    # (circular). Verified 2026-10-05 via ``uv pip install -e .`` followed
+    # by ``python -c "from oneiric.core.config import load_settings"`` —
+    # ImportError unless the factory defers the import. See
+    # docs/plans/2026-10-05-oneiric-cli-loader-xdg-migration.md (Phase 2).
+    from oneiric.mcp.config import OneiricMCPAuthConfig
+
 
 def _default_otel_storage_settings() -> OTelStorageSettings:
     """Lazy factory for ``OneiricSettings.observability``.
@@ -43,6 +52,34 @@ def _default_otel_storage_settings() -> OTelStorageSettings:
     from oneiric.adapters.observability.settings import OTelStorageSettings
 
     return OTelStorageSettings()
+
+
+def _default_auth_config() -> OneiricMCPAuthConfig:
+    """Lazy factory for ``OneiricSettings.auth``.
+
+    Defers the import of ``OneiricMCPAuthConfig`` (a stdlib ``@dataclass``
+    defined in ``oneiric.mcp.config``) until the field is first accessed.
+    The eager import path would create a cycle:
+
+        oneiric.core.config
+          -> oneiric.mcp.config             (OneiricMCPAuthConfig lives here)
+          -> oneiric.mcp.__init__           (re-exports the package surface)
+          -> oneiric.mcp.server             (FastMCP server module)
+          -> mcp_common.server.runtime
+          -> oneiric.runtime.cache
+          -> oneiric.core.config.resolve_cache_dir_path   (still loading)
+
+    The deferred import breaks the cycle because by the time
+    ``default_factory`` runs, ``oneiric.core.config`` is fully loaded.
+    Without this factory, the CLI bootstrap fails with
+    ``ImportError: cannot import name 'resolve_cache_dir_path' from
+    partially initialized module 'oneiric.core.config'`` — verified
+    2026-10-05 in a fresh ``uv pip install -e .`` venv.
+    REQ-CLI-XDG-002.
+    """
+    from oneiric.mcp.config import OneiricMCPAuthConfig
+
+    return OneiricMCPAuthConfig()
 
 
 from .lifecycle import LifecycleError, LifecycleManager
@@ -310,6 +347,25 @@ class OneiricSettings(BaseModel):
     observability: OTelStorageSettings = Field(
         default_factory=_default_otel_storage_settings,
         description="OpenTelemetry storage settings (pgvector-backed).",
+    )
+    # 2026-10-05: typed ``auth:`` block so XDG/project layer overrides on
+    # ``auth.<field>`` (e.g. ``auth.enabled``, ``auth.providers``) flow through
+    # pydantic-settings validation instead of being silently swallowed by
+    # ``extra="allow"`` and stored in ``__pydantic_extra__``. The CLI's
+    # previous reader (oneiric/cli/mcp.py:_load_auth_from_settings) called
+    # ``load_yaml_auth_section()`` to fetch this same dict; the migration
+    # makes ``settings.auth`` (this field) the canonical source. Env-var
+    # overlay (``ONEIRIC_AUTH_*``) is still applied via
+    # ``OneiricMCPAuthConfig.from_env()`` at the CLI call site, preserving
+    # the existing REQ-006 contract. REQ-CLI-XDG-002 in
+    # docs/plans/2026-10-05-oneiric-cli-loader-xdg-migration.md.
+    auth: OneiricMCPAuthConfig = Field(  # type: ignore[valid-type]
+        default_factory=_default_auth_config,
+        description=(
+            "Auth section consumed by the oneiric FastMCP server. "
+            "Env-var overlay applied at call time via "
+            "OneiricMCPAuthConfig.from_env()."
+        ),
     )
 
 
@@ -877,5 +933,13 @@ async def _maybe_await(value: Any) -> Any:
 # during class body definition*. The eager evaluation at module-bottom
 # runs after the class body completes, so the cycle doesn't fire.
 from oneiric.adapters.observability.settings import OTelStorageSettings
+
+# 2026-10-05: same trick for ``OneiricSettings.auth``. Importing
+# ``OneiricMCPAuthConfig`` here is safe for the same reason: by module
+# bottom, ``oneiric.core.config`` is fully resolved and the only thing
+# that would cycle (oneiric.mcp.config → oneiric.mcp → oneiric.mcp.server
+# → mcp_common → oneiric.runtime.cache → oneiric.core.config) runs AFTER
+# ``oneiric.core.config`` is loaded. REQ-CLI-XDG-002.
+from oneiric.mcp.config import OneiricMCPAuthConfig
 
 OneiricSettings.model_rebuild()
