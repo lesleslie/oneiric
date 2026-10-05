@@ -7,7 +7,6 @@ Public invocation from launchd ``com.mcp.oneiric.plist``:
 
     /Users/les/Projects/oneiric/.venv/bin/python \\
     /Users/les/Projects/oneiric/scripts/launch_mcp.py \\
-    /Users/les/.oneiric/settings.yaml \\
     --host 127.0.0.1 --port 8681
 
 The wrapper collapses the prior ad-hoc boot sequence (manual
@@ -15,9 +14,17 @@ The wrapper collapses the prior ad-hoc boot sequence (manual
 wiring, manual ``health_feeds`` warm-up, manual
 ``run_async(transport='http')``) into a single ``mcp_common.server.launcher
 .launch()`` call. The launcher handles ``~/.config/secrets.env`` loading,
-``settings`` feed warming (only ``settings`` — ``context`` and ``progress``
-populate via tool calls), HTTP transport, and uvicorn
-``timeout_graceful_shutdown=30``.
+HTTP transport, and uvicorn ``timeout_graceful_shutdown=30``.
+
+2026-10-05 (XDG loader migration): the legacy ``~/.oneiric/settings.yaml``
+positional argument is dropped. The Oneiric CLI now reads
+``OneiricSettings`` via the XDG-compliant ``load_settings()`` loader
+(see ``docs/plans/2026-10-05-oneiric-cli-loader-xdg-migration.md``
+Phase 4). The launchd plist no longer passes the legacy path. The
+launcher's ``settings_path=`` arg is also dropped because oneiric's
+``/health`` reports substrate feeds (not the generic ``settings`` feed),
+so warming that feed would be a no-op for the visible body — same
+reasoning as ``mahavishnu/scripts/launch_mcp.py``.
 
 The vendored ``oneiric mcp start`` CLI (oneiric/cli/mcp.py) has a
 dormant gap (no ``WorkflowTaskProcessor`` wiring, stdio transport); that
@@ -147,8 +154,8 @@ def _build_warm_feeds() -> dict[str, HealthFeedState]:
     return feeds
 
 
-def build_server(settings_path: Path):
-    """Closure factory: bind ``settings_path``; the inner closure takes no args.
+def build_server():
+    """Closure factory: the inner closure takes no args.
 
     The variadic ``Callable[..., Any]`` contract (REQ-003) lets the
     launcher call ``build_server()`` with no positional args. Two-stage
@@ -156,14 +163,17 @@ def build_server(settings_path: Path):
     the factory binds the heavy deps (auth load + processor) so the
     inner closure is a trivial ``return build_mcp_server(...)``.
 
-    The launcher warms only the ``settings`` feed (REQ-004). ``context``
-    and ``progress`` start unhealthy and populate via tool calls.
+    The launcher warms only the ``settings`` feed (REQ-004) for the
+    generic HealthFeedState. ``context`` and ``progress`` start unhealthy
+    and populate via tool calls. Oneiric's own ``/health`` body
+    reports substrate feeds, not the launcher-warmed ``settings`` feed
+    — so passing a settings file here is intentionally skipped.
     """
     from oneiric.cli.mcp import _load_auth_from_settings
     from oneiric.mcp.config import load_auth_config
     from oneiric.mcp.server import build_mcp_server
 
-    auth_config = _load_auth_from_settings(settings_path)
+    auth_config = _load_auth_from_settings()
     mcp_auth_config, mcp_providers = load_auth_config(
         auth_config,
         provider_factories={},
@@ -187,12 +197,6 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Launch the Oneiric FastMCP server via mcp-common launcher.",
     )
-    parser.add_argument(
-        "settings",
-        nargs="?",
-        default=str(Path.home() / ".oneiric" / "settings.yaml"),
-        help="Path to oneiric settings.yaml (defaults to ~/.oneiric/settings.yaml).",
-    )
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8681)
     return parser.parse_args(argv)
@@ -201,19 +205,17 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(sys.argv[1:] if argv is None else argv)
 
-    settings_path = Path(args.settings)
-    if not settings_path.exists():
-        print(f"settings file not found: {settings_path}", file=sys.stderr)
-        return 2
-
     _install_sigterm_handler()
 
     asyncio.run(
         launch(
-            build_server=build_server(settings_path),
+            build_server=build_server,
             component_name="oneiric",
             secrets_path=Path.home() / ".config" / "secrets.env",
-            settings_path=settings_path,
+            # No settings_path — oneiric's /health reports substrate
+            # feeds (settings, context, progress), not the launcher-warmed
+            # generic settings feed. Same reasoning as
+            # mahavishnu/scripts/launch_mcp.py.
             host=args.host,
             port=args.port,
             timeout_graceful_shutdown=30,

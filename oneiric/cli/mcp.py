@@ -4,13 +4,23 @@ Mirrors the HTTP CLI's ``start|stop|status|health`` shape so the FastMCP
 server can be operated the same way operators already start, stop, probe,
 and query the substrate HTTP server.
 
-Auth wiring (REQ-006): settings YAML drives provider configuration; env
-vars override at runtime. :func:`_load_auth_from_settings` is the single
-canonical path so the operator-facing error messages from
-:mod:`oneiric.mcp.config` survive into production. The default
-:func:`_build_provider_factories` returns ``{}`` so the CLI can be exercised
-standalone; production environments wire their provider constructors
-(e.g. JWT, OIDC) in the settings loader before calling ``start``.
+Auth wiring (REQ-006): config flows through ``oneiric.core.config.load_settings()``
+— XDG + project + env layers (10 layers total, per
+``oneiric/core/config.py:316-516``). The ``auth:`` block is typed as
+``OneiricSettings.auth`` (REQ-CLI-XDG-002). Env vars
+(``ONEIRIC_AUTH_*``) overlay at :func:`_load_auth_from_settings` call time
+via :meth:`OneiricMCPAuthConfig.from_env` so the REQ-006 contract is
+preserved. The default :func:`_build_provider_factories` returns ``{}`` so
+the CLI can be exercised standalone; production environments wire their
+provider constructors (e.g. JWT, OIDC) in the settings loader before
+calling ``start``.
+
+2026-10-05 (XDG loader migration): the legacy ``~/.oneiric/settings.yaml``
+reader (``load_yaml_auth_section``) is dropped. The CLI now reads
+``OneiricSettings.auth`` from the XDG loader; operators who relied on
+the legacy file should migrate their ``auth:`` block to
+``~/.config/oneiric/local.yaml``. See
+``docs/plans/2026-10-05-oneiric-cli-loader-xdg-migration.md`` Phase 3.
 """
 
 from __future__ import annotations
@@ -35,14 +45,12 @@ from oneiric.core.logging import get_logger
 from oneiric.mcp.config import (
     OneiricMCPAuthConfig,
     load_auth_config,
-    load_yaml_auth_section,
 )
 
 logger = get_logger("cli.mcp")
 
 DEFAULT_MCP_PORT = 8681
 DEFAULT_PID_FILE = Path(".oneiric_cache") / "mcp.pid"
-DEFAULT_SETTINGS_PATH = Path.home() / ".oneiric" / "settings.yaml"
 
 
 def _resolve_port(port_option: int | None) -> int:
@@ -93,27 +101,28 @@ def _clear_pid_file(path: Path) -> None:
     path.unlink(missing_ok=True)
 
 
-def _resolve_settings_path(settings_path: Path | None) -> Path:
-    if settings_path is not None:
-        return settings_path
-    env_path = os.getenv("ONEIRIC_SETTINGS_PATH")
-    if env_path:
-        return Path(env_path)
-    return DEFAULT_SETTINGS_PATH
+def _load_auth_from_settings() -> OneiricMCPAuthConfig:
+    """Load OneiricMCPAuthConfig from OneiricSettings + env-var overrides (REQ-006).
 
+    Reads ``settings.auth`` (typed ``OneiricMCPAuthConfig`` per
+    REQ-CLI-XDG-002) from the XDG-compliant ``load_settings(project_name="oneiric")``
+    loader and applies the env-var overlay via
+    :meth:`OneiricMCPAuthConfig.from_env`. Precedence: env var > typed
+    field value > dataclass default.
 
-def _load_auth_from_settings(settings_path: Path | None = None) -> OneiricMCPAuthConfig:
-    """Load OneiricMCPAuthConfig from YAML + env-var overrides (REQ-006).
-
-    Uses :func:`load_yaml_auth_section` so the operator-facing error
-    messages from ``oneiric.mcp.config`` (YAML parse error, wrong-shape
-    ``auth:`` section) propagate intact. Env vars
-    (``ONEIRIC_AUTH_ENABLED``, ``ONEIRIC_AUTH_DEFAULT_PROVIDER``,
-    ``ONEIRIC_AUTH_TRUSTED_ISSUERS``) override YAML values.
+    The legacy ``load_yaml_auth_section()`` path that read
+    ``~/.oneiric/settings.yaml`` directly is dropped — the same YAML keys
+    are now reachable through the XDG loader (file at
+    ``~/.config/oneiric/local.yaml`` or the project-layer
+    ``settings/oneiric.yaml``). REQ-CLI-XDG-001.
     """
-    resolved = _resolve_settings_path(settings_path)
-    raw = load_yaml_auth_section(resolved)
-    return OneiricMCPAuthConfig.from_env(raw)
+    from oneiric.core.config import load_settings
+
+    settings = load_settings(
+        project_name="oneiric",
+        project_root=Path(__file__).resolve().parent.parent.parent,
+    )
+    return OneiricMCPAuthConfig.from_env(vars(settings.auth))
 
 
 def _build_provider_factories() -> dict[
@@ -196,8 +205,8 @@ def _enforce_public_network_auth_safety(host: str, auth_enabled: bool) -> None:
         "auth disabled. The substrate tools (read_settings, write_settings, "
         "schedule_task, etc.) would accept anonymous network writes. "
         "Either bind to a loopback address (127.0.0.1, ::1, localhost) OR "
-        "enable auth: set auth.enabled=true in settings.yaml "
-        "($ONEIRIC_SETTINGS_PATH) or set env var ONEIRIC_AUTH_ENABLED=1, "
+        "enable auth: set auth.enabled=true in ~/.config/oneiric/local.yaml "
+        "or set env var ONEIRIC_AUTH_ENABLED=1, "
         "and configure at least one provider in auth.providers.<name>.",
         param_hint="--host",
     )
@@ -216,12 +225,6 @@ def mcp_start(
         "--port",
         metavar="PORT",
         help="TCP port (defaults to $ONEIRIC_MCP_PORT or 8681).",
-    ),
-    settings_path: Path | None = typer.Option(
-        None,
-        "--settings",
-        metavar="PATH",
-        help="Path to oneiric settings.yaml (defaults to $ONEIRIC_SETTINGS_PATH or ~/.oneiric/settings.yaml).",
     ),
     pid_file: Path | None = typer.Option(
         None,
@@ -255,7 +258,7 @@ def mcp_start(
         )
         raise typer.Exit(code=ExitCode.ERROR)
 
-    auth_config = _load_auth_from_settings(settings_path)
+    auth_config = _load_auth_from_settings()
     provider_factories = _build_provider_factories()
     mcp_auth_config, mcp_providers = load_auth_config(
         auth_config, provider_factories=provider_factories
@@ -293,8 +296,6 @@ def mcp_start(
             str(resolved_port),
             "--foreground",
         ]
-        if settings_path is not None:
-            cmd.extend(["--settings", str(settings_path)])
         if cache_dir is not None:
             cmd.extend(["--cache-dir", cache_dir])
         if pid_file is not None:

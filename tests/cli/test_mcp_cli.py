@@ -47,15 +47,20 @@ def test_build_provider_factories_returns_empty_dict() -> None:
     assert _build_provider_factories() == {}
 
 
-def test_load_auth_from_settings_returns_config_when_file_missing() -> None:
-    """Missing settings file -> defaults (auth disabled, no providers)."""
-    config = _load_auth_from_settings(settings_path=None)  # type: ignore[arg-type]
-    # ``settings_path=None`` resolves via env/default to a path that
-    # usually doesn't exist in CI; load_yaml_auth_section returns ``{}``
-    # so we get a disabled, empty config (REQ-006 trusted-network default).
+def test_load_auth_from_settings_returns_disabled_when_no_layers() -> None:
+    """No XDG layer populated -> defaults (auth disabled, no providers).
+
+    REQ-CLI-XDG-001: ``_load_auth_from_settings`` now reads via
+    ``load_settings(project_name="oneiric")`` instead of the legacy
+    ``~/.oneiric/settings.yaml`` reader. With no XDG local.yaml and no
+    project-layer settings file providing an ``auth:`` block, the
+    result is the same trusted-network default the legacy reader
+    produced when its file was missing (REQ-006).
+    """
+    config = _load_auth_from_settings()
     assert config.enabled is False
     assert config.default_provider is None
-    assert config.provider_configs == {}
+    assert config.providers == {}
 
 
 class TestIsLoopbackHost:

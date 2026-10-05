@@ -41,7 +41,7 @@ def _set_shared_secret(monkeypatch: pytest.MonkeyPatch) -> None:
     """Set BODAI_SHARED_SECRET so AuthConfig's validator passes.
 
     The auth_config built by ``load_auth_config`` doesn't surface the
-    ``provider_configs`` secret onto the AuthConfig object; mcp-common's
+    ``providers`` secret onto the AuthConfig object; mcp-common's
     AuthConfig resolves secrets via env vars. The shared dev secret is
     fine for tests — no real token signing happens because the provider
     is a stub that accepts the ``good-`` prefix only.
@@ -109,7 +109,7 @@ def _build_with_auth(tmp_path: Any, *, processor: Any = None) -> Any:
         enabled=True,
         default_provider="jwt",
         trusted_issuers=["acme"],
-        provider_configs={"jwt": {"secret": "unused"}},
+        providers={"jwt": {"secret": "unused"}},
     )
     auth_config, providers = load_auth_config(
         cfg,
@@ -275,7 +275,7 @@ class TestSubstrateWritesRequireWritePermission:
             enabled=True,
             default_provider="jwt",
             trusted_issuers=["acme"],
-            provider_configs={"jwt": {"secret": "unused"}},
+            providers={"jwt": {"secret": "unused"}},
         )
         auth_config, providers = load_auth_config(
             cfg,
@@ -445,7 +445,7 @@ class TestTokenValidation:
             enabled=True,
             default_provider="jwt",
             trusted_issuers=["acme"],
-            provider_configs={"jwt": {"secret": "unused"}},
+            providers={"jwt": {"secret": "unused"}},
         )
         auth_config, providers = load_auth_config(
             cfg,

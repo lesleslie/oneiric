@@ -64,18 +64,29 @@ class OneiricMCPAuthConfig:
     enabled: bool = False
     default_provider: str | None = None
     trusted_issuers: list[str] = field(default_factory=list)
-    # Provider-specific config; each provider maps to a name and a callable
-    # that returns an IdentityProvider instance (constructed lazily so
-    # secrets aren't loaded until the server starts).
-    provider_configs: dict[str, dict[str, Any]] = field(default_factory=dict)
+    # Provider-specific config keyed by provider name. Each entry maps
+    # to the config payload the matching factory consumes (constructed
+    # lazily so secrets aren't loaded until the server starts).
+    # Field name ``providers`` matches the operator-facing YAML key
+    # (``auth.providers.<name>``) and the pre-migration legacy shape
+    # (``~/.oneiric/settings.yaml:auth.providers``); renaming aligned
+    # Pydantic-settings YAML->dataclass binding so the XDG path no
+    # longer silently drops the providers block. REQ-CLI-XDG-002.
+    providers: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     @classmethod
     def from_env(cls, raw: dict[str, Any]) -> OneiricMCPAuthConfig:
         """Construct from YAML-merged dict + env vars.
 
         Precedence: env var > YAML value > default. The ``raw`` dict is
-        the YAML-loaded ``auth:`` section (already merged with any
-        upstream defaults); env vars are applied LAST so they win.
+        the merged auth config (XDG + project + env layers, all applied);
+        env vars are applied LAST so they win. The ``raw`` dict can come
+        from two sources:
+          1. The pre-migration legacy ``load_yaml_auth_section()`` (only
+             used in tests now).
+          2. ``vars(settings.auth)`` from the post-Phase-2 typed
+             ``OneiricSettings.auth`` (canonical path).
+        Both shapes use the same field names since the rename above.
         """
         enabled_str = os.getenv("ONEIRIC_AUTH_ENABLED")
         if enabled_str is not None:
@@ -94,7 +105,7 @@ class OneiricMCPAuthConfig:
             enabled=enabled,
             default_provider=default_provider,
             trusted_issuers=trusted_issuers,
-            provider_configs=dict(raw.get("providers", {})),
+            providers=dict(raw.get("providers", {})),
         )
 
 
@@ -133,7 +144,7 @@ def load_auth_config(
                 "See docs/operations/oneiric-auth.md for setup details."
             )
         for name, factory in provider_factories.items():
-            providers[name] = factory(cfg.provider_configs.get(name, {}))
+            providers[name] = factory(cfg.providers.get(name, {}))
         # Fail-loud at startup if config is invalid (mcp-common's helper).
         validate_auth_config(auth_config)
     return auth_config, providers

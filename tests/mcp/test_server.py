@@ -91,7 +91,7 @@ def auth_enabled(monkeypatch: pytest.MonkeyPatch) -> OneiricMCPAuthConfig:
         enabled=True,
         default_provider="stub",
         trusted_issuers=["acme"],
-        provider_configs={"stub": {}},
+        providers={"stub": {}},
     )
     return cfg
 

@@ -56,7 +56,7 @@ from oneiric.mcp.store import SubstrateStore
 # AuthConfig's _resolve_secret validator requires either an explicit secret
 # or BODAI_SHARED_SECRET in the environment. The fixture below sets the env
 # var via monkeypatch so load_auth_config() passes validation regardless of
-# the provider_configs secret string.
+# the providers secret string.
 _TEST_SHARED_SECRET = "test_shared_secret_at_least_32_characters_long_xx"
 
 
@@ -202,7 +202,7 @@ def oneiric_mcp(tmp_path: Path) -> Any:
         enabled=True,
         default_provider="jwt",
         trusted_issuers=["acme"],
-        provider_configs={"jwt": {"secret": "test-secret"}},
+        providers={"jwt": {"secret": "test-secret"}},
     )
     auth_config, providers = load_auth_config(
         cfg, provider_factories={"jwt": lambda _: _FakeJWTProvider()},
