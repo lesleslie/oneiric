@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.27.0] - 2026-10-09
+
+### Added
+
+- oneiric: CLI reads auth via load_settings() + launchd plist update
+- oneiric: Tests + plan for XDG loader migration (Phases 5 + 6)
+- Type OneiricSettings.auth as OneiricMCPAuthConfig + unblock fast_hooks gate
+
+### Changed
+
+- oneiric: Pre-existing test fix — handle coredis 6.x list shape
+- oneiric: Test_health_false_on_ping_failure uses typed ConnectionError
+
+### Fixed
+
+- oneiric: Decode asyncpg JSONB metadata in pgvector search/get
+- oneiric: Launch_mcp.build_server returns server, not factory
+
 ## [0.26.4] - 2026-10-03
 
 ### Internal
@@ -17,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- oneiric: _format_entries accepts coredis 6.x dict-shaped xreadgroup response
+- oneiric: \_format_entries accepts coredis 6.x dict-shaped xreadgroup response
 
 ## [0.26.2] - 2026-09-29
 

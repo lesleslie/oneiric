@@ -3,8 +3,8 @@ from __future__ import annotations
 import asyncio
 import inspect
 import json
-from collections.abc import Awaitable, Callable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any
+from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:  # pragma: no cover - optional dependency typing
     from coredis import Redis  # ty: ignore[unresolved-import]
@@ -374,15 +374,24 @@ class RedisStreamsQueueAdapter(EnsureClientMixin):
         # coredis 6.x returns xreadgroup as a dict keyed by stream name;
         # earlier coredis and in-memory fixtures return a list of
         # ``(stream_key, messages)`` tuples. Normalise to pairs before the
-        # stream filter so both shapes are accepted.
+        # stream filter so both shapes are accepted. The ``cast`` on the
+        # inner ``messages`` is necessary because ty's strict mode
+        # collapses the unpacked variable to ``object`` (not ``Any``)
+        # after tuple unpacking from the union-typed ``pairs`` — without
+        # the cast the inner ``for`` is rejected as not-iterable. The
+        # runtime contract is enforced by the regression tests in
+        # ``tests/adapters/test_redis_streams_queue.py``.
+        pairs: Iterable[tuple[Any, Any]]
         if isinstance(entries, dict):
             pairs = entries.items()
+        elif entries is None:
+            pairs = ()
         else:
-            pairs = entries or ()
+            pairs = entries
         for stream_key, messages in pairs:
             if stream_key != self._settings.stream:
                 continue
-            for message_id, payload in messages:
+            for message_id, payload in cast(Iterable[tuple[Any, Any]], messages):
                 formatted.append(
                     {
                         "message_id": message_id,
