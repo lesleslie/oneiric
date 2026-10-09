@@ -49,7 +49,7 @@ from starlette.testclient import TestClient
 
 from oneiric.mcp.adapter_registry import OneiricAdapterRegistry
 from oneiric.mcp.config import OneiricMCPAuthConfig, load_auth_config
-from oneiric.mcp.health import HealthFeedState
+from mcp_common.health.feed import HealthFeedState
 from oneiric.mcp.server import build_mcp_server
 from oneiric.mcp.store import SubstrateStore
 
@@ -210,9 +210,12 @@ def oneiric_mcp(tmp_path: Path) -> Any:
     store = SubstrateStore(root=tmp_path)
     adapter_registry = OneiricAdapterRegistry(root=tmp_path)
     feeds = {
-        "settings": HealthFeedState(name="settings"),
-        "context": HealthFeedState(name="context"),
-        "progress": HealthFeedState(name="progress"),
+        "settings": HealthFeedState(ingester_running=True),
+        "context": HealthFeedState(ingester_running=True),
+        "progress": HealthFeedState(ingester_running=True),
+        # runtime_registry participates in the aggregate per R3 wiring fix
+        # (REQ-RCR-011); same default as production _resolve_feeds().
+        "runtime_registry": HealthFeedState(ingester_running=True),
     }
 
     class _StubProcessor:
@@ -243,14 +246,24 @@ def oneiric_mcp(tmp_path: Path) -> Any:
 
 
 class TestHealthEndpoint:
-    """REQ-004: /health is public."""
+    """REQ-004: /health is public; mcp-health-check-enrichment Phase 1.4 contract."""
 
     def test_health_no_token(self, oneiric_mcp: Any) -> None:
         with oneiric_mcp as client:
             resp = client.get("/health")
+        # Per Phase 1.4: HEALTHY/WARMING_UP -> 200, DEGRADED/FAILED -> 503.
         assert resp.status_code in (200, 503)
         body = resp.json()
-        assert body["component"] == "oneiric"
+        # Canonical mcp-common HealthSnapshot envelope: status + checks.
+        assert "status" in body
+        assert "checks" in body
+        # All four substrate feeds participate in the aggregate.
+        assert set(body["checks"].keys()) == {
+            "settings",
+            "context",
+            "progress",
+            "runtime_registry",
+        }
 
 
 class TestSubstrateE2E:

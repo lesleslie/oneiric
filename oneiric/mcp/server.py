@@ -10,6 +10,19 @@ store=None, processor=None) -> fastmcp.FastMCP.
 
 The CLI (``oneiric mcp``) wires the auth config + store + processor
 into this entrypoint at startup.
+
+Health aggregation
+-----------------
+
+Per the mcp-health-check-enrichment plan (Phase 1.4, REQ-HC-001/002/003),
+this server's ``GET /health`` route and the ``oneiric_get_health`` MCP
+tool both consume the canonical :func:`mcp_common.health.aggregator.
+aggregate_feed_states` aggregator. The per-feed
+:class:`mcp_common.health.feed.HealthFeedState` is mutated by the
+substrate tools via the :func:`_record_feed_success` / :func:`_record_feed_error`
+wrappers (the mcp-common recorders are pure state mutators — they do
+not bump ``cycles_total``; that is the caller's responsibility per
+the mcp-common contract).
 """
 
 from __future__ import annotations
@@ -17,6 +30,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import time
 from typing import TYPE_CHECKING, Any, Protocol
 
 from fastmcp import FastMCP
@@ -25,6 +39,17 @@ from mcp_common.auth.decorator import require_auth
 from mcp_common.auth.middleware import BearerTokenMiddleware
 from mcp_common.auth.permissions import Permission
 from mcp_common.auth.provider import IdentityProvider
+from mcp_common.health.aggregator import (
+    HealthSnapshot,
+    StatusValue,
+    aggregate_feed_states,
+)
+from mcp_common.health.feed import (
+    HealthFeedState,
+    record_error,
+    record_success,
+)
+from mcp_common.health.metrics import update_health_metrics
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
@@ -32,7 +57,6 @@ from oneiric.core.logging import get_logger as _oneiric_get_logger
 
 if TYPE_CHECKING:  # pragma: no cover - guarded import
     from oneiric.mcp.adapter_registry import OneiricAdapterRegistry
-    from oneiric.mcp.health import HealthFeedState
     from oneiric.mcp.store import SubstrateStore
 
 # REQ-RCR-008: per-call audit log for every oneiric_report_runtime call.
@@ -78,6 +102,144 @@ def _resolve_processor(processor: _ProcessorLike | None) -> _ProcessorLike | Non
     return processor
 
 
+# ---- Health feed helpers (mcp-common aggregator adoption) ----
+
+# Module-level Prometheus registry for health metrics. The mcp-common
+# ``update_health_metrics`` helper binds its metrics to a caller-supplied
+# registry; a dedicated registry here keeps the health metrics isolated
+# from any /metrics endpoint the FastMCP server may later expose. The
+# Phase 1.4 metric contract is:
+#
+#   health_feed_status{repo="oneiric", feed, status}      # gauge (0/1)
+#   health_feed_errors_within_window{repo="oneiric", feed}
+#   mcp_common_health_halflife_seconds{repo="oneiric"}
+#   mcp_common_health_aggregate_duration_ms{repo="oneiric"}
+#
+# Operators expose this registry via a ``/metrics`` Starlette route if
+# they want Prometheus to scrape it. The metrics are always updated on
+# every /health request so the registry never goes stale.
+import prometheus_client as _prom
+
+_health_metrics_registry: _prom.CollectorRegistry = _prom.CollectorRegistry()
+
+
+def _resolve_health_halflife() -> float:
+    """Return the per-feed health halflife in seconds.
+
+    Reads the ``HEALTH_FEED_HALFLIFE_SECONDS`` env var (default ``60``).
+    The mcp-common default is 300s; the mcp-health-check-enrichment plan
+    overrides to 60s per adopter so fresh servers recover from
+    WARMING_UP quickly without 503-flickering k8s probes.
+    """
+    raw = os.environ.get("HEALTH_FEED_HALFLIFE_SECONDS", "60")
+    try:
+        return float(raw)
+    except ValueError:
+        return 60.0
+
+
+def _record_feed_success(state: HealthFeedState, entities_count: int) -> None:
+    """Wrap mcp-common's :func:`record_success` to also bump
+    ``cycles_total`` and stamp the entity count.
+
+    The mcp-common contract is that callers manage ``cycles_total``
+    themselves (each successful or failed cycle increments it). For the
+    oneiric substrate tools, a single tool invocation = one cycle, so
+    the helper does the increment + entity update + state mutation in
+    one place. The state must already have ``ingester_running=True``
+    set by the feed constructor (see :func:`_resolve_feeds`).
+    """
+    state.entities_count = entities_count
+    state.last_updated_timestamp = time.time()
+    state.cycles_total += 1
+    record_success(state)
+
+
+def _record_feed_error(state: HealthFeedState) -> None:
+    """Wrap mcp-common's :func:`record_error` to also bump ``cycles_total``.
+
+    Mirror of :func:`_record_feed_success` for the failure path.
+    """
+    state.cycles_total += 1
+    record_error(state)
+
+
+def _aggregate_health_status(
+    states: dict[str, HealthFeedState],
+) -> tuple[int, HealthSnapshot]:
+    """Run the mcp-common aggregator and translate to ``(http_status, body)``.
+
+    HTTP code mapping (per the mcp-health-check-enrichment plan REQ-HC-002):
+
+    * ``HEALTHY`` → 200 (all feeds clean)
+    * ``WARMING_UP`` → 200 (warm but slow = serving 200, not yet 503)
+    * ``DEGRADED`` → 503 (recent error in window OR broken-before-first-success)
+    * ``FAILED`` → 503 (ingester dead or feed unrecoverable)
+
+    Side effect: emits per-feed metrics to :data:`_health_metrics_registry`
+    so a /metrics endpoint can scrape the ``health_feed_status{repo=oneiric,
+    feed, status}`` gauge (Phase 1.4 observability contract).
+    """
+    from time import perf_counter
+
+    halflife = _resolve_health_halflife()
+    start = perf_counter()
+    snapshot = aggregate_feed_states(states, halflife_seconds=halflife)
+    duration_ms = (perf_counter() - start) * 1000.0
+    status = snapshot["status"]
+    http_code = 200 if status in (StatusValue.HEALTHY, StatusValue.WARMING_UP) else 503
+
+    # Phase 1.4 observability: emit per-feed status + halflife + duration.
+    # Best-effort: a metrics emission failure must not break the /health
+    # route (operators rely on the HTTP code for k8s probes). The
+    # narrow ``(ImportError, ValueError, TypeError, RuntimeError)``
+    # set covers every realistic prometheus_client failure mode
+    # (lazy import, label cardinality, registry conflicts).
+    try:
+        update_health_metrics(
+            registry=_health_metrics_registry,
+            snap=snapshot,
+            repo="oneiric",
+            halflife_seconds=halflife,
+            duration_ms=duration_ms,
+        )
+    except (
+        ImportError,
+        ValueError,
+        TypeError,
+        RuntimeError,
+    ) as exc:  # pragma: no cover - defensive
+        _oneiric_get_logger("oneiric.mcp.health.metrics").warning(
+            "health-metrics-emit-failed",
+            extra={"component": "oneiric.mcp", "error": str(exc)},
+        )
+    return http_code, snapshot
+
+
+def _resolve_feeds(
+    feeds: dict[str, HealthFeedState] | None,
+) -> dict[str, HealthFeedState]:
+    """Return per-route HealthFeedState map (settings/context/progress).
+
+    Constructs mcp-common ``HealthFeedState`` instances with
+    ``ingester_running=True`` so a freshly-booted server reports
+    ``WARMING_UP`` (HTTP 200) on the substrate feeds until the first
+    tool call produces a non-empty entity count. Without
+    ``ingester_running=True``, the mcp-common ``is_healthy`` predicate
+    returns FAILED (HTTP 503) for every feed — the opposite of the
+    pre-migration behavior. See feedback-oneiric-mcp-health-feed-warmup.
+    """
+    if feeds is None:
+        feeds = {
+            name: HealthFeedState(ingester_running=True)
+            # REQ-RCR-011: runtime_registry feed participates in /health
+            # aggregator (R3 wiring-discipline fix). Without this entry
+            # the new feed exists but doesn't surface in the aggregate.
+            for name in ("settings", "context", "progress", "runtime_registry")
+        }
+    return feeds
+
+
 def _resolve_adapter_registry(
     registry: OneiricAdapterRegistry | None,
 ) -> OneiricAdapterRegistry:
@@ -87,23 +249,6 @@ def _resolve_adapter_registry(
 
         return _Reg()
     return registry
-
-
-def _resolve_feeds(
-    feeds: dict[str, HealthFeedState] | None,
-) -> dict[str, HealthFeedState]:
-    """Return per-route HealthFeedState map (settings/context/progress)."""
-    if feeds is None:
-        from oneiric.mcp.health import HealthFeedState as _HealthFeedState
-
-        feeds = {
-            name: _HealthFeedState(name=name)
-            # REQ-RCR-011: runtime_registry feed participates in /health
-            # aggregator (R3 wiring-discipline fix). Without this entry
-            # the new feed exists but doesn't surface in the aggregate.
-            for name in ("settings", "context", "progress", "runtime_registry")
-        }
-    return feeds
 
 
 def _register_substrate_tools(
@@ -144,9 +289,9 @@ def _register_substrate_tools(
                 "history_total": len(history),
             }
         except OSError, ValueError, TypeError:
-            feed.record_error()
+            _record_feed_error(feed)
             raise
-        feed.record_success(entities_count=1 if current else 0)
+        _record_feed_success(feed, entities_count=1 if current else 0)
         return rendered
 
     # ----- T8: write_settings -----
@@ -172,9 +317,9 @@ def _register_substrate_tools(
             )
             record = store.write_settings(parsed)
         except OSError, ValueError, TypeError:
-            feed.record_error()
+            _record_feed_error(feed)
             raise
-        feed.record_success(entities_count=1)
+        _record_feed_success(feed, entities_count=1)
         return {"record_id": record["id"], "version": parsed.version}
 
     # ----- T9: read_context -----
@@ -205,9 +350,9 @@ def _register_substrate_tools(
                 )
             rendered = {"tenants": tenants, "tenant_total": len(tenants)}
         except OSError, ValueError, TypeError:
-            feed.record_error()
+            _record_feed_error(feed)
             raise
-        feed.record_success(entities_count=len(tenants))
+        _record_feed_success(feed, entities_count=len(tenants))
         return rendered
 
     # ----- T10: write_context -----
@@ -237,9 +382,9 @@ def _register_substrate_tools(
             )
             record = store.write_context(parsed.tenant_id, parsed)
         except OSError, ValueError, TypeError:
-            feed.record_error()
+            _record_feed_error(feed)
             raise
-        feed.record_success(entities_count=1)
+        _record_feed_success(feed, entities_count=1)
         return {
             "record_id": record["id"],
             "tenant_id": parsed.tenant_id,
@@ -275,9 +420,9 @@ def _register_substrate_tools(
                 "workflow_total": len(workflows),
             }
         except OSError, ValueError, TypeError:
-            feed.record_error()
+            _record_feed_error(feed)
             raise
-        feed.record_success(entities_count=len(workflows))
+        _record_feed_success(feed, entities_count=len(workflows))
         return rendered
 
     # ----- T12: write_progress -----
@@ -309,9 +454,9 @@ def _register_substrate_tools(
             )
             record = store.write_progress(parsed)
         except OSError, ValueError, TypeError:
-            feed.record_error()
+            _record_feed_error(feed)
             raise
-        feed.record_success(entities_count=1)
+        _record_feed_success(feed, entities_count=1)
         return {
             "record_id": record["id"],
             "workflow_id": parsed.workflow_id,
@@ -855,14 +1000,59 @@ def _register_health_route(mcp: FastMCP, *, feeds: dict[str, HealthFeedState]) -
     the underlying Starlette app, bypassing the MCP tool layer. The route
     is therefore exempt from ``@require_auth`` and can be hit by k8s
     probes / load balancers without a bearer token.
+
+    Per the mcp-health-check-enrichment plan (REQ-HC-002) the route
+    returns 503 when the mcp-common aggregator reports
+    ``DEGRADED`` or ``FAILED``; 200 for ``HEALTHY`` and ``WARMING_UP``
+    (warm-but-slow = serving 200).
     """
 
     @mcp.custom_route("/health", methods=["GET"])
     async def health(_request: Request) -> JSONResponse:  # type: ignore[no-untyped-def]
-        from oneiric.mcp.health import aggregate_health
-
-        status_code, body = aggregate_health(feeds)
+        status_code, body = _aggregate_health_status(feeds)
         return JSONResponse(content=body, status_code=status_code)
+
+
+def _register_health_tool(
+    mcp: FastMCP,
+    *,
+    feeds: dict[str, HealthFeedState],
+    service_name: str,
+    auth_enabled: bool,
+) -> None:
+    """Register the ``oneiric_get_health`` MCP tool (Phase 1.4, REQ-HC-001).
+
+    Returns the canonical mcp-common :class:`HealthSnapshot` envelope
+    (same data the ``GET /health`` HTTP route serves). The MCP tool
+    shape is the same as the route body — operators and dashboards
+    consume one shape across both surfaces.
+    """
+
+    @mcp.tool()
+    @require_auth(
+        permission=Permission.READ,
+        service_name=service_name,
+        allow_anonymous=not auth_enabled,
+    )
+    async def oneiric_get_health() -> dict[str, Any]:
+        """Return the aggregated oneiric substrate health snapshot.
+
+        Per the mcp-health-check-enrichment plan (Phase 1.4 REQ-HC-001),
+        this is the MCP-tool surface for the same canonical
+        ``HealthSnapshot`` that ``GET /health`` returns. The shape is::
+
+            {
+              "status": "healthy" | "warming_up" | "degraded" | "failed",
+              "checks": {feed_name: {status, healthy, reason_codes}, ...},
+              "reason_codes": [...],
+            }
+
+        Use the ``status`` field to drive alerting and the ``checks``
+        map to localize which feed is degraded. ``healthy`` mirrors
+        ``status == "healthy"`` for callers that prefer a boolean.
+        """
+        _status_code, snapshot = _aggregate_health_status(feeds)
+        return dict(snapshot)
 
 
 def build_mcp_server(
@@ -933,6 +1123,12 @@ def build_mcp_server(
         auth_enabled=bool(auth_config.enabled),
     )
     _register_health_route(mcp, feeds=resolved_feeds)
+    _register_health_tool(
+        mcp,
+        feeds=resolved_feeds,
+        service_name=auth_config.service_name,
+        auth_enabled=bool(auth_config.enabled),
+    )
 
     return mcp
 

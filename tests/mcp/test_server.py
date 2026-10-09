@@ -21,7 +21,7 @@ from mcp_common.auth.provider import IdentityProvider
 from pydantic import ValidationError
 
 from oneiric.mcp.config import OneiricMCPAuthConfig, load_auth_config
-from oneiric.mcp.health import HealthFeedState
+from mcp_common.health.feed import HealthFeedState
 from oneiric.mcp.server import build_mcp_server
 from oneiric.mcp.store import SubstrateStore
 
@@ -126,7 +126,7 @@ class TestBuildMcpServer:
             provider_factories={"stub": lambda _: _FakeProvider()},
         )
         store = SubstrateStore(root=tmp_path)
-        feeds = {"settings": HealthFeedState(name="settings")}
+        feeds = {"settings": HealthFeedState()}
         mcp = build_mcp_server(
             _StubConfig(), auth_config=auth_config, providers=providers,
             store=store, processor=_FakeProcessor(), health_feeds=feeds,
@@ -147,7 +147,7 @@ class TestBuildMcpServer:
 
         auth_config, providers = load_auth_config(auth_disabled)
         store = SubstrateStore(root=tmp_path)
-        feeds = {"settings": HealthFeedState(name="settings")}
+        feeds = {"settings": HealthFeedState()}
         mcp = build_mcp_server(
             _StubConfig(), auth_config=auth_config, providers=providers,
             store=store, processor=_FakeProcessor(), health_feeds=feeds,
@@ -175,7 +175,7 @@ class TestSubstrateTools:
         auth_config, providers = load_auth_config(OneiricMCPAuthConfig(enabled=False))
         store = SubstrateStore(root=tmp_path)
         feeds = {
-            name: HealthFeedState(name=name)
+            name: HealthFeedState()
             for name in ("settings", "context", "progress")
         }
         mcp = build_mcp_server(
@@ -393,7 +393,7 @@ class TestSchedulerTool:
         auth_config, providers = load_auth_config(OneiricMCPAuthConfig(enabled=False))
         store = SubstrateStore(root=tmp_path)
         feeds = {
-            name: HealthFeedState(name=name)
+            name: HealthFeedState()
             for name in ("settings", "context", "progress")
         }
         return build_mcp_server(
@@ -437,7 +437,7 @@ class TestSchedulerTool:
         at first call."""
         auth_config, providers = load_auth_config(OneiricMCPAuthConfig(enabled=False))
         store = SubstrateStore(root=tmp_path)
-        feeds = {"settings": HealthFeedState(name="settings")}
+        feeds = {"settings": HealthFeedState()}
         with pytest.raises(RuntimeError, match="schedule_task requires a processor"):
             build_mcp_server(
                 _StubConfig(),
@@ -466,13 +466,16 @@ class TestHealthRoute:
     ) -> None:
         from starlette.testclient import TestClient
 
+        from oneiric.mcp.server import _record_feed_success
+
         auth_config, providers = load_auth_config(OneiricMCPAuthConfig(enabled=False))
         store = SubstrateStore(root=tmp_path)
-        feeds = {"settings": HealthFeedState(name="settings")}
-        # A feed with cycles_total == 0 reports unhealthy (uninitialized).
-        # Record one successful cycle so the feed is "healthy" by T4's
-        # semantics: cycles > 0 AND errors == 0.
-        feeds["settings"].record_success(entities_count=0)
+        # mcp-common: a feed with ingester_running=True AND cycles_total >= 1
+        # AND entities_count > 0 is HEALTHY. We use the production
+        # ``_record_feed_success`` wrapper so the contract is exercised
+        # exactly as the substrate tools do.
+        feeds = {"settings": HealthFeedState(ingester_running=True)}
+        _record_feed_success(feeds["settings"], entities_count=3)
         mcp = build_mcp_server(
             _StubConfig(),
             auth_config=auth_config,
@@ -489,5 +492,6 @@ class TestHealthRoute:
         resp = client.get("/health")
         assert resp.status_code == 200
         body = resp.json()
+        # mcp-common HealthSnapshot envelope (Phase 1.4): status + checks.
         assert body["status"] == "healthy"
-        assert "settings" in body["routes"]
+        assert "settings" in body["checks"]

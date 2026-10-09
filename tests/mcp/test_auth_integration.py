@@ -27,7 +27,7 @@ from mcp_common.auth.provider import IdentityProvider
 from starlette.testclient import TestClient
 
 from oneiric.mcp.config import OneiricMCPAuthConfig, load_auth_config
-from oneiric.mcp.health import HealthFeedState
+from mcp_common.health.feed import HealthFeedState
 from oneiric.mcp.server import build_mcp_server
 from oneiric.mcp.store import SubstrateStore
 
@@ -116,7 +116,7 @@ def _build_with_auth(tmp_path: Any, *, processor: Any = None) -> Any:
         provider_factories={"jwt": lambda _: _FakeJWTProvider(secret="unused")},
     )
     store = SubstrateStore(root=tmp_path)
-    feeds = {"settings": HealthFeedState(name="settings")}
+    feeds = {"settings": HealthFeedState()}
     return build_mcp_server(
         SimpleNamespace(name="oneiric-test"),
         auth_config=auth_config,
@@ -135,9 +135,14 @@ class TestHealthIsPublic:
         client = TestClient(mcp.http_app())
         resp = client.get("/health")
         # 200 if feeds healthy, 503 if degraded — either proves the route
-        # is reachable without auth (REQ-004).
+        # is reachable without auth (REQ-004). mcp-common Phase 1.4
+        # contract: HEALTHY/WARMING_UP -> 200, DEGRADED/FAILED -> 503.
         assert resp.status_code in (200, 503)
-        assert "routes" in resp.json()
+        body = resp.json()
+        # Canonical mcp-common HealthSnapshot envelope.
+        assert "status" in body
+        assert "checks" in body
+        assert "settings" in body["checks"]
 
 
 class TestSubstrateReadsRequireReadPermission:
@@ -284,7 +289,7 @@ class TestSubstrateWritesRequireWritePermission:
             },
         )
         store = SubstrateStore(root=tmp_path)
-        feeds = {"settings": HealthFeedState(name="settings")}
+        feeds = {"settings": HealthFeedState()}
 
         mcp = build_mcp_server(
             SimpleNamespace(name="oneiric-test"),
@@ -454,7 +459,7 @@ class TestTokenValidation:
             },
         )
         store = SubstrateStore(root=tmp_path)
-        feeds = {"settings": HealthFeedState(name="settings")}
+        feeds = {"settings": HealthFeedState()}
         mcp = build_mcp_server(
             SimpleNamespace(name="oneiric-test"),
             auth_config=auth_config,

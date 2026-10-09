@@ -70,6 +70,7 @@ import asyncio
 import signal
 from types import SimpleNamespace
 
+from mcp_common.health.feed import HealthFeedState
 from mcp_common.server import launch
 
 
@@ -118,38 +119,41 @@ def _build_processor():
 def _build_warm_feeds() -> dict[str, HealthFeedState]:
     """Pre-warm every oneiric HealthFeedState with a 'ready to serve' baseline.
 
-    The launcher's ``warm_settings_feed()`` constructs an
-    ``mcp_common.health.feed.HealthFeedState`` — a different class
-    from oneiric's own ``oneiric.mcp.health.HealthFeedState``, so
-    oneiric's ``/health`` aggregator never sees the launcher's warm.
-    This helper builds the consumer-shaped feeds directly so the
-    aggregator's per-feed ``is_healthy()`` predicate sees a real warm.
+    The launcher's ``warm_settings_feed()`` (mcp-common) constructs an
+    ``mcp_common.health.feed.HealthFeedState`` — same class the oneiric
+    ``/health`` aggregator now consumes (post Phase 1.4 of the
+    mcp-health-check-enrichment plan). This helper builds the
+    consumer-shaped feeds directly via the
+    :func:`oneiric.mcp.server._record_feed_success` wrapper so the
+    aggregator's per-feed ``is_healthy()`` predicate sees a real warm
+    and reports ``WARMING_UP`` (HTTP 200) instead of ``FAILED`` (503).
 
-    Oneiric's ``HealthFeedState.is_healthy()`` returns False when
-    ``cycles_total == 0`` (no cycles = never warmed = degraded). With
+    A fresh mcp-common ``HealthFeedState`` with ``ingester_running=True``
+    and ``cycles_total=0`` trips the HNSW hardening branch
+    (``FEED_NEVER_POPULATED`` → DEGRADED → 503). Pre-warming bumps
+    ``cycles_total`` to 1 and resets the error window so the
+    ``WARMING_UP_EMPTY_FEED`` reason applies instead (HTTP 200). With
     three substrate feeds (settings/context/progress) all keyed into
-    the same ``/health`` body, an unwarmed ``context`` or ``progress``
-    feed forces the aggregate to 503 even on a freshly-booted server.
-    That cascades: ``launch_with_healthcheck.sh`` uses ``curl -fsS``,
-    which exits non-zero on 4xx/5xx, the wrapper kills the Python
-    process, launchd sees ``KeepAlive.Crashed=true``, and the server
-    restart-loops forever (see
-    ``feedback-oneiric-mcp-health-feed-warmup``).
+    the same ``/health`` body, an unwarmed feed forces the aggregate
+    to 503 even on a freshly-booted server. That cascades:
+    ``launch_with_healthcheck.sh`` uses ``curl -fsS``, which exits
+    non-zero on 4xx/5xx, the wrapper kills the Python process, launchd
+    sees ``KeepAlive.Crashed=true``, and the server restart-loops
+    forever (see ``feedback-oneiric-mcp-health-feed-warmup``).
 
-    Each feed starts with ``record_success(entities_count=0)`` —
-    ``cycles_total=1`` (warmed), ``errors_total=0`` (clean),
+    Each feed starts with ``_record_feed_success(entities_count=0)``
+    — ``cycles_total=1`` (warmed), ``errors_within_window=0`` (clean),
     ``entities_count=0`` (no real data yet). Subsequent tool calls
-    overwrite with the actual entity count via
-    ``feed.record_success(N)``. REQ-004 governs ``/health`` public
-    access; this pre-warm is orthogonal — see cookbook Trap K for the
-    full rationale.
+    overwrite with the actual entity count. REQ-004 governs ``/health``
+    public access; this pre-warm is orthogonal — see cookbook Trap K
+    for the full rationale.
     """
-    from oneiric.mcp.health import HealthFeedState
+    from oneiric.mcp.server import _record_feed_success
 
     feeds = {}
     for name in ("settings", "context", "progress"):
-        feed = HealthFeedState(name=name)
-        feed.record_success(entities_count=0)
+        feed = HealthFeedState(ingester_running=True)
+        _record_feed_success(feed, entities_count=0)
         feeds[name] = feed
     return feeds
 
