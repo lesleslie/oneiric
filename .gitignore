@@ -85,6 +85,14 @@ crackerjack-debug-*.log
 *.bak
 *.backup.json
 .worktrees/
+# Timestamped .gitignore backups created by the gitignore audit tool
+# (e.g. .gitignore.bak.20260926T152807Z). The leading `.gitignore.bak.`
+# prefix is required because the wildcard `*.bak` only matches files whose
+# last extension is `.bak`; timestamped backups put the timestamp AFTER
+# `.bak`, so this prefix-aware pattern is the only one that excludes them.
+# Placed outside the `>>> bodai-shared-gitignore <<<` block so a future
+# `crackerjack gitignore sync` does not overwrite the prefix rule.
+.gitignore.bak.*
 
 # ============================================================================
 # Node.js - Wave-11 mermaid CI guard
