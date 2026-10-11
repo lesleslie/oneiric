@@ -3185,8 +3185,9 @@ def shell_command() -> None:
     async def _shell():
         from oneiric.shell import OneiricShell
 
-        # Load configuration
-        config = load_settings()
+        # Load configuration (off the event loop — load_settings does
+        # disk I/O for YAML layers and reads os.environ for env vars).
+        config = await asyncio.to_thread(load_settings)
 
         # Create and start shell
         shell = OneiricShell(config)

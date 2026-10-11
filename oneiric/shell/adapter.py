@@ -156,7 +156,10 @@ Type 'help()' for Python help or %help_shell for shell commands
         """
         from oneiric.core.config import load_settings
 
-        self.app = load_settings()
+        # Off the event loop — load_settings does disk I/O for YAML
+        # layers and reads os.environ. asyncio.to_thread was a Phase 1
+        # requirement (task 1.11).
+        self.app = await asyncio.to_thread(load_settings)
         self.namespace["config"] = self.app
         logger.info("Settings reloaded")
 
