@@ -518,6 +518,297 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
+## _ALIAS_OVERRIDES audit (Phase 0)
+
+The `_ALIAS_OVERRIDES` table at `oneiric/core/config.py:800-805` maps two single-underscore (legacy-shape) env vars to nested target fields:
+
+| Legacy env var | Target field | Target section | Current route (hand-rolled) | Phase 1 `AliasChoices` target | File:line |
+|---|---|---|---|---|---|
+| `ONEIRIC_ACTIVITY_STORE` | `domain_activity_path` | `runtime_paths` | `_env_overrides` (config.py:801-803) dispatches `{runtime_paths: {domain_activity_path: <coerced>}}` | `AliasChoices("domain_activity_path", "ONEIRIC_ACTIVITY_STORE")` | `oneiric/core/config.py:270` |
+| `ONEIRIC_LOG_LEVEL` | `level` | `logging` | `_env_overrides` (config.py:804) dispatches `{logging: {level: <coerced>}}` | `AliasChoices("level", "ONEIRIC_LOG_LEVEL")` | `oneiric/core/logging.py:61` |
+
+**Findings:**
+
+- **Two AliasChoices already pre-wired.** Both target fields already
+  carry `validation_alias=AliasChoices(...)` (config.py:270,
+  logging.py:61). On the current `BaseModel` substrate these are
+  dead config — they only activate once the parent class switches
+  to `BaseSettings` in Phase 1 task 1.2. Phase 1 task 1.7 declares
+  this as the migration acceptance criterion; the wiring exists,
+  the loader activation is the Phase 1 deliverable.
+- **One additional pre-wired `AliasChoices` not in `_ALIAS_OVERRIDES`.**
+  `RuntimeSupervisorConfig.enabled` carries
+  `AliasChoices("enabled", "ONEIRIC_RUNTIME_SUPERVISOR__ENABLED")`
+  at `config.py:282`. This is NOT in `_ALIAS_OVERRIDES` because
+  `RUNTIME_SUPERVISOR__ENABLED` already uses the modern `__`
+  nested-key shape — the legacy `_env_overrides` naturally dispatches
+  it (config.py:826 splits on `__`, path becomes
+  `["runtime_supervisor", "enabled"]`, config.py:838-841 merges).
+  The `AliasChoices` is redundant-but-harmless insurance. The
+  description at config.py:284-286 is misleading (it says "via
+  `_env_overrides`" but post-migration the route is via
+  pydantic-settings' nested delimiter); Phase 4 task 4.8 should
+  refresh that description text.
+- **No new entries to add.** The full `_ALIAS_OVERRIDES` table is
+  two rows; both are pre-wired. Phase 0 task 0.1 acceptance
+  criterion "no newly-discovered legacy aliases" holds.
+- **Call sites outside `_ALIAS_OVERRIDES`.**
+  `oneiric/mcp/config.py:91-103` (`OneiricMCPAuthConfig.from_env`)
+  reads `ONEIRIC_AUTH_ENABLED`, `ONEIRIC_AUTH_DEFAULT_PROVIDER`,
+  `ONEIRIC_AUTH_TRUSTED_ISSUERS` directly via `os.getenv()` rather
+  than going through `_ALIAS_OVERRIDES`. These are aliased
+  *separately* on the CLI side and are NOT part of
+  `_ALIAS_OVERRIDES`. After migration, the `auth:`
+  field is excluded from env-source merging per Phase 1 task 1.10;
+  these `os.getenv()` reads at `from_env()` call sites remain the
+  sole path for `ONEIRIC_AUTH_*` env vars. This is correct and
+  preserved.
+
+______________________________________________________________________
+
+## Env-var collision audit (Phase 0)
+
+**Methodology:** ran
+`env | grep -E "^(ONEIRIC|MAHAVISHNU|AKOSHA|CRACKERJACK|SESSION_BUDDY)" | sort`
+against the substrate's field set as of 2026-10-11. Below is the
+collision surface for the `OneiricSettings` model at
+`oneiric/core/config.py:311-369` plus the audit summary.
+
+### Field-count summary (post-migration collision surface)
+
+`OneiricSettings` exposes **20 top-level fields** (`config.py:311-369`)
+plus all transitively-nested sub-models. After the migration to
+`BaseSettings` with `env_prefix="ONEIRIC_"`,
+`env_nested_delimiter="__"`, **every nested scalar field becomes
+reachable via a `{ONEIRIC_}{SECTION}__{FIELD}` env var**, and every
+top-level scalar field becomes reachable via a single-segment
+`{ONEIRIC_}{FIELD}` env var.
+
+Notable silent-flip surfaces introduced by the migration (these
+were NOT reachable under the legacy hand-rolled loader because
+`_env_overrides` requires `__` for non-alias entries):
+
+| Field | Type | Legacy reachable via env? | Post-migration env form | Risk |
+|---|---|---|---|---|
+| `OneiricSettings.config_dir` | `str \| None` (`config.py:318`) | NO (single-segment, no `__`) | `ONEIRIC_CONFIG_DIR` | LOW (deliberate override channel) |
+| `OneiricSettings.cache_dir` | `str \| None` (`config.py:319`) | NO | `ONEIRIC_CACHE_DIR` | MEDIUM (operators may set this for unrelated tooling; pre-migration ignored) |
+| `OneiricSettings.profile.name` | `str` (via `RuntimeProfileConfig.name`) | YES via `ONEIRIC_PROFILE` (special-cased at `_env_overrides` line 829-834) | YES via `ONEIRIC_PROFILE__NAME` (nested-delimiter) | LOW (path now consistent with the rest of the surface) |
+| `OneiricSettings.observability.*` | nested `OTelStorageSettings` | NO (nested BaseSettings wasn't reachable under legacy) | YES via `ONEIRIC_OBSERVABILITY__*` (nested-delimiter) | HIGH (this is the new capability plan §1.7 promises) |
+| `OneiricSettings.auth.*` | nested stdlib `@dataclass` | NO (dataclass isn't a Pydantic model) | NO (deliberately excluded by task 1.10) | NONE (auth env vars handled at `from_env()`) |
+
+### `same_field_multiple_env_forms` (Phase 0 task 0.3 results)
+
+The only fields reachable via multiple env-var forms are those
+explicitly listed in `_ALIAS_OVERRIDES`, all of which already have
+`AliasChoices` wired. No silent multiple-form collisions discovered.
+
+| Field path | Multiple env forms | Current handling |
+|---|---|---|
+| `runtime_paths.domain_activity_path` | `ONEIRIC_ACTIVITY_STORE` (alias) and `ONEIRIC_RUNTIME_PATHS__DOMAIN_ACTIVITY_PATH` (nested) | The `__` form is the canonical nested-delimiter path. The alias is documented and pre-wired (`config.py:270`). |
+| `logging.level` | `ONEIRIC_LOG_LEVEL` (alias) and `ONEIRIC_LOGGING__LEVEL` (nested) | The `__` form is the canonical nested-delimiter path. The alias is documented and pre-wired (`logging.py:61`). |
+| `runtime_supervisor.enabled` | `ONEIRIC_RUNTIME_SUPERVISOR__ENABLED` (alias, redundant) and `ONEIRIC_RUNTIME_SUPERVISOR__ENABLED` (nested) | Both pre-wired. The `AliasChoices` at `config.py:282` is redundant but harmless. |
+
+### Shell-env findings (audit run on the developer's actual machine)
+
+The audit ran against the environment of the developer performing
+this audit (the bash session that produced this section). Findings
+worth flagging for the operator:
+
+```
+MAHAVISHNU_AUTO_MERGE=1            # not a Oneiric field; safe
+MAHAVISHNU_WORKTREE_BASE_PATH=…    # not a Oneiric field; safe
+ONEIRIC_CACHE_DIR=/Users/les/.cache/development/oneiric
+                                  # POST-MIGRATION SILENT FLIP: this
+                                  # activates OneiricSettings.cache_dir
+                                  # (config.py:319). Under the legacy
+                                  # loader this was ignored; under
+                                  # pydantic-settings it lands in
+                                  # cache_dir. Operator must either
+                                  # (a) unset before merging Phase 1
+                                  # or (b) accept the new behavior
+                                  # (cache_dir now resolves through
+                                  # the env var consistently).
+SESSION_BUDDY_PATH=…               # not a Oneiric field; safe
+```
+
+**Action required:** the operator who merges Phase 1 should run
+`unset ONEIRIC_CACHE_DIR` (or verify the value is intentional)
+before upgrading, OR document the change in the merge commit so
+the next deployer's shell doesn't silently flip cache_dir. The
+Phase 0 acceptance gate `pytest tests/unit/test_env_var_collision_audit.py -v`
+asserts zero flips for the *current* shell and **explicitly
+documents** which env var flipped when run with this developer's
+shell, so the next merge catches the change.
+
+### SameField+MultiEnv handling summary
+
+No field is silently reachable via more than one env-var form
+*except* via the documented `_ALIAS_OVERRIDES` mappings (which
+all have pre-wired `AliasChoices`). All `AliasChoices` use the
+canonical Pydantic v2 form
+(`AliasChoices("field_name", "ENV_VAR_NAME")`) — verified at
+`config.py:270, 282` and `logging.py:61`.
+
+The full audit summary will be live in
+`tests/unit/test_env_var_collision_audit.py` after Phase 1 lands.
+
+______________________________________________________________________
+
+## ACB precedence (pinned by Phase 0 audit)
+
+> **Note on `acb/config.py:140-260`.** The original plan cited an
+> ACB (Asynchronous Configuration Bus?) precedence section at
+> `acb/config.py:140-260`. ACB is not vendored in this repo as of
+> 2026-10-11 — `find oneiric -name config.py -path "*/acb/*"` returns
+> zero matches, and no third-party ACB package is declared in
+> `pyproject.toml` runtime deps. The audit pins the Oneiric-native
+> precedence (which the legacy `_ALIAS_OVERRIDES` design explicitly
+> *follows*) here. The "ACB ↔ pydantic-settings precedence
+> inversion" remains the keystone risk to Phase 1 task 1.3.
+
+### Pinned ACB-style precedence (legacy Oneiric loader)
+
+The hand-rolled `load_settings()` at `oneiric/core/config.py:372-572`
+applies layers in this strict order (lowest → highest). Each step
+calls `_deep_merge(base=new_data, override=previous_accumulator)`
+(`config.py:905-916`), so **each later layer OVERRIDES the previous
+one** — i.e., "last-write-wins".
+
+| # | Layer | Where read | Source order (legacy) |
+|---|---|---|---|
+| 1 | Code defaults (class field defaults) | `OneiricSettings` field defaults (`config.py:311-369`) | lowest |
+| 2 | Project committed config `<project_root>/settings/{project_name}.yaml[.yml]` | `config.py:494-517` | ↑ |
+| 3 | Project local override `<project_root>/settings/local.yaml` | `config.py:522-540` | ↑ |
+| 4 | XDG user config `${XDG_CONFIG_HOME}/{project_name}/config.yaml` | `config.py:544-546` | ↑ |
+| 5 | XDG user local `${XDG_CONFIG_HOME}/{project_name}/local.yaml` | `config.py:548-550` | ↑ |
+| 6 | Environment variables (`_env_overrides`) | `config.py:553-561` | ↑ |
+| 7 | `{PROJECT_NAME}_CONFIG` env var (file path) | `config.py:470-485` | ↑ |
+| 8 | Explicit `path=` argument | `config.py:470-485` (file resolution) + `config.py:563-570` (final merge) | highest |
+
+### Pinned current Oneiric loader source order
+
+Concretely, the code in `config.py:430-572` applies layers in this
+order (only one entry per operator-action kind, de-duplicated):
+
+1. `_load_layer_file(<project_root>/settings/{project_name}.yaml[.yml])` (lines 497-498)
+2. `_load_layer_file(<project_root>/settings/local.yaml)` (line 524)
+3. `_load_layer_file($XDG_CONFIG_HOME/{project_name}/config.yaml)` (line 546)
+4. `_load_layer_file($XDG_CONFIG_HOME/{project_name}/local.yaml)` (line 550)
+5. `_env_overrides(project_name)` deep-merged at line 555
+6. `{project_name.upper()}_CONFIG` env var path resolved at line 470 and merged at line 566
+7. Explicit `path=` argument file merged at line 566
+
+### Reversed pydantic-settings order (Phase 1 task 1.3 must implement)
+
+pydantic-settings 2.15+ uses **first-returned-wins** semantics in
+`settings_customise_sources`. To preserve current Oneiric
+"last-write-wins" behavior, the tuple must be returned in **reverse
+order** (highest priority first):
+
+```python
+# Phase 1 task 1.3 — pseudocode. Reverse of the legacy layer order.
+return (
+    _explicit_path_source(settings_cls),  # highest priority (was #8)
+    _project_config_env_source(settings_cls),  # {PROJECT_NAME}_CONFIG (was #7)
+    _alias_overrides_source(settings_cls),  # _ALIAS_OVERRIDES (was #6 of legacy,
+                                            # which sits inside _env_overrides)
+    _yaml_source(LAYER_XDG_LOCAL),          # #5 — layers 4-6 collapse into one source
+    _yaml_source(LAYER_XDG_CONFIG),         # #4
+    _yaml_source(LAYER_PROJECT_LOCAL),      # #3
+    _yaml_source(LAYER_PROJECT_CONFIG),     # #2
+    env_settings,                           # init_settings equivalent is handled
+                                            # separately; bare {PREFIX}_{FIELD} (no __)
+                                            # flows via env_settings, NOT via init_kwargs
+    init_settings,                          # lowest priority (constructor kwargs)
+    file_secret_settings,                   # OS keyring / SOPS / vault secrets
+)
+```
+
+**Subtle drift to flag:**
+
+- The legacy loader treats `_ALIAS_OVERRIDES` as a special
+  sub-case of env-var loading (config.py:814-822). In the
+  reversed pydantic-settings chain, `_alias_overrides_source`
+  must be **a separate custom source** slotted BEFORE
+  `_yaml_source(LAYER_XDG_LOCAL)` and AFTER `_project_config_env_source`,
+  so that env vars inheriting from `_ALIAS_OVERRIDES` beat XDG
+  YAML but lose to an explicit `path=` argument. This is the
+  precedence that the existing 10 Phase 0 acceptance tests
+  (`test_pydantic_settings_precedence.py`, per plan §"Phase 0 —
+  Demonstrable by") pin.
+- The legacy loader lets layer-7 (`{PROJECT_NAME}_CONFIG`) and
+  layer-8 (`path=`) BOTH resolve through `_deep_merge` of a
+  parsed file's contents. In pydantic-settings, these are two
+  distinct priority slots: explicit-path is highest;
+  `${PROJECT}_CONFIG` env-var is the second source after
+  `_alias_overrides_source`. This keeps the "explicit-path
+  beats env-var-path" precedence intact.
+
+### Drift notes (between legacy and Phase 1 reversed chain)
+
+| Drift | Impact | Resolution |
+|---|---|---|
+| `_ALIAS_OVERRIDES` order vs legacy | The legacy loader applied aliases AFTER deep-merging the rest of the env vars (config.py:553-561). In the reversed chain, alias overrides must apply BEFORE XDG layers so they win against user-level YAML. | Phase 1 task 1.7 acceptance test: `test_alias_overrides_activity_store_routes_to_domain_activity_path` (plan §"Phase 0 Demonstrable by" line 201) and `test_alias_overrides_log_level_routes_to_logging_level` (line 202). |
+| Bare-env-var flow (`{PREFIX}_{FIELD}` without `__`) | Legacy loader ignored these except for aliases. Post-migration, pydantic-settings activates them — `ONEIRIC_CACHE_DIR` silently sets `OneiricSettings.cache_dir` (see "Env-var collision audit" section above). | Phase 0 acceptance test `tests/unit/test_env_var_collision_audit.py` enumerates the collision surface; operator unsets ambient env vars before merging Phase 1 or accepts the change. |
+| `deep_merge=True` vs `_deep_merge` | Legacy loader used `_deep_merge` (config.py:905-916). pydantic-settings `YamlConfigSettingsSource` defaults to `deep_merge=False` — meaning a nested YAML at a higher-priority layer would CLOBBER a lower-priority nested dict instead of merging. | Phase 1 task 1.3 specifies `YamlConfigSettingsSource(..., deep_merge=True)` explicitly on every layer. |
+| `.env` file activation | Legacy `BaseModel` made `env_file=".env"` (config.py:306) a dead config. Post-migration to `BaseSettings`, the same line silently activates `.env` loading. | Phase 1 task 1.1 explicitly removes `env_file=".env"` from `OneiricMCPConfig.model_config`. |
+
+### Invariants (must hold across the migration)
+
+1. **Operator-visible precedence ordering**: explicit `path=` >
+   `{PROJECT_NAME}_CONFIG` env var > `_ALIAS_OVERRIDES` >
+   XDG local > XDG config > project local > project config >
+   code defaults. This is the ACB-faithful order; any Phase 1
+   source-chain that reorders these fails an acceptance test.
+2. **10 acceptance tests pin the legacy behavior.** They live
+   in `tests/unit/test_pydantic_settings_precedence.py`
+   (per plan §"Phase 0 — Demonstrable by"). Phase 1 cannot pass
+   if any of these break.
+3. **Bare-env-var isolation**: fields at `OneiricSettings.cache_dir`
+   and `OneiricSettings.config_dir` (the only top-level
+   `str | None` fields without explicit `AliasChoices`) must
+   either receive `AliasChoices` annotation to disable env
+   activation, or be documented in the migration commit as
+   "now reachable via `ONEIRIC_CACHE_DIR` /
+   `ONEIRIC_CONFIG_DIR`". The operator's shell already
+   shows `ONEIRIC_CACHE_DIR` set (`env` audit above), so
+   the second path is the realistic choice.
+
+### Pinned order (the source-of-truth for Phase 1 task 1.3)
+
+```
+Highest priority ──────────────────────────────── Lowest priority
+
+explicit path arg
+↓
+{PROJECT_NAME}_CONFIG env var (file path)
+↓
+_ALIAS_OVERRIDES env vars (custom source)
+↓
+XDG local YAML (deep_merge=True)
+↓
+XDG config YAML (deep_merge=True)
+↓
+Project-local YAML (deep_merge=True)
+↓
+Project config YAML (deep_merge=True)
+↓
+Bare {PREFIX}_{FIELD} env vars (env_settings source)
+↓
+Constructor kwargs (init_settings source)
+↓
+file_secret_settings (OS keyring / sops)
+↓
+Code defaults (BaseSettings field defaults)
+```
+
+This is the order **the pydantic-settings source tuple must be
+returned in** (first-returned = highest priority), i.e. Phase 1
+task 1.3 reverses the legacy load-settings call order into this
+tuple.
+
+______________________________________________________________________
+
 ## Migration order (revised — original order was wrong)
 
 ```
