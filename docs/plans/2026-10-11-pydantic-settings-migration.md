@@ -257,7 +257,7 @@ ______________________________________________________________________
 - `ONEIRIC_AUTH__ENABLED=true python -c "..."` does NOT raise (the `auth:` field's env-var source is excluded; `from_env()` overlay applies at CLI call site).
 - `${XDG_CONFIG_HOME}/<project>/local.yaml` overrides beat `settings/<project>.yaml`.
 - `ONEIRIC_MCP_HTTP_PORT=9999 python -c "from oneiric.core.config import OneiricMCPConfig; print(OneiricMCPConfig().http_port)"` prints `9999` (silent env-var loading documented behavior).
-- `ONEIRIC_MCP_HTTP_PORT=9999 python -c "from oneiric.core.config import OneiricMCPConfig; print(OneiricMCPConfig(http_port=8888).http_port)"` prints `8888` (init_settings > env).
+- `ONEIRIC_MCP_HTTP_PORT=9999 python -c "from oneiric.core.config import OneiricMCPConfig; print(OneiricMCPConfig(http_port=8888).http_port)"` prints `9999` (env_settings > init_settings, since env_settings comes earlier in the chain). pydantic-settings' "first returned = highest priority" rule applies.
 - `python -c "from oneiric.adapters.watcher import AdapterConfigWatcher"` (async caller) does not block the event loop (uses `await asyncio.to_thread(load_settings, ...)`).
 - `python -c "import os; os.environ['ONEIRIC_DEBUG'] = 'true'; from oneiric.core.config import OneiricSettings; print(OneiricSettings().debug)"` prints `True` (env-var activation works after migration).
 
@@ -267,7 +267,7 @@ ______________________________________________________________________
 
 ### Phase 1 — Tasks
 
-- [ ] **1.1** In `oneiric/core/config.py:296`, change `class OneiricMCPConfig(BaseModel):` → `class OneiricMCPConfig(BaseSettings):`. **Remove** `env_file=".env"` from `model_config`. No other change to that class.
+- [ ] **1.1** In `oneiric/core/config.py:296`, change `class OneiricMCPConfig(BaseModel):` → `class OneiricMCPConfig(BaseSettings):`. **Remove** `env_file=".env"` from `model_config`. No other change to that class. **In the SAME commit (not a follow-up)**, add `"pydantic-settings>=2.15"` to `[project].dependencies` in `pyproject.toml:13`. The plan uses `pydantic-settings`' full API surface (`SettingsConfigDict`, `BaseSettings`, `YamlConfigSettingsSource`, `PydanticBaseSettingsSource`, `AliasChoices`, `validation_alias`); without a direct pin, future `pydantic` upgrades could silently drop or alter `pydantic-settings`.
 - [ ] **1.2** In `oneiric/core/config.py:311`, change `class OneiricSettings(BaseModel):` → `class OneiricSettings(BaseSettings):`. Add `arbitrary_types_allowed=True` to `model_config`.
 - [ ] **1.3** Add `settings_customise_sources` classmethod to `OneiricSettings`. Return tuple (in pydantic-settings' "first wins" order — REVERSED from ACB's "last wins"):
   ```python
@@ -290,8 +290,17 @@ ______________________________________________________________________
 - [ ] **1.7** Re-implement `_ALIAS_OVERRIDES` as `validation_alias=AliasChoices(...)` on each target field per Phase 0 audit. Specifically: `LoggingConfig.level` gets `validation_alias=AliasChoices("level", "ONEIRIC_LOG_LEVEL")` (NEW). Other target fields per Phase 0 results.
 - [ ] **1.8** Add `BodaiManifestSource(PydanticBaseSettingsSource)` to `oneiric/core/_sources.py` (NOT `oneiric/adapters/`). Implements `get_field_value` + `__call__`. Reads from `oneiric remote-sync` cache. Returns a no-op empty dict when no manifest URL configured. Wired into the chain between YAML and env_settings when configured.
 - [ ] **1.9** Delete the hand-rolled helpers from `oneiric/core/config.py`: `_read_file`, `_load_layer_file`, `_deep_merge`, `_coerce_env_value`, `_env_overrides`, `_ALIAS_OVERRIDES`. Delete the `load_settings` body and replace with the settings_customise_sources + build_oneiric_settings + model_validate path.
-- [ ] **1.10** Mark `auth: OneiricMCPAuthConfig` field as excluded from env-var source merging. Implementation: declare `auth` with `model_config = SettingsConfigDict(...)` on `OneiricMCPAuthConfig` to use pydantic-settings' field-level env support (optional, NOT required for Phase 1), OR add a custom source filter in `settings_customise_sources` that drops `auth` keys before merging.
-- [ ] **1.11** Update async call sites: `oneiric/main.py:38`, `oneiric/cli/__init__.py:204,222,248,768,3189`, `oneiric/cli/mcp.py:121`, `oneiric/shell/adapter.py:159`, `oneiric/adapters/watcher.py:18`, `oneiric/domains/watchers.py:24,41,58,76`, `oneiric/runtime/watchers.py:36` — wrap `load_settings(...)` with `await asyncio.to_thread(load_settings, ...)`.
+- [ ] **1.10** Mark `auth: OneiricMCPAuthConfig` field as excluded from env-var source merging. **`OneiricMCPAuthConfig` is a stdlib `@dataclass` (not a Pydantic model) — pydantic-settings can't decorate it.** Implementation: a custom source wrapper that subclasses the default sources (`EnvSettingsSource`, `YamlConfigSettingsSource`, `DotEnvSettingsSource`) and overrides `__call__` to drop the `auth` key before merging. Code sketch:
+  ```python
+  class _AuthExcludingYamlSource(YamlConfigSettingsSource):
+      def __call__(self) -> dict[str, Any]:
+          data = super().__call__()
+          data.pop("auth", None)
+          return data
+  # Same pattern for EnvSettingsSource + DotEnvSettingsSource
+  ```
+  The `auth:` field's env-var source stays applied via `OneiricMCPAuthConfig.from_env()` at the CLI call site (per the comment at `oneiric/core/config.py:359-361`). Alternative (out-of-scope refactor): convert `OneiricMCPAuthConfig` from `@dataclass` to a `BaseSettings` subclass with its own `env_prefix="ONEIRIC_AUTH_"`, which would make the `auth:` exclusion unnecessary. Document this design choice in the commit message.
+- [ ] **1.11** Update async call sites that invoke `load_settings(...)` inside `async def` blocks: `oneiric/cli/__init__.py:3189` (inside `async def _shell()`), `oneiric/cli/mcp.py:121` (inside `_load_auth_from_settings()` — verify it's async first), `oneiric/shell/adapter.py:159` (inside `async def _reload_settings()`). Wrap each with `await asyncio.to_thread(load_settings, ...)`. **Note:** `oneiric/main.py:38`, `oneiric/cli/__init__.py:204,222,248,768`, `oneiric/adapters/watcher.py:18`, `oneiric/domains/watchers.py:24,41,58,76`, `oneiric/runtime/watchers.py:36` are NOT call sites — they are sync-context references or default-arg values in function signatures. No wrapping needed. **Net async-wrap sites: 3, not 11.**
 - [ ] **1.12** Update unit tests `tests/unit/test_config.py` and the 7 affected test files (see Phase 4 file map) to assert the new chain semantics.
 
 ### Phase 1 — Validation gates (corrected — original gate was empty)
@@ -475,6 +484,18 @@ ______________________________________________________________________
 - [ ] **4.5** Rewrite `tests/core/test_config_xdg.py` (imports deleted `_env_overrides`).
 - [ ] **4.6** Rewrite `tests/unit/test_core_config_branches.py` (calls deleted `_read_file`).
 - [ ] **4.7** Rewrite `tests/unit/test_core_config.py` env-var test cases.
+
+- [ ] **4.7a** Add NEW tests for Phase 1/2 added behavior (none of these are rewrites — they're net additions):
+  - `tests/unit/test_bodai_manifest_source.py` — verify `BodaiManifestSource` reads from `oneiric remote-sync` cache, returns no-op when no manifest URL configured, slots in correct precedence position.
+  - `tests/unit/test_build_oneiric_settings.py` — verify memoization: `build_oneiric_settings("X")` called twice returns the same class object (id-equal).
+  - `tests/unit/test_auth_field_exclusion.py` — verify `ONEIRIC_AUTH__ENABLED=true` does NOT leak into `OneiricSettings.auth.enabled`; `from_env()` is the sole path.
+  - `tests/unit/test_init_env_precedence.py` — verify the chain order: `init_settings` < `env_settings` < YAML < `_alias_overrides_source`. Concrete: `OneiricSettings(api_key=debug_level="DEBUG")` + `ONEIRIC_DEBUG_LEVEL=INFO` → `debug_level == "INFO"`.
+  - `tests/unit/test_arbitrary_types_allowed.py` — verify `auth: OneiricMCPAuthConfig` dataclass round-trips through `model_dump()` / `model_validate()` cleanly.
+  - `tests/unit/test_nested_base_settings.py` — pin the nested-BaseSettings sharp edge: `OTelStorageSettings` inside `OneiricSettings.observability` works for `ONEIRIC_OBSERVABILITY__CONNECTION_STRING=...`.
+  - `tests/unit/test_adapter_env_prefix_collision.py` — verify `LLM_API_KEY=x` does NOT flow into `MahavishnuSettings.api_key`; verify `ONEIRIC_OTEL_STORAGE__CONNECTION_STRING=x` does NOT flow into `MahavishnuSettings.otel_storage.connection_string`.
+  - `tests/unit/test_env_var_collision_audit.py` — pytest-based version of Phase 0 task 0.3 (NOT shell-grep): iterate `dir(settings_instance)`, verify each field name (case-insensitive, with `__` delimiter) doesn't accidentally pick up a real env var via mocked `monkeypatch`.
+
+- [ ] **4.7b** Add `# ty: ignore[valid-type]` on the `auth: OneiricMCPAuthConfig` line in `oneiric/core/config.py:362`. The existing `# type: ignore[valid-type]` is a mypy directive; `ty` (the operative checker for `oneiric.core.*`) requires the same-line `# ty: ignore[...]` syntax per `ty-ignore-same-line-required.md`. **Note for implementers:** `oneiric.core.*` and `oneiric.cli.*` are excluded from mypy/zuban checking per `mypy.ini` lines 63 and 72; `ty` is the operative type checker for these modules.
 - [ ] **4.8** Update `docs/architecture/MEMORY_ARCHITECTURE.md` to reflect: Oneiric's settings are now `BaseSettings`-based (per ADR 0003), the 6-layer merge is via `settings_customise_sources`, the hand-rolled loader is gone. **Sequence: do the Dhara cleanup first (already at `3ea7ae5`), then this Phase 4 step, or factor the merge.**
 - [ ] **4.9** Update `oneiric/README.md` to point at ADR 0003 + this migration plan.
 - [ ] **4.10** Run the full Oneiric + cross-repo test suite one more time; confirm `git grep "hand.rolled.*loader"` returns zero in docs and code.
