@@ -135,8 +135,15 @@ pickle/serialize paths.
 
 ## 4. The settings contract: a Pydantic model
 
-Every adapter that takes config exposes a Pydantic `BaseModel`
-subclass:
+Every adapter that takes config exposes a Pydantic settings model.
+The choice between `pydantic.BaseModel` and `pydantic_settings.BaseSettings`
+depends on whether the adapter needs env-var loading:
+
+### Default: `pydantic.BaseModel`
+
+For adapters whose config is constructed explicitly (passed in via
+`__init__` from a parent config, set by the resolver from a remote
+manifest, etc.):
 
 ```python
 from pydantic import BaseModel, Field
@@ -147,7 +154,28 @@ class MyAdapterSettings(BaseModel):
     require_secrets: bool = Field(default=False)
 ```
 
-Wire it in `AdapterMetadata`:
+### When you need env vars: `pydantic_settings.BaseSettings`
+
+For adapters that need to load config from environment variables
+(API keys, endpoints, model names), use `pydantic_settings.BaseSettings`:
+
+```python
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+class LLMAdapterSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="LLM_")
+    api_key: str
+    model: str = "claude-sonnet-4-20250514"
+    base_url: str = "https://api.example.com"
+```
+
+This gives you free env-var loading (`LLM_API_KEY=...`,
+`LLM_MODEL=...`), plus access to all of pydantic-settings' source
+machinery (YAML files via `YamlConfigSettingsSource`, secrets via
+`SecretsSettingsSource`, etc.) when needed. The precedent in
+Oneiric is `oneiric/adapters/observability/settings.py::OTelStorageSettings`.
+
+### Wire in `AdapterMetadata`
 
 ```python
 metadata = AdapterMetadata(
@@ -157,7 +185,35 @@ metadata = AdapterMetadata(
 ```
 
 The resolver stores the module-qualified path. `AdapterBridge`
-materializes settings when instantiating.
+materializes settings when instantiating — for `BaseSettings`
+subclasses, the env-var loading happens automatically at that point.
+
+### Note: no `OneiricAdapterSettings` substrate base
+
+Oneiric does **not** ship a substrate-level `OneiricAdapterSettings`
+class. ACB had this pattern (per `acb/config.py::Settings` +
+`acb/adapters/vector/_base.py::VectorBaseSettings(Settings, SSLConfigMixin)`),
+but the Oneiric migration dropped it. Each adapter category rolls
+its own `*BaseSettings` class (`LLMBaseSettings`, `VectorBaseSettings`,
+`NoSQLBaseSettings`, `EmbeddingBaseSettings`); each extends
+`pydantic.BaseModel` (or `BaseSettings` if env vars are needed)
+directly. This is a deliberate decision — there's no implicit
+substrate base to extend.
+
+### Substrate-side settings loading (for context)
+
+The substrate's own config (`OneiricSettings`, `OneiricMCPConfig`)
+**extends `pydantic_settings.BaseSettings`** per
+[ADR 0003](../adr/0003-pydantic-settings-migration.md). It does not
+extend `pydantic.BaseModel`. The substrate loads its config via
+pydantic-settings' native `settings_customise_sources` chain (a
+sequence of `YamlConfigSettingsSource` + `EnvSettingsSource` +
+optional `SecretsSettingsSource`), not via a hand-rolled loader.
+
+Adapter authors should NOT replicate a hand-rolled loader — if your
+adapter needs YAML/secrets/env-var loading, use pydantic-settings
+directly. The substrate chose pydantic-settings; the substrate's
+adapters should follow.
 
 ## 5. The capability contract: string tags
 
@@ -261,10 +317,17 @@ The cleanest existing example is
 It shows all five sub-contracts in one place: `AdapterMetadata` at the
 class level (line 75-86), `init/health/cleanup` lifecycle methods
 (line 105-197), factory as `"oneiric.adapters.queue.redis_streams:RedisStreamsQueueAdapter"`
-string, `RedisStreamsQueueSettings` Pydantic model (line 38-71),
-capability tags `["queue", "pubsub", "fanout"]` (line 79).
+string, `RedisStreamsQueueSettings` Pydantic model (line 38-71 —
+currently `BaseModel`; would migrate to `BaseSettings` if env-var
+loading became a requirement, per §4), capability tags
+`["queue", "pubsub", "fanout"]` (line 79).
 
-Use it as the template when writing a new adapter.
+For an adapter that uses `BaseSettings` for env-var loading, see
+`oneiric/adapters/observability/settings.py::OTelStorageSettings` —
+it declares `env_prefix="ONEIRIC_OTEL_STORAGE_"` and inherits
+from `pydantic_settings.BaseSettings`.
+
+Use these as templates when writing a new adapter.
 
 ## 10. Anti-patterns
 
@@ -281,6 +344,12 @@ Use it as the template when writing a new adapter.
   metrics, and resolver scoring.
 - **Skipping `AdapterMetadata` and importing the class elsewhere.**
   Unregistered classes are invisible to the resolver.
+- **Hand-rolling a settings loader.** The substrate uses
+  `pydantic_settings.BaseSettings` natively per
+  [ADR 0003](../adr/0003-pydantic-settings-migration.md). Adapter
+  authors who need YAML/secrets/env-var loading should extend
+  `pydantic_settings.BaseSettings` — don't reimplement
+  pydantic-settings.
 - **POSTing to a non-existent HTTP service in `init()`.** See the
   deleted `mcp_pusher.py` — that was Dhara-MCP-decomposition rot.
   Anything you `import` in `init()` must be a real, current dependency.
