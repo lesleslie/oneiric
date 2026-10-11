@@ -11,6 +11,11 @@ requires-python = ">=3.14"
 dependencies = [
     "mcp-common>=0.28.0",
     "pydantic>=2.12.5",
+    # 2026-10-11: direct pin (was transitive via mcp-common). The substrate
+    # now uses pydantic-settings natively (``oneiric.core.config`` extends
+    # ``BaseSettings``); without a direct pin, future pydantic upgrades could
+    # silently drop or alter pydantic-settings.
+    "pydantic-settings>=2.15",
     "structlog>=26.1.0",
     "opentelemetry-api>=1.42.1",
     "pyyaml>=6.0.3",

@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 import yaml
 from pydantic import AliasChoices, BaseModel, Field
-from pydantic_settings import SettingsConfigDict
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from oneiric.runtime.health import default_runtime_health_path
 
@@ -293,7 +293,7 @@ class RuntimeSupervisorConfig(BaseModel):
     )
 
 
-class OneiricMCPConfig(BaseModel):
+class OneiricMCPConfig(BaseSettings):
     http_port: int = 8000
     http_host: str = "127.0.0.1"
     enable_http_transport: bool = True
@@ -301,9 +301,14 @@ class OneiricMCPConfig(BaseModel):
     environment: str = "development"
     cache_dir: str = ".oneiric_cache"
 
+    # NOTE: ``env_file`` is intentionally NOT declared. Migrating from
+    # BaseModel to BaseSettings activates env-var loading for every field
+    # above; adding ``env_file=".env"`` here would silently activate
+    # .env-file lookup on every ``OneiricMCPConfig(...)`` instantiation.
+    # The legacy hand-rolled loader never did this; preserving that
+    # behavior requires omitting it.
     model_config = SettingsConfigDict(
         env_prefix="ONEIRIC_MCP_",
-        env_file=".env",
         extra="allow",
     )
 
