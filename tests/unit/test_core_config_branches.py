@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -10,7 +9,6 @@ from oneiric.core.config import (
     OneiricSettings,
     SecretsConfig,
     SecretsHook,
-    _read_file,
     apply_profile_with_fallback,
     apply_runtime_profile,
     load_settings,
@@ -39,15 +37,12 @@ def test_load_settings_applies_env_and_explicit_override(tmp_path, monkeypatch) 
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("ONEIRIC_REMOTE__CACHE_DIR", str(tmp_path / "env-cache"))
 
-    explicit = tmp_path / "settings.toml"
+    explicit = tmp_path / "settings.yaml"
     explicit.write_text(
-        """
-[app]
-name = "explicit"
-"""
+        "app:\n  name: explicit\n",
     )
 
-    settings = load_settings(explicit)
+    settings = load_settings(explicit, project_root=tmp_path)
 
     assert settings.app.name == "explicit"
     assert settings.remote.cache_dir == str(tmp_path / "env-cache")
@@ -71,24 +66,31 @@ def test_apply_profile_with_fallback_uses_configured_profile() -> None:
     assert updated.profile.name == "serverless"
 
 
-def test_read_file_supports_json_suffix_and_content_detection(tmp_path) -> None:
-    json_file = tmp_path / "config.json"
-    json_file.write_text(json.dumps({"app": {"name": "json"}}))
+def test_read_yaml_file_parses_yaml_content(tmp_path) -> None:
+    """The explicit ``path=`` override is YAML-only post-migration.
 
-    detected_file = tmp_path / "config.cfg"
-    detected_file.write_text(json.dumps({"app": {"environment": "staging"}}))
+    Phase 1 task 1.9 deleted ``_read_file`` (multi-format YAML/TOML/JSON
+    parser). The explicit-config path now uses ``_read_yaml_file``.
+    """
+    from oneiric.core.config import _read_yaml_file
 
-    assert _read_file(json_file)["app"]["name"] == "json"
-    assert _read_file(detected_file)["app"]["environment"] == "staging"
+    yaml_file = tmp_path / "config.yaml"
+    yaml_file.write_text("app:\n  name: yaml-only\n")
+
+    result = _read_yaml_file(yaml_file)
+
+    assert result["app"]["name"] == "yaml-only"
 
 
-def test_read_file_falls_back_to_toml_for_unknown_extension(tmp_path) -> None:
-    toml_file = tmp_path / "config.cfg"
-    toml_file.write_text('[app]\nname = "toml-fallback"\n')
+def test_read_yaml_file_returns_empty_for_empty_file(tmp_path) -> None:
+    from oneiric.core.config import _read_yaml_file
 
-    result = _read_file(toml_file)
+    empty_file = tmp_path / "empty.yaml"
+    empty_file.write_text("")
 
-    assert result["app"]["name"] == "toml-fallback"
+    result = _read_yaml_file(empty_file)
+
+    assert result == {}
 
 
 class TestSecretsHookGetBranches:

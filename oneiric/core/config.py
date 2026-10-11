@@ -2,18 +2,22 @@ from __future__ import annotations
 
 import hashlib
 import inspect
-import json
 import os
 import tempfile
-import tomllib
-import warnings
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 import yaml
 from pydantic import AliasChoices, BaseModel, Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
+
+from ._sources import (
+    BodaiManifestSource,
+    _AliasOverridesEnvSource,
+    _AuthExcludingEnvSource,
+    build_yaml_layers,
+)
 
 from oneiric.runtime.health import default_runtime_health_path
 
@@ -282,8 +286,10 @@ class RuntimeSupervisorConfig(BaseModel):
         validation_alias=AliasChoices("enabled", "ONEIRIC_RUNTIME_SUPERVISOR__ENABLED"),
         description=(
             "Enable the service supervisor loop. Bound from "
-            "ONEIRIC_RUNTIME_SUPERVISOR__ENABLED (the __ delimiter maps to "
-            "runtime_supervisor.enabled via _env_overrides)."
+            "ONEIRIC_RUNTIME_SUPERVISOR__ENABLED via pydantic-settings' "
+            "nested-delimiter path (the __ delimiter maps to "
+            "runtime_supervisor.enabled). The AliasChoices form is "
+            "redundant-but-harmless insurance."
         ),
     )
     poll_interval: float = Field(
@@ -301,24 +307,33 @@ class OneiricMCPConfig(BaseSettings):
     environment: str = "development"
     cache_dir: str = ".oneiric_cache"
 
-    # NOTE: ``env_file`` is intentionally NOT declared. Migrating from
-    # BaseModel to BaseSettings activates env-var loading for every field
-    # above; adding ``env_file=".env"`` here would silently activate
-    # .env-file lookup on every ``OneiricMCPConfig(...)`` instantiation.
-    # The legacy hand-rolled loader never did this; preserving that
-    # behavior requires omitting it.
+    # Intentionally no ``env_file``: the legacy BaseModel loader never
+    # did CWD-relative .env-file lookup; preserving that requires
+    # omitting the key (it would activate silently under BaseSettings).
     model_config = SettingsConfigDict(
         env_prefix="ONEIRIC_MCP_",
         extra="allow",
     )
 
 
-class OneiricSettings(BaseModel):
+class OneiricSettings(BaseSettings):
+    # 2026-10-11: migrate from ``BaseModel`` to ``BaseSettings`` (pydantic-
+    # settings 2.15+). Activates env-var loading for every nested field via
+    # ``env_prefix`` + ``env_nested_delimiter``. The ``arbitrary_types_allowed``
+    # flag is required because ``auth: OneiricMCPAuthConfig`` is a stdlib
+    # ``@dataclass`` (not a Pydantic model); without it, ``model_validate``
+    # raises ``TypeError`` on the auth field. Env-var merging for the
+    # ``auth`` field is suppressed via the custom ``_AuthExcludingEnvSource`` /
+    # ``_AuthExcludingYamlSource`` wrappers in ``oneiric.core._sources``;
+    # the CLI's existing ``OneiricMCPAuthConfig.from_env()`` call site
+    # (oneiric/cli/mcp.py:_load_auth_from_settings) remains the sole
+    # channel for ``ONEIRIC_AUTH_*`` env vars. REQ-PYDANTIC-MIGRATION-001.
     model_config = SettingsConfigDict(
         env_prefix="ONEIRIC_",
         env_nested_delimiter="__",
         extra="allow",
         populate_by_name=True,
+        arbitrary_types_allowed=True,
     )
     config_dir: str | None = None
     cache_dir: str | None = None
@@ -337,7 +352,11 @@ class OneiricSettings(BaseModel):
     profile: RuntimeProfileConfig = Field(default_factory=RuntimeProfileConfig)
     runtime_paths: RuntimePathsConfig = Field(default_factory=RuntimePathsConfig)
     runtime_supervisor: RuntimeSupervisorConfig = Field(
-        default_factory=RuntimeSupervisorConfig
+        default_factory=RuntimeSupervisorConfig,
+        description="Enable the service supervisor loop. Bound from "
+        "ONEIRIC_RUNTIME_SUPERVISOR__ENABLED via the pydantic-settings "
+        "nested-delimiter path. The AliasChoices on ``enabled`` also "
+        "recognises the modern ``__`` nested-key form.",
     )
     # 2026-09-29: nested OTelStorageSettings so XDG/env-var overrides on
     # ``observability.<field>`` (e.g. ``observability.connection_string``)
@@ -373,6 +392,50 @@ class OneiricSettings(BaseModel):
         ),
     )
 
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        """Customise the pydantic-settings source chain.
+
+        Order = "first returned wins" (pydantic-settings). Precedence
+        (highest → lowest):
+
+        1. ``init_settings`` (constructor kwargs)
+        2. Env source (``{PREFIX}_{SECTION}__{FIELD}`` nested form)
+        3. ``_AliasOverridesEnvSource`` — legacy single-underscore aliases
+        4. ``BodaiManifestSource`` (no-op when no manifest URL configured)
+        5-9. YAML layers (XDG local, XDG config, project local, project yaml, project yml)
+        10. ``dotenv_settings`` (deactivated by the loader — never declared)
+        11. ``file_secret_settings``
+
+        The ``_AuthExcludingEnvSource`` wrapper drops the ``auth:`` key
+        so the stdlib ``OneiricMCPAuthConfig`` dataclass never sees
+        env-source merge (pydantic-settings cannot decorate dataclasses).
+        """
+        project_root_path: Path = getattr(
+            settings_cls,
+            "oneiric_project_root",
+            Path(__file__).resolve().parent.parent.parent,
+        )
+        project_name: str = getattr(settings_cls, "oneiric_project_name", "oneiric")
+        return (
+            init_settings,
+            _AuthExcludingEnvSource(settings_cls),
+            _AliasOverridesEnvSource(
+                settings_cls, env_prefix=f"{project_name.upper()}_"
+            ),
+            BodaiManifestSource(settings_cls),
+            *build_yaml_layers(settings_cls, project_root_path, project_name),
+            dotenv_settings,
+            file_secret_settings,
+        )
+
 
 def load_settings(
     path: str | Path | None = None,
@@ -382,29 +445,28 @@ def load_settings(
     """Load Oneiric settings with XDG-compliant layered configuration.
 
     Configuration priority (highest to lowest):
-    1. Explicit ``path`` argument
-    2. ``{PROJECT_NAME}_CONFIG`` environment variable
-    3. Environment variable overrides (``{PROJECT_NAME}_{SETTING}__``)
+    1. Explicit ``path`` argument (post-construction override)
+    2. ``{PROJECT_NAME}_CONFIG`` environment variable (post-construction override)
+    3. Bare-env-var source (``{PREFIX}_{FIELD}``) — via pydantic-settings
     4. XDG user-local override: ``~/.config/{project_name}/local.yaml``
     5. XDG user config: ``~/.config/{project_name}/config.yaml``
     6. Project local override: ``<project_root>/settings/local.yaml``
-    7. Project local override: ``settings/local.yaml`` (deprecated, CWD-relative)
-    8. Project committed config: ``<project_root>/settings/{project_name}.yaml``
-    9. Project committed config: ``settings/{project_name}.yaml``
-       (deprecated, CWD-relative)
-    10. Code defaults
+    7. Project committed config: ``<project_root>/settings/{project_name}.yaml``
+    8. Code defaults
 
     Project-layer paths are anchored at the package install location (the
     directory containing this package, e.g. ``<repo>/oneiric/``) so they
     resolve correctly under any process spawn context (launchd, nohup,
-    containers, worktrees). When the anchored file does not exist and
-    ``project_root`` was not explicitly provided, ``load_settings()`` falls
-    back to CWD-relative resolution and emits a ``DeprecationWarning`` so
-    operators who ``cd ~/Projects/repo && ./bin/run`` keep working during
-    the migration window.
+    containers, worktrees). The CWD-relative fallback that previously
+    emitted a DeprecationWarning was removed in the Phase 0 amendment;
+    callers that need a non-package anchor must pass ``project_root=``.
 
-    Note: XDG config overrides project local config because user preferences
-    should take precedence over repository defaults.
+    The custom source chain is wired in
+    ``OneiricSettings.settings_customise_sources``; this function only
+    handles the explicit path / ``{PROJECT}_CONFIG`` overrides (which
+    pydantic-settings cannot natively model as "final override slots")
+    and the per-project env_prefix via the ``build_oneiric_settings``
+    factory.
 
     Args:
         path: Optional explicit config file path (highest priority).
@@ -414,10 +476,13 @@ def load_settings(
             (default), inferred from this module's package install location
             (``Path(__file__).resolve().parent.parent.parent``). Pass
             explicitly when calling from a different package or test that
-            needs to anchor at a specific checkout.
+            needs to anchor at a specific checkout. NOTE: the post-
+            migration loader no longer falls back to CWD when ``project_root``
+            is omitted; tests must pass ``project_root=tmp_path`` explicitly
+            to anchor at an empty directory.
 
     Returns:
-        Validated OneiricSettings instance with all layers applied.
+        Validated ``_Project`` instance with all layers applied.
 
     Examples:
         >>> # Load with defaults (anchored at package install location)
@@ -432,51 +497,27 @@ def load_settings(
         >>> # Anchor at an explicit checkout (e.g., for tests)
         >>> settings = load_settings(project_root="/path/to/repo")
     """
-    data: dict[str, Any] = {}
+    # Lazy import to avoid the circular: build_settings imports OneiricSettings,
+    # which is defined in this module.
+    from .build_settings import build_oneiric_settings
 
-    # Resolve project_root once at function entry. Default to the directory
-    # containing this package: oneiric/core/config.py -> oneiric/core ->
-    # oneiric -> <project_root>. This makes the project layer anchor at
-    # the package install location, immune to CWD changes from process
-    # spawn contexts (launchd, nohup, containers, worktrees).
-    if project_root is None:
-        project_root_path = Path(__file__).resolve().parent.parent.parent
-    else:
-        project_root_path = Path(project_root)
-    project_root_provided_explicitly = project_root is not None
+    settings_cls = build_oneiric_settings(project_name, project_root=project_root)
+    project_root_path = getattr(
+        settings_cls, "oneiric_project_root", Path(__file__).resolve().parent.parent.parent
+    )
+    logger.debug(
+        "load-settings-source-chain",
+        project=project_name,
+        project_root=str(project_root_path),
+        settings_class=settings_cls.__name__,
+    )
 
-    def _load_layer_file(path: Path, *, layer: str) -> None:
-        nonlocal data
-        if not path.exists():
-            return
-        try:
-            layer_data = _read_file(path)
-            data = _deep_merge(data, layer_data)
-            logger.info(
-                f"{layer}-config-loaded",
-                path=str(path),
-                layer=layer,
-            )
-        except (
-            FileNotFoundError,
-            json.JSONDecodeError,
-            tomllib.TOMLDecodeError,
-            yaml.YAMLError,
-        ) as e:
-            logger.warning(
-                f"{layer}-config-parse-error",
-                path=str(path),
-                error=str(e),
-                layer=layer,
-            )
-
-    # Track if we have an explicit config (to apply as final override)
-    explicit_config_data: dict[str, Any] | None = None
     config_path = path or os.getenv(f"{project_name.upper()}_CONFIG")
+    explicit_overlay: dict[str, Any] | None = None
     if config_path:
         file = Path(config_path)
         if file.exists():
-            explicit_config_data = _read_file(file)
+            explicit_overlay = _read_yaml_file(file)
             logger.info(
                 "explicit-config-loaded",
                 path=str(file),
@@ -489,92 +530,18 @@ def load_settings(
                 layer="explicit",
             )
 
-    # Layer 1: Project committed config (settings/{project_name}.yaml)
-    # Anchor at project_root (the package install location) so launchd,
-    # nohup, container, and worktree-spawned processes can find their
-    # config. Fall back to CWD-relative resolution with a
-    # DeprecationWarning so operators who `cd ~/Projects/repo && ./bin/run`
-    # keep working during the migration window. When project_root was
-    # passed explicitly, we trust the caller and do NOT fall back.
-    anchored_project_yaml = project_root_path / "settings" / f"{project_name}.yaml"
-    anchored_project_yml = project_root_path / "settings" / f"{project_name}.yml"
-    if anchored_project_yaml.exists() or anchored_project_yml.exists():
-        _load_layer_file(anchored_project_yaml, layer="project")
-        _load_layer_file(anchored_project_yml, layer="project")
-    elif not project_root_provided_explicitly:
-        # Only fall back to CWD when project_root was inferred (not explicit).
-        cwd_project_yaml = Path("settings") / f"{project_name}.yaml"
-        cwd_project_yml = Path("settings") / f"{project_name}.yml"
-        if cwd_project_yaml.exists() or cwd_project_yml.exists():
-            warnings.warn(
-                (
-                    f"settings/{project_name}.yaml resolved relative to CWD "
-                    f"({Path.cwd()!s}). CWD-relative project-layer resolution "
-                    f"is deprecated and will be removed in a future major "
-                    f"version. Anchor your config at the package install "
-                    f"location by passing project_root= explicitly."
-                ),
-                DeprecationWarning,
-                stacklevel=2,
-            )
-        _load_layer_file(cwd_project_yaml, layer="project")
-        _load_layer_file(cwd_project_yml, layer="project")
-    # else: explicit project_root with no anchored file = silent no-op
-
-    # Layer 2: Project local override (settings/local.yaml)
-    # Development-specific, repository-local overrides. Same anchoring
-    # strategy as Layer 1.
-    anchored_project_local = project_root_path / "settings" / "local.yaml"
-    if anchored_project_local.exists():
-        _load_layer_file(anchored_project_local, layer="project-local")
-    elif not project_root_provided_explicitly:
-        # Only fall back to CWD when project_root was inferred (not explicit).
-        cwd_project_local = Path("settings") / "local.yaml"
-        if cwd_project_local.exists():
-            warnings.warn(
-                (
-                    f"settings/local.yaml resolved relative to CWD "
-                    f"({Path.cwd()!s}). CWD-relative project-layer "
-                    f"resolution is deprecated; pass project_root= "
-                    f"explicitly to silence this warning."
-                ),
-                DeprecationWarning,
-                stacklevel=2,
-            )
-        _load_layer_file(cwd_project_local, layer="project-local")
-    # else: explicit project_root with no anchored file = silent no-op
-
-    # Layer 3: XDG user config (~/.config/{project_name}/config.yaml)
-    # User-level config should override repository defaults.
-    xdg_config_home = os.environ.get("XDG_CONFIG_HOME", "~/.config")
-    xdg_config_dir = Path(xdg_config_home).expanduser() / project_name
-    _load_layer_file(xdg_config_dir / "config.yaml", layer="xdg")
-
-    # Layer 4: XDG user local override (~/.config/{project_name}/local.yaml)
-    # Highest priority file layer for machine/user-specific overrides.
-    _load_layer_file(xdg_config_dir / "local.yaml", layer="xdg-local")
-
-    # Layer 5: Environment variable overrides (highest priority among layered data)
-    env_data = _env_overrides(project_name)
-    if env_data:
-        data = _deep_merge(data, env_data)
-        logger.info(
-            "env-overrides-applied",
-            count=len(env_data),
-            project=project_name,
-            layer="environment",
-        )
-
-    # Layer 6: Explicit config (absolute highest priority)
-    # Applied LAST to override all other layers
-    if explicit_config_data is not None:
-        data = _deep_merge(data, explicit_config_data)
+    # Construct via ``__init__()`` so pydantic-settings runs the full
+    # source chain (env vars + YAML layers + manifest). For explicit
+    # path overrides, model_validate the base instance with the parsed
+    # overlay AFTER construction so the path wins over everything else.
+    settings_obj = settings_cls()
+    if explicit_overlay is not None:
+        settings_obj = settings_obj.model_validate(explicit_overlay)
         logger.info(
             "explicit-config-applied",
             layer="explicit-final",
         )
-
-    return OneiricSettings.model_validate(data)
+    return settings_obj
 
 
 def resolver_settings_from_config(settings: OneiricSettings) -> ResolverSettings:
@@ -778,147 +745,21 @@ class SecretsHook:
         return (override or self._default_cache_key or "default").lower()
 
 
-def _env_overrides(project_name: str = "oneiric") -> dict[str, Any]:
-    """Generate environment variable overrides for a project.
+def _read_yaml_file(path: Path) -> dict[str, Any]:
+    """Read the explicit ``path=`` override YAML and return the parsed dict.
 
-    Environment variables should be formatted as:
-    {PROJECT_NAME}_{SECTION}__{FIELD}
-
-    Examples:
-        ONEIRIC_REMOTE__CACHE_DIR=/tmp/cache
-        SESSION_BUDDY_LOGGING__LEVEL=DEBUG
-        CRACKERJACK_REMOTE__ENABLED=false
-
-    Args:
-        project_name: Project name used for environment variable prefix
-            (e.g., "oneiric", "session_buddy", "crackerjack")
-
-    Returns:
-        Dict of configuration overrides from environment variables
-    """
-    # Convert project name to env prefix (e.g., "session_buddy" -> "SESSION_BUDDY_")
-    prefix = f"{project_name.upper()}_"
-
-    # Single-underscore env-var aliases for backward compat with documented
-    # variables that pre-date the `__` nested-key convention.
-    # Map: env-var suffix (after prefix) -> nested override dict
-    _ALIAS_OVERRIDES: dict[str, dict[str, Any]] = {
-        "ACTIVITY_STORE": {
-            "runtime_paths": {"domain_activity_path": None},
-        },
-        "LOG_LEVEL": {"logging": {"level": None}},
-    }
-
-    overrides: dict[str, Any] = {}
-    for key, value in os.environ.items():
-        if not key.startswith(prefix):
-            continue
-        suffix = key[len(prefix) :]
-        coerced = _coerce_env_value(value)
-
-        # Apply single-underscore alias overrides first (backward compat)
-        if suffix in _ALIAS_OVERRIDES and "__" not in suffix:
-            target_template = _ALIAS_OVERRIDES[suffix]
-            for section, fields in target_template.items():
-                section_dict = overrides.setdefault(section, {})
-                if isinstance(section_dict, dict):
-                    for field in fields:
-                        section_dict[field] = coerced
-            continue
-
-        # Remove prefix and split on __ to get nested keys
-        # Example: "REMOTE__CACHE_DIR" -> ["remote", "cache_dir"]
-        path = suffix.lower().split("__")
-
-        # Special handling for profile (single-level override)
-        if len(path) == 1 and path[0] == "profile":
-            profile_section = overrides.setdefault("profile", {})
-            if isinstance(profile_section, dict):
-                profile_section["name"] = coerced
-            else:  # pragma: no cover
-                overrides["profile"] = {"name": coerced}
-            continue
-
-        # Build nested dict structure
-        cursor = overrides
-        for part in path[:-1]:
-            cursor = cursor.setdefault(part, {})
-        cursor[path[-1]] = coerced
-
-    return overrides
-
-
-def _coerce_env_value(value: str) -> Any:
-    lowered = value.lower()
-    if lowered in {"true", "false"}:
-        return lowered == "true"
-    for caster in (int, float):
-        try:
-            return caster(value)
-        except ValueError:
-            continue
-    if "," in value:
-        return [item.strip() for item in value.split(",")]
-    return value
-
-
-def _read_file(path: Path) -> dict[str, Any]:
-    """Read configuration file and return parsed dictionary.
-
-    Supports multiple formats:
-    - YAML (.yaml, .yml)
-    - TOML (.toml, .tml)
-    - JSON (.json or starts with '{')
-
-    Args:
-        path: Path to configuration file
-
-    Returns:
-        Parsed configuration dictionary
-
-    Raises:
-        tomllib.TOMLDecodeError: If TOML parsing fails
-        json.JSONDecodeError: If JSON parsing fails
-        yaml.YAMLError: If YAML parsing fails
+    Phase 1 task 1.6: explicit-path override is the only remaining
+    YAML parser inside ``load_settings`` — the layered YAML sources
+    are handled by pydantic-settings'
+    ``YamlConfigSettingsSource``. The explicit path is always YAML
+    (TOML/JSON were never documented as supported by ``path=``).
     """
     content = path.read_text()
-
-    # Try YAML first (most common for config files)
-    if path.suffix in {".yaml", ".yml"}:
-        try:
-            return yaml.safe_load(content) or {}
-        except yaml.YAMLError as e:
-            logger.error("yaml-parse-error", path=str(path), error=str(e))
-            raise
-
-    # Try TOML
-    if path.suffix in {".toml", ".tml"}:
-        return tomllib.loads(content)
-
-    # Try JSON
-    if path.suffix == ".json":
-        return json.loads(content)
-
-    # Detect JSON by content
-    if content.strip().startswith("{"):
-        return json.loads(content)
-
-    # Default to TOML for backwards compatibility
-    return tomllib.loads(content)
-
-
-def _deep_merge(base: Mapping[str, Any], override: Mapping[str, Any]) -> dict[str, Any]:
-    result: dict[str, Any] = dict(base)
-    for key, value in override.items():
-        if (
-            key in result
-            and isinstance(result[key], Mapping)
-            and isinstance(value, Mapping)
-        ):
-            result[key] = _deep_merge(result[key], value)
-        else:
-            result[key] = value
-    return result
+    try:
+        return yaml.safe_load(content) or {}
+    except yaml.YAMLError as e:
+        logger.error("explicit-yaml-parse-error", path=str(path), error=str(e))
+        raise
 
 
 async def _maybe_await(value: Any) -> Any:
