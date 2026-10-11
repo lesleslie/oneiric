@@ -20,6 +20,7 @@ manage lifecycle transitions; and hydrate capabilities from remote manifests.
 - [CLI map](#cli-map)
 - [MCP server](#mcp-server)
 - [Documentation](#documentation)
+- [Adapter contract](docs/specs/2026-10-11-adapter-contract-design.md)
 
 ## Quality checks
 
@@ -51,7 +52,7 @@ execution behavior.
 
 | Domain | Role |
 | --- | --- |
-| **Adapters** | Providers for cache, storage, queues, HTTP, databases, NoSQL, graph, vector, embeddings, LLMs, secrets, messaging, DNS, file transfer, and monitoring. |
+| **Adapters** | Providers for cache, storage, queues, HTTP, databases, NoSQL, graph, vector, embeddings, LLMs, secrets, messaging, DNS, file transfer, and monitoring. See the [adapter contract](docs/specs/2026-10-11-adapter-contract-design.md) for what makes a Python class an Oneiric adapter, and [ADR 0002](docs/adr/0002-oneiric-adapter-contract.md) for the decision rationale. |
 | **Services** | Lifecycle-managed application services registered by the host application or a manifest. |
 | **Tasks** | Async task providers and queue metadata used by runtime workflows. |
 | **Events** | Topic dispatch with filtering, fan-out, retries, and handler inspection. |
