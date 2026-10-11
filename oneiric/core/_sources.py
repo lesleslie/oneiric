@@ -38,7 +38,19 @@ from pydantic_settings import (
     YamlConfigSettingsSource,
 )
 
+# Top-level field names whose values are consumed out-of-band (via
+# ``os.getenv`` at the CLI call site) rather than via pydantic-settings'
+# env/YAML source chain. The EnvSettingsSource iteration in
+# pydantic_settings.sources.base.__call__ calls ``_get_resolved_field_value``
+# for every field and tries to JSON-decode complex values; an env var like
+# ``ONEIRIC_PROFILE=serverless`` would raise ``SettingsError`` because
+# ``"serverless"`` is not valid JSON. We intercept at ``get_field_value``
+# so the env source returns ``None`` for these fields and the parent's
+# ``if field_value is not None`` filter drops them from the merged data.
+# The CLI then reads the env var via ``os.getenv`` and applies it via
+# ``apply_profile_with_fallback``.
 _AUTH_KEY = "auth"
+_OUT_OF_BAND_ENV_FIELDS: frozenset[str] = frozenset({"auth", "profile"})
 
 # Legacy single-underscore alias env vars → nested target field paths.
 # The key is the env-var suffix (after the per-project prefix; e.g.,
@@ -60,24 +72,65 @@ _LEGACY_ALIAS_OVERRIDES: dict[str, dict[str, Any]] = {
 
 
 def strip_auth(data: dict[str, Any]) -> dict[str, Any]:
-    """Return ``data`` with the ``auth`` key removed (if it's a dict)."""
-    if _AUTH_KEY in data and isinstance(data[_AUTH_KEY], dict):
-        data.pop(_AUTH_KEY, None)
+    """Return ``data`` with out-of-band-managed keys removed.
+
+    Strips two top-level fields the CLI consumes via ``os.getenv``
+    rather than via the pydantic-settings source chain:
+
+    - ``auth`` — typed ``OneiricMCPAuthConfig`` dataclass (pydantic-
+      settings cannot decorate a stdlib dataclass for env/YAML merge).
+      The CLI applies ``ONEIRIC_AUTH_*`` overlay via
+      ``OneiricMCPAuthConfig.from_env()`` at the call site.
+    - ``profile`` — typed ``RuntimeProfileConfig``. ``ONEIRIC_PROFILE``
+      is read directly via ``os.getenv`` in ``_initialize_state`` and
+      applied via ``apply_profile_with_fallback``. Letting the env
+      source attempt JSON-decode a plain string here raises
+      ``SettingsError`` ("serverless" is not valid JSON), so we strip
+      ``profile`` from env-source entirely. Phase 1 amendment.
+    """
+    for key in (_AUTH_KEY, "profile"):
+        if key in data and isinstance(data[key], dict):
+            data.pop(key, None)
     return data
 
 
 class _AuthExcludingYamlSource(YamlConfigSettingsSource):
-    """YamlConfigSettingsSource variant that drops the ``auth:`` key."""
+    """YamlConfigSettingsSource variant that drops out-of-band-managed keys.
+
+    Strips ``auth:`` and ``profile:`` from the YAML payload so the
+    typed (and/or dataclass-backed) fields aren't subjected to
+    pydantic-settings' per-field env-var handling. See
+    :func:`strip_auth` for the rationale; the prefix ``_Auth`` is
+    historic — the function strips more than just ``auth``.
+    """
 
     def __call__(self) -> dict[str, Any]:
         return strip_auth(super().__call__())
 
 
 class _AuthExcludingEnvSource(EnvSettingsSource):
-    """EnvSettingsSource variant that drops the ``auth:`` key."""
+    """EnvSettingsSource variant that drops out-of-band-managed keys.
 
-    def __call__(self) -> dict[str, Any]:
-        return strip_auth(super().__call__())
+    Same rationale as :class:`_AuthExcludingYamlSource`. Class name
+    is historic (kept for grep-ability vs. the legacy
+    ``settings_customise_sources`` reference).
+
+    The ``get_field_value`` override returns ``(None, field_name, False)``
+    for fields in :data:`_OUT_OF_BAND_ENV_FIELDS` so the parent loop in
+    :meth:`PydanticBaseSettingsSource.__call__` skips them via its
+    ``if field_value is not None`` filter (base.py:614). Doing the
+    strip in ``__call__`` post-hoc is too late — ``super().__call__``
+    raises ``SettingsError`` during ``prepare_field_value`` when env
+    vars like ``ONEIRIC_PROFILE=serverless`` fail JSON decoding for a
+    complex (BaseModel-typed) field.
+    """
+
+    def get_field_value(  # type: ignore[override]
+        self, field: Any, field_name: str
+    ) -> tuple[Any, str, bool]:
+        if field_name in _OUT_OF_BAND_ENV_FIELDS:
+            return None, field_name, False
+        return super().get_field_value(field, field_name)
 
 
 class _AliasOverridesEnvSource(EnvSettingsSource):

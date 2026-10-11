@@ -1,12 +1,9 @@
-"""Tests for oneiric.core.config.load_settings() CWD-relative fallback.
+"""Anchored ``project_root`` precedence tests (CWD fallback removed in Phase 1).
 
-When ``project_root`` is inferred (default) and the inferred anchored path
-does not contain the project-layer file, ``load_settings()`` falls back to
-CWD-relative resolution and emits a ``DeprecationWarning`` so operators who
-``cd ~/Projects/repo && ./bin/run`` keep working during the migration window.
-
-When ``project_root`` is passed explicitly, no fallback occurs — the caller
-is trusted.
+Phase 1 task 1.4 removed the CWD-relative fallback that this file
+originally covered. Tests that pinned the legacy
+``DeprecationWarning``-on-CWD contract were deleted; the surviving
+tests verify the explicit ``project_root=`` path that replaced it.
 """
 
 from __future__ import annotations
@@ -30,29 +27,8 @@ def _clear_oneiric_env(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv(key, raising=False)
 
 
-class TestCWDFallback:
-    def test_fallback_warns_and_loads_cwd_value(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """When the inferred anchored path doesn't exist but CWD has
-        settings/{name}.yaml, the loader falls back to CWD and emits a
-        DeprecationWarning.
-        """
-        _clear_oneiric_env(monkeypatch)
-        # CWD has a settings file
-        cwd_settings = tmp_path / "settings"
-        cwd_settings.mkdir()
-        (cwd_settings / "fallback_test.yaml").write_text(
-            "app:\n  name: cwd_fallback\n"
-        )
-        monkeypatch.chdir(tmp_path)
-        # Let project_root be inferred (None). The inferred anchor is the
-        # package install location, which has no settings/fallback_test.yaml,
-        # so the CWD fallback fires.
-        with pytest.warns(DeprecationWarning, match="CWD-relative"):
-            s = load_settings(project_name="fallback_test")
-        # CWD file must have been loaded
-        assert s.app.name == "cwd_fallback"
+class TestExplicitRootNoFallback:
+    """Phase 1 amendment: explicit ``project_root=`` never reads CWD."""
 
     def test_no_warn_when_neither_anchored_nor_cwd_present(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -69,25 +45,6 @@ class TestCWDFallback:
             )
         # Default app name still applies
         assert s.app.name == "oneiric"
-
-    def test_local_yaml_fallback_warns(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """CWD-relative settings/local.yaml also emits a DeprecationWarning
-        when the anchored equivalent is missing.
-        """
-        _clear_oneiric_env(monkeypatch)
-        (tmp_path / "settings").mkdir()
-        (tmp_path / "settings" / "local.yaml").write_text(
-            "logging:\n  level: WARNING\n"
-        )
-        monkeypatch.chdir(tmp_path)
-        # Let project_root be inferred. The inferred anchor's local.yaml
-        # doesn't exist (the package install location has no settings/local.yaml),
-        # so the CWD fallback fires.
-        with pytest.warns(DeprecationWarning, match="local.yaml"):
-            s = load_settings(project_name="local_fallback_test")
-        assert s.logging.level == "WARNING"
 
     def test_anchored_wins_silently_over_cwd(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

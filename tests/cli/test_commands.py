@@ -728,10 +728,16 @@ class TestActivityCommand:
 
     def test_activity_empty(self, runner, tmp_path):
         """activity command handles no paused/draining keys."""
-        config_file = tmp_path / "settings.toml"
+        # Phase 1 amendment: --config= now reads YAML (TOML support was
+        # dropped when ``load_settings`` migrated to pydantic-settings).
+        # Set BOTH ``cache_dir`` and ``remote.cache_dir`` so the per-test
+        # ``domain_activity.sqlite`` lives under tmp_path (the project may
+        # pin ``ONEIRIC_CACHE_DIR`` and we must override it for hermeticity).
+        config_file = tmp_path / "settings.yaml"
         cache_dir = tmp_path / "cache"
         config_file.write_text(
-            f'cache_dir = "{cache_dir}"\n[remote]\ncache_dir = "{cache_dir}"\nallow_file_uris = true\n'
+            f'cache_dir: "{cache_dir}"\n'
+            f'remote:\n  cache_dir: "{cache_dir}"\n  allow_file_uris: true\n'
         )
         result = runner.invoke(app, [f"--config={config_file}", "--demo", "activity"])
 
@@ -740,10 +746,11 @@ class TestActivityCommand:
 
     def test_activity_with_paused(self, runner, tmp_path):
         """activity command shows paused keys."""
-        config_file = tmp_path / "settings.toml"
+        config_file = tmp_path / "settings.yaml"
         cache_dir = tmp_path / "cache"
         config_file.write_text(
-            f'[remote]\ncache_dir = "{cache_dir}"\nallow_file_uris = true\n'
+            f'cache_dir: "{cache_dir}"\n'
+            f'remote:\n  cache_dir: "{cache_dir}"\n  allow_file_uris: true\n'
         )
         # Pause a key first
         runner.invoke(
@@ -766,10 +773,10 @@ class TestActivityCommand:
 
     def test_activity_json_output(self, runner, tmp_path):
         """activity command supports JSON output."""
-        config_file = tmp_path / "settings.toml"
+        config_file = tmp_path / "settings.yaml"
         cache_dir = tmp_path / "cache"
         config_file.write_text(
-            f'[remote]\ncache_dir = "{cache_dir}"\nallow_file_uris = true\n'
+            f'remote:\n  cache_dir: "{cache_dir}"\n  allow_file_uris: true\n'
         )
         result = runner.invoke(
             app, [f"--config={config_file}", "--demo", "activity", "--json"]
@@ -788,10 +795,10 @@ class TestRemoteStatusCommand:
 
     def test_remote_status_empty(self, runner, tmp_path):
         """remote-status command handles no telemetry."""
-        config_file = tmp_path / "settings.toml"
+        config_file = tmp_path / "settings.yaml"
         cache_dir = tmp_path / "cache"
         config_file.write_text(
-            f'[remote]\ncache_dir = "{cache_dir}"\nallow_file_uris = true\n'
+            f'remote:\n  cache_dir: "{cache_dir}"\n  allow_file_uris: true\n'
         )
         result = runner.invoke(
             app, [f"--config={config_file}", "--demo", "remote-status"]
@@ -803,9 +810,11 @@ class TestRemoteStatusCommand:
 
     def test_remote_status_json_output(self, runner, tmp_path):
         """remote-status command supports JSON output."""
-        config_file = tmp_path / "settings.toml"
+        config_file = tmp_path / "settings.yaml"
         cache_dir = tmp_path / "cache"
-        config_file.write_text(f'[remote]\ncache_dir = "{cache_dir}"\n')
+        config_file.write_text(
+            f'remote:\n  cache_dir: "{cache_dir}"\n'
+        )
         result = runner.invoke(
             app, [f"--config={config_file}", "--demo", "remote-status", "--json"]
         )
@@ -823,10 +832,12 @@ class TestRemoteSyncCommand:
         # Create a minimal manifest
         manifest_file = tmp_path / "manifest.yaml"
         manifest_file.write_text("source: test\nentries: []\n")
-        config_file = tmp_path / "settings.toml"
+        # Phase 1 amendment: --config= now reads YAML (TOML dropped with
+        # the load_settings migration to pydantic-settings).
+        config_file = tmp_path / "settings.yaml"
         cache_dir = tmp_path / "cache"
         config_file.write_text(
-            f'[remote]\ncache_dir = "{cache_dir}"\nallow_file_uris = true\n'
+            f'remote:\n  cache_dir: "{cache_dir}"\n  allow_file_uris: true\n'
         )
 
         result = runner.invoke(
@@ -1018,9 +1029,11 @@ class TestOrchestrateCommand:
 
     @staticmethod
     def _write_runtime_config(tmp_path):
+        # Phase 1 amendment: --config= now reads YAML (TOML was dropped
+        # when ``load_settings`` migrated to pydantic-settings).
         cache_dir = tmp_path / "cache"
-        config_path = tmp_path / "settings.toml"
-        config_path.write_text(f'[remote]\ncache_dir = "{cache_dir}"\n')
+        config_path = tmp_path / "settings.yaml"
+        config_path.write_text(f'remote:\n  cache_dir: "{cache_dir}"\n')
         return config_path
 
     def test_orchestrate_print_dag_inspector(self, runner, tmp_path):

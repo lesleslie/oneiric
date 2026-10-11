@@ -315,6 +315,40 @@ class OneiricMCPConfig(BaseSettings):
         extra="allow",
     )
 
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        """Customise pydantic-settings source chain for ``OneiricMCPConfig``.
+
+        Phase 1 Option A: env > init precedence. Mirrors
+        ``OneiricSettings.settings_customise_sources`` but without the
+        YAML layers (``OneiricMCPConfig`` does not load YAML files; the
+        ``ONEIRIC_MCP_`` ``env_prefix`` is the only configured source).
+
+        Chain order (first returned wins; pydantic-settings semantics):
+
+        1. ``_AuthExcludingEnvSource`` — defensive (OneiricMCPConfig has
+           no ``auth`` field, but the wrapper is harmless and keeps the
+           custom-source surface consistent with ``OneiricSettings``).
+        2. ``env_settings`` — ``ONEIRIC_MCP_`` env-var source (wins over
+           ``init_settings`` because returned later in the chain).
+        3. ``init_settings`` — constructor kwargs.
+
+        Verified by plan gate D5: ``ONEIRIC_MCP_HTTP_PORT=9999
+        OneiricMCPConfig(http_port=8888).http_port`` returns 9999.
+        """
+        return (
+            _AuthExcludingEnvSource(settings_cls),
+            env_settings,
+            init_settings,
+        )
+
 
 class OneiricSettings(BaseSettings):
     # 2026-10-11: migrate from ``BaseModel`` to ``BaseSettings`` (pydantic-

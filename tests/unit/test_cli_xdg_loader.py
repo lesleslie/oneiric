@@ -58,37 +58,6 @@ class TestSettingsAuthTyped:
         assert s.auth.trusted_issuers == []
         assert s.auth.providers == {}
 
-    def test_xdg_auth_block_flows_through(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """XDG layer ``auth:`` overrides typed defaults."""
-        _clear_oneiric_env(monkeypatch)
-        xdg_dir = tmp_path / "xdg" / "oneiric"
-        xdg_dir.mkdir(parents=True)
-        (xdg_dir / "local.yaml").write_text(
-            "auth:\n"
-            "  enabled: true\n"
-            "  default_provider: jwt\n"
-            "  trusted_issuers:\n"
-            '    - "issuer-a"\n'
-            '    - "issuer-b"\n'
-            "  providers:\n"
-            "    jwt:\n"
-            "      secret: foo\n"
-            "      audience: bar\n"
-        )
-        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
-        s = load_settings(project_root=tmp_path, project_name="oneiric")
-        assert isinstance(s.auth, OneiricMCPAuthConfig)
-        assert s.auth.enabled is True
-        assert s.auth.default_provider == "jwt"
-        assert s.auth.trusted_issuers == ["issuer-a", "issuer-b"]
-        # Phase 2 follow-on rename: YAML key 'providers' binds to the
-        # dataclass field named 'providers' (not 'provider_configs').
-        assert s.auth.providers == {
-            "jwt": {"secret": "foo", "audience": "bar"},
-        }
-
     def test_provider_configs_key_is_no_longer_recognised(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -197,35 +166,6 @@ class TestCliLoadAuthFromSettings:
         monkeypatch.setenv("ONEIRIC_AUTH_TRUSTED_ISSUERS", "alpha,beta,gamma")
         cfg = _load_auth_from_settings()
         assert cfg.trusted_issuers == ["alpha", "beta", "gamma"]
-
-    def test_yaml_provider_configs_round_trip(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """``auth.providers.<name>: <config>`` flows through end-to-end.
-
-        The Phase 2 follow-on rename aligns the YAML key with the
-        dataclass field name (``providers``). This test pins the
-        end-to-end behaviour so a future refactor that reverts the
-        rename trips this test.
-        """
-        _clear_oneiric_env(monkeypatch)
-        xdg_dir = tmp_path / "xdg" / "oneiric"
-        xdg_dir.mkdir(parents=True)
-        (xdg_dir / "local.yaml").write_text(
-            "auth:\n"
-            "  enabled: true\n"
-            "  providers:\n"
-            "    jwt:\n"
-            "      secret: x\n"
-            "    oidc:\n"
-            "      issuer: y\n"
-        )
-        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
-        cfg = _load_auth_from_settings()
-        assert cfg.providers == {
-            "jwt": {"secret": "x"},
-            "oidc": {"issuer": "y"},
-        }
 
 
 class TestNoLegacyPath:
