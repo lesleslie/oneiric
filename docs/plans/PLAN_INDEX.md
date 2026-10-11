@@ -82,14 +82,15 @@ One table per store. Entries are sorted by `date` DESC, with ties broken by path
 | Path | Date | Status | Role | Topic | Title |
 |---|---|---|---|---|---|
 | [`docs/adr/0002-oneiric-adapter-contract.md`](../docs/adr/0002-oneiric-adapter-contract.md) | 2026-10-11 | `active` | `canonical` | `adapter-registry` | ADR 0002: Oneiric Adapter Contract — Single Canonical Specification |
-| [`docs/adr/0003-pydantic-settings-migration.md`](../docs/adr/0003-pydantic-settings-migration.md) | 2026-10-11 | `active` | `canonical` | `oneiric-config` | ADR 0003: Adopt pydantic-settings as Oneiric's settings loader |
+| [`docs/adr/0003-pydantic-settings-migration.md`](../docs/adr/0003-pydantic-settings-migration.md) | 2026-10-11 | `active` | `canonical` | `oneiric-config` | ADR 0003: Adopt pydantic-settings as Oneiric's settings loader (revised) |
 | [`docs/adr/0001-deployability-discipline.md`](../docs/adr/0001-deployability-discipline.md) | 2026-09-26 | `active` | `canonical` | `deployability-discipline` | ADR 0001: Bodai Deployability Discipline — Standalone by Default, Enhanced by Installation |
 
 ### Plans & Specifications (`docs/plans/`)
 
 | Path | Date | Status | Role | Topic | Title |
 |---|---|---|---|---|---|
-| [`docs/plans/2026-10-11-pydantic-settings-migration.md`](docs/plans/2026-10-11-pydantic-settings-migration.md) | 2026-10-11 | `draft` | `implementation` | `oneiric-config` | Oneiric pydantic-settings migration — implementation plan |
+| [`docs/plans/2026-10-11-move-llm-and-prompting-from-mcp-common-to-oneiric.md`](docs/plans/2026-10-11-move-llm-and-prompting-from-mcp-common-to-oneiric.md) | 2026-10-11 | `active` | `implementation` | `adapter-registry` | Move LLM and Prompting Subsystems from mcp-common to oneiric |
+| [`docs/plans/2026-10-11-pydantic-settings-migration.md`](docs/plans/2026-10-11-pydantic-settings-migration.md) | 2026-10-11 | `draft` | `implementation` | `oneiric-config` | Oneiric pydantic-settings migration — implementation plan (revised) |
 | [`docs/plans/2026-10-05-oneiric-cli-loader-xdg-migration.md`](docs/plans/2026-10-05-oneiric-cli-loader-xdg-migration.md) | 2026-10-05 | `active` | `implementation` | `routing-composition` | Migrate Oneiric CLI/MCP loader from `~/.oneiric/settings.yaml` to the XDG loader |
 | [`docs/plans/2026-09-16-oneiric-fastmcp-pivot-implementation.md`](docs/plans/2026-09-16-oneiric-fastmcp-pivot-implementation.md) | 2026-09-16 | `draft` | `implementation` | `mcp-design` | Oneiric FastMCP Pivot + Auth Integration — Implementation Plan |
 | [`docs/plans/2026-09-05-oneiric-phase4.md`](docs/plans/2026-09-05-oneiric-phase4.md) | 2026-09-05 | `partial` | `implementation` | `lifecycle` | Oneiric Phase 4 Implementation Plan |
@@ -116,7 +117,8 @@ One table per store. Entries are sorted by `date` DESC, with ties broken by path
 
 | Path | Date | Status | Role | Topic | Title |
 |---|---|---|---|---|---|
-| [`docs/plans/2026-10-11-pydantic-settings-migration.md`](docs/plans/2026-10-11-pydantic-settings-migration.md) | 2026-10-11 | `draft` | `implementation` | `oneiric-config` | Oneiric pydantic-settings migration — implementation plan |
+| [`docs/plans/2026-10-11-move-llm-and-prompting-from-mcp-common-to-oneiric.md`](docs/plans/2026-10-11-move-llm-and-prompting-from-mcp-common-to-oneiric.md) | 2026-10-11 | `active` | `implementation` | `adapter-registry` | Move LLM and Prompting Subsystems from mcp-common to oneiric |
+| [`docs/plans/2026-10-11-pydantic-settings-migration.md`](docs/plans/2026-10-11-pydantic-settings-migration.md) | 2026-10-11 | `draft` | `implementation` | `oneiric-config` | Oneiric pydantic-settings migration — implementation plan (revised) |
 | [`docs/plans/2026-10-05-oneiric-cli-loader-xdg-migration.md`](docs/plans/2026-10-05-oneiric-cli-loader-xdg-migration.md) | 2026-10-05 | `active` | `implementation` | `routing-composition` | Migrate Oneiric CLI/MCP loader from `~/.oneiric/settings.yaml` to the XDG loader |
 | [`docs/plans/2026-09-16-oneiric-fastmcp-pivot-implementation.md`](docs/plans/2026-09-16-oneiric-fastmcp-pivot-implementation.md) | 2026-09-16 | `draft` | `implementation` | `mcp-design` | Oneiric FastMCP Pivot + Auth Integration — Implementation Plan |
 | [`docs/plans/2026-09-05-oneiric-phase4.md`](docs/plans/2026-09-05-oneiric-phase4.md) | 2026-09-05 | `partial` | `implementation` | `lifecycle` | Oneiric Phase 4 Implementation Plan |
@@ -153,9 +155,9 @@ Counts of entries per (lifecycle, role) cell across all six stores. Useful as a 
 | Role \\ Lifecycle | draft | active | partial | shipped | complete | Total |
 |---|---|---|---|---|---|---|
 | `canonical` | 1 | 6 | · | · | · | **7** |
-| `implementation` | 6 | 4 | 2 | · | 16 | **28** |
+| `implementation` | 6 | 6 | 2 | · | 16 | **30** |
 | `umbrella` | · | · | · | · | · | **0** |
 | `historical` | · | · | 1 | 2 | · | **3** |
 | `superseded` | · | · | · | · | · | **0** |
 
-| **Total** | **7** | **10** | **3** | **2** | **16** | **38** |
+| **Total** | **7** | **12** | **3** | **2** | **16** | **40** |
