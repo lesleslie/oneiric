@@ -8,102 +8,228 @@ blocks_on: []
 topic: oneiric-config
 ---
 
-# Oneiric pydantic-settings migration — implementation plan
+# Oneiric pydantic-settings migration — implementation plan (revised)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+> **Revision 2** (2026-10-11, late session): five-agent ensemble review
+> caught factual errors, missing risks, and an empty validation gate.
+> This revision addresses them. Original commit was `5b42cfb`; this
+> file supersedes it.
 
 **Date:** 2026-10-11
 **Status:** <!-- legacy status: draft — moved to YAML frontmatter -->
 **Role:** <!-- legacy role: implementation — moved to YAML frontmatter -->
 
-**Goal:** Drop Oneiric's ~500-line hand-rolled settings loader and adopt `pydantic_settings.BaseSettings` natively across the substrate's config, every adapter settings class that needs env-var loading, and the five cross-repo consumers (mahavishnu, akosha, crackerjack, session-buddy, mcp-common). The substrate's config declaration (`env_prefix="ONEIRIC_"`, `env_nested_delimiter="__"`, `populate_by_name=True`) already follows pydantic-settings' idiom; this plan wires up the loader instead of re-implementing it.
+**Goal:** Drop Oneiric's hand-rolled settings loader and adopt `pydantic_settings.BaseSettings` natively across the substrate's config, every adapter settings class that needs env-var loading, and the five cross-repo consumers (mahavishnu, akosha, crackerjack, session-buddy, mcp-common). The substrate's config declaration (`env_prefix="ONEIRIC_"`, `env_nested_delimiter="__"`, `populate_by_name=True`) already follows pydantic-settings' idiom; this plan wires up the loader instead of re-implementing it.
 
-**Architecture:** Four coordinated phases. Phase 1 migrates the substrate's two settings classes and replaces `load_settings()` with a `settings_customise_sources` chain. Phase 2 audits and migrates per-adapter settings (only those that need env vars). Phase 3 verifies each of the five cross-repo consumers works unchanged against the new substrate. Phase 4 cleans up the dead hand-rolled loader code and validates end-to-end. Each phase has its own Integration Contract (Triggered from, Returns to / updates, Demonstrable by, Rollback signal, Observability added).
+**Architecture:** Five coordinated phases — Phase 0 (audit + precedence characterization), Phase 1 (substrate migration), Phase 2 (adapter settings), Phase 3 (cross-repo verification + fixes), Phase 4 (cleanup). Each phase has its own Integration Contract (Triggered from, Returns to / updates, Demonstrable by, Rollback signal, Observability added).
 
-**Tech Stack:** `pydantic_settings.BaseSettings` + `SettingsConfigDict`, `YamlConfigSettingsSource`, `EnvSettingsSource`, `SecretsSettingsSource` (built-ins), `pydantic-settings-sops` extension (optional, for SOPS-encrypted config). Pre-1.0: direct commit to main per `bodai-pre-1.0-merge-policy`.
+**Tech Stack:** `pydantic_settings.BaseSettings` + `SettingsConfigDict` (pydantic-settings 2.15+, installed in `oneiric/.venv`), `YamlConfigSettingsSource`, `EnvSettingsSource`, `SecretsSettingsSource` (built-ins). Pre-1.0: direct commit to main per `bodai-pre-1.0-merge-policy`.
 
 **Adjacent ADRs / specs:**
-- [`docs/adr/0003-pydantic-settings-migration.md`](../adr/0003-pydantic-settings-migration.md) — the decision this plan implements
+- [`docs/adr/0003-pydantic-settings-migration.md`](../adr/0003-pydantic-settings-migration.md) (revised) — the decision this plan implements
 - [`docs/specs/2026-10-11-adapter-contract-design.md`](../specs/2026-10-11-adapter-contract-design.md) §4 — adapter settings contract (BaseModel vs BaseSettings)
 - [`.claude/decisions/2026-10-11-dhara-substrate-refs-cleanup.md`](../../.claude/decisions/2026-10-11-dhara-substrate-refs-cleanup.md) — prior substrate-decomposition cleanup (commit `cd282ba`)
 
 ______________________________________________________________________
 
-## Why these changes
+## Class relationship (cross-reference for ADR 0003 § Class relationship)
 
-Investigation revealed:
+```
+              ┌─ BaseSettings (pydantic_settings)
+              │      ↑
+              │      │ extends
+              │      │
+              │  OneiricSettings ─── owns `settings_customise_sources` chain
+              │      │
+              │      │ has nested field of type
+              │      ↓
+              │  OneiricMCPConfig ──── (was BaseModel; will become BaseSettings)
+              │      ↑
+              │      │ nested in
+              │      │
+              │  build_oneiric_settings(project_name) ─── returns
+              │      │ _Project(OneiricSettings) with
+              │      │ model_config.env_prefix = f"{project_name.upper()}_"
+              │      │
+              │      │ Mahavishnu (consumer) does:
+              │      ↓
+              │  from oneiric.core.config import load_settings as _oneiric_load
+              │  (MahavishnuSettings extends BaseSettings directly;
+              │  it does NOT extend OneiricMCPConfig — see correction below)
+              │
+              │  Akosha / Crackerjack / Session-Buddy (consumers) similar
+              │
+              └─ mcp_common.OneiricMCPConfig re-export (mcp_common/fastmcp/__init__.mpy:31)
+                 is independent — it references the substrate's
+                 OneiricMCPConfig at runtime; not a parent class.
+```
 
-1. **Oneiric already declares pydantic-settings' conventions** (`env_prefix`, `env_nested_delimiter`, `env_file`, `populate_by_name`) on `model_config` blocks but inherits from `BaseModel` — so the conventions are declared and the loader is not wired up (`oneiric/core/config.py:296-317`).
+**Correction to original plan (lines 42, 92-95, 234):**
+the prior claim `MahavishnuSettings extends OneiricMCPConfig` was wrong.
+`mahavishnu/core/config.py:2689` declares
+`class MahavishnuSettings(BaseSettings):` — `BaseSettings` directly,
+not `OneiricMCPConfig`. `OneiricMCPConfig` is a *nested field* on
+`MahavishnuSettings` (`oneiric_mcp: OneiricMCPConfig = Field(...)` at
+line 2984). Mahavishnu consumes Oneiric's settings indirectly via
+`from oneiric.core.config import load_settings as _oneiric_load`
+(`mahavishnu/core/config.py:3153`).
 
-2. **The hand-rolled loader is dead weight.** ~500 lines of `load_settings()`, YAML parsing, layer-merging, and env-var interpolation in `oneiric/core/config.py`. Every feature it implements is now built-in to pydantic-settings (verified via context7 docs 2026-10-11).
-
-3. **The "I assumed pydantic-settings didn't have what we need" rationale is fully obsolete.** YAML, secrets, env vars, nested delimiter — all built-in. SOPS, Vault, AWS/GCP/Azure secrets — all available as extensions.
-
-4. **Cross-repo consumers will not break.** `MahavishnuSettings extends OneiricMCPConfig`; `load_settings(project_name="X")` returns the same fields. The factory preserves the `${XDG_CONFIG_HOME}/<project>/{config,local}.yaml` and `settings/<project>.yaml` layered semantics. Per-project env_prefix `${PROJECT}_*__*` is preserved via a `build_oneiric_settings(project_name)` factory.
-
-5. **No migration window.** Pre-1.0, per project policy (`feedback-no-backwards-compat-pre-1.0.md`). The hand-rolled loader is removed in the same release the `BaseSettings` inheritance lands.
-
-The unifying fix is small: change `BaseModel` → `BaseSettings` (5 lines), replace `load_settings()` body with a `settings_customise_sources` chain (~50 lines), add a `BodaiManifestSource` for remote-manifest-driven config (~30 lines), drop the hand-rolled YAML/env-vars helpers. Net: -500 lines, +150 lines.
+Furthermore, Mahavishnu has its **own local re-declaration** of
+`OneiricMCPConfig` at `mahavishnu/core/config.py:1817`
+(`class OneiricMCPConfig(BaseModel):`). That local class is distinct
+from the substrate's `OneiricMCPConfig` and is not affected by this
+migration.
 
 ______________________________________________________________________
 
-## File map
+## Why these changes
 
-### Phase 1 — Substrate (Oneiric)
+Five-agent ensemble review (2026-10-11) revealed:
 
-| Path | Status | Phase | Notes |
-|---|---|---|---|
-| `oneiric/core/config.py` | rewrite | P1 | `OneiricSettings` + `OneiricMCPConfig` → `BaseSettings`; `load_settings()` → `settings_customise_sources` chain |
-| `oneiric/core/config.py` (helpers) | delete | P1 | `load_yaml_*` helpers if any, manual layer-merge, manual env-var interpolation |
-| `oneiric/adapters/_bodai_sources.py` | create | P1 | `BodaiManifestSource` — Oneiric-specific custom source for `oneiric remote-sync` |
-| `oneiric/core/build_settings.py` | create | P1 | `build_oneiric_settings(project_name)` factory — returns a subclass with `env_prefix=f"{project_name.upper()}_"` |
-| `oneiric/core/config.py::OneiricSettings.create_async()` | adapt | P1 | Keep the async factory wrapper; internals call `asyncio.to_thread(BaseSettings.__init__)` if pydantic-settings I/O needs to be non-blocking |
+1. **Oneiric already declares pydantic-settings' conventions** (`env_prefix`, `env_nested_delimiter`, `env_file`, `populate_by_name`) on `model_config` blocks but inherits from `BaseModel` — so the conventions are declared and the loader is not wired up (`oneiric/core/config.py:296-317`).
 
-### Phase 2 — Adapter settings (within Oneiric)
+2. **The hand-rolled loader is dead weight.** ~365 lines of `load_settings()`, YAML parsing, layer-merging, env-var interpolation, and `_ALIAS_OVERRIDES` in `oneiric/core/config.py`. Every feature is now built-in to pydantic-settings (verified via context7 docs 2026-10-11).
 
-| Path | Status | Phase | Needs env vars? |
-|---|---|---|---|
-| `oneiric/adapters/llm/anthropic.py::AnthropicLLMSettings` | migrate → `BaseSettings` | P2 | yes (model, base_url) |
-| `oneiric/adapters/llm/openai.py::OpenAILLMSettings` | migrate → `BaseSettings` | P2 | yes (api_key, base_url) |
-| `oneiric/adapters/embedding/openai.py::OpenAIEmbeddingSettings` | migrate → `BaseSettings` | P2 | yes (api_key) |
-| `oneiric/adapters/vector/pgvector.py::PgvectorSettings` | migrate → `BaseSettings` | P2 | yes (connection_string) |
-| `oneiric/adapters/vector/pinecone.py::PineconeSettings` | migrate → `BaseSettings` | P2 | yes (api_key, environment) |
-| `oneiric/adapters/vector/qdrant.py::QdrantSettings` | migrate → `BaseSettings` | P2 | yes (url, api_key) |
-| `oneiric/adapters/nosql/mongodb.py::MongoDBSettings` | migrate → `BaseSettings` | P2 | yes (connection_string) |
-| `oneiric/adapters/nosql/firestore.py::FirestoreSettings` | migrate → `BaseSettings` | P2 | yes (credentials path) |
-| `oneiric/adapters/nosql/dynamodb.py::DynamoDBSettings` | migrate → `BaseSettings` | P2 | yes (region, table) |
-| `oneiric/adapters/observability/settings.py::OTelStorageSettings` | already `BaseSettings` | P2 | yes — keep as-is, verify env_prefix still resolves |
-| `oneiric/adapters/llm/llm_interface.py::LLMBaseSettings` | migrate → `BaseSettings` | P2 | shared base |
-| `oneiric/adapters/embedding/embedding_interface.py::EmbeddingBaseSettings` | migrate → `BaseSettings` | P2 | shared base |
-| `oneiric/adapters/vector/vector_types.py::VectorBaseSettings` | migrate → `BaseSettings` | P2 | shared base |
-| `oneiric/adapters/nosql/nosql_types.py::NoSQLBaseSettings` | migrate → `BaseSettings` | P2 | shared base |
-| `oneiric/adapters/cache/*.py` | leave on `BaseModel` | P2 | no — config constructed explicitly |
-| `oneiric/adapters/database/*.py` | leave on `BaseModel` | P2 | no — config constructed explicitly |
-| `oneiric/adapters/secrets/*.py` | leave on `BaseModel` | P2 | no — config constructed explicitly |
-| `oneiric/adapters/messaging/*.py` | leave on `BaseModel` | P2 | no — config constructed explicitly |
-| `oneiric/adapters/monitoring/*.py` | leave on `BaseModel` | P2 | no — config constructed explicitly |
-| `oneiric/adapters/identity/*.py` | leave on `BaseModel` | P2 | no — config constructed explicitly |
-| `oneiric/adapters/file_transfer/*.py` | leave on `BaseModel` | P2 | no — config constructed explicitly |
+3. **The "I assumed pydantic-settings didn't have what we need" rationale is fully obsolete.** YAML, secrets, env vars, nested delimiter — all built-in.
 
-### Phase 3 — Cross-repo consumers
+4. **Cross-repo consumers will not break on the substrate `OneiricMCPConfig`** — but Mahavishnu has a *local* `OneiricMCPConfig` shadow at `mahavishnu/core/config.py:1817` that diverges post-migration unless explicitly handled.
 
-| Path | Repo | Phase | Action |
-|---|---|---|---|
-| `mahavishnu/core/config.py::MahavishnuSettings` | mahavishnu | P3 | Verify `load_settings(project_name="mahavishnu")` returns the same fields after substrate migration. `extends OneiricMCPConfig` — inherits the new `BaseSettings` machinery automatically. |
-| `akosha/<khaorg>/config.py` (or equivalent) | akosha | P3 | Verify `load_settings(project_name="akosha")`. |
-| `crackerjack/<khaorg>/config.py` | crackerjack | P3 | Verify `load_settings(project_name="crackerjack")`. |
-| `session-buddy/<khaorg>/config.py` | session-buddy | P3 | Verify `load_settings(project_name="session_buddy")`. |
-| `mcp-common/src/<khaorg>/config.py::OneiricMCPConfig` | mcp-common | P3 | This is the source of truth for `OneiricMCPConfig`. Verify the migration didn't introduce a cycle. |
+5. **Plan has critical defects that must be fixed before Phase 1:**
+   - `MahavishnuSettings extends OneiricMCPConfig` (factual error in original plan, lines 42/93-95/234).
+   - Source-order tuple inverted (first returned = highest priority; original plan put env AFTER YAML).
+   - `.env` file loading silently activates (`env_file=".env"` was dead config on `BaseModel`).
+   - `_ALIAS_OVERRIDES` regression: `ONEIRIC_LOG_LEVEL` not wired via `AliasChoices`.
+   - `OneiricSettings.auth: OneiricMCPAuthConfig` collision: nested-delimiter on a `@dataclass` field is undefined.
+   - No env-var collision audit (a field `host` would silently flip from a stray env var).
+   - ACB precedence unstated.
+   - `deep_merge=False` default means nested YAML clobbers across layers.
+   - CWD-relative paths break launchd/nohup.
+   - `create_async()` is a phantom method.
+   - 9-11 commit estimate is optimistic; realistic 25-40.
 
-### Phase 4 — Cleanup
+6. **Pre-1.0 migration policy** (`feedback-no-backwards-compat-pre-1.0.md`): direct commit to main, no deprecation window.
+
+The unifying fix is small: change `BaseModel` → `BaseSettings` (5 lines), replace `load_settings()` body with a `settings_customise_sources` chain (~50 lines), re-implement `_ALIAS_OVERRIDES` via `AliasChoices` (~30 lines), drop the hand-rolled YAML/env-vars helpers (~365 lines deleted, ~290 lines added → net ~-75 lines, not -350 as originally estimated).
+
+______________________________________________________________________
+
+## File map (revised)
+
+### Phase 0 — Audit + precedence characterization (Oneiric, 1 commit)
+
+| Path | Status | Notes |
+|---|---|---|
+| `oneiric/core/config.py` | read-only | characterize ACB precedence; full audit of `_ALIAS_OVERRIDES`; env-var collision audit |
+| `.claude/decisions/2026-10-11-pydantic-settings-plan-review.md` | create | record the 5-agent review findings (not yet written) |
+
+### Phase 1 — Substrate migration (Oneiric, 3-4 commits)
+
+| Path | Status | Notes |
+|---|---|---|
+| `oneiric/core/config.py` | rewrite | `OneiricSettings` + `OneiricMCPConfig` → `BaseSettings`; `load_settings()` → `settings_customise_sources` chain; add `arbitrary_types_allowed=True`; drop `env_file=".env"` from `OneiricMCPConfig`; delete hand-rolled helpers |
+| `oneiric/core/logging.py::LoggingConfig.level` | edit | add `validation_alias=AliasChoices("level", "ONEIRIC_LOG_LEVEL")` |
+| `oneiric/core/config.py::_ALIAS_OVERRIDES` (delete) + target fields | delete + edit | re-implement via `AliasChoices` on each target field (full audit in Phase 0) |
+| `oneiric/core/build_settings.py` | create | `build_oneiric_settings(project_name)` factory with module-level memoization |
+| `oneiric/core/_sources.py` | create | `BodaiManifestSource` — Oneiric-specific custom source (reads from `oneiric remote-sync` cache; skipped when no manifest URL configured) |
+| `oneiric/runtime/orchestrator.py` (caller) | edit | call sites that instantiate `OneiricSettings` should use `await asyncio.to_thread(load_settings, project_name=...)` |
+
+### Phase 2 — Adapter settings (Oneiric, 1-2 commits)
+
+| Path | Status | Needs env vars? |
+|---|---|---|
+| `oneiric/adapters/llm/llm_interface.py::LLMBaseSettings` | migrate → `BaseSettings` (with `env_prefix="LLM_"`) | yes — shared base |
+| `oneiric/adapters/embedding/embedding_interface.py::EmbeddingBaseSettings` | migrate → `BaseSettings` (with `env_prefix="EMBEDDING_"`) | yes |
+| `oneiric/adapters/vector/vector_types.py::VectorBaseSettings` | migrate → `BaseSettings` (with `env_prefix="VECTOR_"`) | yes |
+| `oneiric/adapters/nosql/nosql_types.py::NoSQLBaseSettings` | migrate → `BaseSettings` (with `env_prefix="NOSQL_"`) | yes |
+| 9 concrete adapters (Anthropic, OpenAI LLM+Embedding, Pgvector, Pinecone, Qdrant, MongoDB, Firestore, DynamoDB) | inherit from updated shared bases | yes |
+| `oneiric/adapters/observability/settings.py::OTelStorageSettings` | already `BaseSettings` | verify env_prefix still resolves; this is the nested-`BaseSettings` sharp edge case |
+| `oneiric/adapters/cache/*.py` | leave on `BaseModel` | no |
+| `oneiric/adapters/database/*.py` | leave on `BaseModel` | no |
+| `oneiric/adapters/secrets/*.py` | leave on `BaseModel` | no |
+| `oneiric/adapters/messaging/*.py` | leave on `BaseModel` | no |
+| `oneiric/adapters/monitoring/*.py` | leave on `BaseModel` | no |
+| `oneiric/adapters/identity/*.py` | leave on `BaseModel` | no |
+| `oneiric/adapters/file_transfer/*.py` | leave on `BaseModel` | no |
+| `oneiric/adapters/queue/*.py` | leave on `BaseModel` | no — already `BaseModel`, no env-var need identified (spec §9 notes RedisStreamsQueueSettings as a future candidate if env-var need arises) |
+
+### Phase 3 — Cross-repo verification + fixes (5-8 commits across 5 repos)
+
+| Path | Repo | Action |
+|---|---|---|
+| `mahavishnu/core/config.py::MahavishnuSettings` | mahavishnu | Verify `load_settings("mahavishnu")` returns the same fields. No source change required. |
+| `mahavishnu/core/config.py:1817 OneiricMCPConfig` | mahavishnu | **NEW**: explicit decision — migrate to `BaseSettings`, delete in favor of substrate re-export, OR keep the deliberate split. Task 3.7. |
+| `akosha/akosha/config.py:38-43 OneiricMCPConfig fallback` | akosha | **NEW**: verify no test relies on `BaseModel`-specific behavior. Task 3.8. |
+| `mcp-common/mcp_common/config/base.py:34-45 MCPBaseSettings` | mcp-common | **NEW**: decide whether to migrate `MCPBaseSettings` to `BaseSettings` too, or document the deliberate divergence. Task 3.9. |
+| `crackerjack/<khaorg>/config.py` | crackerjack | Verify `load_settings("crackerjack")` works unchanged. |
+| `session-buddy/<khaorg>/config.py` | session-buddy | Verify `load_settings("session_buddy")` works unchanged. |
+| `mcp-common/src/<khaorg>/config.py` (or equivalent) | mcp-common | Verify `OneiricMCPConfig` re-export works unchanged. |
+
+### Phase 4 — Cleanup + test rewrite (Oneiric, 1-2 commits)
 
 | Path | Action |
 |---|---|
-| `oneiric/core/config.py::load_settings` body | delete (replaced by `settings_customise_sources`) |
-| Any `load_yaml_*` helpers in `oneiric/core/config.py` | delete |
-| Manual layer-merge logic | delete |
-| Manual env-var interpolation | delete |
-| `tests/unit/test_load_settings.py` (if exists) | rewrite against `settings_customise_sources` |
+| `tests/unit/test_load_settings_cwd_fallback.py` | rewrite or delete (pydantic-settings emits no `DeprecationWarning`) |
+| `tests/unit/test_load_settings_xdg.py` | rewrite against new source chain |
+| `tests/unit/test_load_settings_anchors.py` | rewrite against new `project_root` handling |
+| `tests/unit/test_cli_xdg_loader.py` | rewrite against new source chain |
+| `tests/core/test_config_xdg.py` | rewrite (imports deleted `_env_overrides`) |
+| `tests/unit/test_core_config_branches.py` | rewrite (calls deleted `_read_file`) |
+| `tests/unit/test_core_config.py` | rewrite env-var test cases |
+| `docs/architecture/MEMORY_ARCHITECTURE.md` | update to reflect new loader model (Dhara cleanup already at `3ea7ae5`) |
+
+______________________________________________________________________
+
+## Phase 0 — Audit + precedence characterization
+
+### Phase 0 — Integration Contract
+
+**Triggered from:** ADR 0003 (revised) active; spec update at `a191bed`.
+
+**Returns to / updates:**
+- `.claude/decisions/2026-10-11-pydantic-settings-plan-review.md` (new) — records the 5-agent review findings
+- `docs/plans/2026-10-11-pydantic-settings-migration.md` (this file) — gains pinned ACB precedence + `_ALIAS_OVERRIDES` audit results + env-var collision list
+
+**Demonstrable by:**
+- `tests/unit/test_pydantic_settings_precedence.py` — 10 test cases that pin ACB's documented precedence under the CURRENT hand-rolled loader (these become the migration acceptance criteria):
+  - `test_env_overrides_yaml_layer_5_xdg_local`
+  - `test_env_overrides_yaml_layer_3_project_local`
+  - `test_yaml_layer_5_xdg_local_overrides_layer_4_xdg_config`
+  - `test_yaml_layer_4_xdg_config_overrides_layer_3_project_local`
+  - `test_init_kwargs_default_when_no_source_supplies_value`
+  - `test_alias_overrides_activity_store_routes_to_domain_activity_path`
+  - `test_alias_overrides_log_level_routes_to_logging_level`
+  - `test_explicit_path_argument_overrides_yaml_layers`
+  - `test_PROJECT_CONFIG_env_overrides_yaml_layers`
+  - `test_yaml_source_with_missing_file_does_not_raise`
+- `tests/unit/test_env_var_collision_audit.py` — enumerates every field on `OneiricSettings` + `OneiricMCPConfig` and asserts the migration does not silently flip any of them when run with `env | grep -E "^(ONEIRIC|MAHAVISHNU|AKOSHA|CRACKERJACK|SESSION_BUDDY)" | sort`.
+
+**Rollback signal:** any of the 10 precedence tests fails after Phase 1 implementation; any of the env-var-collision tests reveals a silent flip.
+
+**Observability added:** `oneiric.core.config.load_settings` logs the active source chain and the env-prefix of the resulting subclass at debug level.
+
+### Phase 0 — Tasks
+
+- [ ] **0.1** Run `grep -rn "_ALIAS_OVERRIDES\|_env_overrides" oneiric/` and document each entry. Output: a table mapping each legacy env var → its new `AliasChoices` target field.
+- [ ] **0.2** For each `_ALIAS_OVERRIDES` entry, add a test that asserts the env var routes to the correct field under the CURRENT hand-rolled loader. These become the migration acceptance tests.
+- [ ] **0.3** Run `env | grep -E "^(ONEIRIC|MAHAVISHNU|AKOSHA|CRACKERJACK|SESSION_BUDDY)" | sort > /tmp/audit-env.txt` against the substrate's field set. Flag any field name that collides with an env var.
+- [ ] **0.4** Document the ACB precedence (from `acb/config.py:140-260`) in this plan as the "ACB precedence" section. Pinned order: defaults → YAML → env → `_ALIAS_OVERRIDES`.
+- [ ] **0.5** Write `.claude/decisions/2026-10-11-pydantic-settings-plan-review.md` recording the 5-agent review findings and the 17 HIGH+BLOCKER issues addressed by this revision.
+
+### Phase 0 — Validation gates
+
+- [ ] `grep -rn "_ALIAS_OVERRIDES\|_env_overrides" oneiric/` returns all known aliases (and only known ones)
+- [ ] `pytest tests/unit/test_pydantic_settings_precedence.py -v` passes against the CURRENT hand-rolled loader
+- [ ] `pytest tests/unit/test_env_var_collision_audit.py -v` passes with zero silent flips
+- [ ] `.claude/decisions/2026-10-11-pydantic-settings-plan-review.md` exists
+
+### Phase 0 — Risk register
+
+| Risk | Likelihood | Mitigation |
+|---|---|---|
+| The 10 precedence tests reveal ACB's actual behavior differs from documented | Medium | If a test fails, the plan reverts — do not proceed to Phase 1 |
+| Env-var collision reveals a silent env var in the shell | Medium | The operator must unset those env vars before merging Phase 1 |
 
 ______________________________________________________________________
 
@@ -111,54 +237,91 @@ ______________________________________________________________________
 
 ### Phase 1 — Integration Contract
 
-**Triggered from:** ADR 0003 (`docs/adr/0003-pydantic-settings-migration.md`) active; spec update at `a191bed` clarifying §4 settings contract.
+**Triggered from:** Phase 0 complete; precedence tests pinned; env-var audit clean.
 
 **Returns to / updates:**
-- `oneiric.core.config.OneiricSettings` and `OneiricMCPConfig` — inherit from `BaseSettings`
-- `oneiric.core.config.load_settings(project_name)` — preserved as a function, internals now call `build_oneiric_settings(project_name)().model_dump()` (or equivalent)
-- `mcp__oneiric__*` MCP tools — unchanged surface
-- `mcp-common.OneiricMCPConfig` — unchanged shape (re-exports the substrate's class)
-- `MahavishnuSettings` and other downstream `extends OneiricMCPConfig` subclasses — work unchanged
+- `oneiric.core.config.OneiricSettings` extends `BaseSettings` (was `BaseModel`); `model_config` retains the same `env_prefix`/`env_nested_delimiter`/`populate_by_name` declarations; adds `arbitrary_types_allowed=True`.
+- `oneiric.core.config.OneiricMCPConfig` extends `BaseSettings` (was `BaseModel`); `model_config` retains declarations; **drops** `env_file=".env"`.
+- `oneiric.core.config.load_settings(project_name, path=None)` — preserved as a function; internals use `build_oneiric_settings(project_name)` + `settings_customise_sources` chain + post-construction `model_validate` for `path=` override.
+- `_ALIAS_OVERRIDES` semantics preserved via `validation_alias=AliasChoices(...)` on `LoggingConfig.level` (and other target fields per Phase 0 audit).
+- `OneiricMCPAuthConfig.from_env()` call-site preserved at the CLI; `auth:` field is **excluded** from env-var source merging.
+- `mcp__oneiric__*` MCP tools — unchanged surface.
+- `mcp-common.OneiricMCPConfig` re-export — independent (mcp-common's `OneiricMCPConfig` is the substrate's class; re-export site at `mcp_common/fastmcp/__init__.py:31`).
 
 **Demonstrable by:**
-- `pytest tests/unit/test_config.py` passes (existing tests; should be 0 changes required if behavior preserved)
-- `pytest tests/integration/test_oneiric_mcp_e2e.py` passes
-- `ONEIRIC_OBSERVABILITY__CONNECTION_STRING=postgres://... python -c "from oneiric.core.config import load_settings; print(load_settings('test').observability.connection_string)"` prints the env value (the canonical pre-migration test)
-- `MAHAVISHNU_AUTH__JWT_SECRET=foo python -c "from mahavishnu.core.config import load_settings; print(load_settings().auth.jwt_secret)"` prints `foo` (cross-repo env-var test)
-- `${XDG_CONFIG_HOME}/<project>/local.yaml` overrides still beat `settings/<project>.yaml`
+- `pytest tests/unit/test_pydantic_settings_precedence.py -v` passes against the new chain (10 tests from Phase 0 still hold).
+- `pytest tests/unit/test_env_var_collision_audit.py -v` passes (zero silent flips).
+- `ONEIRIC_OBSERVABILITY__CONNECTION_STRING=postgres://x python -c "from oneiric.core.config import load_settings; s = load_settings('oneiric'); print(s.observability.connection_string)"` prints `postgres://x`.
+- `ONEIRIC_ACTIVITY_STORE=/tmp/store python -c "..."` routes to `runtime_paths.domain_activity_path` (via `AliasChoices`).
+- `ONEIRIC_LOG_LEVEL=DEBUG python -c "..."` routes to `logging.level` (via new `AliasChoices`).
+- `ONEIRIC_AUTH__ENABLED=true python -c "..."` does NOT raise (the `auth:` field's env-var source is excluded; `from_env()` overlay applies at CLI call site).
+- `${XDG_CONFIG_HOME}/<project>/local.yaml` overrides beat `settings/<project>.yaml`.
+- `ONEIRIC_MCP_HTTP_PORT=9999 python -c "from oneiric.core.config import OneiricMCPConfig; print(OneiricMCPConfig().http_port)"` prints `9999` (silent env-var loading documented behavior).
+- `ONEIRIC_MCP_HTTP_PORT=9999 python -c "from oneiric.core.config import OneiricMCPConfig; print(OneiricMCPConfig(http_port=8888).http_port)"` prints `8888` (init_settings > env).
+- `python -c "from oneiric.adapters.watcher import AdapterConfigWatcher"` (async caller) does not block the event loop (uses `await asyncio.to_thread(load_settings, ...)`).
+- `python -c "import os; os.environ['ONEIRIC_DEBUG'] = 'true'; from oneiric.core.config import OneiricSettings; print(OneiricSettings().debug)"` prints `True` (env-var activation works after migration).
 
-**Rollback signal:** env-var override precedence breaks (e.g., `${PROJECT}_*__*` no longer overrides YAML defaults); XDG layer discovery fails; `load_settings(project_name="X")` raises during construction.
+**Rollback signal:** any of the above demonstrations fails; precedence flips; silent env-var flip detected.
 
-**Observability added:** `oneiric.core.config.load_settings` logs the source chain that produced the final config (debug-level; lists each `YamlConfigSettingsSource` path that was loaded).
+**Observability added:** `oneiric.core.config.load_settings` logs the source chain at debug level; `BodaiManifestSource.__call__` logs when it loads a manifest; `OneiricSettings.create_from_path` (new helper, post-construction model_validate path) logs which explicit path was applied.
 
 ### Phase 1 — Tasks
 
-- [ ] **1.1** In `oneiric/core/config.py:296`, change `class OneiricMCPConfig(BaseModel):` → `class OneiricMCPConfig(BaseSettings):`. No other change to that class — `model_config` block is already correct.
-- [ ] **1.2** In `oneiric/core/config.py:311`, change `class OneiricSettings(BaseModel):` → `class OneiricSettings(BaseSettings):`. Same — `model_config` already correct.
-- [ ] **1.3** Add `settings_customise_sources` classmethod to `OneiricSettings`. The chain is (in order): `init_settings` (defaults) → `YamlConfigSettingsSource(settings_cls, yaml_file=Path("settings/oneiric.yaml"))` → `YamlConfigSettingsSource(settings_cls, yaml_file=Path("settings/local.yaml"))` → `YamlConfigSettingsSource(settings_cls, yaml_file=xdg_config_path())` → `YamlConfigSettingsSource(settings_cls, yaml_file=xdg_local_path())` → `env_settings` → `file_secret_settings`.
-- [ ] **1.4** Create `oneiric/core/build_settings.py` with `build_oneiric_settings(project_name: str) -> type[OneiricSettings]`. The factory returns a `_Project(OneiricSettings)` subclass with `model_config = SettingsConfigDict(env_prefix=f"{project_name.upper()}_", env_nested_delimiter="__", ...)`.
-- [ ] **1.5** Update `load_settings(project_name)` to call `build_oneiric_settings(project_name)()`. Preserve the existing async signature and XDG path discovery behavior.
-- [ ] **1.6** Delete hand-rolled `load_yaml_*` helpers and any other custom loader code from `oneiric/core/config.py` (~300-500 lines).
-- [ ] **1.7** Add `oneiric/adapters/_bodai_sources.py` with `BodaiManifestSource(PydanticBaseSettingsSource)` — implements `get_field_value` + `__call__`, reads from `oneiric remote-sync` cache. Wire into `OneiricSettings.settings_customise_sources` when a manifest URL is configured.
-- [ ] **1.8** Update `oneiric/core/config.py::OneiricSettings.create_async()` (if it exists) to use `asyncio.to_thread(OneiricSettings)` if any of the source I/O is blocking.
-- [ ] **1.9** Add unit tests covering: per-project env_prefix (`SESSION_BUDDY_FOO=x` → `settings.foo`), XDG layer precedence, env override beats YAML, secrets dir support (if configured).
-- [ ] **1.10** Add integration test in `tests/integration/test_oneiric_mcp_e2e.py` confirming `mcp__oneiric__*` tools work unchanged.
+- [ ] **1.1** In `oneiric/core/config.py:296`, change `class OneiricMCPConfig(BaseModel):` → `class OneiricMCPConfig(BaseSettings):`. **Remove** `env_file=".env"` from `model_config`. No other change to that class.
+- [ ] **1.2** In `oneiric/core/config.py:311`, change `class OneiricSettings(BaseModel):` → `class OneiricSettings(BaseSettings):`. Add `arbitrary_types_allowed=True` to `model_config`.
+- [ ] **1.3** Add `settings_customise_sources` classmethod to `OneiricSettings`. Return tuple (in pydantic-settings' "first wins" order — REVERSED from ACB's "last wins"):
+  ```python
+  return (
+      _alias_overrides_source(settings_cls),  # highest priority (was last in ACB)
+      env_settings,                            # env vars beat YAML
+      _yaml_source(LAYER_5_XDG_LOCAL),
+      _yaml_source(LAYER_4_XDG_CONFIG),
+      _yaml_source(LAYER_3_PROJECT_LOCAL),
+      _yaml_source(LAYER_2_PROJECT),
+      _yaml_source(LAYER_1_PROJECT),
+      init_settings,                           # constructor kwargs last (lowest priority)
+      file_secret_settings,
+  )
+  ```
+  Each `_yaml_source(path)` constructs `YamlConfigSettingsSource(settings_cls, yaml_file=path, deep_merge=True)` — explicit `deep_merge=True` so nested dicts across layers merge recursively.
+- [ ] **1.4** Paths passed to `_yaml_source` are anchored to `project_root`, not CWD. The factory `build_oneiric_settings(project_name)` reads `PROJECT_ROOT` env var or defaults to `Path(__file__).resolve().parent.parent.parent`. The 5 YAML paths are constructed as `project_root / "settings" / f"{layer_filename}"`.
+- [ ] **1.5** Memoize `build_oneiric_settings(project_name)` module-level. Returns a `_Project(OneiricSettings)` subclass with `env_prefix=f"{project_name.upper()}_"`. Cache by `project_name` so the subclass is built once per process.
+- [ ] **1.6** `load_settings(project_name, path=None)` builds a `_Project` instance and applies explicit `path=` override via `model_validate(merged_dict)` POST-CONSTRUCTION. The merged dict is constructed by reading `path` (if given) and `{PROJECT_NAME}_CONFIG` env var (if set), in that priority order.
+- [ ] **1.7** Re-implement `_ALIAS_OVERRIDES` as `validation_alias=AliasChoices(...)` on each target field per Phase 0 audit. Specifically: `LoggingConfig.level` gets `validation_alias=AliasChoices("level", "ONEIRIC_LOG_LEVEL")` (NEW). Other target fields per Phase 0 results.
+- [ ] **1.8** Add `BodaiManifestSource(PydanticBaseSettingsSource)` to `oneiric/core/_sources.py` (NOT `oneiric/adapters/`). Implements `get_field_value` + `__call__`. Reads from `oneiric remote-sync` cache. Returns a no-op empty dict when no manifest URL configured. Wired into the chain between YAML and env_settings when configured.
+- [ ] **1.9** Delete the hand-rolled helpers from `oneiric/core/config.py`: `_read_file`, `_load_layer_file`, `_deep_merge`, `_coerce_env_value`, `_env_overrides`, `_ALIAS_OVERRIDES`. Delete the `load_settings` body and replace with the settings_customise_sources + build_oneiric_settings + model_validate path.
+- [ ] **1.10** Mark `auth: OneiricMCPAuthConfig` field as excluded from env-var source merging. Implementation: declare `auth` with `model_config = SettingsConfigDict(...)` on `OneiricMCPAuthConfig` to use pydantic-settings' field-level env support (optional, NOT required for Phase 1), OR add a custom source filter in `settings_customise_sources` that drops `auth` keys before merging.
+- [ ] **1.11** Update async call sites: `oneiric/main.py:38`, `oneiric/cli/__init__.py:204,222,248,768,3189`, `oneiric/cli/mcp.py:121`, `oneiric/shell/adapter.py:159`, `oneiric/adapters/watcher.py:18`, `oneiric/domains/watchers.py:24,41,58,76`, `oneiric/runtime/watchers.py:36` — wrap `load_settings(...)` with `await asyncio.to_thread(load_settings, ...)`.
+- [ ] **1.12** Update unit tests `tests/unit/test_config.py` and the 7 affected test files (see Phase 4 file map) to assert the new chain semantics.
 
-### Phase 1 — Validation gates
+### Phase 1 — Validation gates (corrected — original gate was empty)
 
-- [ ] `grep -rn "BaseSettings" oneiric/core/config.py` returns at least the 2 new import / class lines
-- [ ] `grep -rn "load_yaml_" oneiric/core/config.py` returns zero matches
-- [ ] `pytest tests/unit/test_config.py -v` passes
-- [ ] `pytest tests/integration/test_oneiric_mcp_e2e.py -v` passes
-- [ ] `python -c "from oneiric.core.config import load_settings; s = load_settings('oneiric'); print(s.observability.connection_string)"` with `ONEIRIC_OBSERVABILITY__CONNECTION_STRING=postgres://x` prints `postgres://x`
+| # | Gate | What it checks |
+|---|---|---|
+| 1.1 | `grep -rn "_read_file\|_load_layer_file\|_deep_merge\|_coerce_env_value\|_env_overrides\|_ALIAS_OVERRIDES" oneiric/core/config.py` returns zero matches | Hand-rolled helpers actually deleted (original `load_yaml_` gate returned zero matches before migration — false-positive safety net) |
+| 1.2 | `grep -rn "env_file=" oneiric/core/config.py` returns zero matches | `.env` activation regression avoided |
+| 1.3 | `wc -l oneiric/core/config.py` reduced from pre-migration baseline (≥900 lines) by ≥300 lines | Real net code reduction |
+| 1.4 | `grep -rn "from oneiric.core.config import OneiricSettings, OneiricMCPConfig" oneiric/ tests/` succeeds; both classes construct | Inheritance change doesn't break internal imports |
+| 1.5 | `python -c "from oneiric.core.config import load_settings; s = load_settings('oneiric'); print(type(s).__name__)"` prints a `_Project` subclass name | Factory works |
+| 1.6 | `grep -rn "await load_settings\|asyncio.to_thread(load_settings" oneiric/` shows the async wrap at all 11 call sites | Async discipline enforced |
+| 1.7 | `pytest tests/unit/test_pydantic_settings_precedence.py -v` — all 10 tests pass | ACB precedence preserved |
+| 1.8 | `pytest tests/unit/test_env_var_collision_audit.py -v` — zero flips | Silent env-var activation prevented |
+| 1.9 | `pytest tests/integration/test_oneiric_mcp_e2e.py -v` passes | MCP tool surface unchanged |
+| 1.10 | `ONEIRIC_AUTH__ENABLED=true python -c "from oneiric.core.config import load_settings; print(load_settings('oneiric').auth)"` does NOT raise | `auth:` dataclass field doesn't break construction |
 
 ### Phase 1 — Risk register
 
 | Risk | Likelihood | Mitigation |
 |---|---|---|
-| Pydantic-settings precedence differs from ACB's hand-rolled merge semantics | Low | The 5-source chain (init → 4 YAML → env → secrets) matches ACB's documented precedence. Write the test in 1.9 against the documented behavior, not the observed one. |
-| Async settings load blocks the event loop | Medium | `BaseSettings.__init__` is sync. Wrap with `asyncio.to_thread` if any source reads from disk. |
-| `load_settings(project_name="X")` semantics diverge from pre-migration | Low | The `build_oneiric_settings` factory preserves `env_prefix` + `env_nested_delimiter`. Test 1.9 covers this. |
+| Pydantic-settings precedence differs from ACB (first vs last wins) | Already mitigated | Phase 0 pins precedence via 10 tests |
+| Async `load_settings` blocks the event loop on disk I/O | High | All 11 call sites wrapped with `asyncio.to_thread` (task 1.11) |
+| Nested env_prefix + nested BaseSettings (`OTelStorageSettings` inside `OneiricSettings`) — most-reverted edge in pydantic-settings GitHub history | Medium | Phase 2 verifies; rollback to one-level field if broken |
+| `YamlConfigSettingsSource` silently skips missing files; ACB's loader probably raised | High | Document the new behavior (silent skip); add regression test asserting the absence of raise |
+| `.env` activation regression if `env_file` is not dropped | High | Validation gate 1.2 + explicit `del` from `OneiricMCPConfig.model_config` in task 1.1 |
+| `_ALIAS_OVERRIDES` regression for any alias not in the audit | Medium | Full audit in Phase 0 task 0.1; `AliasChoices` per phase 0 task 0.1 |
+| Adapter `env_prefix` (LLM_, VECTOR_, etc.) collision with project env_prefix (MAHAVISHNU_*) | Medium | Phase 2 explicitly verifies: `LLM_API_KEY=x` does NOT flow into `MahavishnuSettings.api_key` (or does, if the user expects it) |
+| Mahavishnu's `_mahavishnu_env_overlay` workaround becomes dead code post-migration | Medium | Phase 3 task 3.7 documents; remove in follow-up |
+| `OneiricMCPAuthConfig.from_env()` double-applies env vars | Medium | Task 1.10 excludes `auth:` from env-source merging |
 
 ______________________________________________________________________
 
@@ -166,23 +329,25 @@ ______________________________________________________________________
 
 ### Phase 2 — Integration Contract
 
-**Triggered from:** Phase 1 complete (`OneiricSettings` extends `BaseSettings`); spec §4 cross-link in place.
+**Triggered from:** Phase 1 complete; `OneiricSettings` extends `BaseSettings`; precedence pinned.
 
 **Returns to / updates:**
-- 4 shared base classes (`LLMBaseSettings`, `EmbeddingBaseSettings`, `VectorBaseSettings`, `NoSQLBaseSettings`) extend `BaseSettings`
-- 9 concrete adapter settings (`AnthropicLLMSettings`, `OpenAILLMSettings`, `OpenAIEmbeddingSettings`, `PgvectorSettings`, `PineconeSettings`, `QdrantSettings`, `MongoDBSettings`, `FirestoreSettings`, `DynamoDBSettings`) inherit env-var loading via their shared base
-- `OTelStorageSettings` — unchanged (already `BaseSettings`); verify env_prefix still resolves
-- Cache / Database / Secrets / Messaging / Monitoring / Identity / File-transfer adapters — unchanged (`BaseModel` is correct for them)
+- 4 shared base classes (`LLMBaseSettings`, `EmbeddingBaseSettings`, `VectorBaseSettings`, `NoSQLBaseSettings`) extend `BaseSettings` with `env_prefix` per category
+- 9 concrete adapter settings inherit env-var loading from their shared base (no changes needed beyond the base)
+- `OTelStorageSettings` — unchanged (already `BaseSettings`); verify env_prefix still resolves; this is the nested-`BaseSettings` sharp edge case
+- Cache / Database / Secrets / Messaging / Monitoring / Identity / File-transfer / Queue adapters stay on `BaseModel` (no env-var need; spec §9 notes queue as a future candidate if env-var need arises)
 
 **Demonstrable by:**
 - `LLM_API_KEY=sk-xxx python -c "from oneiric.adapters.llm.openai import OpenAILLMSettings; print(OpenAILLMSettings().api_key)"` prints `sk-xxx`
-- `ONEIRIC_OTEL_STORAGE__CONNECTION_STRING=postgres://x python -c "from oneiric.adapters.observability.settings import OTelStorageSettings; print(OTelStorageSettings().connection_string)"` prints `postgres://x`
-- `pytest tests/adapters/test_vector_types.py tests/adapters/test_llm_interface.py tests/adapters/test_nosql_types.py tests/adapters/embedding/test_embedding_interface.py` pass
-- Cache / Database settings still construct from explicit kwargs without env-var lookup
+- `EMBEDDING_API_KEY=sk-xxx python -c "from oneiric.adapters.embedding.openai import OpenAIEmbeddingSettings; print(OpenAIEmbeddingSettings().api_key)"` prints `sk-xxx`
+- `VECTOR_URL=http://localhost:6333 python -c "from oneiric.adapters.vector.qdrant import QdrantSettings; print(QdrantSettings().url)"` prints `http://localhost:6333`
+- `ONEIRIC_OTEL_STORAGE__CONNECTION_STRING=postgres://x python -c "from oneiric.adapters.observability.settings import OTelStorageSettings; print(OTelStorageSettings().connection_string)"` prints `postgres://x` (the nested-BaseSettings sharp edge)
+- Cache / Database settings still construct from explicit kwargs without env-var lookup: `RedisCacheSettings(url="redis://x")` works as before.
+- Adapter `env_prefix` does NOT collide with project env_prefix: `LLM_API_KEY=x python -c "from mahavishnu.core.config import MahavishnuSettings; print(MahavishnuSettings().api_key)"` prints Mahavishnu's value, not `x`.
 
-**Rollback signal:** any adapter fails its existing tests after migration (likely a precedence difference between manual `__init__` kwargs and pydantic-settings' source chain); env-var resolution fails for an adapter that previously worked.
+**Rollback signal:** any adapter's existing tests fail on env-var precedence; nested-BaseSettings (`OTelStorageSettings` inside `OneiricSettings`) breaks construction; cross-prefix env-var collision detected.
 
-**Observability added:** each `BaseSettings` subclass logs its source chain at debug level when first instantiated (pydantic-settings' standard hook).
+**Observability added:** each `BaseSettings` subclass logs its source chain at debug level when first instantiated.
 
 ### Phase 2 — Tasks
 
@@ -191,126 +356,212 @@ ______________________________________________________________________
 - [ ] **2.3** `oneiric/adapters/vector/vector_types.py::VectorBaseSettings`: same with `env_prefix="VECTOR_"`.
 - [ ] **2.4** `oneiric/adapters/nosql/nosql_types.py::NoSQLBaseSettings`: same with `env_prefix="NOSQL_"`.
 - [ ] **2.5** Verify concrete adapter settings inherit env-var loading from their shared base: `AnthropicLLMSettings`, `OpenAILLMSettings`, `OpenAIEmbeddingSettings`, `PgvectorSettings`, `PineconeSettings`, `QdrantSettings`, `MongoDBSettings`, `FirestoreSettings`, `DynamoDBSettings` (no changes needed if the bases are correct).
-- [ ] **2.6** Verify `OTelStorageSettings` still works (already `BaseSettings`; verify `env_prefix="ONEIRIC_OTEL_STORAGE_"` is preserved).
+- [ ] **2.6** Verify `OTelStorageSettings` still works (already `BaseSettings`; verify `env_prefix="ONEIRIC_OTEL_STORAGE_"` is preserved; test the nested-BaseSettings sharp edge).
 - [ ] **2.7** Update tests under `tests/adapters/` to either keep the existing `BaseModel`-style test (if env vars are not asserted) or add new env-var tests.
-- [ ] **2.8** Run the full `pytest tests/adapters/` to verify no regressions.
+- [ ] **2.8** Cross-prefix collision test: assert that `LLM_API_KEY=x` does NOT flow into `MahavishnuSettings.api_key`.
+- [ ] **2.9** Run the full `pytest tests/adapters/` to verify no regressions.
 
 ### Phase 2 — Validation gates
 
-- [ ] `grep -rn "BaseSettings)" oneiric/adapters/` returns ≥ 4 matches (the 4 shared bases)
+- [ ] `grep -rn "(BaseSettings)" oneiric/adapters/` returns ≥ 5 matches (4 shared bases + `OTelStorageSettings`)
 - [ ] `pytest tests/adapters/ -v` passes
-- [ ] `LLM_API_KEY=x python -c "from oneiric.adapters.llm.openai import OpenAILLMSettings; print(OpenAILLMSettings().api_key)"` prints `x`
+- [ ] `LLM_API_KEY=x python -c "..."` prints `x`
+- [ ] `EMBEDDING_API_KEY=x python -c "..."` prints `x`
+- [ ] `VECTOR_URL=http://x python -c "..."` prints `http://x`
+- [ ] `pytest tests/unit/test_pydantic_settings_precedence.py -v` still passes (no regression in substrate)
 
 ### Phase 2 — Risk register
 
 | Risk | Likelihood | Mitigation |
 |---|---|---|
 | A shared base's `env_prefix` collides with a concrete adapter's `env_prefix` | Low | Pydantic-settings precedence: nearest-in-MRO wins. Concrete adapters extend shared bases — set `env_prefix` only on the shared base. |
-| Tests rely on kwargs-only construction (not env vars); migrate to `BaseSettings` breaks them | Medium | Pydantic-settings falls back to constructor kwargs when env vars are absent. Document this in the test PR. |
+| Tests rely on kwargs-only construction (not env vars); migrate to `BaseSettings` breaks them | Medium | Pydantic-settings falls back to constructor kwargs when env vars are absent. Document in test PR. |
+| Nested `BaseSettings` (`OTelStorageSettings` inside `OneiricSettings.observability`) breaks construction | Medium | Phase 2 task 2.6 explicitly verifies. If broken: refactor `OneiricSettings.observability` to be `dict[str, Any]` and instantiate `OTelStorageSettings(**)` separately. |
+| Cross-prefix env-var collision (adapter LLM_* vs project MAHAVISHNU_*) | Medium | Task 2.8 explicit collision test |
+| Per-category env_prefix is dynamic, not class-level — does the factory approach work? | Already mitigated | Each `*BaseSettings` is a class with its own `env_prefix`; concrete adapters extend. The factory is per-project for `OneiricSettings`, not for adapter settings. |
 
 ______________________________________________________________________
 
-## Phase 3 — Cross-repo consumer verification
+## Phase 3 — Cross-repo verification + fixes
 
 ### Phase 3 — Integration Contract
 
 **Triggered from:** Phase 1 + Phase 2 complete.
 
 **Returns to / updates:**
-- `mahavishnu.core.config.load_settings(project_name="mahavishnu")` returns the same fields as pre-migration
-- `akosha.<khaorg>.config.load_settings(project_name="akosha")` — same
-- `crackerjack.<khaorg>.config.load_settings(project_name="crackerjack")` — same
-- `session-buddy.<khaorg>.config.load_settings(project_name="session_buddy")` — same
-- `mcp-common.OneiricMCPConfig` — unchanged shape; same `model_config`; same field set
+- All 5 cross-repo consumers' `load_settings(project_name="X")` calls return the same fields as pre-migration (with env-var precedence preserved)
+- Mahavishnu's local `OneiricMCPConfig(BaseModel)` shadow — explicit decision documented (migrate, delete, or keep deliberate split)
+- Akosha's local fallback `OneiricMCPConfig(BaseModel)` — verified no test relies on `BaseModel`-specific behavior
+- mcp-common's `MCPBaseSettings` — explicit decision documented (migrate to `BaseSettings` or document divergence)
+- Phase 3 env-var name typo corrected: `MAHAVISHNU_AUTH__JWT_SECRET` → `MAHAVISHNU_AUTH__SECRET` (the field is `secret`, not `jwt_secret`)
 
-**Demonstrable by:** the existing test suite in each of the 5 repos passes (Mahavishnu, Akosha, Crackerjack, Session-Buddy, mcp-common).
+**Demonstrable by:**
+- All 5 consumers' existing test suites pass without source changes (other than pulling in the migrated Oneiric substrate)
+- Per-project env-prefix tests pass: `MAHAVISHNU_LOG_LEVEL=DEBUG` flows into `MahavishnuSettings.log_level`; `AKOSHA_*`, `CRACKERJACK_*`, `SESSION_BUDDY_*`, `MAHAVISHNU_AUTH__SECRET=foo` flow correctly
+- Phase 3 task 3.7 result documented (Mahavishnu's local `OneiricMCPConfig` decision)
+- Phase 3 task 3.8 result documented (Akosha fallback verification)
+- Phase 3 task 3.9 result documented (mcp-common `MCPBaseSettings` decision)
+- `OneiricMCPConfig(http_port=9999).http_port == 9999` when no env var is set; `ONEIRIC_MCP_HTTP_PORT=9999` is picked up when set
 
-**Rollback signal:** any of the 5 cross-repo test suites fails on a config-load path; env-var override precedence changes for any downstream consumer.
+**Rollback signal:** any of the 5 consumer test suites fails on a config-load path; env-var override precedence changes for any downstream consumer.
 
-**Observability added:** each cross-repo `load_settings` logs the source chain at debug level; same shape as Phase 1.
+**Observability added:** each cross-repo `load_settings` logs the source chain at debug level.
 
 ### Phase 3 — Tasks
 
-- [ ] **3.1** `mahavishnu`: `mahavishnu/core/config.py::load_settings(project_name="mahavishnu")` — run the existing test suite. Verify `MahavishnuSettings.auth.jwt_secret` is settable via `MAHAVISHNU_AUTH__JWT_SECRET=...`.
-- [ ] **3.2** `akosha`: same pattern with `load_settings(project_name="akosha")`.
-- [ ] **3.3** `crackerjack`: same with `load_settings(project_name="crackerjack")`.
-- [ ] **3.4** `session-buddy`: same with `load_settings(project_name="session_buddy")`.
-- [ ] **3.5** `mcp-common`: verify `OneiricMCPConfig` works in isolation (it's the source of truth that the substrate's `OneiricSettings` and the cross-repo `extends` relationships all derive from).
-- [ ] **3.6** Document each consumer's verified env-var names in `docs/adr/0003-pydantic-settings-migration.md` § Validation as evidence the migration is correct.
+- [ ] **3.1** Mahavishnu: run the existing test suite against `from oneiric.core.config import load_settings as _oneiric_load`. Verify `MahavishnuSettings.secret` is settable via `MAHAVISHNU_AUTH__SECRET=foo` (not `JWT_SECRET` — that was a typo).
+- [ ] **3.2** Mahavishnu: verify Mahavishnu's `_mahavishnu_env_overlay` workaround is no longer needed (post-migration, `MAHAVISHNU_LOG_LEVEL` flows directly to MahavishnuSettings.log_level). Mark for removal as follow-up.
+- [ ] **3.3** Akosha: verify `load_settings("akosha")` works unchanged.
+- [ ] **3.4** Crackerjack: verify `load_settings("crackerjack")` works unchanged.
+- [ ] **3.5** Session-Buddy: verify `load_settings("session_buddy")` works unchanged.
+- [ ] **3.6** mcp-common: verify `OneiricMCPConfig` re-export works (post-migration it's `BaseSettings`).
+- [ ] **3.7** **Mahavishnu's local `OneiricMCPConfig(BaseModel)` shadow** at `mahavishnu/core/config.py:1817` — explicit decision: migrate to `BaseSettings` (mirror substrate), delete in favor of substrate re-export, or keep the deliberate split. **This is its own commit per decision.**
+- [ ] **3.8** **Akosha's local fallback `OneiricMCPConfig(BaseModel)`** at `akosha/akosha/config.py:38-43` — verify no test relies on `BaseModel`-specific behavior. Document the verification result.
+- [ ] **3.9** **mcp-common's `MCPBaseSettings(BaseModel)` deprecated seam** at `mcp-common/config/base.py:34-45` — explicit decision: migrate to `BaseSettings` or document the divergence.
+- [ ] **3.10** Document each consumer's verified env-var names in the `.claude/decisions/2026-10-11-pydantic-settings-migration-results.md` follow-up note (not in the ADR — that's a meta-task).
 
 ### Phase 3 — Validation gates
 
-- [ ] All 5 repos' existing test suites pass without source changes (other than pulling in the migrated Oneiric substrate)
-- [ ] Per-project env-prefix tests pass in each of the 5 repos (set `MAHAVISHNU_*`, `AKOSHA_*`, etc. and verify the value flows through)
+- [ ] All 5 consumers' existing test suites pass without source changes (other than pulling in the migrated Oneiric substrate)
+- [ ] Per-project env-prefix tests pass in each of the 5 repos
+- [ ] Task 3.7 result documented
+- [ ] Task 3.8 result documented
+- [ ] Task 3.9 result documented
+- [ ] `OneiricMCPConfig(http_port=9999).http_port == 9999` when no env var is set
+- [ ] `ONEIRIC_MCP_HTTP_PORT=9999 python -c "..."` picks up `9999` (silent env-var loading documented)
 
 ### Phase 3 — Risk register
 
 | Risk | Likelihood | Mitigation |
 |---|---|---|
-| A cross-repo consumer relies on a hand-rolled loader internal that's now removed | Medium | The substrate's `load_settings` is the only public API; no consumer should reach into internals. Verify with grep: `grep -rn "load_yaml\|layer_merge\|env_override" <repo>/` should return zero. |
+| A cross-repo consumer relies on a hand-rolled loader internal that's now removed | Medium | The substrate's `load_settings` is the only public API; no consumer should reach into internals. Verify with `grep -rn "load_yaml_\|layer_merge\|env_override" <repo>/` should return zero. |
 | A consumer sets env vars with a different convention (e.g., `MAHAVISHNU_FOO` not `MAHAVISHNU_FOO__BAR`) | Low | The `env_nested_delimiter="__"` is preserved. Single-segment env vars work as before. |
-| `OneiricMCPConfig` extends `BaseSettings` breaks the cross-repo `mcp-common` consumer that expected `BaseModel` semantics | Low | `BaseSettings` IS a `BaseModel` (it extends it). All existing `BaseModel` semantics still work; only env-var loading is added. |
+| `OneiricMCPConfig` extends `BaseSettings` breaks a cross-repo consumer that expected `BaseModel` semantics | Low | `BaseSettings` IS a `BaseModel` (verified via pydantic-settings 2.15 docs). All existing `BaseModel` semantics still work; only env-var loading is added. |
+| Mahavishnu's local `OneiricMCPConfig(BaseModel)` shadow diverges post-migration | High | Task 3.7 explicit decision |
+| Akosha's local fallback diverges if oneiric is not installed | Medium | Task 3.8 verification |
+| mcp-common's `MCPBaseSettings` deprecated seam refers to a class whose semantics change | Medium | Task 3.9 explicit decision |
 
 ______________________________________________________________________
 
-## Phase 4 — Cleanup + validation
+## Phase 4 — Cleanup + test rewrite
 
 ### Phase 4 — Integration Contract
 
-**Triggered from:** Phase 3 complete; all 5 cross-repo consumers verified.
+**Triggered from:** Phase 3 complete; all 5 cross-repo consumers verified; tasks 3.7/3.8/3.9 decisions documented.
 
 **Returns to / updates:**
-- `oneiric/core/config.py` loses the hand-rolled loader code (~300-500 lines deleted)
-- `oneiric/adapters/__init__.py` exports `build_oneiric_settings` if helpful (not required)
-- `oneiric/adapters/_bodai_sources.py::BodaiManifestSource` is documented as a public extension point
+- `oneiric/core/config.py` loses the dead hand-rolled loader code (Phase 1 already removed it; Phase 4 is just verification + line-count check)
+- 7 test files rewritten (per Phase 4 file map)
+- `docs/architecture/MEMORY_ARCHITECTURE.md` reflects the new loader model
+- `.claude/decisions/2026-10-11-pydantic-settings-migration-results.md` records the actual results
 
-**Demonstrable by:** `wc -l oneiric/core/config.py` shows a net reduction; `grep -rn "load_yaml\|manual.*layer\|manual.*env.*override" oneiric/` returns zero matches; full Oneiric test suite passes; full cross-repo test suite passes.
+**Demonstrable by:**
+- `wc -l oneiric/core/config.py` shows a net reduction (target: ≥300 lines removed)
+- `grep -rn "load_yaml\|manual.*layer\|manual.*env.*override" oneiric/` returns zero matches
+- All 7 rewritten test files pass
+- Full Oneiric test suite passes
+- All 5 cross-repo test suites pass
 
-**Rollback signal:** a hand-rolled loader feature is needed in a future feature (unlikely — pydantic-settings covers everything).
+**Rollback signal:** a hand-rolled loader feature is needed in a future feature (unlikely — pydantic-settings covers all known needs).
 
 **Observability added:** none beyond Phase 1's debug-level source-chain log.
 
 ### Phase 4 — Tasks
 
-- [ ] **4.1** Delete hand-rolled `load_yaml_*` helpers from `oneiric/core/config.py` (if any survived Phase 1).
-- [ ] **4.2** Delete any `extra="allow"` flattening logic that's no longer needed (pydantic-settings' nested-delimiter handles it natively).
-- [ ] **4.3** Update `docs/architecture/MEMORY_ARCHITECTURE.md` to reflect: Oneiric's settings are now `BaseSettings`-based (per ADR 0003), the 6-layer merge is via `settings_customise_sources`, the hand-rolled loader is gone.
-- [ ] **4.4** Update `oneiric/README.md` to point at ADR 0003 + the migration plan.
-- [ ] **4.5** Run the full Oneiric + cross-repo test suite one more time; confirm `git grep "hand.rolled.*loader"` returns zero in docs and code.
+- [ ] **4.1** Rewrite `tests/unit/test_load_settings_cwd_fallback.py` — the `DeprecationWarning` for CWD-relative paths no longer fires (pydantic-settings emits no warning). Either delete the test or assert that no warning fires.
+- [ ] **4.2** Rewrite `tests/unit/test_load_settings_xdg.py` against the new source chain.
+- [ ] **4.3** Rewrite `tests/unit/test_load_settings_anchors.py` against the new `project_root` handling.
+- [ ] **4.4** Rewrite `tests/unit/test_cli_xdg_loader.py` against the new source chain.
+- [ ] **4.5** Rewrite `tests/core/test_config_xdg.py` (imports deleted `_env_overrides`).
+- [ ] **4.6** Rewrite `tests/unit/test_core_config_branches.py` (calls deleted `_read_file`).
+- [ ] **4.7** Rewrite `tests/unit/test_core_config.py` env-var test cases.
+- [ ] **4.8** Update `docs/architecture/MEMORY_ARCHITECTURE.md` to reflect: Oneiric's settings are now `BaseSettings`-based (per ADR 0003), the 6-layer merge is via `settings_customise_sources`, the hand-rolled loader is gone. **Sequence: do the Dhara cleanup first (already at `3ea7ae5`), then this Phase 4 step, or factor the merge.**
+- [ ] **4.9** Update `oneiric/README.md` to point at ADR 0003 + this migration plan.
+- [ ] **4.10** Run the full Oneiric + cross-repo test suite one more time; confirm `git grep "hand.rolled.*loader"` returns zero in docs and code.
+- [ ] **4.11** Write `.claude/decisions/2026-10-11-pydantic-settings-migration-results.md` recording actual migration results (Phase 0 → 4 outcomes, decisions made, follow-up backlog).
 
 ### Phase 4 — Validation gates
 
-- [ ] `wc -l oneiric/core/config.py` reduced from pre-migration baseline
-- [ ] `grep -rn "load_yaml\|extra=.allow. storage" oneiric/` returns zero
+- [ ] `wc -l oneiric/core/config.py` reduced from pre-migration baseline (≥900 lines) by ≥300 lines
+- [ ] `grep -rn "load_yaml\|manual.*layer\|manual.*env.*override\|env_overrides\b" oneiric/` returns zero
 - [ ] `pytest tests/` (full Oneiric suite) passes
 - [ ] Cross-repo suite (Phase 3 commands) passes
+- [ ] `.claude/decisions/2026-10-11-pydantic-settings-migration-results.md` exists
+
+### Phase 4 — Risk register
+
+| Risk | Likelihood | Mitigation |
+|---|---|---|
+| A test rewrite misses a behavior previously covered | Medium | Run pre-migration and post-migration test suites side-by-side; compare coverage |
+| `MEMORY_ARCHITECTURE.md` update races with Dhara cleanup (commit `3ea7ae5`) | Low | Dhara cleanup is already on `main`; this step is a follow-on edit |
 
 ______________________________________________________________________
 
-## Migration order (final)
+## Migration order (revised — original order was wrong)
 
 ```
-Phase 1 (substrate)        ─→  Phase 2 (adapter settings)  ─→  Phase 3 (cross-repo verify)  ─→  Phase 4 (cleanup)
-[2-3 commits, Oneiric]            [1-2 commits, Oneiric]            [5 commits, one per repo]            [1 commit, Oneiric]
+Phase 0  Audit + precedence characterization   (Oneiric, 1 commit)
+        ↓
+Phase 1  Substrate migration                (Oneiric, 3-4 commits)
+        ↓
+Phase 2  Adapter settings                   (Oneiric, 1-2 commits)
+        ↓
+Phase 3  Cross-repo verification + fixes    (5-8 commits across 5 repos)
+        ↓
+Phase 4  Cleanup + test rewrite             (Oneiric, 1-2 commits)
 ```
 
-Estimated total: **9-11 commits** across **5 repos**. Pre-1.0 — direct commits to main, no PRs.
+Estimated total: **25-40 commits** across **5 repos**. The original
+estimate of 9-11 was optimistic by ~2x — every sub-test case study revealed
+work that wasn't in the original file map (Mahavishnu local shadow,
+Akosha fallback, mcp-common deprecated seam, 7 test files to rewrite).
+
+Pre-1.0 — direct commits to main, no PRs.
+
+### Rollback order (revised — original was wrong)
+
+Rolling back is in the reverse order:
+
+```
+Phase 4 → Phase 2 → Phase 1
+```
+
+NOT "Phase 1 last so easy to revert". Phase 1 is the substrate change
+that everything else depends on. If Phase 1 breaks, you can't run
+Phase 2 or Phase 3 anyway. So rolling back means: revert Phase 4 (doc
+cleanup) first, then Phase 2 (adapter settings), then Phase 1
+(substrate).
 
 ### Sequencing note
 
-Phase 2 and Phase 3 are independent — Phase 2 changes adapter settings within Oneiric; Phase 3 verifies the cross-repo consumers. If Phase 3 reveals a regression, Phase 2 is easy to revert (its commits are within Oneiric). If Phase 4 reveals a hand-rolled-loader feature was needed, that's a separate ADR (likely none — pydantic-settings covers all known needs).
+Phase 2 and Phase 3 are partially independent — Phase 2 changes
+adapter settings within Oneiric; Phase 3 verifies cross-repo
+consumers. If Phase 3 reveals a regression, the most likely cause
+is Phase 1 (which Phase 2 doesn't depend on); the rollback order
+above applies.
 
 The recommended execution path:
 
-1. Land Phase 1 as one PR-equivalent (one branch → squash → main). Validate.
-2. Land Phase 2 as one PR-equivalent. Validate.
-3. Phase 3 is verification, not implementation — run the 5 consumer tests against the migrated substrate. If any fails, fix in that consumer's repo.
-4. Land Phase 4 as one final PR-equivalent.
+1. Land Phase 0 as one PR-equivalent (one branch → squash → main).
+2. Land Phase 1 as 3-4 PR-equivalents. Validate after each.
+3. Land Phase 2 as 1-2 PR-equivalents. Validate.
+4. Phase 3 is verification + implementation — each consumer may
+   need source changes (especially Mahavishnu's local shadow,
+   Akosha's fallback, mcp-common's deprecated seam). 1 commit per
+   consumer per decision.
+5. Land Phase 4 as one final PR-equivalent.
 
 ### Post-migration
 
-After all 4 phases ship:
-- Total LoC change: -500 (hand-rolled loader), +150 (settings_customise_sources + BodaiManifestSource + tests). Net -350 lines.
-- Cross-repo consumers: zero source changes required (verified by Phase 3).
-- New capability unlocked: BodaiManifestSource — adapter config can come from signed remote manifests.
-- Follow-on opportunities (out of scope): `pydantic-settings-sops` for SOPS-encrypted config; `pydantic-settings-vault` for HashiCorp Vault; AWS/GCP/Azure secrets-manager extensions.
+After all 5 phases ship:
+- Total LoC change: -365 (hand-rolled loader) → +290 (new chain +
+  factory + sources + tests) = **net -75 lines** (revised from
+  original -350 estimate; the original was optimistic).
+- Cross-repo consumers: 0-1 source changes each (depending on
+  Phase 3 tasks 3.7/3.8/3.9 decisions).
+- New capability unlocked: BodaiManifestSource — adapter config
+  can come from signed remote manifests.
+- Follow-on opportunities (out of scope for v1 of the migration):
+  `pydantic-settings-sops` for SOPS-encrypted config;
+  `pydantic-settings-vault` for HashiCorp Vault; AWS/GCP/Azure
+  secrets-manager extensions.
