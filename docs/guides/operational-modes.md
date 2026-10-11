@@ -22,11 +22,11 @@ ______________________________________________________________________
 | **Configuration** | Local only | Local + Remote |
 | **Remote Resolution** | No | Yes |
 | **Cloud Backup** | No | Yes |
-| **Adapter Distribution** | Local only | Via Druva |
+| **Adapter Distribution** | Local only | Via remote manifest (`oneiric remote-sync`) |
 | **Manifest Sync** | Manual | Automatic |
 | **Best For** | Development, Testing | Production, Multi-env |
-| **Dependencies** | None | Druva (optional) |
-| **Network Required** | No | Yes (for remote features) |
+| **Dependencies** | None | None (remote manifests are files or signed URLs) |
+| **Network Required** | No | Only for remote manifest URL / cloud backup |
 
 ______________________________________________________________________
 
@@ -165,19 +165,19 @@ ______________________________________________________________________
 
 ### Overview
 
-Standard Mode is designed for **production deployments** with remote resolution, distributed configuration, and cloud backup support. It integrates with Druva for adapter distribution and can sync configuration from cloud storage.
+Standard Mode is designed for **production deployments** with remote resolution, distributed configuration, and cloud backup support. Adapters are loaded from signed remote manifests (YAML v1/v2 per `docs/REMOTE_MANIFEST_SCHEMA.md`) into Oneiric's local JSON-backed adapter registry.
 
 ### Setup Time
 
-**~ 5 minutes** including Druva and cloud configuration
+**~ 5 minutes** including remote manifest and cloud configuration
 
 ### Features
 
 **Remote Resolution**:
 
-- Fetch adapters from Druva
-- Signed manifest delivery
-- Automatic version updates
+- Load adapters from a signed remote manifest
+- ED25519 signature verification
+- Automatic version updates (refresh-interval)
 
 **Distributed Configuration**:
 
@@ -203,22 +203,19 @@ Standard Mode is designed for **production deployments** with remote resolution,
 # 1. Set mode to standard
 export ONEIRIC_MODE=standard
 
-# 2. Configure remote URL
-export DHruVA_MCP_URL="http://localhost:8683/mcp"
+# 2. Initialize
+oneiric init
 
-# 3. Initialize with remote
-oneiric init --remote-url http://localhost:8683/mcp
-
-# 4. Sync from manifest
+# 3. Sync from manifest
 oneiric remote-sync \
   --manifest docs/sample_remote_manifest.yaml \
   --refresh-interval 120
 
-# 5. Start Oneiric
+# 4. Start Oneiric
 oneiric start
 
-# 6. Verify health
-oneiric health --probe
+# 5. Verify health
+oneiric mcp health
 ```
 
 ### Configuration Example
@@ -230,7 +227,6 @@ mode: "standard"
 # Remote configuration
 remote:
   enabled: true
-  url: "http://druva:8683/mcp"
   manifest: "docs/sample_remote_manifest.yaml"
   refresh_interval: 120
   verify_signatures: true
@@ -265,7 +261,6 @@ orchestrator:
 export ONEIRIC_MODE=standard
 
 # Remote configuration
-export DHruVA_MCP_URL="http://druva:8683/mcp"
 export ONEIRIC_REMOTE_MANIFEST="s3://my-bucket/manifest.json"
 export ONEIRIC_MANIFEST_PUBLIC_KEY="/path/to/public_key.pem"
 
@@ -285,7 +280,6 @@ export MAHAVISHNU_MCP_URL="http://mahavishnu:8680/mcp"
 ```bash
 # Configure environment
 export ONEIRIC_MODE=standard
-export DHruVA_MCP_URL="http://druva:8683/mcp"
 
 # Sync from production manifest
 oneiric remote-sync \
@@ -331,13 +325,13 @@ oneiric start
 
 **Optional Services**:
 
-- **Druva** (for remote manifests): http://localhost:8683/mcp
+- **Remote manifest URL** (optional, only if `--manifest` is an HTTP URL): the manifest host
 - **Mahavishnu** (for orchestration): http://localhost:8680/mcp
 - **Cloud Storage** (for backup): S3/Azure/GCS
 
 **Network Access**:
 
-- Connectivity to Druva MCP server
+- Connectivity to remote manifest URL (only when `--manifest` is HTTP)
 - Connectivity to cloud storage (if using backup)
 - Outbound internet access (if using public cloud)
 
@@ -487,7 +481,7 @@ ______________________________________________________________________
 
 - **Production Deployment**: You're deploying to production and need reliability
 - **Multi-Environment**: You have dev/staging/prod environments
-- **Remote Adapters**: You need to fetch adapters from Druva
+- **Remote Adapters**: You need to load adapters from a remote manifest via `oneiric remote-sync --manifest ...`
 - **Cloud Backup**: You want configuration backup in cloud storage
 - **Team Collaboration**: Multiple teams need to share configurations
 - **Compliance**: You need signature verification and audit trails
@@ -519,17 +513,17 @@ ______________________________________________________________________
 
 ### "Remote sync failed in Standard Mode"
 
-**Solution**: Check Druva connectivity and manifest URL
+**Solution**: Check remote manifest URL is reachable + signature verifies
 
 ```bash
-# Check Druva health
-curl http://localhost:8683/mcp/health
+# Verify manifest signature
+oneiric manifest verify --input manifest.yaml
 
-# Verify manifest URL
+# Re-sync with verbose logging
 oneiric remote-sync --verify-only --manifest manifest.yaml
 
-# Check network connectivity
-ping druva
+# Check network connectivity to remote manifest URL
+curl -I https://your-manifest-host/path/to/manifest.yaml
 ```
 
 ### "Cannot find adapter in Lite Mode"
@@ -604,7 +598,7 @@ mode: standard
 
 remote:
   enabled: true
-  url: "http://druva:8683/mcp"
+  url: "https://example.com/oneiric-manifest.yaml"
   manifest: "docs/sample_remote_manifest.yaml"
   refresh_interval: 120
   verify_signatures: true

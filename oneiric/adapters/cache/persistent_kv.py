@@ -1,11 +1,8 @@
 """File-backed persistent KV and time-series cache adapter.
 
-Ported from :mod:`dhara.mcp.kv_timeseries` (which used ``PersistentDict``/
-``PersistentList`` over a Dhara ``Connection``). Oneiric has no equivalent of
-Dhara's persistent collections, so this adapter serializes the entire store
-as JSON to a single file on disk. Whole-file writes are acceptable for
-low-throughput metadata stores (component endpoints, OTel config caches,
-fitness signal windows) — exactly the workloads Dhara's KV layer served.
+Serializes the entire store as JSON to a single file on disk. Whole-file
+writes are acceptable for low-throughput metadata stores (component
+endpoints, OTel config caches, fitness signal windows).
 
 Implements:
 - put/get with optional TTL
@@ -103,7 +100,7 @@ def _purge_ts_list(
 
 
 class PersistentKVCacheAdapter:
-    """File-backed KV + time-series store, ported from Dhara's persistent objects."""
+    """File-backed KV + time-series store."""
 
     metadata = AdapterMetadata(
         category="cache",

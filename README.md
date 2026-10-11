@@ -76,7 +76,7 @@ Oneiric exposes a FastMCP server (substrate state + workflow task scheduling) th
 |-------|-------|---------|
 | Substrate | 6 | 3 reads + 3 writes against the substrate (settings, context, progress records) |
 | Scheduler | 1 | `schedule_task` — dispatch a workflow task via the scheduler processor |
-| Adapter registry | 7 | OneiricAdapterRegistry read/list/state/refresh/clear/diagnose/health (ported from `dhara.mcp.tools.group_registers.register_adapter_registry_group` during the Phase 1 Dhara decomposition) |
+| Adapter registry | 7 | OneiricAdapterRegistry read/list/state/refresh/clear/diagnose/health — Oneiric's own adapter catalog, persisted to `~/.oneiric/adapter_registry.json` |
 
 Plus the 4 mcp-common baseline tools (`discover_tools`, `get_liveness`, `get_readiness`, `health_check_all`) for a 18-tool total MCP surface.
 

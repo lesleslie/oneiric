@@ -116,15 +116,15 @@ oneiric start
 
 ```bash
 export ONEIRIC_MODE=standard
-oneiric start --manifest http://dhara:8683/mcp
+# Optional: load a remote manifest into Oneiric's local adapter registry.
+# Format: see docs/REMOTE_MANIFEST_SCHEMA.md
+oneiric start --manifest ./path/to/manifest.yaml
 ```
 
 **Features**:
 
-- Remote resolution enabled
+- Remote resolution enabled (via Oneiric's local adapter registry, seeded from manifests)
 - Distributed configuration
-- Adapter distribution via Dhara
-- Cloud backup support
 - Production-ready scaling
 
 ______________________________________________________________________
@@ -142,12 +142,6 @@ ______________________________________________________________________
 - **Purpose**: Component resolution for workflows
 - **Protocol**: MCP
 - **URL**: http://localhost:8680/mcp
-
-**Dhara (Curator — persistent object storage and Oneiric adapter distribution)**
-
-- **Purpose**: Adapter distribution and remote manifests
-- **Protocol**: MCP
-- **URL**: http://localhost:8683/mcp
 
 **Cloud Storage**
 
@@ -231,8 +225,8 @@ oneiric list --domain adapter --shadowed
 # Inspect remote manifest sync state
 oneiric remote-status --json
 
-# Verify Dhara connection
-oneiric health --probe
+# Verify MCP server health
+oneiric mcp health
 ```
 
 ### "Remote sync failed"

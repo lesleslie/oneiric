@@ -1,28 +1,28 @@
-"""Oneiric-native adapter registry (Phase 1 of Dhara MCP decomposition).
+"""Oneiric's adapter registry.
 
-Mirrors the public interface of ``dhara.mcp.adapter_tools.AsyncAdapterRegistry``
-(``store_adapter_async`` / ``get_adapter_async`` / ``list_adapters_async`` /
-``list_adapter_versions_async`` / ``validate_adapter_async`` /
-``check_adapter_health_async``) but persists to a local JSON file instead
-of Dhara's PersistentDict shelve. This keeps Oneiric's MCP server
-self-contained — adapters stored via these tools live in
-``~/.oneiric/adapter_registry.json`` and do NOT require Dhara to be
-running.
+Owns the canonical adapter catalog and persists records to a local JSON
+file at ``~/.oneiric/adapter_registry.json`` (or a configurable root via
+the ``root=`` constructor argument). The MCP server in
+``oneiric/mcp/server.py`` exposes these records through the
+``oneiric_store_adapter`` / ``oneiric_get_adapter`` /
+``oneiric_list_adapters`` / ``oneiric_list_adapter_versions`` /
+``oneiric_validate_adapter`` / ``oneiric_get_adapter_health`` /
+``oneiric_report_runtime`` tools, which other Bodai components call via
+MCP to discover adapters without importing Oneiric directly.
 
-The Dhara ``Adapter`` model (version_history, health_status, env tag) is
-preserved so existing callers ported from Dhara keep their shape
-expectations.
+Design follows the SubstrateStore pattern (``oneiric/mcp/store.py``):
 
-Design follows the SubstrateStore pattern (oneiric/mcp/store.py):
 - JSON-file persistence under a configurable root directory
-- threading.Lock for concurrent-safe reads/writes
-- dataclass-based state (no Pydantic — registry is internal-only)
+- ``threading.Lock`` for concurrent-safe reads/writes (each public method
+  releases the GIL via ``asyncio.to_thread`` so the event loop is not
+  blocked on disk I/O)
+- Dataclass-based state (no Pydantic — the registry is internal-only)
 
-The registry is intentionally simpler than Dhara's because Oneiric does
-not need cross-process ACID transactions; the use case here is local
-adapter discovery for the control plane. Phase 2 of the decomposition
-will likely add a write-through to a shared substrate so other Bodai
-components can read what Oneiric exposes.
+The ``AdapterRecord`` shape preserves ``version_history`` (capped at 10
+entries), ``health_status``, ``last_health_check``, ``env``, and the
+``factory_path`` / ``capabilities`` / ``metadata`` fields so cross-
+component consumers (Mahavishnu, Akosha, Crackerjack, Session-Buddy)
+keep their shape expectations stable.
 """
 
 from __future__ import annotations
@@ -120,7 +120,7 @@ def _import_factory(factory_path: str) -> tuple[Any, Any]:
 
 @dataclass
 class AdapterRecord:
-    """Persistent adapter record (mirrors Dhara Adapter schema)."""
+    """Persistent adapter record."""
 
     domain: str
     key: str
@@ -168,7 +168,7 @@ class AdapterRecord:
                 },
             }
         )
-        # Cap history at 10 entries (mirrors Dhara limit).
+        # Cap history at 10 entries.
         if len(self.version_history) > 10:
             self.version_history.pop(0)
         self.version = new_version
@@ -181,7 +181,7 @@ class AdapterRecord:
         self.updated_at = _now_iso()
 
     def to_dict(self) -> dict[str, Any]:
-        """Return the public dict shape (mirrors Dhara Adapter.to_dict)."""
+        """Return the public dict shape."""
         return {
             "schema_version": 1,
             "domain": self.domain,
@@ -204,14 +204,14 @@ class AdapterRecord:
 
 
 class OneiricAdapterRegistry:
-    """JSON-file backed adapter registry with the Dhara AsyncAdapterRegistry API.
+    """JSON-file backed adapter registry.
 
-    All async methods are coroutines (matching the Dhara interface so
-    callers can swap implementations) but the underlying I/O is synchronous
-    JSON. Because tool handlers run in async context, each public method
-    releases the GIL via ``asyncio.to_thread`` so we don't block the event
-    loop on a slow disk. The threading.Lock inside guarantees serialized
-    reads/writes (same as SubstrateStore).
+    All public methods are coroutines so MCP tool handlers can ``await``
+    them without blocking the event loop, but the underlying I/O is
+    synchronous JSON. Each public method releases the GIL via
+    ``asyncio.to_thread`` so we don't block the event loop on a slow disk.
+    The ``threading.Lock`` inside guarantees serialized reads/writes
+    (same as SubstrateStore).
     """
 
     SCHEMA_VERSION = 1
@@ -289,7 +289,7 @@ class OneiricAdapterRegistry:
         tmp.write_text(json.dumps(serialized, indent=2, default=str))
         tmp.replace(self._path)
 
-    # ----- async public API (mirrors Dhara AsyncAdapterRegistry) -----
+    # ----- async public API -----
 
     async def store_adapter_async(
         self,

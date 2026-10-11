@@ -466,7 +466,7 @@ class TestOversizePayloadRejection:
 
 
 class TestAdapterRegistryE2E:
-    """Phase 1 of Dhara MCP decomposition: 7 adapter_registry tools.
+    """End-to-end coverage of the 7 adapter_registry tools.
 
     Positive-path assertions through the FastMCP streamable-HTTP layer
     are xfail-marked with the pre-existing CONTEXTVAR_PROPAGATION_BUG

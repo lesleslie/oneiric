@@ -535,11 +535,11 @@ def _register_adapter_tools(
 ) -> None:
     """Register the 8 ``adapter_registry`` + contract-info tools.
 
-    Ported from ``dhara.mcp.tools.group_registers.register_adapter_registry_group``
-    but rewired to use Oneiric's local JSON-backed registry instead of
-    Dhara's PersistentDict shelve. Permissions follow Oneiric's existing
-    convention (READ / WRITE only — Dhara used ``auth("list")`` which is
-    not a valid mcp-common Permission enum member).
+    Oneiric owns the adapter registry directly. Records persist to a local
+    JSON file at ``~/.oneiric/adapter_registry.json`` and are exposed via
+    standard MCP tools (no separate substrate HTTP service in the path).
+    Permissions follow the mcp-common ``Permission`` enum (READ for
+    queries, WRITE for ``oneiric_store_adapter`` and ``oneiric_report_runtime``).
 
     The registration is split across per-tool helpers so each helper
     stays under the project's ruff ``max-branches = 15`` ceiling

@@ -1,8 +1,8 @@
 """End-to-end tests for the file-backed PersistentKVCacheAdapter.
 
 These tests exercise the real on-disk JSON store under tmp_path (no mocking)
-and cover the same operations Dhara's ``AsyncKVTimeSeriesStore`` /
-``KVTimeSeriesStore`` exposed via ``dhara.mcp.kv_timeseries``.
+and cover the same operations exposed by Oneiric's
+``PersistentKVCacheAdapter``.
 """
 
 from __future__ import annotations

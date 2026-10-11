@@ -21,7 +21,6 @@ NOT in scope (stay in AkoSHA):
 
 Refs:
 - docs/adr/017-oneiric-shared-persistence-substrate.md
-- docs/specs/2026-09-14-dhara-mcp-decomposition-design.md §5 Phase 5 task 8
 - oneiric commit 93f60cd (Protocol sibling)
 
 Dependencies:

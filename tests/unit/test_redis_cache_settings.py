@@ -38,10 +38,10 @@ def test_negative_stampede_jitter_ms_rejected() -> None:
 def test_factory_string_redis_has_no_leading_space() -> None:
     """Regression guard for D11 (the prerequisite Task 2.0 fix).
 
-    Reads `AdapterMetadata.factory` *raw* and exercises the same
-    `getattr(module, attr)` path that Dhara's `resolve_cache_adapter`
-    uses via `import_string`. A leading space would make the `getattr`
-    raise `AttributeError`.
+    Reads `AdapterMetadata.factory` *raw* and exercises the
+    `getattr(module, attr)` path that the resolver uses to import the
+    factory. A leading space would make the `getattr` raise
+    `AttributeError`.
     """
     from oneiric.adapters.cache.redis import RedisCacheAdapter
 

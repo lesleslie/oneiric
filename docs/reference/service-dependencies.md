@@ -83,47 +83,33 @@ oneiric remote-status --json
 
 ______________________________________________________________________
 
-### Druva (Curator)
+### Remote Manifest Source
 
-**Role**: Asset Manager - Manages adapter distribution and remote manifests
+**Role**: Signed adapter-manifest provider — describes which adapters should be registered, with ED25519 signature verification.
 
 **Integration Purpose**:
 
-- Remote adapter distribution
-- Signed manifest delivery
-- Adapter version management
-- Cloud-based configuration backup
+- Signed manifest delivery (oneiric remote-sync reads YAML v1/v2 manifests)
+- Adapter version + dependency declaration
+- Cross-environment configuration synchronization
 
-**Protocol**: MCP (Model Context Protocol)
+**Protocol**: file path or HTTP(S) URL to a signed YAML manifest (no MCP service required)
 
-**Connection Details**:
+**Manifest Schema**: `docs/REMOTE_MANIFEST_SCHEMA.md`
 
-```bash
-# Default URL
-http://localhost:8683/mcp
-
-# Enable in Oneiric
-export DHruVA_MCP_URL="http://localhost:8683/mcp"
-```
-
-**Features**:
-
-- **Remote Manifests**: Fetch signed manifests from Druva
-- **Adapter Registry**: Discover and install adapters remotely
-- **Version Control**: Track adapter versions and dependencies
-- **Signature Verification**: ED25519 signature validation for security
-
-**Health Check**:
+**Sync**:
 
 ```bash
-# Sync from Druva manifest
+# Load a signed manifest into Oneiric's local adapter registry
 oneiric remote-sync \
   --manifest docs/sample_remote_manifest.yaml \
   --refresh-interval 120
 
-# Verify signature
+# Verify manifest signature
 oneiric manifest verify --input manifest.json
 ```
+
+**Where Records Live After Sync**: `~/.oneiric/adapter_registry.json` (Oneiric's local JSON-backed registry; exposed via the Oneiric MCP `oneiric_list_adapters` / `oneiric_get_adapter` tools).
 
 **When to Use**:
 
@@ -132,7 +118,7 @@ oneiric manifest verify --input manifest.json
 - Signed manifest delivery for security
 - Adapter distribution across teams
 
-**Startup Order**: Oneiric → Druva (Oneiric fetches from Druva on startup)
+**No external service required** — manifests are files or signed URLs; Oneiric itself is the registry backend.
 
 ______________________________________________________________________
 
@@ -229,8 +215,7 @@ No external dependencies
 
 ```
 1. Oneiric (Resolver) - must start first
-2. Druva (Curator) - optional, for remote manifests
-3. Mahavishnu (Orchestrator) - optional, for workflow coordination
+2. Mahavishnu (Orchestrator) - optional, for workflow coordination
 ```
 
 **Rationale**: Oneiric must be running before other services can connect to it for component resolution.
@@ -246,7 +231,6 @@ ______________________________________________________________________
 export ONEIRIC_HOST="127.0.0.1"
 export ONEIRIC_PORT=8681
 export MAHAVISHNU_MCP_URL="http://localhost:8680/mcp"
-export DHruVA_MCP_URL="http://localhost:8683/mcp"
 ```
 
 ### Production Deployment
@@ -256,7 +240,6 @@ export DHruVA_MCP_URL="http://localhost:8683/mcp"
 export ONEIRIC_HOST="10.0.1.10"  # Explicit IP
 export ONEIRIC_PORT=8681
 export MAHAVISHNU_MCP_URL="http://mahavishnu:8680/mcp"
-export DHruVA_MCP_URL="http://druva:8683/mcp"
 ```
 
 **Security Note**: For production, bind to explicit interfaces (not `0.0.0.0`) and use firewall rules to restrict access.
@@ -289,11 +272,6 @@ oneiric health --json
       "status": "connected",
       "url": "http://localhost:8680/mcp",
       "latency_ms": 5
-    },
-    "druva": {
-      "status": "connected",
-      "url": "http://localhost:8683/mcp",
-      "latency_ms": 3
     }
   },
   "domains": {
@@ -340,7 +318,7 @@ oneiric remote-status --json
    oneiric enable-remote --url http://localhost:8683/mcp
    ```
 
-1. **Druva unreachable**: Check connection
+1. **Oneiric registry write fails**: Check `~/.oneiric/adapter_registry.json` permissions + disk space
 
    ```bash
    curl http://localhost:8683/mcp/health
@@ -484,7 +462,7 @@ adapters:
     connection_string: "postgresql://localhost/db"
 ```
 
-### Standard Mode (With Druva)
+### Standard Mode (With Remote Manifests)
 
 ```yaml
 # oneiric.yaml
@@ -507,7 +485,6 @@ adapters:
 mode: "standard"
 remote:
   enabled: true
-  url: "http://druva:8683/mcp"
   manifest: "s3://my-bucket/oneiric/manifest.json"
   refresh_interval: 300
 cloud_backup:
@@ -528,7 +505,6 @@ ______________________________________________________________________
 **Dependency Health**:
 
 - Mahavishnu connection status
-- Druva sync success rate
 - Remote manifest fetch latency
 
 **Component Health**:
@@ -560,7 +536,7 @@ oneiric status --json > oneiric_status.json
 
 Recommended dashboards:
 
-- **Dependency Health**: Mahavishnu/Druva connection status
+- **Dependency Health**: Mahavishnu connection status
 - **Component Lifecycle**: Active/paused/drained component counts
 - **Resolution Performance**: Latency histograms
 - **Remote Sync**: Success rate, duration, error breakdown
@@ -578,7 +554,6 @@ ______________________________________________________________________
 ### Authentication
 
 - **Mahavishnu**: JWT-based authentication
-- **Druva**: API token or mutual TLS
 - **Cloud Storage**: IAM roles or service accounts
 
 ### Signature Verification

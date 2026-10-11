@@ -3,7 +3,6 @@
 This module provides ULID (Universally Unique Lexicographically Sortable Identifier)
 support for Oneiric, enabling:
 - Time-ordered configuration traceability
-- Cross-system correlation with druva OIDs
 - Globally unique configuration IDs
 - Time-based config history queries
 
@@ -21,6 +20,7 @@ Example:
 
 from __future__ import annotations
 
+import secrets
 import time
 from typing import Any
 
@@ -40,33 +40,7 @@ from oneiric.core.ulid_resolution import (
     resolve_ulid,
 )
 
-# Try to import from dhara (Bodai-curated rebrand of druva), fallback to druva package,
-# then to a built-in pure-Python implementation. The test below monkeypatches
-# ``sys.modules["druva"]`` before importing this module, so we must consult the
-# in-memory modules dict rather than the package import system.
-try:
-    import sys as _ulid_sys
-
-    _impl_pkg = _ulid_sys.modules.get("dhara")
-    if _impl_pkg is None:
-        _impl_pkg = _ulid_sys.modules.get("druva")
-    if _impl_pkg is not None and all(
-        hasattr(_impl_pkg, attr)
-        for attr in ("ULID", "generate", "get_timestamp", "is_ulid")
-    ):
-        ULID = _impl_pkg.ULID  # type: ignore[attr-defined]
-        generate = _impl_pkg.generate  # type: ignore[attr-defined]
-        get_timestamp = _impl_pkg.get_timestamp  # type: ignore[attr-defined]
-        is_ulid = _impl_pkg.is_ulid  # type: ignore[attr-defined]
-        DHURUVA_AVAILABLE = True
-    else:
-        raise ImportError("dhura-style backend not available")
-except ImportError, AttributeError:  # pragma: no cover - fallback path
-    DHURUVA_AVAILABLE = False
-    # Fallback implementation if druva is not available
-    import secrets
-
-    BASE32_ALPHABET = "0123456789abcdefghjkmnpqrstvwxyz"
+BASE32_ALPHABET = "0123456789abcdefghjkmnpqrstvwxyz"
     ULID_BINARY_SIZE = 16
     ULID_STRING_LENGTH = 26
 
