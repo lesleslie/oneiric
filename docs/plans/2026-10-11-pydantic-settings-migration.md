@@ -312,7 +312,7 @@ ______________________________________________________________________
 | 1.3 | `wc -l oneiric/core/config.py` reduced from pre-migration baseline (≥900 lines) by ≥300 lines | Real net code reduction |
 | 1.4 | `grep -rn "from oneiric.core.config import OneiricSettings, OneiricMCPConfig" oneiric/ tests/` succeeds; both classes construct | Inheritance change doesn't break internal imports |
 | 1.5 | `python -c "from oneiric.core.config import load_settings; s = load_settings('oneiric'); print(type(s).__name__)"` prints a `_Project` subclass name | Factory works |
-| 1.6 | `grep -rn "await load_settings\|asyncio.to_thread(load_settings" oneiric/` shows the async wrap at all 11 call sites | Async discipline enforced |
+| 1.6 | `grep -rn "await load_settings\|asyncio.to_thread(load_settings" oneiric/` shows the async wrap at **exactly 3 sites** (`cli/__init__.py:3189`, `cli/mcp.py:121`, `shell/adapter.py:159`); **fails if more than 3 matches** | Async discipline enforced — neither over- nor under-wrapping |
 | 1.7 | `pytest tests/unit/test_pydantic_settings_precedence.py -v` — all 10 tests pass | ACB precedence preserved |
 | 1.8 | `pytest tests/unit/test_env_var_collision_audit.py -v` — zero flips | Silent env-var activation prevented |
 | 1.9 | `pytest tests/integration/test_oneiric_mcp_e2e.py -v` passes | MCP tool surface unchanged |
@@ -575,9 +575,7 @@ The recommended execution path:
 ### Post-migration
 
 After all 5 phases ship:
-- Total LoC change: -365 (hand-rolled loader) → +290 (new chain +
-  factory + sources + tests) = **net -75 lines** (revised from
-  original -350 estimate; the original was optimistic).
+- Total LoC change: -365 (hand-rolled loader) → +290 source (new chain + factory + sources + BodaiManifestSource) + **+2100 test rewrite/addition** (Phase 4) = **net +2025 lines** (revised from original -350 estimate; the original was optimistic; the test rewrite is the largest underestimated scope).
 - Cross-repo consumers: 0-1 source changes each (depending on
   Phase 3 tasks 3.7/3.8/3.9 decisions).
 - New capability unlocked: BodaiManifestSource — adapter config
