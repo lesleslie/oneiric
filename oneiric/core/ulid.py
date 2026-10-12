@@ -41,96 +41,96 @@ from oneiric.core.ulid_resolution import (
 )
 
 BASE32_ALPHABET = "0123456789abcdefghjkmnpqrstvwxyz"
-    ULID_BINARY_SIZE = 16
-    ULID_STRING_LENGTH = 26
+ULID_BINARY_SIZE = 16
+ULID_STRING_LENGTH = 26
 
-    class ULID:
-        """Fallback ULID implementation."""
+class ULID:
+    """Fallback ULID implementation."""
 
-        __slots__ = ("_bytes", "_str")
+    __slots__ = ("_bytes", "_str")
 
-        def __init__(self, value: str | bytes | None = None):
-            if value is None:
-                self._bytes = self._generate()
-                self._str = self._encode(self._bytes)
-            elif isinstance(value, str):
-                if len(value) != ULID_STRING_LENGTH:
-                    raise ValueError(f"Invalid ULID string: {value!r}")
-                self._str = value
-                self._bytes = self._decode(value)
-            elif isinstance(value, bytes):
-                if len(value) != ULID_BINARY_SIZE:
-                    raise ValueError(f"ULID bytes must be {ULID_BINARY_SIZE} bytes")
-                self._bytes = value
-                self._str = self._encode(value)
-
-        def _generate(self) -> bytes:
-            timestamp_ms = int(time.time() * 1000)
-            timestamp_bytes = timestamp_ms.to_bytes(6, byteorder="big")
-            random_bytes = secrets.token_bytes(10)
-            return timestamp_bytes + random_bytes
-
-        @staticmethod
-        def _encode(data: bytes) -> str:
-            if len(data) != ULID_BINARY_SIZE:
-                raise ValueError(f"Data must be {ULID_BINARY_SIZE} bytes")
-            value = int.from_bytes(data, byteorder="big")
-            result = []
-            for _ in range(ULID_STRING_LENGTH):
-                index = value & 0x1F
-                result.append(BASE32_ALPHABET[index])
-                value >>= 5
-            return "".join(reversed(result))
-
-        @staticmethod
-        def _decode(value: str) -> bytes:
+    def __init__(self, value: str | bytes | None = None):
+        if value is None:
+            self._bytes = self._generate()
+            self._str = self._encode(self._bytes)
+        elif isinstance(value, str):
             if len(value) != ULID_STRING_LENGTH:
                 raise ValueError(f"Invalid ULID string: {value!r}")
-            alphabet_index = {char: idx for idx, char in enumerate(BASE32_ALPHABET)}
-            value_int = 0
-            for char in value:
-                value_int = (value_int << 5) | alphabet_index[char]
-            return value_int.to_bytes(ULID_BINARY_SIZE, byteorder="big")
+            self._str = value
+            self._bytes = self._decode(value)
+        elif isinstance(value, bytes):
+            if len(value) != ULID_BINARY_SIZE:
+                raise ValueError(f"ULID bytes must be {ULID_BINARY_SIZE} bytes")
+            self._bytes = value
+            self._str = self._encode(value)
 
-        @property
-        def timestamp(self) -> int:
-            timestamp_bytes = self._bytes[:6]
-            return int.from_bytes(timestamp_bytes, byteorder="big")
+    def _generate(self) -> bytes:
+        timestamp_ms = int(time.time() * 1000)
+        timestamp_bytes = timestamp_ms.to_bytes(6, byteorder="big")
+        random_bytes = secrets.token_bytes(10)
+        return timestamp_bytes + random_bytes
 
-        def __str__(self) -> str:
-            return self._str
+    @staticmethod
+    def _encode(data: bytes) -> str:
+        if len(data) != ULID_BINARY_SIZE:
+            raise ValueError(f"Data must be {ULID_BINARY_SIZE} bytes")
+        value = int.from_bytes(data, byteorder="big")
+        result = []
+        for _ in range(ULID_STRING_LENGTH):
+            index = value & 0x1F
+            result.append(BASE32_ALPHABET[index])
+            value >>= 5
+        return "".join(reversed(result))
 
-        def __repr__(self) -> str:
-            return f"ULID({self._str!r})"
-
-        def __eq__(self, other: object) -> bool:
-            if isinstance(other, ULID):
-                return self._bytes == other._bytes
-            elif isinstance(other, str):
-                return self._str == other
-            return False
-
-        def __hash__(self) -> int:
-            return hash(self._bytes)
-
-    def generate() -> str:
-        """Generate a new ULID string."""
-        return str(ULID())
-
-    def get_timestamp(value: str | ULID) -> int:
-        """Extract timestamp from ULID."""
-        if isinstance(value, ULID):
-            return value.timestamp
-        ulid = ULID(value)
-        return ulid.timestamp
-
-    def is_ulid(value: str) -> bool:
-        """Check if string is a valid ULID."""
-        if not isinstance(value, str):
-            return False
+    @staticmethod
+    def _decode(value: str) -> bytes:
         if len(value) != ULID_STRING_LENGTH:
-            return False
-        return all(char in BASE32_ALPHABET for char in value.lower())
+            raise ValueError(f"Invalid ULID string: {value!r}")
+        alphabet_index = {char: idx for idx, char in enumerate(BASE32_ALPHABET)}
+        value_int = 0
+        for char in value:
+            value_int = (value_int << 5) | alphabet_index[char]
+        return value_int.to_bytes(ULID_BINARY_SIZE, byteorder="big")
+
+    @property
+    def timestamp(self) -> int:
+        timestamp_bytes = self._bytes[:6]
+        return int.from_bytes(timestamp_bytes, byteorder="big")
+
+    def __str__(self) -> str:
+        return self._str
+
+    def __repr__(self) -> str:
+        return f"ULID({self._str!r})"
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, ULID):
+            return self._bytes == other._bytes
+        elif isinstance(other, str):
+            return self._str == other
+        return False
+
+    def __hash__(self) -> int:
+        return hash(self._bytes)
+
+def generate() -> str:
+    """Generate a new ULID string."""
+    return str(ULID())
+
+def get_timestamp(value: str | ULID) -> int:
+    """Extract timestamp from ULID."""
+    if isinstance(value, ULID):
+        return value.timestamp
+    ulid = ULID(value)
+    return ulid.timestamp
+
+def is_ulid(value: str) -> bool:
+    """Check if string is a valid ULID."""
+    if not isinstance(value, str):
+        return False
+    if len(value) != ULID_STRING_LENGTH:
+        return False
+    return all(char in BASE32_ALPHABET for char in value.lower())
 
 
 __all__ = [
