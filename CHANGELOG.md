@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.0] - 2026-10-12
+
+### Added
+
+- adapters: Migrate LLM/Embedding/Vector/NoSQL shared bases to BaseSettings
+- adapters: OneiricAdapter Protocol — substrate structural contract
+- config: Pydantic-settings substrate migration (T1.2-T1.10)
+- oneiric: UUID7-only substrate (Phase 2 of cross-repo migration)
+- OneiricMCPConfig -> BaseSettings; drop env_file; pin pydantic-settings direct
+- OneiricMCPConfig settings_customise_sources (Phase 1 Option A)
+- SubstrateSettings + ONEIRIC__SUBSTRATE__* env-var resolution (Plan 2 Phase E1)
+- Wrap load_settings in asyncio.to_thread (T1.11)
+
+### Fixed
+
+- adapters: Register PgvectorAdapter in builtin_adapter_metadata()
+- oneiric: Chmod 0o600 on adapter registry + restore report_runtime e2e
+- oneiric: Drop ULID read-time acceptance from is_valid_id
+- Repair IndentationError in ulid.py
+- sources: Power-trio follow-ups — auth/profile exclusion, manifest wiring, rename
+- test+docs(config): Phase 4 — pin pydantic-settings substrate behavior
+
+### Documentation
+
+- adapters: Canonical adapter contract (ADR + spec) + Dhara cleanup
+- adr+plan: Revise pydantic-settings migration per 5-agent review
+- adr: 0003 adopt pydantic-settings as Oneiric's settings loader
+- decision: Phase 3 cross-repo verification results
+- oneiric: Remove obsolete ULID-substrate references in system_registry docstring
+- plan+test: Phase 0 — pin ACB precedence + _ALIAS_OVERRIDES audit + env-var collision
+- plan-index: Regenerate after pydantic-settings plan v2
+- plan-index: Regenerate for ADR 0003 + pydantic-settings migration plan
+- plan: Add Move LLM + Prompting from mcp-common to oneiric
+- plan: Surgical v3 fixes — BLOCKERs (B1/B2/B3) + HIGHs (H1/H2/H4)
+- plan: V3 follow-up — gate 1.6 grep + LoC estimate correction
+- Pydantic-settings migration — 4-phase implementation plan
+- readme: Cross-link to adapter contract spec + ADR 0002
+- spec: §4 + §9 — clarify settings contract (BaseModel vs BaseSettings)
+- Strip Dhara refs from MEMORY_ARCHITECTURE.md
+
+### Testing
+
+- oneiric: Flip plan-2 §6.5 gap test to positive shape contract
+- oneiric: Pin health feed-state aggregator contract (Plan 2 Phase E2 Task 5 — partial)
+- oneiric: Three-component parallel boot preflight (Plan 1 Phase 3 Task 3.2)
+
 ## [0.28.0] - 2026-10-09
 
 ### Added
