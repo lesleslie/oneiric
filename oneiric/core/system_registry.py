@@ -5,8 +5,8 @@ ecosystem systems (Akosha entities, Crackerjack tests,
 Session-buddy sessions, Mahavishnu workflows) for time-based
 correlation and complete traceability.
 
-Replaces the legacy ULID-keyed registry in ``oneiric.core.ulid_resolution``.
-The new shape keys on UUID7 ``entity_id`` strings instead of ULIDs,
+Replaces the legacy ULID-keyed registry (the oneiric.core.ulid_resolution module is deleted; see docs/plans/2026-10-11-uuid7-only-migration.md Phase 5).
+The new shape keys on UUID7 ``entity_id`` strings; ULID substrate is removed (see docs/plans/2026-10-12-ulid-surface-elimination.md).
 and drops the ``reference_type`` field -- the per-system entity type
 is now carried inside ``metadata``.
 
