@@ -6,11 +6,13 @@ pgvector-backed for production).
 """
 
 from .agentdb import AgentDBAdapter
+from .pgvector import PgvectorAdapter
 from .pinecone import PineconeAdapter
 from .qdrant import QdrantAdapter
 
 __all__ = [
     "AgentDBAdapter",
+    "PgvectorAdapter",
     "PineconeAdapter",
     "QdrantAdapter",
 ]
