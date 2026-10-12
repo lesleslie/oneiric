@@ -1,22 +1,23 @@
 """UUID7 identifier substrate for Oneiric.
 
-Replaces the legacy ULID substrate (``oneiric.core.ulid*``) with
-RFC 9562 UUID7 hex. The new generator emits 32 lowercase hex
-characters whose ``UUID.version`` nibble is 7. Legacy 26-char
-Crockford Base32 ULIDs remain readable for the duration of the
-lazy dual-write migration window (REQ-012) but are no longer
-produced.
+UUID7-only substrate (RFC 9562). Generation emits 32 lowercase hex
+characters whose ``UUID.version`` nibble is 7. Validation is strict:
+legacy 26-char Crockford Base32 ULIDs are rejected.
+
+The legacy 26-char ULID substrate was removed in
+``docs/plans/2026-10-11-uuid7-only-migration.md`` Phase 5/6 (see the
+``feedback-no-backwards-compat-pre-1.0`` rule). Any code that
+previously accepted ULIDs must re-encode them to UUID7 before passing
+them to this module.
 
 Public API:
-    generate_id(value)            -- fresh UUID7 hex string.
-    is_uuid7(value)               -- strict UUID7 hex check.
-    is_valid_id(value)            -- accepts UUID7 hex OR legacy ULID
-                                     (read-time acceptance only).
-    extract_timestamp_ms(value)   -- ms-since-epoch from UUID7 or ULID.
+    generate_id()              -- fresh UUID7 hex string.
+    is_uuid7(value)             -- strict UUID7 hex check.
+    is_valid_id(value)          -- alias for is_uuid7 (UUID7-only).
+    extract_timestamp_ms(value) -- ms-since-epoch from UUID7 high 48 bits.
     extract_timestamp_seconds(value) -- seconds since epoch.
-    ConfigTraceability            -- config-change correlation record,
-                                     keyed on UUID7 entity_id instead
-                                     of ULID config_id.
+    ConfigTraceability          -- config-change correlation record,
+                                   keyed on UUID7 entity_id.
 
 UUID7 (RFC 9562 sec 5.7) bit layout::
 
@@ -44,13 +45,6 @@ from uuid import UUID, uuid7
 
 logger = logging.getLogger(__name__)
 
-# Legacy 26-char Crockford Base32 ULID alphabet. Kept only for
-# read-time acceptance of pre-migration storage rows; never used
-# to generate.
-_CROCKFORD_ALPHABET = "0123456789abcdefghjkmnpqrstvwxyz"
-_ULID_ALPHABET_INDEX = {c: i for i, c in enumerate(_CROCKFORD_ALPHABET)}
-_ULID_ALPHABET_SET = frozenset(_CROCKFORD_ALPHABET)
-_ULID_STRING_LENGTH = 26
 _UUID7_HEX_LENGTH = 32
 _UUID7_HEX_ALPHABET = frozenset("0123456789abcdef")
 _UUID7_TIMESTAMP_SHIFT = 80  # 128 - 48 (high 48 bits hold unix_ts_ms)
@@ -83,7 +77,9 @@ def is_uuid7(value: Any) -> bool:
     Example:
         >>> is_uuid7(generate_id())
         True
-        >>> is_uuid7("01ARZ3NDEKTS6PQRYF")  # legacy ULID
+        >>> is_uuid7("01ARZ3NDEKTS6PQRYF")  # legacy 26-char ULID
+        False
+        >>> is_uuid7("bcfbf3f2-076c-4a35-96cc-340e3995ce74")  # 36-char UUID with hyphens
         False
         >>> is_uuid7("not-an-id")
         False
@@ -96,72 +92,40 @@ def is_uuid7(value: Any) -> bool:
         return False
     try:
         return UUID(value).version == 7
-    except ValueError, AttributeError:
+    except (ValueError, AttributeError):
         return False
 
 
-def _is_legacy_ulid(value: str) -> bool:
-    """Read-time check that ``value`` is a 26-char Crockford Base32 ULID."""
-    if not isinstance(value, str):
-        return False
-    if len(value) != _ULID_STRING_LENGTH:
-        return False
-    return all(c in _ULID_ALPHABET_SET for c in value.lower())
-
-
-def is_valid_id(value: Any) -> bool:
-    """Read-time acceptance: True for UUID7 hex OR legacy 26-char ULID.
-
-    Used to validate identifiers that may be encountered in pre-migration
-    storage rows (e.g. Akosha's warm.db carries ULID PKs from before
-    the UUID7 migration; reads accept both shapes until the lazy
-    dual-write backfill finishes).
-
-    This function never accepts ULIDs as new identifiers -- generation
-    always emits UUID7. It only validates pre-existing data.
-
-    Example:
-        >>> is_valid_id(generate_id())
-        True
-        >>> is_valid_id("01ARZ3NDEKTS6PQRYF")
-        True
-        >>> is_valid_id("not-an-id")
-        False
-    """
-    return is_uuid7(value) or _is_legacy_ulid(value)
-
-
-def _ulid_to_int(value: str) -> int:
-    """Decode a 26-char ULID into its 128-bit integer form."""
-    n = 0
-    for c in value.lower():
-        n = (n << 5) | _ULID_ALPHABET_INDEX[c]
-    return n
+# is_valid_id is an alias preserved for callers that use the more
+# descriptive name. UUID7-only — legacy ULIDs return False.
+is_valid_id = is_uuid7
 
 
 def extract_timestamp_ms(value: str) -> int:
-    """Extract ms-since-epoch from a UUID7 hex string or legacy ULID.
+    """Extract ms-since-epoch from a UUID7 hex string.
 
-    Both shapes place a 48-bit Unix-ms timestamp in the high 48 bits
-    of the 128-bit value, so the extraction is the same shift. Raises
-    ValueError for unparsable input.
+    The high 48 bits of a UUID7 encode Unix-ms timestamp per
+    RFC 9562 §5.7, so a single right-shift extracts it. Raises
+    ``ValueError`` for unparsable input.
 
     Example:
         >>> extract_timestamp_ms(generate_id()) > 0
         True
+        >>> extract_timestamp_ms("not-a-uuid7")
+        Traceback (most recent call last):
+            ...
+        ValueError: Cannot extract timestamp from invalid id: 'not-a-uuid7'
     """
-    if is_uuid7(value):
-        return UUID(value).int >> _UUID7_TIMESTAMP_SHIFT
-    if _is_legacy_ulid(value):
-        return _ulid_to_int(value) >> _UUID7_TIMESTAMP_SHIFT
-    raise ValueError(f"Cannot extract timestamp from invalid id: {value!r}")
+    if not is_uuid7(value):
+        raise ValueError(f"Cannot extract timestamp from invalid id: {value!r}")
+    return UUID(value).int >> _UUID7_TIMESTAMP_SHIFT
 
 
 def extract_timestamp_seconds(value: str) -> float:
-    """Extract seconds-since-epoch from a UUID7 hex string or legacy ULID.
+    """Extract seconds-since-epoch from a UUID7 hex string.
 
     Convenience wrapper over :func:`extract_timestamp_ms`. Raises
-    ValueError for unparsable input.
+    ``ValueError`` for unparsable input.
     """
     return extract_timestamp_ms(value) / 1000.0
 
@@ -171,11 +135,6 @@ class ConfigTraceability:
 
     Provides traceability for configuration changes across systems,
     enabling cross-system correlation and time-ordered history.
-
-    Replaces the ULID-keyed ``ConfigTraceability`` from the legacy
-    ``oneiric.core.ulid`` module. The slot ``entity_id`` replaces
-    ``config_id``; the timestamp source shifts from Crockford ULID
-    decode to UUID7 (RFC 9562 sec 5.7) high-48-bit extraction.
 
     Example:
         >>> trace = ConfigTraceability(source="oneiric", change_type="update")
@@ -234,22 +193,22 @@ class ConfigTraceability:
 
     @property
     def timestamp_seconds(self) -> float:
-        """Timestamp in seconds."""
+        """Timestamp in seconds (extracted from UUID7)."""
         return self._timestamp_ms / 1000.0
 
     @property
     def metadata(self) -> dict[str, Any]:
-        """Additional metadata (returns a copy)."""
+        """Application metadata (returns a copy)."""
         return dict(self._metadata)
 
     def correlates_with(self, other_id: str) -> bool:
         """True if this trace correlates with ``other_id`` within 1 second.
 
         Useful for cross-system correlation when tracking related
-        changes. Accepts both UUID7 hex and legacy ULID (read-time
-        acceptance per REQ-012).
+        changes. ``other_id`` must be a UUID7 hex string; non-UUID7
+        inputs return False (no exception).
         """
-        if not is_valid_id(other_id):
+        if not is_uuid7(other_id):
             return False
         other_ts = extract_timestamp_ms(other_id)
         return abs(self._timestamp_ms - other_ts) < 1000
