@@ -417,7 +417,7 @@ class OneiricSettings(BaseSettings):
     # ``OneiricMCPAuthConfig.from_env()`` at the CLI call site, preserving
     # the existing REQ-006 contract. REQ-CLI-XDG-002 in
     # docs/plans/2026-10-05-oneiric-cli-loader-xdg-migration.md.
-    auth: OneiricMCPAuthConfig = Field(  # type: ignore[valid-type]
+    auth: OneiricMCPAuthConfig = Field(  # type: ignore[valid-type]  # ty: ignore[valid-type]
         default_factory=_default_auth_config,
         description=(
             "Auth section consumed by the oneiric FastMCP server. "

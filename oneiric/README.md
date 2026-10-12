@@ -14,6 +14,18 @@ For the full documentation map and runbooks, start with `docs/README.md` at the 
 - `cli.py` - CLI entrypoints and demo wiring.
 - `demo.py` - playground/demo helpers (kept separate from production modules).
 
+## Settings
+
+Oneiric's settings use `pydantic_settings.BaseSettings` natively — see
+[`docs/adr/0003-pydantic-settings-migration.md`](../adr/0003-pydantic-settings-migration.md)
+and the implementation plan at
+[`docs/plans/2026-10-11-pydantic-settings-migration.md`](../plans/2026-10-11-pydantic-settings-migration.md).
+The custom source chain (init → env → alias → manifest → YAML → secrets)
+lives in `oneiric/core/config.py::OneiricSettings.settings_customise_sources`;
+custom source wrappers (auth-exclusion, alias-override, manifest-cache)
+live in `oneiric/core/_sources.py`. Per-project env-var prefix
+subclasses are built and memoized by `oneiric/core/build_settings.py`.
+
 ## Extension points
 
 - Add adapters in `oneiric/adapters/` and register via entry points or config.
