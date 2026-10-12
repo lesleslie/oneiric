@@ -786,3 +786,25 @@ async def test_qdrant_insert_delegates_to_upsert(
     docs = [VectorDocument(id="d1", vector=[0.1, 0.2])]
     ids = await adapter.insert("col", docs)
     assert ids == ["d1"]
+
+
+# ---------------------------------------------------------------------------
+# Tests — Phase 2: VectorBaseSettings env_prefix=VECTOR_ isolation
+# ---------------------------------------------------------------------------
+
+
+def test_vector_base_settings_reads_vector_env_prefix(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """VECTOR_URL=x flows into QdrantSettings.url via VectorBaseSettings.
+    Also asserts VECTOR_DEFAULT_DIMENSION flows into VectorBaseSettings.default_dimension.
+    """
+    monkeypatch.setenv("VECTOR_URL", "http://qdrant-env")
+    monkeypatch.setenv("VECTOR_DEFAULT_DIMENSION", "768")
+    from oneiric.adapters.vector.vector_types import VectorBaseSettings
+
+    base = VectorBaseSettings()
+    assert base.default_dimension == 768
+    qdr = QdrantSettings()
+    assert qdr.url == "http://qdrant-env"
+    assert qdr.default_dimension == 768

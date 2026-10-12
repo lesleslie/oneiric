@@ -122,3 +122,23 @@ async def test_span_error_path() -> None:
     with pytest.raises(ValueError, match="boom"):
         async with adapter.span("test-event"):
             raise ValueError("boom")
+
+
+# ---------------------------------------------------------------------------
+# Tests — Phase 2: NoSQLBaseSettings env_prefix=NOSQL_ isolation
+# ---------------------------------------------------------------------------
+
+
+def test_nosql_base_settings_defaults() -> None:
+    s = NoSQLBaseSettings()
+    assert s.connect_timeout == 30.0
+    assert s.health_timeout == 5.0
+
+
+def test_nosql_base_settings_reads_nosql_env_prefix(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """NOSQL_CONNECT_TIMEOUT=x flows into NoSQLBaseSettings.connect_timeout."""
+    monkeypatch.setenv("NOSQL_CONNECT_TIMEOUT", "99.5")
+    s = NoSQLBaseSettings()
+    assert s.connect_timeout == 99.5

@@ -1001,3 +1001,88 @@ discovered after landing.
   unrelated to this commit, present on `main`).
 - `ONEIRIC_MCP_HTTP_PORT=9999` + `OneiricMCPConfig(http_port=8888)` →
   `9999` (Option A / D5 verified).
+## Phase 2 amendments (2026-10-11)
+
+### T2.5 — Concrete adapter verdict
+
+All 9 concrete adapter settings (AnthropicLLMSettings, OpenAILLMSettings,
+OpenAIEmbeddingSettings, PgvectorSettings, PineconeSettings, QdrantSettings,
+MongoDBSettings, FirestoreSettings, DynamoDBSettings) inherit env-var
+loading from their shared base unchanged. None required a per-class
+`model_config` override. All 9 pass both kwargs construction AND
+env-var loading:
+
+| Adapter | Env var tested | Attr loaded | Status |
+|---|---|---|---|
+| OpenAILLMSettings | `LLM_API_KEY` | `api_key` | OK |
+| AnthropicLLMSettings | `LLM_API_KEY` | `api_key` | OK |
+| OpenAIEmbeddingSettings | `EMBEDDING_API_KEY` | `api_key` | OK |
+| PgvectorSettings | `VECTOR_DSN` | `dsn` | OK |
+| PineconeSettings | `VECTOR_API_KEY` | `api_key` | OK |
+| QdrantSettings | `VECTOR_URL` | `url` | OK |
+| MongoDBSettings | `NOSQL_URI` | `uri` | OK |
+| FirestoreSettings | `NOSQL_PROJECT_ID` | `project_id` | OK |
+| DynamoDBSettings | `NOSQL_TABLE_NAME` | `table_name` | OK |
+
+### T2.6 — Nested-BaseSettings verdict
+
+`ONEIRIC_OBSERVABILITY__CONNECTION_STRING=postgresql://x` →
+`OneiricSettings.observability.connection_string == "postgresql://x"`.
+The nested-BaseSettings sharp edge still works after Phase 2 because
+`OneiricSettings.observability: OTelStorageSettings` is a typed nested
+field and pydantic-settings' nested-delimiter (`__`) routes
+`ONEIRIC_OBSERVABILITY__*` env vars into the sub-model via the parent's
+env source. **No refactor needed.**
+
+Note: `OTelStorageSettings` itself does NOT declare `env_prefix` in its
+own `model_config` (line 7, file `oneiric/adapters/observability/settings.py`).
+The pre-existing comment at line 401 of `core/config.py` claiming
+`env_prefix="ONEIRIC_OTEL_STORAGE_"` is misleading — that env-prefix
+path was never actually wired. Standalone `OTelStorageSettings()`
+ignores `ONEIRIC_OTEL_STORAGE__*` env vars; it relies entirely on its
+defaults. The nested form via `OneiricSettings.observability` is the
+canonical override path and continues to work.
+
+### T2.7 — Tests updated
+
+4 base test files extended with env-var-loading assertions:
+
+- `tests/adapters/test_llm_interface.py` — added 3 tests
+  (`test_llm_base_settings_defaults`, `test_llm_base_settings_reads_llm_env_prefix`,
+  `test_llm_base_settings_kwargs_override_env`)
+- `tests/adapters/test_nosql_types.py` — added 2 tests
+  (`test_nosql_base_settings_defaults`, `test_nosql_base_settings_reads_nosql_env_prefix`)
+- `tests/adapters/embedding/test_embedding_interface.py` — added 2 tests
+  (`test_embedding_base_settings_defaults`, `test_embedding_base_settings_reads_embedding_env_prefix`)
+- `tests/adapters/vector/test_qdrant_adapter.py` — added 1 test
+  (`test_vector_base_settings_reads_vector_env_prefix`)
+
+### T2.8 — Cross-prefix collision tests added
+
+`tests/unit/test_adapter_env_prefix_collision.py` — 12 tests:
+- 7 positive flow tests (per-adapter env-var loading on each prefix)
+- 5 cross-prefix isolation tests (LLM does NOT bleed into
+  Embedding/Vector/Mahavishnu; Embedding does NOT bleed into LLM;
+  Vector does NOT bleed into LLM; LLM does NOT bleed into Vector)
+
+### T2.9 — Test summary
+
+- `tests/adapters/` full run — **1207 passed, 13 skipped, 1 xfailed**
+  (skips/xfails pre-exist, not affected by Phase 2).
+- `test_unit/test_pydantic_settings_precedence.py` +
+  `test_env_var_collision_audit.py` +
+  `test_adapter_env_prefix_collision.py` —
+  **44 passed** (Phase 0 + Phase 2 invariants preserved).
+
+### Line-count deltas (per-base file)
+
+| File | Before | After | Δ |
+|---|---:|---:|---:|
+| `oneiric/adapters/llm/llm_interface.py` | 410 | 418 | +8 |
+| `oneiric/adapters/embedding/embedding_interface.py` | 296 | 304 | +8 |
+| `oneiric/adapters/vector/vector_types.py` | 225 | 233 | +8 |
+| `oneiric/adapters/nosql/nosql_types.py` | 62 | 70 | +8 |
+
+Each file gains exactly +8 lines: +1 import line
+(`from pydantic_settings import BaseSettings, SettingsConfigDict`)
+and +7 lines for the `model_config = SettingsConfigDict(...)` block.

@@ -264,3 +264,31 @@ def test_calculate_cost_with_pricing() -> None:
     cost = llm._calculate_cost(1000, 1000, info)
     assert cost is not None
     assert abs(cost - 0.04) < 1e-9
+
+
+# ---------------------------------------------------------------------------
+# Tests — Phase 2: LLMBaseSettings env_prefix=env_nest isolation
+# ---------------------------------------------------------------------------
+
+
+def test_llm_base_settings_defaults() -> None:
+    """LLMBaseSettings() without kwargs uses the documented defaults."""
+    s = LLMBaseSettings()
+    assert s.model == "gpt-3.5-turbo"
+    assert s.temperature == 0.7
+    assert s.api_key is None
+
+
+def test_llm_base_settings_reads_llm_env_prefix(monkeypatch: pytest.MonkeyPatch) -> None:
+    """LLM_API_KEY=x flows into LLMBaseSettings.api_key."""
+    monkeypatch.setenv("LLM_API_KEY", "sk-env-llm")
+    s = LLMBaseSettings()
+    assert s.api_key is not None
+    assert s.api_key.get_secret_value() == "sk-env-llm"
+
+
+def test_llm_base_settings_kwargs_override_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Explicit kwargs take precedence over env vars (per pydantic-settings precedence)."""
+    monkeypatch.setenv("LLM_MODEL", "gpt-env")
+    s = LLMBaseSettings(model="gpt-kwarg")
+    assert s.model == "gpt-kwarg"

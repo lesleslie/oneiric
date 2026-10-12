@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from pydantic import BaseModel, Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from oneiric.core.logging import get_logger
 
@@ -22,7 +23,14 @@ class NoSQLQuery(BaseModel):
     sort: list[tuple[str, int]] | None = None
 
 
-class NoSQLBaseSettings(BaseModel):
+class NoSQLBaseSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_prefix="NOSQL_",
+        env_nested_delimiter="__",
+        extra="allow",
+        populate_by_name=True,
+    )
+
     connect_timeout: float = 30.0
     operation_timeout: float = 30.0
     health_timeout: float = 5.0

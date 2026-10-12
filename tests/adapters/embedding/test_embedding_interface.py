@@ -307,3 +307,24 @@ def test_dot_product() -> None:
 
 def test_manhattan_distance() -> None:
     assert EmbeddingUtils.manhattan_distance([1.0, 2.0], [4.0, 6.0]) == 7.0
+
+
+# ---------------------------------------------------------------------------
+# Tests — Phase 2: EmbeddingBaseSettings env_prefix=EMBEDDING_ isolation
+# ---------------------------------------------------------------------------
+
+
+def test_embedding_base_settings_defaults() -> None:
+    s = EmbeddingBaseSettings()
+    assert s.model == "text-embedding-3-small"
+    assert s.api_key is None
+
+
+def test_embedding_base_settings_reads_embedding_env_prefix(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """EMBEDDING_API_KEY=x flows into EmbeddingBaseSettings.api_key."""
+    monkeypatch.setenv("EMBEDDING_API_KEY", "sk-env-emb")
+    s = EmbeddingBaseSettings()
+    assert s.api_key is not None
+    assert s.api_key.get_secret_value() == "sk-env-emb"

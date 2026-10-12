@@ -5,6 +5,7 @@ from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from oneiric.core.logging import get_logger
 
@@ -62,7 +63,14 @@ class EmbeddingBatch(BaseModel):
     batch_size: int
 
 
-class EmbeddingBaseSettings(BaseModel):
+class EmbeddingBaseSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_prefix="EMBEDDING_",
+        env_nested_delimiter="__",
+        extra="allow",
+        populate_by_name=True,
+    )
+
     model: str = Field(default="text-embedding-3-small")
     api_key: SecretStr | None = Field(default=None)
     base_url: str | None = Field(default=None)

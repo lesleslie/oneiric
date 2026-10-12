@@ -7,6 +7,7 @@ from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from oneiric.core.logging import get_logger
 
@@ -24,7 +25,14 @@ class VectorDocument(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
-class VectorBaseSettings(BaseModel):
+class VectorBaseSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_prefix="VECTOR_",
+        env_nested_delimiter="__",
+        extra="allow",
+        populate_by_name=True,
+    )
+
     collection_prefix: str = ""
     default_dimension: int = 1536
     default_distance_metric: str = "cosine"

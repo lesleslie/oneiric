@@ -7,6 +7,7 @@ from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from oneiric.core.logging import get_logger
 
@@ -103,7 +104,14 @@ class LLMModelInfo:
     cost_per_1k_output_tokens: float | None = None
 
 
-class LLMBaseSettings(BaseModel):
+class LLMBaseSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_prefix="LLM_",
+        env_nested_delimiter="__",
+        extra="allow",
+        populate_by_name=True,
+    )
+
     model: str = Field(default="gpt-3.5-turbo")
     max_tokens: int = Field(default=1000)
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
