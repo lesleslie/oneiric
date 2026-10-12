@@ -31,6 +31,7 @@ import importlib
 import json
 import logging
 import operator
+import os
 import re
 import threading
 from dataclasses import dataclass, field
@@ -220,6 +221,10 @@ class OneiricAdapterRegistry:
         self._root = root or (Path.home() / ".oneiric")
         self._path = self._root / "adapter_registry.json"
         self._root.mkdir(parents=True, exist_ok=True)
+        try:
+            os.chmod(self._root, 0o700)
+        except OSError:
+            logger.debug("adapter_registry: chmod 0o700 failed on %s", self._root)
         self._lock = threading.Lock()
         self._adapters: dict[str, AdapterRecord] = self._load()
 
@@ -287,6 +292,10 @@ class OneiricAdapterRegistry:
         }
         tmp = self._path.with_suffix(self._path.suffix + ".tmp")
         tmp.write_text(json.dumps(serialized, indent=2, default=str))
+        try:
+            os.chmod(tmp, 0o600)
+        except OSError:
+            logger.debug("adapter_registry: chmod 0o600 failed on %s", tmp)
         tmp.replace(self._path)
 
     # ----- async public API -----
