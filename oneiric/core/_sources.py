@@ -184,6 +184,72 @@ class _AliasOverridesEnvSource(EnvSettingsSource):
         return result
 
 
+# 2026-10-12 (Phase E1, Plan 2): canonical prefix for substrate env vars.
+# The substrate spec §5.3 declares double-underscore field names
+# (``cache__max_entries``, ``warm__pg_url``, etc.). pydantic-settings
+# nested-delimiter resolution cannot natively route
+# ``ONEIRIC__SUBSTRATE__CACHE__MAX_ENTRIES=5`` to the leaf field
+# ``cache__max_entries`` because the parent's ``env_nested_delimiter='__'``
+# splits the suffix during ``EnvSettingsSource.explode_env_vars`` and
+# the resulting ``cache`` / ``max_entries`` tokens do not match any
+# single field name in ``SubstrateSettings``. The custom source below
+# is the explicit Phase E1 fix — it short-circuits the broken nested
+# walk by scanning the same env vars and mapping them straight into
+# ``{"substrate": {<field>: <value>}}``. This is purely additive; the
+# pydantic-settings chain still runs (so non-substrate env vars behave
+# as before) and the canonical field-with-double-underscore surface
+# stays intact.
+_SUBSTRATE_ENV_PREFIX: str = "ONEIRIC__SUBSTRATE__"
+
+
+class _SubstrateEnvSource(PydanticBaseSettingsSource):
+    """Routes ``ONEIRIC__SUBSTRATE__<field>`` env vars to ``SubstrateSettings``.
+
+    Pure-additive Phase E1 (Plan 2) source. Bypasses pydantic-settings'
+    nested-delimiter walk because the ``__`` delimiter would otherwise
+    re-split field names that themselves contain ``__`` (e.g.
+    ``cache__max_entries`` resolves to two path tokens ``cache`` and
+    ``max_entries``, neither of which matches the literal field). See
+    the comment on :data:`_SUBSTRATE_ENV_PREFIX` for the full rationale.
+
+    Precedence: slotted into the chain AFTER the parent's EnvSettingsSource
+    (so non-substrate vars still route through the normal walk) but
+    BEFORE the YAML layers (so explicit env vars still win over the
+    substrate YAML section, matching the legacy ``_env_overrides``
+    ordering).
+
+    Field-name mapping: env suffix (lowercased) maps 1:1 to the
+    double-underscore field name on ``SubstrateSettings``. Unknown
+    env suffixes are silently ignored (caller's responsibility to
+    detect them via pydantic validation on construction).
+    """
+
+    def __init__(self, settings_cls: type) -> None:
+        super().__init__(settings_cls)
+
+    def get_field_value(  # type: ignore[override]
+        self, field: Any, field_name: str
+    ) -> tuple[Any, str, bool]:
+        # We override ``__call__`` to do bulk collection, so
+        # ``get_field_value`` is a no-op for the per-field iteration
+        # in the base class.
+        return None, field_name, False
+
+    def __call__(self) -> dict[str, Any]:
+        prefix = _SUBSTRATE_ENV_PREFIX
+        result: dict[str, Any] = {}
+        for env_key, env_value in os.environ.items():
+            if not env_key.startswith(prefix):
+                continue
+            suffix = env_key[len(prefix) :].lower()
+            if not suffix:
+                continue
+            substrate_section = result.setdefault("substrate", {})
+            if isinstance(substrate_section, dict):
+                substrate_section[suffix] = env_value
+        return result
+
+
 class OneiricManifestSource(PydanticBaseSettingsSource):
     """Read adapter/pack manifests from the ``oneiric remote-sync`` cache.
 
@@ -289,8 +355,9 @@ class _AuthExcludingDotEnvSource(DotEnvSettingsSource):
 __all__ = [
     "OneiricManifestSource",
     "_AliasOverridesEnvSource",
-    "_AuthExcludingYamlSource",
     "_AuthExcludingEnvSource",
+    "_AuthExcludingYamlSource",
+    "_SubstrateEnvSource",
     "_AuthExcludingDotEnvSource",
     "build_yaml_layers",
     "strip_auth",

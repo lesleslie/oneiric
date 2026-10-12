@@ -17,6 +17,7 @@ from ._sources import (
     _AliasOverridesEnvSource,
     _AuthExcludingDotEnvSource,
     _AuthExcludingEnvSource,
+    _SubstrateEnvSource,
     build_yaml_layers,
 )
 
@@ -92,6 +93,7 @@ from .logging import LoggingConfig, get_logger
 from .protocols import SecretsCacheProtocol, SecretsProviderProtocol
 from .resolution import ResolverSettings
 from .secrets_cache import SecretValueCache
+from .substrate_settings import SubstrateSettings
 
 logger = get_logger("config")
 
@@ -426,6 +428,28 @@ class OneiricSettings(BaseSettings):
             "OneiricMCPAuthConfig.from_env()."
         ),
     )
+    # 2026-10-12: shared Bodai-substrate section (Plan 2 Phase E1).
+    # Container typed as ``SubstrateSettings`` (a real ``BaseSettings``),
+    # so env vars of the form ``ONEIRIC__SUBSTRATE__CACHE__MAX_ENTRIES=5``
+    # resolve to ``settings.substrate.cache__max_entries`` via pydantic-
+    # settings' nested-delimiter walk: parent strips ``ONEIRIC_`` + splits
+    # on ``__`` → ``['substrate', 'cache__max_entries']`` → descends into
+    # ``substrate``, whose inner ``env_nested_delimiter=None`` treats the
+    # tail as a literal field-name lookup (matches ``cache__max_entries``).
+    # Per-component overrides of the form
+    # ``{COMPONENT}__SUBSTRATE__<field>`` flow through the higher layers
+    # (``_AliasOverridesEnvSource`` plus the YAML chain) before this field
+    # is finalised. SubstrateSettings is *additive* — it does not rename,
+    # delete, or modify any existing ``OneiricSettings`` field.
+    substrate: SubstrateSettings = Field(
+        default_factory=SubstrateSettings,
+        description=(
+            "Shared Bodai-substrate configuration (cache, warm pgvector, "
+            "cold object store, embedding, pool, retry, "
+            "circuit-breaker, telemetry, backup, auth-loopback). "
+            "Env-var binding via ``ONEIRIC__SUBSTRATE__<double-underscore-field>``."
+        ),
+    )
 
     @classmethod
     def settings_customise_sources(
@@ -465,6 +489,12 @@ class OneiricSettings(BaseSettings):
             _AliasOverridesEnvSource(
                 settings_cls, env_prefix=f"{project_name.upper()}_"
             ),
+            # 2026-10-12: substrate env-var short-circuit (Phase E1, Plan 2).
+            # Slotted AFTER the parent's EnvSettingsSource but BEFORE
+            # the YAML layers so explicit ``ONEIRIC__SUBSTRATE__<field>``
+            # vars override substrate YAML while remaining subordinate
+            # to higher-priority init/alias sources.
+            _SubstrateEnvSource(settings_cls),
             OneiricManifestSource(settings_cls),
             *build_yaml_layers(settings_cls, project_root_path, project_name),
             _AuthExcludingDotEnvSource(settings_cls),
