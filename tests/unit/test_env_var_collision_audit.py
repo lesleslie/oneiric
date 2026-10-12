@@ -14,7 +14,7 @@ Env-var form conventions:
   - ``ONEIRIC_ACTIVITY_STORE`` -> ``runtime_paths.domain_activity_path``
   - ``ONEIRIC_LOG_LEVEL``       -> ``logging.level``
 
-This file also re-uses the env-strip helper from
+This file also reuses the env-strip helper from
 ``test_pydantic_settings_precedence`` so tests do not depend on shell state.
 """
 
@@ -443,7 +443,7 @@ def test_alias_collections_match_known_table() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Section inventory (re-used in audit summary output if any test fails)
+# Section inventory (reused in audit summary output if any test fails)
 # ---------------------------------------------------------------------------
 
 

@@ -70,7 +70,6 @@ DEFAULT_STORES: tuple[str, ...] = (
     "docs/adr/",
     "docs/plans/",
     "docs/specs/",
-    "docs/plans/",
     ".claude/decisions/",
     "docs/followups/",
 )
@@ -327,18 +326,37 @@ Last regenerated: {generated_at}.
 
 
 def _entry_link(rel: str, store: str) -> str:
-    """POSIX link to the file from the index's home at docs/plans/.
-    Files outside docs/plans/ need an explicit relative prefix."""
+    """POSIX link to the file from the index's home at ``docs/plans/``.
+
+    The index lives at ``docs/plans/PLAN_INDEX.md`` — one directory below
+    the repo root. So the relative path needs to step up from
+    ``docs/plans/`` first, then traverse to the target:
+
+    - siblings under ``docs/plans/``: drop the ``docs/plans/`` prefix;
+      use just the filename (Markdown resolves it against the current dir).
+    - siblings under ``docs/`` (other than ``plans/``): ``../`` then drop
+      the ``docs/`` prefix so we land in ``docs/adr/foo.md`` etc.
+    - siblings under ``.claude/``: ``../../`` then keep the full rel —
+      we need two ``..`` to escape ``docs/plans/`` → ``docs/`` → repo root.
+    """
     if rel.startswith("docs/plans/"):
-        depth = 1  # file lives in same directory as the index
+        # Same directory as PLAN_INDEX.md; bare filename is enough.
+        target = rel.removeprefix("docs/plans/")
+        prefix = ""
     elif rel.startswith("docs/"):
-        depth = 2  # up one (docs/), then down into the actual path
+        # Sibling under docs/ — up one, then drop the docs/ prefix.
+        target = rel.removeprefix("docs/")
+        prefix = "../"
     elif rel.startswith(".claude/"):
-        depth = 2  # up one to repo root, then into .claude/
+        # Top-level hidden dir — up two (docs/plans/ → docs/ → repo root),
+        # then keep the full rel.
+        target = rel
+        prefix = "../../"
     else:
-        depth = 2
-    prefix = "../" * (depth - 1)
-    return f"[`{rel}`]({prefix}{rel})"
+        # Defensive: unknown store; assume two levels deep.
+        target = rel
+        prefix = "../../"
+    return f"[`{rel}`]({prefix}{target})"
 
 
 def _render_store_table(store: str, entries: list[Entry]) -> str:

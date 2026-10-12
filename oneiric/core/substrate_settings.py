@@ -195,16 +195,16 @@ class SubstrateSettings(BaseSettings):
     )
 
     # ---- Embedding ----------------------------------------------------
-    embedding__backend: Literal[
-        "openai", "fastembed", "llama_server", "ollama"
-    ] = Field(
-        default="llama_server",
-        description=(
-            "Embedding-model backend. ``llama_server`` (default) routes "
-            "through the local llama.cpp-compatible endpoint; "
-            "``ollama`` is the local-server alternative; ``openai`` is "
-            "the cloud-paid tier; ``fastembed`` is the offline CPU tier."
-        ),
+    embedding__backend: Literal["openai", "fastembed", "llama_server", "ollama"] = (
+        Field(
+            default="llama_server",
+            description=(
+                "Embedding-model backend. ``llama_server`` (default) routes "
+                "through the local llama.cpp-compatible endpoint; "
+                "``ollama`` is the local-server alternative; ``openai`` is "
+                "the cloud-paid tier; ``fastembed`` is the offline CPU tier."
+            ),
+        )
     )
     embedding__model: str = Field(
         default="nomic-embed-text",
@@ -298,10 +298,7 @@ class SubstrateSettings(BaseSettings):
         default=5,
         ge=1,
         le=100,
-        description=(
-            "Consecutive failures that trip the breaker into the open "
-            "state."
-        ),
+        description=("Consecutive failures that trip the breaker into the open state."),
     )
     circuit_breaker__reset_timeout_seconds: int = Field(
         default=60,

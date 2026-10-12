@@ -51,7 +51,7 @@ class MyAdapter:
 ```
 
 The `AdapterMetadata` model is defined at
-[`oneiric/adapters/metadata.py:21`](../adapters/metadata.py). The full
+[`oneiric/adapters/metadata.py:21`](../../oneiric/adapters/metadata.py). The full
 field set:
 
 | Field | Type | Required | Purpose |
@@ -73,7 +73,7 @@ field set:
 
 `AdapterMetadata.to_candidate()` converts to a `Candidate` for the
 resolver — see
-[`oneiric/core/resolution.py:41`](../core/resolution.py) for the full
+[`oneiric/core/resolution.py:41`](../../oneiric/core/resolution.py) for the full
 scoring algorithm (override × capability_match × priority × stack_level
 × registration_order).
 
@@ -96,7 +96,7 @@ class MyAdapter:
 ```
 
 Driven by `LifecycleManager` and invoked by
-[`AdapterBridge.use()`](../adapters/bridge.py:44). The bridge's
+[`AdapterBridge.use()`](../../oneiric/adapters/bridge.py). The bridge's
 `_after_handle` hook captures adapter-state metrics + emits
 `adapter-ready` log line after every successful resolution.
 
@@ -107,7 +107,7 @@ Driven by `LifecycleManager` and invoked by
 - The monitoring layer relies on `bool`; raising would surface as a
   5xx instead of a degraded state.
 
-Reference: [`oneiric/adapters/queue/redis_streams.py:174-188`](../adapters/queue/redis_streams.py).
+Reference: [`oneiric/adapters/queue/redis_streams.py:174-188`](../../oneiric/adapters/queue/redis_streams.py).
 
 ## 3. The factory contract
 
@@ -235,7 +235,7 @@ right one when several cache adapters are registered.
 An adapter that exists as a class file but isn't registered is
 **invisible**. Registration happens through one of four
 `CandidateSource` paths (defined in
-[`oneiric/core/resolution.py:34`](../core/resolution.py)):
+[`oneiric/core/resolution.py:34`](../../oneiric/core/resolution.py)):
 
 | `CandidateSource` | Path | Use for |
 |---|---|---|
@@ -304,7 +304,7 @@ discover adapters through Oneiric's MCP server. The relevant tools:
 | `oneiric_report_runtime` | Push runtime facts (sanitized server-side). |
 
 These wrap `OneiricAdapterRegistry`
-([`oneiric/mcp/adapter_registry.py`](../mcp/adapter_registry.py)) which
+([`oneiric/mcp/adapter_registry.py`](../../oneiric/mcp/adapter_registry.py)) which
 persists to `~/.oneiric/adapter_registry.json`.
 
 **Cross-component consumers do not import Oneiric directly.** They call
@@ -313,7 +313,7 @@ the MCP tools. This is the rule that survived the Dhara decomposition.
 ## 9. Reference implementation
 
 The cleanest existing example is
-[`oneiric/adapters/queue/redis_streams.py`](../adapters/queue/redis_streams.py).
+[`oneiric/adapters/queue/redis_streams.py`](../../oneiric/adapters/queue/redis_streams.py).
 It shows all five sub-contracts in one place: `AdapterMetadata` at the
 class level (line 75-86), `init/health/cleanup` lifecycle methods
 (line 105-197), factory as `"oneiric.adapters.queue.redis_streams:RedisStreamsQueueAdapter"`
@@ -360,7 +360,7 @@ Use these as templates when writing a new adapter.
 2. Define the adapter class with class-level `AdapterMetadata`.
 3. Implement `init`, `health`, `cleanup`.
 4. Add the class to
-   [`oneiric/adapters/bootstrap.py::builtin_adapter_metadata()`](../adapters/bootstrap.py).
+   [`oneiric/adapters/bootstrap.py::builtin_adapter_metadata()`](../../oneiric/adapters/bootstrap.py).
    The list order does not matter — resolver scores by priority, not
    registration order.
 5. (Optional) write a test that exercises the lifecycle methods

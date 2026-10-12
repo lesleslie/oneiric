@@ -3,7 +3,7 @@
 The factory memoizes per-(project_name, project_root) so repeated
 ``load_settings(project_name=..., project_root=...)`` calls reuse the
 same subclass and pydantic-settings' per-class ``env_prefix`` config is
-not re-declared. Distinct projects / distinct roots must produce
+not redeclared. Distinct projects / distinct roots must produce
 distinct subclasses so their env vars don't cross-contaminate.
 """
 

@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.1] - 2026-10-12
+
+### Fixed
+
+- decision: Correct role field on pydantic-settings-migration-results
+- deps: Pin logfire<6.0 to avoid OTel 1.44+ rename skew
+
 ## [0.29.0] - 2026-10-12
 
 ### Added
@@ -15,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - oneiric: UUID7-only substrate (Phase 2 of cross-repo migration)
 - OneiricMCPConfig -> BaseSettings; drop env_file; pin pydantic-settings direct
 - OneiricMCPConfig settings_customise_sources (Phase 1 Option A)
-- SubstrateSettings + ONEIRIC__SUBSTRATE__* env-var resolution (Plan 2 Phase E1)
+- SubstrateSettings + ONEIRIC\_\_SUBSTRATE\_\_\* env-var resolution (Plan 2 Phase E1)
 - Wrap load_settings in asyncio.to_thread (T1.11)
 
 ### Fixed
@@ -34,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - adr: 0003 adopt pydantic-settings as Oneiric's settings loader
 - decision: Phase 3 cross-repo verification results
 - oneiric: Remove obsolete ULID-substrate references in system_registry docstring
-- plan+test: Phase 0 — pin ACB precedence + _ALIAS_OVERRIDES audit + env-var collision
+- plan+test: Phase 0 — pin ACB precedence + \_ALIAS_OVERRIDES audit + env-var collision
 - plan-index: Regenerate after pydantic-settings plan v2
 - plan-index: Regenerate for ADR 0003 + pydantic-settings migration plan
 - plan: Add Move LLM + Prompting from mcp-common to oneiric

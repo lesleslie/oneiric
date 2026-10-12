@@ -10,7 +10,13 @@ from typing import TYPE_CHECKING, Any, cast
 
 import yaml
 from pydantic import AliasChoices, BaseModel, Field
-from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
+from pydantic_settings import (
+    BaseSettings,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+)
+
+from oneiric.runtime.health import default_runtime_health_path
 
 from ._sources import (
     OneiricManifestSource,
@@ -20,8 +26,6 @@ from ._sources import (
     _SubstrateEnvSource,
     build_yaml_layers,
 )
-
-from oneiric.runtime.health import default_runtime_health_path
 
 if TYPE_CHECKING:
     # Used as a string forward-ref on ``OneiricSettings.observability`` to
@@ -420,7 +424,7 @@ class OneiricSettings(BaseSettings):
     # ``OneiricMCPAuthConfig.from_env()`` at the CLI call site, preserving
     # the existing REQ-006 contract. REQ-CLI-XDG-002 in
     # docs/plans/2026-10-05-oneiric-cli-loader-xdg-migration.md.
-    auth: OneiricMCPAuthConfig = Field(  # type: ignore[valid-type]  # ty: ignore[valid-type]
+    auth: OneiricMCPAuthConfig = Field(
         default_factory=_default_auth_config,
         description=(
             "Auth section consumed by the oneiric FastMCP server. "
@@ -568,7 +572,9 @@ def load_settings(
 
     settings_cls = build_oneiric_settings(project_name, project_root=project_root)
     project_root_path = getattr(
-        settings_cls, "oneiric_project_root", Path(__file__).resolve().parent.parent.parent
+        settings_cls,
+        "oneiric_project_root",
+        Path(__file__).resolve().parent.parent.parent,
     )
     logger.debug(
         "load-settings-source-chain",

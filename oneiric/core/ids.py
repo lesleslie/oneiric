@@ -79,7 +79,9 @@ def is_uuid7(value: Any) -> bool:
         True
         >>> is_uuid7("01ARZ3NDEKTS6PQRYF")  # legacy 26-char ULID
         False
-        >>> is_uuid7("bcfbf3f2-076c-4a35-96cc-340e3995ce74")  # 36-char UUID with hyphens
+        >>> is_uuid7(
+        ...     "bcfbf3f2-076c-4a35-96cc-340e3995ce74"
+        ... )  # 36-char UUID with hyphens
         False
         >>> is_uuid7("not-an-id")
         False
@@ -92,7 +94,7 @@ def is_uuid7(value: Any) -> bool:
         return False
     try:
         return UUID(value).version == 7
-    except (ValueError, AttributeError):
+    except ValueError, AttributeError:
         return False
 
 

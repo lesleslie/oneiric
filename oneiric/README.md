@@ -17,10 +17,10 @@ For the full documentation map and runbooks, start with `docs/README.md` at the 
 ## Settings
 
 Oneiric's settings use `pydantic_settings.BaseSettings` natively — see
-[`docs/adr/0003-pydantic-settings-migration.md`](../adr/0003-pydantic-settings-migration.md)
+[`docs/adr/0003-pydantic-settings-migration.md`](../docs/adr/0003-pydantic-settings-migration.md)
 and the implementation plan at
-[`docs/plans/2026-10-11-pydantic-settings-migration.md`](../plans/2026-10-11-pydantic-settings-migration.md).
-The custom source chain (init → _AuthExcludingEnvSource → env → _AliasOverridesEnvSource → OneiricManifestSource → YAML → _AuthExcludingDotEnvSource → secrets)
+[`docs/plans/2026-10-11-pydantic-settings-migration.md`](../docs/plans/2026-10-11-pydantic-settings-migration.md).
+The custom source chain (init → \_AuthExcludingEnvSource → env → \_AliasOverridesEnvSource → OneiricManifestSource → YAML → \_AuthExcludingDotEnvSource → secrets)
 lives in `oneiric/core/config.py::OneiricSettings.settings_customise_sources`;
 custom source wrappers (auth-exclusion for env/yaml/dotenv, alias-override, manifest-cache)
 live in `oneiric/core/_sources.py`. Per-project env-var prefix

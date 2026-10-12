@@ -33,6 +33,7 @@ from pathlib import Path
 from typing import Any
 
 from pydantic_settings import (
+    BaseSettings,
     DotEnvSettingsSource,
     EnvSettingsSource,
     PydanticBaseSettingsSource,
@@ -162,7 +163,9 @@ class _AliasOverridesEnvSource(EnvSettingsSource):
     chain.
     """
 
-    def __init__(self, settings_cls: type, env_prefix: str = "") -> None:
+    def __init__(
+        self, settings_cls: type[BaseSettings], env_prefix: str = ""
+    ) -> None:
         super().__init__(settings_cls, env_prefix=env_prefix)
 
     def __call__(self) -> dict[str, Any]:
@@ -224,7 +227,7 @@ class _SubstrateEnvSource(PydanticBaseSettingsSource):
     detect them via pydantic validation on construction).
     """
 
-    def __init__(self, settings_cls: type) -> None:
+    def __init__(self, settings_cls: type[BaseSettings]) -> None:
         super().__init__(settings_cls)
 
     def get_field_value(  # type: ignore[override]
@@ -273,7 +276,9 @@ class OneiricManifestSource(PydanticBaseSettingsSource):
     deliberately wired but explicitly opt-in.
     """
 
-    def __init__(self, settings_cls: type, cache_dir: Path | None = None) -> None:
+    def __init__(
+        self, settings_cls: type[BaseSettings], cache_dir: Path | None = None
+    ) -> None:
         super().__init__(settings_cls)
         # If no explicit cache_dir was passed, fall back to a
         # per-subclass ``oneiric_cache_dir`` ClassVar (set by
@@ -282,9 +287,7 @@ class OneiricManifestSource(PydanticBaseSettingsSource):
             cache_dir = getattr(settings_cls, "oneiric_cache_dir", None)
         self._cache_dir = cache_dir
 
-    def get_field_value(
-        self, field: Any, field_name: str
-    ) -> tuple[Any, str, bool]:
+    def get_field_value(self, field: Any, field_name: str) -> tuple[Any, str, bool]:
         return None, field_name, False
 
     def __call__(self) -> dict[str, Any]:
@@ -306,7 +309,7 @@ class OneiricManifestSource(PydanticBaseSettingsSource):
 
 
 def build_yaml_layers(
-    settings_cls: type,
+    settings_cls: type[BaseSettings],
     project_root_path: Path,
     project_name: str,
 ) -> list[PydanticBaseSettingsSource]:
@@ -318,9 +321,9 @@ def build_yaml_layers(
     are wrapped; missing files are silently skipped (pydantic-settings
     ``YamlConfigSettingsSource`` defaults to a no-op on missing files).
     """
-    xdg_dir = Path(
-        os.environ.get("XDG_CONFIG_HOME", "~/.config")
-    ).expanduser() / project_name
+    xdg_dir = (
+        Path(os.environ.get("XDG_CONFIG_HOME", "~/.config")).expanduser() / project_name
+    )
     candidates = (
         xdg_dir / "local.yaml",
         xdg_dir / "config.yaml",
@@ -355,10 +358,10 @@ class _AuthExcludingDotEnvSource(DotEnvSettingsSource):
 __all__ = [
     "OneiricManifestSource",
     "_AliasOverridesEnvSource",
+    "_AuthExcludingDotEnvSource",
     "_AuthExcludingEnvSource",
     "_AuthExcludingYamlSource",
     "_SubstrateEnvSource",
-    "_AuthExcludingDotEnvSource",
     "build_yaml_layers",
     "strip_auth",
 ]

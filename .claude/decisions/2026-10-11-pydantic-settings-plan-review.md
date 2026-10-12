@@ -18,13 +18,13 @@ The five lenses were:
 
 1. **oneiric-substrate** — knows the Oneiric-specific patterns (XDG, ACB
    legacy, project_root anchoring, the `__` nested-key convention).
-2. **python-idioms** — Python 3.14 stdlib, Pydantic v2, type-system
+1. **python-idioms** — Python 3.14 stdlib, Pydantic v2, type-system
    best-practices, `from __future__ import annotations` discipline.
-3. **mcp-integration** — knows mcp-common's `OneiricMCPConfig` re-export
+1. **mcp-integration** — knows mcp-common's `OneiricMCPConfig` re-export
    shape, the FastMCP server lifecycle, MCP tool surface stability.
-4. **process-discipline** — Bodai pre-1.0 merge policy, integration
+1. **process-discipline** — Bodai pre-1.0 merge policy, integration
    contract gates, audit-orphans wiring check, validation gates.
-5. **general-purpose** — random generalist for non-domain blind spots.
+1. **general-purpose** — random generalist for non-domain blind spots.
 
 This decision note records the findings (v1 review), the 17 issues
 caught, the corrections land in v2, and the **3 follow-up BLOCKERs**
@@ -79,6 +79,7 @@ highest priority" (the opposite of ACB-style "last-write-wins").
 
 **v3 fix:** v3 plan adds an explicit "ACB precedence (pinned by Phase
 0 audit)" section that:
+
 - Confirms the ACB-style layered precedence (last-write-wins via
   `_deep_merge`)
 - Confirms pydantic-settings 2.15+ semantics (first-returned-wins)
@@ -101,9 +102,10 @@ recursively tries to read env vars for every nested field — and
 fails on a `@dataclass` because it's not a Pydantic model.
 
 **v3 fix:** v3 plan task 1.10 splits into two sub-decisions:
+
 1. **Default (in-scope):** exclude `auth:` from env-source merging
    via the wrapper source. Document in commit message.
-2. **Optional (out-of-scope):** convert `OneiricMCPAuthConfig` from
+1. **Optional (out-of-scope):** convert `OneiricMCPAuthConfig` from
    `@dataclass` to `BaseSettings` with `env_prefix="ONEIRIC_AUTH_"`.
    This would make the exclusion unnecessary. Document the design
    choice in the commit message; do NOT convert in v1 of the
@@ -141,7 +143,7 @@ is incomplete.
 | #14 AliasChoices duplicates | v2 plan task 0.1 confirms no change needed |
 | #15 Phase 1 gates empty | v2 plan adds 10 numbered gates |
 | #16 Phase 0 gates too thin | v2 plan adds 4 numbered gates |
-| #17 MAHAVISHNU_AUTH__JWT_SECRET typo | v2 plan corrects env-var names throughout |
+| #17 MAHAVISHNU_AUTH\_\_JWT_SECRET typo | v2 plan corrects env-var names throughout |
 
 ## Open follow-ups for the migration to track
 
@@ -150,44 +152,44 @@ is incomplete.
    re-pin the "ACB precedence" section against the actual source
    rather than the Oneiric-native precedence currently cited.
 
-2. **`ONEIRIC_CACHE_DIR` shell-state warning.** The audit found
+1. **`ONEIRIC_CACHE_DIR` shell-state warning.** The audit found
    `ONEIRIC_CACHE_DIR=/Users/les/.cache/development/oneiric` set
    in the developer's shell. Post-migration this activates
    `OneiricSettings.cache_dir`. Operator action: either unset before
    merging Phase 1 or accept the new behavior. Document in merge
    commit either way.
 
-3. **`AuthExcludingYamlSource` may need to handle nested
+1. **`AuthExcludingYamlSource` may need to handle nested
    `DotEnvSettingsSource`** in addition to `EnvSettingsSource` and
    `YamlConfigSettingsSource`. The v3 task 1.10 lists the YAML and
    env variants but the `.env` file source may also need wrapping
    if Phase 1 re-enables `.env` activation anywhere else.
 
-4. **Mahavishnu's local `OneiricMCPConfig(BaseModel)` shadow**
+1. **Mahavishnu's local `OneiricMCPConfig(BaseModel)` shadow**
    (`mahavishnu/core/config.py:1817`) — Phase 3 task 3.7 keeps the
    split by default. Revisit if mcp-common migrates `MCPBaseSettings`
    post-migration (task 3.9); the seam may collapse naturally.
 
-5. **7 test files to rewrite.** Phase 4 file map at plan §"File
+1. **7 test files to rewrite.** Phase 4 file map at plan §"File
    map (revised)" lists `test_load_settings_cwd_fallback.py`,
    `test_load_settings_xdg.py`, `test_load_settings_anchors.py`,
    `test_cli_xdg_loader.py`, `test_config_xdg.py`,
    `test_core_config_branches.py`, `test_core_config.py`. The
    v3 Phase 4 task 4.7 adds 8 new tests (none are rewrites).
 
-6. **Realistic total: 25-40 commits** (revised from v1's 9-11).
+1. **Realistic total: 25-40 commits** (revised from v1's 9-11).
    Tracker should not mark migration complete until all phases
    ship.
 
-7. **Phase 0 audit results land in this decision note's amended
+1. **Phase 0 audit results land in this decision note's amended
    plan.** The amended plan at the path above has the three new
-   sections ("_ALIAS_OVERRIDES audit (Phase 0)", "Env-var collision
+   sections ("\_ALIAS_OVERRIDES audit (Phase 0)", "Env-var collision
    audit (Phase 0)", "ACB precedence (pinned by Phase 0 audit)")
    inserted at lines 521, 569, 657 — BEFORE the "Migration order"
    section at line 812. Phase 1 task 1.3 reads these sections to
    know exactly what source-chain to build.
 
-8. **Pre-1.0 policy reminder (`feedback-no-backwards-compat-pre-1.0.md`):**
+1. **Pre-1.0 policy reminder (`feedback-no-backwards-compat-pre-1.0.md`):**
    no deprecation windows, no backwards-compat rewiring. If a
    downstream consumer breaks on Phase 1, the consumer migrates
    or the migration is broken — there is no middle ground.
