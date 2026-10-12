@@ -1,6 +1,6 @@
 ---
 status: active
-role: reference
+role: historical
 kind: decision
 date: 2026-10-11
 last_reviewed: 2026-10-12
