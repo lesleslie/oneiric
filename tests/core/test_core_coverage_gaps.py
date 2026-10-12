@@ -65,48 +65,12 @@ def test_secrets_cache_invalidate_all_by_provider_no_matches() -> None:
 
 
 # ---------------------------------------------------------------------------
-# ulid_collision.py:81 — real import path when _generate_fn is None
+# ulid_collision.py:81 — REMOVED (Phase 2 of UUID7 migration; ulid_collision
+# module is gone, replaced by oneiric.core.ids)
 # ---------------------------------------------------------------------------
 
 
-def test_generate_with_retry_uses_real_generate_fn() -> None:
-    """When _generate_fn is not supplied, generate_with_retry imports from oneiric.core.ulid."""
-    from oneiric.core.ulid_collision import generate_with_retry
-
-    result = generate_with_retry(max_attempts=3, context="test-real-fn")
-    assert isinstance(result, str)
-    assert len(result) > 0
-
-
 # ---------------------------------------------------------------------------
-# ulid_resolution.py:49-51 — SystemReference swallows get_timestamp exceptions
+# ulid_resolution.py:49-51, 118-119 — REMOVED (Phase 2 of UUID7 migration;
+# ulid_resolution module is gone, replaced by oneiric.core.system_registry)
 # ---------------------------------------------------------------------------
-
-
-def test_system_reference_handles_get_timestamp_exception() -> None:
-    """SystemReference sets timestamp=0 when get_timestamp raises."""
-    import oneiric.core.ulid_resolution as mod
-    from oneiric.core.ulid_resolution import SystemReference
-
-    original_fn = mod.get_timestamp
-    try:
-        mod.get_timestamp = lambda ulid: 1 / 0  # type: ignore[assignment]
-        ref = SystemReference("bad-ulid", "test-system", "test-type")
-        assert ref.timestamp == 0
-        assert ref.system == "test-system"
-    finally:
-        mod.get_timestamp = original_fn
-
-
-# ---------------------------------------------------------------------------
-# ulid_resolution.py:118-119 — find_related_ulids returns [] for unknown ULID
-# ---------------------------------------------------------------------------
-
-
-def test_find_related_ulids_returns_empty_for_unregistered() -> None:
-    from oneiric.core.ulid_resolution import _ulid_registry, find_related_ulids
-
-    _ulid_registry.clear()
-    result = find_related_ulids("not-in-registry")
-    assert result == []
-    _ulid_registry.clear()

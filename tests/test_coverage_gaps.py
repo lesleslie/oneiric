@@ -252,47 +252,9 @@ class TestResolutionCoverageGaps:
 
 
 # ---------------------------------------------------------------------------
-# 7. oneiric/core/ulid.py - lines 47, 86, 98, 121
+# 7. oneiric/core/ulid.py - REMOVED (Phase 2 of UUID7 migration; the ulid
+#    module is gone, replaced by oneiric.core.ids)
 # ---------------------------------------------------------------------------
-
-
-class TestULIDFallbackCoverage:
-    """Cover ULID fallback paths when druva is not installed.
-
-    Lines 47, 86, 98, 121 are inside the ``except ImportError`` fallback block.
-    These tests only run when druva is NOT available (CI without druva installed).
-    When druva is installed, these lines are unreachable and coverage excludes them.
-    """
-
-    @pytest.fixture(autouse=True)
-    def _skip_when_druva_available(self):
-        from oneiric.core.ulid import DHURUVA_AVAILABLE
-
-        if DHURUVA_AVAILABLE:
-            pytest.skip("druva installed — fallback lines unreachable")
-        yield
-
-    def test_ulid_fallback_encode_invalid_length(self):
-        """Line 86: _encode raises ValueError for wrong data length."""
-        from oneiric.core.ulid import ULID
-
-        with pytest.raises(ValueError, match="Data must be"):
-            ULID._encode(b"short")
-
-    def test_ulid_fallback_decode_invalid_string(self):
-        """Line 98: _decode raises ValueError for wrong string length."""
-        from oneiric.core.ulid import ULID
-
-        with pytest.raises(ValueError, match="Invalid ULID"):
-            ULID._decode("tooshort")
-
-    def test_ulid_fallback_eq_non_ulid_non_str(self):
-        """Line 121: ULID.__eq__ returns False for non-ULID, non-str."""
-        from oneiric.core.ulid import ULID
-
-        ulid = ULID()
-        assert ulid != 42
-        assert ulid != None
 
 
 # ---------------------------------------------------------------------------
@@ -398,27 +360,9 @@ class TestLoadRemoteTelemetryCorruptFile:
 
 
 # ---------------------------------------------------------------------------
-# 10. oneiric/core/ulid_collision.py - line 81
+# 10. oneiric/core/ulid_collision.py - REMOVED (Phase 2 of UUID7 migration;
+#     the ulid_collision module is gone)
 # ---------------------------------------------------------------------------
-
-
-class TestULIDCollisionStatsAfterCollision:
-    """Line 81: get_collision_stats returns non-zero after collision."""
-
-    def test_collision_stats_after_collision(self):
-        # Reset state
-        import oneiric.core.ulid_collision as m
-        from oneiric.core.ulid_collision import (
-            get_collision_stats,
-            register_collision,
-        )
-
-        m._collision_count = 0
-        m._collision_registry.clear()
-
-        register_collision("ulid1", "ulid2", "test-context")
-        stats = get_collision_stats()
-        assert stats["total_collisions"] == 1
 
 
 # ---------------------------------------------------------------------------
