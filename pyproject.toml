@@ -298,7 +298,10 @@ monitoring = [
     "sentry-sdk>=3.0.0a7",
 ]
 "monitoring-logfire" = [
-    "logfire>=4.37.0",
+    # Pinned below 6.0: logfire 6.0.0b* is broken against opentelemetry-api 1.44+
+    # (renamed _clean_attribute_value → _clean_extended_attribute_value). Bump when
+    # logfire ships a stable 6.x that fixes the OTel skew.
+    "logfire>=4.37.0,<6.0",
 ]
 "monitoring-otlp" = [
     "opentelemetry-exporter-otlp>=1.42.1",
