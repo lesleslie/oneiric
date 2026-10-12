@@ -130,3 +130,95 @@ class TestSourceChainOrder:
         monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
         s = load_settings(project_root=project_dir, project_name="oneiric")
         assert s.app.name == "xdg_local"
+
+    def test_xdg_config_overrides_project_yaml(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """``build_yaml_layers`` enumerates 5 candidate paths; pin that
+        XDG config (not just XDG local) is wired in and beats project yaml.
+        """
+        _clear_oneiric_env(monkeypatch)
+        project_dir = tmp_path / "project"
+        (project_dir / "settings").mkdir(parents=True)
+        (project_dir / "settings" / "oneiric.yaml").write_text(
+            "app:\n  name: project_default\n"
+        )
+        xdg_dir = tmp_path / "xdg" / "oneiric"
+        xdg_dir.mkdir(parents=True)
+        # Only config.yaml (no local.yaml) — distinct from xdg_local test
+        (xdg_dir / "config.yaml").write_text("app:\n  name: xdg_config\n")
+        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+        s = load_settings(project_root=project_dir, project_name="oneiric")
+        assert s.app.name == "xdg_config"
+
+    def test_project_local_overrides_project_yaml(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """``<project_root>/settings/local.yaml`` beats project yaml
+        and is one of the 5 enumerated YAML layers.
+        """
+        _clear_oneiric_env(monkeypatch)
+        project_dir = tmp_path / "project"
+        (project_dir / "settings").mkdir(parents=True)
+        (project_dir / "settings" / "oneiric.yaml").write_text(
+            "app:\n  name: committed\n"
+        )
+        (project_dir / "settings" / "local.yaml").write_text(
+            "app:\n  name: local_override\n"
+        )
+        s = load_settings(project_root=project_dir, project_name="oneiric")
+        assert s.app.name == "local_override"
+
+    def test_project_yml_variant_loaded(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """``.yml`` (vs ``.yaml``) is one of the 5 enumerated candidates.
+        Pin that the loader picks it up.
+        """
+        _clear_oneiric_env(monkeypatch)
+        project_dir = tmp_path / "project"
+        (project_dir / "settings").mkdir(parents=True)
+        (project_dir / "settings" / "oneiric.yml").write_text(
+            "app:\n  name: yml_variant\n"
+        )
+        s = load_settings(project_root=project_dir, project_name="oneiric")
+        assert s.app.name == "yml_variant"
+
+    def test_alias_overrides_env_source_routes_activity_store(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Direct test of the ``_AliasOverridesEnvSource`` source — proves
+        the custom source is wired into the chain by calling it
+        directly with a stub settings_cls and verifying it produces
+        the expected nested-path dict for ``ONEIRIC_ACTIVITY_STORE``.
+
+        The end-to-end alias-routing test in ``test_yaml_loses_to_alias_source``
+        passes via the pre-wired ``AliasChoices`` on the target field
+        regardless of whether the custom source is in the chain. This
+        direct test pins the custom source's own behavior.
+        """
+        from oneiric.core._sources import _AliasOverridesEnvSource
+        from oneiric.core.config import OneiricSettings
+
+        _clear_oneiric_env(monkeypatch)
+        monkeypatch.setenv("ONEIRIC_ACTIVITY_STORE", "/custom/activity")
+        source = _AliasOverridesEnvSource(OneiricSettings, env_prefix="ONEIRIC_")
+        payload = source()
+        assert payload == {
+            "runtime_paths": {"domain_activity_path": "/custom/activity"}
+        }
+
+    def test_alias_overrides_env_source_does_not_match_other_prefixes(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The custom source only matches env vars with the project prefix
+        (e.g. ``ONEIRIC_`` for the oneiric project). Pin that prefix
+        isolation works for the alias source.
+        """
+        from oneiric.core._sources import _AliasOverridesEnvSource
+        from oneiric.core.config import OneiricSettings
+
+        _clear_oneiric_env(monkeypatch)
+        monkeypatch.setenv("MAHAVISHNU_ACTIVITY_STORE", "/wrong/project")
+        source = _AliasOverridesEnvSource(OneiricSettings, env_prefix="ONEIRIC_")
+        assert source() == {}

@@ -21,7 +21,7 @@ Provides custom sources wired into OneiricSettings'
   overlay via ``OneiricMCPAuthConfig.from_env()`` at the call site.
 - ``_AuthExcludingEnvSource`` — wraps ``EnvSettingsSource`` and applies
   the same ``auth:`` exclusion.
-- ``BodaiManifestSource`` — reads adapter/pack manifests from the
+- ``OneiricManifestSource`` — reads adapter/pack manifests from the
   ``oneiric remote-sync`` cache. Returns an empty dict (no-op) when no
   manifest URL is configured.
 """
@@ -33,6 +33,7 @@ from pathlib import Path
 from typing import Any
 
 from pydantic_settings import (
+    DotEnvSettingsSource,
     EnvSettingsSource,
     PydanticBaseSettingsSource,
     YamlConfigSettingsSource,
@@ -132,6 +133,19 @@ class _AuthExcludingEnvSource(EnvSettingsSource):
             return None, field_name, False
         return super().get_field_value(field, field_name)
 
+    def __call__(self) -> dict[str, Any]:
+        """Post-process the env-source payload to strip nested paths.
+
+        ``get_field_value`` returning ``None`` only blocks the top-level
+        ``auth`` / ``profile`` field. pydantic-settings' nested-delimiter
+        resolution still walks the auth dataclass for subkeys
+        (``ONEIRIC_AUTH__ENABLED`` → ``{"auth": {"enabled": "true"}}``),
+        so we strip the keys post-hoc. See plan §Phase 1 task 1.10
+        ("auth env vars handled at from_env()") — the post-hoc strip
+        is what makes that contract observable.
+        """
+        return strip_auth(super().__call__())
+
 
 class _AliasOverridesEnvSource(EnvSettingsSource):
     """Routes legacy single-underscore alias env vars to nested target fields.
@@ -170,22 +184,36 @@ class _AliasOverridesEnvSource(EnvSettingsSource):
         return result
 
 
-class BodaiManifestSource(PydanticBaseSettingsSource):
+class OneiricManifestSource(PydanticBaseSettingsSource):
     """Read adapter/pack manifests from the ``oneiric remote-sync`` cache.
 
-    Returns an empty dict when no manifest URL is configured. When a
-    manifest URL is set, the source reads the cached manifest file
-    under the project's cache directory and returns its parsed payload
-    as a flat dict.
+    Returns an empty dict when no cache_dir is configured. When a
+    cache_dir is set (via the per-project ``oneiric_cache_dir`` class
+    attribute populated by ``build_oneiric_settings._Project``), the
+    source reads the cached manifest file at
+    ``{cache_dir}/manifest.yaml`` and returns its parsed payload as a
+    flat dict.
 
     The cache layout is owned by ``oneiric.runtime.remote_sync`` and
     follows the contract documented at
     ``docs/specs/2026-10-11-remote-sync-cache-layout.md`` (planned;
     the cache writer is the only producer).
+
+    When ``cache_dir`` is ``None`` (the default until a project opts
+    in by setting ``oneiric_cache_dir`` on its subclass), the source
+    is a no-op and returns ``{}`` — so the chain slot is reserved but
+    inert. This avoids the substrate-compat shim rot pattern (see
+    ``feedback-substrate-compat-shim-rot.md``): the source is
+    deliberately wired but explicitly opt-in.
     """
 
     def __init__(self, settings_cls: type, cache_dir: Path | None = None) -> None:
         super().__init__(settings_cls)
+        # If no explicit cache_dir was passed, fall back to a
+        # per-subclass ``oneiric_cache_dir`` ClassVar (set by
+        # ``build_oneiric_settings._Project`` or a downstream caller).
+        if cache_dir is None:
+            cache_dir = getattr(settings_cls, "oneiric_cache_dir", None)
         self._cache_dir = cache_dir
 
     def get_field_value(
@@ -197,7 +225,7 @@ class BodaiManifestSource(PydanticBaseSettingsSource):
         cache_dir = self._cache_dir
         if cache_dir is None:
             return {}
-        manifest_path = cache_dir / "manifest.yaml"
+        manifest_path = Path(cache_dir) / "manifest.yaml"
         if not manifest_path.exists():
             return {}
         try:
@@ -243,11 +271,27 @@ def build_yaml_layers(
     return layers
 
 
+class _AuthExcludingDotEnvSource(DotEnvSettingsSource):
+    """DotEnvSettingsSource variant that drops out-of-band-managed keys.
+
+    Parity with :class:`_AuthExcludingYamlSource` and
+    :class:`_AuthExcludingEnvSource`. Currently a no-op because
+    ``OneiricSettings.model_config`` does not declare ``env_file``;
+    defensive in case a future change re-enables ``.env`` loading —
+    without this wrapper, the ``auth:`` block in a project ``.env``
+    would re-enter the merge path.
+    """
+
+    def __call__(self) -> dict[str, Any]:
+        return strip_auth(super().__call__())
+
+
 __all__ = [
-    "BodaiManifestSource",
+    "OneiricManifestSource",
     "_AliasOverridesEnvSource",
     "_AuthExcludingYamlSource",
     "_AuthExcludingEnvSource",
+    "_AuthExcludingDotEnvSource",
     "build_yaml_layers",
     "strip_auth",
 ]

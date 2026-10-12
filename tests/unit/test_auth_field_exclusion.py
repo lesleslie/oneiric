@@ -26,6 +26,7 @@ def _clear_oneiric_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "ONEIRIC_AUTH__ENABLED",
         "ONEIRIC_AUTH__DEFAULT_PROVIDER",
         "ONEIRIC_AUTH__TRUSTED_ISSUERS",
+        "ONEIRIC_PROFILE",
     ):
         monkeypatch.delenv(key, raising=False)
 
@@ -94,3 +95,36 @@ class TestAuthFieldExclusion:
         assert settings.auth.default_provider is None
         # But the auth field IS still typed and present.
         assert isinstance(settings.auth, OneiricMCPAuthConfig)
+
+    def test_nested_delimiter_env_does_not_leak_into_auth(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """``ONEIRIC_AUTH__ENABLED=true`` must NOT flip settings.auth.enabled.
+
+        Pydantic-settings' nested-delimiter resolution walks the
+        ``auth`` field for subkeys (``auth.enabled``) even when
+        ``get_field_value`` returns None for the top-level. The
+        ``_AuthExcludingEnvSource.__call__`` post-process strips the
+        ``auth:`` key so the dataclass stays at defaults. Pins the
+        plan §Phase 1 task 1.10 contract.
+        """
+        _clear_oneiric_env(monkeypatch)
+        monkeypatch.setenv("ONEIRIC_AUTH__ENABLED", "true")
+        settings = OneiricSettings()
+        assert settings.auth.enabled is False
+
+    def test_nested_delimiter_profile_does_not_leak(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """``ONEIRIC_PROFILE=serverless`` must NOT raise ``SettingsError``.
+
+        Without the post-hoc ``strip_auth`` on the env source, pydantic-
+        settings tries to JSON-decode ``"serverless"`` for the complex
+        ``profile`` field and raises. The strip drops ``profile:`` from
+        the env payload; the CLI applies the profile via
+        ``apply_profile_with_fallback`` at the call site.
+        """
+        _clear_oneiric_env(monkeypatch)
+        monkeypatch.setenv("ONEIRIC_PROFILE", "serverless")
+        settings = OneiricSettings()
+        assert settings.profile.name == "default"

@@ -13,8 +13,9 @@ from pydantic import AliasChoices, BaseModel, Field
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
 from ._sources import (
-    BodaiManifestSource,
+    OneiricManifestSource,
     _AliasOverridesEnvSource,
+    _AuthExcludingDotEnvSource,
     _AuthExcludingEnvSource,
     build_yaml_layers,
 )
@@ -443,7 +444,7 @@ class OneiricSettings(BaseSettings):
         1. ``init_settings`` (constructor kwargs)
         2. Env source (``{PREFIX}_{SECTION}__{FIELD}`` nested form)
         3. ``_AliasOverridesEnvSource`` — legacy single-underscore aliases
-        4. ``BodaiManifestSource`` (no-op when no manifest URL configured)
+        4. ``OneiricManifestSource`` (no-op when no manifest URL configured)
         5-9. YAML layers (XDG local, XDG config, project local, project yaml, project yml)
         10. ``dotenv_settings`` (deactivated by the loader — never declared)
         11. ``file_secret_settings``
@@ -464,9 +465,9 @@ class OneiricSettings(BaseSettings):
             _AliasOverridesEnvSource(
                 settings_cls, env_prefix=f"{project_name.upper()}_"
             ),
-            BodaiManifestSource(settings_cls),
+            OneiricManifestSource(settings_cls),
             *build_yaml_layers(settings_cls, project_root_path, project_name),
-            dotenv_settings,
+            _AuthExcludingDotEnvSource(settings_cls),
             file_secret_settings,
         )
 
