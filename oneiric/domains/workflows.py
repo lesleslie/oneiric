@@ -45,6 +45,8 @@ class WorkflowBridge(DomainBridge):
         queue_category: str | None = "queue",
         supervisor: ServiceSupervisor | None = None,
         telemetry: RuntimeTelemetryRecorder | None = None,
+        enable_task_resume: bool | None = None,
+        enable_execution_tracing: bool | None = None,
     ) -> None:
         super().__init__(
             "workflow",
@@ -56,10 +58,27 @@ class WorkflowBridge(DomainBridge):
         )
         self._task_bridge = task_bridge
         self._dag_specs: dict[str, dict[str, Any]] = {}
-        self._checkpoint_store = checkpoint_store
+        # Store 1 (task-completion resume) and Store 2 (execution tracing)
+        # are gated independently. ``None`` defers to the presence of the
+        # corresponding store (the legacy behavior). When the runtime
+        # orchestrator instantiates both stores and passes them in, the
+        # flags below are None and the stores are used as-is.
+        self._task_resume_enabled = (
+            enable_task_resume
+            if enable_task_resume is not None
+            else checkpoint_store is not None
+        )
+        self._execution_tracing_enabled = (
+            enable_execution_tracing
+            if enable_execution_tracing is not None
+            else execution_store is not None
+        )
+        self._checkpoint_store = (
+            checkpoint_store if self._task_resume_enabled else None
+        )
         self._execution_hooks: DAGExecutionHooks | None = (
             build_durable_execution_hooks(execution_store)
-            if execution_store is not None
+            if self._execution_tracing_enabled and execution_store is not None
             else None
         )
         self._queue_bridge = queue_bridge

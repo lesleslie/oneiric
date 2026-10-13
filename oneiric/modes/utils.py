@@ -58,7 +58,11 @@ def apply_mode_to_settings(
 
     # Apply runtime paths
     if not config.supervisor_enabled:
-        # Disable checkpoints if supervisor is disabled
+        # Disable both task-resume (Store 1) and execution-tracing (Store 2)
+        # if supervisor is disabled. The flags are independent at the
+        # orchestrator level, but supervisor-disabled is a holistic signal
+        # that means "don't trust any durable state" — both stores are
+        # turned off together.
         updated.runtime_paths.workflow_checkpoints_enabled = False
 
     # Apply runtime supervisor settings

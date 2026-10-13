@@ -55,6 +55,8 @@ class RuntimeOrchestrator:
         health_path: str | None = None,
         workflow_checkpoint_path: str | None = None,
         enable_workflow_checkpoints: bool | None = None,
+        enable_task_resume: bool | None = None,
+        enable_execution_tracing: bool | None = None,
     ) -> None:
         self.settings = settings
         self.resolver = resolver
@@ -83,19 +85,36 @@ class RuntimeOrchestrator:
             if workflow_checkpoint_path
             else resolve_workflow_checkpoint_path(settings)
         )
+        # Store 1 (task-completion resume) and Store 2 (execution tracing)
+        # are gated independently. The legacy ``enable_workflow_checkpoints``
+        # flag is preserved as a back-compat alias: if neither new flag is
+        # set explicitly, fall back to the legacy ``workflow_checkpoints_enabled``
+        # setting so existing callers don't break.
+        task_resume_explicit = enable_task_resume is not None
+        execution_tracing_explicit = enable_execution_tracing is not None
         checkpoints_enabled = (
             settings.runtime_paths.workflow_checkpoints_enabled
             if enable_workflow_checkpoints is None
             else enable_workflow_checkpoints
         )
+        self._task_resume_enabled = (
+            enable_task_resume
+            if task_resume_explicit
+            else checkpoints_enabled
+        )
+        self._execution_tracing_enabled = (
+            enable_execution_tracing
+            if execution_tracing_explicit
+            else checkpoints_enabled
+        )
         self._checkpoint_store = (
             WorkflowCheckpointStore(resolved_checkpoint_path)
-            if checkpoints_enabled and resolved_checkpoint_path
+            if self._task_resume_enabled and resolved_checkpoint_path
             else None
         )
         self._execution_store = (
             WorkflowExecutionStore(resolved_checkpoint_path)
-            if checkpoints_enabled and resolved_checkpoint_path
+            if self._execution_tracing_enabled and resolved_checkpoint_path
             else None
         )
 

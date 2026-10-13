@@ -1,27 +1,108 @@
 from __future__ import annotations
 
+import json
 import sqlite3
 import threading
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import anyio
 
+from oneiric.core.logging import get_logger
 from oneiric.runtime.dag import DAGExecutionHooks
 from oneiric.runtime.protocols import WorkflowExecutionStoreProtocol
 
+if TYPE_CHECKING:  # pragma: no cover - hints only
+    from oneiric.adapters.protocol import OneiricAdapter
+
+logger = get_logger("runtime.durable")
+
 
 class WorkflowExecutionStore:
-    def __init__(self, path: str | Path) -> None:
+    def __init__(
+        self,
+        path: str | Path,
+        adapter: "OneiricAdapter | None" = None,
+    ) -> None:
         self.path = Path(path)
+        self.adapter = adapter
+        # When an adapter is provided, writes may be routed through it.
+        # The store remains functional without an adapter (dev/CI default)
+        # — the SQLite path is preserved as the durable fallback so reads
+        # (load_run, load_nodes) can always work locally. Adapter routing
+        # is opt-in: if the supplied adapter also implements the
+        # WorkflowExecutionStoreProtocol duck type, the adapter's methods
+        # take precedence for writes; otherwise we keep SQLite-only and
+        # leave the adapter available for direct calls.
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.RLock()
+        self._adapter_is_execution_store = (
+            adapter is not None
+            and hasattr(adapter, "start_run")
+            and hasattr(adapter, "finish_run")
+            and hasattr(adapter, "start_node")
+            and hasattr(adapter, "finish_node")
+        )
+        if self._adapter_is_execution_store:
+            logger.debug(
+                "workflow-execution-store-adapter-routed",
+                adapter=getattr(getattr(adapter, "metadata", None), "provider", None),
+            )
         self._ensure_schema()
 
+    def _route_start_run(
+        self, workflow_key: str, run_id: str, started_at: str
+    ) -> None:
+        if self._adapter_is_execution_store and self.adapter is not None:
+            self.adapter.start_run(workflow_key, run_id, started_at)  # type: ignore[attr-defined]
+
+    def _route_finish_run(
+        self,
+        run_id: str,
+        status: str,
+        ended_at: str,
+        error: str | None,
+    ) -> None:
+        if self._adapter_is_execution_store and self.adapter is not None:
+            self.adapter.finish_run(run_id, status, ended_at, error)  # type: ignore[attr-defined]
+
+    def _route_start_node(
+        self, run_id: str, node_key: str, started_at: str
+    ) -> None:
+        if self._adapter_is_execution_store and self.adapter is not None:
+            self.adapter.start_node(run_id, node_key, started_at)  # type: ignore[attr-defined]
+
+    def _route_finish_node(
+        self,
+        run_id: str,
+        node_key: str,
+        status: str,
+        ended_at: str,
+        attempts: int | None,
+        error: str | None,
+    ) -> None:
+        if self._adapter_is_execution_store and self.adapter is not None:
+            self.adapter.finish_node(  # type: ignore[attr-defined]
+                run_id,
+                node_key,
+                status,
+                ended_at,
+                attempts,
+                error,
+            )
+
+    def _json_payload(self, **fields: Any) -> str:
+        """Serialize a payload to JSON for adapter-backed backends that
+        expect JSON rather than keyword args. Reserved for adapter
+        implementations that don't expose the typed methods."""
+
+        return json.dumps(fields, default=str, sort_keys=True)
+
     def start_run(self, workflow_key: str, run_id: str, started_at: str) -> None:
+        self._route_start_run(workflow_key, run_id, started_at)
         with self._connection() as conn:
             conn.execute(
                 """
@@ -38,6 +119,7 @@ class WorkflowExecutionStore:
     def finish_run(
         self, run_id: str, status: str, ended_at: str, error: str | None = None
     ) -> None:
+        self._route_finish_run(run_id, status, ended_at, error)
         with self._connection() as conn:
             conn.execute(
                 """
@@ -50,6 +132,7 @@ class WorkflowExecutionStore:
             conn.commit()
 
     def start_node(self, run_id: str, node_key: str, started_at: str) -> None:
+        self._route_start_node(run_id, node_key, started_at)
         with self._connection() as conn:
             conn.execute(
                 """
@@ -73,6 +156,7 @@ class WorkflowExecutionStore:
         attempts: int | None = None,
         error: str | None = None,
     ) -> None:
+        self._route_finish_node(run_id, node_key, status, ended_at, attempts, error)
         with self._connection() as conn:
             conn.execute(
                 """
