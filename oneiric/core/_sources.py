@@ -163,9 +163,7 @@ class _AliasOverridesEnvSource(EnvSettingsSource):
     chain.
     """
 
-    def __init__(
-        self, settings_cls: type[BaseSettings], env_prefix: str = ""
-    ) -> None:
+    def __init__(self, settings_cls: type[BaseSettings], env_prefix: str = "") -> None:
         super().__init__(settings_cls, env_prefix=env_prefix)
 
     def __call__(self) -> dict[str, Any]:

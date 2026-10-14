@@ -98,9 +98,7 @@ class RuntimeOrchestrator:
             else enable_workflow_checkpoints
         )
         self._task_resume_enabled = (
-            enable_task_resume
-            if task_resume_explicit
-            else checkpoints_enabled
+            enable_task_resume if task_resume_explicit else checkpoints_enabled
         )
         self._execution_tracing_enabled = (
             enable_execution_tracing

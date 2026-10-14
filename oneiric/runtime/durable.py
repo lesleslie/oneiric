@@ -7,7 +7,7 @@ from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import anyio
 
@@ -25,7 +25,7 @@ class WorkflowExecutionStore:
     def __init__(
         self,
         path: str | Path,
-        adapter: "OneiricAdapter | None" = None,
+        adapter: OneiricAdapter | WorkflowExecutionStoreProtocol | None = None,
     ) -> None:
         self.path = Path(path)
         self.adapter = adapter
@@ -53,11 +53,10 @@ class WorkflowExecutionStore:
             )
         self._ensure_schema()
 
-    def _route_start_run(
-        self, workflow_key: str, run_id: str, started_at: str
-    ) -> None:
+    def _route_start_run(self, workflow_key: str, run_id: str, started_at: str) -> None:
         if self._adapter_is_execution_store and self.adapter is not None:
-            self.adapter.start_run(workflow_key, run_id, started_at)  # type: ignore[attr-defined]
+            store = cast(WorkflowExecutionStoreProtocol, self.adapter)
+            store.start_run(workflow_key, run_id, started_at)
 
     def _route_finish_run(
         self,
@@ -67,13 +66,13 @@ class WorkflowExecutionStore:
         error: str | None,
     ) -> None:
         if self._adapter_is_execution_store and self.adapter is not None:
-            self.adapter.finish_run(run_id, status, ended_at, error)  # type: ignore[attr-defined]
+            store = cast(WorkflowExecutionStoreProtocol, self.adapter)
+            store.finish_run(run_id, status, ended_at, error)
 
-    def _route_start_node(
-        self, run_id: str, node_key: str, started_at: str
-    ) -> None:
+    def _route_start_node(self, run_id: str, node_key: str, started_at: str) -> None:
         if self._adapter_is_execution_store and self.adapter is not None:
-            self.adapter.start_node(run_id, node_key, started_at)  # type: ignore[attr-defined]
+            store = cast(WorkflowExecutionStoreProtocol, self.adapter)
+            store.start_node(run_id, node_key, started_at)
 
     def _route_finish_node(
         self,
@@ -85,7 +84,8 @@ class WorkflowExecutionStore:
         error: str | None,
     ) -> None:
         if self._adapter_is_execution_store and self.adapter is not None:
-            self.adapter.finish_node(  # type: ignore[attr-defined]
+            store = cast(WorkflowExecutionStoreProtocol, self.adapter)
+            store.finish_node(
                 run_id,
                 node_key,
                 status,

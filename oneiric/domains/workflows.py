@@ -73,9 +73,7 @@ class WorkflowBridge(DomainBridge):
             if enable_execution_tracing is not None
             else execution_store is not None
         )
-        self._checkpoint_store = (
-            checkpoint_store if self._task_resume_enabled else None
-        )
+        self._checkpoint_store = checkpoint_store if self._task_resume_enabled else None
         self._execution_hooks: DAGExecutionHooks | None = (
             build_durable_execution_hooks(execution_store)
             if self._execution_tracing_enabled and execution_store is not None
