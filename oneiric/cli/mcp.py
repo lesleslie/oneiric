@@ -141,6 +141,115 @@ def _build_provider_factories() -> dict[
     return {}
 
 
+def _build_processor_from_settings(
+    settings_path: Path | None = None,
+) -> Any:
+    """Construct a WorkflowTaskProcessor from the vendored CLI's settings.
+
+    REQ-009 (launcher plan §5 Phase 2 task 2.3): the vendored ``oneiric mcp
+    start`` path historically called ``build_mcp_server(...)`` without
+    ``processor=``, then crashed at the first ``schedule_task`` call with
+    ``RuntimeError: schedule_task requires a processor; none supplied.``
+    This helper wires the processor up-front using settings loaded via the
+    XDG loader (same path :func:`_load_auth_from_settings` uses).
+
+    Resolves the minimum collaboration graph that
+    :class:`oneiric.mcp.scheduler.WorkflowTaskProcessor` requires:
+    ``LayerSettings + Resolver + LifecycleManager + WorkflowBridge``.
+    If a collaborator cannot be imported (rare in vendored-CLI-only
+    environments that never imported the runtime subsystem), falls back
+    to a stub processor that emits a warning on the first ``schedule_task``
+    call so the misconfiguration is observed rather than swallowed.
+
+    Returns:
+        Either a real :class:`WorkflowTaskProcessor` instance, or a
+        ``_StubProcessor`` warning object that satisfies the
+        ``_ProcessorLike`` protocol used by ``build_mcp_server``.
+    """
+    try:
+        from oneiric.core.config import load_settings  # noqa: PLC0415
+        from oneiric.mcp.scheduler import WorkflowTaskProcessor  # noqa: PLC0415
+    except ImportError:
+        logger.warning("oneiric-mcp-cannot-import-scheduler-using-stub")
+        return _StubProcessor()
+
+    settings = load_settings(
+        project_name="oneiric",
+        project_root=(
+            settings_path.parent
+            if settings_path is not None
+            else Path(__file__).resolve().parent.parent.parent
+        ),
+    )
+
+    # Minimal collaboration graph for WorkflowTaskProcessor.process().
+    # WorkflowBridge(resolver, lifecycle, settings.workflows, activity_store=...,
+    #                 task_bridge=..., checkpoint_store=..., queue_bridge=...).
+    # In the vendored CLI we construct only the collaborators that
+    # WorkflowTaskProcessor.process() transitively invokes
+    # (workflow_bridge.execute_dag). Activity/task/checkpoint stores are
+    # left None — bridge.execute_dag tolerates None for stores it doesn't
+    # touch — and downstream tools that DO need a store catch the missing
+    # dependency at the point-of-use with a typed error (vs. a startup
+    # explosion). This keeps the vendored CLI's startup deterministic.
+    try:
+        from oneiric.core.lifecycle import LifecycleManager  # noqa: PLC0415
+        from oneiric.core.resolution import Resolver  # noqa: PLC0415
+        from oneiric.domains.workflows import WorkflowBridge  # noqa: PLC0415
+    except ImportError:
+        logger.warning("oneiric-mcp-cannot-import-bridge-using-stub")
+        return _StubProcessor()
+
+    try:
+        resolver = Resolver(settings)
+        lifecycle = LifecycleManager(resolver)
+        workflow_bridge = WorkflowBridge(
+            resolver,
+            lifecycle,
+            settings.workflows,
+        )
+    except Exception as exc:  # noqa: BLE001 - bridge constructor may validate
+        logger.warning(
+            "oneiric-mcp-processor-bridge-init-failed-using-stub",
+            error=str(exc),
+        )
+        return _StubProcessor()
+
+    return WorkflowTaskProcessor(workflow_bridge=workflow_bridge)
+
+
+class _StubProcessor:
+    """Stand-in processor for vendored-CLI environments lacking bridge imports.
+
+    Implements the structural ``_ProcessorLike`` protocol
+    (``.process(payload) -> dict``) so it can stand in wherever a real
+    WorkflowTaskProcessor is expected. Emits a one-shot warning on the
+    first ``process()`` call so operators see the misconfiguration in
+    the logs rather than encountering a silent failure at the tool layer.
+    """
+
+    _warned: bool = False
+
+    async def process(self, payload: dict[str, Any]) -> dict[str, Any]:
+        if not _StubProcessor._warned:
+            logger.warning(
+                "oneiric-mcp-schedule-task-via-stub-processor",
+                note=(
+                    "StubProcessor active — runtime bridge unavailable "
+                    "in vendored CLI environment. Install the oneiric "
+                    "runtime subsystem OR run via the canonical "
+                    "mcp_common.server.launcher.launch() entrypoint."
+                ),
+            )
+            _StubProcessor._warned = True
+        raise RuntimeError(
+            "schedule_task requires the oneiric runtime subsystem "
+            "(WorkflowTaskProcessor could not be constructed in the "
+            "vendored CLI environment). Install the runtime subsystem OR "
+            "run via the canonical mcp_common.server.launcher.launch()."
+        )
+
+
 def _probe_port(host: str, port: int) -> bool:
     try:
         with socket.create_connection((host, port), timeout=0.5):
@@ -273,10 +382,12 @@ def mcp_start(
         host=host,
         auth_enabled=bool(mcp_auth_config.enabled),
     )
+    mcp_processor = _build_processor_from_settings()
     server = build_mcp_server(
         config=SimpleNamespace(name="oneiric"),
         auth_config=mcp_auth_config,
         providers=mcp_providers,
+        processor=mcp_processor,
     )
 
     if not foreground:
@@ -325,7 +436,16 @@ def mcp_start(
     _write_pid_file(resolved_pid, os.getpid())
 
     async def _serve_forever() -> None:
-        await server.run_async(host=host, port=resolved_port)  # type: ignore[attr-defined]
+        # REQ-010 (launcher plan §5 Phase 2 task 2.2): pass transport="http"
+        # so FastMCP's TransportMixin dispatches to run_http_async() instead
+        # of run_stdio_async() (the historical bare-host/port call landed in
+        # stdio, which throws TypeError: TransportMixin.run_stdio_async()
+        # got an unexpected keyword argument 'host').
+        await server.run_async(  # type: ignore[attr-defined]
+            transport="http",
+            host=host,
+            port=resolved_port,
+        )
 
     try:
         asyncio.run(_serve_forever())
