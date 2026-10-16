@@ -55,6 +55,8 @@ from starlette.responses import JSONResponse
 
 from oneiric.core.logging import get_logger as _oneiric_get_logger
 
+from .agents_tools import register_agents_tools as _register_agents_tools
+
 if TYPE_CHECKING:  # pragma: no cover - guarded import
     from oneiric.mcp.adapter_registry import OneiricAdapterRegistry
     from oneiric.mcp.store import SubstrateStore
@@ -1122,6 +1124,12 @@ def build_mcp_server(
         service_name=auth_config.service_name,
         auth_enabled=bool(auth_config.enabled),
     )
+    # Phase 3: register the server-published agents tools (oneiric-specialist
+    # plus one per-domain specialist for every domain with >=2 providers).
+    # The catalog is built at module load by agents_tools._build_catalog()
+    # by walking oneiric/adapters/<domain>/; the body_loader synthesizes
+    # a pointed body per domain at request time.
+    _register_agents_tools(mcp)
     _register_health_route(mcp, feeds=resolved_feeds)
     _register_health_tool(
         mcp,
