@@ -68,7 +68,6 @@ Use this table (and the links above) as the navigation loop: roadmap → plan �
 - **[analysis/QUALITY_AUDITS.md](analysis/QUALITY_AUDITS.md)** – Summary of architecture/code/test audits
 - **[LOAD_TESTING.md](LOAD_TESTING.md)** – Load testing harness + CLI usage
 - **[STRATEGIC_ROADMAP.md](STRATEGIC_ROADMAP.md)** – Live execution tracks + status (supersedes the old build progress log)
-- **[archive/implementation/BUILD_PROGRESS.md](archive/implementation/BUILD_PROGRESS.md)** – Historical phase log (reference only)
 
 ### 🤖 AI & Agent Notes
 
@@ -311,7 +310,7 @@ flowchart TD
 1. **[RESOLUTION_LAYER_SPEC.md](RESOLUTION_LAYER_SPEC.md)** - Resolution system internals
 1. **[REMOTE_MANIFEST_SCHEMA.md](REMOTE_MANIFEST_SCHEMA.md)** - Remote manifest format
 1. **[SIGNATURE_VERIFICATION.md](SIGNATURE_VERIFICATION.md)** - Security implementation
-1. **[implementation/](implementation/)** - Active plans (serverless/parity, adapter remediation); completion reports now live in [archive/implementation/](archive/implementation/)
+1. **[implementation/](implementation/)** - Active plans (serverless/parity, adapter remediation)
 1. **[analysis/](analysis/)** - Code quality and audit reports
 
 ### For Migration from ACB
@@ -341,7 +340,6 @@ flowchart TD
 1. **[implementation/ORCHESTRATION_PARITY_PLAN.md](implementation/ORCHESTRATION_PARITY_PLAN.md)** - Orchestration parity roadmap
 1. **[implementation/CUTOVER_VALIDATION_CHECKLIST.md](implementation/CUTOVER_VALIDATION_CHECKLIST.md)** - Migration validation workflow + repo sign-off table
 1. **[UNCOMPLETED_TASKS.md](UNCOMPLETED_TASKS.md)** - Future enhancements + known issues
-1. **[archive/implementation/BUILD_PROGRESS.md](archive/implementation/BUILD_PROGRESS.md)** - Historical phase log
 
 ______________________________________________________________________
 
