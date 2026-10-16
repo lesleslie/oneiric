@@ -28,10 +28,6 @@ class EmbeddingSettings(BaseModel):
         llama_cpp_base_url: llama-server HTTP root (no trailing /v1).
         llama_cpp_model: Embedding model name to request from llama-server.
         llama_cpp_timeout_seconds: Probe + encode timeout.
-        ollama_enabled: Whether to probe Ollama.
-        ollama_base_url: Ollama HTTP root.
-        ollama_model: Embedding model name (e.g. ``nomic-embed-text``).
-        ollama_timeout_seconds: Probe + encode timeout.
         minimax_enabled: Whether to probe MiniMax (api.minimax.chat).
         minimax_api_key: Bearer token (usually ``${MINIMAX_API_KEY}``).
         minimax_group_id: Group ID query param (usually ``${MINIMAX_GROUP_ID}``).
@@ -52,12 +48,6 @@ class EmbeddingSettings(BaseModel):
     llama_cpp_base_url: str = "http://localhost:8080"
     llama_cpp_model: str = "nomic-embed-text"
     llama_cpp_timeout_seconds: int = Field(default=5, ge=1, le=300)
-
-    # Ollama (fallback local)
-    ollama_enabled: bool = True
-    ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "nomic-embed-text"
-    ollama_timeout_seconds: int = Field(default=10, ge=1, le=300)
 
     # MiniMax / ZhipuAI (cloud)
     minimax_enabled: bool = True

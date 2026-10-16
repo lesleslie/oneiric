@@ -1,4 +1,4 @@
-"""Hybrid EmbeddingService with a 5-backend probe chain.
+"""Hybrid EmbeddingService with a 4-backend probe chain.
 
 The Bodai ecosystem needs real semantic embeddings without forcing a
 heavy ONNX/torch dependency on every component. This service probes a
@@ -6,10 +6,9 @@ chain of HTTP and pure-numpy backends at ``initialize()`` time and
 selects the first responder:
 
     1. llama.cpp server     preferred local    http://localhost:8080
-    2. Ollama               fallback local     http://localhost:11434
-    3. MiniMax (ZhipuAI)    cloud              https://api.minimax.chat/v1
-    4. Model2Vec            pure-numpy offline minishlab/potion-base-32M
-    5. Mock                 last resort        deterministic Gaussian
+    2. MiniMax (ZhipuAI)    cloud              https://api.minimax.chat/v1
+    3. Model2Vec            pure-numpy offline minishlab/potion-base-32M
+    4. Mock                 last resort        deterministic Gaussian
 
 Each leg's probe is a fast GET to ``/v1/models`` (or equivalent). The
 selected backend is cached for the lifetime of the service. ``encode``
@@ -63,7 +62,7 @@ class EmbeddingService:
         >>> svc = EmbeddingService()
         >>> await svc.initialize()
         >>> svc.backend_name()
-        'ollama'
+        'llama_cpp'
         >>> svc.is_available()
         True
         >>> v = await svc.encode("hello")
@@ -99,9 +98,9 @@ class EmbeddingService:
     async def initialize(self) -> None:
         """Probe the backend chain and select the first responder.
 
-        Order (matches ``docs/plans/2026-08-22-hybrid-embeddings-design.md``):
+        Order:
 
-            llama_cpp → ollama → minimax → model2vec → mock
+            llama_cpp → minimax → model2vec → mock
 
         ``initialize`` never raises. If every probe fails (or raises),
         the service falls back to the deterministic mock backend and
@@ -109,7 +108,6 @@ class EmbeddingService:
         """
         probe_order = (
             ("llama_cpp", self._probe_llama_cpp),
-            ("ollama", self._probe_ollama),
             ("minimax", self._probe_minimax),
             ("model2vec", self._probe_model2vec),
         )
@@ -169,9 +167,6 @@ class EmbeddingService:
         if self._backend == "llama_cpp":
             results = await self._encode_llama_cpp([text])
             return results[0]
-        if self._backend == "ollama":
-            results = await self._encode_ollama([text])
-            return results[0]
         if self._backend == "minimax":
             results = await self._encode_minimax([text])
             return results[0]
@@ -199,8 +194,6 @@ class EmbeddingService:
 
         if self._backend == "llama_cpp":
             return await self._encode_llama_cpp(list(texts))
-        if self._backend == "ollama":
-            return await self._encode_ollama(list(texts))
         if self._backend == "minimax":
             return await self._encode_minimax(list(texts))
         if self._backend == "model2vec":
@@ -305,30 +298,6 @@ class EmbeddingService:
             return False
         return False
 
-    async def _probe_ollama(self) -> bool:
-        if not self._settings.ollama_enabled:
-            return False
-        url = f"{self._settings.ollama_base_url.rstrip('/')}/api/tags"
-        try:
-            async with httpx.AsyncClient(
-                timeout=self._settings.ollama_timeout_seconds
-            ) as client:
-                resp = await client.get(url)
-                if resp.status_code == 200:
-                    probe_vec = await self._probe_encode_via(
-                        client,
-                        f"{self._settings.ollama_base_url.rstrip('/')}/api/embeddings",
-                        self._settings.ollama_model,
-                        ["probe"],
-                        ollama=True,
-                    )
-                    if probe_vec is not None:
-                        self._backend_dim = int(probe_vec.shape[0])
-                        return True
-        except httpx.HTTPError:
-            return False
-        return False
-
     async def _probe_minimax(self) -> bool:
         if (
             not self._settings.minimax_enabled
@@ -390,7 +359,6 @@ class EmbeddingService:
         url: str,
         model: str,
         texts: list[str],
-        ollama: bool = False,
     ) -> np.ndarray | None:
         """Send a probe encode to determine the backend's vector dimension.
 
@@ -399,28 +367,20 @@ class EmbeddingService:
             url: Full encode endpoint URL.
             model: Model name to request.
             texts: Input list (one probe text is enough).
-            ollama: If True, use Ollama's ``{"prompt": ..., "model": ...}``
-                request shape; else OpenAI ``{"input": ..., "model": ...}``.
 
         Returns:
             The resulting ``np.ndarray`` on success, ``None`` otherwise.
         """
         try:
-            if ollama:
-                payload = {"model": model, "prompt": texts[0]}
-            else:
-                payload = {"model": model, "input": texts}
+            payload = {"model": model, "input": texts}
             resp = await client.post(url, json=payload)
             if resp.status_code != 200:
                 return None
             body = resp.json()
-            if ollama:
-                vec = body.get("embedding")
-                return np.asarray(vec, dtype=np.float32) if vec is not None else None
             data = body.get("data") or []
             if data and "embedding" in data[0]:
                 return np.asarray(data[0]["embedding"], dtype=np.float32)
-        except httpx.HTTPError, ValueError, KeyError:
+        except (httpx.HTTPError, ValueError, KeyError):
             return None
         return None
 
@@ -441,21 +401,6 @@ class EmbeddingService:
             return [
                 np.asarray(item["embedding"], dtype=np.float32) for item in body["data"]
             ]
-
-    async def _encode_ollama(self, texts: list[str]) -> list[np.ndarray]:
-        url = f"{self._settings.ollama_base_url.rstrip('/')}/api/embeddings"
-        results: list[np.ndarray] = []
-        async with httpx.AsyncClient(
-            timeout=self._settings.ollama_timeout_seconds
-        ) as client:
-            for text in texts:
-                resp = await client.post(
-                    url, json={"model": self._settings.ollama_model, "prompt": text}
-                )
-                resp.raise_for_status()
-                body = resp.json()
-                results.append(np.asarray(body["embedding"], dtype=np.float32))
-        return results
 
     async def _encode_minimax(self, texts: list[str]) -> list[np.ndarray]:
         url = f"{self._settings.minimax_base_url.rstrip('/')}/embeddings"

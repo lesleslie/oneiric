@@ -195,14 +195,14 @@ class SubstrateSettings(BaseSettings):
     )
 
     # ---- Embedding ----------------------------------------------------
-    embedding__backend: Literal["openai", "fastembed", "llama_server", "ollama"] = (
+    embedding__backend: Literal["openai", "fastembed", "llama_server"] = (
         Field(
             default="llama_server",
             description=(
                 "Embedding-model backend. ``llama_server`` (default) routes "
                 "through the local llama.cpp-compatible endpoint; "
-                "``ollama`` is the local-server alternative; ``openai`` is "
-                "the cloud-paid tier; ``fastembed`` is the offline CPU tier."
+                "``openai`` is the cloud-paid tier; ``fastembed`` is "
+                "the offline CPU tier."
             ),
         )
     )
@@ -240,8 +240,8 @@ class SubstrateSettings(BaseSettings):
     embedding__endpoint_url: str | None = Field(
         default=None,
         description=(
-            "Override endpoint URL for ``llama_server`` / ``ollama`` "
-            "backends. Defaults to the per-component local value."
+            "Override endpoint URL for the ``llama_server`` "
+            "backend. Defaults to the per-component local value."
         ),
     )
 

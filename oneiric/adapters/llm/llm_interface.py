@@ -18,7 +18,6 @@ class LLMProvider(StrEnum):
     AZURE_OPENAI = "azure_openai"
     GOOGLE_VERTEX = "google_vertex"
     AWS_BEDROCK = "aws_bedrock"
-    OLLAMA = "ollama"
     LOCAL = "local"
     ZAI = "zai"
 

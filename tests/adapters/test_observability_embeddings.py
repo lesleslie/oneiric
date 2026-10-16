@@ -265,71 +265,6 @@ async def test_probe_llama_cpp_transport_error(monkeypatch) -> None:
 
 
 # ---------------------------------------------------------------------------
-# _probe_ollama
-# ---------------------------------------------------------------------------
-
-
-async def test_probe_ollama_disabled_returns_false() -> None:
-    svc = EmbeddingService(settings=EmbeddingSettings(ollama_enabled=False))
-    assert await svc._probe_ollama() is False
-
-
-async def test_probe_ollama_success_uses_prompt_payload(monkeypatch) -> None:
-    """GET /api/tags + probe-encode with ollama=True (prompt key) succeeds."""
-
-    captured: list[httpx.Request] = []
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        captured.append(request)
-        if request.url.path.endswith("/api/tags"):
-            return httpx.Response(200, content=b'{"models": []}')
-        # Probe-encode for Ollama (ollama=True) — body must use 'prompt' not 'input'
-        if request.url.path.endswith("/api/embeddings"):
-            import json as _json
-
-            body = _json.loads(request.content)
-            assert body == {"model": "nomic-embed-text", "prompt": "probe"}
-            return httpx.Response(200, content=b'{"embedding": [0.1, 0.2, 0.3, 0.4]}')
-        return httpx.Response(404)
-
-    _install_mock_client(monkeypatch, handler)
-    svc = EmbeddingService()
-    assert await svc._probe_ollama() is True
-    assert svc._backend_dim == 4
-
-
-async def test_probe_ollama_get_returns_non_200(monkeypatch) -> None:
-    def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(404)
-
-    _install_mock_client(monkeypatch, handler)
-    svc = EmbeddingService()
-    assert await svc._probe_ollama() is False
-
-
-async def test_probe_ollama_probe_encode_missing_embedding_key(monkeypatch) -> None:
-    """Probe-encode returns 200 but no 'embedding' key → probe fails."""
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.path.endswith("/api/tags"):
-            return httpx.Response(200, content=b"{}")
-        return httpx.Response(200, content=b'{"other": "value"}')
-
-    _install_mock_client(monkeypatch, handler)
-    svc = EmbeddingService()
-    assert await svc._probe_ollama() is False
-
-
-async def test_probe_ollama_transport_error(monkeypatch) -> None:
-    def handler(request: httpx.Request) -> httpx.Response:
-        raise httpx.ConnectError("connection refused")
-
-    _install_mock_client(monkeypatch, handler)
-    svc = EmbeddingService()
-    assert await svc._probe_ollama() is False
-
-
-# ---------------------------------------------------------------------------
 # _probe_minimax
 # ---------------------------------------------------------------------------
 
@@ -526,27 +461,11 @@ async def test_probe_encode_via_openai_shape_returns_ndarray(monkeypatch) -> Non
     svc = EmbeddingService()
     client = factory(timeout=5)
     result = await svc._probe_encode_via(
-        client, "https://example.com/embed", "model", ["probe"], ollama=False
+        client, "https://example.com/embed", "model", ["probe"]
     )
     assert isinstance(result, np.ndarray)
     assert result.dtype == np.float32
     assert result.shape == (3,)
-
-
-async def test_probe_encode_via_ollama_shape_returns_ndarray(monkeypatch) -> None:
-    """For ollama=True, body is parsed as {'embedding': [...]} (not 'data')."""
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, content=b'{"embedding": [0.1, 0.2]}')
-
-    factory = _make_async_client_factory(handler)
-    svc = EmbeddingService()
-    client = factory(timeout=5)
-    result = await svc._probe_encode_via(
-        client, "https://example.com/embed", "model", ["probe"], ollama=True
-    )
-    assert isinstance(result, np.ndarray)
-    assert result.shape == (2,)
 
 
 async def test_probe_encode_via_invalid_json_returns_none(monkeypatch) -> None:
@@ -574,13 +493,13 @@ async def test_probe_encode_via_missing_embedding_key_returns_none(monkeypatch) 
     svc = EmbeddingService()
     client = factory(timeout=5)
     result = await svc._probe_encode_via(
-        client, "https://example.com/embed", "model", ["probe"], ollama=False
+        client, "https://example.com/embed", "model", ["probe"]
     )
     assert result is None
 
 
 # ---------------------------------------------------------------------------
-# _encode_llama_cpp / _encode_ollama / _encode_minimax / _encode_model2vec
+# _encode_llama_cpp / _encode_minimax / _encode_model2vec
 # ---------------------------------------------------------------------------
 
 
@@ -606,27 +525,6 @@ async def test_encode_llama_cpp_returns_parsed_embeddings(monkeypatch) -> None:
     assert results[0].shape == (2,)
     assert results[1].shape == (2,)
     assert len(captured) == 1
-
-
-async def test_encode_ollama_one_request_per_text(monkeypatch) -> None:
-    """Ollama encodes one text per POST (unlike OpenAI-compatible batch)."""
-    captured: list[httpx.Request] = []
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        captured.append(request)
-        import json as _json
-
-        body = _json.loads(request.content)
-        assert "prompt" in body
-        return httpx.Response(200, content=b'{"embedding": [0.1, 0.2, 0.3]}')
-
-    _install_mock_client(monkeypatch, handler)
-    svc = EmbeddingService()
-    results = await svc._encode_ollama(["a", "b", "c"])
-    assert len(results) == 3
-    # 3 separate POSTs (Ollama doesn't batch)
-    assert len(captured) == 3
-    assert all(r.shape == (3,) for r in results)
 
 
 async def test_encode_minimax_sends_auth_and_group(monkeypatch) -> None:
@@ -720,7 +618,7 @@ async def test_encode_model2vec_lazy_loads_when_not_cached(monkeypatch) -> None:
 async def test_initialize_falls_back_to_mock_when_all_probes_fail(
     monkeypatch,
 ) -> None:
-    """All four probes fail → backend='mock', is_available()=False."""
+    """All probes fail → backend='mock', is_available()=False."""
 
     def handler(request: httpx.Request) -> httpx.Response:
         raise httpx.ConnectError("nothing reachable")
@@ -729,7 +627,6 @@ async def test_initialize_falls_back_to_mock_when_all_probes_fail(
     svc = EmbeddingService(
         settings=EmbeddingSettings(
             llama_cpp_enabled=True,
-            ollama_enabled=True,
             minimax_enabled=False,  # skip so we don't need api_key/group_id
             model2vec_enabled=False,
         )
@@ -742,18 +639,13 @@ async def test_initialize_falls_back_to_mock_when_all_probes_fail(
 async def test_initialize_selects_llama_cpp_when_first_probe_succeeds(
     monkeypatch,
 ) -> None:
-    """When llama_cpp responds, it's selected and ollama is never tried."""
-
-    ollama_called = False
+    """When llama_cpp responds, it's the selected backend."""
 
     def handler(request: httpx.Request) -> httpx.Response:
-        nonlocal ollama_called
         if request.url.path.endswith("/v1/models"):
             return httpx.Response(200, content=b'{"data": []}')
         if request.url.path.endswith("/v1/embeddings"):
             return httpx.Response(200, content=b'{"data": [{"embedding": [0.1, 0.2]}]}')
-        if "ollama" in request.url.host or "/api/" in request.url.path:
-            ollama_called = True
         return httpx.Response(404)
 
     _install_mock_client(monkeypatch, handler)
@@ -767,30 +659,7 @@ async def test_initialize_selects_llama_cpp_when_first_probe_succeeds(
     assert svc.backend_name() == "llama_cpp"
     assert svc.is_available() is True
     assert svc.dimension() == 2
-    assert ollama_called is False
 
-
-async def test_initialize_skips_to_ollama_when_llama_cpp_fails(monkeypatch) -> None:
-    """Chain order: llama_cpp fails → ollama probed next."""
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        # llama.cpp GET fails
-        if request.url.path.endswith("/v1/models"):
-            return httpx.Response(503)
-        # Ollama succeeds
-        if request.url.path.endswith("/api/tags"):
-            return httpx.Response(200, content=b"{}")
-        if request.url.path.endswith("/api/embeddings"):
-            return httpx.Response(200, content=b'{"embedding": [0.5, 0.5]}')
-        return httpx.Response(404)
-
-    _install_mock_client(monkeypatch, handler)
-    svc = EmbeddingService(
-        settings=EmbeddingSettings(minimax_enabled=False, model2vec_enabled=False)
-    )
-    await svc.initialize()
-    assert svc.backend_name() == "ollama"
-    assert svc.dimension() == 2
 
 
 async def test_initialize_exception_in_probe_does_not_break_chain(monkeypatch) -> None:
