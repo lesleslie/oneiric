@@ -313,30 +313,20 @@ def _sign(metadata: AgentCanonicalSchema) -> AgentCanonicalSchema:
     """Apply an ed25519 signature using oneiric's signing surface.
 
     The factory hands the unsigned metadata to this callable and
-    receives the signed copy. Acquires the signer (oneiric-specific
-    lifespan wiring), canonicalizes via oneiric's local
+    receives the signed copy. Acquires the signer via
+    :func:`oneiric.mcp.signer_feed.get_signer_feed_state`
+    (lifespan-owned singleton initialized in
+    ``build_mcp_server``), canonicalizes via oneiric's local
     :func:`canonical_payload_for_signing` (which strips the
     ``signature`` + ``server_pubkey_id`` fields before signing so
     the signature doesn't cover itself), and attaches the result.
 
-    Raises if the signer isn't available. The factory converts
+    Raises if the signer feed state isn't initialized (server still
+    starting up, or pre-Phase-1.5 lite mode). The factory converts
     the exception into the standard error envelope.
-
-    Oneiric does not yet have a full signing surface (no
-    ``oneiric.mcp.signer_feed`` module, no
-    ``oneiric.skills_signer`` package). When the surface is
-    added, this callable will use it; until then, the raised
-    ImportError becomes a clear "signing failed" error envelope
-    on the get_agent response. The picker (list_agents) is
-    unaffected — it returns UNSIGNED metadata per Phase 3 spec.
     """
-    try:
-        from oneiric.skills_signer import canonical_payload_for_signing
-        from oneiric.mcp.signer_feed import get_signer_feed_state
-    except ImportError as exc:
-        raise RuntimeError(
-            f"signing surface not yet wired for oneiric: {exc}"
-        ) from exc
+    from oneiric.mcp.signer_feed import get_signer_feed_state
+    from oneiric.skills_signer import canonical_payload_for_signing
 
     state = get_signer_feed_state()
     if state is None:
@@ -361,19 +351,12 @@ def _on_call() -> None:
     """B-7: bump cycles_total on every tool call.
 
     The factory invokes this at the start of every list_agents and
-    get_agent call. No-op if the signer feed state isn't
-    initialized yet.
-
-    Oneiric does not yet have a full signing surface (no
-    ``oneiric.mcp.signer_feed`` module exists). When the surface
-    is added, this callable will use it; until then, this is a
-    best-effort no-op that swallows the ImportError so the B-7
-    contract doesn't break the picker call.
+    get_agent call so the four mandatory feed signals stay
+    accurate. No-op if the signer feed state isn't initialized
+    yet (matches the pre-refactor behavior).
     """
-    try:
-        from oneiric.mcp.signer_feed import get_signer_feed_state
-    except ImportError:
-        return
+    from oneiric.mcp.signer_feed import get_signer_feed_state
+
     state = get_signer_feed_state()
     if state is not None:
         state.record_cycle()
@@ -402,4 +385,4 @@ def register_agents_tools(app: FastMCP) -> None:
     )(app)
 
 
-__all__ = ["register_agents_tools", "AgentCanonicalSchema", "CATALOG"]
+__all__ = ["register_agents_tools", "AgentCanonicalSchema"]

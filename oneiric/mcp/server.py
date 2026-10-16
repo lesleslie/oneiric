@@ -56,6 +56,11 @@ from starlette.responses import JSONResponse
 from oneiric.core.logging import get_logger as _oneiric_get_logger
 
 from .agents_tools import register_agents_tools as _register_agents_tools
+from .signer_feed import (
+    SignerFeedState as _SignerFeedState,
+    get_signer_feed_state as _get_signer_feed_state,
+    init_signer_feed_state as _init_signer_feed_state,
+)
 
 if TYPE_CHECKING:  # pragma: no cover - guarded import
     from oneiric.mcp.adapter_registry import OneiricAdapterRegistry
@@ -181,11 +186,38 @@ def _aggregate_health_status(
     Side effect: emits per-feed metrics to :data:`_health_metrics_registry`
     so a /metrics endpoint can scrape the ``health_feed_status{repo=oneiric,
     feed, status}`` gauge (Phase 1.4 observability contract).
+
+    Phase 1.5 wiring: also projects the lifespan-owned
+    :class:`SignerFeedState` (from :mod:`oneiric.mcp.signer_feed`) into
+    a :class:`HealthFeedState` and merges it into the aggregator input.
+    The projection reads the live singleton so the aggregator's
+    ``cycles_total`` and ``last_updated_timestamp`` always reflect the
+    current signing surface state (per memory rule
+    ``feedback-bodai-publisher-install-needs-cycle-credit``, the init
+    bumps ``cycles_total = 1`` so this feed reports HEALTHY on first
+    probe — without that, ``cycles_total == 0`` is FAILED).
     """
     from time import perf_counter
 
     halflife = _resolve_health_halflife()
     start = perf_counter()
+    # Phase 1.5: project the lifespan-owned SignerFeedState into the
+    # aggregator's input. Read at probe time so cycles_total /
+    # last_updated_timestamp always reflect the live state.
+    signer_state = _get_signer_state_for_health()
+    if signer_state is not None:
+        manifest_dict = signer_state.manifest.as_dict()
+        states = {
+            **states,
+            "skills_signer": HealthFeedState(
+                entities_count=manifest_dict["key_count"],
+                last_updated_timestamp=signer_state.last_updated_timestamp,
+                cycles_total=signer_state.cycles_total,
+                errors_total=signer_state.errors_total,
+                last_error_at=None,
+                ingester_running=True,
+            ),
+        }
     snapshot = aggregate_feed_states(states, halflife_seconds=halflife)
     duration_ms = (perf_counter() - start) * 1000.0
     status = snapshot["status"]
@@ -237,6 +269,10 @@ def _resolve_feeds(
             # REQ-RCR-011: runtime_registry feed participates in /health
             # aggregator (R3 wiring-discipline fix). Without this entry
             # the new feed exists but doesn't surface in the aggregate.
+            # The skills_signer feed is NOT in this dict — its
+            # SignerFeedState is projected to a HealthFeedState at /health
+            # probe time (see _aggregate_health_status) so the projection
+            # always reads fresh state instead of a captured snapshot.
             for name in ("settings", "context", "progress", "runtime_registry")
         }
     return feeds
@@ -251,6 +287,16 @@ def _resolve_adapter_registry(
 
         return _Reg()
     return registry
+
+
+def _get_signer_state_for_health() -> _SignerFeedState | None:
+    """Return the lifespan-owned :class:`SignerFeedState`, if any.
+
+    Used by the /health probe to project the signing feed into the
+    mcp-common aggregator. Returns ``None`` pre-init so the aggregator
+    simply omits the feed (HEALTHY on the remaining feeds is unaffected).
+    """
+    return _get_signer_feed_state()
 
 
 def _register_substrate_tools(
@@ -1105,6 +1151,18 @@ def build_mcp_server(
     resolved_feeds = _resolve_feeds(health_feeds)
     resolved_processor = _resolve_processor(processor)
     resolved_adapter_registry = _resolve_adapter_registry(adapter_registry)
+
+    # Phase 1.5 wiring: install the lifespan-owned skills_signer feed
+    # BEFORE registering the agents tools. The agents_tools factory's
+    # ``sign`` callback reads the singleton via
+    # ``oneiric.mcp.signer_feed.get_signer_feed_state()``; a None
+    # state surfaces as a "signing failed" error envelope on get_agent.
+    # The init bumps cycles_total = 1 (per
+    # feedback-bodai-publisher-install-needs-cycle-credit) so the feed
+    # is HEALTHY on first /health probe — without that, a fresh server
+    # returns 503 from the mcp-common aggregator (cycles_total == 0
+    # is FAILED).
+    _init_signer_feed_state()
     _register_substrate_tools(
         mcp,
         store=resolved_store,
