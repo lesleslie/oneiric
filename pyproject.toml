@@ -54,6 +54,11 @@ prerelease = "allow"
 
 [tool.hatch.build.targets.wheel]
 packages = ["oneiric"]
+# Package the controlled schemas alongside the Python modules so
+# downstream tools (crackerjack, et al.) can discover them via
+# importlib.resources without per-repo file copies. See
+# `oneiric.schemas.topic_vocabulary_v1` for the canonical entry point.
+artifacts = ["oneiric/schemas/*.md"]
 
 
 [tool.pytest.ini_options]
