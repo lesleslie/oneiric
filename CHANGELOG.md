@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.4] - 2026-10-16
+
+### Fixed
+
+- docs: Remove dangling archive/implementation/BUILD_PROGRESS.md links
+- oneiric: Wire WorkflowTaskProcessor + transport='http' in vendored CLI
+
+### Internal
+
+- oneiric: Untrack docs/archive/, keep historical on disk in docs/.archive/
+
 ## [0.29.3] - 2026-10-14
 
 ### Internal

@@ -167,8 +167,8 @@ def _build_processor_from_settings(
         ``_ProcessorLike`` protocol used by ``build_mcp_server``.
     """
     try:
-        from oneiric.core.config import load_settings  # noqa: PLC0415
-        from oneiric.mcp.scheduler import WorkflowTaskProcessor  # noqa: PLC0415
+        from oneiric.core.config import load_settings
+        from oneiric.mcp.scheduler import WorkflowTaskProcessor
     except ImportError:
         logger.warning("oneiric-mcp-cannot-import-scheduler-using-stub")
         return _StubProcessor()
@@ -193,15 +193,16 @@ def _build_processor_from_settings(
     # dependency at the point-of-use with a typed error (vs. a startup
     # explosion). This keeps the vendored CLI's startup deterministic.
     try:
-        from oneiric.core.lifecycle import LifecycleManager  # noqa: PLC0415
-        from oneiric.core.resolution import Resolver  # noqa: PLC0415
-        from oneiric.domains.workflows import WorkflowBridge  # noqa: PLC0415
+        from oneiric.core.config import resolver_settings_from_config
+        from oneiric.core.lifecycle import LifecycleManager
+        from oneiric.core.resolution import Resolver
+        from oneiric.domains.workflows import WorkflowBridge
     except ImportError:
         logger.warning("oneiric-mcp-cannot-import-bridge-using-stub")
         return _StubProcessor()
 
     try:
-        resolver = Resolver(settings)
+        resolver = Resolver(settings=resolver_settings_from_config(settings))
         lifecycle = LifecycleManager(resolver)
         workflow_bridge = WorkflowBridge(
             resolver,
