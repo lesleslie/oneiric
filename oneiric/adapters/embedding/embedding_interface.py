@@ -41,9 +41,15 @@ class PoolingStrategy(StrEnum):
 
 
 class VectorNormalization(StrEnum):
+    """Vector normalization methods.
+
+    The public embedding API always enforces L2 normalization (unit-length
+    output vectors) — subclasses do not need to apply normalization
+    themselves. The enum remains for utilities and any caller that wants
+    to re-normalize a hand-built vector.
+    """
+
     L2 = "l2"
-    L1 = "l1"
-    NONE = "none"
 
 
 class EmbeddingResult(BaseModel):
@@ -78,12 +84,10 @@ class EmbeddingBaseSettings(BaseSettings):
     timeout: float = Field(default=30.0)
     batch_size: int = Field(default=32)
     max_tokens_per_batch: int = Field(default=8192)
-    normalize_embeddings: bool = Field(default=True)
 
     chunk_size: int = Field(default=512)
     chunk_overlap: int = Field(default=50)
     pooling_strategy: PoolingStrategy = Field(default=PoolingStrategy.MEAN)
-    normalization: VectorNormalization = Field(default=VectorNormalization.L2)
 
 
 class EmbeddingBase(ABC):
@@ -114,34 +118,34 @@ class EmbeddingBase(ABC):
         self,
         text: str,
         model: str | EmbeddingModel | None = None,
-        normalize: bool | None = None,
         **kwargs: Any,
     ) -> list[float]:
-        result = await self.embed_texts(
-            [text],
-            model=model,
-            normalize=normalize,
-            **kwargs,
-        )
+        """Embed a single text. Output is always L2-normalized (unit-length)."""
+        result = await self.embed_texts([text], model=model, **kwargs)
         return result.results[0].embedding
 
     async def embed_texts(
         self,
         texts: list[str],
         model: str | EmbeddingModel | None = None,
-        normalize: bool | None = None,
         batch_size: int | None = None,
         **kwargs: Any,
     ) -> EmbeddingBatch:
-        return await self._embed_texts(
+        """Embed a batch of texts.
+
+        Output vectors are always L2-normalized to unit length. Subclasses
+        are free to skip their own normalization step — the base enforces
+        it post-`_embed_texts` so callers never have to think about it.
+        """
+        batch = await self._embed_texts(
             texts,
             model=model or self._settings.model,
-            normalize=normalize
-            if normalize is not None
-            else self._settings.normalize_embeddings,
             batch_size=batch_size or self._settings.batch_size,
             **kwargs,
         )
+        for result in batch.results:
+            result.embedding = self._normalize_vector(result.embedding)
+        return batch
 
     async def embed_documents(
         self,
@@ -151,13 +155,18 @@ class EmbeddingBase(ABC):
         model: str | EmbeddingModel | None = None,
         **kwargs: Any,
     ) -> list[EmbeddingBatch]:
-        return await self._embed_documents(
+        """Embed documents. Output vectors are always L2-normalized (unit-length)."""
+        batches = await self._embed_documents(
             documents,
             chunk_size=chunk_size or self._settings.chunk_size,
             chunk_overlap=chunk_overlap or self._settings.chunk_overlap,
             model=model or self._settings.model,
             **kwargs,
         )
+        for batch in batches:
+            for result in batch.results:
+                result.embedding = self._normalize_vector(result.embedding)
+        return batches
 
     async def compute_similarity(
         self,
@@ -184,7 +193,6 @@ class EmbeddingBase(ABC):
         self,
         texts: list[str],
         model: str,
-        normalize: bool,
         batch_size: int,
         **kwargs: Any,
     ) -> EmbeddingBatch: ...
@@ -216,28 +224,17 @@ class EmbeddingBase(ABC):
     def _normalize_vector(
         self,
         vector: list[float],
-        method: VectorNormalization = VectorNormalization.L2,
     ) -> list[float]:
-        if method == VectorNormalization.NONE:
-            return vector
+        """Return an L2-normalized copy of ``vector`` (unit-length).
 
+        The zero vector is returned unchanged to avoid division by zero.
+        """
         np_module = _require_numpy()
         np_vector = np_module.array(vector, dtype=float)
-
-        if method == VectorNormalization.L2:
-            norm = np_module.linalg.norm(np_vector)
-            if norm == 0:
-                return vector
-            normalized: list[float] = (np_vector / norm).tolist()
-            return normalized
-        if method == VectorNormalization.L1:
-            norm = np_module.sum(np_module.abs(np_vector))
-            if norm == 0:
-                return vector
-            normalized_l1: list[float] = (np_vector / norm).tolist()
-            return normalized_l1
-
-        return vector
+        norm = float(np_module.linalg.norm(np_vector))
+        if norm == 0.0:
+            return vector
+        return (np_vector / norm).tolist()
 
     def _chunk_text(self, text: str, chunk_size: int, overlap: int = 0) -> list[str]:
         if len(text) <= chunk_size:

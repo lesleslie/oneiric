@@ -137,7 +137,6 @@ class OpenAIEmbeddingAdapter(EmbeddingBase):
         self,
         texts: list[str],
         model: str,
-        normalize: bool,
         batch_size: int,
         **kwargs: Any,
     ) -> EmbeddingBatch:
@@ -157,7 +156,6 @@ class OpenAIEmbeddingAdapter(EmbeddingBase):
                     client,
                     batch_texts,
                     model,
-                    normalize,
                 )
 
                 results.extend(batch_results)
@@ -188,7 +186,6 @@ class OpenAIEmbeddingAdapter(EmbeddingBase):
         client: Any,
         batch_texts: list[str],
         model: str,
-        normalize: bool,
     ) -> tuple[list[EmbeddingResult], int]:
         request_params = self._prepare_request_params(batch_texts, model)
         response = await client.embeddings.create(**request_params)
@@ -196,7 +193,6 @@ class OpenAIEmbeddingAdapter(EmbeddingBase):
         results = self._extract_embedding_results(
             response,
             batch_texts,
-            normalize,
         )
 
         tokens = (
@@ -227,18 +223,11 @@ class OpenAIEmbeddingAdapter(EmbeddingBase):
         self,
         response: Any,
         batch_texts: list[str],
-        normalize: bool,
     ) -> list[EmbeddingResult]:
         results = []
 
         for i, embedding_data in enumerate(response.data):
             embedding = embedding_data.embedding
-
-            if normalize:
-                embedding = self._normalize_vector(
-                    embedding,
-                    self._settings.normalization,
-                )
 
             result = EmbeddingResult(
                 text=batch_texts[i],
@@ -271,7 +260,6 @@ class OpenAIEmbeddingAdapter(EmbeddingBase):
             batch = await self._embed_texts(
                 chunks,
                 model=model,
-                normalize=self._settings.normalize_embeddings,
                 batch_size=self._settings.batch_size,
                 **kwargs,
             )

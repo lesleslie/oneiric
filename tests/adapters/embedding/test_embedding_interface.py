@@ -16,7 +16,6 @@ from oneiric.adapters.embedding.embedding_interface import (
     EmbeddingBatch,
     EmbeddingResult,
     EmbeddingUtils,
-    VectorNormalization,
 )
 
 # ---------------------------------------------------------------------------
@@ -45,7 +44,6 @@ class _DummyAdapter(EmbeddingBase):
         self,
         texts: list[str],
         model: str,
-        normalize: bool,
         batch_size: int,
         **kwargs: Any,
     ) -> EmbeddingBatch:
@@ -67,7 +65,7 @@ class _DummyAdapter(EmbeddingBase):
         for doc in documents:
             chunks = self._chunk_text(doc, chunk_size, chunk_overlap)
             batch = await self._embed_texts(
-                chunks, model=model, normalize=False, batch_size=32
+                chunks, model=model, batch_size=32
             )
             batches.append(batch)
         return batches
@@ -111,13 +109,6 @@ def test_client_property() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_normalize_vector_none_method() -> None:
-    adapter = _make()
-    vec = [1.0, 2.0, 3.0]
-    result = adapter._normalize_vector(vec, VectorNormalization.NONE)
-    assert result is vec
-
-
 def test_normalize_vector_l2() -> None:
     adapter = _make()
     result = adapter._normalize_vector([3.0, 4.0])
@@ -132,26 +123,14 @@ def test_normalize_vector_l2_zero_norm() -> None:
     assert result is vec
 
 
-def test_normalize_vector_l1() -> None:
+def test_normalize_vector_returns_new_list() -> None:
+    """L2 normalization always allocates a fresh list — caller mutation
+    of the result must not poison the input vector."""
     adapter = _make()
-    result = adapter._normalize_vector([1.0, 3.0], VectorNormalization.L1)
-    assert abs(result[0] - 0.25) < 1e-6
-    assert abs(result[1] - 0.75) < 1e-6
-
-
-def test_normalize_vector_l1_zero_norm() -> None:
-    adapter = _make()
-    vec = [0.0, 0.0]
-    result = adapter._normalize_vector(vec, VectorNormalization.L1)
-    assert result is vec
-
-
-def test_normalize_vector_unknown_method_returns_vector() -> None:
-    """Fallback return on line 241 — reached when method is not NONE/L2/L1."""
-    adapter = _make()
-    vec = [1.0, 2.0]
-    result = adapter._normalize_vector(vec, "custom")  # type: ignore[arg-type]
-    assert result is vec
+    source = [3.0, 4.0]
+    result = adapter._normalize_vector(source)
+    assert source == [3.0, 4.0]  # input unchanged
+    assert result == [0.6, 0.8]
 
 
 # ---------------------------------------------------------------------------
@@ -212,9 +191,16 @@ def test_batch_texts_larger_than_list() -> None:
 
 @pytest.mark.asyncio
 async def test_embed_text() -> None:
+    """The dummy's [0.5, 0.5] is NOT unit-length (norm = sqrt(0.5)).
+    The base layer must re-normalize to length 1.0."""
     adapter = _make()
     result = await adapter.embed_text("hello")
-    assert result == [0.5, 0.5]
+    norm = (result[0] ** 2 + result[1] ** 2) ** 0.5
+    assert abs(norm - 1.0) < 1e-6
+    # Component-wise: 0.5 / sqrt(0.5) = sqrt(0.5)
+    expected = 0.5 / (0.5) ** 0.5
+    assert abs(result[0] - expected) < 1e-6
+    assert abs(result[1] - expected) < 1e-6
 
 
 @pytest.mark.asyncio
@@ -228,9 +214,7 @@ async def test_embed_texts_uses_settings_defaults() -> None:
 @pytest.mark.asyncio
 async def test_embed_texts_explicit_params() -> None:
     adapter = _make()
-    batch = await adapter.embed_texts(
-        ["x"], model="custom-model", normalize=True, batch_size=8
-    )
+    batch = await adapter.embed_texts(["x"], model="custom-model", batch_size=8)
     assert batch.model == "custom-model"
 
 

@@ -52,16 +52,14 @@ async def test_openai_prepare_and_extract(monkeypatch: pytest.MonkeyPatch) -> No
     assert params["dimensions"] == 256
 
     response = FakeResponse([FakeEmbeddingData([0.1, 0.2], 0)], "model", tokens=3)
-    normalize_calls: list[list[float]] = []
 
-    def _normalize(vector: list[float], _method) -> list[float]:
-        normalize_calls.append(vector)
-        return [0.0, 0.0]
-
-    monkeypatch.setattr(adapter, "_normalize_vector", _normalize)
-    results = adapter._extract_embedding_results(response, ["hello"], normalize=True)
-    assert results[0].embedding == [0.0, 0.0]
-    assert normalize_calls == [[0.1, 0.2]]
+    # Base class now owns L2 normalization — _extract_embedding_results
+    # must hand back the raw provider vector unchanged.
+    results = adapter._extract_embedding_results(response, ["hello"])
+    assert results[0].embedding == [0.1, 0.2]
+    assert results[0].text == "hello"
+    assert results[0].model == "model"
+    assert results[0].dimensions == 2
 
 
 @pytest.mark.asyncio
@@ -84,7 +82,6 @@ async def test_openai_embed_texts_batches(monkeypatch: pytest.MonkeyPatch) -> No
     batch = await adapter._embed_texts(
         ["a", "b", "c"],
         model="model",
-        normalize=False,
         batch_size=2,
     )
 
@@ -296,7 +293,7 @@ async def test_openai_embed_texts_exception(monkeypatch: pytest.MonkeyPatch) -> 
 
     with pytest.raises(LifecycleError, match="openai-embedding-failed"):
         await adapter._embed_texts(
-            ["text"], model="model", normalize=False, batch_size=10
+            ["text"], model="model", batch_size=10
         )
 
 
@@ -316,7 +313,7 @@ async def test_openai_embed_documents(monkeypatch: pytest.MonkeyPatch) -> None:
     adapter = OpenAIEmbeddingAdapter(settings)
 
     async def fake_embed_texts(
-        texts: list[str], model: str, normalize: bool, batch_size: int, **kwargs: object
+        texts: list[str], model: str, batch_size: int, **kwargs: object
     ) -> EmbeddingBatch:
         results = [
             EmbeddingResult(text=t, embedding=[0.1], model=model, dimensions=1)
