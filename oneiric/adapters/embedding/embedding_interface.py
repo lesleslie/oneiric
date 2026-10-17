@@ -159,7 +159,9 @@ class EmbeddingBase(ABC):
         batches = await self._embed_documents(
             documents,
             chunk_size=chunk_size or self._settings.chunk_size,
-            chunk_overlap=chunk_overlap or self._settings.chunk_overlap,
+            chunk_overlap=(
+                chunk_overlap if chunk_overlap is not None else self._settings.chunk_overlap
+            ),
             model=model or self._settings.model,
             **kwargs,
         )

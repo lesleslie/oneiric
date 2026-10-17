@@ -236,6 +236,35 @@ async def test_embed_documents_with_params() -> None:
 
 
 @pytest.mark.asyncio
+async def test_embed_documents_chunk_overlap_zero_is_honored() -> None:
+    """Regression: chunk_overlap=0 must NOT fall through to the settings default.
+
+    Pre-fix the call used `chunk_overlap or self._settings.chunk_overlap`,
+    which treats 0 as falsy and silently substituted the default (50) — that
+    then made `_chunk_text` loop indefinitely (start went negative, producing
+    empty chunks forever). This test pins the explicit `is None` fallback
+    that preserves a caller-supplied 0.
+
+    Chunks are character-based. With chunk_size=5 on a 19-char string and
+    chunk_overlap=0, the expected output is 4 disjoint chunks of lengths
+    [5, 5, 5, 4]. The pre-fix bug would have produced an unbounded number
+    of empty chunks (infinite loop) — pytest's 30s per-test timeout would
+    catch it as a hang.
+    """
+    adapter = _make()
+    batches = await adapter.embed_documents(
+        ["a b c d e f g h i j"], chunk_size=5, chunk_overlap=0
+    )
+    assert len(batches) == 1
+    results = batches[0].results
+    # Correct behavior: 4 disjoint chunks of 5,5,5,4 chars.
+    assert len(results) == 4
+    assert [len(r.text) for r in results] == [5, 5, 5, 4]
+    # No chunk should be empty (the pre-fix bug's infinite-loop signature).
+    assert all(r.text for r in results)
+
+
+@pytest.mark.asyncio
 async def test_compute_similarity() -> None:
     adapter = _make()
     score = await adapter.compute_similarity([1.0, 0.0], [0.0, 1.0])
