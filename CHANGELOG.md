@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.30.0] - 2026-10-16
+
+### Added
+
+- oneiric: Add agents_tools with dynamic per-domain catalog (path B)
+- oneiric: Add skills_signer package + signer_feed wiring
+- oneiric: Package document-frontmatter-v1.md as wheel data
+- oneiric: Package topic-vocabulary-v1.md as wheel data
+
+### Fixed
+
+- oneiric/docs: Replace broken PLAN_INDEX.md markdown link with text
+- oneiric: Drop ollama from LLM provider and embedding chain
+- Restore topic vocabulary at canonical docs/schemas path
+
+### Documentation
+
+- oneiric: Retarget canonical schema references to new location
+
+### Internal
+
+- Regenerate PLAN_INDEX.md via plan_index_sync (git-aware)
+
 ## [0.29.4] - 2026-10-16
 
 ### Fixed

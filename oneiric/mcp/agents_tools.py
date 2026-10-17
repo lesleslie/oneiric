@@ -60,14 +60,26 @@ next restart. The body explicitly tells the LLM to call
 ``oneiric_list_adapters`` for current state — the static body
 is a hint, not the truth.
 """
+
 from __future__ import annotations
 
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from mcp_common.agents_tools import build_register_agents_tools
 from mcp_common.canonical_schemas.agent import AgentCanonicalSchema
+
+# ``build_register_agents_tools`` is imported lazily inside
+# :func:`register_agents_tools` to break a circular-import chain: the
+# mcp_common top-level package eagerly imports :mod:`mcp_common.cli`
+# (which transitively imports :mod:`oneiric`), so when oneiric loads
+# during mcp_common's initialization, the mcp_common submodules
+# (including :mod:`mcp_common.agents_tools`) are not yet importable.
+# Deferring the import to the call site resolves the cycle and
+# mirrors the PEP 562 ``__getattr__`` pattern mcp_common itself uses
+# for ``HTTPClientAdapter``. See
+# ``oneiric/mcp/server.py`` -> :func:`register_agents_tools` for the
+# import site.
 
 if TYPE_CHECKING:
     from fastmcp import FastMCP
@@ -108,10 +120,11 @@ def _enumerate_domains() -> dict[str, list[str]]:
     for entry in sorted(_ADAPTERS_ROOT.iterdir()):
         if not entry.is_dir():
             continue
-        providers: list[str] = []
-        for f in sorted(entry.iterdir()):
-            if f.suffix == ".py" and f.stem != "__init__":
-                providers.append(f.stem)
+        providers: list[str] = [
+            f.stem
+            for f in sorted(entry.iterdir())
+            if f.suffix == ".py" and f.stem != "__init__"
+        ]
         if providers:
             domains[entry.name] = providers
     return domains
@@ -300,9 +313,7 @@ def _body_loader(name: str) -> str:
     if name.endswith("-specialist"):
         domain = name[: -len("-specialist")]
         if domain in _DOMAINS_WITH_SPECIALIST:
-            return _synthesize_domain_body(
-                domain, _DOMAINS_WITH_SPECIALIST[domain]
-            )
+            return _synthesize_domain_body(domain, _DOMAINS_WITH_SPECIALIST[domain])
     raise KeyError(f"agent {name!r} not in oneiric's synthesized catalog")
 
 
@@ -329,13 +340,11 @@ def _sign(metadata: AgentCanonicalSchema) -> AgentCanonicalSchema:
     from oneiric.skills_signer import canonical_payload_for_signing
 
     state = get_signer_feed_state()
-    if state is None:
-        raise RuntimeError(
-            "signer not initialized (server may still be starting up)"
-        )
+    if state is None or state.signer is None:
+        raise RuntimeError("signer not initialized (server may still be starting up)")
 
     canonical = canonical_payload_for_signing(metadata.to_dict())
-    signed = state.signer.sign(canonical)
+    signed = state.signer.sign(canonical)  # ty: ignore[possibly-missing-attribute]
     return metadata.model_copy(
         update={
             "signature": signed.signature_b64,
@@ -375,6 +384,15 @@ def register_agents_tools(app: FastMCP) -> None:
     (:func:`_body_loader`), the signing policy (:func:`_sign`),
     and the cycle-bump hook (:func:`_on_call`).
     """
+    # Lazy import: see the module-level comment block on
+    # ``build_register_agents_tools``. Importing here breaks the
+    # circular-init chain (``mcp_common`` -> ``mcp_common.cli`` ->
+    # ``oneiric`` -> :mod:`oneiric.mcp.agents_tools` -> this module
+    # -> ``mcp_common.agents_tools``). By the time :func:`register_agents_tools`
+    # is called, :mod:`mcp_common` is fully initialized and the
+    # submodule is resolvable.
+    from mcp_common.agents_tools import build_register_agents_tools
+
     build_register_agents_tools(
         server_key=_SERVER_KEY,
         catalog=CATALOG,
@@ -385,4 +403,4 @@ def register_agents_tools(app: FastMCP) -> None:
     )(app)
 
 
-__all__ = ["register_agents_tools", "AgentCanonicalSchema"]
+__all__ = ["AgentCanonicalSchema", "register_agents_tools"]

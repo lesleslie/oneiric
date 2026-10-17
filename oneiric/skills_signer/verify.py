@@ -62,7 +62,9 @@ def verify_signature(
             payload (do NOT catch and continue — abort the install).
     """
     if not isinstance(signature_b64, str):
-        raise TypeError(f"signature_b64 must be str, not {type(signature_b64).__name__}")
+        raise TypeError(
+            f"signature_b64 must be str, not {type(signature_b64).__name__}"
+        )
 
     entry = manifest.get(key_id)
     if entry is None:

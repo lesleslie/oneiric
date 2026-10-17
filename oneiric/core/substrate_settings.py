@@ -195,16 +195,14 @@ class SubstrateSettings(BaseSettings):
     )
 
     # ---- Embedding ----------------------------------------------------
-    embedding__backend: Literal["openai", "fastembed", "llama_server"] = (
-        Field(
-            default="llama_server",
-            description=(
-                "Embedding-model backend. ``llama_server`` (default) routes "
-                "through the local llama.cpp-compatible endpoint; "
-                "``openai`` is the cloud-paid tier; ``fastembed`` is "
-                "the offline CPU tier."
-            ),
-        )
+    embedding__backend: Literal["openai", "fastembed", "llama_server"] = Field(
+        default="llama_server",
+        description=(
+            "Embedding-model backend. ``llama_server`` (default) routes "
+            "through the local llama.cpp-compatible endpoint; "
+            "``openai`` is the cloud-paid tier; ``fastembed`` is "
+            "the offline CPU tier."
+        ),
     )
     embedding__model: str = Field(
         default="nomic-embed-text",

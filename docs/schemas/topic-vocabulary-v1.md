@@ -77,4 +77,3 @@ can be merged.
 - Slug **must not be a reserved word**. The reserved words are:
   `draft`, `active`, `partial`, `shipped`, `complete`, `canonical`,
   `implementation`, `umbrella`, `historical`, `superseded`.
-

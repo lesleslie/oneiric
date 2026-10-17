@@ -58,7 +58,11 @@ from oneiric.core.logging import get_logger as _oneiric_get_logger
 from .agents_tools import register_agents_tools as _register_agents_tools
 from .signer_feed import (
     SignerFeedState as _SignerFeedState,
+)
+from .signer_feed import (
     get_signer_feed_state as _get_signer_feed_state,
+)
+from .signer_feed import (
     init_signer_feed_state as _init_signer_feed_state,
 )
 
@@ -207,8 +211,7 @@ def _aggregate_health_status(
     signer_state = _get_signer_state_for_health()
     if signer_state is not None:
         manifest_dict = signer_state.manifest.as_dict()
-        states = {
-            **states,
+        states = states | {
             "skills_signer": HealthFeedState(
                 entities_count=manifest_dict["key_count"],
                 last_updated_timestamp=signer_state.last_updated_timestamp,
