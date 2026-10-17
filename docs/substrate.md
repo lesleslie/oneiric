@@ -252,7 +252,7 @@ storage**:
 
 - [ADR 017 — Oneiric as the shared persistence substrate for Bodai](https://github.com/lesleslie/mahavishnu/blob/main/docs/adr/017-oneiric-shared-persistence-substrate.md)
 - [ADR 013 — Mahavishnu Dhara adapter-tool boundary](https://github.com/lesleslie/mahavishnu/blob/main/docs/adr/013-mahavishnu-dhara-adapter-tool-boundary.md)
-- [ADR 0002 — Oneiric adapter contract](../adr/0002-oneiric-adapter-contract.md)
-- [Oneiric Adapter Contract spec](../specs/2026-10-11-adapter-contract-design.md)
-- [Oneiric Memory Architecture](../architecture/MEMORY_ARCHITECTURE.md)
-- [Migration guide for Dhara-using repos](../MIGRATION_GUIDE.md)
+- [ADR 0002 — Oneiric adapter contract](adr/0002-oneiric-adapter-contract.md)
+- [Oneiric Adapter Contract spec](specs/2026-10-11-adapter-contract-design.md)
+- [Oneiric Memory Architecture](architecture/MEMORY_ARCHITECTURE.md)
+- [Migration guide for Dhara-using repos](MIGRATION_GUIDE.md)
