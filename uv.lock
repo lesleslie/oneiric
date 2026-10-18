@@ -3225,7 +3225,7 @@ wheels = [
 
 [[package]]
 name = "oneiric"
-version = "0.30.0"
+version = "0.31.0"
 source = { editable = "." }
 dependencies = [
     { name = "aiobreaker" },
@@ -3475,7 +3475,7 @@ database-mysql = [{ name = "aiomysql", specifier = ">=0.3.2" }]
 database-postgres = [{ name = "asyncpg", specifier = ">=0.31.0" }]
 database-sqlite = [{ name = "aiosqlite", specifier = ">=0.22.1" }]
 dev = [
-    { name = "crackerjack", specifier = ">=0.70.0" },
+    { name = "crackerjack", specifier = ">=0.89.2" },
     { name = "fakeredis", specifier = ">=2.21.0" },
     { name = "filelock", specifier = ">=3.29.4" },
     { name = "freezegun", specifier = ">=1.5.5" },

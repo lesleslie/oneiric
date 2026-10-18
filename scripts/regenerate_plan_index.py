@@ -46,7 +46,7 @@ from pathlib import Path
 from typing import Any
 
 # ---------------------------------------------------------------------------
-# Constants — mirrors validate_document_frontmatter.py
+# Constants — mirrors crackerjack's shared frontmatter validator
 # ---------------------------------------------------------------------------
 
 LIFECYCLE_VALUES: tuple[str, ...] = (
