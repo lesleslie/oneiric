@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.32.0] - 2026-10-18
+
+### Added
+
+- oneiric: BifrostLLMRouter — Bodai LLM call-site routing policy (plan 6, phases 0-1)
+
+### Internal
+
+- deps: Bump crackerjack pin to >=0.89.2
+- ollama: Oneiric slice — add LLAMA_SERVER + clean test kwargs (plan 5)
+
 ## [0.31.0] - 2026-10-17
 
 ### Added
