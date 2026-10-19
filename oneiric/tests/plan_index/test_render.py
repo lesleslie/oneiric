@@ -28,5 +28,5 @@ def test_render_sorted_by_date_desc_then_path():
     e2 = Entry(rel="docs/plans/zzz.md", store="docs/plans/", date="2026-10-19", status="active", role="implementation", kind="plan", topic="t", title="Zzz")
     e3 = Entry(rel="docs/plans/mmm.md", store="docs/plans/", date="2026-10-19", status="active", role="implementation", kind="plan", topic="t", title="Mmm")
     rendered = render_index(entries_by_store={"docs/plans/": [e1, e2, e3]}, generated_at="2026-10-19")
-    # Expected order: e2 (date desc), e3 (same date, path asc), e1
-    assert rendered.index("Zzz") < rendered.index("Mmm") < rendered.index("Aaa")
+    # Actual rendering order: e3 (date 2026-10-19, path "mmm.md" < "zzz.md"), e2 (date 2026-10-19), e1 (date 2026-10-01)
+    assert rendered.index("Mmm") < rendered.index("Zzz") < rendered.index("Aaa")

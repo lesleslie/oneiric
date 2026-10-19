@@ -42,6 +42,7 @@ def test_regenerate_equals_scan_plus_render(tmp_path: Path):
     docs = tmp_path / "docs" / "plans"
     docs.mkdir(parents=True)
     (docs / "x.md").write_text("---\nstatus: active\nrole: implementation\nkind: plan\ntopic: t\n---\n# X\n")
+    (docs / "y.md").write_text("---\nstatus: active\nrole: implementation\nkind: plan\ntopic: t\n---\n# Y\n")
     entries = scan_entries(tmp_path)
     expected = render_index(entries_by_store=entries, generated_at="2026-10-19")
     # Now regenerate
@@ -49,4 +50,5 @@ def test_regenerate_equals_scan_plus_render(tmp_path: Path):
     actual = (tmp_path / "docs" / "plans" / "PLAN_INDEX.md").read_text()
     # After regenerate, file should equal expected (modulo header/preamble which we don't emit).
     assert "Lifecycle × Role Distribution" in actual
-    assert "| `x.md` |" in actual
+    assert "docs/plans/x.md" in actual
+    assert "docs/plans/y.md" in actual

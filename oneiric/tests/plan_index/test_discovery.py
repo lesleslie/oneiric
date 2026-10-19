@@ -33,6 +33,7 @@ def test_system_dir_parts_pruned(tmp_path: Path):
     (repo / "node_modules" / "docs" / "plans" / "foo.md").write_text("---\nstatus: active\n---\n# Foo\n")
     (repo / "docs" / "plans").mkdir(parents=True)
     (repo / "docs" / "plans" / "bar.md").write_text("---\nstatus: active\n---\n# Bar\n")
+    (repo / "docs" / "plans" / "baz.md").write_text("---\nstatus: active\n---\n# Baz\n")
     stores = discover_stores(repo, yaml)
     assert "docs/plans/" in stores
     assert "node_modules/docs/plans/" not in stores
@@ -43,5 +44,6 @@ def test_dedup_handles_duplicate_dirs_in_scan(tmp_path: Path):
     plans = repo / "docs" / "plans"
     plans.mkdir(parents=True)
     (plans / "foo.md").write_text("---\nstatus: active\n---\n# Foo\n")
+    (plans / "foo2.md").write_text("---\nstatus: active\n---\n# Foo2\n")
     stores = discover_stores(repo, yaml)
     assert list(stores).count("docs/plans/") == 1
