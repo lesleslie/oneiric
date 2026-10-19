@@ -170,7 +170,12 @@ class TestResolveEnabled:
         router = BifrostLLMRouter(settings=settings)
         result = router.resolve(LLMProvider.OPENAI)
         assert result is not None
-        assert result.rstrip("/") == "http://127.0.0.1:8471"
+        # Default base_url must include ``/v1`` — the OpenAI-compatible
+        # endpoint on Bifrost is served at ``/v1/chat/completions``,
+        # not ``/chat/completions``. Restores the legacy
+        # ``BifrostClient.DEFAULT_BASE_URL = "http://localhost:8471/v1"``
+        # contract (cross-repo B2 BLOCKER fix in oneiric 0.33+).
+        assert result.rstrip("/") == "http://127.0.0.1:8471/v1"
 
     def test_resolve_routes_mismatch_returns_none(self) -> None:
         """Enabled but the required route is absent from settings.routes."""

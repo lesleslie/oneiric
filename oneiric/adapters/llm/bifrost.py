@@ -236,7 +236,14 @@ class BifrostLLMSettings(BaseSettings):
     )
 
     enabled: bool = Field(default=False)
-    base_url: HttpUrl = Field(default=HttpUrl("http://127.0.0.1:8471"))
+    # The default MUST include ``/v1``: the OpenAI-compatible endpoint on
+    # the Bifrost gateway is served at ``/v1/chat/completions`` (not
+    # ``/chat/completions``). The legacy ``BifrostClient.DEFAULT_BASE_URL``
+    # was ``http://localhost:8471/v1``; this default restores that
+    # contract. Without the ``/v1``, every gateway call returns 404
+    # unless the operator explicitly sets ``ONEIRIC_BIFROST_BASE_URL``
+    # (cross-repo B2 BLOCKER documented in plan 6 / Phase 4 commits).
+    base_url: HttpUrl = Field(default=HttpUrl("http://127.0.0.1:8471/v1"))
     anthropic_base_url: HttpUrl = Field(
         default=HttpUrl("http://127.0.0.1:8471/anthropic")
     )
