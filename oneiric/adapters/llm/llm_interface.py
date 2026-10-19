@@ -20,6 +20,7 @@ class LLMProvider(StrEnum):
     AWS_BEDROCK = "aws_bedrock"
     LOCAL = "local"
     ZAI = "zai"
+    LLAMA_SERVER = "llama_server"
 
 
 class LLMCapability(StrEnum):

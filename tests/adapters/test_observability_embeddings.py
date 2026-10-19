@@ -681,7 +681,6 @@ async def test_initialize_exception_in_probe_does_not_break_chain(monkeypatch) -
 
     svc = EmbeddingService(
         settings=EmbeddingSettings(
-            ollama_enabled=False,
             minimax_enabled=False,
             model2vec_enabled=False,
         )
@@ -720,7 +719,6 @@ async def test_encode_after_initialize_routes_to_selected_backend(monkeypatch) -
     _install_mock_client(monkeypatch, handler)
     svc = EmbeddingService(
         settings=EmbeddingSettings(
-            ollama_enabled=False,
             minimax_enabled=False,
             model2vec_enabled=False,
         )
@@ -758,7 +756,6 @@ async def test_embed_trace_falls_back_when_encode_raises(monkeypatch) -> None:
 
     svc = EmbeddingService(
         settings=EmbeddingSettings(
-            ollama_enabled=False,
             minimax_enabled=False,
             model2vec_enabled=False,
         )
