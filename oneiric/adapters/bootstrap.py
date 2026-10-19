@@ -80,6 +80,11 @@ from .vector import AgentDBAdapter, PgvectorAdapter, PineconeAdapter, QdrantAdap
 
 
 def builtin_adapter_metadata() -> list[AdapterMetadata]:
+    # Lazy import keeps the oneiric cold-start path from pulling the
+    # bifrost module on every run (3-agent F8 fix: stay inside the
+    # single ``oneiric.adapters`` package namespace).
+    from .llm.bifrost import BifrostLLMRouter
+
     return [
         MemoryCacheAdapter.metadata,
         PersistentKVCacheAdapter.metadata,
@@ -138,6 +143,7 @@ def builtin_adapter_metadata() -> list[AdapterMetadata]:
         SCPFileTransferAdapter.metadata,
         HTTPArtifactAdapter.metadata,
         HTTPSUploadAdapter.metadata,
+        BifrostLLMRouter.metadata,
     ]
 
 
