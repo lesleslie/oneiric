@@ -119,14 +119,26 @@ class S3StorageAdapter(EnsureClientMixin):
         if self._settings.region:
             session_kwargs["region_name"] = self._settings.region
         session = aioboto3.Session(**session_kwargs)
+        # `use_accelerate_endpoint` is an S3-specific option that lives inside
+        # `botocore.config.Config(s3={...})`, NOT as a direct `session.client()`
+        # kwarg. Passing it as a top-level kwarg was a latent bug — it failed
+        # explicitly against aioboto3's `Session.client()` (TypeError: ...
+        # unexpected keyword argument 'use_accelerate_endpoint') and was at best
+        # silently dropped against boto3 sync's. Thread it through
+        # `Config(s3=...)` so the field actually works for users who set it.
+        s3_specific: dict[str, Any] | None = (
+            {"use_accelerate_endpoint": True}
+            if self._settings.use_accelerate_endpoint
+            else None
+        )
+        config = Config(signature_version="s3v4", s3=s3_specific)
         client_kwargs: dict[str, Any] = {
             "service_name": "s3",
             "endpoint_url": self._settings.endpoint_url,
-            "use_accelerate_endpoint": self._settings.use_accelerate_endpoint,
             "aws_access_key_id": self._settings.access_key_id,
             "aws_secret_access_key": self._settings.secret_access_key,
             "aws_session_token": self._settings.session_token,
-            "config": Config(signature_version="s3v4"),
+            "config": config,
         }
         client_kwargs = {k: v for k, v in client_kwargs.items() if v is not None}
         self._client_cm = session.client(**client_kwargs)
@@ -426,14 +438,26 @@ class S3StorageAdapter(EnsureClientMixin):
             session_kwargs["region_name"] = self._settings.region
         session = boto3.session.Session(**session_kwargs)
 
+        # `use_accelerate_endpoint` is an S3-specific option that lives inside
+        # `botocore.config.Config(s3={...})`, NOT as a direct `session.client()`
+        # kwarg. Passing it as a top-level kwarg was a latent bug — it failed
+        # explicitly against aioboto3's `Session.client()` (TypeError: ...
+        # unexpected keyword argument 'use_accelerate_endpoint') and was at best
+        # silently dropped against boto3 sync's. Thread it through
+        # `Config(s3=...)` so the field actually works for users who set it.
+        s3_specific: dict[str, Any] | None = (
+            {"use_accelerate_endpoint": True}
+            if self._settings.use_accelerate_endpoint
+            else None
+        )
+        config = Config(signature_version="s3v4", s3=s3_specific)
         client_kwargs: dict[str, Any] = {
             "service_name": "s3",
             "endpoint_url": self._settings.endpoint_url,
-            "use_accelerate_endpoint": self._settings.use_accelerate_endpoint,
             "aws_access_key_id": self._settings.access_key_id,
             "aws_secret_access_key": self._settings.secret_access_key,
             "aws_session_token": self._settings.session_token,
-            "config": Config(signature_version="s3v4"),
+            "config": config,
         }
         client_kwargs = {k: v for k, v in client_kwargs.items() if v is not None}
         self._sync_client = session.client(**client_kwargs)

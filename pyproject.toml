@@ -22,6 +22,15 @@ dependencies = [
     "typer>=0.26.8",
     "cryptography>=49.0.0",
     "google-cloud-storage>=3.12.0",
+    # S3 adapter (`oneiric/adapters/storage/s3.py`) imports aioboto3
+    # unconditionally in `init()`, so the runtime dep must be in
+    # `[project].dependencies` rather than only in `[dependency-groups].storage*`
+    # (those groups are opt-in via `uv sync --group <name>` and not pulled by
+    # default `uv sync`). 0.33.0 shipped without this and so the S3 adapter
+    # raised `LifecycleError("aioboto3-missing")` on first init. Floor matches
+    # the `storage*` dep groups so behavior is identical when both paths are
+    # used.
+    "aioboto3>=15.5.0",
     "google-cloud-secret-manager>=2.29.0",
     "email-validator>=2.3.0",
     "numpy>=2.5.0",
