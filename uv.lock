@@ -3227,9 +3227,10 @@ wheels = [
 
 [[package]]
 name = "oneiric"
-version = "0.32.1"
+version = "0.33.0"
 source = { editable = "." }
 dependencies = [
+    { name = "aioboto3" },
     { name = "aiobreaker" },
     { name = "anyio" },
     { name = "cryptography" },
@@ -3440,6 +3441,7 @@ vector-qdrant = [
 
 [package.metadata]
 requires-dist = [
+    { name = "aioboto3", specifier = ">=15.5.0" },
     { name = "aiobreaker", specifier = ">=1.2.0" },
     { name = "anyio", specifier = ">=4.14.1" },
     { name = "cryptography", specifier = ">=49.0.0" },
