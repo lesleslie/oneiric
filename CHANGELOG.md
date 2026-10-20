@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.33.0] - 2026-10-19
+
+### Added
+
+- oneiric: Add 'plan-index regenerate' CLI subcommand
+- oneiric: Plan_index discovery, render, regenerate
+- oneiric: Plan_index entry, frontmatter, exclusions modules
+
+### Fixed
+
+- oneiric: LayerSettings accepts extras so nested keys survive
+
+### Testing
+
+- oneiric: Align test fixtures with plan-mandated MIN_STORE_DOCS=2 + path-ASC sort
+
 ## [0.32.1] - 2026-10-19
 
 ### Fixed

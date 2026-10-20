@@ -1,4 +1,5 @@
 import yaml
+
 from oneiric.plan_index.frontmatter import extract_frontmatter
 
 

@@ -1,4 +1,5 @@
 """Entry point for ``python -m oneiric`` invocation."""
+
 from __future__ import annotations
 
 from oneiric.cli import main

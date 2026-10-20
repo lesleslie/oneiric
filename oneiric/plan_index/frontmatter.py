@@ -6,7 +6,9 @@ Validates against the schema in oneiric/schemas/document-frontmatter-v1.md;
 the parser itself doesn't enforce the schema (caller does), it just
 returns the parsed YAML mapping or None for malformed input.
 """
+
 from __future__ import annotations
+
 from typing import Any
 
 _FRONTMATTER_OPEN = "---"

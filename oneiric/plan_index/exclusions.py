@@ -4,6 +4,7 @@ SYSTEM_DIR_PARTS is a verbatim copy of the legacy script's exclusion
 list (mahavishnu/scripts/regenerate_plan_index.py:99-127). Test
 `test_system_dir_parts_pinned` pins every entry.
 """
+
 from __future__ import annotations
 
 SELF_SKIP_REL = "docs/plans/PLAN_INDEX.md"
@@ -12,12 +13,30 @@ ARCHIVE_PARTS = ("archive", ".archive")
 BACKUP_SUFFIXES = (".backup", ".backup.json")
 
 # Verbatim from legacy script (mahavishnu/scripts/regenerate_plan_index.py:99-127)
-SYSTEM_DIR_PARTS = frozenset({
-    ".git", ".venv", "venv", "__pycache__", "node_modules", "htmlcov",
-    "dist", ".pytest_cache", ".archive", "archive", "backups", ".backups",
-    "coverage_report", "assets", ".vscode", ".idea", "cache", ".cache",
-    ".playwright-mcp", "worktree-snapshots",
-})
+SYSTEM_DIR_PARTS = frozenset(
+    {
+        ".git",
+        ".venv",
+        "venv",
+        "__pycache__",
+        "node_modules",
+        "htmlcov",
+        "dist",
+        ".pytest_cache",
+        ".archive",
+        "archive",
+        "backups",
+        ".backups",
+        "coverage_report",
+        "assets",
+        ".vscode",
+        ".idea",
+        "cache",
+        ".cache",
+        ".playwright-mcp",
+        "worktree-snapshots",
+    }
+)
 
 
 def is_excluded(rel: str) -> bool:

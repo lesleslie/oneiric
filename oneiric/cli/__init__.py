@@ -280,7 +280,8 @@ app.add_typer(secrets_app, name="secrets")
 app.add_typer(event_app, name="event")
 app.add_typer(workflow_app, name="workflow")
 app.add_typer(mcp_app, name="mcp")
-from oneiric.cli.plan_index import plan_index_app  # noqa: E402
+from oneiric.cli.plan_index import plan_index_app
+
 app.add_typer(plan_index_app, name="plan-index")
 
 

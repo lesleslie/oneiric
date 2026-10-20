@@ -1,4 +1,4 @@
-from oneiric.plan_index.exclusions import is_excluded, SYSTEM_DIR_PARTS
+from oneiric.plan_index.exclusions import SYSTEM_DIR_PARTS, is_excluded
 
 
 def test_drafts_subdirectory_excluded():
@@ -29,8 +29,26 @@ def test_toplevel_archived_NOT_excluded():
 
 def test_system_dir_parts_pinned():
     """Pinned verbatim from the spec — every entry must be in the exclusion set."""
-    expected = {".git", ".venv", "venv", "__pycache__", "node_modules", "htmlcov",
-                "dist", ".pytest_cache", ".archive", "archive", "backups", ".backups",
-                "coverage_report", "assets", ".vscode", ".idea", "cache", ".cache",
-                ".playwright-mcp", "worktree-snapshots"}
+    expected = {
+        ".git",
+        ".venv",
+        "venv",
+        "__pycache__",
+        "node_modules",
+        "htmlcov",
+        "dist",
+        ".pytest_cache",
+        ".archive",
+        "archive",
+        "backups",
+        ".backups",
+        "coverage_report",
+        "assets",
+        ".vscode",
+        ".idea",
+        "cache",
+        ".cache",
+        ".playwright-mcp",
+        "worktree-snapshots",
+    }
     assert SYSTEM_DIR_PARTS == expected
