@@ -130,6 +130,21 @@ class AppConfig(BaseModel):
 
 
 class LayerSettings(BaseModel):
+    # 2026-10-19: explicit ``extra="allow"`` so unknown nested keys (e.g.
+    # ``adapters.hatchet_enabled`` set in a user's XDG
+    # ``~/.config/<project>/local.yaml``) survive the
+    # OneiricSettings -> ``LayerSettings`` validate step instead of being
+    # silently swallowed by Pydantic v2's default ``extra="ignore"``.
+    # The chain downstream (``get_settings`` in mahavishnu) reads the
+    # ``adapters`` field via ``model_dump(exclude_unset=False)`` and
+    # forwards nested extras into the stricter ``AdapterConfig`` model,
+    # which uses ``extra="forbid"`` — anything not declared on the
+    # destination is dropped there, so flipping this does not relax
+    # strictness at the consumer boundary.
+    # Same class backs ``services``, ``tasks``, ``workflows``, ``events``,
+    # ``actions``, so all six framework slots gain the same tolerance.
+    model_config = {"extra": "allow"}
+
     selections: dict[str, str] = Field(
         default_factory=dict, description="category -> provider mapping"
     )
