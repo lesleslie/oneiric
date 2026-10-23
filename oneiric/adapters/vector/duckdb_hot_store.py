@@ -346,6 +346,126 @@ class DuckdbHotStore:
 
             logger.info("Hot store initialized")
 
+    # ── ingest writers ──────────────────────────────────────────────────
+    # These live beside the DDL above rather than in akosha's subclass. The
+    # tables are substrate-owned (ADR 017), the write path is substrate
+    # access, and putting the writers next to the schema they target keeps
+    # the two from drifting — a column added to ``SPANS_SUBSTRATE_DDL`` and
+    # a column named in an INSERT statement in another repo is a silent
+    # mismatch until a producer happens to send that field.
+    #
+    # akosha's ``HotStore`` inherits both, so the OTLP receiver's call sites
+    # are unchanged. Its module is kept small on purpose (a CI test caps it
+    # at 500 LOC) precisely so it stays a thin subclass.
+
+    async def insert_spans_substrate(
+        self,
+        rows: list[dict[str, Any]],
+    ) -> tuple[int, int]:
+        """Bulk-INSERT validated spans; return ``(inserted, deduped)``.
+
+        Spec §15 prescribes ``ON CONFLICT (trace_id, span_id) DO NOTHING``.
+        That clause is written here WITHOUT the conflict target, which is not
+        a style choice — it is the only form that satisfies the spec's stated
+        intent against the spec's own DDL.
+
+        ``SPANS_SUBSTRATE_DDL`` declares both ``span_id TEXT PRIMARY KEY`` and
+        ``CONSTRAINT uq_span_identity UNIQUE (trace_id, span_id)``. A PK on
+        ``span_id`` alone is strictly narrower than a unique on the pair, so
+        every row that collides on the composite key has already collided on
+        the PK: ``uq_span_identity`` can never be the constraint that rejects
+        anything. A targeted ``ON CONFLICT (trace_id, span_id)`` handles only
+        the constraint it names, so a ``span_id`` collision falls through to
+        the PK and raises ``ConstraintException`` — an unhandled exception on
+        the hot ingest path, in exactly the case the composite key exists to
+        handle (two producers reusing a ``span_id`` under different
+        ``trace_id``s, e.g. a producer that restarted its trace).
+
+        Untargeted ``ON CONFLICT DO NOTHING`` honors every constraint, so a
+        replay is a genuine no-op whichever one catches it. Verified against
+        the pinned DuckDB 2.0.0.dev build. NOT NULL violations are unaffected
+        and still raise, which is what keeps the table constraint a usable
+        backstop for rows the receiver's validation fails to catch.
+
+        Counting samples pre-insert existence rather than reading rows back:
+        a read-back cannot distinguish "this INSERT wrote it" from "it was
+        already here", so it would report a pure replay as N inserts. DuckDB's
+        ``executemany`` reports no per-row outcome, so existence has to be
+        probed explicitly. Both numbers are wanted — a receiver whose dedup
+        count silently collapses to zero is indistinguishable from one
+        receiving nothing new.
+
+        Columns are named explicitly. The table has ~28 and the receiver's
+        row dicts carry a producer-varying subset, so a positional INSERT
+        would couple the caller's field order to the DDL column order.
+        """
+        if not rows:
+            return (0, 0)
+        async with self._lock:
+            if self.conn is None:
+                raise RuntimeError("Hot store not initialized")
+            table = self.spans_substrate_table
+            columns = list(rows[0].keys())
+            placeholders = ", ".join("?" for _ in columns)
+            collist = ", ".join(columns)
+
+            # Keyed on ``span_id`` alone — the narrowest constraint in the
+            # DDL, and therefore an exact predictor of what the untargeted
+            # ON CONFLICT will do. Probing the composite pair instead would
+            # report "inserted" for rows the database silently dropped, and
+            # the returned numbers would disagree with the table.
+            seen: set[Any] = set()
+            deduped = 0
+            for row in rows:
+                span_id = row.get("span_id")
+                if span_id in seen:
+                    deduped += 1
+                    continue
+                seen.add(span_id)
+                hit = self.conn.execute(
+                    f"SELECT 1 FROM {table} WHERE span_id IS NOT DISTINCT FROM ?",
+                    [span_id],
+                ).fetchone()
+                if hit:
+                    deduped += 1
+
+            self.conn.executemany(
+                f"INSERT INTO {table} ({collist}) VALUES ({placeholders}) "
+                f"ON CONFLICT DO NOTHING",
+                [list(r.get(c) for c in columns) for r in rows],
+            )
+            return (len(rows) - deduped, deduped)
+
+    async def insert_dlq_rows(self, rows: list[dict[str, Any]]) -> int:
+        """Append rejected rows to ``_dlq_rows``; return the count written.
+
+        No ``ON CONFLICT`` clause, because there is no uniqueness to collide
+        with: the table has no primary key precisely because the rows in it
+        already failed a uniqueness constraint on their way into
+        ``spans_substrate``. Two distinct spans sharing an identity must both
+        survive quarantine — giving the DLQ its own key would re-introduce
+        the very collision it exists to absorb.
+
+        Raises on substrate failure. The receiver wraps this call so a DLQ
+        outage cannot abort a batch carrying good rows (spec §15); that
+        wrapping is the receiver's contract, so a caller who wants DLQ
+        failure to be fatal can still have it.
+        """
+        if not rows:
+            return 0
+        async with self._lock:
+            if self.conn is None:
+                raise RuntimeError("Hot store not initialized")
+            table = self.dlq_rows_table
+            columns = list(rows[0].keys())
+            placeholders = ", ".join("?" for _ in columns)
+            collist = ", ".join(columns)
+            self.conn.executemany(
+                f"INSERT INTO {table} ({collist}) VALUES ({placeholders})",
+                [list(r.get(c) for c in columns) for r in rows],
+            )
+            return len(rows)
+
     async def table_exists(self, name: str) -> bool:
         """Whether table ``name`` is present in the connected database.
 

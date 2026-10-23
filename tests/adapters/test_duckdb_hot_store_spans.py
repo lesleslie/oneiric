@@ -15,6 +15,7 @@ anything if something actually executes them.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import duckdb
 import pytest
@@ -236,3 +237,155 @@ async def test_receiver_tables_are_idempotent_across_reopen(tmp_path: Path) -> N
     ).fetchone()
     assert kept[0] == 1, "re-opening the substrate must not drop existing DLQ rows"
     await again.close()
+
+# ── ingest writers ───────────────────────────────────────────────────────
+# These cover DuckDB behaviour — constraint resolution and affected-row
+# accounting — rather than receiver policy, so they live with the substrate
+# whose DDL they are reasoning about. akosha keeps a consumer-side test
+# proving the receiver reaches these through inheritance.
+
+
+def _span(
+    span_id: str,
+    trace_id: str = "t1",
+    *,
+    service_name: str = "mahavishnu",
+) -> dict[str, Any]:
+    """A minimal row satisfying every NOT NULL column of the substrate."""
+    return {
+        "span_id": span_id,
+        "trace_id": trace_id,
+        "service_name": service_name,
+        "service_namespace": "bodai",
+        "span_name": "unit-test-span",
+        "start_time_unix_nano": 1,
+        "received_at_unix_nano": 2,
+        "attributes": "{}",
+        "resource": "{}",
+    }
+
+
+def _count(store: DuckdbHotStore, sql: str) -> int:
+    row = store.conn.execute(sql).fetchone()  # type: ignore[union-attr]
+    return int(row[0])
+
+
+async def test_empty_batch_is_a_noop_not_an_error(store: DuckdbHotStore) -> None:
+    """A producer that exports zero spans must not cost an empty INSERT."""
+    assert await store.insert_spans_substrate([]) == (0, 0)
+    assert _count(store, "SELECT count(*) FROM spans_substrate") == 0
+
+
+async def test_fresh_rows_all_count_as_inserted(store: DuckdbHotStore) -> None:
+    rows = [_span("a"), _span("b"), _span("c", trace_id="t2")]
+    assert await store.insert_spans_substrate(rows) == (3, 0)
+    assert _count(store, "SELECT count(*) FROM spans_substrate") == 3
+
+
+async def test_replaying_a_batch_counts_as_deduped_not_inserted(
+    store: DuckdbHotStore,
+) -> None:
+    """Reading rows back after the INSERT cannot tell "I wrote this" from
+    "this was already here", so a naive implementation reports a pure replay
+    as 3 inserts and 0 dedups. An operator watching that counter sees a
+    healthy ingest forever while the substrate holds exactly one span.
+    """
+    rows = [_span("a"), _span("b"), _span("c")]
+    await store.insert_spans_substrate(rows)
+    assert await store.insert_spans_substrate(rows) == (0, 3)
+    assert _count(store, "SELECT count(*) FROM spans_substrate") == 3
+
+
+async def test_a_span_id_collision_across_trace_ids_is_deduped_not_fatal(
+    store: DuckdbHotStore,
+) -> None:
+    """The case §5.1's DDL gets wrong.
+
+    The table declares BOTH ``span_id TEXT PRIMARY KEY`` and
+    ``UNIQUE (trace_id, span_id)``. The PK is narrower, so it fires first and
+    the composite constraint can never reject anything — which makes the
+    spec's own prescribed ``ON CONFLICT (trace_id, span_id)`` clause handle
+    only an unreachable constraint, raising on the hot path instead of
+    no-op'ing. The untargeted clause used here honors both.
+
+    The returned count must agree with what the database actually did:
+    probing the composite pair would predict "inserted" while the row was
+    silently dropped, and the two numbers would disagree.
+    """
+    rows = [_span("shared", "t1"), _span("shared", "t2")]
+    assert await store.insert_spans_substrate(rows) == (1, 1)
+    assert _count(store, "SELECT count(*) FROM spans_substrate") == 1
+
+
+async def test_duplicates_within_one_batch_are_counted_as_deduped(
+    store: DuckdbHotStore,
+) -> None:
+    """Sampling existence before the INSERT alone would miss an in-batch
+    duplicate: neither copy is in the table when the batch starts. Folding
+    each classified span_id into a ``seen`` set is what catches the second.
+    """
+    assert await store.insert_spans_substrate(
+        [_span("a"), _span("a"), _span("b")]
+    ) == (2, 1)
+    assert _count(store, "SELECT count(*) FROM spans_substrate") == 2
+
+
+async def test_a_null_trace_id_still_dedups(store: DuckdbHotStore) -> None:
+    """``trace_id`` is nullable and ``NULL = NULL`` is never true in SQL.
+
+    A probe written ``WHERE trace_id = ?`` would report every null-trace span
+    as new on every batch, so the dedup counter would sit at zero for a
+    producer that never sets ``trace_id`` — the receiver would look healthy
+    while its dedup total never moved. ``IS NOT DISTINCT FROM`` is null-safe.
+    """
+    span = _span("a")
+    span["trace_id"] = None
+    assert await store.insert_spans_substrate([span]) == (1, 0)
+    assert await store.insert_spans_substrate([span]) == (0, 1)
+    assert _count(store, "SELECT count(*) FROM spans_substrate") == 1
+
+
+async def test_a_row_missing_a_not_null_column_raises(store: DuckdbHotStore) -> None:
+    """The table constraint stays a usable backstop.
+
+    Validation is the receiver's job; if ``pre_validate`` ever lets a row
+    through, DuckDB must refuse it rather than storing a span the read path
+    later chokes on. Untargeted ON CONFLICT does not weaken NOT NULL.
+    """
+    bad = _span("bad")
+    del bad["service_name"]
+    with pytest.raises(duckdb.ConstraintException):
+        await store.insert_spans_substrate([bad])
+
+
+async def test_dlq_accepts_two_rows_sharing_an_identity(store: DuckdbHotStore) -> None:
+    """Quarantining under a key that enforces the same uniqueness would make
+    the second rejection uncatchable: the insert would raise, the receiver's
+    DLQ wrapper would log it, and the second span would be lost with no
+    record anywhere.
+    """
+    row = {
+        "reason": "not_null",
+        "field": "service_name",
+        "row_json": "{}",
+        "trace_id": "t1",
+        "span_id": "s1",
+    }
+    assert await store.insert_dlq_rows([dict(row), dict(row)]) == 2
+    assert _count(store, "SELECT count(*) FROM _dlq_rows") == 2
+
+
+async def test_dlq_empty_batch_is_a_noop(store: DuckdbHotStore) -> None:
+    assert await store.insert_dlq_rows([]) == 0
+
+
+async def test_dlq_failure_raises_so_the_receiver_can_decide(
+    store: DuckdbHotStore,
+) -> None:
+    """A substrate failure propagates.
+
+    The receiver wraps this call, but that wrapping is the receiver's
+    contract. Swallowing the error here would remove its ability to notice.
+    """
+    with pytest.raises(duckdb.ConstraintException):
+        await store.insert_dlq_rows([{"reason": None, "row_json": "{}"}])
