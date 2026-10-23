@@ -59,10 +59,9 @@ logger = logging.getLogger(__name__)
 #   for partial indexes on both builds, so the outcome predicate lives in the
 #   read-side SELECT instead.
 #
-# One writer exists: the akosha OTLP receiver, via `_ensure_operational_tables`.
+# One writer exists: the akosha OTLP receiver, via `HotStore.insert_spans_substrate`.
 # akosha's read-path tests carry their own copy in
-# `akosha/tests/_support/spans_ddl.py` until the receiver lands — the two must
-# be updated together.
+# `akosha/tests/_support/spans_ddl.py`; the two must be updated together.
 SPANS_SUBSTRATE_DDL = """
 CREATE TABLE IF NOT EXISTS spans_substrate (
     span_id                   TEXT PRIMARY KEY,
@@ -125,6 +124,49 @@ SPANS_SUBSTRATE_INDEXES: tuple[tuple[str, str], ...] = (
         "ON spans_substrate(received_at_unix_nano DESC)"),
         "idx_spans_received_at_recent",
     ),
+)
+
+# ── receiver operational tables ───────────────────────────────────────────
+# Spec §5.3 + §15 (the v7 "Migration framework: none" decision) place these
+# two tables in the same substrate as `spans_substrate`, created by the same
+# idempotent inline DDL rather than by a migrations framework. The fleet has
+# no migration runner: mahavishnu uses Alembic (`migrations/versions/V*.sql`),
+# akosha and oneiric have none, and building yoyo for two tiny tables would
+# have introduced a third framework for no sequencing benefit. `IF NOT EXISTS`
+# covers both a fresh substrate file and a pre-existing one on every boot.
+#
+# §5.3 draws the ownership line explicitly, and it is worth restating because
+# it looks contradictory: these tables are AKOSHAs tables that happen to be
+# CREATED here. `_dlq_rows` holds rows that were already rejected on their way
+# into the substrate — dead-letter storage for ingest, not telemetry. The
+# receiver is the only writer of both; nothing in the read path queries them.
+RECEIVER_STATE_DDL = """
+CREATE TABLE IF NOT EXISTS _akosha_otel_receiver_state (
+    component       TEXT PRIMARY KEY,
+    schema_version  INTEGER NOT NULL,
+    last_applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+"""
+
+# `_dlq_rows` is deliberately keyed on nothing. A quarantine table holds rows
+# that failed a uniqueness or NOT NULL constraint elsewhere; giving it its own
+# primary key here would re-introduce the collision the DLQ exists to survive.
+DLQ_ROWS_DDL = """
+CREATE TABLE IF NOT EXISTS _dlq_rows (
+    rejected_at  TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    reason       TEXT        NOT NULL,
+    field        TEXT,
+    row_json     JSON        NOT NULL,
+    trace_id     TEXT,
+    span_id      TEXT
+);
+"""
+
+# §8.1 retention sweeps `_dlq_rows` by age; without this index every sweep is
+# a full scan of a table that only ever grows until the first sweep runs.
+DLQ_ROWS_INDEX = (
+    "CREATE INDEX IF NOT EXISTS idx_dlq_rows_recent "
+    "ON _dlq_rows(rejected_at DESC)"
 )
 
 # Default embedding dimensionality when neither ``embedding_dim`` is passed
@@ -191,6 +233,8 @@ class DuckdbHotStore:
     # ``spans_substrate_table`` to fail loud when the DDL is absent.
     conversations_table: str = "conversations"
     spans_substrate_table: str = "spans_substrate"
+    receiver_state_table: str = "_akosha_otel_receiver_state"
+    dlq_rows_table: str = "_dlq_rows"
 
     def __init__(
         self,
@@ -286,6 +330,19 @@ class DuckdbHotStore:
             for index_ddl, index_name in SPANS_SUBSTRATE_INDEXES:
                 self.conn.execute(index_ddl)
                 logger.info("Created %s index", index_name)
+
+            # ── receiver operational tables (v7 §5.3) ─────────────────────
+            # Created alongside the substrate table rather than by the
+            # receiver itself: the receiver's ``start()`` asserts
+            # ``spans_substrate_table`` exists and raises otherwise, and a
+            # receiver that has to create its own DLQ on the fly would be
+            # asserting something it just did. Same reasoning as the
+            # no-try/except decision above — a substrate that cannot create
+            # its own tables is broken, and hiding that is worse.
+            self.conn.execute(RECEIVER_STATE_DDL)
+            self.conn.execute(DLQ_ROWS_DDL)
+            self.conn.execute(DLQ_ROWS_INDEX)
+            logger.info("Created receiver operational tables")
 
             logger.info("Hot store initialized")
 
@@ -449,4 +506,12 @@ class DuckdbHotStore:
         return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
 
-__all__ = ["DEFAULT_EMBEDDING_DIM", "DuckdbHotStore"]
+__all__ = [
+    "DEFAULT_EMBEDDING_DIM",
+    "DLQ_ROWS_DDL",
+    "DLQ_ROWS_INDEX",
+    "DuckdbHotStore",
+    "RECEIVER_STATE_DDL",
+    "SPANS_SUBSTRATE_DDL",
+    "SPANS_SUBSTRATE_INDEXES",
+]
