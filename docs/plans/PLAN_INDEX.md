@@ -1,6 +1,6 @@
 # Plan Index
 
-_Regenerated 2026-10-20 by `crackerjack.tools.plan_index_sync` (fast-hook)._
+_Regenerated 2026-10-23 by `crackerjack.tools.plan_index_sync` (phase)._
 
 ### Docs: adr
 
@@ -27,16 +27,6 @@ _Regenerated 2026-10-20 by `crackerjack.tools.plan_index_sync` (fast-hook)._
 | [`docs/specs/2026-09-16-oneiric-fastmcp-pivot-design.md`](../specs/2026-09-16-oneiric-fastmcp-pivot-design.md) | 2026-09-16 | `draft` | `canonical` | `mcp-design` | Oneiric FastMCP Pivot + Auth Integration |
 | [`docs/specs/2026-10-11-adapter-contract-design.md`](../specs/2026-10-11-adapter-contract-design.md) | 2026-10-11 | `active` | `canonical` | `adapter-registry` | Oneiric Adapter Contract — Authoring and Discovery Specification |
 
-### Docs: plans
-
-| Path | Date | Status | Role | Topic | Title |
-|---|---|---|---|---|---|
-| [`docs/plans/2026-08-22-hybrid-embeddings-design.md`](2026-08-22-hybrid-embeddings-design.md) | 2026-08-22 | `active` | `implementation` | `learning-pipeline` | Hybrid EmbeddingService Design |
-| [`docs/plans/2026-09-05-oneiric-phase4.md`](2026-09-05-oneiric-phase4.md) | 2026-09-05 | `partial` | `implementation` | `lifecycle` | Oneiric Phase 4 Implementation Plan |
-| [`docs/plans/2026-10-05-oneiric-cli-loader-xdg-migration.md`](2026-10-05-oneiric-cli-loader-xdg-migration.md) | 2026-10-05 | `active` | `implementation` | `routing-composition` | Migrate Oneiric CLI/MCP loader from `~/.oneiric/settings.yaml` to the XDG loader |
-| [`docs/plans/2026-10-11-move-llm-and-prompting-from-mcp-common-to-oneiric.md`](2026-10-11-move-llm-and-prompting-from-mcp-common-to-oneiric.md) | 2026-10-11 | `active` | `implementation` | `adapter-registry` | Move LLM and Prompting Subsystems from mcp-common to oneiric |
-| [`docs/plans/2026-10-11-pydantic-settings-migration.md`](2026-10-11-pydantic-settings-migration.md) | 2026-10-11 | `draft` | `implementation` | `oneiric-config` | Oneiric pydantic-settings migration — implementation plan (revised) |
-
 ### .claude/decisions
 
 | Path | Date | Status | Role | Topic | Title |
@@ -57,8 +47,8 @@ _Regenerated 2026-10-20 by `crackerjack.tools.plan_index_sync` (fast-hook)._
 | Role \\ Lifecycle | draft | active | partial | shipped | complete | Total |
 |---|---|---|---|---|---|---|
 | `canonical` | 1 | 5 | · | · | · | **6** |
-| `implementation` | 2 | 7 | 2 | · | · | **11** |
+| `implementation` | 1 | 4 | 1 | · | · | **6** |
 | `umbrella` | · | · | · | · | · | **0** |
 | `historical` | · | 1 | 1 | · | · | **2** |
 | `superseded` | · | · | · | · | · | **0** |
-| **Total** | **3** | **13** | **3** | **·** | **·** | **19** |
+| **Total** | **2** | **10** | **2** | **·** | **·** | **14** |

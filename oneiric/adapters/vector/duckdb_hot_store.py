@@ -105,23 +105,31 @@ CREATE TABLE IF NOT EXISTS spans_substrate (
 # the sort needs one.
 SPANS_SUBSTRATE_INDEXES: tuple[tuple[str, str], ...] = (
     (
-        ("CREATE INDEX IF NOT EXISTS idx_spans_selector_task_class_outcome "
-        "ON spans_substrate(selector, task_class, outcome, received_at_unix_nano DESC)"),
+        (
+            "CREATE INDEX IF NOT EXISTS idx_spans_selector_task_class_outcome "
+            "ON spans_substrate(selector, task_class, outcome, received_at_unix_nano DESC)"
+        ),
         "idx_spans_selector_task_class_outcome",
     ),
     (
-        ("CREATE INDEX IF NOT EXISTS idx_spans_service_name_recent "
-        "ON spans_substrate(service_name, received_at_unix_nano DESC)"),
+        (
+            "CREATE INDEX IF NOT EXISTS idx_spans_service_name_recent "
+            "ON spans_substrate(service_name, received_at_unix_nano DESC)"
+        ),
         "idx_spans_service_name_recent",
     ),
     (
-        ("CREATE INDEX IF NOT EXISTS idx_spans_source_type_recent "
-        "ON spans_substrate(telemetry_source_type, received_at_unix_nano DESC)"),
+        (
+            "CREATE INDEX IF NOT EXISTS idx_spans_source_type_recent "
+            "ON spans_substrate(telemetry_source_type, received_at_unix_nano DESC)"
+        ),
         "idx_spans_source_type_recent",
     ),
     (
-        ("CREATE INDEX IF NOT EXISTS idx_spans_received_at_recent "
-        "ON spans_substrate(received_at_unix_nano DESC)"),
+        (
+            "CREATE INDEX IF NOT EXISTS idx_spans_received_at_recent "
+            "ON spans_substrate(received_at_unix_nano DESC)"
+        ),
         "idx_spans_received_at_recent",
     ),
 )
@@ -165,8 +173,7 @@ CREATE TABLE IF NOT EXISTS _dlq_rows (
 # §8.1 retention sweeps `_dlq_rows` by age; without this index every sweep is
 # a full scan of a table that only ever grows until the first sweep runs.
 DLQ_ROWS_INDEX = (
-    "CREATE INDEX IF NOT EXISTS idx_dlq_rows_recent "
-    "ON _dlq_rows(rejected_at DESC)"
+    "CREATE INDEX IF NOT EXISTS idx_dlq_rows_recent ON _dlq_rows(rejected_at DESC)"
 )
 
 # Default embedding dimensionality when neither ``embedding_dim`` is passed
@@ -432,7 +439,7 @@ class DuckdbHotStore:
             self.conn.executemany(
                 f"INSERT INTO {table} ({collist}) VALUES ({placeholders}) "
                 f"ON CONFLICT DO NOTHING",
-                [list(r.get(c) for c in columns) for r in rows],
+                [[r.get(c) for c in columns] for r in rows],
             )
             return (len(rows) - deduped, deduped)
 
@@ -462,7 +469,7 @@ class DuckdbHotStore:
             collist = ", ".join(columns)
             self.conn.executemany(
                 f"INSERT INTO {table} ({collist}) VALUES ({placeholders})",
-                [list(r.get(c) for c in columns) for r in rows],
+                [[r.get(c) for c in columns] for r in rows],
             )
             return len(rows)
 
@@ -630,8 +637,8 @@ __all__ = [
     "DEFAULT_EMBEDDING_DIM",
     "DLQ_ROWS_DDL",
     "DLQ_ROWS_INDEX",
-    "DuckdbHotStore",
     "RECEIVER_STATE_DDL",
     "SPANS_SUBSTRATE_DDL",
     "SPANS_SUBSTRATE_INDEXES",
+    "DuckdbHotStore",
 ]

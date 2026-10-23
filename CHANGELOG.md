@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.33.2] - 2026-10-23
+
+### Added
+
+- Add the spans_substrate DDL (v7 PR-0a)
+- duckdb: Create the OTLP receiver's two operational tables
+- duckdb: Re-home the span ingest writers into the substrate
+
+### Fixed
+
+- deps: Uv 0.13.3 -> 0.13.5 (PYSEC-2026-4321)
+
 ## [0.33.1] - 2026-10-20
 
 ### Fixed
