@@ -1,10 +1,29 @@
 from __future__ import annotations
 
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class OTelStorageSettings(BaseSettings):
+    """pgvector-backed OTLP **storage** settings.
+
+    ``extra="allow"`` because ``observability`` is a key consumers already use
+    for their own, unrelated meaning -- Mahavishnu's ``ObservabilityConfig``
+    (whether to EXPORT metrics/traces) collides with this model's ``observability``
+    (where to STORE telemetry). With pydantic-settings' default
+    ``extra="forbid"``, a single unknown nested key raised ValidationError inside
+    ``OneiricSettings`` construction, ``load_settings`` propagated it, and the
+    consumer's whole layered config was discarded in favour of defaults --
+    silently taking unrelated settings (``adapters.hatchet_enabled``,
+    ``qc.enabled``) down with it.
+
+    This matches ``OneiricSettings``, which is already ``extra="allow"`` at the
+    top level. A permissive parent with a strict child is the inconsistency
+    that made the blast radius total rather than local.
+    """
+
+    model_config = SettingsConfigDict(extra="allow")
+
     connection_string: str = Field(
         default="postgresql://postgres:postgres@localhost:5432/otel",
         description="PostgreSQL connection string with pgvector extension",
