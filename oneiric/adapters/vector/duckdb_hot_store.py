@@ -42,6 +42,91 @@ import duckdb  # third-party; substrate ships it as an optional extra for develo
 
 logger = logging.getLogger(__name__)
 
+# ── `spans_substrate` DDL ──────────────────────────────────────────────────
+# Verbatim from spec §5.1 of
+# `docs/specs/2026-10-19-bodai-substrate-otel-v7.md`. Verified against the
+# DuckDB build `uv.lock` pins; the audit trail is §5.1a.
+#
+# Two DuckDB constraints shaped this and neither is obvious:
+#
+# - `uq_span_identity` is INLINE in CREATE TABLE, not a separate ALTER. v5
+#   tried `ALTER TABLE ... ADD COLUMN received_at_unix_nano BIGINT NOT NULL
+#   DEFAULT (...)` and DuckDB rejects adding a constrained column
+#   (1.5.6: "Adding columns with constraints not yet supported";
+#   2.0.0-dev: DependencyException). Same conclusion, different diagnostic.
+#   Columns therefore ship in the initial schema.
+# - The indexes carry NO `WHERE` clause. DuckDB raises NotImplementedException
+#   for partial indexes on both builds, so the outcome predicate lives in the
+#   read-side SELECT instead.
+#
+# One writer exists: the akosha OTLP receiver, via `_ensure_operational_tables`.
+# akosha's read-path tests carry their own copy in
+# `akosha/tests/_support/spans_ddl.py` until the receiver lands — the two must
+# be updated together.
+SPANS_SUBSTRATE_DDL = """
+CREATE TABLE IF NOT EXISTS spans_substrate (
+    span_id                   TEXT PRIMARY KEY,
+    trace_id                  TEXT,
+    parent_span_id            TEXT,
+    service_name              TEXT         NOT NULL,
+    service_namespace         TEXT         NOT NULL,
+    deployment_environment    TEXT,
+    telemetry_source          TEXT,
+    telemetry_source_type     TEXT,
+    span_name                 TEXT         NOT NULL,
+    start_time_unix_nano      BIGINT       NOT NULL,
+    end_time_unix_nano        BIGINT,
+    received_at_unix_nano     BIGINT       NOT NULL,
+    duration_ms               REAL,
+    outcome                   TEXT,
+    selector                  TEXT,
+    task_class                TEXT,
+    latency_ms                REAL,
+    gen_ai_provider_name      TEXT,
+    gen_ai_request_model      TEXT,
+    gen_ai_response_model     TEXT,
+    gen_ai_usage_input_tokens INTEGER,
+    gen_ai_usage_output_tokens INTEGER,
+    gen_ai_usage_cost         NUMERIC(10, 6),
+    status_code               TEXT,
+    status_message            TEXT,
+    attributes                JSON         NOT NULL,
+    events                    JSON,
+    resource                  JSON         NOT NULL,
+    has_gen_ai_attrs          BOOLEAN      NOT NULL DEFAULT FALSE,
+    has_dispatch_attrs        BOOLEAN      NOT NULL DEFAULT FALSE,
+    inserted_at               TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at                TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_span_identity UNIQUE (trace_id, span_id)
+);
+"""
+
+# Trailing `received_at_unix_nano DESC` on every index: the read path pages by
+# keyset on (received_at_unix_nano, span_id), so every filter that can precede
+# the sort needs one.
+SPANS_SUBSTRATE_INDEXES: tuple[tuple[str, str], ...] = (
+    (
+        ("CREATE INDEX IF NOT EXISTS idx_spans_selector_task_class_outcome "
+        "ON spans_substrate(selector, task_class, outcome, received_at_unix_nano DESC)"),
+        "idx_spans_selector_task_class_outcome",
+    ),
+    (
+        ("CREATE INDEX IF NOT EXISTS idx_spans_service_name_recent "
+        "ON spans_substrate(service_name, received_at_unix_nano DESC)"),
+        "idx_spans_service_name_recent",
+    ),
+    (
+        ("CREATE INDEX IF NOT EXISTS idx_spans_source_type_recent "
+        "ON spans_substrate(telemetry_source_type, received_at_unix_nano DESC)"),
+        "idx_spans_source_type_recent",
+    ),
+    (
+        ("CREATE INDEX IF NOT EXISTS idx_spans_received_at_recent "
+        "ON spans_substrate(received_at_unix_nano DESC)"),
+        "idx_spans_received_at_recent",
+    ),
+)
+
 # Default embedding dimensionality when neither ``embedding_dim`` is passed
 # at ``__init__`` nor a registered embedding service is available. Matches
 # MiniLM-L6-v2's standard output dim — the most common cross-component choice.
@@ -100,6 +185,12 @@ class DuckdbHotStore:
     extends this with code-graph sub-features; Mahavishnu's
     ``otel_ingester`` uses this directly via runtime construction.
     """
+
+    # Table names are class attributes rather than literals so callers name the
+    # surface they depend on. The OTLP receiver asserts against
+    # ``spans_substrate_table`` to fail loud when the DDL is absent.
+    conversations_table: str = "conversations"
+    spans_substrate_table: str = "spans_substrate"
 
     def __init__(
         self,
@@ -182,7 +273,41 @@ class DuckdbHotStore:
                     logger.info("Created %s index", name)
                 except Exception as exc:
                     logger.warning("%s index creation failed: %s", name, exc)
+
+            # ── spans_substrate (v7 PR-0a) ──────────────────────────────
+            # The OTel span substrate. Substrate-managed per ADR 017: every
+            # Bodai component inherits the access path from here.
+            #
+            # Deliberately not wrapped in try/except. A substrate that cannot
+            # create its own table is broken, and swallowing that would surface
+            # later as a read path that silently returns nothing — the exact
+            # failure mode table_exists() exists to let callers detect.
+            self.conn.execute(SPANS_SUBSTRATE_DDL)
+            for index_ddl, index_name in SPANS_SUBSTRATE_INDEXES:
+                self.conn.execute(index_ddl)
+                logger.info("Created %s index", index_name)
+
             logger.info("Hot store initialized")
+
+    async def table_exists(self, name: str) -> bool:
+        """Whether table ``name`` is present in the connected database.
+
+        Used by akosha's ``OTLPReceiver.start()`` to fail loud when the
+        substrate is missing, and by the read path to return empty rather
+        than raise a CatalogError before the receiver has ever run.
+
+        ``duckdb_tables()`` is a table function — the parentheses are
+        required; ``duckdb_tables`` alone parses as a relation reference.
+        ``conn.execute`` is synchronous in DuckDB's Python API, so it is not
+        awaited; the method is async only so call sites read uniformly with
+        the rest of this class's async surface.
+        """
+        if self.conn is None:
+            return False
+        row = self.conn.execute(
+            "SELECT 1 FROM duckdb_tables() WHERE table_name = ?", [name]
+        ).fetchone()
+        return bool(row)
 
     async def insert(self, record: Any) -> None:
         """Insert a conversation record.
