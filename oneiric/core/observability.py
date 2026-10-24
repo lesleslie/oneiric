@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterator, Mapping
+from collections.abc import Generator, Mapping
 from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 from typing import Any
@@ -60,7 +60,7 @@ class DecisionEvent:
 
 
 @contextmanager
-def traced_decision(event: DecisionEvent) -> Iterator[Span]:
+def traced_decision(event: DecisionEvent) -> Generator[Span]:
     log_context = {
         "domain": event.domain,
         "key": event.key,
@@ -91,7 +91,7 @@ def observed_span(
     component: str | None = None,
     attributes: Mapping[str, Any] | None = None,
     log_context: Mapping[str, Any] | None = None,
-) -> Iterator[Span]:
+) -> Generator[Span]:
     tracer = get_tracer(component)
     context_scope = scoped_log_context(**log_context) if log_context else nullcontext()
     with context_scope, tracer.start_as_current_span(name) as span:

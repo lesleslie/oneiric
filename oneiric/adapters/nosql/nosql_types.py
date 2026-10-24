@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -60,7 +60,7 @@ class NoSQLAdapterBase[SettingsT: NoSQLBaseSettings](ABC):
         pass
 
     @asynccontextmanager
-    async def span(self, event: str, **extra: Any) -> AsyncIterator[None]:
+    async def span(self, event: str, **extra: Any) -> AsyncGenerator[None]:
         self._logger.debug("%s-start", event, **extra)
         try:
             yield

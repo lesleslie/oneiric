@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import inspect
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncGenerator, Callable
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -189,7 +189,7 @@ class DynamoDBAdapter(NoSQLAdapterBase):
         return session
 
     @asynccontextmanager
-    async def _table(self) -> AsyncIterator[Any]:
+    async def _table(self) -> AsyncGenerator[Any]:
         if self._table_factory:
             table = self._table_factory()
             if inspect.isawaitable(table):

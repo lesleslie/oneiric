@@ -27,7 +27,7 @@ logger = get_logger("adapter.llm.anthropic")
 
 class AnthropicLLMSettings(LLMBaseSettings):
     model: str = Field(default="claude-sonnet-4-20250514")
-    base_url: str = Field(default="https://api.anthropic.com")
+    base_url: str | None = Field(default="https://api.anthropic.com")
     api_version: str = Field(default="2023-06-01")
     max_tokens: int = Field(default=4096)
     temperature: float = Field(default=0.7)

@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import time
-from collections.abc import AsyncIterator, Callable, Iterable, Mapping
+from collections.abc import AsyncGenerator, Callable, Iterable, Mapping
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from typing import Any
@@ -199,7 +199,7 @@ class EventDispatchAction:
         return results
 
     @asynccontextmanager
-    async def _acquire_client(self) -> AsyncIterator[httpx.AsyncClient]:
+    async def _acquire_client(self) -> AsyncGenerator[httpx.AsyncClient]:
         if self._client_factory:
             client = self._client_factory()
         else:

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import sqlite3
 import threading
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
@@ -194,7 +194,7 @@ class WorkflowExecutionStore:
         return [dict(row) for row in rows]
 
     @contextmanager
-    def _connection(self) -> Iterator[sqlite3.Connection]:
+    def _connection(self) -> Generator[sqlite3.Connection]:
         with self._lock:
             conn: sqlite3.Connection = sqlite3.connect(self.path)
             conn.row_factory = sqlite3.Row

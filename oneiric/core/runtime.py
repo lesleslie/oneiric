@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import math
-from collections.abc import AsyncIterator, Awaitable, Callable, Coroutine, Sequence
+from collections.abc import AsyncGenerator, Awaitable, Callable, Coroutine, Sequence
 from contextlib import asynccontextmanager
 from typing import Any, Self
 
@@ -134,7 +134,7 @@ async def anyio_nursery(
     limit: int | None = None,
     timeout: float | None = None,
     shield: bool = False,
-) -> AsyncIterator[AnyioTaskGroup]:
+) -> AsyncGenerator[AnyioTaskGroup]:
     logger = get_logger(name)
     limiter = anyio.CapacityLimiter(limit) if limit else None
     deadline = math.inf
@@ -179,7 +179,7 @@ async def run_with_anyio_taskgroup(
 @asynccontextmanager
 async def task_nursery(
     name: str = "oneiric.nursery",
-) -> AsyncIterator[RuntimeTaskGroup]:
+) -> AsyncGenerator[RuntimeTaskGroup]:
     group = RuntimeTaskGroup(name=name)
     async with group as active:
         yield active

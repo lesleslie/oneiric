@@ -264,7 +264,7 @@ async def sync_remote_manifest(
 
     try:
         result = await breaker.call(_do_sync)
-        return cast("RemoteSyncResult | None", result)
+        return result
     except CircuitBreakerOpen as exc:
         logger.warning(
             "remote-sync-circuit-open",
@@ -356,17 +356,14 @@ async def _run_sync(
             allowed_file_uri_roots=config.allowed_file_uri_roots,
         )
 
-    manifest_data_str: str = cast(
-        str,
-        await run_with_retry(
-            _fetch_manifest_text,
-            attempts=retry_attempts,
-            base_delay=retry_base_delay,
-            max_delay=retry_max_delay,
-            jitter=retry_jitter,
-            adaptive_key=f"remote: manifest:{_remote_host(url)}",
-            attributes=_retry_attributes(url, "manifest.fetch"),
-        ),
+    manifest_data_str: str = await run_with_retry(
+        _fetch_manifest_text,
+        attempts=retry_attempts,
+        base_delay=retry_base_delay,
+        max_delay=retry_max_delay,
+        jitter=retry_jitter,
+        adaptive_key=f"remote: manifest:{_remote_host(url)}",
+        attributes=_retry_attributes(url, "manifest.fetch"),
     )
     manifest = _parse_manifest(manifest_data_str, signature_policy=config)
     artifact_manager = ArtifactManager(

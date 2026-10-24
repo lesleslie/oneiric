@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import sqlite3
 import threading
-from collections.abc import Iterator, Mapping
+from collections.abc import Generator, Mapping
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
@@ -54,7 +54,7 @@ class WorkflowCheckpointStore:
             conn.commit()
 
     @contextmanager
-    def _connection(self) -> Iterator[sqlite3.Connection]:
+    def _connection(self) -> Generator[sqlite3.Connection]:
         with self._lock:
             conn: sqlite3.Connection = sqlite3.connect(self.path)
             conn.row_factory = sqlite3.Row
