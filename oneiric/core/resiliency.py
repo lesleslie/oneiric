@@ -5,7 +5,7 @@ import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import TypeVar
+from typing import TypeVar, overload
 
 from aiobreaker import CircuitBreaker as _AioCircuitBreaker
 from aiobreaker import CircuitBreakerError as _AioCircuitBreakerError
@@ -66,6 +66,17 @@ class CircuitBreaker:
             name=name,
         )
 
+    # `Awaitable[T] | T` in one signature is not inferable. A coroutine function
+    # satisfies both arms of that union, so the checker cannot tell whether T is
+    # the awaited value or the coroutine itself, and joins the two candidates
+    # into `T | CoroutineType[...]`. Overloads bind each shape separately, so
+    # `await breaker.call(...)` yields the awaited type rather than a union.
+    @overload
+    async def call(self, func: Callable[[], Awaitable[T]]) -> T: ...
+
+    @overload
+    async def call(self, func: Callable[[], T]) -> T: ...
+
     async def call(self, func: Callable[[], Awaitable[T] | T]) -> T:
         async def _execute() -> T:
             result = func()
@@ -99,6 +110,35 @@ class CircuitBreaker:
             self._breaker.timeout_duration = timedelta(seconds=new_recovery)  # ty: ignore[invalid-assignment]
         except Exception:  # noqa: BLE001 — defensive: circuit-breaker tuning must never raise
             return
+
+
+# Same inference hazard as `CircuitBreaker.call`: a single `Awaitable[T] | T`
+# parameter cannot bind T unambiguously for coroutine functions. Split into
+# overloads so each callable shape gets its own binding.
+@overload
+async def run_with_retry[T](
+    operation: Callable[[], Awaitable[T]],
+    *,
+    attempts: int = 3,
+    base_delay: float = 1.0,
+    max_delay: float = 30.0,
+    jitter: float = 0.25,
+    adaptive_key: str | None = None,
+    attributes: dict[str, str] | None = None,
+) -> T: ...
+
+
+@overload
+async def run_with_retry[T](
+    operation: Callable[[], T],
+    *,
+    attempts: int = 3,
+    base_delay: float = 1.0,
+    max_delay: float = 30.0,
+    jitter: float = 0.25,
+    adaptive_key: str | None = None,
+    attributes: dict[str, str] | None = None,
+) -> T: ...
 
 
 async def run_with_retry[T](

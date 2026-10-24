@@ -9,7 +9,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 from urllib.parse import urlparse
 
 import httpx2 as httpx
@@ -400,17 +400,14 @@ async def _run_sync(
             ) -> Path:
                 return await artifact_manager.fetch(_uri, _sha, headers)
 
-            artifact_path = cast(
-                "Path | None",
-                await run_with_retry(
-                    _fetch_artifact,
-                    attempts=retry_attempts,
-                    base_delay=retry_base_delay,
-                    max_delay=retry_max_delay,
-                    jitter=retry_jitter,
-                    adaptive_key=f"remote: artifact:{_remote_host(entry.uri)}",
-                    attributes=_retry_attributes(entry.uri, "artifact.fetch"),
-                ),
+            artifact_path = await run_with_retry(
+                _fetch_artifact,
+                attempts=retry_attempts,
+                base_delay=retry_base_delay,
+                max_delay=retry_max_delay,
+                jitter=retry_jitter,
+                adaptive_key=f"remote: artifact:{_remote_host(entry.uri)}",
+                attributes=_retry_attributes(entry.uri, "artifact.fetch"),
             )
         if entry.sha256:
             digest_checks += 1
