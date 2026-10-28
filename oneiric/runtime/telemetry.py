@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from oneiric.core.atomic import atomic_write_text
 from oneiric.core.config import resolve_cache_dir_path
 from oneiric.core.logging import get_logger
 
@@ -150,9 +151,7 @@ class RuntimeTelemetryRecorder:
     def _write(self, snapshot: RuntimeObservabilitySnapshot) -> None:
         path = self._path
         path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(snapshot.as_dict()))
-        tmp.replace(path)
+        atomic_write_text(path, json.dumps(snapshot.as_dict()))
 
 
 def runtime_telemetry_path(cache_dir: str | Path) -> Path:

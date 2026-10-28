@@ -6,6 +6,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from oneiric.core.atomic import atomic_write_text
+
 RUNTIME_HEALTH_FILENAME = "runtime_health.json"
 
 
@@ -67,9 +69,7 @@ def write_runtime_health(path: str | Path, snapshot: RuntimeHealthSnapshot) -> N
     file = Path(path)
     file.parent.mkdir(parents=True, exist_ok=True)
     snapshot.updated_at = _timestamp()
-    tmp = file.with_suffix(".tmp")
-    tmp.write_text(json.dumps(snapshot.as_dict()))
-    tmp.replace(file)
+    atomic_write_text(file, json.dumps(snapshot.as_dict()))
 
 
 def _timestamp() -> str:

@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from oneiric.core.atomic import atomic_write_text
 from oneiric.core.config import resolve_cache_dir_path
 from oneiric.core.logging import get_logger
 
@@ -95,9 +96,7 @@ def record_remote_failure(cache_dir: str, error: str) -> None:
 def _write(cache_dir: str, telemetry: RemoteSyncTelemetry) -> None:
     path = _telemetry_path(cache_dir)
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp_path = path.with_suffix(".tmp")
-    tmp_path.write_text(json.dumps(telemetry.as_dict()))
-    tmp_path.replace(path)
+    atomic_write_text(path, json.dumps(telemetry.as_dict()))
 
 
 def _telemetry_path(cache_dir: str) -> Path:

@@ -39,6 +39,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from oneiric.core.atomic import atomic_write_text
+
 logger = logging.getLogger(__name__)
 
 
@@ -290,13 +292,7 @@ class OneiricAdapterRegistry:
             }
             for aid, rec in self._adapters.items()
         }
-        tmp = self._path.with_suffix(self._path.suffix + ".tmp")
-        tmp.write_text(json.dumps(serialized, indent=2, default=str))
-        try:
-            os.chmod(tmp, 0o600)
-        except OSError:
-            logger.debug("adapter_registry: chmod 0o600 failed on %s", tmp)
-        tmp.replace(self._path)
+        atomic_write_text(self._path, json.dumps(serialized, indent=2, default=str))
 
     # ----- async public API -----
 

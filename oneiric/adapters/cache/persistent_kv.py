@@ -18,9 +18,9 @@ The storage format is::
         "time_series": {"metric_type:entity_id": [{"ts": "iso", ...}, ...], ...}
     }
 
-Atomicity: every mutation is serialized to a temp file in the same directory
-and then ``os.replace``-d into place so a crash mid-write leaves the prior
-snapshot intact.
+Atomicity: every mutation is serialized to a uniquely named temp file in
+the same directory and then renamed into place, so a crash mid-write
+leaves the prior snapshot intact.
 """
 
 from __future__ import annotations
@@ -28,7 +28,6 @@ from __future__ import annotations
 import asyncio
 import json
 import operator
-import os
 import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -37,6 +36,7 @@ from typing import Any, cast
 from pydantic import BaseModel, Field
 
 from oneiric.adapters.metadata import AdapterMetadata
+from oneiric.core.atomic import atomic_write_text
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
 
@@ -229,13 +229,11 @@ class PersistentKVCacheAdapter:
             self._TTL_KEY: self._kv_ttl,
             self._TS_KEY: self._time_series,
         }
-        tmp_path = self._storage_path.with_suffix(self._storage_path.suffix + ".tmp")
         data = json.dumps(payload, default=str, sort_keys=True)
         # Use a sync write under the asyncio lock — the file is small and the
         # I/O is bounded, so running it inline avoids adding executor indirection
         # for every commit. MemoryCacheAdapter uses the same inline-write pattern.
-        tmp_path.write_text(data, encoding="utf-8")
-        os.replace(tmp_path, self._storage_path)
+        atomic_write_text(self._storage_path, data)
 
     async def health(self) -> bool:
         async with self._lock:

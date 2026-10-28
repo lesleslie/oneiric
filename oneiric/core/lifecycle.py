@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from .atomic import atomic_write_text
 from .logging import get_logger
 from .metrics import record_swap_duration
 from .observability import observed_span
@@ -468,9 +469,7 @@ class LifecycleManager:
         payload = [status.as_dict() for status in self._status.values()]
         path = self._status_snapshot_path
         path.parent.mkdir(parents=True, exist_ok=True)
-        tmp_path = path.with_suffix(".tmp")
-        tmp_path.write_text(json.dumps(payload))
-        tmp_path.replace(path)
+        atomic_write_text(path, json.dumps(payload))
 
     def _ensure_status_entry(self, candidate: Candidate) -> LifecycleStatus:
         key = (candidate.domain, candidate.key)

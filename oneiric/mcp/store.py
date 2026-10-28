@@ -23,6 +23,8 @@ from pathlib import Path
 from typing import Any, Protocol
 from uuid import uuid4
 
+from oneiric.core.atomic import atomic_write_text
+
 
 class _PayloadLike(Protocol):
     """Any payload with .model_dump(); T3 will refine to the concrete types."""
@@ -70,9 +72,7 @@ def _read_json(path: Path, empty: dict[str, Any]) -> dict[str, Any]:
 
 def _write_json_atomic(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(payload, indent=2, default=str))
-    tmp.replace(path)
+    atomic_write_text(path, json.dumps(payload, indent=2, default=str))
 
 
 @dataclass
