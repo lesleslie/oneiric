@@ -1,5 +1,5 @@
 ---
-status: active
+status: partial
 role: implementation
 date: 2026-10-29
 last_reviewed: 2026-10-29
@@ -139,6 +139,19 @@ git commit --only docs/RESOLUTION_LAYER_SPEC.md tests/core/test_resolution.py te
 
 ### Task 2: Rewrite the `resolve-components` skill to describe the real API
 
+> **✅ Completed 2026-10-29** (out of band, from the mahavishnu planning
+> session — the skill is user-level, so no repo commit was involved).
+> Verified two ways: (a) all 17 ```python blocks scanned for the fictional
+> symbols — **zero** matches; the only remaining mentions of
+> `oneiric.core.resolver`, `oneiric.core.priority`, and `@priority` are in the
+> prose, where they are named deliberately to warn against them. (b) every
+> runnable example was **executed** against `oneiric/core/resolution.py` in
+> oneiric's venv and asserted — resolve, explain, `as_dict()` shape, reasons
+> list, shadowed list, override-wins-over-priority, capability filtering, and
+> the precedence-holds block all pass. One correction came out of that run:
+> `as_dict()["ordered"][i]["score"]` is a **tuple** in Python, not a JSON
+> array — the skill now shows the tuple form and notes the JSON conversion.
+
 **Files:**
 - Modify: `~/.claude/skills/resolve-components/SKILL.md` (absolute path — this skill exists only at user level; there is no repo-local copy)
 
@@ -156,7 +169,7 @@ The current skill also documents `from oneiric.core.priority import priority` an
 
 The current skill's precedence table says registration order means "first registered wins" and places "Stack Order" above "Priority". Both contradict the spec and the code: registration order is **last registered wins**, and `stack_level` ranks **below** `priority`.
 
-- [ ] **Step 1: Replace the import and API surface**
+- [x] **Step 1: Replace the import and API surface**
 
 Rewrite the "Implementation" section to use the real API:
 
@@ -185,7 +198,7 @@ Real methods, with their exact signatures:
 
 Note `Resolver.explain` takes `capabilities` as keyword-only; `CandidateRegistry.explain` accepts it as keyword too. Use keyword arguments for `capabilities` in both.
 
-- [ ] **Step 2: Replace the precedence table**
+- [x] **Step 2: Replace the precedence table**
 
 Replace the "Resolver Precedence" tier table with one matching `docs/RESOLUTION_LAYER_SPEC.md` exactly:
 
@@ -199,7 +212,7 @@ Replace the "Resolver Precedence" tier table with one matching `docs/RESOLUTION_
 
 State explicitly that with `require_all=True` (the default) capability-incompatible candidates are excluded before ranking, so tier 2 does not differentiate.
 
-- [ ] **Step 3: Replace the fictional selection API**
+- [x] **Step 3: Replace the fictional selection API**
 
 There is no `resolver.select()` / `resolver.clear_selection()`. Selection is a *setting*, read via `ResolverSettings.selection_for(domain, key)`. Rewrite that section to show:
 
@@ -209,7 +222,7 @@ registry = CandidateRegistry(settings)
 assert settings.selection_for("adapters", "database") == "postgres"
 ```
 
-- [ ] **Step 4: Replace the fictional priority API**
+- [x] **Step 4: Replace the fictional priority API**
 
 Remove the `@priority(100)` decorator example. Show the real mechanism:
 
@@ -228,31 +241,35 @@ registry.register_candidate(
 
 and note that `register_pkg(..., priority=...)` sets the priority for candidates that do not carry one (`oneiric/core/resolution.py:312`).
 
-- [ ] **Step 5: Remove the unsupported sections**
+- [x] **Step 5: Remove the unsupported sections**
 
 Delete the "Resolution Hooks" section (`ResolutionHook`, `register_hook`) and the "Component Metadata" subsections that call `candidates_with_capability` / `candidates_with_metadata`. Replace with the real metadata-bearing path: `Candidate.metadata` plus the `capabilities` argument on `resolve` / `explain`.
 
 Keep the "Shadowed candidates" and "Conflict" material, but rewrite it to use `registry.list_shadowed(domain)` and `registry.explain(domain, key)` — the real read paths.
 
-- [ ] **Step 6: Add a source-of-truth pointer**
+- [x] **Step 6: Add a source-of-truth pointer**
 
 Add a line under the Overview:
 
 > The canonical contract is `docs/RESOLUTION_LAYER_SPEC.md` in the oneiric repository. If this skill and that spec disagree, the spec is correct.
 
-- [ ] **Step 7: Verify every symbol in the rewritten skill exists**
+- [x] **Step 7: Verify every symbol in the rewritten skill exists**
 
 For each Python symbol the skill names, confirm it is defined or exported in `oneiric/core/resolution.py`:
 
 Run: `grep -nE "def (select|clear_selection|candidates|conflicts|set_priority|register_hook)|class ResolutionHook|oneiric\.core\.resolver|oneiric\.core\.priority" ~/.claude/skills/resolve-components/SKILL.md`
 
-Expected: **no output**. Any match is a surviving fiction — remove it.
+Expected: **no output** from the code blocks. Scope the check to the file's
+```python blocks before running it — the prose deliberately names the fictions
+in the Common Mistakes table and the priority note, so a naive whole-file
+grep produces false positives. Any match inside a code block is a surviving
+fiction — remove it.
 
 Run: `grep -c "oneiric.core.resolution" ~/.claude/skills/resolve-components/SKILL.md`
 
 Expected: at least 1.
 
-- [ ] **Step 8: Spot-check the corrected examples**
+- [x] **Step 8: Spot-check the corrected examples**
 
 Confirm the skill's worked examples type-check against the real signatures by running the central one in oneiric's interpreter:
 
@@ -260,7 +277,7 @@ Run: `cd ~/Projects/oneiric && ./.venv/bin/python -c "from oneiric.core.resoluti
 
 Expected: prints `ok`.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 The skill lives outside the repository, so it is not part of the repo commit. Commit only any repo-side change made in Step 1 or 2 of this task (there should be none — the spec was amended in Task 1):
 
@@ -421,13 +438,17 @@ git commit --only oneiric/core/resolution.py tests/core/test_resolution.py tests
 
 ## Parking
 
-This plan is **approved and parked** — `status: active` in frontmatter, not started.
+This plan is **partially implemented** — `status: partial` in frontmatter.
+**Task 2 is complete**; Tasks 1 and 3 remain parked for a dedicated
+implementation session.
 
 | Field | Value |
 |---|---|
 | Parked on | 2026-10-29 |
 | Parked by | Claude (planning session, mahavishnu) |
 | Reason | Deferred to a dedicated implementation session; no resolver behavior changes were wanted inside a planning session |
+| Task 2 completed | 2026-10-29, out of band — the skill is user-level (`~/.claude/skills/`), so no repo commit was involved |
+| Still parked | Task 1 (spec ↔ code reconciliation, tiebreak pins, spec sync guard), Task 3 (`filtered` channel on `ResolutionExplanation`) |
 | Resume trigger | Any future session that needs to change resolver precedence, explainability, or resolver documentation |
 | Working location | A worktree at `~/.local/state/mahavishnu/worktrees/oneiric/` (per the user-level worktree convention), **not** inside the oneiric repository |
 | Implementation skill | `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` |

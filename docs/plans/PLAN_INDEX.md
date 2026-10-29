@@ -19,7 +19,7 @@
 
 | Path | Date | Status | Role | Kind | Topic | Title |
 |---|---|---|---|---|---|---|
-| `docs/plans/2026-10-29-resolver-precedence-contract-and-empty-result-explanation.md` | 2026-10-29 | `active` | `implementation` | `plan` | `resolver` | Resolver Precedence Contract and Empty-Result Explanation — Implementation Plan |
+| `docs/plans/2026-10-29-resolver-precedence-contract-and-empty-result-explanation.md` | 2026-10-29 | `partial` | `implementation` | `plan` | `resolver` | Resolver Precedence Contract and Empty-Result Explanation — Implementation Plan |
 | `docs/plans/2026-10-29-resolver-scope-deferrals-and-triggers.md` | 2026-10-29 | `active` | `implementation` | `plan` | `resolver` | Resolver Scope Deferrals and Reopening Triggers — Implementation Plan |
 | `docs/substrate.md` | 2026-10-17 | `active` | `canonical` | `plan` | `persistence` | Oneiric Substrate |
 | `docs/adr/0002-oneiric-adapter-contract.md` | 2026-10-11 | `active` | `canonical` | `decision` | `adapter-registry` | ADR 0002: Oneiric Adapter Contract — Single Canonical Specification |
@@ -129,7 +129,7 @@
 
 | Path | Date | Status | Role | Kind | Topic | Title |
 |---|---|---|---|---|---|---|
-| `docs/plans/2026-10-29-resolver-precedence-contract-and-empty-result-explanation.md` | 2026-10-29 | `active` | `implementation` | `plan` | `resolver` | Resolver Precedence Contract and Empty-Result Explanation — Implementation Plan |
+| `docs/plans/2026-10-29-resolver-precedence-contract-and-empty-result-explanation.md` | 2026-10-29 | `partial` | `implementation` | `plan` | `resolver` | Resolver Precedence Contract and Empty-Result Explanation — Implementation Plan |
 | `docs/plans/2026-10-29-resolver-scope-deferrals-and-triggers.md` | 2026-10-29 | `active` | `implementation` | `plan` | `resolver` | Resolver Scope Deferrals and Reopening Triggers — Implementation Plan |
 | `docs/plans/2026-10-11-move-llm-and-prompting-from-mcp-common-to-oneiric.md` | 2026-10-11 | `active` | `implementation` | `plan` | `adapter-registry` | Move LLM and Prompting Subsystems from mcp-common to oneiric |
 | `docs/plans/2026-10-11-pydantic-settings-migration.md` | 2026-10-11 | `draft` | `implementation` | `plan` | `oneiric-config` | Oneiric pydantic-settings migration — implementation plan (revised) |
@@ -218,8 +218,8 @@
 | Role \ Lifecycle | draft | active | partial | shipped | complete | Total |
 |---|---|---|---|---|---|---|
 | `canonical` | 2 | 85 | · | · | · | **87** |
-| `implementation` | 7 | 11 | 14 | · | · | **32** |
+| `implementation` | 7 | 9 | 16 | · | · | **32** |
 | `umbrella` | · | 2 | · | · | · | **2** |
 | `historical` | · | 1 | 1 | · | 22 | **24** |
 | `superseded` | · | · | · | · | · | **0** |
-| **Total** | **2** | **85** | **0** | **0** | **0** | **7** | **11** | **14** | **0** | **0** | **0** | **2** | **0** | **0** | **0** | **0** | **1** | **1** | **0** | **22** | **0** | **0** | **0** | **0** | **0** | **145** |
+| **Total** | **2** | **85** | **0** | **0** | **0** | **7** | **9** | **16** | **0** | **0** | **0** | **2** | **0** | **0** | **0** | **0** | **1** | **1** | **0** | **22** | **0** | **0** | **0** | **0** | **0** | **145** |
