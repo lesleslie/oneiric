@@ -9,7 +9,14 @@ description = "Universal resolution layer for pluggable components with hot-swap
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
-    "mcp-common>=0.28.0",
+    # 0.33.1 is the floor for the producer-telemetry OWNERSHIP API:
+    # `configure_producer_tracing` returns `ProducerTracingResult`, which
+    # separates "will this process export spans" from "may this caller
+    # close the provider". The launcher installs the provider before the
+    # server is built, so a component inherits one it does not own -- the
+    # ownership distinction is what keeps it from closing an exporter
+    # that belongs to someone else.
+    "mcp-common>=0.33.1",
     "pydantic>=2.12.5",
     # 2026-10-11: direct pin (was transitive via mcp-common). The substrate
     # now uses pydantic-settings natively (``oneiric.core.config`` extends

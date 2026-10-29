@@ -2717,13 +2717,17 @@ wheels = [
 
 [[package]]
 name = "mcp-common"
-version = "0.32.0"
+version = "0.33.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cryptography" },
     { name = "fastmcp" },
     { name = "httpx2" },
     { name = "oneiric" },
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-exporter-otlp-proto-grpc" },
+    { name = "opentelemetry-exporter-otlp-proto-http" },
+    { name = "opentelemetry-sdk" },
     { name = "prometheus-client" },
     { name = "psutil" },
     { name = "pydantic" },
@@ -2734,9 +2738,9 @@ dependencies = [
     { name = "typer" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/58/3c/96f6472a3d06bbcb59e45b007564d4e99b472a84203cf9422f46b8f51cc5/mcp_common-0.32.0.tar.gz", hash = "sha256:fa1e01a42f307eedb27b05d67d08f03b038eb48c97bb9d1b2be4ebde13d09d7d", size = 1069630, upload-time = "2026-10-28T22:02:43.818Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/36/05/103e08e9e99452f3f88b52142a8147eb2cf3fb80a1d60edc238866924895/mcp_common-0.33.1.tar.gz", hash = "sha256:babdd18b1361a8df3ca6f54209a7343f1876344b04014529465878f0253f4650", size = 1070552, upload-time = "2026-10-29T02:27:30.709Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/93/8a/3b7e3127946cb2001db3283b6ab5f32393d4ec9efcd40b78adcfa7ddddd4/mcp_common-0.32.0-py3-none-any.whl", hash = "sha256:1fe00a5df4e1c7a5141ac9f82e9cb0ff61103277edaf102d306d29b8c811231a", size = 488734, upload-time = "2026-10-28T22:02:41.364Z" },
+    { url = "https://files.pythonhosted.org/packages/44/f2/6681313ebda50df7848441f269f79db32f9729d359243b06025d96c4f232/mcp_common-0.33.1-py3-none-any.whl", hash = "sha256:c20d75b8a8184a55f7d267c46db9f30582d6a7cdef27c0801ff9916ccde5df9f", size = 489360, upload-time = "2026-10-29T02:27:28.72Z" },
 ]
 
 [[package]]
@@ -3247,7 +3251,7 @@ wheels = [
 
 [[package]]
 name = "oneiric"
-version = "0.33.3"
+version = "0.33.4"
 source = { editable = "." }
 dependencies = [
     { name = "aioboto3" },
@@ -3469,7 +3473,7 @@ requires-dist = [
     { name = "google-cloud-secret-manager", specifier = ">=2.29.0" },
     { name = "google-cloud-storage", specifier = ">=3.12.0" },
     { name = "ipython", specifier = ">=9.15.0" },
-    { name = "mcp-common", specifier = ">=0.28.0" },
+    { name = "mcp-common", specifier = ">=0.33.1" },
     { name = "msgspec", specifier = ">=0.21.1" },
     { name = "networkx", specifier = ">=3.6.1" },
     { name = "numpy", specifier = ">=2.5.0" },
