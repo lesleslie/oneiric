@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.33.6] - 2026-10-29
+
+### Documentation
+
+- Add resolver precedence and scope-deferral plans
+- plans: Mark Plan A task 2 complete, plan now partial
+
 ## [0.33.5] - 2026-10-28
 
 ### Build
