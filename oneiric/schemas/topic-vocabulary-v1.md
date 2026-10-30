@@ -3,7 +3,7 @@ title: Oneiric Topic Vocabulary
 status: active
 role: canonical
 topic: lifecycle
-last_reviewed: 2026-09-09
+last_reviewed: 2026-10-30
 ---
 
 # Topic Vocabulary v1
@@ -53,6 +53,7 @@ contribution workflow below.
 | `lifecycle-hooks` | Oneiric activation, health-check, hot-swap, rollback, and cleanup hook contracts. |
 | `decision-index` | `.claude/decisions/` README index file (canonical decision inventory). |
 | `deployability-discipline` | Bodai deployability rule: standalone-by-default, harness-agnostic interface, serverless-deployable runtime. See `oneiric/docs/adr/0001-deployability-discipline.md` (proposed 2026-09-26). |
+| `embeddings` | Embedding provider chains, canonical vector width, and vector-store migration (session-buddy). |
 
 ## Contribution Workflow
 
