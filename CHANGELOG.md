@@ -177,7 +177,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
-- adapters: Canonical adapter contract (ADR + spec) + Dhara cleanup
+- adapters: Canonical adapter contract (ADR + spec) + retired-service cleanup
 - adr+plan: Revise pydantic-settings migration per 5-agent review
 - adr: 0003 adopt pydantic-settings as Oneiric's settings loader
 - decision: Phase 3 cross-repo verification results
@@ -191,7 +191,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pydantic-settings migration — 4-phase implementation plan
 - readme: Cross-link to adapter contract spec + ADR 0002
 - spec: §4 + §9 — clarify settings contract (BaseModel vs BaseSettings)
-- Strip Dhara refs from MEMORY_ARCHITECTURE.md
+- Strip retired-service refs from MEMORY_ARCHITECTURE.md
 
 ### Testing
 
@@ -321,7 +321,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- oneiric/mcp: Add 7 adapter_registry tools (Phase 1 of Dhara decomposition)
+- oneiric/mcp: Add 7 adapter_registry tools (Phase 1 of the storage decomposition)
 - Re-introduce FastMCP server on port 8681
 
 ### Fixed
@@ -343,8 +343,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - oneiric/mcp: FastMCP server skeleton with build_mcp_server() (REQ-001, REQ-002)
 - oneiric/mcp: Migrate HealthFeedState + aggregate_health (REQ-004)
 - oneiric/mcp: Migrate SubstrateStore with threading.Lock (REQ-009)
-- oneiric: Port dhara substrate_routes.py to aiohttp HTTP server
-- oneiric: Port dhara.mcp.kv_timeseries to file-backed PersistentKVCacheAdapter
+- oneiric: Port the storage service's substrate_routes.py to aiohttp HTTP server
+- oneiric: Port the storage service's kv_timeseries to file-backed PersistentKVCacheAdapter
 
 ### Changed
 
@@ -370,7 +370,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Build
 
-- deps: Drop dhara dep (Phase 8 — root cause of consumer transitive pollution)
+- deps: Drop the retired storage dependency (Phase 8 — root cause of consumer transitive pollution)
 - oneiric: Drop aiohttp + http-aiohttp extra; add fastmcp dependency (REQ-008)
 
 ### Internal
@@ -426,7 +426,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - metadata: Backfill YAML frontmatter on 69 long-tail docs
 - migration-guide: Fix single-line frontmatter corruption to proper YAML
 - readme: Add CLI invocation glossary and fix stale Session-Mgmt refs
-- round2-architectural: Fix QUICKSTART.md phantom CLI commands, Druva rename, add custom-adapter guide
+- round2-architectural: Fix QUICKSTART.md phantom CLI commands, rename to the substrate name, add custom-adapter guide
 - round2-mechanical: Fix CLI-form refs, refresh test numbers, fix coverage.xml pointer
 - schemas: Convert schema docs to YAML frontmatter and fix 3 broken refs
 
