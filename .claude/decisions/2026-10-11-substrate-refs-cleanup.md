@@ -28,8 +28,8 @@ target today is: Oneiric's MCP server owns the adapter catalog and
 substrate feeds; no separate external storage service runs in the path.
 
 Active code in Oneiric accumulated references to that retired service
-that no longer match the runtime (POSTs to port 8683, "Druva (Curator)"
-sections, `DHruVA_MCP_URL` env-var setup commands, "Phase 1 of the
+that no longer match the runtime (POSTs to port 8683, "Curator"
+sections, the retired service's env-var setup commands, "Phase 1 of the
 storage decomposition" framing in docstrings, etc.). Operators following
 docs encountered dead URLs and references to services that no longer
 exist.
@@ -38,9 +38,9 @@ exist.
 
 When documenting Oneiric's adapter registry or substrate behaviour:
 
-1. Do not reference the retired external storage service, `Druva`, or
-   `DHruVA_MCP_URL` as a runtime dependency. Oneiric's MCP server is the
-   registry backend.
+1. Do not reference the retired external storage service — by any of its
+   former names, or by the env vars it used to read — as a runtime
+   dependency. Oneiric's MCP server is the registry backend.
 2. The `REMOTE_MANIFEST` `CandidateSource` enum value refers to
    oneiric remote-sync loading YAML manifests into Oneiric's local
    registry — not to a separate substrate service.
@@ -68,14 +68,14 @@ When documenting Oneiric's adapter registry or substrate behaviour:
 - `oneiric/adapters/bootstrap.py` — `queued_publisher` docstring dropped the old service spec reference.
 - `oneiric/adapters/vector/hot_store.py` — refactor-context note dropped the "Phase 5 task 8 of the old service's decomposition design" reference.
 - `oneiric/adapters/vector/duckdb_hot_store.py` — refs block dropped the old service spec reference.
-- `oneiric/core/ulid.py` — dropped the retired-package → `druva` → built-in import fallback chain (the retired package is not installed in Oneiric's venv; the chain was already dead).
+- `oneiric/core/ulid.py` — dropped the retired-package → built-in import fallback chain (the retired package is not installed in Oneiric's venv; the chain was already dead).
 - `tests/integration/test_persistent_kv_adapter_e2e.py` — retired-service framing dropped.
 - `tests/integration/test_oneiric_mcp_e2e.py` — "Phase 1 storage decomposition" docstring dropped.
 - `tests/unit/test_redis_cache_settings.py` — retired-service reference dropped.
 - `README.md:79` — adapter-registry row dropped the "(ported from the old service's adapter-registry tool during the Phase 1 decomposition)" note.
 - `QUICKSTART.md` — removed `oneiric start --manifest http://<old-host>:8683/mcp` and `oneiric health --probe`; rewrote Standard Mode block to reference the local manifest path.
-- `docs/reference/service-dependencies.md` — replaced entire "Druva (Curator)" section with "Remote Manifest Source" pointing at `docs/REMOTE_MANIFEST_SCHEMA.md`; removed `DHruVA_MCP_URL` env vars and Druva blocks from the dependency-tree, status JSON, monitoring list, dashboard list, and auth list.
-- `docs/guides/operational-modes.md` — removed all `DHruVA_MCP_URL` env vars; rewrote Standard Mode overview, table rows, troubleshooting commands to reference manifest URL / `oneiric manifest verify`.
+- `docs/reference/service-dependencies.md` — replaced the entire retired-service section with "Remote Manifest Source" pointing at `docs/REMOTE_MANIFEST_SCHEMA.md`; removed the retired service's env vars and its blocks from the dependency-tree, status JSON, monitoring list, dashboard list, and auth list.
+- `docs/guides/operational-modes.md` — removed all of the retired service's env vars; rewrote Standard Mode overview, table rows, troubleshooting commands to reference manifest URL / `oneiric manifest verify`.
 
 ## NOT done this session (tracked follow-ups)
 
