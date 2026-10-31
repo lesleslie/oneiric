@@ -30,7 +30,7 @@ topic: oneiric-config
 **Adjacent ADRs / specs:**
 - [`docs/adr/0003-pydantic-settings-migration.md`](../adr/0003-pydantic-settings-migration.md) (revised) — the decision this plan implements
 - [`docs/specs/2026-10-11-adapter-contract-design.md`](../specs/2026-10-11-adapter-contract-design.md) §4 — adapter settings contract (BaseModel vs BaseSettings)
-- [`.claude/decisions/2026-10-11-dhara-substrate-refs-cleanup.md`](../../.claude/decisions/2026-10-11-dhara-substrate-refs-cleanup.md) — prior substrate-decomposition cleanup (commit `cd282ba`)
+- [`.claude/decisions/2026-10-11-substrate-refs-cleanup.md`](../../.claude/decisions/2026-10-11-substrate-refs-cleanup.md) — prior substrate-decomposition cleanup (commit `cd282ba`)
 
 ______________________________________________________________________
 
@@ -177,7 +177,7 @@ ______________________________________________________________________
 | `tests/core/test_config_xdg.py` | rewrite (imports deleted `_env_overrides`) |
 | `tests/unit/test_core_config_branches.py` | rewrite (calls deleted `_read_file`) |
 | `tests/unit/test_core_config.py` | rewrite env-var test cases |
-| `docs/architecture/MEMORY_ARCHITECTURE.md` | update to reflect new loader model (Dhara cleanup already at `3ea7ae5`) |
+| `docs/architecture/MEMORY_ARCHITECTURE.md` | update to reflect new loader model (substrate cleanup already at `3ea7ae5`) |
 
 ______________________________________________________________________
 
@@ -496,7 +496,7 @@ ______________________________________________________________________
   - `tests/unit/test_env_var_collision_audit.py` — pytest-based version of Phase 0 task 0.3 (NOT shell-grep): iterate `dir(settings_instance)`, verify each field name (case-insensitive, with `__` delimiter) doesn't accidentally pick up a real env var via mocked `monkeypatch`.
 
 - [ ] **4.7b** Add `# ty: ignore[valid-type]` on the `auth: OneiricMCPAuthConfig` line in `oneiric/core/config.py:362`. The existing `# type: ignore[valid-type]` is a mypy directive; `ty` (the operative checker for `oneiric.core.*`) requires the same-line `# ty: ignore[...]` syntax per `ty-ignore-same-line-required.md`. **Note for implementers:** `oneiric.core.*` and `oneiric.cli.*` are excluded from mypy/zuban checking per `mypy.ini` lines 63 and 72; `ty` is the operative type checker for these modules.
-- [ ] **4.8** Update `docs/architecture/MEMORY_ARCHITECTURE.md` to reflect: Oneiric's settings are now `BaseSettings`-based (per ADR 0003), the 6-layer merge is via `settings_customise_sources`, the hand-rolled loader is gone. **Sequence: do the Dhara cleanup first (already at `3ea7ae5`), then this Phase 4 step, or factor the merge.**
+- [ ] **4.8** Update `docs/architecture/MEMORY_ARCHITECTURE.md` to reflect: Oneiric's settings are now `BaseSettings`-based (per ADR 0003), the 6-layer merge is via `settings_customise_sources`, the hand-rolled loader is gone. **Sequence: do the substrate cleanup first (already at `3ea7ae5`), then this Phase 4 step, or factor the merge.**
 - [ ] **4.9** Update `oneiric/README.md` to point at ADR 0003 + this migration plan.
 - [ ] **4.10** Run the full Oneiric + cross-repo test suite one more time; confirm `git grep "hand.rolled.*loader"` returns zero in docs and code.
 - [ ] **4.11** Write `.claude/decisions/2026-10-11-pydantic-settings-migration-results.md` recording actual migration results (Phase 0 → 4 outcomes, decisions made, follow-up backlog).
@@ -514,7 +514,7 @@ ______________________________________________________________________
 | Risk | Likelihood | Mitigation |
 |---|---|---|
 | A test rewrite misses a behavior previously covered | Medium | Run pre-migration and post-migration test suites side-by-side; compare coverage |
-| `MEMORY_ARCHITECTURE.md` update races with Dhara cleanup (commit `3ea7ae5`) | Low | Dhara cleanup is already on `main`; this step is a follow-on edit |
+| `MEMORY_ARCHITECTURE.md` update races with the substrate cleanup (commit `3ea7ae5`) | Low | Substrate cleanup is already on `main`; this step is a follow-on edit |
 
 ______________________________________________________________________
 

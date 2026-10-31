@@ -244,14 +244,15 @@ An adapter that exists as a class file but isn't registered is
 | `REMOTE_MANIFEST` | YAML manifests (schema at `docs/REMOTE_MANIFEST_SCHEMA.md`) loaded via `oneiric remote-sync` | Cross-environment manifest delivery with ED25519 signature verification. |
 | `MANUAL` | `resolver.register(candidate)` at runtime | Tests, dynamic registration. |
 
-**`REMOTE_MANIFEST` clarification (post-Dhara-decomposition):** the
+**`REMOTE_MANIFEST` clarification (post-decomposition):** the
 enum name is historical. It does **not** mean "load from a separate
 substrate service." It means "load from a signed YAML manifest via
 the `oneiric remote-sync` CLI, persisting records into Oneiric's local
-JSON registry at `~/.oneiric/adapter_registry.json`." The Dhara MCP
+JSON registry at `~/.oneiric/adapter_registry.json`." The external MCP
 service that previously held the cross-ecosystem catalog has been
-decomposed and is no longer in the resolution path. See
-[`.claude/decisions/2026-10-11-dhara-substrate-refs-cleanup.md`](../../.claude/decisions/2026-10-11-dhara-substrate-refs-cleanup.md).
+decomposed into Oneiric's MCP server and is no longer in the resolution
+path. See
+[`.claude/decisions/2026-10-11-substrate-refs-cleanup.md`](../../.claude/decisions/2026-10-11-substrate-refs-cleanup.md).
 
 ## 7. The runtime access contract: `AdapterBridge.use()`
 
@@ -308,7 +309,8 @@ These wrap `OneiricAdapterRegistry`
 persists to `~/.oneiric/adapter_registry.json`.
 
 **Cross-component consumers do not import Oneiric directly.** They call
-the MCP tools. This is the rule that survived the Dhara decomposition.
+the MCP tools. This is the rule that survived the external storage
+service's decomposition.
 
 ## 9. Reference implementation
 
@@ -351,7 +353,7 @@ Use these as templates when writing a new adapter.
   `pydantic_settings.BaseSettings` — don't reimplement
   pydantic-settings.
 - **POSTing to a non-existent HTTP service in `init()`.** See the
-  deleted `mcp_pusher.py` — that was Dhara-MCP-decomposition rot.
+  deleted `mcp_pusher.py` — that was MCP-decomposition rot.
   Anything you `import` in `init()` must be a real, current dependency.
 
 ## 11. Adding a new adapter — checklist

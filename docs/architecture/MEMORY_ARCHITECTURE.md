@@ -12,7 +12,7 @@ topic: lifecycle
 
 > **Status**: Living document. Updated whenever the settings schema, adapter catalog, lifecycle contract, or CLI surface change.
 > **Audience**: Bodai ecosystem contributors, Claude Code users, and downstream components (Session-Buddy, Akosha, Mahavishnu, Crackerjack).
-> **Source of truth**: `oneiric/core/config.py` (`load_settings`, `OneiricSettings`, `LifecycleConfig`, `RuntimeProfileConfig`), `oneiric/core/resolution.py` (`Resolver` + `Candidate` + scoring), `oneiric/core/lifecycle.py` (`LifecycleManager` + `LifecycleStatus`), `oneiric/core/security.py` (factory allowlist), `oneiric/adapters/tracked_settings.py` (HTTP push — runtime dead, deferred for separate work; see `.claude/decisions/2026-10-11-dhara-substrate-refs-cleanup.md`), `oneiric/runtime/{activity,checkpoints,health,telemetry,orchestrator}.py`, and the CLI surface in `oneiric/cli.py`.
+> **Source of truth**: `oneiric/core/config.py` (`load_settings`, `OneiricSettings`, `LifecycleConfig`, `RuntimeProfileConfig`), `oneiric/core/resolution.py` (`Resolver` + `Candidate` + scoring), `oneiric/core/lifecycle.py` (`LifecycleManager` + `LifecycleStatus`), `oneiric/core/security.py` (factory allowlist), `oneiric/runtime/{activity,checkpoints,health,telemetry,orchestrator}.py`, and the CLI surface in `oneiric/cli.py`.
 
 Oneiric is the **Foundation** component of the Bodai ecosystem. Unlike the
 other five components, Oneiric is a **library, not a service** — it ships
@@ -25,7 +25,7 @@ What it provides is the substrate every other component relies on:
 - A **six-domain bridge layer** (`adapter`, `service`, `task`, `event`, `workflow`, `action`) that wraps resolution + lifecycle into a single `use(key)` call (`oneiric/domains/base.py::DomainBridge`).
 - A **runtime orchestrator** that wires all six bridges together with a `ServiceSupervisor`, watchers, and optional workflow checkpoints (`oneiric/runtime/orchestrator.py`).
 - A **persistent state surface** under `.oneiric_cache/` (lifecycle status JSON, domain activity SQLite, workflow checkpoints SQLite, runtime health JSON, runtime telemetry JSON) — not an MCP database, but the on-disk state every component reads at startup.
-- Built-in adapter distribution is **in-process** via `register_builtin_adapters()` (`oneiric/adapters/bootstrap.py`) — no separate HTTP bridge required. The previous Dhara HTTP bridge (`oneiric/adapters/mcp_pusher.py`) was deleted 2026-10-11 (commit `cd282ba`).
+- Built-in adapter distribution is **in-process** via `register_builtin_adapters()` (`oneiric/adapters/bootstrap.py`) — no separate HTTP bridge required. The previous external HTTP bridge (`oneiric/adapters/mcp_pusher.py`) was deleted 2026-10-11 (commit `cd282ba`).
 
 This document describes what Oneiric stores, who reads and writes it, and
 the integration contracts the rest of the ecosystem depends on. The two
@@ -68,7 +68,7 @@ task, event, workflow, and action instance is tracked under that key.
 | **Runtime telemetry** | JSON (atomic tmp-write replace) | `${cache_dir}/runtime_telemetry.json` (`runtime_observability_path`) | `oneiric/runtime/telemetry.py::RuntimeTelemetryRecorder` — `last_event` + `last_workflow` snapshots. Written after every event dispatch and workflow execution. |
 | **DI / resolution state** | In-process Python `dict` (`CandidateRegistry._candidates`, `_active`, `_shadowed`) | n/a (lost on process exit) | `oneiric/core/resolution.py::CandidateRegistry` + `Resolver` — the live registry of every registered candidate across all six domains. Re-built at every cold start by walking entry-point groups + remote manifests. |
 | **Settings layered source** | YAML / TOML / JSON on disk | `settings/<project>.yaml` + `settings/local.yaml` + `${XDG_CONFIG_HOME}/<project>/config.yaml` + `${XDG_CONFIG_HOME}/<project>/local.yaml` + env vars `${PROJECT}_*__*` | `oneiric/core/config.py::load_settings` — merges all six layers; explicit `path=` argument wins over all. |
-| **Tracked settings snapshots** | JSON over HTTP POST + local fallback file (runtime dead — see [`.claude/decisions/2026-10-11-dhara-substrate-refs-cleanup.md`](../../.claude/decisions/2026-10-11-dhara-substrate-refs-cleanup.md) for the deferred deletion) | `${HOME}/.cache/oneiric/pending_snapshots/<adapter_id>-{snapshot|change_batch}-<timestamp>.json` (mode 0600) | `oneiric/adapters/tracked_settings.py::TrackedSettings` — pushes every settings mutation + lifecycle event over HTTP. Local fallback only on HTTP error. **No production callers; runtime is dead (Dhara substrate decomposed into Oneiric's MCP server).** |
+| **Tracked settings snapshots** | — (removed 2026-10-30) | — | `oneiric/adapters/tracked_settings.py::TrackedSettings` — pushed every settings mutation + lifecycle event over HTTP to the retired external service, with a local fallback file. The module was deleted 2026-10-30: it had no production callers and its target service no longer exists, so no snapshot files are written today. |
 
 ### Schema map
 
@@ -224,7 +224,7 @@ erDiagram
 | `settings/<project>.yaml` | `_load_layer_file` (project layer) | Operator / project maintainers | Version-controlled. |
 | `settings/local.yaml` | `_load_layer_file` (project-local layer) | Operator (gitignored) | Per-developer. |
 | `~/.config/<project>/{config,local}.yaml` | `_load_layer_file` (XDG layers) | Operator (per-machine) | Per-machine. |
-| `pending_snapshots/*.json` | `TrackedSettings._capture_fallback` (write-only; read on next lifecycle event) | `TrackedSettings` when HTTP POST fails | Mode 0600 files; operator must replay manually (no automated retry today). Note: `TrackedSettings` runtime is dead (Dhara substrate decomposed into Oneiric's MCP server); file slated for separate work. |
+| `pending_snapshots/*.json` | — (removed 2026-10-30) | — | The `TrackedSettings` fallback writer was deleted 2026-10-30 along with the module; no pending-snapshot files are written today. |
 
 ### Cache directory resolution
 
@@ -263,9 +263,9 @@ POST endpoint, and no CLI daemon. The "write surface" is the set of
 | `WorkflowExecutionStore.start_run` / `finish_run` / `start_node` / `finish_node` | `oneiric/runtime/durable.py` | Durable workflow runs | Inserts / updates `workflow_executions` + `workflow_execution_nodes` |
 | `RuntimeOrchestrator._update_health` | `oneiric/runtime/orchestrator.py` | `RuntimeOrchestrator.start`, `sync_remote`, supervisor tick | Atomic tmp-write of `runtime_health.json` |
 | `RuntimeTelemetryRecorder.record_event_dispatch` / `record_workflow_execution` | `oneiric/runtime/telemetry.py:55,67` | `EventBridge.emit`, `WorkflowBridge.execute_dag` | Atomic tmp-write of `runtime_telemetry.json` |
-| `TrackedSettings.__setattr__` (intercepted) | `oneiric/adapters/tracked_settings.py:177` | Every adapter settings mutation | Records change; debounces + POSTs over HTTP; on HTTP failure writes `~/.cache/oneiric/pending_snapshots/<id>-change_batch-<ts>.json` (mode 0600). **Runtime dead — deferred.** |
-| `TrackedSettings.on_startup` / `on_stop` / `on_restart` | `oneiric/adapters/tracked_settings.py:346-356` | Adapter lifecycle hooks | Immediate HTTP POST (no debounce). **Runtime dead — deferred.** |
-| `MCPAdapterPusher.push_builtin_adapters` | `oneiric/adapters/mcp_pusher.py:68` | **Module deleted 2026-10-11** (commit `cd282ba`); see `.claude/decisions/2026-10-11-dhara-substrate-refs-cleanup.md` | HTTP POST to non-existent `http://127.0.0.1:8683/tools/store_adapter`; service was decomposed into Oneiric's MCP server. Built-in adapters are registered in-process via `register_builtin_adapters()` (see `oneiric/adapters/bootstrap.py`). |
+| `TrackedSettings.__setattr__` (intercepted) | `oneiric/adapters/tracked_settings.py:177` | Every adapter settings mutation | **Module deleted 2026-10-30** (with its unit test); the `TrackedSettings` export was also dropped from `oneiric/adapters/__init__.py`. It recorded changes, debounced + POSTed them over HTTP to the retired external service, and fell back to `~/.cache/oneiric/pending_snapshots/<id>-change_batch-<ts>.json` (mode 0600). No production callers; nothing writes that path today. |
+| `TrackedSettings.on_startup` / `on_stop` / `on_restart` | `oneiric/adapters/tracked_settings.py:346-356` | Adapter lifecycle hooks | **Module deleted 2026-10-30.** Immediate HTTP POST (no debounce) — no longer present. |
+| `MCPAdapterPusher.push_builtin_adapters` | `oneiric/adapters/mcp_pusher.py:68` | **Module deleted 2026-10-11** (commit `cd282ba`); see `.claude/decisions/2026-10-11-substrate-refs-cleanup.md` | HTTP POST to a non-existent `http://127.0.0.1:8683/tools/store_adapter`; that service was decomposed into Oneiric's MCP server. Built-in adapters are registered in-process via `register_builtin_adapters()` (see `oneiric/adapters/bootstrap.py`). |
 | `load_settings` | `oneiric/core/config.py:250` | Every Bodai component's `*_settings.py` (session_buddy, mahavishnu, crackerjack, akosha) | Resolves layered config → returns `OneiricSettings` instance; no on-disk write |
 | `_load_layer_file` (nested in `load_settings`) | `oneiric/core/config.py:289` | `load_settings` | Read-only on disk; merges into the running dict |
 
@@ -445,7 +445,7 @@ result = await workflow_bridge.execute_dag(
 | Mahavishnu | `mcp__mahavishnu__adapter_resolve` | `adapter_bridge.use("cache")` (Mahavishnu's bridge is the wrapper) |
 | Crackerjack | `mcp__crackerjack__execute_crackerjack` | (no direct Oneiric read; Crackerjack uses Oneiric's workflow cache via `WorkflowCheckpointStore`) |
 
-**Note**: Oneiric's own MCP tools (`mcp__oneiric__list_adapters`, `mcp__oneiric__get_adapter`, etc.) are also reachable from any Bodai component that connects to Oneiric's MCP server (port 8681). Dhara's `mcp__dhara__*` tools no longer exist — the cross-ecosystem catalog was decomposed into Oneiric's MCP server. See [ADR 0002](../adr/0002-oneiric-adapter-contract.md) § "Cross-component discovery."
+**Note**: Oneiric's own MCP tools (`mcp__oneiric__list_adapters`, `mcp__oneiric__get_adapter`, etc.) are also reachable from any Bodai component that connects to Oneiric's MCP server (port 8681). The retired service's `mcp__<service>__*` tools no longer exist — the cross-ecosystem catalog was decomposed into Oneiric's MCP server. See [ADR 0002](../adr/0002-oneiric-adapter-contract.md) § "Cross-component discovery."
 
 Oneiric is the only component whose MCP surface is **empty**. The "MCP"
 analogue for Oneiric is the Python import boundary — every consumer
@@ -468,7 +468,7 @@ initialization** (each component's startup registers its candidates).
 | **Crackerjack** | `oneiric.core.config.load_settings` (`project_name="crackerjack"`); `oneiric.core.config.OneiricMCPConfig` (extends `CrackerjackSettings`); `oneiric.core.logging.{get_logger, configure_logging, LoggingConfig, LoggingSinkConfig}`; `oneiric.runtime.workflow` (the actual `crackerjack/runtime/oneiric_workflow.py`); `oneiric.runtime.dag.DAGExecutionHooks`; `oneiric.runtime.checkpoints.WorkflowCheckpointStore` (under `.crackerjack/oneiric_cache/workflow_checkpoints.sqlite`); `oneiric.runtime.notifications.NotificationRouter` | Settings; the `WorkflowCheckpointStore` cache that backs `crackerjack/oneiric_cache/workflow_checkpoints.sqlite`; `DAGExecutionHooks` for the `crackerjack` phase DAG | Crackerjack calls `WorkflowCheckpointStore.save` from its own pipeline; `_clear_oneiric_cache` wipes the `crackerjack` workflow key at the start of every `run_complete_workflow` |
 | **Claude Code** | Direct Python imports (no MCP) — Oneiric is library-first | The whole `oneiric` package | No write surface; CC uses Oneiric via the parent component it is driving (e.g., Mahavishnu worker → Oneiric adapter activation) |
 
-**Dhara decomposition note**: Dhara is no longer a Bodai component; its MCP service and substrate feeds were absorbed into Oneiric's MCP server (commit `f98b982` and earlier, plus commit `cd282ba` for cleanup). The rows above list the four current downstream consumers. Built-in adapter distribution happens in-process via `register_builtin_adapters()` (see `oneiric/adapters/bootstrap.py`); cross-component discovery uses Oneiric's own `mcp__oneiric__*` tools. See `.claude/decisions/2026-10-11-dhara-substrate-refs-cleanup.md` for the cleanup scope log.
+**Decomposition note**: the retired external storage service is no longer a Bodai component; its MCP service and substrate feeds were absorbed into Oneiric's MCP server (commit `f98b982` and earlier, plus commit `cd282ba` for cleanup). The rows above list the four current downstream consumers. Built-in adapter distribution happens in-process via `register_builtin_adapters()` (see `oneiric/adapters/bootstrap.py`); cross-component discovery uses Oneiric's own `mcp__oneiric__*` tools. See `.claude/decisions/2026-10-11-substrate-refs-cleanup.md` for the cleanup scope log.
 
 ### What Oneiric does NOT store
 
@@ -480,7 +480,7 @@ not** store:
 - **Pool / worker runtime state** — Mahavishnu owns that; Oneiric has `DomainActivityStore` for the per-`(domain, key)` pause/drain state, but no worker or pool concept.
 - **Routing decisions** — Mahavishnu's `RoutingDecisionBuffer`.
 - **Skill memory** — Session-Buddy's `distilled_skills`.
-- **KV / time-series / ecosystem state** — Oneiric ships `PersistentKVCacheAdapter` (`oneiric/adapters/cache/persistent_kv.py`) as a file-backed JSON store; the previous Dhara substrate service is decomposed.
+- **KV / time-series / ecosystem state** — Oneiric ships `PersistentKVCacheAdapter` (`oneiric/adapters/cache/persistent_kv.py`) as a file-backed JSON store; the previous external substrate service is decomposed.
 - **LLM provider configuration / API keys** — those live in component-level env vars (`MAHAVISHNU_*`, `SESSION_BUDDY_*`, etc.) that Oneiric loads via `load_settings`. Oneiric itself does not store API keys.
 
 ______________________________________________________________________
@@ -814,7 +814,7 @@ print(result["run_id"], result["results"])
 # Persists a checkpoint row keyed by "demo.workflow"
 ```
 
-### Q6 — (removed — `TrackedSettings` runtime is dead; see `.claude/decisions/2026-10-11-dhara-substrate-refs-cleanup.md`)
+### Q6 — (removed — the `TrackedSettings` module was deleted 2026-10-30; it had no production callers and pushed to a service that no longer exists)
 
 ### Q7 — (removed — `oneiric.adapters.mcp_pusher` module was deleted in commit `cd282ba`; built-in adapters now register in-process via `register_builtin_adapters()`)
 
@@ -1050,7 +1050,7 @@ Three patterns are in production today:
    register_builtin_adapters(resolver)
    ```
 
-   The previous Dhara HTTP push pattern (`python -m oneiric.adapters.mcp_pusher --dhara-url ...`) was deleted 2026-10-11 (commit `cd282ba`); see `.claude/decisions/2026-10-11-dhara-substrate-refs-cleanup.md`.
+   The previous HTTP push pattern (`python -m oneiric.adapters.mcp_pusher`, which POSTed to the retired external service) was deleted 2026-10-11 (commit `cd282ba`); see `.claude/decisions/2026-10-11-substrate-refs-cleanup.md`.
 
 1. **Entry-point plugin** (per consumer package):
 
@@ -1177,9 +1177,9 @@ ______________________________________________________________________
 - `oneiric/core/security.py` — `validate_factory_string`, `load_factory_allowlist`, `FACTORY_PATTERN`, `BLOCKED_MODULES`, `DEFAULT_ALLOWED_PREFIXES`.
 - `oneiric/core/logging.py` — `LoggingConfig`, `LoggingSinkConfig`, `configure_logging`, `get_logger`.
 - `oneiric/core/resiliency.py` — `CircuitBreaker`, `AdaptiveRetryState`, `CircuitBreakerOpen`.
-- `oneiric/adapters/__init__.py` — `AdapterBridge`, `AdapterConfigWatcher`, `AdapterHandle`, `AdapterMetadata`, `TrackedSettings`, `builtin_adapter_metadata`, `register_adapter_metadata`, `register_builtin_adapters`.
+- `oneiric/adapters/__init__.py` — `AdapterBridge`, `AdapterConfigWatcher`, `AdapterHandle`, `AdapterMetadata`, `builtin_adapter_metadata`, `register_adapter_metadata`, `register_builtin_adapters`.
 - `oneiric/adapters/bootstrap.py` — 87+ built-in `AdapterMetadata` registrations (cache, storage, queue, http, database, vector, embedding, llm, identity, secrets, messaging, monitoring, graph, dns, file_transfer, observability).
-- `oneiric/adapters/tracked_settings.py` — `TrackedSettings` wrapper + FNV-1a 64-bit hashing + HTTP push + fallback file pattern. **Runtime is dead (Dhara substrate decomposed into Oneiric's MCP server); file slated for separate work — see `.claude/decisions/2026-10-11-dhara-substrate-refs-cleanup.md`.**
+- `oneiric/adapters/tracked_settings.py` — **Deleted 2026-10-30** (with its unit test). It wrapped `TrackedSettings` (FNV-1a 64-bit hashing + HTTP push + fallback file pattern) and pushed adapter settings snapshots to the retired external service; it had no production callers, so nothing writes the `pending_snapshots/` path today.
 - `oneiric/adapters/mcp_pusher.py` — **Deleted 2026-10-11 (commit `cd282ba`)**. Built-in adapter distribution now happens in-process via `register_builtin_adapters()` (see `oneiric/adapters/bootstrap.py`).
 - `oneiric/domains/base.py` — `DomainBridge`, `DomainHandle` (the consumer-facing `bridge.use(key)` API).
 - `oneiric/domains/{events,services,tasks,workflows}.py` — The four non-adapter domain bridges.

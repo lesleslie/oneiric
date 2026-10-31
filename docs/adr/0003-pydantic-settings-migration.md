@@ -368,4 +368,4 @@ This ADR is correctly applied when:
 - Companion ADRs:
   [0001-deployability-discipline.md](0001-deployability-discipline.md),
   [0002-oneiric-adapter-contract.md](0002-oneiric-adapter-contract.md).
-- Cleanup scope: [`.claude/decisions/2026-10-11-dhara-substrate-refs-cleanup.md`](../../.claude/decisions/2026-10-11-dhara-substrate-refs-cleanup.md).
+- Cleanup scope: [`.claude/decisions/2026-10-11-substrate-refs-cleanup.md`](../../.claude/decisions/2026-10-11-substrate-refs-cleanup.md).

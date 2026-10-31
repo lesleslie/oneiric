@@ -36,8 +36,8 @@ defined across five places today, none of which is canonical:
 5. The README's "Adapter registry" table row (`README.md:79`).
 
 New adapter authors have to grep across these to assemble the contract.
-Past Dhara-cleanup work (see
-`.claude/decisions/2026-10-11-dhara-substrate-refs-cleanup.md`) showed
+Past substrate-cleanup work (see
+`.claude/decisions/2026-10-11-substrate-refs-cleanup.md`) showed
 that this scattering causes rot: docstrings drift apart over time and
 operators following them end up implementing against a half-correct
 picture (e.g. the deleted `mcp_pusher.py` POSTed to a non-existent
@@ -51,8 +51,9 @@ anywhere:
   methods. New adapter authors often reach for inheritance first.
 - **Cross-component discovery path.** Other Bodai components discover
   Oneiric's adapter catalog through `mcp__oneiric__*` tools, not through
-  import. This was implicit after the Dhara decomposition; the
-  surfaces it but doesn't surface the *why*.
+  import. This was implicit after the external storage service was
+  decomposed into Oneiric; the surfaces it but doesn't surface the
+  *why*.
 - **`REMOTE_MANIFEST` source path.** After the decomposition, this
   enum value's meaning shifted from "load from a separate substrate
   service" to "load from a signed YAML manifest via
@@ -80,9 +81,9 @@ Additionally, the **cross-component discovery path** is canonical:
 > Session-Buddy) discover adapters through Oneiric's MCP tools
 > (`oneiric_list_adapters`, `oneiric_get_adapter`,
 > `oneiric_get_adapter_health`, etc.). They do not import Oneiric
-> directly. The Dhara MCP service that previously held the
-> cross-ecosystem catalog has been decomposed and is no longer in the
-> resolution path.
+> directly. The external MCP service that previously held the
+> cross-ecosystem catalog has been decomposed into Oneiric's MCP server
+> and is no longer in the resolution path.
 
 And the **`REMOTE_MANIFEST` `CandidateSource` value** is canonical:
 
@@ -99,7 +100,8 @@ And the **`REMOTE_MANIFEST` `CandidateSource` value** is canonical:
 - `README.md:79` and module docstrings in `mcp/adapter_registry.py`,
   `mcp/server.py`, and `adapters/bootstrap.py` cross-link to the
   canonical spec instead of restating the contract. (Docstring cleanup
-  — see the 2026-10-11 Dhara cleanup decision note for parallel work.)
+  — see the 2026-10-11 substrate cleanup decision note for parallel
+  work.)
 - The spec is the source of truth for new adapter authors. Adding a
   new adapter is now: read the spec → satisfy the five sub-contracts →
   register via `register_builtin_adapters` (or an entry point / remote
@@ -152,7 +154,7 @@ This ADR is correctly applied when:
 ## References
 
 - Full contract: [`docs/specs/2026-10-11-adapter-contract-design.md`](../specs/2026-10-11-adapter-contract-design.md)
-- Parallel cleanup: [`.claude/decisions/2026-10-11-dhara-substrate-refs-cleanup.md`](../../.claude/decisions/2026-10-11-dhara-substrate-refs-cleanup.md)
+- Parallel cleanup: [`.claude/decisions/2026-10-11-substrate-refs-cleanup.md`](../../.claude/decisions/2026-10-11-substrate-refs-cleanup.md)
 - Existing `AdapterMetadata` model: `oneiric/adapters/metadata.py:21`
 - Existing `AdapterBridge`: `oneiric/adapters/bridge.py:25`
 - Resolver scoring: `oneiric/core/resolution.py:217-279`

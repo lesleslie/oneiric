@@ -9,7 +9,7 @@ related:
   - ../../../docs/adr/0003-pydantic-settings-migration.md
   - ../../../docs/plans/2026-10-11-pydantic-settings-migration.md
   - ./2026-10-11-pydantic-settings-plan-review.md
-  - ./2026-10-11-dhara-substrate-refs-cleanup.md
+  - ./2026-10-11-substrate-refs-cleanup.md
 ---
 
 # Phase 3 cross-repo verification results
@@ -48,7 +48,7 @@ predate the pydantic-settings migration. Counts below are pre-existing.
 
 The Mahavishnu test collection was blocked by a pre-existing
 `IndentationError` at `oneiric/core/ulid.py:44` (originating in commit
-`cd282ba` — Dhara cleanup, well before Phase 1).
+`cd282ba` — substrate cleanup, well before Phase 1).
 
 - **Path taken:** B (fix indentation). Path A (delete) was not viable:
   `oneiric.core.ulid` has 3 real sibling-module imports

@@ -232,7 +232,6 @@ ______________________________________________________________________
 | **oneiric** | Sentence-transformers + mock | Hybrid chain |
 | **session-buddy** | "HTTP embedding providers" (separate) | Out of scope; tracked separately |
 | **crackerjack** | No embeddings | Unchanged |
-| **dhara** | No embeddings | Unchanged |
 | **mcp-common** | No embeddings | Unchanged |
 
 **Dimension migration:** Current 384-dim → Model2Vec's `potion-base-32M`

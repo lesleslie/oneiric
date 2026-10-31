@@ -33,7 +33,7 @@ _Regenerated 2026-10-29 by `crackerjack.tools.plan_index_sync` (phase)._
 
 | Path | Date | Status | Role | Topic | Title |
 |---|---|---|---|---|---|
-| [`.claude/decisions/2026-10-11-dhara-substrate-refs-cleanup.md`](../../.claude/decisions/2026-10-11-dhara-substrate-refs-cleanup.md) | 2026-10-11 | `partial` | `historical` | `storage-consolidation` | Dhara substrate references — documentation cleanup (2026-10-11) |
+| [`.claude/decisions/2026-10-11-substrate-refs-cleanup.md`](../../.claude/decisions/2026-10-11-substrate-refs-cleanup.md) | 2026-10-11 | `complete` | `historical` | `storage-consolidation` | Substrate references — documentation cleanup (2026-10-11) |
 | [`.claude/decisions/2026-10-11-pydantic-settings-migration-results.md`](../../.claude/decisions/2026-10-11-pydantic-settings-migration-results.md) | 2026-10-11 | `active` | `historical` | `oneiric-config` | Phase 3 cross-repo verification results |
 | [`.claude/decisions/2026-10-12-logfire-pydantic-plugin-pin.md`](../../.claude/decisions/2026-10-12-logfire-pydantic-plugin-pin.md) | 2026-10-12 | `active` | `implementation` | `oneiric-config` | logfire + pydantic-plugin compatibility pin |
 | [`.claude/decisions/deployability-discipline.md`](../../.claude/decisions/deployability-discipline.md) | 2026-09-26 | `active` | `canonical` | `deployability-discipline` | deployability discipline |
@@ -51,6 +51,6 @@ _Regenerated 2026-10-29 by `crackerjack.tools.plan_index_sync` (phase)._
 | `canonical` | 1 | 5 | · | · | · | **6** |
 | `implementation` | 1 | 5 | 2 | · | · | **8** |
 | `umbrella` | · | · | · | · | · | **0** |
-| `historical` | · | 1 | 1 | · | · | **2** |
+| `historical` | · | 1 | · | · | 1 | **2** |
 | `superseded` | · | · | · | · | · | **0** |
-| **Total** | **2** | **11** | **3** | **·** | **·** | **16** |
+| **Total** | **2** | **11** | **2** | **·** | **1** | **16** |

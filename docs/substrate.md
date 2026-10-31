@@ -26,7 +26,7 @@ related:
 
 The Oneiric **substrate** is the shared persistence and embedding
 layer every Bodai component binds against. It subsumed the old
-Dhara storage concerns in 2026-09 (per
+cross-component storage concerns in 2026-09 (per
 [ADR 017](https://github.com/lesleslie/mahavishnu/blob/main/docs/adr/017-oneiric-shared-persistence-substrate.md)):
 all blob, SQL, KV, queue, vector, and embedding operations are now
 fronted by Oneiric adapters rather than cross-component imports.
@@ -46,9 +46,10 @@ lifecycle contract:
 | `vector`   | `pgvector`, `qdrant`, `duckdb_hot_store`  | Embedding storage + similarity search.    |
 | `embedding`| `openai`, `local`, `probe_chain`          | Compute embeddings (L2-normalized).       |
 
-Together they replace Dhara's hardcoded `FileStorage`, Akosha's bespoke
-`HotStorageConfig`, Mahavishnu's direct `akosha.storage` import, and
-Session-Buddy's per-repo SQLite.
+Together they replace the old cross-component storage surface's
+hardcoded `FileStorage`, Akosha's bespoke `HotStorageConfig`,
+Mahavishnu's direct `akosha.storage` import, and Session-Buddy's
+per-repo SQLite.
 
 **Hot / warm / cold tiers** (per `SubstrateSettings` in
 `oneiric/core/substrate_settings.py`):
@@ -170,10 +171,10 @@ The four `CandidateSource` paths (`oneiric/core/resolution.py`):
 
 - `LOCAL_PKG` — built-ins shipped with Oneiric.
 - `ENTRY_POINT` — out-of-tree adapters published on PyPI.
-- `REMOTE_MANIFEST` — signed YAML manifests (the Dhara-MCP path that
-  previously held the cross-ecosystem catalog has been decomposed;
-  `REMOTE_MANIFEST` now means "load from
-  `~/.oneiric/adapter_registry.json` after `oneiric remote-sync`").
+- `REMOTE_MANIFEST` — signed YAML manifests (the old cross-ecosystem
+  catalog service has been decomposed; `REMOTE_MANIFEST` now means
+  "load from `~/.oneiric/adapter_registry.json` after
+  `oneiric remote-sync`").
 - `MANUAL` — `resolver.register(...)` at runtime.
 
 ### 3.2 Resolve
@@ -211,35 +212,38 @@ Oneiric directly** for substrate access. They call the MCP tools:
 | `oneiric_store_adapter`      | Register/update a custom adapter.              |
 | `oneiric_report_runtime`     | Push sanitized runtime facts.                  |
 
-This rule survived the Dhara decomposition (2026-09) — direct Python
+This rule survived the 2026-09 storage decomposition — direct Python
 imports across Bodai components are forbidden.
 
-## 5. Migration from Dhara's old storage API
+## 5. Migration from the old cross-component storage API
 
-Dhara's pre-2026-09 storage surface (`dhara/storage/file.py` +
-`dhara/mcp/server_core.py` `FileStorage` class) is **gone**. Repos
-that referenced it must migrate:
+The pre-2026-09 cross-component storage surface (the retired external
+storage package — referred to below as `<retired_service>` — plus its
+`mcp/server_core.py` `FileStorage` class) is **gone**. Repos that
+referenced it must migrate:
 
-| Old Dhara surface                            | New Oneiric substrate call                          |
-|----------------------------------------------|-----------------------------------------------------|
-| `from dhara.storage import FileStorage`      | `await bridge.use("storage", provider="local_disk")`  |
-| `FileStorage(path)` / `.read()` / `.write()` | `StorageAdapter.put()` / `.get()`                   |
+| Old cross-component surface | New Oneiric substrate call |
+|---|---|
+| `from <retired_service>.storage import FileStorage` | `await bridge.use("storage", provider="local_disk")` |
+| `FileStorage(path)` / `.read()` / `.write()` | `StorageAdapter.put()` / `.get()` |
 | `from akosha.storage import HotStore` (cross-component import — forbidden) | `await bridge.use("vector", capabilities=["hnsw"])` |
-| `HotStore.initialize()` / `.search_similar()`| `VectorAdapter.initialize()` / `.search_similar()`  |
-| `mahavishnu.ingesters.otel_ingester` direct dhara imports | `bridge.use("vector")` + `bridge.use("storage")` |
-| Hardcoded `fcntl`-based locks in Dhara MCP   | Resolver + lifecycle + adapter-level locking        |
-| `dhara/mcp/server_core.py` adapter registry  | `oneiric_list_adapters` MCP tool + local JSON       |
+| `HotStore.initialize()` / `.search_similar()` | `VectorAdapter.initialize()` / `.search_similar()` |
+| `mahavishnu.ingesters.otel_ingester` direct cross-component imports | `bridge.use("vector")` + `bridge.use("storage")` |
+| Hardcoded `fcntl`-based locks in the old MCP service | Resolver + lifecycle + adapter-level locking |
+| `<retired_service>/mcp/server_core.py` adapter registry | `oneiric_list_adapters` MCP tool + local JSON |
 
-The Dhara repo still exists as a separate component (it handles
-federated identity / session restoration and other non-storage
-concerns); only its storage surface was lifted into Oneiric.
+The old cross-component storage service is **no longer a component** of
+the ecosystem: only its storage surface was lifted into Oneiric, and it
+no longer runs as an MCP service. The Bodai core component set is six
+repos — mahavishnu, akosha, session-buddy, crackerjack, oneiric,
+mcp-common — and Oneiric's substrate is the only persistence path.
 
-**Migration steps for a repo that previously depended on Dhara
-storage**:
+**Migration steps for a repo that previously depended on the old
+cross-component storage surface**:
 
 1. Add `oneiric` to the repo's `[project].dependencies`.
-2. Replace direct `from dhara.storage import ...` with
-   `bridge = AdapterBridge(...); await bridge.use("storage", ...)`.
+2. Replace direct imports from the retired service's storage package
+   with `bridge = AdapterBridge(...); await bridge.use("storage", ...)`.
 3. Replace cross-component imports from `akosha.storage` /
    `session_buddy.storage` with the same bridge pattern (the
    corresponding Oneiric adapter category).
@@ -251,8 +255,8 @@ storage**:
 ## 6. References
 
 - [ADR 017 — Oneiric as the shared persistence substrate for Bodai](https://github.com/lesleslie/mahavishnu/blob/main/docs/adr/017-oneiric-shared-persistence-substrate.md)
-- [ADR 013 — Mahavishnu Dhara adapter-tool boundary](https://github.com/lesleslie/mahavishnu/blob/main/docs/adr/013-mahavishnu-dhara-adapter-tool-boundary.md)
+- [ADR 013 — Mahavishnu adapter-tool boundary](https://github.com/lesleslie/mahavishnu/blob/main/docs/adr/013-mahavishnu-adapter-tool-boundary.md)
 - [ADR 0002 — Oneiric adapter contract](adr/0002-oneiric-adapter-contract.md)
 - [Oneiric Adapter Contract spec](specs/2026-10-11-adapter-contract-design.md)
 - [Oneiric Memory Architecture](architecture/MEMORY_ARCHITECTURE.md)
-- [Migration guide for Dhara-using repos](MIGRATION_GUIDE.md)
+- [Migration guide for ACB-to-Oneiric migration](MIGRATION_GUIDE.md)

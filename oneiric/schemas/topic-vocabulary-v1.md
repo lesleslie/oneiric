@@ -30,12 +30,12 @@ contribution workflow below.
 | `oneiric-config` | Oneiric layered configuration (defaults, settings/*.yaml, MAHAVISHNU\_* env vars). |
 | `mcp-design` | MCP-first architecture, tool registration, server design. |
 | `error-handling` | Exception hierarchy, retry, circuit breaker, dead-letter queue (ADR 003). |
-| `storage-consolidation` | Akosha/Dhara/Session-Buddy storage ownership. |
+| `storage-consolidation` | Cross-component storage ownership (Oneiric substrate, Akosha, Session-Buddy). |
 | `memory-architecture` | Unified memory layer across Bodai components (ADR 005). |
 | `adapter-architecture` | Engine adapter (Prefect/LlamaIndex/Agno/Pydantic-AI) patterns. |
 | `adapter-registry` | Hybrid adapter registry with dynamic discovery (ADR 009). |
 | `adapter-security` | Adapter security specification (ADR 010). |
-| `adapter-tool-boundary` | Mahavishnu ↔ Dhara adapter-tool boundary (ADR 013). |
+| `adapter-tool-boundary` | Mahavishnu ↔ Oneiric adapter-tool boundary (ADR 013). |
 | `saga-pattern` | Saga coordinator for distributed transactions (ADR 007). |
 | `zero-downtime-migration` | Zero-downtime SQLite-to-PostgreSQL migration (ADR 008). |
 | `terminal` | iTerm2, MockTerminal, CrowTerminal, GenericShellWorker, workers/protocol.py. |

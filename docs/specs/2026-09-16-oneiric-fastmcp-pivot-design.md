@@ -9,8 +9,8 @@ created: 2026-09-16
 owner: les
 priority: high
 related:
-  - docs/plans/2026-09-16-dhara-mcp-retirement-plan.md
-  - docs/specs/2026-09-14-dhara-mcp-decomposition-design.md
+  - docs/specs/2026-10-11-adapter-contract-design.md
+  - docs/adr/0002-oneiric-adapter-contract.md
 ---
 
 # Oneiric FastMCP Pivot + Auth Integration
@@ -25,7 +25,7 @@ The migration is paired with the security-review findings flagged against the cu
 
 ### 2.1 Why this pivot exists
 
-During Phase 8 of the **dhara MCP retirement plan**, oneiric ported three pieces of dhara substrate functionality (`settings.json`, `context.json`, `progress.json`) plus the workflow task scheduler. The port landed as two standalone aiohttp HTTP servers rather than as MCP tools on a FastMCP server. This deviated from the Bodai convention — every other Bodai MCP server (mahavishnu, akosha, session-buddy, crackerjack) is built on FastMCP.
+During Phase 8 of the **external MCP service retirement plan**, oneiric ported three pieces of that service's substrate functionality (`settings.json`, `context.json`, `progress.json`) plus the workflow task scheduler. The port landed as two standalone aiohttp HTTP servers rather than as MCP tools on a FastMCP server. This deviated from the Bodai convention — every other Bodai MCP server (mahavishnu, akosha, session-buddy, crackerjack) is built on FastMCP.
 
 The deviation created three concrete problems:
 
