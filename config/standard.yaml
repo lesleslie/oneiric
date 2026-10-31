@@ -8,7 +8,7 @@
 # - Team collaboration
 #
 # Setup time: ~ 5 minutes
-# External dependencies: Druva (optional)
+# External dependencies: Remote manifest source (optional)
 
 app:
   name: "oneiric"

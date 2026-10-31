@@ -14,7 +14,7 @@ Features:
 - Auto-sync with watch
 - Optional cloud backup
 - Runtime supervisor
-- External services (Druva optional)
+- External services (remote manifest source optional)
 
 Setup Time: ~ 5 minutes
 """
@@ -77,7 +77,7 @@ class StandardMode(OperationMode):
             # Metadata
             setup_time_minutes=5,
             external_dependencies=[
-                "Druva (optional) - Remote manifest server",
+                "Remote manifest source (optional)",
             ],
             additional_settings={
                 "description": "Full-featured mode with remote resolution",
@@ -156,7 +156,7 @@ Configuration:
 Features:
   - File watchers: Enabled
   - Runtime supervisor: Enabled
-  - External dependencies: Druva (optional)
+  - External dependencies: Remote manifest source (optional)
 
 Setup time: ~ 5 minutes
 
