@@ -255,7 +255,12 @@ cross-component storage surface**:
 ## 6. References
 
 - [ADR 017 — Oneiric as the shared persistence substrate for Bodai](https://github.com/lesleslie/mahavishnu/blob/main/docs/adr/017-oneiric-shared-persistence-substrate.md)
-- [ADR 013 — Mahavishnu adapter-tool boundary](https://github.com/lesleslie/mahavishnu/blob/main/docs/adr/013-mahavishnu-adapter-tool-boundary.md)
+<!-- ADR 013 lives in the mahavishnu repo and its filename changes with
+     mahavishnu's own renames. GitHub does not redirect renamed files in
+     blob/ URLs, so a direct file link 404s whenever the sibling repo
+     renames the ADR. The directory link is rename-proof: it resolves
+     before and after a sibling rename. -->
+- [ADR 013 — Mahavishnu adapter-tool boundary](https://github.com/lesleslie/mahavishnu/tree/main/docs/adr)
 - [ADR 0002 — Oneiric adapter contract](adr/0002-oneiric-adapter-contract.md)
 - [Oneiric Adapter Contract spec](specs/2026-10-11-adapter-contract-design.md)
 - [Oneiric Memory Architecture](architecture/MEMORY_ARCHITECTURE.md)
