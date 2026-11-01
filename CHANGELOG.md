@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.34.0] - 2026-11-01
+
+### Changed
+
+- modes: Describe the remote manifest source instead of the retired service
+
+### Documentation
+
+- changelog: Describe the retired storage service without naming it
+- decisions: Name the retired service generically in the cleanup note
+- Remove Dhara references from Oneiric documentation
+- schemas: Add the embeddings topic to the seed vocabulary
+- substrate: Point ADR 013 at a rename-proof link target
+
+### Internal
+
+- Untrack the generated complexity report
+
 ## [0.33.6] - 2026-10-29
 
 ### Documentation
