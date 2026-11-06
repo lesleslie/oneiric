@@ -1,9 +1,9 @@
 """Version-string consistency guard for Oneiric.
 
 Single-file pytest module that asserts every documented version stamp
-(README banner, CLI_REFERENCE header, CLAUDE.md status line) agrees with the
-canonical version declared in ``pyproject.toml``. Modeled on the Bodai
-ci-version-guard-template and on
+(CLI_REFERENCE header, CLAUDE.md status line) agrees with the canonical
+version declared in ``pyproject.toml``, and that README carries no version
+stamp at all. Modeled on the Bodai ci-version-guard-template and on
 ``tests/unit/test_task_router.py::TestYAMLRoutingSync`` in mahavishnu.
 
 Adoption notes (oneiric-specific)
@@ -12,9 +12,12 @@ Adoption notes (oneiric-specific)
   guard is intentionally absent (template's skip-on-None contract).
 - Oneiric is a library, not an MCP server. The MCP ``/health`` guard is also
   absent.
-- Three docs surfaces are pinned: README, docs/CLI_REFERENCE.md, CLAUDE.md.
-  Each is a one-line assertion; mismatch messages name the file + line so the
-  next bump author can fix without re-running the audit.
+- Two docs surfaces are pinned to MATCH pyproject: docs/CLI_REFERENCE.md
+  and CLAUDE.md. Each is a one-line assertion; mismatch messages name the
+  file + line so the next bump author can fix without re-running the audit.
+- README is pinned to carry NO version stamp. The ``**current vX.Y.Z**``
+  hero banner was removed in da9606b — versions live in CHANGELOG entries,
+  not in hero text, because a hero stamp drifts silently.
 """
 from __future__ import annotations
 
@@ -64,11 +67,16 @@ def _read_pyproject_version(pyproject_path: Path) -> str:
     return _normalize_version(version)
 
 
-def _scan_head(path: Path, pattern: str, max_lines: int) -> str:
+def _read_head(path: Path, max_lines: int) -> str:
+    """The first ``max_lines`` lines of ``path``, as one string."""
     if not path.is_file():
         raise FileNotFoundError(f"{path} not found")
     with path.open(encoding="utf-8") as f:
-        head = "".join(line for _, line in zip(range(max_lines), f))
+        return "".join(line for _, line in zip(range(max_lines), f))
+
+
+def _scan_head(path: Path, pattern: str, max_lines: int) -> str:
+    head = _read_head(path, max_lines)
     match = re.search(pattern, head)
     if not match or not match.group(1):
         raise ValueError(
@@ -88,16 +96,21 @@ class TestVersionConsistency:
             f"pyproject version {version!r} is not a valid semver-shaped token"
         )
 
-    def test_readme_banner_matches(self) -> None:
-        """README's "current vX.Y.Z" stamp must equal pyproject."""
-        expected = _read_pyproject_version(PYPROJECT_PATH)
-        actual = _scan_head(
-            README_PATH, README_BANNER_PATTERN, README_BANNER_SEARCH_LINES
-        )
-        assert actual == expected, (
-            f"README banner says {actual!r} but pyproject says {expected!r}.\n"
-            f"Update the version near the top of {README_PATH} "
-            f"(within the first {README_BANNER_SEARCH_LINES} lines)."
+    def test_readme_carries_no_version_stamp(self) -> None:
+        """README must NOT carry a version stamp; the CHANGELOG owns versions.
+
+        The ``**current vX.Y.Z**`` hero banner was removed in da9606b
+        because it went stale silently — main had already moved past it
+        twice before anyone noticed. A version stamp in README hero text is
+        a second source of truth that can only ever disagree with
+        pyproject, so the guard is now that the stamp stays absent rather
+        than that it matches.
+        """
+        head = _read_head(README_PATH, README_BANNER_SEARCH_LINES)
+        assert not re.search(README_BANNER_PATTERN, head), (
+            f"{README_PATH} must not carry a 'current vX.Y.Z' stamp — versions "
+            "live in CHANGELOG.md and pyproject.toml, and a hero stamp only "
+            "ever drifts (see da9606b)."
         )
 
     def test_cli_reference_header_matches(self) -> None:
