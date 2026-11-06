@@ -33,12 +33,20 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import json
 import logging
+from collections.abc import Mapping
 from datetime import UTC, datetime
+from itertools import batched
 from pathlib import Path
 from typing import Any
 
 import duckdb  # third-party; substrate ships it as an optional extra for development
+
+from oneiric.adapters.vector.metrics import (
+    record_metrics_substrate_insert,
+    record_metrics_substrate_insert_failure,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -134,6 +142,155 @@ SPANS_SUBSTRATE_INDEXES: tuple[tuple[str, str], ...] = (
     ),
 )
 
+# ── `metrics_substrate` DDL ───────────────────────────────────────────────
+# The metric counterpart of `spans_substrate`, in the same substrate file
+# (plan `docs/plans/2026-10-27-otel-metrics-service.md`, Phase 1 / REQ-M03).
+# Same idempotent inline DDL, same writer, same no-migration-runner rule
+# described above — this fleet has no migration runner, so every table ships
+# as `CREATE TABLE IF NOT EXISTS` executed on every boot.
+#
+# The identity constraint is the interesting part, and it is NOT the spans
+# constraint. A span is a unique event and `span_id` names it. A metric data
+# point is a *sample of a time series*, so what names it is the series
+# identity plus the instant it was recorded:
+#
+#     (service_name, service_namespace, scope_name, metric_name, ts, attributes)
+#
+# `attributes` — the data point's own attribute set — is in the key because it
+# is the label set: two points differing only by a label are two different
+# series, not two samples of one series. `resource` is stored but deliberately
+# NOT in the key; see `insert_metrics_substrate` for why.
+#
+# `attributes` is a JSON column inside the constraint, and DuckDB compares
+# JSON *as text* — verified on the pinned 2.1.0-dev build, where
+# `{"a":1,"b":2}` and `{"b":2,"a":1}` are two different rows. Text comparison
+# makes the constraint exact only if every stored value is byte-stable, which
+# OTLP producers do not guarantee: attribute ordering follows producer-side
+# iteration order. `insert_metrics_substrate` therefore canonicalizes the
+# attribute JSON before it is bound. The stored value then IS the identity —
+# no hash, no collision window, and the same attribute set always lands on
+# the same row however the producer serialized it.
+#
+# One writer exists, mirroring the span path: the akosha OTLP receiver.
+# req: REQ-M03
+METRICS_SUBSTRATE_DDL = """
+CREATE TABLE IF NOT EXISTS metrics_substrate (
+    ts                   BIGINT    NOT NULL,
+    service_name         TEXT      NOT NULL,
+    service_namespace    TEXT      NOT NULL,
+    scope_name           TEXT      NOT NULL,
+    metric_name          TEXT      NOT NULL,
+    data_type            TEXT      NOT NULL,
+    unit                 TEXT,
+    description          TEXT,
+    value_sum            DOUBLE,
+    value_count          BIGINT,
+    value_min            DOUBLE,
+    value_max            DOUBLE,
+    value_sum_of_squares DOUBLE,
+    is_monotonic         BOOLEAN,
+    buckets_json         JSON,
+    attributes           JSON      NOT NULL,
+    resource             JSON      NOT NULL,
+    inserted_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_metric_point UNIQUE (
+        service_name, service_namespace, scope_name, metric_name, ts, attributes
+    ),
+    CONSTRAINT ck_metric_data_type CHECK (
+        data_type IN (
+            'sum',
+            'gauge',
+            'histogram',
+            'exponential_histogram',
+            'summary'
+        )
+    )
+);
+"""
+
+# The numeric payload is carried in the `value_*` columns under a per-type
+# convention, because OTLP gives each data type a different shape:
+#
+#   sum / gauge -> value_sum is the sample, value_count is 1
+#   histogram   -> value_sum / value_count / value_min / value_max /
+#                  value_sum_of_squares, with the bucket boundaries and
+#                  counts in `buckets_json`
+#   summary     -> value_sum / value_count / value_min / value_max /
+#                  value_sum_of_squares
+#
+# `is_monotonic` is meaningful only for a `sum` and stays NULL for every
+# other type rather than FALSE: "not applicable" and "false" are different
+# facts, and a gauge is not a non-monotonic sum.
+#
+# `buckets_json` is the one column beyond the plan's enumerated list. Without
+# it a stored histogram cannot be reconstructed — the summary statistics do
+# not determine the bucket boundaries — so the schema would have to change
+# again in Phase 2, when the receiver starts writing histograms.
+
+# Trailing `ts DESC` on every index, mirroring the span path: the read path
+# pages by keyset on (ts, metric_name), so every filter that can precede the
+# sort needs one.
+METRICS_SUBSTRATE_INDEXES: tuple[tuple[str, str], ...] = (
+    (
+        (
+            "CREATE INDEX IF NOT EXISTS idx_metrics_name_recent "
+            "ON metrics_substrate(metric_name, ts DESC)"
+        ),
+        "idx_metrics_name_recent",
+    ),
+    (
+        (
+            "CREATE INDEX IF NOT EXISTS idx_metrics_service_recent "
+            "ON metrics_substrate(service_name, ts DESC)"
+        ),
+        "idx_metrics_service_recent",
+    ),
+    (
+        (
+            "CREATE INDEX IF NOT EXISTS idx_metrics_ts_recent "
+            "ON metrics_substrate(ts DESC)"
+        ),
+        "idx_metrics_ts_recent",
+    ),
+)
+
+# The insert column list, in DDL order. The projection in
+# `_metric_point_values` is driven by this tuple rather than by the caller's
+# dict, because the key set varies by metric type: a gauge carries no
+# `is_monotonic`, a histogram carries no `value_sum` and carries
+# `buckets_json`.
+METRICS_SUBSTRATE_COLUMNS: tuple[str, ...] = (
+    "ts",
+    "service_name",
+    "service_namespace",
+    "scope_name",
+    "metric_name",
+    "data_type",
+    "unit",
+    "description",
+    "value_sum",
+    "value_count",
+    "value_min",
+    "value_max",
+    "value_sum_of_squares",
+    "is_monotonic",
+    "buckets_json",
+    "attributes",
+    "resource",
+)
+
+# Columns stored as JSON. Every one of them is canonicalized before it is
+# bound, so the stored text is a function of the value's content alone.
+METRICS_SUBSTRATE_JSON_COLUMNS: frozenset[str] = frozenset(
+    {"attributes", "buckets_json", "resource"}
+)
+
+# Rows per INSERT statement. The statement binds one placeholder per column
+# per row, so an unbounded batch would build an unbounded SQL string; the
+# chunk also bounds how many conflict checks a single statement carries.
+METRICS_SUBSTRATE_INSERT_CHUNK = 500
+
 # ── receiver operational tables ───────────────────────────────────────────
 # Spec §5.3 + §15 (the v7 "Migration framework: none" decision) place these
 # two tables in the same substrate as `spans_substrate`, created by the same
@@ -221,6 +378,69 @@ def _strip_tz_suffix(s: str) -> str:
     return s
 
 
+def _canonical_json(value: str | Mapping[str, Any], field: str) -> str:
+    """Render ``value`` as byte-stable JSON text.
+
+    Two producers describing the same attribute set can serialize it in
+    different orders — OTLP attribute ordering follows producer-side
+    iteration order, not a specification. DuckDB compares a JSON column as
+    text, so an uncanonicalized attribute set would make one point look like
+    two. Sorting the keys at every level makes the stored text a function of
+    the attribute *set* alone, which is what the identity constraint needs.
+
+    Args:
+        value: JSON text, or an already-decoded mapping.
+        field: Column name, used only in the error message.
+
+    Raises:
+        ValueError: If ``value`` is not valid JSON, or holds a value that
+            cannot be represented in JSON.
+        TypeError: If ``value`` does not describe a JSON object. The text was
+            well-formed JSON, so the problem is the shape rather than the
+            content — which is a different failure from unparseable text.
+    """
+    payload: Any
+    if isinstance(value, str):
+        try:
+            payload = json.loads(value)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"{field} is not valid JSON: {exc}") from exc
+    else:
+        payload = value
+    if not isinstance(payload, dict):
+        raise TypeError(f"{field} must be a JSON object, got {type(payload).__name__}")
+    try:
+        return json.dumps(
+            payload,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        )
+    except TypeError as exc:
+        raise ValueError(
+            f"{field} holds a value that cannot be represented in JSON: {exc}"
+        ) from exc
+
+
+def _metric_point_values(row: Mapping[str, Any]) -> list[Any]:
+    """Project one row dict onto ``METRICS_SUBSTRATE_COLUMNS``, in order.
+
+    The projection is driven by the DDL's column list rather than by the
+    caller's dict, because the key set varies by metric type. Reading the
+    column order off ``rows[0]`` — which is what the span path does, safely,
+    because every span row carries the same keys — would silently drop a
+    column whenever the first row of a batch is a different type from the
+    rest.
+    """
+    values: list[Any] = []
+    for column in METRICS_SUBSTRATE_COLUMNS:
+        value = row.get(column)
+        if column in METRICS_SUBSTRATE_JSON_COLUMNS and value is not None:
+            value = _canonical_json(value, column)
+        values.append(value)
+    return values
+
+
 class DuckdbHotStore:
     """DuckDB-backed hot-store concrete implementation.
 
@@ -237,9 +457,11 @@ class DuckdbHotStore:
 
     # Table names are class attributes rather than literals so callers name the
     # surface they depend on. The OTLP receiver asserts against
-    # ``spans_substrate_table`` to fail loud when the DDL is absent.
+    # ``spans_substrate_table`` (and, once the metrics receiver lands,
+    # ``metrics_substrate_table``) to fail loud when the DDL is absent.
     conversations_table: str = "conversations"
     spans_substrate_table: str = "spans_substrate"
+    metrics_substrate_table: str = "metrics_substrate"
     receiver_state_table: str = "_akosha_otel_receiver_state"
     dlq_rows_table: str = "_dlq_rows"
 
@@ -335,6 +557,19 @@ class DuckdbHotStore:
             # failure mode table_exists() exists to let callers detect.
             self.conn.execute(SPANS_SUBSTRATE_DDL)
             for index_ddl, index_name in SPANS_SUBSTRATE_INDEXES:
+                self.conn.execute(index_ddl)
+                logger.info("Created %s index", index_name)
+
+            # ── metrics_substrate (plan Phase 1 / REQ-M03) ───────────────
+            # The metric counterpart of `spans_substrate`, in the same file.
+            # Created on this same path so a producer can never find the
+            # table missing: the metrics receiver asserts
+            # `metrics_substrate_table` exists at bind time, exactly as the
+            # trace receiver asserts `spans_substrate_table`. Same
+            # no-try/except reasoning as above — a substrate that cannot
+            # create its own tables is broken, and hiding that is worse.
+            self.conn.execute(METRICS_SUBSTRATE_DDL)
+            for index_ddl, index_name in METRICS_SUBSTRATE_INDEXES:
                 self.conn.execute(index_ddl)
                 logger.info("Created %s index", index_name)
 
@@ -442,6 +677,84 @@ class DuckdbHotStore:
                 [[r.get(c) for c in columns] for r in rows],
             )
             return (len(rows) - deduped, deduped)
+
+    async def insert_metrics_substrate(
+        self,
+        rows: list[dict[str, Any]],
+    ) -> tuple[int, int]:
+        """Bulk-INSERT metric data points; return ``(inserted, deduped)``.
+
+        # Implements: REQ-M03
+
+        A metric data point is a sample of a time series, so its identity is
+        the series plus the instant — not a primary key the producer
+        supplies. The table's constraint is ``(service_name,
+        service_namespace, scope_name, metric_name, ts, attributes)``; a
+        point that collides with one already stored is a replay, and is
+        dropped.
+
+        The counts come from the statement itself rather than from a
+        pre-insert existence probe. The span path has to probe, because
+        DuckDB's ``executemany`` reports no per-row outcome — but a single
+        multi-row ``VALUES`` statement can ``RETURNING`` the rows it
+        actually wrote. That is both exact and cheaper: one statement, one
+        conflict check per row, and no window between "does it exist?" and
+        "write it" for a concurrent writer to slip into.
+
+        Each statement is atomic: a row that violates a constraint rolls
+        that statement back, so no statement is ever half-written. A batch
+        larger than ``METRICS_SUBSTRATE_INSERT_CHUNK`` is split across
+        several statements, so atomicity holds per chunk — a failure in the
+        third chunk leaves the first two committed.
+
+        ``resource`` is stored but is NOT part of the identity. It names the
+        *producer*; a producer's identity for the purposes of a time series
+        is ``service.name``/``service.namespace``, which is already in the
+        key. Folding the whole resource in would split one logical series
+        into many whenever incidental resource attributes churn — a
+        changing pid, a hostname — multiplying the series the Prometheus
+        bridge has to expose.
+
+        First write wins. A replay carrying a *different* value for an
+        already-stored point keeps the stored value: the substrate is an
+        append-only record of what the producer reported, not a
+        last-writer-wins register.
+
+        Args:
+            rows: Point dicts keyed by column name. The key set may vary by
+                metric type; absent optional columns are stored as NULL.
+
+        Returns:
+            ``(inserted, deduped)`` — rows written, and rows that collided
+            with an existing point or with an earlier row in the same batch.
+        """
+        if not rows:
+            return (0, 0)
+        async with self._lock:
+            if self.conn is None:
+                raise RuntimeError("Hot store not initialized")
+            table = self.metrics_substrate_table
+            collist = ", ".join(METRICS_SUBSTRATE_COLUMNS)
+            slot = "(" + ", ".join(["?"] * len(METRICS_SUBSTRATE_COLUMNS)) + ")"
+            inserted = 0
+            try:
+                for chunk in batched(rows, METRICS_SUBSTRATE_INSERT_CHUNK):
+                    params = [
+                        value for row in chunk for value in _metric_point_values(row)
+                    ]
+                    returned = self.conn.execute(
+                        f"INSERT INTO {table} ({collist}) VALUES "
+                        f"{', '.join([slot] * len(chunk))} "
+                        "ON CONFLICT DO NOTHING RETURNING ts",
+                        params,
+                    ).fetchall()
+                    inserted += len(returned)
+            except Exception:
+                logger.exception("metrics_substrate insert failed")
+                record_metrics_substrate_insert_failure()
+                raise
+            record_metrics_substrate_insert(inserted)
+            return (inserted, len(rows) - inserted)
 
     async def insert_dlq_rows(self, rows: list[dict[str, Any]]) -> int:
         """Append rejected rows to ``_dlq_rows``; return the count written.
@@ -637,6 +950,11 @@ __all__ = [
     "DEFAULT_EMBEDDING_DIM",
     "DLQ_ROWS_DDL",
     "DLQ_ROWS_INDEX",
+    "METRICS_SUBSTRATE_COLUMNS",
+    "METRICS_SUBSTRATE_DDL",
+    "METRICS_SUBSTRATE_INDEXES",
+    "METRICS_SUBSTRATE_INSERT_CHUNK",
+    "METRICS_SUBSTRATE_JSON_COLUMNS",
     "RECEIVER_STATE_DDL",
     "SPANS_SUBSTRATE_DDL",
     "SPANS_SUBSTRATE_INDEXES",
