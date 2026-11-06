@@ -2,7 +2,9 @@
 
 Asserts behavior the user observes:
 - when auth is enabled, tools gate
-- when disabled, tools raise AuthenticationRequiredError (safe default)
+- when disabled, tools are loopback-trusted: reads accept anonymous
+  callers, while the catalog-mutating write tool still requires auth
+  (REQ-RCR-007)
 - T7-T12: read/write substrate tools register, render payloads, write records,
   enforce input validation
 """
@@ -18,10 +20,10 @@ from mcp_common.auth.context import _principal_var
 from mcp_common.auth.permissions import Permission
 from mcp_common.auth.principal import Principal
 from mcp_common.auth.provider import IdentityProvider
+from mcp_common.health.feed import HealthFeedState
 from pydantic import ValidationError
 
 from oneiric.mcp.config import OneiricMCPAuthConfig, load_auth_config
-from mcp_common.health.feed import HealthFeedState
 from oneiric.mcp.server import build_mcp_server
 from oneiric.mcp.store import SubstrateStore
 
@@ -137,14 +139,17 @@ class TestBuildMcpServer:
         with pytest.raises(AuthenticationRequiredError):
             await tool.fn()
 
-    async def test_auth_disabled_still_raises_on_unauthenticated_tool_call(
+    async def test_auth_disabled_allows_anonymous_reads(
         self, auth_disabled: OneiricMCPAuthConfig, tmp_path
     ) -> None:
-        """Spec §6.2 safe default: even with auth disabled, substrate
-        tools refuse anonymous calls (cannot read a Principal from a
-        middleware that doesn't exist)."""
-        from mcp_common.auth.exceptions import AuthenticationRequiredError
+        """Auth disabled is the loopback-trusted model: reads accept
+        anonymous callers.
 
+        With no middleware installed there is no Principal to read, so
+        requiring one would make every tool permanently unusable in the
+        loopback deployment. The carve-out is the catalog-mutating write
+        tool, which still requires auth — see the REQ-RCR-007 test below.
+        """
         auth_config, providers = load_auth_config(auth_disabled)
         store = SubstrateStore(root=tmp_path)
         feeds = {"settings": HealthFeedState()}
@@ -155,8 +160,40 @@ class TestBuildMcpServer:
         tool = next(
             t for t in await mcp.list_tools() if t.name == "read_settings"
         )
+        assert await tool.fn() is not None
+
+    async def test_auth_disabled_still_gates_the_runtime_write_tool(
+        self, auth_disabled: OneiricMCPAuthConfig, tmp_path
+    ) -> None:
+        """REQ-RCR-007: the one catalog-mutating write tool always
+        requires auth.
+
+        A read-only probe leaking to a malicious local process is an
+        acceptable loopback risk; a write that poisons every component's
+        runtime facts is not. That tool carries ``allow_anonymous=False``
+        regardless of the auth_enabled flag, so the loopback bypass the
+        other tools inherit does not apply to it.
+        """
+        from mcp_common.auth.exceptions import AuthenticationRequiredError
+
+        auth_config, providers = load_auth_config(auth_disabled)
+        store = SubstrateStore(root=tmp_path)
+        feeds = {"settings": HealthFeedState()}
+        mcp = build_mcp_server(
+            _StubConfig(), auth_config=auth_config, providers=providers,
+            store=store, processor=_FakeProcessor(), health_feeds=feeds,
+        )
+        tool = next(
+            t for t in await mcp.list_tools() if t.name == "oneiric_report_runtime"
+        )
         with pytest.raises(AuthenticationRequiredError):
-            await tool.fn()
+            await tool.fn(
+                domain="adapter",
+                key="cache",
+                provider="memory",
+                runtime_facts={"version": "1.0.0"},
+                caller_component="test",
+            )
 
 
 class TestSubstrateTools:

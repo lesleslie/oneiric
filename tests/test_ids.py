@@ -5,8 +5,10 @@ Covers the public surface:
     extract_timestamp_ms, extract_timestamp_seconds,
     ConfigTraceability.
 
-The legacy ULID read-time acceptance path (REQ-012) is exercised here so
-that pre-migration storage rows can still be validated after Phase 2.
+The legacy 26-char ULID read-time acceptance path was removed in the
+UUID7-only migration (Phase 2 / REQ-012): the substrate is UUID7-only, so a
+legacy ULID must be re-encoded before it is passed in. The tests below pin
+that rejection rather than the acceptance the module used to offer.
 """
 
 from __future__ import annotations
@@ -25,21 +27,25 @@ from oneiric.core.ids import (
     is_valid_id,
 )
 
-# Crockford Base32 alphabet: 0-9, a-h, j-k, m-n, p-t, v-z (32 chars, no i/l/o/u).
-_CROCKFORD = "0123456789abcdefghjkmnpqrstvwxyz"
+# Crockford Base32 alphabet: 0-9, A-H, J-K, M-N, P-T, V-Z (32 chars,
+# no I/L/O/U). Uppercase, the conventional ULID rendering.
+_CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
+
+
+def _ulid_rendering(value: int) -> str:
+    """Render a 128-bit int as a 26-char Crockford Base32 ULID."""
+    out: list[str] = []
+    for _ in range(26):
+        out.append(_CROCKFORD[value & 0x1F])
+        value >>= 5
+    return "".join(reversed(out))
 
 
 def _real_ulid_hex() -> str:
     """Build a real 26-char Crockford ULID from a uuid7 int (same bit layout)."""
     from uuid import uuid7
 
-    n = uuid7().int
-    alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
-    out = []
-    for _ in range(26):
-        out.append(alphabet[n & 0x1F])
-        n >>= 5
-    return "".join(reversed(out))
+    return _ulid_rendering(uuid7().int)
 
 
 _HEX_RE = re.compile(r"^[0-9a-f]{32}$")
@@ -99,9 +105,11 @@ class TestIsValidId:
     def test_accepts_uuid7(self) -> None:
         assert is_valid_id(generate_id())
 
-    def test_accepts_legacy_ulid(self) -> None:
-        # Real 26-char ULID; the read-time acceptance path.
-        assert is_valid_id(_real_ulid_hex())
+    def test_rejects_legacy_ulid(self) -> None:
+        # UUID7-only substrate: the read-time ULID acceptance path was
+        # removed in the Phase 2 migration (b48fe18). A legacy ULID must
+        # be re-encoded to UUID7 before it is passed in.
+        assert not is_valid_id(_real_ulid_hex())
 
     def test_rejects_short_ulid_example(self) -> None:
         # 18-char placeholder from the plan is not a valid ULID.
@@ -121,24 +129,18 @@ class TestExtractTimestampMs:
         assert isinstance(ts, int)
         assert ts > 1_700_000_000_000  # after 2023-11
 
-    def test_uuid7_and_ulid_agree_when_built_from_same_int(self) -> None:
-        # When the UUID7 and ULID encode the same 128-bit value, the
-        # high-48-bit timestamp must match exactly.
+    def test_ulid_rendering_of_a_uuid7_is_rejected(self) -> None:
+        # The two encodings share a bit layout, but only UUID7 is accepted.
         from uuid import uuid7
 
         u7 = uuid7()
-        n = u7.int
-        alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
-        out = []
-        for _ in range(26):
-            out.append(alphabet[n & 0x1F])
-            n >>= 5
-        ulid_str = "".join(reversed(out))
-        assert extract_timestamp_ms(u7.hex) == extract_timestamp_ms(ulid_str)
+        ulid_str = _ulid_rendering(u7.int)
+        with pytest.raises(ValueError, match="invalid id"):
+            extract_timestamp_ms(ulid_str)
 
-    def test_legacy_ulid_returns_positive_timestamp(self) -> None:
-        ts = extract_timestamp_ms(_real_ulid_hex())
-        assert ts > 0
+    def test_legacy_ulid_raises(self) -> None:
+        with pytest.raises(ValueError, match="invalid id"):
+            extract_timestamp_ms(_real_ulid_hex())
 
     def test_invalid_raises_value_error(self) -> None:
         with pytest.raises(ValueError, match="invalid id"):
@@ -204,27 +206,20 @@ class TestConfigTraceability:
         # Within 1 second of itself; the helpers should agree.
         assert ct.correlates_with(ct.entity_id)
 
-    def test_correlates_with_legacy_ulid_in_same_second(self) -> None:
-        # Build a ULID from the same UUID7 bit-pattern so they share timestamp.
+    def test_does_not_correlate_with_legacy_ulid(self) -> None:
+        # correlates_with returns False for a non-UUID7 id rather than
+        # raising — a legacy ULID is not a correlation target any more.
         from uuid import uuid7
 
         u7 = uuid7()
-        n = u7.int
-        alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
-        out = []
-        for _ in range(26):
-            out.append(alphabet[n & 0x1F])
-            n >>= 5
-        ulid_str = "".join(reversed(out))
+        ulid_str = _ulid_rendering(u7.int)
         ct = ConfigTraceability(entity_id=u7.hex)
-        assert ct.correlates_with(ulid_str)
+        assert not ct.correlates_with(ulid_str)
 
     def test_correlates_with_old_timestamp_returns_false(self) -> None:
-        # ULID with a clearly old timestamp (~2010) should not correlate
-        # with a freshly-generated UUID7.
+        # A non-UUID7 id is not a correlation target; the helper answers
+        # False rather than raising.
         ct = ConfigTraceability()
-        # 0x01ARZ3NDEKTS6PQRYF is the canonical "example" ULID; treat it
-        # as an out-of-window input rather than a real timestamp.
         assert not ct.correlates_with("not-a-valid-id")
 
     def test_repr_includes_entity_id_source_change_type(self) -> None:

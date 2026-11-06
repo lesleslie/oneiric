@@ -138,10 +138,15 @@ def test_yaml_non_dict_top_level_raises(tmp_path) -> None:
     Operators regularly mistake `oneiric.yaml` for a flat list of settings;
     catching that shape here gives them a one-line fix instead of a silent
     'auth disabled' boot.
+
+    The exception is a TypeError, not a RuntimeError: the file parsed
+    fine, it just does not have the shape the loader needs. A YAML
+    *parse* failure stays a RuntimeError (see
+    ``test_yaml_parse_error_raises``).
     """
     settings_file = tmp_path / "list.yaml"
     settings_file.write_text("- list\n- not\n- dict\n")
-    with pytest.raises(RuntimeError, match="YAML mapping"):
+    with pytest.raises(TypeError, match="YAML mapping"):
         load_yaml_auth_section(settings_file)
 
 
@@ -151,8 +156,11 @@ def test_yaml_auth_section_non_dict_raises(tmp_path) -> None:
     An operator who writes `auth: "jwt"` (intending a string provider name)
     would otherwise get a confusing downstream ProviderConfig error. The
     shape check here turns that into a one-line YAML fix.
+
+    TypeError for the same reason as the top-level shape check: the YAML
+    parsed, the shape is wrong.
     """
     settings_file = tmp_path / "scalar_auth.yaml"
     settings_file.write_text("auth: not a dict\n")
-    with pytest.raises(RuntimeError, match="auth:"):
+    with pytest.raises(TypeError, match="auth:"):
         load_yaml_auth_section(settings_file)

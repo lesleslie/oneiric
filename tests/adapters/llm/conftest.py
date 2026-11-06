@@ -9,6 +9,7 @@ before AND after every test for belt-and-braces safety.
 
 from __future__ import annotations
 
+import os
 from collections.abc import Generator
 
 import pytest
@@ -17,8 +18,24 @@ from oneiric.adapters.llm.bifrost import reset_router_for_tests
 
 
 @pytest.fixture(autouse=True)
-def _reset_bifrost_router_singleton() -> Generator[None, None, None]:
+def _reset_bifrost_router_singleton() -> Generator[None]:
     """Clear the ``get_router()`` singleton cache between tests."""
     reset_router_for_tests()
     yield
     reset_router_for_tests()
+
+
+@pytest.fixture(autouse=True)
+def _clear_bifrost_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Strip every BIFROST env var so tests don't see operator shell state.
+
+    This lives in the shared conftest rather than in one test module
+    because the leak is ambient: an operator shell exporting
+    ``ONEIRIC_BIFROST_ENABLED`` or ``ONEIRIC_BIFROST_ANTHROPIC_BASE_URL``
+    silently changes what the router resolves, in every test file that
+    touches it. A test asserting "the defaults" must not be decided by
+    whatever the developer's shell happened to export.
+    """
+    for key in list(os.environ):
+        if key.startswith(("ONEIRIC_BIFROST_", "MAHAVISHNU_BIFROST__")):
+            monkeypatch.delenv(key, raising=False)

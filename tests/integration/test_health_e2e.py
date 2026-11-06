@@ -17,11 +17,11 @@ REQ-HC-001/002/003:
 from __future__ import annotations
 
 import asyncio
-import os
 from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from fastmcp import FastMCP
 from mcp_common.auth.config import AuthConfig
 from mcp_common.health.feed import HealthFeedState
 from starlette.testclient import TestClient
@@ -30,12 +30,10 @@ from oneiric.mcp.server import (
     _aggregate_health_status,
     _record_feed_error,
     _record_feed_success,
-    _register_health_tool,
     _resolve_feeds,
     _resolve_health_halflife,
     build_mcp_server,
 )
-from fastmcp import FastMCP
 
 
 class _StubProcessor:
@@ -187,14 +185,35 @@ class TestHealthSnapshotShape:
             _record_feed_success(f, entities_count=3)
         _status_code, snapshot = _aggregate_health_status(feeds)
         assert set(snapshot.keys()) == {"status", "checks", "reason_codes"}
-        assert set(snapshot["checks"].keys()) == {
+        # The four substrate feeds must all appear so an operator can
+        # localize a failure. This is a SUBSET requirement, not an exact
+        # set: the skills_signer feed is projected in at probe time from
+        # lifespan-owned state (Phase 1.5), so it is present once the
+        # server lifespan has run and absent before that.
+        assert {
             "settings",
             "context",
             "progress",
             "runtime_registry",
-        }
+        } <= set(snapshot["checks"].keys())
+        for name in ("settings", "context", "progress", "runtime_registry"):
+            check = snapshot["checks"][name]
+            # Core verdict plus the four mandatory feed fields from the
+            # MCP backend wiring discipline (REQ-HC-001/002/003). Every
+            # feed carries them; the Phase 1.4 enrichment added them.
+            assert set(check.keys()) == {
+                "status",
+                "healthy",
+                "reason_codes",
+                "entities_count",
+                "last_updated_timestamp",
+                "errors_total",
+                "cycles_total",
+            }
+        # The envelope contract holds for every feed, whatever else a
+        # feed may add to its own check.
         for check in snapshot["checks"].values():
-            assert set(check.keys()) == {"status", "healthy", "reason_codes"}
+            assert {"status", "healthy", "reason_codes"} <= set(check.keys())
 
     def test_reason_codes_are_string_enum_values(self) -> None:
         feeds = _resolve_feeds(None)
@@ -244,7 +263,13 @@ class TestOneiricGetHealthMcpTool:
         health_tool = next(t for t in tools if t.name == "oneiric_get_health")
         result = asyncio.run(health_tool.fn())
         assert result["status"] == "warming_up"
-        for check in result["checks"].values():
+        # The substrate feeds are the ones that warm up. The signer feed
+        # is projected in separately from lifespan-owned state and
+        # carries its own verdict (its cycle credit is bumped at init,
+        # so it reports HEALTHY rather than WARMING_UP), so it is not
+        # part of this assertion.
+        for name in ("settings", "context", "progress", "runtime_registry"):
+            check = result["checks"][name]
             assert check["status"] == "warming_up"
             assert "warming_up_empty_feed" in check["reason_codes"]
 

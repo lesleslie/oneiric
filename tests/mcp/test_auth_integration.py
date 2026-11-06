@@ -24,10 +24,10 @@ from mcp_common.auth.exceptions import (
 from mcp_common.auth.permissions import Permission
 from mcp_common.auth.principal import Principal
 from mcp_common.auth.provider import IdentityProvider
+from mcp_common.health.feed import HealthFeedState
 from starlette.testclient import TestClient
 
 from oneiric.mcp.config import OneiricMCPAuthConfig, load_auth_config
-from mcp_common.health.feed import HealthFeedState
 from oneiric.mcp.server import build_mcp_server
 from oneiric.mcp.store import SubstrateStore
 
@@ -321,8 +321,14 @@ class TestTokenValidation:
         mcp-common's ``include={'authorization'}`` fix in place, the
         middleware actually fires on HTTP requests. ``verify_token``
         raises ``TokenInvalidError`` and the middleware re-raises; FastMCP
-        wraps it as a ``ToolError`` that surfaces in the JSON-RPC body
-        with ``isError: true``.
+        fails the whole JSON-RPC request and surfaces it as an ``error``
+        envelope.
+
+        A middleware rejection happens BEFORE the tool call, so it fails
+        the request itself. The decorator's fallback — a tool invoked
+        without auth — instead produces a tool-level result with
+        ``isError: true``. The two are distinguishable in the body, and
+        which one appeared is exactly what this test pins.
 
         Crucially, the body MUST contain the middleware's specific error
         message (``"bad token prefix"`` — the ``str(exc)`` from
@@ -388,7 +394,11 @@ class TestTokenValidation:
         assert "Authentication required for read_settings" not in body, (
             f"middleware should have fired, but decorator fallback ran: {body!r}"
         )
-        assert '"isError":true' in body
+        # Middleware rejections fail the JSON-RPC request itself, so
+        # FastMCP surfaces an ``error`` envelope. A decorator fallback
+        # would instead be a tool-level ``isError: true`` result.
+        assert '"error"' in body
+        assert '"isError":true' not in body
 
     async def test_expired_token_accepted_documented_gap(
         self, tmp_path: Any
@@ -512,7 +522,11 @@ class TestTokenValidation:
         assert "Authentication required for read_settings" not in body, (
             f"middleware should have fired, but decorator fallback ran: {body!r}"
         )
-        assert '"isError":true' in body
+        # Middleware rejections fail the JSON-RPC request itself, so
+        # FastMCP surfaces an ``error`` envelope. A decorator fallback
+        # would instead be a tool-level ``isError: true`` result.
+        assert '"error"' in body
+        assert '"isError":true' not in body
 
     def test_tools_list_without_auth_rejected_by_middleware(
         self, tmp_path: Any

@@ -45,11 +45,11 @@ import pytest
 from mcp_common.auth.permissions import Permission
 from mcp_common.auth.principal import Principal
 from mcp_common.auth.provider import IdentityProvider
+from mcp_common.health.feed import HealthFeedState
 from starlette.testclient import TestClient
 
 from oneiric.mcp.adapter_registry import OneiricAdapterRegistry
 from oneiric.mcp.config import OneiricMCPAuthConfig, load_auth_config
-from mcp_common.health.feed import HealthFeedState
 from oneiric.mcp.server import build_mcp_server
 from oneiric.mcp.store import SubstrateStore
 
@@ -257,13 +257,16 @@ class TestHealthEndpoint:
         # Canonical mcp-common HealthSnapshot envelope: status + checks.
         assert "status" in body
         assert "checks" in body
-        # All four substrate feeds participate in the aggregate.
-        assert set(body["checks"].keys()) == {
+        # All four substrate feeds participate in the aggregate. This is a
+        # SUBSET requirement: the skills_signer feed is projected in at
+        # probe time from lifespan-owned state (Phase 1.5), so it may also
+        # be present.
+        assert {
             "settings",
             "context",
             "progress",
             "runtime_registry",
-        }
+        } <= set(body["checks"].keys())
 
 
 class TestSubstrateE2E:
@@ -897,7 +900,12 @@ class TestAdapterRegistryE2E:
         mcp = FastMCP(name="oneiric-direct")
         tmp = self._tmp_root()
         registry = OneiricAdapterRegistry(root=tmp)
-        _register_adapter_tools(mcp, registry=registry, service_name="oneiric")
+        _register_adapter_tools(
+            mcp,
+            registry=registry,
+            service_name="oneiric",
+            auth_enabled=True,
+        )
 
         async def _seed_and_call() -> dict[str, Any]:
             tools = await mcp.list_tools()
@@ -943,7 +951,12 @@ class TestAdapterRegistryE2E:
         mcp = FastMCP(name="oneiric-direct")
         tmp = self._tmp_root()
         registry = OneiricAdapterRegistry(root=tmp)
-        _register_adapter_tools(mcp, registry=registry, service_name="oneiric")
+        _register_adapter_tools(
+            mcp,
+            registry=registry,
+            service_name="oneiric",
+            auth_enabled=True,
+        )
 
         async def _names() -> set[str]:
             tools = await mcp.list_tools()

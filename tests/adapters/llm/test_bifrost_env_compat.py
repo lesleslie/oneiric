@@ -10,23 +10,12 @@ operator-visible surface).
 
 from __future__ import annotations
 
-import os
 import warnings
 
 import pytest
 import structlog
 
 from oneiric.adapters.llm.bifrost import BifrostLLMSettings
-
-
-@pytest.fixture(autouse=True)
-def _clear_bifrost_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Strip every BIFROST env var so tests don't see operator shell state."""
-    for key in list(os.environ):
-        if key.startswith("ONEIRIC_BIFROST_") or key.startswith(
-            "MAHAVISHNU_BIFROST__"
-        ):
-            monkeypatch.delenv(key, raising=False)
 
 
 def test_legacy_prefix_applies_values(monkeypatch: pytest.MonkeyPatch) -> None:
