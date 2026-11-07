@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.35.0] - 2026-11-07
+
+### Added
+
+- Add the metrics_substrate table and insert primitives
+
+### Fixed
+
+- docs: Sync the version stamps to 0.34.0
+- observability: Gate plaintext telemetry egress behind an explicit opt-in
+- observability: Let the OTLP endpoint scheme decide the transport
+- observability: Make the OTLP transport guard protocol-aware
+- substrate: Correct the stale bind-time-assertion comment
+- substrate: Get synchronous DuckDB work off the event loop
+- tests: Refresh stale assertions against current oneiric behavior
+
+### Internal
+
+- envrc: Keep component configuration out of the direnv hook
+- gitignore: Ignore the Understand-Anything knowledge graph
+
 ## [0.34.0] - 2026-11-01
 
 ### Changed

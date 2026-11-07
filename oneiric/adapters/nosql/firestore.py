@@ -149,8 +149,8 @@ class FirestoreAdapter(NoSQLAdapterBase):
 
     def _default_client_factory(self) -> Any:
         try:
-            from google.cloud.firestore_v1.async_client import (  # ty: ignore[unresolved-import]
-                AsyncClient,  # ty: ignore[unresolved-import]
+            from google.cloud.firestore_v1.async_client import (  # ty: ignore[import-not-found]
+                AsyncClient,  # ty: ignore[import-not-found]
             )
         except ModuleNotFoundError as exc:  # pragma: no cover - optional dep
             raise LifecycleError(

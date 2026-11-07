@@ -5,6 +5,7 @@ import ipaddress
 import os
 import socket
 from collections.abc import Callable
+from contextlib import suppress
 from dataclasses import dataclass
 from typing import Any, Self
 from urllib.parse import urlparse
@@ -76,10 +77,8 @@ def _canonical_ip(host: str) -> ipaddress.IPv4Address | ipaddress.IPv6Address | 
     which ``ip_address`` has already handled.
     """
     candidate = host.strip()
-    try:
+    with suppress(ValueError):
         return ipaddress.ip_address(candidate)
-    except ValueError:
-        pass
     try:
         packed = socket.inet_aton(candidate)
     except OSError:
@@ -500,32 +499,32 @@ class OTLPObservabilityAdapter:
         try:  # pragma: no cover - depends on optional OTLP install
             from opentelemetry import metrics as metrics_api
             from opentelemetry import trace as trace_api
-            from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import (  # ty: ignore[unresolved-import]
+            from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import (  # ty: ignore[import-not-found]
                 OTLPMetricExporter as GrpcMetricExporter,
             )
-            from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (  # ty: ignore[unresolved-import]
+            from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (  # ty: ignore[import-not-found]
                 OTLPSpanExporter as GrpcSpanExporter,
             )
-            from opentelemetry.exporter.otlp.proto.http.metric_exporter import (  # ty: ignore[unresolved-import]
+            from opentelemetry.exporter.otlp.proto.http.metric_exporter import (  # ty: ignore[import-not-found]
                 OTLPMetricExporter as HttpMetricExporter,
             )
-            from opentelemetry.exporter.otlp.proto.http.trace_exporter import (  # ty: ignore[unresolved-import]
+            from opentelemetry.exporter.otlp.proto.http.trace_exporter import (  # ty: ignore[import-not-found]
                 OTLPSpanExporter as HttpSpanExporter,
             )
-            from opentelemetry.sdk.metrics import (  # ty: ignore[unresolved-import]
-                MeterProvider,  # ty: ignore[unresolved-import]
+            from opentelemetry.sdk.metrics import (  # ty: ignore[import-not-found]
+                MeterProvider,  # ty: ignore[import-not-found]
             )
-            from opentelemetry.sdk.metrics.export import (  # ty: ignore[unresolved-import]
-                PeriodicExportingMetricReader,  # ty: ignore[unresolved-import]
+            from opentelemetry.sdk.metrics.export import (  # ty: ignore[import-not-found]
+                PeriodicExportingMetricReader,  # ty: ignore[import-not-found]
             )
-            from opentelemetry.sdk.resources import (  # ty: ignore[unresolved-import]
-                Resource,  # ty: ignore[unresolved-import]
+            from opentelemetry.sdk.resources import (  # ty: ignore[import-not-found]
+                Resource,  # ty: ignore[import-not-found]
             )
-            from opentelemetry.sdk.trace import (  # ty: ignore[unresolved-import]
-                TracerProvider,  # ty: ignore[unresolved-import]
+            from opentelemetry.sdk.trace import (  # ty: ignore[import-not-found]
+                TracerProvider,  # ty: ignore[import-not-found]
             )
-            from opentelemetry.sdk.trace.export import (  # ty: ignore[unresolved-import]
-                BatchSpanProcessor,  # ty: ignore[unresolved-import]
+            from opentelemetry.sdk.trace.export import (  # ty: ignore[import-not-found]
+                BatchSpanProcessor,  # ty: ignore[import-not-found]
             )
         except ModuleNotFoundError as exc:  # pragma: no cover - optional dependency
             raise LifecycleError("opentelemetry-sdk-missing") from exc

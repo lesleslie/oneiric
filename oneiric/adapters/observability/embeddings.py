@@ -340,7 +340,7 @@ class EmbeddingService:
         if not self._settings.model2vec_enabled:
             return False
         try:
-            from model2vec import StaticModel  # ty: ignore[unresolved-import]
+            from model2vec import StaticModel  # ty: ignore[import-not-found]
         except ImportError:
             return False
         try:
@@ -427,7 +427,7 @@ class EmbeddingService:
     def _encode_model2vec(self, texts: list[str]) -> list[np.ndarray]:
         model = getattr(self, "_model2vec_model", None)
         if model is None:
-            from model2vec import StaticModel  # ty: ignore[unresolved-import]
+            from model2vec import StaticModel  # ty: ignore[import-not-found]
 
             model = StaticModel.from_pretrained(self._settings.model2vec_model_name)
             self._model2vec_model = model  # type: ignore[attr-defined]

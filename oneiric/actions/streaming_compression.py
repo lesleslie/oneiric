@@ -134,7 +134,7 @@ class StreamingCompressionAction:
         # raise a clear LifecycleError when it's missing rather than
         # blowing up at module-import time.
         try:
-            import zstandard  # ty: ignore[unresolved-import]
+            import zstandard  # ty: ignore[import-not-found]
         except ImportError as exc:
             raise LifecycleError(
                 "zstandard dependency required for zstd algorithm; "
@@ -155,7 +155,7 @@ class StreamingCompressionAction:
     @staticmethod
     def _zstd_stream_decompress(chunks: Iterator[bytes]) -> Iterator[bytes]:
         try:
-            import zstandard  # ty: ignore[unresolved-import]
+            import zstandard  # ty: ignore[import-not-found]
         except ImportError as exc:
             raise LifecycleError(
                 "zstandard dependency required for zstd algorithm; "

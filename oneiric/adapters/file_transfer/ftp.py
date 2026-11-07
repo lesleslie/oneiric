@@ -62,7 +62,7 @@ class FTPFileTransferAdapter:
             self._logger.info("ftp-adapter-init-factory")
             return
         try:
-            import aioftp  # ty: ignore[unresolved-import]
+            import aioftp  # ty: ignore[import-not-found]
         except ModuleNotFoundError as exc:  # pragma: no cover - optional path
             raise LifecycleError(
                 "aioftp-required: install aioftp to use FTPFileTransferAdapter"

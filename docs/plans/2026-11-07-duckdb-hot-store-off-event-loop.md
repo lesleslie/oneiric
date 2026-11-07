@@ -99,8 +99,7 @@ The first version of this fix moved the queries to a worker thread and left
 the connection alone. That was wrong, and it showed up in production.
 
 DuckDB's Python binding **refuses** concurrent use of one connection: the
-second caller gets `Resource In Use Error: connection is busy with another
-call` rather than waiting for the first to finish. It does not queue.
+second caller gets `Resource In Use Error: connection is busy with another call` rather than waiting for the first to finish. It does not queue.
 
 Before the change this never happened, because the event loop was the only
 thread that ever touched the connection — every query ran synchronously
@@ -111,9 +110,7 @@ exactly that in five places: its retention sweep (`otlp_receiver.py:1181`)
 and its aging service (`storage/aging.py:321, 423, 441, 458`) all call
 `hot_store.conn.execute(...)` without going through the store's API.
 
-The live symptom was `akosha.canary.substrate_write_failed detail=spans
-substrate write failed: Resource In Use Error: connection is busy with
-another call`.
+The live symptom was `akosha.canary.substrate_write_failed detail=spans substrate write failed: Resource In Use Error: connection is busy with another call`.
 
 So the guarantee has to be explicit. `self.conn` becomes a
 `_SerializedConnection` proxy that takes a re-entrant `threading.RLock`

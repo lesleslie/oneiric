@@ -401,7 +401,7 @@ def _canonical_json(value: str | Mapping[str, Any], field: str) -> str:
             cannot be represented in JSON.
         TypeError: If ``value`` does not describe a JSON object. The text was
             well-formed JSON, so the problem is the shape rather than the
-            content — which is a different failure from unparseable text.
+            content — which is a different failure from unparsable text.
     """
     payload: Any
     if isinstance(value, str):

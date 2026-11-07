@@ -8,14 +8,14 @@ from typing import Any
 from pydantic import BaseModel, Field, RedisDsn
 
 try:
-    from coredis import Redis  # ty: ignore[unresolved-import]
-    from coredis.exceptions import (  # ty: ignore[unresolved-import]
-        RedisError,  # pragma: no cover  # ty: ignore[unresolved-import]
+    from coredis import Redis  # ty: ignore[import-not-found]
+    from coredis.exceptions import (  # ty: ignore[import-not-found]
+        RedisError,  # pragma: no cover  # ty: ignore[import-not-found]
     )
-    from coredis.patterns.cache import (  # pragma: no cover  # ty: ignore[unresolved-import]
+    from coredis.patterns.cache import (  # pragma: no cover  # ty: ignore[import-not-found]
         LRUCache,
     )
-    from coredis.patterns.cache import (  # ty: ignore[unresolved-import]
+    from coredis.patterns.cache import (  # ty: ignore[import-not-found]
         TrackingCache as _AbstractTrackingCache,
     )
 

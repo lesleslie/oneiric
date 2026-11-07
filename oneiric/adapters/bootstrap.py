@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from oneiric.core.resolution import Resolver
 
 if TYPE_CHECKING:
-    from coredis import Redis  # ty: ignore[unresolved-import]
+    from coredis import Redis  # ty: ignore[import-not-found]
 
 from .cache import (
     MemoryCacheAdapter,

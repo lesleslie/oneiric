@@ -184,7 +184,7 @@ class ArangoDBGraphAdapter:
 
     def _default_client_factory(self) -> Any:
         try:
-            from arango import ArangoClient  # ty: ignore[unresolved-import]
+            from arango import ArangoClient  # ty: ignore[import-not-found]
         except ModuleNotFoundError as exc:  # pragma: no cover - optional dependency
             raise LifecycleError(
                 "arangodb-driver-not-installed: install optional extra 'oneiric[graph-arangodb]' to use ArangoDBGraphAdapter"

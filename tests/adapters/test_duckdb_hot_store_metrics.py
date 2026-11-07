@@ -348,7 +348,7 @@ async def test_an_unknown_data_type_is_rejected(store: DuckdbHotStore) -> None:
 
 
 async def test_malformed_attribute_json_is_rejected(store: DuckdbHotStore) -> None:
-    """Unparseable attributes fail loudly instead of being stored as noise."""
+    """Unparsable attributes fail loudly instead of being stored as noise."""
     with pytest.raises(ValueError, match="attributes is not valid JSON"):
         await store.insert_metrics_substrate([_point(attributes="{not json")])
 
@@ -357,7 +357,7 @@ async def test_attributes_must_be_a_json_object(store: DuckdbHotStore) -> None:
     """An attribute set is an object; a JSON array is not one.
 
     The text parsed fine, so the failure is the shape rather than the
-    content — a different failure from unparseable text, and a different
+    content — a different failure from unparsable text, and a different
     exception to match.
     """
     with pytest.raises(TypeError, match="attributes must be a JSON object"):

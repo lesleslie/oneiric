@@ -69,7 +69,7 @@ class PineconeAdapter(VectorBase[PineconeSettings]):
 
     async def _create_client(self) -> Any:
         try:
-            from pinecone import Pinecone  # ty: ignore[unresolved-import]
+            from pinecone import Pinecone  # ty: ignore[import-not-found]
 
             pc = Pinecone(
                 api_key=self._settings.api_key.get_secret_value(),

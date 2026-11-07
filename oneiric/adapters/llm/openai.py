@@ -116,7 +116,7 @@ class OpenAILLMAdapter(LLMBase):
             return self._client
 
         try:
-            import openai  # ty: ignore[unresolved-import]
+            import openai  # ty: ignore[import-not-found]
         except ImportError as e:
             msg = "openai package required for OpenAI LLM adapter"
             raise ImportError(msg) from e
@@ -450,7 +450,7 @@ class OpenAILLMAdapter(LLMBase):
 
     async def _count_tokens(self, text: str, model: str) -> int:
         try:
-            import tiktoken  # ty: ignore[unresolved-import]
+            import tiktoken  # ty: ignore[import-not-found]
 
             encoding = tiktoken.encoding_for_model(model)
             return len(encoding.encode(text))

@@ -88,7 +88,7 @@ class OpenAIEmbeddingAdapter(EmbeddingBase):
     async def _ensure_client(self) -> Any:
         if self._client is None:
             try:
-                from openai import AsyncOpenAI  # ty: ignore[unresolved-import]
+                from openai import AsyncOpenAI  # ty: ignore[import-not-found]
             except ImportError as exc:
                 raise LifecycleError(
                     "openai-import-failed: pip install openai"
