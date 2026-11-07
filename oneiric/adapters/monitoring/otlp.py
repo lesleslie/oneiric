@@ -25,8 +25,14 @@ class OTLPObservabilitySettings(BaseModel):
     headers: dict[str, str] = Field(
         default_factory=dict, description="Additional request headers."
     )
-    insecure: bool = Field(
-        default=False, description="Skip TLS verification when true."
+    insecure: bool | None = Field(
+        default=None,
+        description=(
+            "Use a plaintext channel. None (the default) lets the exporter "
+            "decide from the endpoint scheme: http:// is plaintext, https:// "
+            "is TLS. Set true to force plaintext or false to force TLS; an "
+            "https:// endpoint stays TLS regardless."
+        ),
     )
     service_name: str = Field(default="oneiric")
     environment: str = Field(default="development")
@@ -130,18 +136,30 @@ class OTLPObservabilityAdapter:
         self._configured = False
         self._logger.info("adapter-cleanup-complete", adapter="otel-otlp")
 
+    def _exporter_kwargs(self) -> dict[str, Any]:
+        """Transport-specific keyword arguments for the OTLP exporters.
+
+        Only the gRPC exporters accept ``insecure``; the HTTP/protobuf
+        exporters have no such parameter (their TLS behaviour follows the
+        endpoint scheme and the ``certificate_file`` family of options), so
+        passing one raises ``TypeError``.
+        """
+        kwargs: dict[str, Any] = {
+            "endpoint": self._settings.endpoint,
+            "headers": self._settings.headers or None,
+            "timeout": self._settings.export_timeout_seconds,
+        }
+        if self._settings.protocol == "grpc":
+            kwargs["insecure"] = self._settings.insecure
+        return kwargs
+
     def _create_span_exporter(self, components: _OTLPComponents) -> Any:
         exporter_cls = (
             components.grpc_span_exporter_cls
             if self._settings.protocol == "grpc"
             else components.http_span_exporter_cls
         )
-        return exporter_cls(
-            endpoint=self._settings.endpoint,
-            headers=self._settings.headers or None,
-            insecure=self._settings.insecure,
-            timeout=self._settings.export_timeout_seconds,
-        )
+        return exporter_cls(**self._exporter_kwargs())
 
     def _create_metric_exporter(self, components: _OTLPComponents) -> Any:
         exporter_cls = (
@@ -149,12 +167,7 @@ class OTLPObservabilityAdapter:
             if self._settings.protocol == "grpc"
             else components.http_metric_exporter_cls
         )
-        return exporter_cls(
-            endpoint=self._settings.endpoint,
-            headers=self._settings.headers or None,
-            insecure=self._settings.insecure,
-            timeout=self._settings.export_timeout_seconds,
-        )
+        return exporter_cls(**self._exporter_kwargs())
 
     def _import_components(self) -> _OTLPComponents:
         try:  # pragma: no cover - depends on optional OTLP install

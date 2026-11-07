@@ -223,3 +223,180 @@ async def test_otlp_import_components_returns_otlp_components() -> None:
     adapter = OTLPObservabilityAdapter(OTLPObservabilitySettings())
     components = adapter._import_components()
     assert isinstance(components, _OTLPComponents)
+
+
+# ---------------------------------------------------------------------------
+# insecure — scheme-driven transport selection
+# ---------------------------------------------------------------------------
+#
+# The gRPC OTLP exporters resolve their transport like this:
+#
+#     parsed_url = urlparse(self._endpoint)
+#     if parsed_url.scheme == "https":
+#         insecure = False
+#     insecure_exporter = environ.get("OTEL_EXPORTER_OTLP_INSECURE")
+#     if insecure is None:
+#         if insecure_exporter is not None:
+#             insecure = insecure_exporter.lower() == "true"
+#         else:
+#             insecure = parsed_url.scheme == "http"
+#
+# So the scheme decides only while `insecure` is unset (None). An explicit
+# False *overrides* that inference and forces a TLS channel — which fails the
+# handshake against a plaintext collector on 127.0.0.1:4317. The default
+# therefore has to stay None.
+#
+# Note the asymmetry: an https:// endpoint is forced to TLS *before* the
+# explicit value is consulted, so `insecure=True` cannot open a plaintext
+# channel to an https:// endpoint. That is SDK behaviour, not ours.
+#
+# The SDK exposes no public accessor for the resolved transport, so these
+# tests assert on the private `_insecure` attribute.
+
+
+def _grpc_metric_exporter_cls() -> Any:
+    """Return the real gRPC metric exporter class, skipping if unavailable."""
+    pytest.importorskip("opentelemetry.exporter.otlp.proto.grpc.metric_exporter")
+    from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import (
+        OTLPMetricExporter,
+    )
+
+    return OTLPMetricExporter
+
+
+def _build_metric_exporter(
+    settings: OTLPObservabilitySettings,
+) -> Any:
+    """Build the metric exporter the adapter would construct for `settings`."""
+    exporter_cls = _grpc_metric_exporter_cls()
+    components = _fake_components()
+    components.grpc_metric_exporter_cls = exporter_cls
+    adapter = OTLPObservabilityAdapter(settings)
+    return adapter._create_metric_exporter(components)
+
+
+def test_insecure_default_is_unset() -> None:
+    """The default must leave the transport to the exporter's scheme inference."""
+    assert OTLPObservabilitySettings().insecure is None
+
+
+def test_grpc_exporter_default_is_plaintext_for_http_endpoint() -> None:
+    """Default settings + an http:// endpoint must yield a plaintext channel."""
+    exporter = _build_metric_exporter(OTLPObservabilitySettings())
+
+    assert exporter._insecure is True
+
+
+def test_grpc_exporter_default_is_tls_for_https_endpoint() -> None:
+    """Default settings + an https:// endpoint must yield a TLS channel."""
+    exporter = _build_metric_exporter(
+        OTLPObservabilitySettings(endpoint="https://collector:4317")
+    )
+
+    assert exporter._insecure is False
+
+
+def test_grpc_exporter_explicit_insecure_true_forces_plaintext() -> None:
+    """An explicit `insecure=True` still forces plaintext."""
+    exporter = _build_metric_exporter(
+        OTLPObservabilitySettings(endpoint="http://collector:4317", insecure=True)
+    )
+
+    assert exporter._insecure is True
+
+
+def test_grpc_exporter_explicit_insecure_false_forces_tls() -> None:
+    """An explicit `insecure=False` still forces TLS over an http:// endpoint.
+
+    This is the assertion that proves the explicit value survives the default
+    change: the unset default would have chosen plaintext here.
+    """
+    exporter = _build_metric_exporter(
+        OTLPObservabilitySettings(endpoint="http://collector:4317", insecure=False)
+    )
+
+    assert exporter._insecure is False
+
+
+def test_https_endpoint_forces_tls_even_with_insecure_true() -> None:
+    """An https:// endpoint is pinned to TLS by the SDK.
+
+    The exporter sets `insecure = False` for the https scheme before it
+    consults the explicit value, so `insecure=True` cannot open a plaintext
+    channel to an https:// endpoint. Pinned so the SDK behaviour is visible
+    rather than surprising.
+    """
+    exporter = _build_metric_exporter(
+        OTLPObservabilitySettings(endpoint="https://collector:4317", insecure=True)
+    )
+
+    assert exporter._insecure is False
+
+
+def test_insecure_env_var_is_honoured_when_the_field_is_unset(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`OTEL_EXPORTER_OTLP_INSECURE` applies while `insecure` is unset.
+
+    Leaving the field at None lets the operator steer the transport from the
+    environment; an explicit field value wins over the variable.
+    """
+    monkeypatch.setenv("OTEL_EXPORTER_OTLP_INSECURE", "false")
+    exporter = _build_metric_exporter(
+        OTLPObservabilitySettings(endpoint="http://collector:4317")
+    )
+    assert exporter._insecure is False
+
+    monkeypatch.setenv("OTEL_EXPORTER_OTLP_INSECURE", "true")
+    exporter = _build_metric_exporter(
+        OTLPObservabilitySettings(endpoint="http://collector:4317", insecure=False)
+    )
+    assert exporter._insecure is False
+
+
+@pytest.mark.asyncio
+async def test_otlp_adapter_passes_insecure_through_to_grpc_exporters(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The adapter hands the (possibly unset) value to the gRPC exporters."""
+    components = _fake_components()
+    adapter = OTLPObservabilityAdapter(OTLPObservabilitySettings())
+    monkeypatch.setattr(
+        OTLPObservabilityAdapter,
+        "_import_components",
+        lambda self: components,
+    )
+    await adapter.init()
+
+    assert _FakeSpanExporter.instances[-1].kwargs["insecure"] is None
+    assert _FakeMetricExporter.instances[-1].kwargs["insecure"] is None
+
+
+def test_http_exporters_are_built_without_an_insecure_kwarg() -> None:
+    """The HTTP/protobuf exporters have no `insecure` parameter.
+
+    Passing one raises `TypeError: OTLPMetricExporter.__init__() got an
+    unexpected keyword argument 'insecure'`, so the adapter must omit it for
+    the `http/protobuf` protocol. Built with the real SDK classes so the
+    signature mismatch surfaces here rather than at runtime.
+    """
+    pytest.importorskip("opentelemetry.exporter.otlp.proto.http.trace_exporter")
+    pytest.importorskip("opentelemetry.exporter.otlp.proto.http.metric_exporter")
+    from opentelemetry.exporter.otlp.proto.http.metric_exporter import (
+        OTLPMetricExporter as HttpMetricExporter,
+    )
+    from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
+        OTLPSpanExporter as HttpSpanExporter,
+    )
+
+    components = _fake_components()
+    components.http_span_exporter_cls = HttpSpanExporter
+    components.http_metric_exporter_cls = HttpMetricExporter
+    adapter = OTLPObservabilityAdapter(
+        OTLPObservabilitySettings(
+            endpoint="http://collector:4318", protocol="http/protobuf"
+        )
+    )
+
+    assert adapter._create_span_exporter(components) is not None
+    assert adapter._create_metric_exporter(components) is not None
