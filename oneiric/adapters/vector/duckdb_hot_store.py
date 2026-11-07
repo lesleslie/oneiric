@@ -32,14 +32,16 @@ Dependencies:
 from __future__ import annotations
 
 import asyncio
+import functools
 import hashlib
 import json
 import logging
-from collections.abc import Mapping
+import threading
+from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from itertools import batched
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar
 
 import duckdb  # third-party; substrate ships it as an optional extra for development
 
@@ -49,6 +51,8 @@ from oneiric.adapters.vector.metrics import (
 )
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar("T")
 
 # ── `spans_substrate` DDL ──────────────────────────────────────────────────
 # Verbatim from spec §5.1 of
@@ -441,6 +445,126 @@ def _metric_point_values(row: Mapping[str, Any]) -> list[Any]:
     return values
 
 
+class _SerializedResult:
+    """The result DuckDB hands back from ``execute``.
+
+    ``DuckDBPyConnection.execute`` returns the connection itself with the
+    result attached — ``conn.execute(sql)`` *is* ``conn`` — and reading that
+    result (``fetchone``, ``fetchall``, ``rowcount``) is a further call into
+    DuckDB. A wrapper that only locked ``execute`` would let the read
+    escape into the gap between the two, where it can collide with an
+    in-flight write exactly like an unlocked query would.
+    """
+
+    def __init__(
+        self,
+        conn: duckdb.DuckDBPyConnection,
+        lock: threading.RLock,
+    ) -> None:
+        self._conn = conn
+        self._lock = lock
+
+    def fetchone(self) -> Any:
+        with self._lock:
+            return self._conn.fetchone()
+
+    def fetchall(self) -> Any:
+        with self._lock:
+            return self._conn.fetchall()
+
+    def fetchdf(self, *args: Any, **kwargs: Any) -> Any:
+        with self._lock:
+            return self._conn.fetchdf(*args, **kwargs)
+
+    @property
+    def rowcount(self) -> int:
+        with self._lock:
+            return self._conn.rowcount
+
+    def __getattr__(self, name: str) -> Any:
+        attr = getattr(self._conn, name)
+        if not callable(attr):
+            return attr
+
+        @functools.wraps(attr)
+        def locked(*args: Any, **kwargs: Any) -> Any:
+            with self._lock:
+                return attr(*args, **kwargs)
+
+        return locked
+
+
+class _SerializedConnection:
+    """A DuckDB connection whose calls are serialized across threads.
+
+    DuckDB's Python binding refuses concurrent use of one connection: the
+    second caller gets ``Resource In Use Error: connection is busy with
+    another call`` rather than waiting for the first to finish. It does not
+    queue, so this is a hard failure, not a slowdown.
+
+    The event loop used to provide that serialization for free — it was the
+    only thread that ever touched the connection, because every query ran
+    synchronously inside an ``async def``. Moving the substrate's work to a
+    worker thread removed that free guarantee, and any caller that reaches
+    for ``conn`` directly would collide with an in-flight write. akosha
+    does exactly that: its retention sweep and its aging service call
+    ``hot_store.conn.execute(...)`` without going through the store's API.
+
+    So the guarantee has to be explicit. Every method takes a re-entrant
+    lock. Re-entrancy is load-bearing: the store holds the lock for a whole
+    operation, and the queries inside that operation re-take it on the same
+    thread.
+    """
+
+    def __init__(
+        self,
+        conn: duckdb.DuckDBPyConnection,
+        lock: threading.RLock,
+    ) -> None:
+        self._conn = conn
+        self._lock = lock
+
+    def execute(self, *args: Any, **kwargs: Any) -> Any:
+        with self._lock:
+            return _SerializedResult(self._conn.execute(*args, **kwargs), self._lock)
+
+    def executemany(self, *args: Any, **kwargs: Any) -> Any:
+        with self._lock:
+            return _SerializedResult(
+                self._conn.executemany(*args, **kwargs), self._lock
+            )
+
+    def commit(self) -> None:
+        with self._lock:
+            self._conn.commit()
+
+    def close(self) -> None:
+        with self._lock:
+            self._conn.close()
+
+    def cursor(self) -> Any:
+        with self._lock:
+            return self._conn.cursor()
+
+    def __getattr__(self, name: str) -> Any:
+        """Forward anything else, under the lock.
+
+        Without this, an unlisted method would reach the raw connection
+        with no serialization at all — the exact failure this class
+        exists to prevent.
+        """
+        attr = getattr(self._conn, name)
+        if not callable(attr):
+            return attr
+
+        @functools.wraps(attr)
+        def locked(*args: Any, **kwargs: Any) -> Any:
+            with self._lock:
+                return attr(*args, **kwargs)
+
+        return locked
+
+
 class DuckdbHotStore:
     """DuckDB-backed hot-store concrete implementation.
 
@@ -481,8 +605,13 @@ class DuckdbHotStore:
                 embedding service's output.
         """
         self.db_path = database_path
-        self.conn: duckdb.DuckDBPyConnection | None = None
+        self.conn: _SerializedConnection | None = None
         self._lock = asyncio.Lock()
+        # The connection's own lock, shared with ``_SerializedConnection``.
+        # ``self._lock`` serializes this store's operations against each
+        # other; this one serializes them against callers that reach for
+        # ``conn`` directly. Both are needed — see ``_SerializedConnection``.
+        self._conn_lock = threading.RLock()
         # Schema dim is baked into the CREATE TABLE DDL at initialize()
         # time — capture it now so the SQL can interpolate ``FLOAT[<dim>]``
         # as a literal. Pass an explicit int for tests that don't go
@@ -491,107 +620,169 @@ class DuckdbHotStore:
             embedding_dim if embedding_dim is not None else DEFAULT_EMBEDDING_DIM
         )
 
+    async def _run_off_loop(self, func: Callable[[_SerializedConnection], T]) -> T:
+        """Run a synchronous DuckDB call on a worker thread.
+
+        ``duckdb.DuckDBPyConnection.execute`` blocks the calling thread until
+        the query has run and its result is materialized. There is no
+        awaitable underneath it, so calling it from an ``async def`` pins the
+        event loop for the whole query — the coroutine looks async but is
+        not.
+
+        On the OTLP ingest path that is half a second to a second per batch,
+        which is long enough to starve every other coroutine. akosha's Redis
+        client (``socket_timeout=5``) began failing with ``TimeoutError``,
+        and the HTTP and gRPC surfaces stopped answering while TCP still
+        connected — the kernel's accept backlog hides a stalled loop.
+
+        The work runs on a worker thread instead.
+
+        Two locks are in play, and they guard different things:
+
+        * ``self._lock`` (asyncio) is taken by the calling method and is
+          awaited across this call, so it covers the whole operation. It
+          serializes this store's operations against each other, which is
+          what gives a multi-statement operation a consistent view — two
+          probes racing on one connection returned inconsistent
+          intermediate counts.
+        * ``self._conn_lock`` (threading) is taken here, around the whole
+          operation, and is what keeps the connection safe for callers that
+          reach for ``conn`` directly. DuckDB refuses concurrent use of one
+          connection rather than queueing, so without this the substrate's
+          write and akosha's retention sweep would collide.
+
+        Args:
+            func: Callable taking the connection and returning the result.
+
+        Returns:
+            Whatever ``func`` returns.
+
+        Raises:
+            RuntimeError: If the store was never initialized.
+        """
+        conn = self.conn
+        if conn is None:
+            raise RuntimeError("Hot store not initialized")
+
+        def runner() -> T:
+            with self._conn_lock:
+                return func(conn)
+
+        return await asyncio.to_thread(runner)
+
     async def initialize(self) -> None:
         """Initialize database schema (conversations table + HNSW index).
 
         Idempotent; safe to call multiple times.
         """
         async with self._lock:
-            self.conn = duckdb.connect(str(self.db_path))
-            # Create conversations table with HNSW index support.
-            # ``embedding FLOAT[N]`` is interpolated at __init__ time so
-            # the schema dim matches the active backend; this MUST
-            # match the dim the embedding service produces or insert()
-            # raises.
-            self.conn.execute(
-                f"""
-                CREATE TABLE IF NOT EXISTS conversations (
-                    system_id VARCHAR,
-                    conversation_id VARCHAR PRIMARY KEY,
-                    content TEXT,
-                    embedding FLOAT[{self._embedding_dim}],
-                    timestamp TIMESTAMP,
-                    metadata JSON,
-                    content_hash VARCHAR,
-                    uploaded_at TIMESTAMP DEFAULT NOW()
-                )
-            """
+            # Opening a file-backed database replays its WAL, and the DDL
+            # below runs a statement per table and index. Both block the
+            # calling thread; on a database with a large WAL the replay
+            # alone is seconds.
+            raw = await asyncio.to_thread(duckdb.connect, str(self.db_path))
+            # The proxy is what makes the connection safe to share between
+            # this store's worker threads and callers that reach for
+            # ``conn`` directly.
+            self.conn = _SerializedConnection(raw, self._conn_lock)
+            await self._run_off_loop(self._initialize_schema)
+
+    def _initialize_schema(self, conn: _SerializedConnection) -> None:
+        """Create every table and index this store owns."""
+        # Create conversations table with HNSW index support.
+        # ``embedding FLOAT[N]`` is interpolated at __init__ time so
+        # the schema dim matches the active backend; this MUST
+        # match the dim the embedding service produces or insert()
+        # raises.
+        conn.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS conversations (
+                system_id VARCHAR,
+                conversation_id VARCHAR PRIMARY KEY,
+                content TEXT,
+                embedding FLOAT[{self._embedding_dim}],
+                timestamp TIMESTAMP,
+                metadata JSON,
+                content_hash VARCHAR,
+                uploaded_at TIMESTAMP DEFAULT NOW()
             )
-            # HNSW index for vector similarity search.
+        """
+        )
+        # HNSW index for vector similarity search.
+        try:
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS embedding_hnsw_index
+                ON conversations USING HNSW (embedding)
+                WITH (m = 16, ef_construction = 200)
+            """)
+        except Exception as exc:
+            logger.warning("HNSW index creation failed: %s", exc)
+        # Filter indexes (performance).
+        for ddl, name in (
+            (
+                "CREATE INDEX IF NOT EXISTS system_id_index ON conversations (system_id)",
+                "system_id",
+            ),
+            (
+                "CREATE INDEX IF NOT EXISTS timestamp_index ON conversations (timestamp)",
+                "timestamp",
+            ),
+            (
+                "CREATE INDEX IF NOT EXISTS system_timestamp_index ON conversations (system_id, timestamp)",
+                "composite_system_timestamp",
+            ),
+        ):
             try:
-                self.conn.execute("""
-                    CREATE INDEX IF NOT EXISTS embedding_hnsw_index
-                    ON conversations USING HNSW (embedding)
-                    WITH (m = 16, ef_construction = 200)
-                """)
+                conn.execute(ddl)
+                logger.info("Created %s index", name)
             except Exception as exc:
-                logger.warning("HNSW index creation failed: %s", exc)
-            # Filter indexes (performance).
-            for ddl, name in (
-                (
-                    "CREATE INDEX IF NOT EXISTS system_id_index ON conversations (system_id)",
-                    "system_id",
-                ),
-                (
-                    "CREATE INDEX IF NOT EXISTS timestamp_index ON conversations (timestamp)",
-                    "timestamp",
-                ),
-                (
-                    "CREATE INDEX IF NOT EXISTS system_timestamp_index ON conversations (system_id, timestamp)",
-                    "composite_system_timestamp",
-                ),
-            ):
-                try:
-                    self.conn.execute(ddl)
-                    logger.info("Created %s index", name)
-                except Exception as exc:
-                    logger.warning("%s index creation failed: %s", name, exc)
+                logger.warning("%s index creation failed: %s", name, exc)
 
-            # ── spans_substrate (v7 PR-0a) ──────────────────────────────
-            # The OTel span substrate. Substrate-managed per ADR 017: every
-            # Bodai component inherits the access path from here.
-            #
-            # Deliberately not wrapped in try/except. A substrate that cannot
-            # create its own table is broken, and swallowing that would surface
-            # later as a read path that silently returns nothing — the exact
-            # failure mode table_exists() exists to let callers detect.
-            self.conn.execute(SPANS_SUBSTRATE_DDL)
-            for index_ddl, index_name in SPANS_SUBSTRATE_INDEXES:
-                self.conn.execute(index_ddl)
-                logger.info("Created %s index", index_name)
+        # ── spans_substrate (v7 PR-0a) ──────────────────────────────
+        # The OTel span substrate. Substrate-managed per ADR 017: every
+        # Bodai component inherits the access path from here.
+        #
+        # Deliberately not wrapped in try/except. A substrate that cannot
+        # create its own table is broken, and swallowing that would surface
+        # later as a read path that silently returns nothing — the exact
+        # failure mode table_exists() exists to let callers detect.
+        conn.execute(SPANS_SUBSTRATE_DDL)
+        for index_ddl, index_name in SPANS_SUBSTRATE_INDEXES:
+            conn.execute(index_ddl)
+            logger.info("Created %s index", index_name)
 
-            # ── metrics_substrate (plan Phase 1 / REQ-M03) ───────────────
-            # The metric counterpart of `spans_substrate`, in the same file.
-            # Created on this same path so a producer can never find the
-            # table missing. Same no-try/except reasoning as above — a
-            # substrate that cannot create its own tables is broken, and
-            # hiding that is worse.
-            #
-            # The trace receiver asserts `spans_substrate_table` exists at
-            # bind time; the METRICS receiver deliberately does not. Failing
-            # the receiver's boot to prove a metric table is missing would
-            # take the trace path down with it, and a missing table already
-            # reports itself as `oneiric_metrics_substrate_insert_failed_total`
-            # (see `insert_metrics_substrate`).
-            self.conn.execute(METRICS_SUBSTRATE_DDL)
-            for index_ddl, index_name in METRICS_SUBSTRATE_INDEXES:
-                self.conn.execute(index_ddl)
-                logger.info("Created %s index", index_name)
+        # ── metrics_substrate (plan Phase 1 / REQ-M03) ───────────────
+        # The metric counterpart of `spans_substrate`, in the same file.
+        # Created on this same path so a producer can never find the
+        # table missing. Same no-try/except reasoning as above — a
+        # substrate that cannot create its own tables is broken, and
+        # hiding that is worse.
+        #
+        # The trace receiver asserts `spans_substrate_table` exists at
+        # bind time; the METRICS receiver deliberately does not. Failing
+        # the receiver's boot to prove a metric table is missing would
+        # take the trace path down with it, and a missing table already
+        # reports itself as `oneiric_metrics_substrate_insert_failed_total`
+        # (see `insert_metrics_substrate`).
+        conn.execute(METRICS_SUBSTRATE_DDL)
+        for index_ddl, index_name in METRICS_SUBSTRATE_INDEXES:
+            conn.execute(index_ddl)
+            logger.info("Created %s index", index_name)
 
-            # ── receiver operational tables (v7 §5.3) ─────────────────────
-            # Created alongside the substrate table rather than by the
-            # receiver itself: the receiver's ``start()`` asserts
-            # ``spans_substrate_table`` exists and raises otherwise, and a
-            # receiver that has to create its own DLQ on the fly would be
-            # asserting something it just did. Same reasoning as the
-            # no-try/except decision above — a substrate that cannot create
-            # its own tables is broken, and hiding that is worse.
-            self.conn.execute(RECEIVER_STATE_DDL)
-            self.conn.execute(DLQ_ROWS_DDL)
-            self.conn.execute(DLQ_ROWS_INDEX)
-            logger.info("Created receiver operational tables")
+        # ── receiver operational tables (v7 §5.3) ─────────────────────
+        # Created alongside the substrate table rather than by the
+        # receiver itself: the receiver's ``start()`` asserts
+        # ``spans_substrate_table`` exists and raises otherwise, and a
+        # receiver that has to create its own DLQ on the fly would be
+        # asserting something it just did. Same reasoning as the
+        # no-try/except decision above — a substrate that cannot create
+        # its own tables is broken, and hiding that is worse.
+        conn.execute(RECEIVER_STATE_DDL)
+        conn.execute(DLQ_ROWS_DDL)
+        conn.execute(DLQ_ROWS_INDEX)
+        logger.info("Created receiver operational tables")
 
-            logger.info("Hot store initialized")
+        logger.info("Hot store initialized")
 
     # ── ingest writers ──────────────────────────────────────────────────
     # These live beside the DDL above rather than in akosha's subclass. The
@@ -649,39 +840,50 @@ class DuckdbHotStore:
         if not rows:
             return (0, 0)
         async with self._lock:
-            if self.conn is None:
-                raise RuntimeError("Hot store not initialized")
-            table = self.spans_substrate_table
-            columns = list(rows[0].keys())
-            placeholders = ", ".join("?" for _ in columns)
-            collist = ", ".join(columns)
-
-            # Keyed on ``span_id`` alone — the narrowest constraint in the
-            # DDL, and therefore an exact predictor of what the untargeted
-            # ON CONFLICT will do. Probing the composite pair instead would
-            # report "inserted" for rows the database silently dropped, and
-            # the returned numbers would disagree with the table.
-            seen: set[Any] = set()
-            deduped = 0
-            for row in rows:
-                span_id = row.get("span_id")
-                if span_id in seen:
-                    deduped += 1
-                    continue
-                seen.add(span_id)
-                hit = self.conn.execute(
-                    f"SELECT 1 FROM {table} WHERE span_id IS NOT DISTINCT FROM ?",
-                    [span_id],
-                ).fetchone()
-                if hit:
-                    deduped += 1
-
-            self.conn.executemany(
-                f"INSERT INTO {table} ({collist}) VALUES ({placeholders}) "
-                f"ON CONFLICT DO NOTHING",
-                [[r.get(c) for c in columns] for r in rows],
+            return await self._run_off_loop(
+                lambda conn: self._insert_spans_substrate_sync(conn, rows)
             )
-            return (len(rows) - deduped, deduped)
+
+    def _insert_spans_substrate_sync(
+        self,
+        conn: _SerializedConnection,
+        rows: list[dict[str, Any]],
+    ) -> tuple[int, int]:
+        """Write one span batch. Runs on a worker thread.
+
+        See ``_run_off_loop`` for why the call is off the event loop.
+        """
+        table = self.spans_substrate_table
+        columns = list(rows[0].keys())
+        placeholders = ", ".join("?" for _ in columns)
+        collist = ", ".join(columns)
+
+        # Keyed on ``span_id`` alone — the narrowest constraint in the
+        # DDL, and therefore an exact predictor of what the untargeted
+        # ON CONFLICT will do. Probing the composite pair instead would
+        # report "inserted" for rows the database silently dropped, and
+        # the returned numbers would disagree with the table.
+        seen: set[Any] = set()
+        deduped = 0
+        for row in rows:
+            span_id = row.get("span_id")
+            if span_id in seen:
+                deduped += 1
+                continue
+            seen.add(span_id)
+            hit = conn.execute(
+                f"SELECT 1 FROM {table} WHERE span_id IS NOT DISTINCT FROM ?",
+                [span_id],
+            ).fetchone()
+            if hit:
+                deduped += 1
+
+        conn.executemany(
+            f"INSERT INTO {table} ({collist}) VALUES ({placeholders}) "
+            f"ON CONFLICT DO NOTHING",
+            [[r.get(c) for c in columns] for r in rows],
+        )
+        return (len(rows) - deduped, deduped)
 
     async def insert_metrics_substrate(
         self,
@@ -736,30 +938,39 @@ class DuckdbHotStore:
         if not rows:
             return (0, 0)
         async with self._lock:
-            if self.conn is None:
-                raise RuntimeError("Hot store not initialized")
-            table = self.metrics_substrate_table
-            collist = ", ".join(METRICS_SUBSTRATE_COLUMNS)
-            slot = "(" + ", ".join(["?"] * len(METRICS_SUBSTRATE_COLUMNS)) + ")"
-            inserted = 0
-            try:
-                for chunk in batched(rows, METRICS_SUBSTRATE_INSERT_CHUNK):
-                    params = [
-                        value for row in chunk for value in _metric_point_values(row)
-                    ]
-                    returned = self.conn.execute(
-                        f"INSERT INTO {table} ({collist}) VALUES "
-                        f"{', '.join([slot] * len(chunk))} "
-                        "ON CONFLICT DO NOTHING RETURNING ts",
-                        params,
-                    ).fetchall()
-                    inserted += len(returned)
-            except Exception:
-                logger.exception("metrics_substrate insert failed")
-                record_metrics_substrate_insert_failure()
-                raise
-            record_metrics_substrate_insert(inserted)
-            return (inserted, len(rows) - inserted)
+            return await self._run_off_loop(
+                lambda conn: self._insert_metrics_substrate_sync(conn, rows)
+            )
+
+    def _insert_metrics_substrate_sync(
+        self,
+        conn: _SerializedConnection,
+        rows: list[dict[str, Any]],
+    ) -> tuple[int, int]:
+        """Write one metric batch. Runs on a worker thread.
+
+        See ``_run_off_loop`` for why the call is off the event loop.
+        """
+        table = self.metrics_substrate_table
+        collist = ", ".join(METRICS_SUBSTRATE_COLUMNS)
+        slot = "(" + ", ".join(["?"] * len(METRICS_SUBSTRATE_COLUMNS)) + ")"
+        inserted = 0
+        try:
+            for chunk in batched(rows, METRICS_SUBSTRATE_INSERT_CHUNK):
+                params = [value for row in chunk for value in _metric_point_values(row)]
+                returned = conn.execute(
+                    f"INSERT INTO {table} ({collist}) VALUES "
+                    f"{', '.join([slot] * len(chunk))} "
+                    "ON CONFLICT DO NOTHING RETURNING ts",
+                    params,
+                ).fetchall()
+                inserted += len(returned)
+        except Exception:
+            logger.exception("metrics_substrate insert failed")
+            record_metrics_substrate_insert_failure()
+            raise
+        record_metrics_substrate_insert(inserted)
+        return (inserted, len(rows) - inserted)
 
     async def insert_dlq_rows(self, rows: list[dict[str, Any]]) -> int:
         """Append rejected rows to ``_dlq_rows``; return the count written.
@@ -779,17 +990,28 @@ class DuckdbHotStore:
         if not rows:
             return 0
         async with self._lock:
-            if self.conn is None:
-                raise RuntimeError("Hot store not initialized")
-            table = self.dlq_rows_table
-            columns = list(rows[0].keys())
-            placeholders = ", ".join("?" for _ in columns)
-            collist = ", ".join(columns)
-            self.conn.executemany(
-                f"INSERT INTO {table} ({collist}) VALUES ({placeholders})",
-                [[r.get(c) for c in columns] for r in rows],
+            return await self._run_off_loop(
+                lambda conn: self._insert_dlq_rows_sync(conn, rows)
             )
-            return len(rows)
+
+    def _insert_dlq_rows_sync(
+        self,
+        conn: _SerializedConnection,
+        rows: list[dict[str, Any]],
+    ) -> int:
+        """Append one quarantine batch. Runs on a worker thread.
+
+        See ``_run_off_loop`` for why the call is off the event loop.
+        """
+        table = self.dlq_rows_table
+        columns = list(rows[0].keys())
+        placeholders = ", ".join("?" for _ in columns)
+        collist = ", ".join(columns)
+        conn.executemany(
+            f"INSERT INTO {table} ({collist}) VALUES ({placeholders})",
+            [[r.get(c) for c in columns] for r in rows],
+        )
+        return len(rows)
 
     async def table_exists(self, name: str) -> bool:
         """Whether table ``name`` is present in the connected database.
@@ -800,16 +1022,26 @@ class DuckdbHotStore:
 
         ``duckdb_tables()`` is a table function — the parentheses are
         required; ``duckdb_tables`` alone parses as a relation reference.
-        ``conn.execute`` is synchronous in DuckDB's Python API, so it is not
-        awaited; the method is async only so call sites read uniformly with
-        the rest of this class's async surface.
+        The catalog query is synchronous in DuckDB's Python API, so it runs
+        on a worker thread; see ``_run_off_loop``.
+
+        The lock is taken here, as it is for every other method on this
+        class. It was not, originally, and that was safe by accident: the
+        event loop was the only thread that touched the connection, so
+        nothing could interleave. Once the substrate's work moved to a
+        worker thread, an un-locked catalog query could land in the middle
+        of a write.
         """
         if self.conn is None:
             return False
-        row = self.conn.execute(
-            "SELECT 1 FROM duckdb_tables() WHERE table_name = ?", [name]
-        ).fetchone()
-        return bool(row)
+        async with self._lock:
+            return await self._run_off_loop(
+                lambda conn: bool(
+                    conn.execute(
+                        "SELECT 1 FROM duckdb_tables() WHERE table_name = ?", [name]
+                    ).fetchone()
+                )
+            )
 
     async def insert(self, record: Any) -> None:
         """Insert a conversation record.
@@ -841,23 +1073,23 @@ class DuckdbHotStore:
                 f"(expected {self._embedding_dim}, got {actual_dim})"
             )
         async with self._lock:
-            if not self.conn:
-                raise RuntimeError("Hot store not initialized")
-            self.conn.execute(
-                """
-                INSERT INTO conversations
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                [
-                    record.system_id,
-                    record.conversation_id,
-                    record.content,
-                    record.embedding,
-                    _to_naive_utc(record.timestamp),
-                    record.metadata,
-                    self._compute_content_hash(record.content),
-                    datetime.now(UTC),
-                ],
+            await self._run_off_loop(
+                lambda conn: conn.execute(
+                    """
+                    INSERT INTO conversations
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    [
+                        record.system_id,
+                        record.conversation_id,
+                        record.content,
+                        record.embedding,
+                        _to_naive_utc(record.timestamp),
+                        record.metadata,
+                        self._compute_content_hash(record.content),
+                        datetime.now(UTC),
+                    ],
+                )
             )
 
     async def search_similar(
@@ -900,45 +1132,62 @@ class DuckdbHotStore:
                 f"(expected {self._embedding_dim}, got {query_dim})"
             )
         async with self._lock:
-            if not self.conn:
-                raise RuntimeError("Hot store not initialized")
-            conditions: list[str] = []
-            params: list[Any] = []
-            if system_id is not None:
-                conditions.append("system_id = ?")
-                params.append(system_id)
-            conditions.append("list_cosine_similarity(embedding, ?) >= ?")
-            params.append(list(query_embedding))
-            params.append(threshold)
-            where_clause = " AND ".join(conditions) if conditions else "TRUE"
-            rows = self.conn.execute(
-                f"""
-                SELECT system_id, conversation_id, content, timestamp, metadata,
-                       list_cosine_similarity(embedding, ?) AS score
-                FROM conversations
-                WHERE {where_clause}
-                ORDER BY score DESC
-                LIMIT ?
-                """,
-                [list(query_embedding), *params, limit],
-            ).fetchall()
-            return [
-                {
-                    "system_id": r[0],
-                    "conversation_id": r[1],
-                    "content": r[2],
-                    "timestamp": r[3],
-                    "metadata": r[4],
-                    "score": float(r[5]),
-                }
-                for r in rows
-            ]
+            return await self._run_off_loop(
+                lambda conn: self._search_similar_sync(
+                    conn, query_embedding, system_id, limit, threshold
+                )
+            )
+
+    def _search_similar_sync(
+        self,
+        conn: _SerializedConnection,
+        query_embedding: list[float],
+        system_id: str | None,
+        limit: int,
+        threshold: float,
+    ) -> list[dict[str, Any]]:
+        """Run the vector similarity query. Runs on a worker thread.
+
+        See ``_run_off_loop`` for why the call is off the event loop.
+        """
+        conditions: list[str] = []
+        params: list[Any] = []
+        if system_id is not None:
+            conditions.append("system_id = ?")
+            params.append(system_id)
+        conditions.append("list_cosine_similarity(embedding, ?) >= ?")
+        params.append(list(query_embedding))
+        params.append(threshold)
+        where_clause = " AND ".join(conditions) if conditions else "TRUE"
+        rows = conn.execute(
+            f"""
+            SELECT system_id, conversation_id, content, timestamp, metadata,
+                   list_cosine_similarity(embedding, ?) AS score
+            FROM conversations
+            WHERE {where_clause}
+            ORDER BY score DESC
+            LIMIT ?
+            """,
+            [list(query_embedding), *params, limit],
+        ).fetchall()
+        return [
+            {
+                "system_id": r[0],
+                "conversation_id": r[1],
+                "content": r[2],
+                "timestamp": r[3],
+                "metadata": r[4],
+                "score": float(r[5]),
+            }
+            for r in rows
+        ]
 
     async def close(self) -> None:
         """Close the DuckDB connection. Idempotent."""
         async with self._lock:
-            if self.conn is not None:
-                self.conn.close()
+            conn = self.conn
+            if conn is not None:
+                await asyncio.to_thread(conn.close)
                 logger.info("Hot store closed")
 
     @staticmethod
