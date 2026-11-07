@@ -1,16 +1,123 @@
 from __future__ import annotations
 
 import asyncio
+import ipaddress
+import os
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Self
+from urllib.parse import urlparse
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from oneiric.adapters.metadata import AdapterMetadata
 from oneiric.core.lifecycle import LifecycleError
 from oneiric.core.logging import get_logger
 from oneiric.core.resolution import CandidateSource
+
+# ---------------------------------------------------------------------------
+# Transport policy helpers
+# ---------------------------------------------------------------------------
+#
+# An ``http://`` OTLP endpoint resolves to a *plaintext* channel, so metric
+# names, labels and resource attributes would leave the host in the clear.
+# The helpers below decide whether a given endpoint would actually be
+# plaintext, so the settings guard never disagrees with the transport the
+# exporter really opens.
+
+# AWS / GCP / Azure metadata endpoints. An observability exporter has no
+# business talking to a cloud metadata service.
+_METADATA_HOSTS: frozenset[str] = frozenset(
+    {
+        "169.254.169.254",
+        "169.254.169.253",
+        "100.100.100.200",
+        "metadata.google.internal",
+        "metadata.azure.com",
+    }
+)
+
+
+def _strip_brackets(host: str) -> str:
+    """Strip IPv6 brackets from a host value (``[::1]`` -> ``::1``)."""
+    if host.startswith("[") and host.endswith("]"):
+        return host[1:-1]
+    return host
+
+
+def _is_loopback(host: str) -> bool:
+    """Return True for loopback hosts (127.0.0.1, ::1, localhost).
+
+    Mirrors ``oneiric.adapters.llm.bifrost._is_loopback``. The duplication is
+    deliberate: adapters do not import across each other, so each module
+    keeps its own copy. Keep the two in sync.
+    """
+    normalized = _strip_brackets(host)
+    if normalized in {"localhost", "127.0.0.1", "::1"}:
+        return True
+    try:
+        return ipaddress.ip_address(normalized).is_loopback
+    except ValueError:
+        return False
+
+
+def _endpoint_host(endpoint: str) -> str:
+    """The host component of an OTLP endpoint, lowercased and unbracketed.
+
+    ``urlparse`` is the parser the gRPC exporter uses, so a normal
+    ``scheme://host:port`` endpoint resolves identically here. Endpoint forms
+    without ``//`` (``host:port``) leave ``netloc`` empty — and ``urlparse``
+    reads a leading ``localhost:`` as a *scheme* — so those fall back to
+    splitting the raw string.
+    """
+    raw = endpoint.strip()
+    parsed = urlparse(raw)
+    if parsed.netloc:
+        return _strip_brackets((parsed.hostname or "").lower())
+
+    candidate = raw
+    for scheme in ("grpcs", "grpc", "https", "http"):
+        if candidate.lower().startswith(f"{scheme}:"):
+            candidate = candidate[len(scheme) + 1 :]
+            break
+    if candidate.startswith("["):
+        end = candidate.find("]")
+        if end != -1:
+            return candidate[1:end].lower()
+    head, sep, tail = candidate.rpartition(":")
+    if sep and head and tail.isdigit():
+        candidate = head
+    return candidate.split("/", 1)[0].lower()
+
+
+def _resolved_insecure(endpoint: str, insecure: bool | None) -> bool:
+    """Whether the exporter would open a plaintext channel for this endpoint.
+
+    Mirrors the gRPC exporter's own resolution
+    (``opentelemetry/exporter/otlp/proto/grpc/exporter.py``) exactly:
+
+        parsed_url = urlparse(self._endpoint)
+        if parsed_url.scheme == "https":
+            insecure = False
+        insecure_exporter = environ.get("OTEL_EXPORTER_OTLP_INSECURE")
+        if insecure is None:
+            if insecure_exporter is not None:
+                insecure = insecure_exporter.lower() == "true"
+            else:
+                insecure = parsed_url.scheme == "http"
+
+    The environment variable is read at validation time here and again at
+    export time, so a change between the two is not seen by this guard.
+    """
+    parsed_url = urlparse(endpoint)
+    if parsed_url.scheme == "https":
+        return False
+    if insecure is not None:
+        return bool(insecure)
+    insecure_exporter = os.environ.get("OTEL_EXPORTER_OTLP_INSECURE")
+    if insecure_exporter is not None:
+        return insecure_exporter.lower() == "true"
+    return parsed_url.scheme == "http"
 
 
 class OTLPObservabilitySettings(BaseModel):
@@ -41,6 +148,55 @@ class OTLPObservabilitySettings(BaseModel):
     export_timeout_seconds: float = Field(default=5.0, gt=0)
     enable_traces: bool = True
     enable_metrics: bool = True
+    allow_insecure: bool = Field(
+        default=False,
+        description=(
+            "Opt in to a plaintext channel to a non-loopback collector. An "
+            "http:// endpoint resolves to plaintext, so a remote collector "
+            "needs this explicit opt-in; loopback collectors (the default "
+            "endpoint) do not."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def _guard_plaintext_transport(self) -> Self:
+        """Fail closed on plaintext telemetry egress to a remote collector.
+
+        The transport is resolved exactly as the exporter resolves it (see
+        ``_resolved_insecure``), so this guard never rejects a config the
+        exporter would have handled over TLS, and never waves through one it
+        would have sent in the clear.
+
+        Three ways out, in order of preference:
+          1. use an ``https://`` endpoint,
+          2. set ``insecure=False`` to force TLS,
+          3. set ``allow_insecure=True`` to opt in to a plaintext
+             non-loopback collector.
+
+        ``insecure=True`` on its own is **not** a way out: it selects the
+        transport, it does not grant the policy exception.
+        """
+        host = _endpoint_host(self.endpoint)
+        if host in _METADATA_HOSTS:
+            raise ValueError(
+                f"OTLPObservabilitySettings.endpoint: host '{host}' is a "
+                f"cloud metadata endpoint. An observability exporter must "
+                f"not target AWS / GCP / Azure metadata services."
+            )
+        if not _resolved_insecure(self.endpoint, self.insecure):
+            return self
+        if _is_loopback(host):
+            return self
+        if self.allow_insecure:
+            return self
+        raise ValueError(
+            f"OTLPObservabilitySettings.endpoint: endpoint '{self.endpoint}' "
+            f"resolves to a plaintext channel to non-loopback host "
+            f"'{host}'. Telemetry would leave the host unencrypted. Use an "
+            f"'https://' endpoint, set insecure=False to force TLS, or set "
+            f"allow_insecure=True to opt in to a plaintext non-loopback "
+            f"collector."
+        )
 
 
 @dataclass

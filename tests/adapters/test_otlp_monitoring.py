@@ -117,7 +117,7 @@ def _fake_components() -> _OTLPComponents:
 async def test_otlp_adapter_configures_traces_and_metrics(monkeypatch) -> None:
     components = _fake_components()
     adapter = OTLPObservabilityAdapter(
-        OTLPObservabilitySettings(endpoint="http://collector:4317", protocol="grpc")
+        OTLPObservabilitySettings(endpoint="http://localhost:4317", protocol="grpc")
     )
     monkeypatch.setattr(
         OTLPObservabilityAdapter,
@@ -129,7 +129,7 @@ async def test_otlp_adapter_configures_traces_and_metrics(monkeypatch) -> None:
     assert components.trace_api.provider is _FakeTracerProvider.instances[-1]
     assert components.metrics_api.provider is _FakeMeterProvider.instances[-1]
     span_exporter = _FakeSpanExporter.instances[-1]
-    assert span_exporter.kwargs["endpoint"] == "http://collector:4317"
+    assert span_exporter.kwargs["endpoint"] == "http://localhost:4317"
     await adapter.cleanup()
     assert _FakeTracerProvider.instances[-1].shutdown_called is True
     assert _FakeMeterProvider.instances[-1].shutdown_called is True
@@ -140,7 +140,7 @@ async def test_otlp_adapter_uses_http_exporters(monkeypatch) -> None:
     components = _fake_components()
     adapter = OTLPObservabilityAdapter(
         OTLPObservabilitySettings(
-            endpoint="http://collector:4318", protocol="http/protobuf"
+            endpoint="http://localhost:4318", protocol="http/protobuf"
         )
     )
     monkeypatch.setattr(
@@ -150,7 +150,7 @@ async def test_otlp_adapter_uses_http_exporters(monkeypatch) -> None:
     )
     await adapter.init()
     metric_exporter = _FakeMetricExporter.instances[-1]
-    assert metric_exporter.kwargs["endpoint"] == "http://collector:4318"
+    assert metric_exporter.kwargs["endpoint"] == "http://localhost:4318"
 
 
 @pytest.mark.asyncio
@@ -299,7 +299,7 @@ def test_grpc_exporter_default_is_tls_for_https_endpoint() -> None:
 def test_grpc_exporter_explicit_insecure_true_forces_plaintext() -> None:
     """An explicit `insecure=True` still forces plaintext."""
     exporter = _build_metric_exporter(
-        OTLPObservabilitySettings(endpoint="http://collector:4317", insecure=True)
+        OTLPObservabilitySettings(endpoint="http://localhost:4317", insecure=True)
     )
 
     assert exporter._insecure is True
@@ -343,13 +343,13 @@ def test_insecure_env_var_is_honoured_when_the_field_is_unset(
     """
     monkeypatch.setenv("OTEL_EXPORTER_OTLP_INSECURE", "false")
     exporter = _build_metric_exporter(
-        OTLPObservabilitySettings(endpoint="http://collector:4317")
+        OTLPObservabilitySettings(endpoint="http://localhost:4317")
     )
     assert exporter._insecure is False
 
     monkeypatch.setenv("OTEL_EXPORTER_OTLP_INSECURE", "true")
     exporter = _build_metric_exporter(
-        OTLPObservabilitySettings(endpoint="http://collector:4317", insecure=False)
+        OTLPObservabilitySettings(endpoint="http://localhost:4317", insecure=False)
     )
     assert exporter._insecure is False
 
@@ -394,9 +394,167 @@ def test_http_exporters_are_built_without_an_insecure_kwarg() -> None:
     components.http_metric_exporter_cls = HttpMetricExporter
     adapter = OTLPObservabilityAdapter(
         OTLPObservabilitySettings(
-            endpoint="http://collector:4318", protocol="http/protobuf"
+            endpoint="http://localhost:4318", protocol="http/protobuf"
         )
     )
 
     assert adapter._create_span_exporter(components) is not None
     assert adapter._create_metric_exporter(components) is not None
+
+
+# ---------------------------------------------------------------------------
+# Plaintext-transport guard
+# ---------------------------------------------------------------------------
+#
+# An `http://` endpoint resolves to a *plaintext* channel, so telemetry
+# (metric names, labels, resource attributes) would leave the host in the
+# clear. A loopback collector — the default endpoint, and the whole point of
+# the substrate — needs no opt-in; a remote collector does.
+
+
+@pytest.fixture(autouse=True)
+def _clear_insecure_env_var(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep the guard hermetic.
+
+    `OTEL_EXPORTER_OTLP_INSECURE` steers the transport whenever `insecure` is
+    unset, so an ambient value in the developer's shell would change the
+    outcome of these tests. Tests that care about the variable set it
+    themselves.
+    """
+    monkeypatch.delenv("OTEL_EXPORTER_OTLP_INSECURE", raising=False)
+
+
+def test_default_endpoint_is_loopback_and_accepted() -> None:
+    """The default endpoint (127.0.0.1) is plaintext but loopback."""
+    settings = OTLPObservabilitySettings()
+
+    assert settings.endpoint == "http://127.0.0.1:4317"
+    assert settings.allow_insecure is False
+
+
+def test_loopback_http_endpoint_accepted_without_opt_in() -> None:
+    """A loopback collector needs no opt-in — the substrate case."""
+    settings = OTLPObservabilitySettings(endpoint="http://localhost:4317")
+
+    assert settings.allow_insecure is False
+
+
+def test_non_loopback_http_endpoint_rejected_by_default() -> None:
+    """A remote plaintext collector is rejected without an explicit opt-in."""
+    with pytest.raises(ValueError, match="allow_insecure=True"):
+        OTLPObservabilitySettings(endpoint="http://collector.example.com:4317")
+
+
+def test_non_loopback_http_endpoint_accepted_with_allow_insecure() -> None:
+    """`allow_insecure=True` is the explicit opt-in for a remote plaintext."""
+    settings = OTLPObservabilitySettings(
+        endpoint="http://collector.example.com:4317", allow_insecure=True
+    )
+
+    assert settings.allow_insecure is True
+
+
+def test_non_loopback_https_endpoint_accepted_without_opt_in() -> None:
+    """An https:// endpoint is TLS, so no opt-in is needed."""
+    settings = OTLPObservabilitySettings(endpoint="https://collector.example.com:4317")
+
+    assert settings.allow_insecure is False
+
+
+def test_non_loopback_http_endpoint_with_insecure_false_accepted() -> None:
+    """`insecure=False` forces TLS, so nothing is sent in the clear."""
+    settings = OTLPObservabilitySettings(
+        endpoint="http://collector.example.com:4317", insecure=False
+    )
+
+    assert settings.insecure is False
+
+
+def test_insecure_true_alone_does_not_bypass_the_plaintext_guard() -> None:
+    """`insecure=True` selects the transport; it does not grant the exception.
+
+    There is exactly one way in — `allow_insecure=True` — so the policy knob
+    is greppable and cannot be flipped by accident alongside a transport
+    tweak.
+    """
+    with pytest.raises(ValueError, match="allow_insecure=True"):
+        OTLPObservabilitySettings(
+            endpoint="http://collector.example.com:4317", insecure=True
+        )
+
+
+def test_plaintext_guard_applies_to_http_protobuf_protocol() -> None:
+    """The guard lives on the shared settings model, so both protocols hit it."""
+    with pytest.raises(ValueError, match="allow_insecure=True"):
+        OTLPObservabilitySettings(
+            endpoint="http://collector.example.com:4318", protocol="http/protobuf"
+        )
+
+    with pytest.raises(ValueError, match="allow_insecure=True"):
+        OTLPObservabilitySettings(
+            endpoint="http://collector.example.com:4317", protocol="grpc"
+        )
+
+
+def test_bare_host_port_endpoint_is_not_rejected() -> None:
+    """A scheme-less `host:port` endpoint is TLS to the SDK, so it is allowed.
+
+    `urlparse("collector.example.com:4317")` reports no `http` scheme, so the
+    exporter resolves `insecure = (scheme == "http")` -> False and opens a
+    TLS channel. The guard must agree rather than reject a secure config.
+    """
+    settings = OTLPObservabilitySettings(endpoint="collector.example.com:4317")
+
+    assert settings.endpoint == "collector.example.com:4317"
+
+
+def test_insecure_env_var_does_not_bypass_the_plaintext_guard(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The environment variable cannot bypass the guard.
+
+    `OTEL_EXPORTER_OTLP_INSECURE=true` makes the exporter open a plaintext
+    channel, so it must not be a way around the opt-in.
+    """
+    monkeypatch.setenv("OTEL_EXPORTER_OTLP_INSECURE", "true")
+
+    with pytest.raises(ValueError, match="allow_insecure=True"):
+        OTLPObservabilitySettings(endpoint="http://collector.example.com:4317")
+
+    settings = OTLPObservabilitySettings(
+        endpoint="http://collector.example.com:4317", allow_insecure=True
+    )
+    assert settings.allow_insecure is True
+
+
+@pytest.mark.parametrize(
+    "host",
+    [
+        "169.254.169.254",  # AWS / Azure IMDS
+        "169.254.169.253",  # AWS IMDS alt
+        "100.100.100.200",  # Alibaba Cloud IMDS
+        "metadata.google.internal",
+        "metadata.azure.com",
+    ],
+)
+def test_metadata_endpoint_rejected_even_with_allow_insecure(host: str) -> None:
+    """A cloud metadata service is never a valid OTLP target.
+
+    The opt-in covers a plaintext *collector*; it does not permit pivoting
+    the exporter at a metadata endpoint.
+    """
+    with pytest.raises(ValueError, match="cloud metadata endpoint"):
+        OTLPObservabilitySettings(endpoint=f"http://{host}:4317", allow_insecure=True)
+
+
+def test_rfc1918_host_is_allowed_with_allow_insecure() -> None:
+    """An internal collector on 10.x is a legitimate destination.
+
+    Unlike an LLM gateway, an OTLP collector is routinely deployed on a
+    private address, so RFC1918 ranges are deliberately *not* blocked here.
+    """
+    settings = OTLPObservabilitySettings(
+        endpoint="http://10.0.0.5:4317", allow_insecure=True
+    )
+
+    assert settings.endpoint == "http://10.0.0.5:4317"
