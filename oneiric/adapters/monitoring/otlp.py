@@ -3,12 +3,13 @@ from __future__ import annotations
 import asyncio
 import ipaddress
 import os
+import socket
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Self
 from urllib.parse import urlparse
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from oneiric.adapters.metadata import AdapterMetadata
 from oneiric.core.lifecycle import LifecycleError
@@ -25,16 +26,26 @@ from oneiric.core.resolution import CandidateSource
 # plaintext, so the settings guard never disagrees with the transport the
 # exporter really opens.
 
-# AWS / GCP / Azure metadata endpoints. An observability exporter has no
-# business talking to a cloud metadata service.
-_METADATA_HOSTS: frozenset[str] = frozenset(
+# Cloud metadata *hostnames*. An observability exporter has no business
+# talking to a cloud metadata service.
+_METADATA_HOSTNAMES: frozenset[str] = frozenset(
     {
-        "169.254.169.254",
-        "169.254.169.253",
-        "100.100.100.200",
         "metadata.google.internal",
         "metadata.azure.com",
     }
+)
+
+# Cloud metadata *networks*. Blocked by membership rather than by literal
+# string, so the alternate spellings of an address (decimal, hexadecimal,
+# IPv6, trailing dot) cannot slip past.
+#
+# Deliberately NOT blocking RFC1918 ranges: an internal OTLP collector on
+# 10.x is a legitimate destination here, unlike an LLM gateway.
+_METADATA_NETWORKS: tuple[ipaddress.IPv4Network | ipaddress.IPv6Network, ...] = (
+    ipaddress.IPv4Network("169.254.0.0/16"),  # link-local, covers AWS / Azure IMDS
+    ipaddress.IPv4Network("100.100.100.200/32"),  # GCP IMDS
+    ipaddress.IPv6Network("fd00:ec2::254/128"),  # AWS IMDS IPv6
+    ipaddress.IPv6Network("fe80::/10"),  # IPv6 link-local
 )
 
 
@@ -43,6 +54,69 @@ def _strip_brackets(host: str) -> str:
     if host.startswith("[") and host.endswith("]"):
         return host[1:-1]
     return host
+
+
+def _normalized_hostname(host: str) -> str:
+    """Lowercase a host and strip one trailing dot (the FQDN root label).
+
+    ``metadata.google.internal.`` names the same host as
+    ``metadata.google.internal``; a resolver treats them identically.
+    """
+    normalized = host.strip().lower()
+    return normalized.removesuffix(".")
+
+
+def _canonical_ip(host: str) -> ipaddress.IPv4Address | ipaddress.IPv6Address | None:
+    """The IP address a host string denotes, in canonical form.
+
+    ``ipaddress.ip_address`` alone misses the alternate spellings a resolver
+    accepts -- the decimal (``2852039166``) and hexadecimal (``0xa9fea9fe``)
+    forms of an IPv4 address -- so ``socket.inet_aton`` is used as a
+    fallback. ``inet_aton`` is IPv4-only, so it raises for IPv6 literals,
+    which ``ip_address`` has already handled.
+    """
+    candidate = host.strip()
+    try:
+        return ipaddress.ip_address(candidate)
+    except ValueError:
+        pass
+    try:
+        packed = socket.inet_aton(candidate)
+    except OSError:
+        # inet_aton raises OSError for anything that is not an IPv4 address
+        # in one of its accepted spellings.
+        return None
+    return ipaddress.ip_address(packed)
+
+
+def _is_metadata_host(host: str) -> bool:
+    """True for cloud metadata service endpoints.
+
+    Blocking is by network membership and canonicalised name, not by literal
+    string, so ``169.254.169.254``, ``169.254.169.254.``, ``2852039166`` and
+    ``0xa9fea9fe`` are all recognised as the same address.
+
+    Deliberately out of scope: resolving the hostname and re-checking the
+    resolved addresses before connecting. The endpoint is operator-set
+    configuration, not attacker input -- anyone who can write it can aim it
+    at a collector the guard already permits under ``allow_insecure`` -- and
+    validation-time DNS is both a network side effect at config-parse time
+    and a TOCTOU window. Bifrost does not resolve either.
+    """
+    normalized = _normalized_hostname(host)
+    if normalized in _METADATA_HOSTNAMES:
+        return True
+    address = _canonical_ip(normalized)
+    if address is None:
+        return False
+    for network in _METADATA_NETWORKS:
+        # `address in network` is type-strict: an IPv4 address compared
+        # against an IPv6 network raises TypeError.
+        if address.version != network.version:
+            continue
+        if address in network:
+            return True
+    return False
 
 
 def _is_loopback(host: str) -> bool:
@@ -61,39 +135,107 @@ def _is_loopback(host: str) -> bool:
         return False
 
 
-def _endpoint_host(endpoint: str) -> str:
-    """The host component of an OTLP endpoint, lowercased and unbracketed.
+def _split_host_port(raw: str) -> tuple[str, int | None]:
+    """Split a bare ``host[:port]`` string (no scheme, no netloc)."""
+    candidate = raw
+    if candidate.startswith("["):
+        end = candidate.find("]")
+        if end != -1:
+            host = candidate[1:end]
+            rest = candidate[end + 1 :]
+            port = (
+                int(rest[1:]) if rest.startswith(":") and rest[1:].isdigit() else None
+            )
+            return host.lower(), port
+    head, sep, tail = candidate.rpartition(":")
+    if sep and head and tail.isdigit():
+        return head.lower(), int(tail)
+    return candidate.split("/", 1)[0].lower(), None
 
-    ``urlparse`` is the parser the gRPC exporter uses, so a normal
+
+def _recover_unbracketed_ipv6(netloc: str) -> tuple[str, int | None] | None:
+    """Recover an IPv6 literal from a URL netloc that omitted the brackets.
+
+    ``urlparse`` reports only the first hextet as the hostname for an
+    unbracketed IPv6 (``http://fd00:ec2::254:4317`` -> ``fd00``), which
+    would hide the address from the loopback and metadata checks. Such a URL
+    is malformed for ``requests``, but classifying it correctly costs nothing
+    and keeps the checks honest.
+    """
+    head, sep, tail = netloc.rpartition(":")
+    if sep and head and tail.isdigit():
+        try:
+            address = ipaddress.ip_address(head)
+        except ValueError:
+            address = None
+        if address is not None and address.version == 6:
+            return str(address), int(tail)
+    try:
+        address = ipaddress.ip_address(netloc)
+    except ValueError:
+        return None
+    if address.version != 6:
+        return None
+    return str(address), None
+
+
+def _parse_endpoint(endpoint: str) -> tuple[str, str, int | None]:
+    """Split an endpoint into ``(scheme, host, port)``.
+
+    ``urlparse`` is the parser the exporters use, so a normal
     ``scheme://host:port`` endpoint resolves identically here. Endpoint forms
     without ``//`` (``host:port``) leave ``netloc`` empty — and ``urlparse``
     reads a leading ``localhost:`` as a *scheme* — so those fall back to
     splitting the raw string.
+
+    The scheme returned here is the *effective* one (empty for a bare
+    ``host:port``). It is deliberately not the same value as
+    ``urlparse(endpoint).scheme``: the transport resolution uses the latter
+    verbatim, because that is what the exporter reads.
     """
     raw = endpoint.strip()
     parsed = urlparse(raw)
     if parsed.netloc:
-        return _strip_brackets((parsed.hostname or "").lower())
+        try:
+            port = parsed.port
+        except ValueError:
+            port = None
+        hostname = _strip_brackets((parsed.hostname or "").lower())
+        if not parsed.netloc.startswith("[") and parsed.netloc.count(":") > 1:
+            recovered = _recover_unbracketed_ipv6(parsed.netloc)
+            if recovered is not None:
+                hostname, port = recovered
+        return parsed.scheme, hostname, port
 
-    candidate = raw
     for scheme in ("grpcs", "grpc", "https", "http"):
-        if candidate.lower().startswith(f"{scheme}:"):
-            candidate = candidate[len(scheme) + 1 :]
-            break
-    if candidate.startswith("["):
-        end = candidate.find("]")
-        if end != -1:
-            return candidate[1:end].lower()
-    head, sep, tail = candidate.rpartition(":")
-    if sep and head and tail.isdigit():
-        candidate = head
-    return candidate.split("/", 1)[0].lower()
+        if raw.lower().startswith(f"{scheme}:"):
+            host, port = _split_host_port(raw[len(scheme) + 1 :])
+            return scheme, host, port
+    host, port = _split_host_port(raw)
+    return "", host, port
 
 
-def _resolved_insecure(endpoint: str, insecure: bool | None) -> bool:
+def _endpoint_display(endpoint: str) -> str:
+    """A loggable rendering of the endpoint: scheme, host and port only.
+
+    The endpoint may carry ``http://user:pass@host`` userinfo, a query
+    string or a fragment. None of that belongs in an exception message that
+    gets logged, so only the scheme and the sanitised host are reported. The
+    port is not sensitive and is kept.
+    """
+    scheme, host, port = _parse_endpoint(endpoint)
+    location = f"{host}:{port}" if port is not None else host
+    return f"{scheme}://{location}" if scheme else location
+
+
+def _resolved_insecure(endpoint: str, insecure: bool | None, protocol: str) -> bool:
     """Whether the exporter would open a plaintext channel for this endpoint.
 
-    Mirrors the gRPC exporter's own resolution
+    The two protocols resolve their transport differently, so the resolution
+    is protocol-aware — the guard must never reason about a transport the
+    exporter will not actually use.
+
+    ``grpc`` mirrors the gRPC exporter's own resolution
     (``opentelemetry/exporter/otlp/proto/grpc/exporter.py``) exactly:
 
         parsed_url = urlparse(self._endpoint)
@@ -106,10 +248,18 @@ def _resolved_insecure(endpoint: str, insecure: bool | None) -> bool:
             else:
                 insecure = parsed_url.scheme == "http"
 
+    ``http/protobuf`` has no such knobs: the HTTP exporters have no
+    ``insecure`` parameter and never read ``OTEL_EXPORTER_OTLP_INSECURE``.
+    Their transport is decided by the URL scheme alone — ``http://`` is
+    plaintext, ``https://`` is TLS.
+
     The environment variable is read at validation time here and again at
     export time, so a change between the two is not seen by this guard.
     """
     parsed_url = urlparse(endpoint)
+    if protocol == "http/protobuf":
+        # The `protocol` field pattern admits no third value.
+        return parsed_url.scheme == "http"
     if parsed_url.scheme == "https":
         return False
     if insecure is not None:
@@ -121,6 +271,13 @@ def _resolved_insecure(endpoint: str, insecure: bool | None) -> bool:
 
 
 class OTLPObservabilitySettings(BaseModel):
+    # Pydantic echoes the offending input into every validation error by
+    # default. This model carries `headers` (vendor API keys) and `endpoint`
+    # (which may embed userinfo), so that echo would leak secrets into
+    # whatever logs the error. Hide the input; the error messages below
+    # already carry the sanitised details an operator needs.
+    model_config = ConfigDict(hide_input_in_errors=True)
+
     endpoint: str = Field(
         default="http://127.0.0.1:4317", description="OTLP collector endpoint."
     )
@@ -162,40 +319,54 @@ class OTLPObservabilitySettings(BaseModel):
     def _guard_plaintext_transport(self) -> Self:
         """Fail closed on plaintext telemetry egress to a remote collector.
 
-        The transport is resolved exactly as the exporter resolves it (see
-        ``_resolved_insecure``), so this guard never rejects a config the
-        exporter would have handled over TLS, and never waves through one it
-        would have sent in the clear.
+        The transport is resolved exactly as the exporter resolves it for the
+        configured protocol (see ``_resolved_insecure``), so this guard never
+        rejects a config the exporter would have handled over TLS, and never
+        waves through one it would have sent in the clear.
 
         Three ways out, in order of preference:
           1. use an ``https://`` endpoint,
-          2. set ``insecure=False`` to force TLS,
+          2. set ``insecure=False`` to force TLS (gRPC only),
           3. set ``allow_insecure=True`` to opt in to a plaintext
              non-loopback collector.
 
         ``insecure=True`` on its own is **not** a way out: it selects the
         transport, it does not grant the policy exception.
         """
-        host = _endpoint_host(self.endpoint)
-        if host in _METADATA_HOSTS:
+        if self.protocol == "http/protobuf" and self.insecure is not None:
+            # `insecure` selects the transport on gRPC only. On
+            # http/protobuf it would be silently ignored — the very failure
+            # mode this guard exists to prevent — so it is rejected rather
+            # than ignored.
+            raise ValueError(
+                "OTLPObservabilitySettings.insecure: the 'http/protobuf' "
+                "exporters have no 'insecure' parameter and never read "
+                "OTEL_EXPORTER_OTLP_INSECURE, so the endpoint scheme alone "
+                "decides the transport — an 'http://' endpoint is sent in "
+                "plaintext whatever this setting says. Remove 'insecure', "
+                "or use protocol='grpc' where it is meaningful."
+            )
+
+        _, host, _ = _parse_endpoint(self.endpoint)
+        if _is_metadata_host(host):
             raise ValueError(
                 f"OTLPObservabilitySettings.endpoint: host '{host}' is a "
                 f"cloud metadata endpoint. An observability exporter must "
                 f"not target AWS / GCP / Azure metadata services."
             )
-        if not _resolved_insecure(self.endpoint, self.insecure):
+        if not _resolved_insecure(self.endpoint, self.insecure, self.protocol):
             return self
         if _is_loopback(host):
             return self
         if self.allow_insecure:
             return self
         raise ValueError(
-            f"OTLPObservabilitySettings.endpoint: endpoint '{self.endpoint}' "
-            f"resolves to a plaintext channel to non-loopback host "
-            f"'{host}'. Telemetry would leave the host unencrypted. Use an "
-            f"'https://' endpoint, set insecure=False to force TLS, or set "
-            f"allow_insecure=True to opt in to a plaintext non-loopback "
-            f"collector."
+            f"OTLPObservabilitySettings.endpoint: endpoint "
+            f"'{_endpoint_display(self.endpoint)}' resolves to a plaintext "
+            f"channel to non-loopback host '{host}'. Telemetry would leave "
+            f"the host unencrypted. Use an 'https://' endpoint, set "
+            f"insecure=False to force TLS, or set allow_insecure=True to "
+            f"opt in to a plaintext non-loopback collector."
         )
 
 

@@ -558,3 +558,134 @@ def test_rfc1918_host_is_allowed_with_allow_insecure() -> None:
     )
 
     assert settings.endpoint == "http://10.0.0.5:4317"
+
+
+# ---------------------------------------------------------------------------
+# Protocol-aware transport resolution
+# ---------------------------------------------------------------------------
+#
+# The two protocols resolve their transport differently. The gRPC exporters
+# take an `insecure` parameter and read OTEL_EXPORTER_OTLP_INSECURE; the
+# HTTP/protobuf exporters have neither, so the URL scheme alone decides.
+# A guard that reasons about gRPC semantics on the HTTP protocol waves
+# through plaintext the exporter really sends.
+
+
+def test_http_protobuf_rejects_plaintext_remote_even_with_insecure_false() -> None:
+    """The bypass: `insecure=False` does not force TLS on http/protobuf.
+
+    The HTTP exporter posts to the URL it was given, so an `http://` endpoint
+    is plaintext whatever `insecure` says. The setting is rejected outright
+    rather than silently ignored.
+    """
+    with pytest.raises(ValueError, match="http/protobuf"):
+        OTLPObservabilitySettings(
+            endpoint="http://collector.example.com:4317",
+            protocol="http/protobuf",
+            insecure=False,
+        )
+
+
+def test_http_protobuf_rejects_explicit_insecure_true_on_remote_http() -> None:
+    """`insecure=True` is not a bypass on http/protobuf either."""
+    with pytest.raises(ValueError, match="http/protobuf"):
+        OTLPObservabilitySettings(
+            endpoint="http://collector.example.com:4317",
+            protocol="http/protobuf",
+            insecure=True,
+        )
+
+
+def test_http_protobuf_accepts_https_endpoint() -> None:
+    """An https:// endpoint is TLS on the HTTP protocol — no opt-in needed."""
+    settings = OTLPObservabilitySettings(
+        endpoint="https://collector.example.com:4317", protocol="http/protobuf"
+    )
+
+    assert settings.protocol == "http/protobuf"
+
+
+def test_http_protobuf_ignores_the_insecure_env_var(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """OTEL_EXPORTER_OTLP_INSECURE is not read by the HTTP exporters.
+
+    The exporter ignores the variable, so the guard must too: with an
+    https:// endpoint the transport stays TLS regardless of the variable.
+    """
+    monkeypatch.setenv("OTEL_EXPORTER_OTLP_INSECURE", "true")
+
+    settings = OTLPObservabilitySettings(
+        endpoint="https://collector.example.com:4317", protocol="http/protobuf"
+    )
+
+    assert settings.protocol == "http/protobuf"
+
+
+def test_grpc_resolution_is_unchanged_by_the_protocol_fix() -> None:
+    """The gRPC path keeps its own resolution: `insecure` still forces TLS.
+
+    The protocol-aware fix must not have altered the gRPC semantics.
+    """
+    settings = OTLPObservabilitySettings(
+        endpoint="http://collector.example.com:4317",
+        protocol="grpc",
+        insecure=False,
+    )
+
+    assert settings.insecure is False
+
+
+# ---------------------------------------------------------------------------
+# Metadata denylist escapes
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "endpoint",
+    [
+        "http://169.254.169.254.:4317",  # trailing dot
+        "http://2852039166:4317",  # decimal form of 169.254.169.254
+        "http://0xa9fea9fe:4317",  # hexadecimal form
+        "http://fd00:ec2::254:4317",  # AWS IMDS IPv6, unbracketed
+        "http://[fd00:ec2::254]:4317",  # AWS IMDS IPv6, bracketed
+        "http://fe80::1:4317",  # IPv6 link-local, unbracketed
+        "http://[fe80::1]:4317",  # IPv6 link-local, bracketed
+        "http://metadata.google.internal.:4317",  # trailing dot
+    ],
+)
+def test_metadata_endpoint_spellings_are_rejected(endpoint: str) -> None:
+    """Alternate spellings of a metadata address must not slip past.
+
+    A literal string denylist is escapable: the same address can be written
+    in decimal, in hexadecimal, with a trailing dot, or in IPv6 form. The
+    guard canonicalises the name and the address and blocks by network.
+    """
+    with pytest.raises(ValueError, match="cloud metadata endpoint"):
+        OTLPObservabilitySettings(endpoint=endpoint, allow_insecure=True)
+
+
+def test_ordinary_host_with_allow_insecure_is_still_allowed() -> None:
+    """The hardened denylist must not start rejecting ordinary collectors."""
+    settings = OTLPObservabilitySettings(
+        endpoint="http://collector.example.com:4317", allow_insecure=True
+    )
+
+    assert settings.allow_insecure is True
+
+
+def test_error_message_does_not_leak_endpoint_userinfo() -> None:
+    """The endpoint may carry `http://user:pass@host` — that must not be logged.
+
+    The error message is written to logs, so it reports only the scheme and
+    the sanitised host. The port is not sensitive and is kept.
+    """
+    with pytest.raises(ValueError) as excinfo:
+        OTLPObservabilitySettings(
+            endpoint="http://user:secret@collector.example.com:4317"
+        )
+
+    message = str(excinfo.value)
+    assert "secret" not in message
+    assert "user" not in message
+    assert "collector.example.com" in message
