@@ -563,11 +563,16 @@ class DuckdbHotStore:
             # ── metrics_substrate (plan Phase 1 / REQ-M03) ───────────────
             # The metric counterpart of `spans_substrate`, in the same file.
             # Created on this same path so a producer can never find the
-            # table missing: the metrics receiver asserts
-            # `metrics_substrate_table` exists at bind time, exactly as the
-            # trace receiver asserts `spans_substrate_table`. Same
-            # no-try/except reasoning as above — a substrate that cannot
-            # create its own tables is broken, and hiding that is worse.
+            # table missing. Same no-try/except reasoning as above — a
+            # substrate that cannot create its own tables is broken, and
+            # hiding that is worse.
+            #
+            # The trace receiver asserts `spans_substrate_table` exists at
+            # bind time; the METRICS receiver deliberately does not. Failing
+            # the receiver's boot to prove a metric table is missing would
+            # take the trace path down with it, and a missing table already
+            # reports itself as `oneiric_metrics_substrate_insert_failed_total`
+            # (see `insert_metrics_substrate`).
             self.conn.execute(METRICS_SUBSTRATE_DDL)
             for index_ddl, index_name in METRICS_SUBSTRATE_INDEXES:
                 self.conn.execute(index_ddl)
