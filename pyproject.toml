@@ -67,6 +67,20 @@ ONNXRuntime-Compatibility = "https://github.com/microsoft/onnxruntime/issues/new
 [tool.uv]
 package = true
 prerelease = "allow"
+# redis 8.2.0b1 changed `deprecated_args` to close over a builtin
+# `dict_keys.isdisjoint` method descriptor rather than a plain function.
+# fakeredis 2.40.0 discovers deprecated arguments by walking that closure
+# and dereferencing `method.__closure__` on every callable it finds — which
+# raises AttributeError on a method descriptor, so `FakeRedis()` cannot be
+# constructed at all and every test using it fails in fixture setup.
+#
+# fakeredis 2.40.0 is the newest release, so the guard has to land
+# upstream. Until it does, keep redis on a stable release: every stable
+# release through 8.1.0 predates the closure change and is unaffected.
+#
+# Drop this override once fakeredis ships the fix:
+# https://github.com/cunla/fakeredis-py/issues
+prerelease-package = { redis = "disallow" }
 
 [tool.hatch.build.targets.wheel]
 packages = ["oneiric"]
