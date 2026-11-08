@@ -10,7 +10,7 @@ Oneiric is a **universal resolution layer** for pluggable components with hot-sw
 
 **Status:** Production Ready (0.35.0) — hardened for controlled deployment. See `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for the most recent comprehensive audit, and `docs/ONEIRIC_VS_ACB.md` for comparison with ACB and migration strategy.
 
-**Current state:** 4218 tests passing, 96% coverage — a +17pp margin over the 79% coverage ratchet baseline.
+**Current state:** 4531 tests passing, 94% coverage — a +15pp margin over the 79% coverage ratchet baseline.
 
 **Python Version:** 3.14+ (async-first, modern type hints) — matches `requires-python = ">=3.14"` in `pyproject.toml`.
 
