@@ -13,15 +13,20 @@
 # bind 5672/1883/15672/15692 and will crash-loop against the first.
 #
 # On the operator's Mac the broker runs under the hand-rolled LaunchAgent
-# `com.bodai.lavinmq` (loopback-only, data dir ~/Library/lavinmq), NOT under
-# `brew services` — `brew services list` reports `lavinmq none` because it
-# has never been started by Homebrew. Starting it via Homebrew as well
-# gives two instances on the same ports.
+# `com.bodai.lavinmq` — loopback-only, data dir ~/Library/lavinmq. It is NOT
+# supervised by Homebrew: `brew services list` reports `lavinmq none`
+# because Homebrew has never started it.
 #
-# Note also that Homebrew's own config (/usr/local/etc/lavinmq/lavinmq.ini)
-# binds every listener to `::` — all interfaces — with the default
-# guest/guest credentials. It must be hardened to 127.0.0.1 before
-# `brew services start lavinmq` is used.
+# Keep it that way. The LaunchAgent passes no `-c`, so LavinMQ uses its
+# built-in defaults, which bind every listener to 127.0.0.1. Homebrew's own
+# config (/usr/local/etc/lavinmq/lavinmq.ini) instead sets `bind = ::` in
+# [mgmt], [amqp], [mqtt] and [clustering] — all interfaces — with the
+# default guest/guest credentials, and Homebrew regenerates that file on
+# every `brew upgrade lavinmq`.
+#
+# So: do not run `brew services start lavinmq`. If you want defence in
+# depth against an accidental start, change those four `bind = ::` lines to
+# `bind = 127.0.0.1` in the ini — but re-check after any formula upgrade.
 #
 # See docs/plans/2026-11-08-lavinmq-provider-pinning.md.
 

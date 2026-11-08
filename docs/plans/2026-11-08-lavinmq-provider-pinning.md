@@ -145,11 +145,12 @@ and `bifrost` — but **no `adapters` key** — so the deep merge leaves
    `cycles_total: 1` — the normal post-restart feed warmup, not a
    regression.)
 
-## Supervisor Split — findings and remaining steps
+## Supervisor Split — findings and decision
 
-The broker is **already running**, but not under `brew services`. `brew
-services list` reports `lavinmq none` because a second, hand-rolled
-LaunchAgent owns it:
+**Decision: keep the hand-rolled LaunchAgent. Do not switch to `brew services`.**
+
+The broker is already running, and `brew services list` reports `lavinmq none`
+because a second, hand-rolled LaunchAgent owns it:
 
 - `~/Library/LaunchAgents/com.bodai.lavinmq.plist` — label `com.bodai.lavinmq`,
   `RunAtLoad` + `KeepAlive`, running `lavinmq --data-dir
@@ -160,14 +161,28 @@ LaunchAgent owns it:
 - Verified idle: `connections_opened_total 0`, `queues 0`,
   `queues_declared_total 0`, `messages_delivered_total 0`. No client has ever
   connected.
+- The plist instance's own log (`~/Library/Logs/lavinmq.log`) records **zero**
+  ERROR/FATAL lines and only clean `Stopping`/restart cycles.
 
-So the hazard is not "the broker is down" — it is that `brew services start
-lavinmq` would spawn a **second** instance against the same ports.
+### Why the LaunchAgent, and not `brew services`
 
-### The Homebrew ini binds to every interface
+**1. LavinMQ's CLI default bind is loopback; the Homebrew ini overrides it to
+all interfaces.**
 
-Verified empirically by running a throwaway instance from a copy of
-`/usr/local/etc/lavinmq/lavinmq.ini` on alternate ports:
+`lavinmq --help` reports the defaults for every listener:
+
+```
+-b BIND, --bind=BIND          IP address that the AMQP, MQTT and HTTP servers will listen on (default: 127.0.0.1)
+--amqp-bind=BIND             (default: 127.0.0.1)
+--http-bind=BIND             (default: 127.0.0.1)
+--mqtt-bind=BIND             (default: 127.0.0.1)
+--metrics-http-bind=BIND     (default: 127.0.0.1)
+```
+
+The LaunchAgent passes no `-c`, so it inherits that safe default. The
+Homebrew ini sets `bind = ::` in `[mgmt]`, `[amqp]`, `[mqtt]` and
+`[clustering]`, which overrides it. Verified empirically by running a
+throwaway instance from a copy of the ini on alternate ports:
 
 ```
 lmq.server      Bound AMQP to [::]:25672
@@ -175,52 +190,78 @@ lmq.server      Bound MQTT to [::]:21883
 lmq.http.server Bound to [::]:25671
 ```
 
-`[::]` is all interfaces. The shipped ini has `bind = ::` in `[mgmt]`,
-`[amqp]`, `[mqtt]` and `[clustering]`, and `default_user_only_loopback` is
-commented out. The hand-rolled LaunchAgent is loopback-only only because it
-runs **without** `-c`, so it never reads that ini.
+`[::]` is every interface. Switching to `brew services` therefore *removes*
+the loopback guarantee, with the default `guest`/`guest` credentials.
 
-**Consequence:** switching the supervisor to `brew services` without first
-hardening the ini would expose AMQP, MQTT and the management API on every
-network interface, with the default `guest`/`guest` credentials. The ini must
-be hardened *before* the switch, not after.
+**2. The Homebrew service has never been the working path on this machine.**
 
-### Remaining steps (require operator action)
+- `/usr/local/etc/lavinmq/lavinmq.ini` has **never been edited**: its mtime
+  (`2026-10-26 02:12:28`) equals the formula install time. A working
+  `brew services` deployment would have had to change `data_dir` and the
+  binds.
+- `/usr/local/var/lavinmq` (the ini's `data_dir`) did not exist until a
+  deliberate probe on 2026-11-08. The Homebrew service never initialised it.
+- The `com.bodai.*` plists are house style for "Homebrew binary, custom
+  arguments" — `mahavishnu/settings/local.yaml` documents the llama-server
+  plist as the home of `--batch-size 4096 --ubatch-size 4096` precisely
+  because `brew services` cannot express per-service flags. `brew services`
+  *is* used freely for everything else (opensearch, grafana, postgresql,
+  prometheus), so there is no general aversion to it.
 
-Two operations are outside the agent's permitted scope — `launchctl` is not
-in the permission allowlist, and `/usr/local/etc/**` is not writable by the
-Edit tool. Run these in order:
+**3. The ini is Homebrew-owned.** `brew upgrade lavinmq` and
+`brew reinstall lavinmq` regenerate `/usr/local/etc/lavinmq/lavinmq.ini` from
+the formula, so any hardening written there is clobbered on the next
+upgrade. The plist is stable across upgrades — it points at
+`/usr/local/bin/lavinmq`, a symlink Homebrew repoints for us.
 
-```bash
-# 1. Harden the Homebrew ini: bind every listener to loopback.
-#    (edit /usr/local/etc/lavinmq/lavinmq.ini)
-#      [main]    default_user_only_loopback = true
-#      [mgmt]    bind = 127.0.0.1
-#      [amqp]    bind = 127.0.0.1
-#      [mqtt]    bind = 127.0.0.1
-#      [clustering] bind = 127.0.0.1
+### Residual hazard (not fixed by this plan)
 
-# 2. Stop the hand-rolled instance and unload it.
-launchctl bootout gui/$(id -u)/com.bodai.lavinmq
+`brew services start lavinmq` would spawn a **second** instance. It fails on
+the port conflict (launchd restart-loop, `exit 1`), and it would additionally
+bind `::` before failing. Two mitigations, both operator-side:
 
-# 3. Remove its autostart plist.
-rm ~/Library/LaunchAgents/com.bodai.lavinmq.plist
+1. **Harden the ini as defence-in-depth** so a stray `brew services start`
+   cannot expose the broker, even though it will still fail to bind:
 
-# 4. Hand the supervisor to Homebrew.
-brew services start lavinmq
+   ```ini
+   # /usr/local/etc/lavinmq/lavinmq.ini
+   [main]
+   default_user_only_loopback = true
+   [mgmt]        bind = 127.0.0.1
+   [amqp]        bind = 127.0.0.1
+   [mqtt]        bind = 127.0.0.1
+   [clustering]  bind = 127.0.0.1
+   ```
 
-# 5. Verify: loopback-only binds, no second instance, metrics live.
-brew services list | grep lavinmq
-lsof -nP -iTCP -sTCP:LISTEN | grep lavinmq
-curl -s http://localhost:15692/metrics | grep lavinmq_version
-```
+   This is a stopgap, not a fix — the ini is regenerated on upgrade, so
+   re-check it after every `brew upgrade lavinmq`.
 
-### Rollback references
+2. **Leave a note** where an operator will see it. `settings/lavinmq.yaml`
+   in this repo now carries the warning, and this plan records it.
 
-No backup files were created (the agent's file-creation step was denied), so
-the pre-change contents are recorded here verbatim.
+Do **not** run `brew services start lavinmq` while the LaunchAgent is loaded.
 
-`/usr/local/etc/lavinmq/lavinmq.ini` — **before**:
+### Machine state — unchanged
+
+Nothing on the machine was modified. The ini and the plist were **not**
+edited, the LaunchAgent was never unloaded, and the broker has been running
+under `com.bodai.lavinmq` throughout. A `brew services start lavinmq` probe
+was run and immediately reverted with `brew services stop lavinmq`; it
+failed on the port conflict, as expected.
+
+One leftover from that probe: `/usr/local/var/lavinmq/` (the ini's `data_dir`)
+was created by the failed Homebrew instance and could not be removed by the
+agent. It is inert — an empty broker data dir that the Homebrew service
+would initialise if it were ever started. Safe to delete:
+`rm -rf /usr/local/var/lavinmq`.
+
+### Reference: the two files, as they currently stand
+
+Recorded because the agent could not create backup copies, and because the
+ini's `bind = ::` is the thing to re-check after any `brew upgrade lavinmq`.
+
+`/usr/local/etc/lavinmq/lavinmq.ini` — **as shipped, never edited**
+(mtime equals the formula install time):
 
 ```ini
 [main]
@@ -257,7 +298,8 @@ bind = ::
 ;etcd_endpoints = localhost:2379
 ```
 
-`~/Library/LaunchAgents/com.bodai.lavinmq.plist` — **before** (restore with
+`~/Library/LaunchAgents/com.bodai.lavinmq.plist` — **as it stands**
+(created 2026-05-10 11:13, unchanged since; restore with
 `launchctl bootstrap gui/$(id -u) <path>`):
 
 ```xml
