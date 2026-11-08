@@ -57,6 +57,7 @@ from .nosql.firestore import FirestoreAdapter
 from .nosql.mongodb import MongoDBAdapter
 from .queue import (
     CloudTasksQueueAdapter,
+    LavinMQQueueAdapter,
     NATSQueueAdapter,
     PubSubQueueAdapter,
     RedisStreamsQueueAdapter,
@@ -97,6 +98,13 @@ def builtin_adapter_metadata() -> list[AdapterMetadata]:
         NATSQueueAdapter.metadata,
         CloudTasksQueueAdapter.metadata,
         PubSubQueueAdapter.metadata,
+        # priority=330 — above redis-streams (300). Registered so it is
+        # reachable by explicit opt-in (`use("queue", provider="lavinmq")`),
+        # NOT so it can win by priority: `settings/oneiric.yaml` pins
+        # ("adapter", "queue") to redis-streams, and `override_score` is the
+        # first element of the scoring tuple. See
+        # docs/plans/2026-11-08-lavinmq-provider-pinning.md.
+        LavinMQQueueAdapter.metadata,
         HTTPClientAdapter.metadata,
         AioHTTPAdapter.metadata,
         PostgresDatabaseAdapter.metadata,

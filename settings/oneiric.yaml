@@ -1,0 +1,49 @@
+# Oneiric project-local configuration.
+#
+# This is layer 7 of the layered config chain (see
+# `oneiric/core/_sources.py::build_yaml_layers`):
+#
+#     1. explicit `path=` argument
+#     2. ONEIRIC_CONFIG environment variable
+#     3. bare env vars (ONEIRIC_*)
+#     4. ~/.config/oneiric/local.yaml   (XDG user-local)
+#     5. ~/.config/oneiric/config.yaml  (XDG user)
+#     6. <repo>/settings/local.yaml      (project-local, gitignored)
+#     7. <repo>/settings/oneiric.yaml    (this file — project, committed)
+#     8. code defaults
+#
+# Higher layers win. The XDG layer does not define an `adapters` key, so the
+# selection below survives the deep merge.
+
+# Explicit provider selections, keyed by adapter category.
+#
+# `selections` is the tier-1 "explicit override" in the resolver's 4-tier
+# precedence (CLAUDE.md, "Resolution Precedence"). Candidates are scored by
+#
+#     (override_score, capability_score, priority, stack_level, registration_sequence)
+#
+# and `override_score` is the FIRST element, so an explicit selection
+# dominates priority outright.
+#
+# WHY THIS PIN EXISTS
+#
+# The LavinMQ queue adapter carries priority=330, above redis-streams (300)
+# and rabbitmq (320). Without this pin, registering LavinMQ would silently
+# repoint the ("adapter", "queue") resolution from Redis Streams to AMQP —
+# `DomainBridge.use("queue")` would start opening AMQP connections with no
+# config change and no log line that reads like a deliberate choice.
+#
+# The Bodai event bus is hardwired to Redis Streams regardless: see
+# `oneiric/adapters/bootstrap.py::queued_publisher` and
+# `mahavishnu/bodai_hook_bridge.py::_publish`. This pin governs the resolver's
+# generic ("adapter", "queue") slot, which is what a future consumer would hit.
+#
+# To opt into LavinMQ explicitly (it is registered and healthy), request it
+# per call rather than by changing this file:
+#
+#     await bridge.use("queue", provider="lavinmq")
+#
+# See docs/plans/2026-11-08-lavinmq-provider-pinning.md.
+adapters:
+  selections:
+    queue: "redis-streams"

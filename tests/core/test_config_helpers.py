@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import pytest
 
+from oneiric.core.build_settings import build_oneiric_settings
 from oneiric.core.config import LayerSettings, OneiricSettings
 from oneiric.core.domain_settings import (
     SUPPORTED_DOMAINS,
@@ -233,10 +234,16 @@ class TestDomainAgnosticConfigPatterns:
         "domain",
         ["adapter", "service", "task", "event", "workflow", "action"],
     )
-    def test_layer_selector_works_for_all_domains(self, domain):
+    def test_layer_selector_works_for_all_domains(self, domain, tmp_path):
         """Layer selector function works for all supported domains."""
         selector = create_layer_selector(domain)
-        settings = OneiricSettings()
+        # Anchor the project layer at an empty directory so this test
+        # exercises the selector mechanics rather than the project's own
+        # config content. The project layer (``settings/oneiric.yaml``)
+        # carries the ("adapter", "queue") provider pin — see
+        # docs/plans/2026-11-08-lavinmq-provider-pinning.md — and that pin
+        # is asserted in tests/adapters/queue/test_queue_provider_selection.py.
+        settings = build_oneiric_settings("oneiric", project_root=tmp_path)()
 
         result = selector(settings)
 

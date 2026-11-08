@@ -6,6 +6,24 @@
 #     2. settings/lavinmq.yaml (committed)
 #     3. settings/local.yaml (gitignored)
 #     4. Environment variables LAVINMQ_*
+#
+# LOCAL BROKER NOTE
+#
+# Exactly one supervisor may run the broker. A second instance cannot
+# bind 5672/1883/15672/15692 and will crash-loop against the first.
+#
+# On the operator's Mac the broker runs under the hand-rolled LaunchAgent
+# `com.bodai.lavinmq` (loopback-only, data dir ~/Library/lavinmq), NOT under
+# `brew services` — `brew services list` reports `lavinmq none` because it
+# has never been started by Homebrew. Starting it via Homebrew as well
+# gives two instances on the same ports.
+#
+# Note also that Homebrew's own config (/usr/local/etc/lavinmq/lavinmq.ini)
+# binds every listener to `::` — all interfaces — with the default
+# guest/guest credentials. It must be hardened to 127.0.0.1 before
+# `brew services start lavinmq` is used.
+#
+# See docs/plans/2026-11-08-lavinmq-provider-pinning.md.
 
 # === Connection Settings ===
 

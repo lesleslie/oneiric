@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
+from oneiric.core.build_settings import build_oneiric_settings
 from oneiric.core.config import (
     OneiricSettings,
     RemoteAuthConfig,
@@ -184,8 +185,12 @@ class TestPathHelpers:
 
 
 class TestResolverSettingsFromConfig:
-    def test_returns_settings(self) -> None:
-        s = OneiricSettings()
+    def test_returns_settings(self, tmp_path: Path) -> None:
+        # Anchor the project layer at an empty directory: the repo now
+        # ships settings/oneiric.yaml, which pins the ("adapter", "queue")
+        # provider. The loader's contract is that tests anchor
+        # project_root explicitly — see ``load_settings``.
+        s = build_oneiric_settings("oneiric", project_root=tmp_path)()
         rs = resolver_settings_from_config(s)
         assert rs is not None
         assert rs.default_priority == 0

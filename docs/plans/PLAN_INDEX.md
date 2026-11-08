@@ -1,6 +1,6 @@
 # Plan Index
 
-_Regenerated 2026-11-07 by `crackerjack.tools.plan_index_sync` (phase)._
+_Regenerated 2026-11-08 by `crackerjack.tools.plan_index_sync` (phase)._
 
 ### Docs: adr
 
@@ -21,6 +21,7 @@ _Regenerated 2026-11-07 by `crackerjack.tools.plan_index_sync` (phase)._
 | [`docs/plans/2026-10-11-pydantic-settings-migration.md`](2026-10-11-pydantic-settings-migration.md) | 2026-10-11 | `draft` | `implementation` | `oneiric-config` | Oneiric pydantic-settings migration — implementation plan (revised) |
 | [`docs/plans/2026-10-29-resolver-precedence-contract-and-empty-result-explanation.md`](2026-10-29-resolver-precedence-contract-and-empty-result-explanation.md) | 2026-10-29 | `partial` | `implementation` | `resolver` | Resolver Precedence Contract and Empty-Result Explanation — Implementation Plan |
 | [`docs/plans/2026-10-29-resolver-scope-deferrals-and-triggers.md`](2026-10-29-resolver-scope-deferrals-and-triggers.md) | 2026-10-29 | `active` | `implementation` | `resolver` | Resolver Scope Deferrals and Reopening Triggers — Implementation Plan |
+| [`docs/plans/2026-11-08-lavinmq-provider-pinning.md`](2026-11-08-lavinmq-provider-pinning.md) | 2026-11-08 | `active` | `implementation` | `adapter-registry` | Pin the queue provider so LavinMQ registration cannot silently repoint the bus |
 
 ### Docs: specs
 
@@ -49,8 +50,8 @@ _Regenerated 2026-11-07 by `crackerjack.tools.plan_index_sync` (phase)._
 | Role \\ Lifecycle | draft | active | partial | shipped | complete | Total |
 |---|---|---|---|---|---|---|
 | `canonical` | 1 | 5 | · | · | · | **6** |
-| `implementation` | 1 | 5 | 2 | · | · | **8** |
+| `implementation` | 1 | 6 | 2 | · | · | **9** |
 | `umbrella` | · | · | · | · | · | **0** |
 | `historical` | · | 1 | · | · | 1 | **2** |
 | `superseded` | · | · | · | · | · | **0** |
-| **Total** | **2** | **11** | **2** | **·** | **1** | **16** |
+| **Total** | **2** | **12** | **2** | **·** | **1** | **17** |
