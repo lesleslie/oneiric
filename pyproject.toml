@@ -81,6 +81,58 @@ prerelease = "allow"
 # Drop this override once fakeredis ships the fix:
 # https://github.com/cunla/fakeredis-py/issues
 prerelease-package = { redis = "disallow" }
+# 7-day dependency cooldown. A package published minutes ago has had no
+# time to be flagged, and a rolling window keeps a fresh compromise from
+# being adopted by a routine `uv lock`. This is the fleet standard --
+# crackerjack/pyproject.toml carries the same setting with the same
+# carve-out classes (see below).
+#
+# This is the generic half of the redis defence: redis 8.2.0b1 was four
+# days old when it was resolved, so a cooldown excludes it too. The
+# `prerelease-package` override above remains the durable half, because
+# the cooldown is a rolling window -- once redis 8.2.0b1 ages past seven
+# days it becomes eligible again, and only fakeredis shipping the guard
+# makes it safe.
+exclude-newer = "7 days"
+
+# Carve-outs from the cooldown. Far-future timestamps disable the window
+# for that package only. Three classes, mirroring crackerjack:
+#
+#   1. Bodai ecosystem -- we want same-day access to ecosystem releases
+#      so cross-repo changes can be validated immediately.
+#   2. CVE fixes -- a security-fix release that lands inside the window
+#      must be adoptable immediately; without the override `uv lock
+#      --upgrade` silently keeps the vulnerable version.
+#   3. Dev-tool pinning -- the tool's version CHANGES WHAT THE GATE
+#      REPORTS, so a week-old version is a degraded signal, not a
+#      security posture.
+[tool.uv.exclude-newer-package]
+# Class 1 -- Bodai ecosystem.
+crackerjack = "2099-12-31T23:59:59Z"
+mcp-common = "2099-12-31T23:59:59Z"
+oneiric = "2099-12-31T23:59:59Z"
+session-buddy = "2099-12-31T23:59:59Z"
+# Class 2 -- CVE fixes. Same fleet-wide set crackerjack carries: uv's
+# vendored webpki-root-certs (PYSEC-2026-4321), certifi
+# (PYSEC-2026-4320), filelock (CVE-2026-112907/112913/112940),
+# fastmcp + fastmcp-slim (GHSA-7xgj-8392-5q4r and
+# GHSA-vqqp-x5qm-5qp4, authorization bypasses in the MCP server), and
+# pyasn1 (four quadratic-complexity DoS bugs in the ASN.1 decoder).
+# Each fix landed inside a cooldown window, so without these entries the
+# resolver keeps the vulnerable version rather than erroring.
+uv = "2099-12-31T23:59:59Z"
+certifi = "2099-12-31T23:59:59Z"
+filelock = "2099-12-31T23:59:59Z"
+fastmcp = "2099-12-31T23:59:59Z"
+fastmcp-slim = "2099-12-31T23:59:59Z"
+pyasn1 = "2099-12-31T23:59:59Z"
+# Class 3 -- dev-tool pinning. ty is the gate's primary type checker
+# and ruff is its linter; their versions change what the gate reports,
+# so a week-old ty or ruff fails quietly rather than loudly. Same for
+# pytest-testmon, the gate's test-selection plugin.
+ty = "2099-12-31T23:59:59Z"
+ruff = "2099-12-31T23:59:59Z"
+pytest-testmon = "2099-12-31T23:59:59Z"
 
 [tool.hatch.build.targets.wheel]
 packages = ["oneiric"]

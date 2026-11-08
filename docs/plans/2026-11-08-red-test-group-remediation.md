@@ -210,6 +210,53 @@ happened. This change follows the same precedent.
 4. Verify both groups green, then the full suite. ✅ done
 5. Record the changelog entry. ✅ done
 
+## Follow-up — the generic defence: a dependency cooldown
+
+The redis fix above is specific: it names one package. The **generic**
+problem is that `[tool.uv] prerelease = "allow"` lets uv adopt any
+dependency version published minutes ago, including a compromised one,
+on a routine `uv lock`. That is the same mechanism that admitted redis
+8.2.0b1 — four days old at lock time — and it is what the security
+scanner flags as `uv-missing-dependency-cooldown`.
+
+oneiric now carries the fleet's 7-day cooldown, matching
+`crackerjack/pyproject.toml`:
+
+```toml
+[tool.uv]
+exclude-newer = "7 days"
+```
+
+with `[tool.uv.exclude-newer-package]` carve-outs in the same three
+classes crackerjack documents:
+
+1. **Bodai ecosystem** — `crackerjack`, `mcp-common`, `oneiric`,
+   `session-buddy`. Same-day access, so cross-repo changes can be
+   validated immediately.
+2. **CVE fixes** — `uv`, `certifi`, `filelock`, `fastmcp`,
+   `fastmcp-slim`, `pyasn1`. A security fix that lands inside the window
+   must be adoptable at once; without the override `uv lock --upgrade`
+   silently keeps the vulnerable version.
+3. **Dev-tool pinning** — `ty`, `ruff`, `pytest-testmon`. Their
+   versions change *what the gate reports*, so a week-old one is a
+   degraded signal rather than a security posture.
+
+**Why the carve-outs are load-bearing rather than cosmetic.** Measured
+against the pre-carve-out state, the cooldown proposed 60 version
+changes; the carve-outs reduce that to 47, and every remaining change is
+an ordinary runtime library being held back — the same posture
+crackerjack's own lock shows (`sqlalchemy 2.1.6` there vs `2.1.8` here
+before the cooldown). Without the carve-outs the cooldown would have
+removed `pytest-testmon` entirely and stranded `ty` and `ruff` — i.e.
+it would have degraded the gate's own signal.
+
+**Relationship to the redis fix.** The cooldown is the generic first
+line of defence and would have excluded redis 8.2.0b1 on its own (four
+days old). The `prerelease-package = { redis = "disallow" }` override
+stays because the cooldown is a **rolling** window: once redis 8.2.0b1
+ages past seven days it becomes eligible again, and only fakeredis
+shipping the guard makes it safe.
+
 ## Rollback
 
 - **Dependency:** delete the `prerelease-package` line from
