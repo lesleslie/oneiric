@@ -16,7 +16,7 @@ dependencies = [
     # server is built, so a component inherits one it does not own -- the
     # ownership distinction is what keeps it from closing an exporter
     # that belongs to someone else.
-    "mcp-common>=0.33.1",
+    "mcp-common>=0.35.0",
     "pydantic>=2.12.5",
     # 2026-10-11: direct pin (was transitive via mcp-common). The substrate
     # now uses pydantic-settings natively (``oneiric.core.config`` extends
