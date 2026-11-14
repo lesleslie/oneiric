@@ -313,6 +313,30 @@ Two decisions the plan did not pin down:
    rendered traceback, and the redactor now covers a three-segment JWT's
    *signature* — which the original two-segment pattern let through.
 
+   A second pass over that hardening closed three **parser differentials**,
+   each of which was a control that parsed an address or a URL one way
+   while the component that consumed it parsed it another:
+
+   - **IPv4-mapped IPv6.** `ipaddress` membership is family-sensitive, so
+     `::ffff:169.254.169.254` was *not* a member of `169.254.0.0/16` and
+     slipped past every IPv4 rule. The mapped address is now tested both
+     as the IPv6 address it is and as the IPv4 address it carries, and
+     the containment test checks the address family explicitly rather
+     than relying on a silent `False`.
+   - **The IPv6 ranges were missing.** `fe80::/10` (link-local),
+     `fc00::/7` (unique local) and `fd00:ec2::254/128` (Oracle IMDSv6)
+     are now blocked alongside the IPv4 metadata addresses.
+   - **A URL's query string and a JSON-shaped label.** `scrub_url` now
+     rebuilds the URL from its parsed parts instead of matching userinfo
+     with a regex: a query string can carry the credential outright
+     (`?api_key=…` is not userinfo), and a password containing `/`
+     defeated the pattern. The redactor's assignment form now accepts a
+     *quoted* label — `"api_key": "…"` is JSON, and the old pattern
+     stopped at the closing quote.
+
+   `ProviderConfig` also validates on assignment, so a `base_url` cannot
+   be swapped after it was checked.
+
 ### Phase 1b — Carry a per-model thinking-depth policy through the moved provider
 
 **Why this phase is in this plan.** `mcp_common/llm/provider.py:99-111` builds

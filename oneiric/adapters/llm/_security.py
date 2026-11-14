@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import ipaddress
 import re
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urlunsplit
 
 _SECRET_PATTERNS: list[tuple[re.Pattern[str], str]] = [
     (
@@ -21,22 +21,23 @@ _SECRET_PATTERNS: list[tuple[re.Pattern[str], str]] = [
         "<redacted>",
     ),  # Bearer header values
     (
-        re.compile(r"[\"'][A-Za-z0-9+/=_\-\.]{32,}[\"']"),
+        re.compile(r"[\"'][A-Za-z0-9+/=_~\-\.]{20,}[\"']"),
         "<redacted>",
     ),  # quoted long secrets
     # Assignment forms: ``api_key=…``, ``token: …``, ``x-bf-vk=…``. The label
-    # is kept so the redacted diagnostic still says which credential it was.
+    # may be quoted (``"api_key": "…"`` is JSON, and the label is followed
+    # by a closing quote before the separator), and the value may be
+    # quoted. The label is kept so the redacted diagnostic still says
+    # which credential it was.
     (
         re.compile(
-            r"(?i)\b(api[_-]?key|access[_-]?token|token|secret|password|passwd|"
-            r"credential|x-bf-vk)(\s*[=:]\s*)\"?[^\s\"']+"
+            r"(?i)([\"']?\b(?:api[_-]?key|access[_-]?token|token|secret|password|"
+            r"passwd|credential|x-bf-vk)\b[\"']?\s*[=:]\s*)"
+            r"[\"']?[^\s\"',}\]]+[\"']?"
         ),
-        r"\1\2<redacted>",
+        r"\1<redacted>",
     ),
 ]
-
-#: Captures the scheme + "://" so ``userinfo@`` can be stripped from a URL.
-_URL_USERINFO_RE = re.compile(r"^([a-z][a-z0-9+.\-]*://)[^@/\s]+@", re.IGNORECASE)
 
 #: Hostnames that resolve to a cloud metadata service.
 BLOCKED_HOSTNAMES = frozenset(
@@ -54,12 +55,19 @@ BLOCKED_HOSTNAMES = frozenset(
 #: Loopback (``127.0.0.0/8``, ``::1``) is deliberately absent: the local
 #: Bifrost gateway and the local llama-server are loopback services.
 BLOCKED_NETWORKS = (
-    ipaddress.ip_network("169.254.0.0/16"),  # link-local, includes AWS/Azure IMDS
+    ipaddress.ip_network("169.254.0.0/16"),  # IPv4 link-local, includes AWS/Azure IMDS
     ipaddress.ip_network("100.100.100.200/32"),  # Alibaba Cloud metadata
     ipaddress.ip_network("192.0.0.192/32"),  # Oracle Cloud metadata
     ipaddress.ip_network("10.0.0.0/8"),  # RFC1918
     ipaddress.ip_network("172.16.0.0/12"),  # RFC1918
     ipaddress.ip_network("192.168.0.0/16"),  # RFC1918
+    ipaddress.ip_network("fe80::/10"),  # IPv6 link-local
+    ipaddress.ip_network("fc00::/7"),  # IPv6 unique local (covers fd00::/8)
+    ipaddress.ip_network("fd00:ec2::254/128"),  # Oracle Cloud metadata (IMDSv6)
+    # IPv4-mapped IPv6. The whole mapped range is refused: the form is
+    # an attempt to present an IPv4 address to an IPv6-shaped check, and
+    # plain IPv4 (127.0.0.1 for the local gateway) stays available.
+    ipaddress.ip_network("::ffff:0:0/96"),
 )
 
 #: Hostnames that name the loopback interface.
@@ -74,12 +82,57 @@ def sanitize_error(msg: str) -> str:
 
 
 def scrub_url(url: str) -> str:
-    """Strip ``user:password@`` userinfo from a URL before logging it."""
-    return _URL_USERINFO_RE.sub(r"\1***@", url)
+    """Strip everything credential-shaped from a URL before logging it.
+
+    Rebuilding from the parsed parts beats a regex here. A userinfo
+    pattern has two holes: a password may contain ``/`` (which stops a
+    ``[^@/]`` pattern dead), and a *query string* can carry the
+    credential outright -- ``?api_key=…`` is not userinfo at all. A URL
+    with credentials in it is reported as ``scheme://***`` and a URL
+    without them keeps its host and path but loses the query and the
+    fragment.
+    """
+    try:
+        parts = urlsplit(url)
+    except ValueError:
+        return "<unparsable url>"
+    if not parts.scheme and not parts.netloc:
+        # Not a URL at all (an unresolved ``${ENV_VAR}`` placeholder).
+        return url
+    if parts.username is not None or parts.password is not None:
+        return f"{parts.scheme}://***"
+    host = parts.hostname or ""
+    try:
+        port = parts.port
+    except ValueError:
+        # An authority whose colon does not introduce a valid port is a
+        # userinfo fragment in all but name (``user:pa/ss@host`` parses
+        # its authority as "user:pa" because the slash ends it early).
+        return f"{parts.scheme}://***"
+    netloc = f"{host}:{port}" if port else host
+    return urlunsplit((parts.scheme, netloc, parts.path, "", ""))
 
 
 def _is_blocked_address(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
-    return any(ip in network for network in BLOCKED_NETWORKS)
+    """Whether an address falls in a blocked network.
+
+    The containment test is family-sensitive -- an IPv6 address compared
+    against an IPv4 network is silently *not* a member -- so the version
+    is checked explicitly and an IPv4-mapped address is tested both as
+    the IPv6 address it is and as the IPv4 address it carries.
+    """
+    candidates: list[ipaddress.IPv4Address | ipaddress.IPv6Address] = [ip]
+    if ip.version == 6:
+        mapped = ip.ipv4_mapped
+        if mapped is not None:
+            candidates.append(mapped)
+    for candidate in candidates:
+        for network in BLOCKED_NETWORKS:
+            if candidate.version != network.version:
+                continue
+            if candidate in network:
+                return True
+    return False
 
 
 def validate_base_url(url: str) -> str:
@@ -169,11 +222,18 @@ async def assert_resolved_host_allowed(url: str) -> None:
     if not host:
         return
     try:
-        ipaddress.ip_address(host)
+        literal = ipaddress.ip_address(host)
     except ValueError:
-        pass
-    else:
-        # A literal address was already judged by validate_base_url.
+        literal = None
+
+    if literal is not None:
+        # A literal address gets the same blocked-address rule as a
+        # resolved one, so the two paths cannot disagree.
+        if _is_blocked_address(literal):
+            raise ValueError(
+                f"base_url host {host!r} is in a blocked network; refusing to "
+                "send a provider credential there"
+            )
         return
 
     loop = asyncio.get_running_loop()

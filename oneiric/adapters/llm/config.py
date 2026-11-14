@@ -78,7 +78,11 @@ class ProviderConfig(BaseModel):
     #: configuration should be able to make.
     reasoning_effort: dict[str, str] = {}
 
-    model_config = {"extra": "forbid"}
+    # ``validate_assignment`` closes the gap between "the base_url was
+    # checked" and "the base_url is still the one that was checked": a
+    # validated model that can be mutated afterwards is a model whose
+    # validation can be undone.
+    model_config = {"extra": "forbid", "validate_assignment": True}
 
     @field_validator("reasoning_effort")
     @classmethod
