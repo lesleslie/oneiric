@@ -27,7 +27,6 @@ from oneiric.adapters.llm.bifrost import (
 from oneiric.adapters.llm.llm_interface import LLMBase, LLMProvider
 from oneiric.core.resolution import CandidateSource
 
-
 # ---------------------------------------------------------------------------
 # REQ-BIFROST-001: catalog registration
 # ---------------------------------------------------------------------------

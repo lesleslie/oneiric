@@ -12,7 +12,7 @@ from oneiric.core.resolution import CandidateSource
 
 from ._security import sanitize_error as _sanitize_error
 from .config import LLMSettings
-from .exceptions import AllProvidersExhaustedError
+from .exceptions import AllProvidersExhaustedError, LLMError
 from .provider import OpenAICompatibleProvider
 
 logger = logging.getLogger(__name__)
@@ -179,6 +179,17 @@ class FallbackChain:
                 breaker.record_failure()  # counts once per tier-call
 
         sanitized_last = _sanitize_error(str(last_error)) if last_error else "unknown"
+        if last_error is not None:
+            # Sanitize the chained cause too: `raise ... from e` puts the
+            # cause's own rendering into the traceback, so a key in the
+            # original message would still be printed. An exception that
+            # renders itself from somewhere other than args is not
+            # chained at all.
+            last_error.args = (sanitized_last,)
+        if last_error is not None and str(last_error) != sanitized_last:
+            raise AllProvidersExhaustedError(
+                f"All {len(self._providers)} providers failed. Last: {sanitized_last}"
+            ) from None
         raise AllProvidersExhaustedError(
             f"All {len(self._providers)} providers failed. Last: {sanitized_last}"
         ) from last_error
@@ -188,9 +199,28 @@ class FallbackChain:
 
         Idempotent -- each provider's ``init`` tolerates repeat calls, so
         a hot-swap can re-run this without rebuilding live clients.
+
+        Fault-tolerant, like :meth:`health` and :meth:`cleanup`: one
+        provider failing to warm up must not strand the others. The
+        failures are collected and raised together, so a caller learns
+        that setup was incomplete without losing the providers that did
+        come up.
         """
+        failures: list[str] = []
         for provider in self._providers:
-            await provider.init()
+            try:
+                await provider.init()
+            except Exception as e:
+                failures.append(f"{provider.name}: {_sanitize_error(str(e))}")
+                logger.warning(
+                    "Provider %s failed to initialize: %s",
+                    provider.name,
+                    _sanitize_error(str(e)),
+                )
+        if failures:
+            raise LLMError(
+                "Fallback chain initialization failed for: " + "; ".join(failures)
+            )
 
     async def health(self) -> bool:
         """Return whether at least one provider in the chain is reachable.

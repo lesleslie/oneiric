@@ -9,11 +9,38 @@ from typing import Any, ClassVar
 from oneiric.adapters.metadata import AdapterMetadata
 from oneiric.core.resolution import CandidateSource
 
+from ._security import assert_resolved_host_allowed, scrub_url
 from ._security import sanitize_error as _sanitize_error
 from .config import ProviderConfig
 from .exceptions import LLMError
 
 logger = logging.getLogger(__name__)
+
+#: Per-request headers a caller may set. Everything else is dropped.
+#:
+#: The OpenAI SDK merges custom headers *last*
+#: (``_merge_headers(auth_headers, default_headers, custom_headers)``), so
+#: a per-request header wins over the client's own ``Authorization`` and
+#: over the gateway virtual key. An allowlist keeps that override from
+#: becoming a credential-displacement primitive.
+ALLOWED_REQUEST_HEADERS = frozenset(
+    {
+        "x-bf-cache-type",
+        "x-bf-cache-key",
+        "x-bf-cache-no-store",
+    }
+)
+
+#: Headers that carry a credential. They come from the provider
+#: configuration alone -- never from a per-request override, and never
+#: from ``default_headers`` (where they would displace the SDK's own auth
+#: header).
+CREDENTIAL_HEADERS = frozenset(
+    {
+        "authorization",
+        "proxy-authorization",
+    }
+)
 
 
 class OpenAICompatibleProvider:
@@ -58,7 +85,9 @@ class OpenAICompatibleProvider:
         if config is not None:
             self._client = self._build_client(config)
             logger.info(
-                "Initialized provider %s: base_url=%s", config.name, config.base_url
+                "Initialized provider %s: base_url=%s",
+                config.name,
+                scrub_url(config.base_url),
             )
 
     def _build_client(self, config: ProviderConfig) -> Any:
@@ -83,7 +112,24 @@ class OpenAICompatibleProvider:
         # substituted for them: ``Authorization`` still comes from
         # ``api_key``. The Bifrost gateway path uses this to carry the
         # gateway virtual key (``x-bf-vk``) and the cache headers.
-        extra_headers = config.default_headers.copy()
+        #
+        # A credential header in ``default_headers`` would displace the
+        # SDK's own auth header (the SDK merges ``default_headers`` after
+        # the auth headers), so those are dropped here rather than at
+        # the call site.
+        extra_headers = {
+            name: value
+            for name, value in config.default_headers.items()
+            if name.lower() not in CREDENTIAL_HEADERS
+        }
+        for name in config.default_headers:
+            if name.lower() in CREDENTIAL_HEADERS:
+                logger.warning(
+                    "Provider %s: dropping the credential header %r from "
+                    "default_headers; the SDK sets Authorization from api_key",
+                    config.name,
+                    name,
+                )
 
         if config.require_auth:
             return openai.AsyncOpenAI(
@@ -146,7 +192,7 @@ class OpenAICompatibleProvider:
                     "Provider %s: model %s has no reasoning_effort entry; "
                     "the provider default applies",
                     self.name,
-                    model,
+                    model or "<unresolved>",
                 )
             return None
         return effort
@@ -187,9 +233,10 @@ class OpenAICompatibleProvider:
             # Per-call headers, for callers that need to vary them per
             # request (e.g. a per-tenant cache bucket). Omitted entirely
             # when absent so the SDK call shape is unchanged.
-            call_headers = task.get("extra_headers")
+            call_headers = self._filter_request_headers(task.get("extra_headers"))
             if call_headers:
-                create_kwargs["extra_headers"] = dict(call_headers)
+                create_kwargs["extra_headers"] = call_headers
+            await self._assert_endpoint_allowed()
             response = await self._ensure_client().chat.completions.create(
                 **create_kwargs
             )
@@ -203,10 +250,52 @@ class OpenAICompatibleProvider:
                 result["reasoning_effort"] = effort
             return result
         except Exception as e:
-            logger.warning("Provider %s failed: %s", self.name, _sanitize_error(str(e)))
-            raise LLMError(
-                f"Provider {self.name} failed: {_sanitize_error(str(e))}"
-            ) from e
+            sanitized = _sanitize_error(str(e))
+            logger.warning("Provider %s failed: %s", self.name, sanitized)
+            # Sanitize the chained cause as well: `raise ... from e` puts
+            # the cause's own rendering into the traceback, so a key in
+            # the original message would still be printed. Setting args
+            # covers the common case (the OpenAI SDK's exceptions render
+            # from args); an exception that renders itself from somewhere
+            # else is not chained at all.
+            e.args = (sanitized,)
+            if str(e) != sanitized:
+                raise LLMError(f"Provider {self.name} failed: {sanitized}") from None
+            raise LLMError(f"Provider {self.name} failed: {sanitized}") from e
+
+    def _filter_request_headers(self, headers: dict[str, Any] | None) -> dict[str, str]:
+        """Keep only the per-request headers a caller is allowed to set.
+
+        The SDK applies custom headers last, so an allowlist is what
+        stops a caller from displacing ``Authorization`` or the gateway
+        virtual key.
+        """
+        if not headers:
+            return {}
+        allowed: dict[str, str] = {}
+        for name, value in headers.items():
+            if name.lower() in ALLOWED_REQUEST_HEADERS:
+                allowed[name] = str(value)
+            else:
+                logger.warning(
+                    "Provider %s: dropping the per-request header %r; "
+                    "only %s may be set per request",
+                    self.name,
+                    name,
+                    ", ".join(sorted(ALLOWED_REQUEST_HEADERS)),
+                )
+        return allowed
+
+    async def _assert_endpoint_allowed(self) -> None:
+        """Re-check the resolved address of the provider's base URL.
+
+        The config-time check judges the URL string; this one judges the
+        address the host currently resolves to, which is the check the
+        Bifrost adapter's contract assigns to the transport layer.
+        """
+        if self._config is None:
+            return
+        await assert_resolved_host_allowed(self._config.base_url)
 
     async def health_check(self) -> bool:
         """Lightweight health check by listing models.
@@ -215,6 +304,7 @@ class OpenAICompatibleProvider:
             True if provider is reachable, False otherwise.
         """
         try:
+            await self._assert_endpoint_allowed()
             await self._ensure_client().models.list()
             return True
         except (

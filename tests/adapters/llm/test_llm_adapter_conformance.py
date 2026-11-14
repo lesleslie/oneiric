@@ -15,6 +15,8 @@ import sys
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+
 from oneiric.adapters.bootstrap import builtin_adapter_metadata
 from oneiric.adapters.llm.config import ProviderConfig
 from oneiric.adapters.llm.fallback import FallbackChain
@@ -61,7 +63,9 @@ def _mock_provider(name: str = "provider") -> MagicMock:
 
 
 def test_provider_satisfies_the_adapter_protocol() -> None:
-    provider = _make_provider(ProviderConfig(name="minimax", base_url="http://x/v1"))
+    provider = _make_provider(
+        ProviderConfig(name="minimax", base_url="https://127.0.0.1/v1")
+    )
     assert isinstance(provider, OneiricAdapter)
 
 
@@ -98,24 +102,33 @@ def test_declared_factory_paths_resolve_to_the_moved_classes() -> None:
     )
 
 
-def test_both_moved_classes_are_in_the_builtin_catalog() -> None:
-    providers = {m.provider for m in builtin_adapter_metadata()}
-    assert "fallback" in providers
-    assert "openai-compatible" in providers
+def test_the_moved_classes_are_not_in_the_resolution_catalog() -> None:
+    """They are consumer-constructed, so a catalog entry could never work.
 
+    The catalog instantiates a factory with **no arguments** and then
+    runs its health check; an adapter that fails that health check cannot
+    be activated. ``FallbackChain()`` is an empty chain and
+    ``OpenAICompatibleProvider()`` has no configuration, so both are
+    permanently unhealthy and neither can ever be resolved by provider
+    name.
 
-def test_moved_adapters_do_not_outrank_the_direct_llm_adapters() -> None:
-    """An unqualified ``use("llm")`` must keep resolving to the direct adapters.
-
-    The moved classes are registered so they are discoverable, but they
-    carry a ``ProviderConfig``/``LLMSettings`` rather than a
-    settings-driven adapter contract. A low priority keeps them reachable
-    by explicit provider name without hijacking the default resolution.
+    The classes keep their ``AdapterMetadata`` and the lifecycle methods
+    -- that is what the ``OneiricAdapter`` Protocol asks for, and it is
+    what the conformance tooling reads. What they do not get is a
+    catalog entry that looks resolvable and is not.
     """
-    by_provider = {m.provider: m for m in builtin_adapter_metadata()}
-    assert by_provider["fallback"].priority is not None
-    assert by_provider["fallback"].priority < by_provider["openai"].priority
-    assert by_provider["openai-compatible"].priority < by_provider["openai"].priority
+    providers = {m.provider for m in builtin_adapter_metadata()}
+    assert "fallback" not in providers
+    assert "openai-compatible" not in providers
+
+
+def test_the_moved_classes_are_still_discoverable_as_adapters() -> None:
+    """Conformance is by shape: the metadata is what a validator reads."""
+    for cls in (FallbackChain, OpenAICompatibleProvider):
+        metadata = cls.metadata
+        assert metadata.category == "llm"
+        assert metadata.factory
+        assert metadata.capabilities
 
 
 # ---------------------------------------------------------------------------
@@ -141,7 +154,7 @@ def test_fallback_chain_constructs_without_arguments() -> None:
 async def test_provider_init_warms_the_client_up() -> None:
     client = MagicMock()
     provider = OpenAICompatibleProvider()
-    provider._config = ProviderConfig(name="minimax", base_url="http://x/v1")
+    provider._config = ProviderConfig(name="minimax", base_url="https://127.0.0.1/v1")
 
     with patch.dict(sys.modules, {"openai": _mock_openai(client)}):
         await provider.init()
@@ -152,7 +165,7 @@ async def test_provider_init_warms_the_client_up() -> None:
 async def test_provider_init_is_idempotent() -> None:
     client = MagicMock()
     provider = _make_provider(
-        ProviderConfig(name="minimax", base_url="http://x/v1"), client=client
+        ProviderConfig(name="minimax", base_url="https://127.0.0.1/v1"), client=client
     )
 
     await provider.init()
@@ -170,7 +183,7 @@ async def test_provider_health_is_true_when_the_provider_answers() -> None:
     client = MagicMock()
     client.models.list = AsyncMock(return_value=MagicMock())
     provider = _make_provider(
-        ProviderConfig(name="minimax", base_url="http://x/v1"), client=client
+        ProviderConfig(name="minimax", base_url="https://127.0.0.1/v1"), client=client
     )
 
     assert await provider.health() is True
@@ -186,7 +199,7 @@ async def test_provider_health_never_raises() -> None:
     client = MagicMock()
     client.models.list = AsyncMock(side_effect=_TransportError("connection reset"))
     provider = _make_provider(
-        ProviderConfig(name="minimax", base_url="http://x/v1"), client=client
+        ProviderConfig(name="minimax", base_url="https://127.0.0.1/v1"), client=client
     )
 
     assert await provider.health() is False
@@ -196,7 +209,7 @@ async def test_provider_cleanup_releases_the_client_and_is_idempotent() -> None:
     client = MagicMock()
     client.close = AsyncMock()
     provider = _make_provider(
-        ProviderConfig(name="minimax", base_url="http://x/v1"), client=client
+        ProviderConfig(name="minimax", base_url="https://127.0.0.1/v1"), client=client
     )
 
     await provider.cleanup()
@@ -210,7 +223,7 @@ async def test_provider_cleanup_never_raises() -> None:
     client = MagicMock()
     client.close = AsyncMock(side_effect=_TransportError("boom"))
     provider = _make_provider(
-        ProviderConfig(name="minimax", base_url="http://x/v1"), client=client
+        ProviderConfig(name="minimax", base_url="https://127.0.0.1/v1"), client=client
     )
 
     await provider.cleanup()
@@ -256,6 +269,20 @@ async def test_fallback_chain_health_never_raises() -> None:
     chain = FallbackChain([raising])
 
     assert await chain.health() is False
+
+
+async def test_fallback_chain_init_is_fault_tolerant() -> None:
+    """One provider failing to warm up must not strand the others."""
+    failing = _mock_provider("failing")
+    failing.init = AsyncMock(side_effect=_TransportError("boom"))
+    working = _mock_provider("working")
+    chain = FallbackChain([failing, working])
+
+    with pytest.raises(Exception) as excinfo:
+        await chain.init()
+
+    working.init.assert_awaited_once()
+    assert "failing" in str(excinfo.value)
 
 
 async def test_fallback_chain_cleanup_releases_every_provider() -> None:

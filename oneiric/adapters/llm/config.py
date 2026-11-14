@@ -8,7 +8,9 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import BaseModel, SecretStr, field_validator, model_validator
+from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
+
+from ._security import validate_base_url
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +54,11 @@ class ProviderConfig(BaseModel):
     #:
     #: These are merged with the SDK's own headers -- they do not replace
     #: them, so ``Authorization`` is still set from ``api_key``.
-    default_headers: dict[str, str] = {}
+    #:
+    #: The field is excluded from the model's ``repr``: the Bifrost path
+    #: puts the gateway virtual key in ``x-bf-vk``, and a printed config
+    #: is a printed credential.
+    default_headers: dict[str, str] = Field(default_factory=dict, repr=False)
     #: Per-model thinking-depth policy, keyed by the *resolved* model id.
     #:
     #: Values are the effort levels MiniMax's OpenAI-compatible endpoint
@@ -122,6 +128,22 @@ class ProviderConfig(BaseModel):
         if self.timeout_seconds == 30 and self.timeout != 30:
             self.timeout_seconds = self.timeout
 
+        return self
+
+    @model_validator(mode="after")
+    def reject_dangerous_base_url(self) -> ProviderConfig:
+        """Refuse a ``base_url`` that would aim the provider credential at
+        a metadata endpoint or a private network.
+
+        Runs after :meth:`resolve_env_vars` so the ``${ENV_VAR}`` form is
+        judged once it has been substituted; an unresolved placeholder is
+        skipped, because the environment is not read at model-construction
+        time for every provider.
+        """
+        url = self.base_url
+        if not url or (url.startswith("${") and url.endswith("}")):
+            return self
+        validate_base_url(url)
         return self
 
     def get_model_for_task(self, task_type: str) -> str | None:

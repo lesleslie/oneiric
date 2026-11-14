@@ -16,10 +16,7 @@ from __future__ import annotations
 
 import json
 
-import pytest
-
 from oneiric.adapters.llm.bifrost import BifrostLLMSettings
-
 
 # ---------------------------------------------------------------------------
 # model_dump excludes _SENSITIVE_FIELDS by default

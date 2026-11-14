@@ -100,7 +100,7 @@ async def test_mapped_level_is_sent_upstream() -> None:
     provider, client = _make_provider(
         ProviderConfig(
             name="minimax",
-            base_url="http://x/v1",
+            base_url="https://127.0.0.1/v1",
             reasoning_effort={"MiniMax-M3.1-Flash": "low"},
         )
     )
@@ -116,7 +116,7 @@ async def test_adaptive_sends_no_effort_field() -> None:
     provider, client = _make_provider(
         ProviderConfig(
             name="minimax",
-            base_url="http://x/v1",
+            base_url="https://127.0.0.1/v1",
             reasoning_effort={"MiniMax-M3.1-Flash": "adaptive"},
         )
     )
@@ -133,7 +133,7 @@ async def test_a_model_absent_from_the_map_sends_no_effort_field(
     provider, client = _make_provider(
         ProviderConfig(
             name="minimax",
-            base_url="http://x/v1",
+            base_url="https://127.0.0.1/v1",
             reasoning_effort={"MiniMax-M3": "adaptive"},
         )
     )
@@ -151,7 +151,7 @@ async def test_an_empty_map_is_not_logged_as_a_configuration_miss(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     provider, client = _make_provider(
-        ProviderConfig(name="llama_server", base_url="http://x/v1")
+        ProviderConfig(name="llama_server", base_url="https://127.0.0.1/v1")
     )
 
     with caplog.at_level("WARNING"):
@@ -167,7 +167,7 @@ async def test_the_lookup_key_is_the_resolved_model() -> None:
     provider, client = _make_provider(
         ProviderConfig(
             name="minimax",
-            base_url="http://x/v1",
+            base_url="https://127.0.0.1/v1",
             task_routing={"quick": "MiniMax-M3.1-Flash"},
             reasoning_effort={"MiniMax-M3.1-Flash": "low", "MiniMax-M3": "adaptive"},
         )
@@ -189,7 +189,7 @@ async def test_the_result_echoes_the_delivered_level() -> None:
     provider, _ = _make_provider(
         ProviderConfig(
             name="minimax",
-            base_url="http://x/v1",
+            base_url="https://127.0.0.1/v1",
             reasoning_effort={"MiniMax-M3.1-Flash": "low"},
         )
     )
@@ -203,7 +203,7 @@ async def test_the_result_echoes_the_adaptive_sentinel() -> None:
     provider, _ = _make_provider(
         ProviderConfig(
             name="minimax",
-            base_url="http://x/v1",
+            base_url="https://127.0.0.1/v1",
             reasoning_effort={"MiniMax-M3.1-Flash": "adaptive"},
         )
     )
@@ -215,7 +215,7 @@ async def test_the_result_echoes_the_adaptive_sentinel() -> None:
 
 async def test_the_result_omits_the_key_when_no_policy_applies() -> None:
     provider, _ = _make_provider(
-        ProviderConfig(name="llama_server", base_url="http://x/v1")
+        ProviderConfig(name="llama_server", base_url="https://127.0.0.1/v1")
     )
 
     result = await provider.execute(TASK)

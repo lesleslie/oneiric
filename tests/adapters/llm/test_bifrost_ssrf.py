@@ -15,7 +15,6 @@ import pytest
 
 from oneiric.adapters.llm.bifrost import BifrostLLMSettings
 
-
 # ---------------------------------------------------------------------------
 # Default: loopback-only
 # ---------------------------------------------------------------------------
@@ -171,7 +170,6 @@ def test_allow_remote_default_does_not_log_identity(
     """
     import structlog
 
-    from oneiric.adapters.llm.bifrost import logger as bifrost_logger  # noqa: PLC0415
 
     monkeypatch.setenv("BIFROST_ALLOW_REMOTE", "1")
     monkeypatch.delenv("BIFROST_LOG_OPERATOR_IDENTITY", raising=False)

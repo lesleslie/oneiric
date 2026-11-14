@@ -63,20 +63,16 @@ def test_existing_llm_metadata_shape_is_valid() -> None:
     ``category``, ``provider``, and ``factory``. The new router
     follows the same shape (REQ-BIFROST-019).
 
-    The moved chaining layer registers two more providers here:
-    ``fallback`` (the chain) and ``openai-compatible`` (its transport).
+    The moved chaining layer (``FallbackChain``,
+    ``OpenAICompatibleProvider``) is deliberately **not** in this catalog:
+    they are consumer-constructed, and a catalog entry could never be
+    activated.
     """
     llm_entries = [m for m in builtin_adapter_metadata() if m.category == "llm"]
     assert len(llm_entries) >= 2  # anthropic + openai
     for entry in llm_entries:
         assert entry.category == "llm"
-        assert entry.provider in {
-            "anthropic",
-            "openai",
-            "bifrost",
-            "fallback",
-            "openai-compatible",
-        }
+        assert entry.provider in {"anthropic", "openai", "bifrost"}
         assert entry.factory  # non-empty
         assert " " in entry.factory  # per 3-agent F7 fix (space after colon)
 

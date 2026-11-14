@@ -286,13 +286,13 @@ class TestProviderConfig:
         assert config.api_key.get_secret_value() == "${LLM_API_KEY}"
 
     def test_resolve_env_vars_both(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("MY_URL", "https://api.test.com")
+        monkeypatch.setenv("MY_URL", "https://127.0.0.1/v1")
         monkeypatch.setenv("MY_KEY", "key-123")
         config = ProviderConfig(
             base_url="${MY_URL}",
             api_key=SecretStr("${MY_KEY}"),
         )
-        assert config.base_url == "https://api.test.com"
+        assert config.base_url == "https://127.0.0.1/v1"
         assert config.api_key.get_secret_value() == "key-123"
 
     def test_resolve_env_vars_unset_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -337,7 +337,7 @@ default_provider: minimax
 fallback_chain: [minimax, llama_server]
 minimax:
   enabled: true
-  base_url: "https://api.minimax.io/v1"
+  base_url: "https://127.0.0.1/v1"
   api_key: "${MINIMAX_API_KEY}"
   timeout_seconds: 30
 llama_server:
@@ -360,7 +360,7 @@ default_provider: minimax
 fallback_chain: [minimax, llama_server]
 minimax:
   enabled: true
-  base_url: "https://api.minimax.io/v1"
+  base_url: "https://127.0.0.1/v1"
   api_key_env: "MINIMAX_API_KEY"
   require_auth: true
 llama_server:
@@ -407,7 +407,7 @@ class TestLLMSettings:
             "fallback_chain": ["minimax", "llama_server"],
             "minimax": {
                 "enabled": True,
-                "base_url": "https://api.minimax.io/v1",
+                "base_url": "https://127.0.0.1/v1",
                 "api_key": "sk-test",
                 "models": {"MiniMax-M2.7": "MiniMax-M2.7"},
                 "priority": 1,
@@ -681,7 +681,7 @@ class TestOpenAICompatibleProvider:
         """If openai is not importable, constructor raises ImportError."""
         config = ProviderConfig(
             name="test",
-            base_url="https://api.test.com",
+            base_url="https://127.0.0.1/v1",
             api_key=SecretStr("sk-test"),
         )
         # Use None to simulate openai not being installed
@@ -692,7 +692,7 @@ class TestOpenAICompatibleProvider:
         """Constructor initializes AsyncOpenAI with max_retries=0 (chain handles retries)."""
         config = ProviderConfig(
             name="minimax",
-            base_url="https://api.minimax.io/v1",
+            base_url="https://127.0.0.1/v1",
             api_key=SecretStr("sk-test"),
             timeout_seconds=60,
         )
@@ -701,7 +701,7 @@ class TestOpenAICompatibleProvider:
         assert provider.timeout_seconds == 60
         mock_openai_module.AsyncOpenAI.assert_called_once_with(
             api_key="sk-test",
-            base_url="https://api.minimax.io/v1",
+            base_url="https://127.0.0.1/v1",
             max_retries=0,
             timeout=60,
             default_headers={},
@@ -1034,7 +1034,7 @@ class TestOpenAICompatibleProvider:
 
         config = ProviderConfig(
             name="minimax",
-            base_url="https://api.minimax.io/v1",
+            base_url="https://127.0.0.1/v1",
             api_key=SecretStr("sk-test"),
         )
         provider = _build_provider_with_mock_openai(config, mock_openai_module)
@@ -1438,7 +1438,7 @@ class TestFallbackChain:
             "fallback_chain": ["minimax", "llama_server"],
             "minimax": {
                 "enabled": True,
-                "base_url": "https://api.minimax.io/v1",
+                "base_url": "https://127.0.0.1/v1",
                 "api_key": "sk-test",
                 "priority": 1,
             },
