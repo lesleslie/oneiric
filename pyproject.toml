@@ -126,6 +126,23 @@ filelock = "2099-12-31T23:59:59Z"
 fastmcp = "2099-12-31T23:59:59Z"
 fastmcp-slim = "2099-12-31T23:59:59Z"
 pyasn1 = "2099-12-31T23:59:59Z"
+# tornado 6.6.1 -- GHSA-5cjw-f85j-cv6r / CVE-2026-126347 (LOW, CWE-601).
+# Tornado's 6.6.0 fix for the RedirectHandler open redirect
+# (CVE-2026-116578, commit cc75ab0e) was incomplete: browsers treat a
+# string of three or more leading slashes as a protocol-level redirect
+# while urllib does not, so a triple-slash path still escaped the
+# redirect check. 6.6.1 completes the detection and also fixes a
+# regression in the 6.6.0 implementation.
+#
+# Transitive only: oneiric never imports tornado. It arrives via
+# creosote -> nbconvert -> nbclient -> jupyter-client, and
+# jupyter-client 8.10.0 declares tornado with no version specifier, so
+# 6.6.1 is a drop-in bump with no resolver conflict. The fix landed
+# 2026-11-09, inside the 7-day cooldown above, so without this entry
+# `uv lock --upgrade` keeps the vulnerable 6.6 rather than erroring.
+# Same carve-out crackerjack, mcp-common, and session-buddy carry for
+# the same CVE.
+tornado = "2099-12-31T23:59:59Z"
 # Class 3 -- dev-tool pinning. ty is the gate's primary type checker
 # and ruff is its linter; their versions change what the gate reports,
 # so a week-old ty or ruff fails quietly rather than loudly. Same for

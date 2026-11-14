@@ -349,4 +349,3 @@ The broker's durable state (`~/Library/lavinmq`) is untouched by this plan.
   nothing in the fleet speaks MQTT today). That needs a consumer, which would
   be its own plan.
 - Upgrading lavinmq 2.10.3 → 2.10.4.
-
