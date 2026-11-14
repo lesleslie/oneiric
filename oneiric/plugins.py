@@ -120,8 +120,8 @@ def register_entrypoint_plugins(
         return PluginRegistrationReport.empty()
 
     report = _process_plugin_groups(resolver, groups)
-    resolver._oneiric_plugins_loaded = True  # ty: ignore[unresolved-attribute]
-    resolver._oneiric_plugin_report = report  # ty: ignore[unresolved-attribute]
+    resolver._oneiric_plugins_loaded = True  # ty: ignore[missing-attribute]
+    resolver._oneiric_plugin_report = report  # ty: ignore[missing-attribute]
 
     if report.registered:
         logger.info(

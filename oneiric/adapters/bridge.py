@@ -41,7 +41,7 @@ class AdapterBridge(DomainBridge):
             supervisor=supervisor,
         )
 
-    async def use(  # ty: ignore[invalid-method-override]
+    async def use(  # ty: ignore[incompatible-method-override]
         self,
         category: str,
         *,

@@ -133,7 +133,7 @@ class DuckDBPGQAdapter:
         rows, columns = await self._run_sync(_run_query)
         if not columns:
             # When DuckDB omits description (e.g., PRAGMA) fall back to positional keys
-            return [dict(enumerate(row)) for row in rows]  # ty: ignore[invalid-return-type]
+            return [dict(enumerate(row)) for row in rows]  # ty: ignore[invalid-explicit-return]
         return [{columns[idx]: value for idx, value in enumerate(row)} for row in rows]
 
     async def _ensure_connection(self) -> Any:

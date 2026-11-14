@@ -2477,7 +2477,7 @@ class TestOTelSearchLogs:
 
         # search_logs uses bare LogModel name without local import;
         # inject it into the otel module namespace so the reference resolves.
-        otel_module.LogModel = LogModel  # ty: ignore[unresolved-attribute]
+        otel_module.LogModel = LogModel  # ty: ignore[missing-attribute]
 
         adapter = OTelStorageAdapter(OTelStorageSettings())
 
@@ -2516,7 +2516,7 @@ class TestOTelSearchLogs:
 
         # search_logs uses bare LogModel name without local import;
         # inject it so the NameError does not fire before our side_effect.
-        otel_module.LogModel = LogModel  # ty: ignore[unresolved-attribute]
+        otel_module.LogModel = LogModel  # ty: ignore[missing-attribute]
 
         adapter = OTelStorageAdapter(OTelStorageSettings())
 

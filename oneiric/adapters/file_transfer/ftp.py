@@ -68,7 +68,7 @@ class FTPFileTransferAdapter:
                 "aioftp-required: install aioftp to use FTPFileTransferAdapter"
             ) from exc
 
-        self._client = aioftp.ClientSession(  # ty: ignore[unresolved-attribute]
+        self._client = aioftp.ClientSession(  # ty: ignore[missing-attribute]
             self._settings.host,
             self._settings.port,
             user=self._settings.username,

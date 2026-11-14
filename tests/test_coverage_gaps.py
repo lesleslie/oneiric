@@ -467,8 +467,8 @@ class TestDurableExecutionHooksCoverage:
         hooks = build_durable_execution_hooks(store)
 
         # Start the run first so finish_run (UPDATE) has a row to update
-        await hooks.on_run_start(run_id="r1", workflow_key="test-wf")  # ty: ignore[call-non-callable, invalid-await]
-        await hooks.on_run_error(run_id="r1", error="boom")  # ty: ignore[call-non-callable, invalid-await]
+        await hooks.on_run_start(run_id="r1", workflow_key="test-wf")  # ty: ignore[not-callable, invalid-await]
+        await hooks.on_run_error(run_id="r1", error="boom")  # ty: ignore[not-callable, invalid-await]
 
         with store._connection() as conn:
             row = conn.execute(
@@ -491,9 +491,9 @@ class TestDurableExecutionHooksCoverage:
         hooks = build_durable_execution_hooks(store)
 
         # Start a run and node first (INSERT), then skip (UPDATE)
-        await hooks.on_run_start(run_id="r1", workflow_key="test-wf")  # ty: ignore[call-non-callable, invalid-await]
-        await hooks.on_node_start(run_id="r1", node="step1")  # ty: ignore[call-non-callable, invalid-await]
-        await hooks.on_node_skip(run_id="r1", node="step1")  # ty: ignore[call-non-callable, invalid-await]
+        await hooks.on_run_start(run_id="r1", workflow_key="test-wf")  # ty: ignore[not-callable, invalid-await]
+        await hooks.on_node_start(run_id="r1", node="step1")  # ty: ignore[not-callable, invalid-await]
+        await hooks.on_node_skip(run_id="r1", node="step1")  # ty: ignore[not-callable, invalid-await]
 
         with store._connection() as conn:
             row = conn.execute(
@@ -514,9 +514,9 @@ class TestDurableExecutionHooksCoverage:
         store = WorkflowExecutionStore(tmp_path / "durable.sqlite")
         hooks = build_durable_execution_hooks(store)
 
-        await hooks.on_run_start(run_id="r1", workflow_key="test-wf")  # ty: ignore[call-non-callable, invalid-await]
-        await hooks.on_node_start(run_id="r1", node="step1")  # ty: ignore[call-non-callable, invalid-await]
-        await hooks.on_node_error(  # ty: ignore[call-non-callable, invalid-await]
+        await hooks.on_run_start(run_id="r1", workflow_key="test-wf")  # ty: ignore[not-callable, invalid-await]
+        await hooks.on_node_start(run_id="r1", node="step1")  # ty: ignore[not-callable, invalid-await]
+        await hooks.on_node_error(  # ty: ignore[not-callable, invalid-await]
             run_id="r1", node="step1", attempts=3, error="timeout"
         )
 

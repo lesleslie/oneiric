@@ -199,8 +199,8 @@ def test_register_entrypoint_plugins_returns_cached_report() -> None:
     resolver = Resolver()
     config = PluginsConfig(auto_load=False, entry_points=["some.group"])
     existing = _plugins.PluginRegistrationReport(registered=7)
-    resolver._oneiric_plugins_loaded = True  # ty: ignore[unresolved-attribute]
-    resolver._oneiric_plugin_report = existing  # ty: ignore[unresolved-attribute]
+    resolver._oneiric_plugins_loaded = True  # ty: ignore[missing-attribute]
+    resolver._oneiric_plugin_report = existing  # ty: ignore[missing-attribute]
 
     report = _plugins.register_entrypoint_plugins(resolver, config, skip_if_loaded=True)
     assert report.registered == 7
@@ -209,8 +209,8 @@ def test_register_entrypoint_plugins_returns_cached_report() -> None:
 def test_register_entrypoint_plugins_returns_empty_when_cached_is_not_report() -> None:
     resolver = Resolver()
     config = PluginsConfig(auto_load=False, entry_points=["some.group"])
-    resolver._oneiric_plugins_loaded = True  # ty: ignore[unresolved-attribute]
-    resolver._oneiric_plugin_report = "not-a-report"  # ty: ignore[unresolved-attribute]
+    resolver._oneiric_plugins_loaded = True  # ty: ignore[missing-attribute]
+    resolver._oneiric_plugin_report = "not-a-report"  # ty: ignore[missing-attribute]
 
     report = _plugins.register_entrypoint_plugins(resolver, config, skip_if_loaded=True)
     assert report.registered == 0

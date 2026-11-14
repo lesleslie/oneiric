@@ -312,7 +312,7 @@ async def _run_task_with_retry(
     async def _execute() -> Any:
         nonlocal attempts
         attempts += 1
-        return await task.runner()  # type: ignore[misc]  # ty: ignore[call-non-callable]
+        return await task.runner()  # type: ignore[misc]  # ty: ignore[not-callable]
 
     try:
         if config["max_attempts"] > 1:

@@ -87,7 +87,7 @@ class OpenAILLMAdapter(LLMBase):
 
     @property
     def settings(self) -> OpenAILLMSettings:
-        return self._settings  # ty: ignore[invalid-return-type]
+        return self._settings  # ty: ignore[invalid-explicit-return]
 
     async def init(self) -> None:
         self._logger.info("Initializing OpenAI LLM adapter")
