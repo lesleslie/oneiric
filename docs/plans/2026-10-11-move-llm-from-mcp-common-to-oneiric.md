@@ -677,6 +677,42 @@ Update any matches to the new factory paths.
 - Rollback signal: any consumer test suite fails after the import swap
 - Observability added: none
 
+**Status: implemented (2026-11-14), after the operator published oneiric
+0.36.0.** All three consumers swapped their imports, raised their `oneiric`
+floor to `>=0.36.0`, and regenerated their `uv.lock`
+(`uv lock --upgrade-package oneiric`). The fleet-wide `git grep` returns zero
+matches in all three repos.
+
+Phase 1b's mahavishnu half shipped with it: `settings/models.yaml` carries
+the `minimax.reasoning_effort` map, `resolve_minimax_reasoning_effort()` in
+`mahavishnu/core/model_routing.py` reads it, `_build_fallback_chain`
+injects it into `providers["minimax"]["reasoning_effort"]`, and
+`mahavishnu/CLAUDE.md` documents the three rules that matter (the
+`adaptive` sentinel, the `max` default behind a miss, and the absent "off"
+member). The map is keyed by the *resolved* model id, so a model renamed in
+`task_routing` must be renamed in `reasoning_effort` too — a miss is
+logged by the provider and costs the operator that model's provider default
+(`max` on `MiniMax-M3.1-Flash`).
+
+> **Ruling: the crackerjack test patches the class through the module under
+> test, not through the oneiric module path.** The plan's edit list said
+> "same swap" for `crackerjack/tests/adapters/test_provider_chain.py:85`,
+> which reads as `patch("oneiric.adapters.llm.fallback.FallbackChain.from_settings")`.
+> Measured 2026-11-14: that literal swap **fails**, and not because of the
+> move. Crackerjack's autouse reset fixture (`tests/conftest.py` →
+> `tests/conftest_reset.py:clear_oneiric_modules`) deletes every module
+> whose name starts with `oneiric` from `sys.modules` between tests. The
+> test module is imported at collection time, so `crackerjack.adapters.ai.unified`
+> captures the *first* `FallbackChain` class object; the test body's import
+> resolves to a *second* class object, created by the re-import the wipe
+> forces. The two are the same class by name and source file but not by
+> identity, so the patch lands on a class the code under test never calls.
+> The test therefore patches
+> `crackerjack.adapters.ai.unified.FallbackChain.from_settings` — the object
+> the production code actually holds, which the reset cannot invalidate.
+> *Cost if wrong:* one extra import in the test file; the alternative was a
+> test that cannot pass.
+
 ### Phase 5 — Docs cleanup + final validation
 
 **Edit:** `oneiric/CLAUDE.md` or `oneiric/docs/README.md` — add a one-line note under the adapters section: "`oneiric.adapters.llm` hosts the LLM subsystem (providers, fallback chain, settings); mcp-common no longer ships LLM or prompting code."
