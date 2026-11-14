@@ -34,7 +34,12 @@ from .file_transfer import (
 from .graph import ArangoDBGraphAdapter, DuckDBPGQAdapter, Neo4jGraphAdapter
 from .http import AioHTTPAdapter, HTTPClientAdapter
 from .identity import Auth0IdentityAdapter
-from .llm import AnthropicLLM, OpenAILLMAdapter
+from .llm import (
+    AnthropicLLM,
+    FallbackChain,
+    OpenAICompatibleProvider,
+    OpenAILLMAdapter,
+)
 from .messaging import (
     APNSPushAdapter,
     FCMPushAdapter,
@@ -118,6 +123,12 @@ def builtin_adapter_metadata() -> list[AdapterMetadata]:
         OpenAIEmbeddingAdapter.metadata,
         OpenAILLMAdapter.metadata,
         AnthropicLLM.metadata,
+        # The chaining layer and its transport, moved from ``mcp_common.llm``.
+        # Registered with low priority so an unqualified ``use("llm")``
+        # keeps resolving to the direct provider adapters above; they are
+        # reachable by explicit provider name.
+        FallbackChain.metadata,
+        OpenAICompatibleProvider.metadata,
         Auth0IdentityAdapter.metadata,
         EnvSecretAdapter.metadata,
         FileSecretAdapter.metadata,

@@ -251,6 +251,31 @@ Five phases. Each phase ends with the consumer-side smoke test for the affected 
 - Rollback signal: any consumer (mahavishnu, session-buddy, crackerjack) fails to import `FallbackChain` / `LLMSettings`
 - Observability added: none
 
+**Status: implemented (2026-11-14).** The six modules moved into
+`oneiric/adapters/llm/`, the package `__init__.py` re-exports them from
+same-package modules, both classes carry the `OneiricAdapter` conformance
+slice, and the new factory paths are registered in
+`oneiric/adapters/bootstrap.py`.
+
+Two decisions the plan did not pin down:
+
+1. **Factory paths use the colon form** — `oneiric.adapters.llm.fallback:
+   FallbackChain`, not the dotted `oneiric.adapters.llm.fallback.FallbackChain`
+   the Failure Condition spells out. `oneiric/core/security.py`'s
+   `FACTORY_PATTERN` *requires* `module.path: Name`; a dotted path is
+   rejected at resolution time with `Invalid factory format`. The dotted
+   spelling in the Failure Condition is prose shorthand for "the new path",
+   not a literal.
+2. **Both classes are zero-argument constructible.** The lifecycle manager
+   instantiates a candidate with `factory()` and no arguments
+   (`oneiric/core/lifecycle.py:_instantiate_candidate`), so a registration
+   whose class needs a `ProviderConfig` would explode the moment someone
+   resolved it by provider name. `OpenAICompatibleProvider(config=None)`
+   defers client construction to `init()`; `FallbackChain(providers=None)`
+   is an empty chain. Passing a configuration keeps the original eager
+   behaviour, including the constructor-time `ImportError` when `openai` is
+   not installed.
+
 ### Phase 1b — Carry a per-model thinking-depth policy through the moved provider
 
 **Why this phase is in this plan.** `mcp_common/llm/provider.py:99-111` builds
@@ -399,6 +424,24 @@ that the primary model's thinking is left to the model, and so a renamed
 model id surfaces as a logged configuration miss rather than as a quiet
 fall-through to the provider default.
 
+> **This half lands with Phase 4, not with Phase 1.** The field is declared
+> on *oneiric's* `ProviderConfig`. Until Phase 4 swaps mahavishnu's import,
+> mahavishnu still builds its providers from `mcp_common.llm.config.
+> ProviderConfig`, which is `extra: forbid` and does not know the key —
+> so adding `reasoning_effort:` to the shipped `settings/models.yaml`
+> makes that file **unloadable** by the shipped code:
+>
+> ```
+> ValidationError: reasoning_effort
+>   Extra inputs are not permitted [type=extra_forbidden]
+> ```
+>
+> Measured 2026-11-14 by loading the edited file through the current
+> `mcp_common.llm.config.LLMSettings`. The map therefore ships with the
+> import swap, and `mahavishnu/CLAUDE.md`'s thinking-depth note ships with
+> it too — that note documents live behaviour, and the behaviour is not
+> live until the swap lands.
+
 **Verification.**
 
 - `ProviderConfig` rejects `none` and `disabled` with a load-time error.
@@ -419,6 +462,16 @@ fall-through to the provider default.
 - Demonstrable by: `uv run pytest tests/ -k effort` exits 0 in oneiric; a mahavishnu worker call routed to `MiniMax-M3.1-Flash` returns a usage payload whose `completion_tokens_details.reasoning_tokens` is materially below the same call made without the map
 - Rollback signal: any MiniMax call returns `400` mentioning `reasoning.effort` or `requires adaptive thinking` — the field reached a model that rejects it
 - Observability added: the provider result carries `reasoning_effort`; a map miss logs a warning naming the unresolved model
+
+**Status: the oneiric half is implemented (2026-11-14); the mahavishnu
+half is deferred to Phase 4.** `ProviderConfig.reasoning_effort` is
+declared and validated at load time — `none` and `disabled` are rejected
+by name, and the message explains why (M3.1-Flash answers 400 for a
+disable request). The provider sends the field only for a resolved model
+that maps to a level, echoes the resolved policy in the result, and logs
+a configuration-miss warning naming the unresolved model. The operator map
+and the CLAUDE.md note ship with Phase 4 — see the note under
+"Operator config" above for the measurement that forces that ordering.
 
 ### Phase 2 — Delete `HailuoAdapter` and the mcp-common prompting stack
 
@@ -489,6 +542,9 @@ are created.
 - `mahavishnu/tests/unit/workers/test_cloud_worker.py:133,169,201,241` — same swap
 - `session-buddy/tests/unit/test_llm_providers_bifrost_router.py:89,133,168,208` — same swap
 - `crackerjack/tests/adapters/test_provider_chain.py:85` — same swap
+- `mahavishnu/settings/models.yaml` — add the `minimax.reasoning_effort` map (Phase 1b's operator half; it cannot land before the swap above, because the current `mcp_common` `ProviderConfig` rejects the key)
+- `mahavishnu/CLAUDE.md` — the task-to-model table gains a thinking-depth note (same reason: it documents live behaviour)
+- `crackerjack/pyproject.toml` — add the `openai` dependency. **Measured 2026-11-14:** crackerjack's venv has no `openai` installed, and `crackerjack/adapters/ai/unified.py`'s `FallbackChainCodeFixer._initialize_client()` calls `FallbackChain.from_settings(...)`, which constructs an `OpenAICompatibleProvider`, which imports the SDK. The path therefore raises `ImportError: openai package required for OpenAICompatibleProvider` **today**, before the move — the move does not break it, but it does not fix it either, and the old hint (`pip install mcp-common[llm]`) names a group mcp-common no longer has. mahavishnu (`openai>=3.26.0`) and session-buddy (`openai>=2.41.0`) already declare the SDK.
 
 **Raise the `oneiric` dependency floor in all three consumers — this is not optional.**
 The import swap introduces a dependency on a module that does not exist in
@@ -548,7 +604,20 @@ Update any matches to the new factory paths.
 
 **Edit:** `oneiric/CLAUDE.md` or `oneiric/docs/README.md` — add a one-line note under the adapters section: "`oneiric.adapters.llm` hosts the LLM subsystem (providers, fallback chain, settings); mcp-common no longer ships LLM or prompting code."
 
-**Regenerate** `oneiric/docs/plans/PLAN_INDEX.md` via `uv run python scripts/regenerate_plan_index.py` — the plan was renamed, so the index entry path changes. Verify the regenerated entry picks up the revised title.
+**Regenerate** `oneiric/docs/plans/PLAN_INDEX.md` — the plan was renamed, so
+the index entry path changes. Verify the regenerated entry picks up the
+revised title.
+
+> **Use `crackerjack.tools.plan_index_sync`, not
+> `scripts/regenerate_plan_index.py`.** Measured 2026-11-14: the committed
+> index carries the header *"Regenerated 2026-11-14 by
+> `crackerjack.tools.plan_index_sync` (phase)"*, and running the
+> `scripts/` variant replaces the whole file with a **different document
+> schema** (a 2026-07-16 frontmatter + authority-matrix layout, 94
+> insertions / 16 deletions). The two generators are not interchangeable;
+> the `scripts/` one is stale. Phase 1 needed no regeneration at all —
+> the plan's title, status, role, and topic are unchanged, so the index
+> entry is unchanged.
 
 **Final validation across all affected repos:**
 - `uv sync` in oneiric, mcp-common, session-buddy, crackerjack, mahavishnu
@@ -591,6 +660,10 @@ Update any matches to the new factory paths.
 8. **The two request paths do not share an effort mechanism.** The worker path (Phase 1b) sends `reasoning_effort` on the OpenAI-compatible surface, where the field name is native on both sides of the Bifrost gateway. The Claude Code path is a different surface with a different field name and a bridge in between — see the coordination note below before designing per-slot effort on that path.
 9. **A consumer can resolve an oneiric that lacks the moved code.** The import swap in Phase 4 fails at import time, not at test time, and only for environments whose lockfile resolves an older oneiric. The floors are raised in the same change (Phase 4), but the raise makes `uv sync` unsatisfiable until the carrying version is published — so an unlocked environment is broken until the publish lands. Mitigation: raise the floors and regenerate the locks in one commit per consumer, after the publish; do not merge a consumer's import swap ahead of its floor bump.
 10. **The moved classes must satisfy the `OneiricAdapter` protocol, and neither does today.** `FallbackChain` and `OpenAICompatibleProvider` both lack `metadata`, `init`, `health`, and `cleanup`; the provider also names its liveness method `health_check` where the protocol says `health`. Mitigation: Phase 1 adds the conformance slice and registers the new factory paths; the public `health_check` method is kept as-is and `health()` delegates to it.
+11. **A *published* package outside the audited repos imports `mcp_common.llm`.** The consumer audit swept all 29 local repos' *source*, and found crackerjack's `crackerjack/adapters/ai/unified.py:8` — which Phase 4 fixes. But the *installed* crackerjack wheel in mcp-common's own venv imports the same module, so deleting `mcp_common/llm/` from mcp-common breaks **mcp-common's own tooling**: `crackerjack run` cannot even import its CLI (measured 2026-11-14 —
+    `ModuleNotFoundError: No module named 'mcp_common.llm'` at
+    `crackerjack/cli/handlers/provider_selection.py` →
+    `crackerjack/adapters/ai/unified.py:8`). Mitigation: the publish order already puts mcp-common last, so mcp-common's *release* is safe; what breaks is mcp-common's *local* venv, and it heals when mcp-common's `uv sync --upgrade` picks up the republished crackerjack. Concretely: **crackerjack must be published before mcp-common is published**, or every environment with an older crackerjack and a newer mcp-common fails at `import crackerjack`.
 
 ## References
 
@@ -617,12 +690,15 @@ Update any matches to the new factory paths.
 | 5. Docs + index regeneration + final validation | 15 min |
 | **Total** | ~3.5 hr |
 
-Phases 2 and 3 shipped on 2026-11-14; the remaining work is Phase 1, Phase 1b,
-Phase 4, and Phase 5.
+Phases 2 and 3 shipped on 2026-11-14. Phase 1 and Phase 1b's oneiric half
+shipped on 2026-11-14; the remaining work is Phase 4 (blocked on a published
+oneiric version carrying the moved code), Phase 5, and Phase 1b's operator
+half, which travels with Phase 4.
 
 ## Coordination notes
 
 - **Push order is critical.** oneiric first (so consumers can pull the new code), then session-buddy + crackerjack + mahavishnu (so they reference the new locations), then mcp-common last (it deletes the old locations, and any consumer that hasn't updated yet breaks at import time).
+- **The publish order has one extra link the source audit could not see.** The *published* crackerjack wheel imports `mcp_common.llm`, so crackerjack must be **published** before mcp-common is published — not merely merged. The full chain is: oneiric (carrying the moved code) → crackerjack → session-buddy + mahavishnu → mcp-common.
 - **The `BodaiAdapter` Protocol session is in flight.** Confirm the protocol's structural shape with that session before Phase 1; if the shape is finalized, the moved classes can be patched in lockstep.
 - **Per `feedback-keep-plan-files-tracked.md`:** when committing, run `git add docs/plans/2026-10-11-move-llm-from-mcp-common-to-oneiric.md docs/plans/PLAN_INDEX.md` first to land the plan atomically.
 - **`PLAN_INDEX.md` is auto-regenerated** by `scripts/regenerate_plan_index.py`. Regenerate it rather than hand-editing; verify the regeneration picks up the renamed path and the revised frontmatter.
