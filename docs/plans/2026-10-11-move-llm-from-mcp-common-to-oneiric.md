@@ -76,6 +76,7 @@ consumers in lockstep, ship.
 9. `session-buddy/docs/developer/PROMPTING_ADAPTER_QUICK_REFERENCE.md` carries frontmatter `status: complete` + `role: superseded` + `superseded_by: ext:oneiric/docs/plans/2026-10-11-move-llm-from-mcp-common-to-oneiric.md`, and the duplicate root copy `session-buddy/PROMPTING_ADAPTER_QUICK_REFERENCE.md` is removed.
 10. `mahavishnu/tests/unit/test_apple_script_bridge_conformance.py` is deleted (it tested the removed `mcp_common.apple_script` bridge).
 11. The `OneiricAdapterRegistry` registrations for the moved classes use the new factory paths (`oneiric.adapters.llm.fallback.FallbackChain`).
+12. `oneiric.adapters.llm.config.ProviderConfig` exposes a `reasoning_effort` map whose values are limited to `{adaptive, low, medium, high, xhigh, max}`. A value of `none` or `disabled` is rejected at load time, and no configuration can disable thinking. `oneiric.adapters.llm.provider.OpenAICompatibleProvider.execute` sends `reasoning_effort` only for a resolved model that maps to an effort level — a model mapped to `adaptive`, or absent from the map, sends no such field.
 
 ## Context
 
@@ -226,6 +227,175 @@ Five phases. Each phase ends with the consumer-side smoke test for the affected 
 - Rollback signal: any consumer (mahavishnu, session-buddy, crackerjack) fails to import `FallbackChain` / `LLMSettings`
 - Observability added: none
 
+### Phase 1b — Carry a per-model thinking-depth policy through the moved provider
+
+**Why this phase is in this plan.** `mcp_common/llm/provider.py:99-111` builds
+the provider request from a fixed allowlist — `model`, `messages`,
+`max_tokens`, `temperature`, and (per call) `extra_headers`. There is no way
+for an operator or a caller to ask MiniMax for a different *thinking depth*.
+The file is being relocated in Phase 1 anyway, and the move is a hard break
+with no shims, so adding the passthrough during the move touches the file
+once instead of twice — once now, and once again in a follow-up change that
+would have to cross the mcp-common → oneiric boundary a second time.
+
+**The measured facts this rests on** (2026-11-14, MiniMax's own API,
+`/v1/chat/completions`, three runs per cell, one fixed prompt):
+
+| Model | `reasoning_effort` sent | Reasoning tokens (median of 3) | Verdict |
+|---|---|---|---|
+| `MiniMax-M3` | omitted | 285 | baseline |
+| `MiniMax-M3` | `low` | 197 | **accepted and ignored** |
+| `MiniMax-M3` | `medium` | 194 | **accepted and ignored** |
+| `MiniMax-M3` | `high` | 210 | **accepted and ignored** |
+| `MiniMax-M3` | `xhigh` | 274 | **accepted and ignored** |
+| `MiniMax-M3` | `max` | 219 | **accepted and ignored** |
+| `MiniMax-M3.1-Flash` | omitted | 102 | the default is `max` — the most expensive setting |
+| `MiniMax-M3.1-Flash` | `low` | 75 | **honored**, and reliably the cheapest |
+| `MiniMax-M3.1-Flash` | `medium` | 84 | honored, but the levels blur on a short prompt |
+| `MiniMax-M3.1-Flash` | `high` | 89 | honored, blurred |
+| `MiniMax-M3.1-Flash` | `xhigh` | 80 | honored, blurred |
+| `MiniMax-M3.1-Flash` | `max` | 160 | honored, blurred |
+
+Every `MiniMax-M3` cell overlaps the baseline: on that model the field
+reaches the API and changes nothing — the depth is the model's own adaptive
+choice. `MiniMax-M3.1-Flash` honors it. On a *real* workload the ladder
+separates cleanly (AIHubMix, three runs per level, same task): `low`
+344–812, `medium` 970–2,488, `high` 2,194–3,673, `xhigh` 1,019–2,562, `max`
+2,612–6,246, omitted 4,284–9,376 — with `omitted` behaving like `max`,
+matching MiniMax's documentation. The blur above `low` in the table above is
+a property of the one-line prompt the probe used, not of the ladder.
+
+Two error paths, both measured:
+
+| Request | Result |
+|---|---|
+| `MiniMax-M3` + `thinking: {"type": "disabled"}` | `200`, `reasoning_tokens: 0` |
+| `MiniMax-M3.1-Flash` + `thinking: {"type": "disabled"}` | `400` — `model "MiniMax-M3.1-Flash" requires adaptive thinking; thinking.type="disabled" (including reasoning.effort=none) is not allowed (2013)` |
+| `MiniMax-M3.1-Flash` + `reasoning_effort: "none"` | `400`, same message |
+
+**The decision this encodes.**
+
+1. **Thinking is never disabled.** `MiniMax-M3` *can* be (it answers
+   directly, at zero reasoning tokens) and `MiniMax-M3.1-Flash` *cannot* (it
+   400s). Neither is reachable from configuration: the value vocabulary below
+   has no "off" member.
+2. **`MiniMax-M3` keeps its adaptive thinking** and receives **no** effort
+   field. The field is a no-op there, and sending it would advertise a
+   control that does not exist.
+3. **`MiniMax-M3.1-Flash` is pinned to `low`.** It defaults to `max`, and
+   this fleet routes it as the *latency* bucket (`SWARM`, `QUICK`,
+   `AGENT_LOOP`, `CREATIVE`, `GENERAL` in `mahavishnu/settings/models.yaml`).
+   Left unset, the cheapest route is the most expensive setting on the
+   provider.
+
+**Config surface — `oneiric/adapters/llm/config.py`.** `ProviderConfig` is
+`extra: forbid`, so the new field is declared explicitly:
+
+```python
+#: Per-model thinking-depth policy, keyed by the *resolved* model id.
+#:
+#: Values are the effort levels MiniMax's OpenAI-compatible endpoint accepts
+#: -- ``low``, ``medium``, ``high``, ``xhigh``, ``max`` -- plus the sentinel
+#: ``adaptive``, which means "send no effort field; the model chooses its
+#: own depth".
+#:
+#: The sentinel is a first-class member rather than an absent key so that
+#: every model the provider can serve is accounted for. A model missing from
+#: the map is a configuration miss and is logged as such: on
+#: ``MiniMax-M3.1-Flash`` a miss silently means the provider default, which
+#: is ``max``.
+#:
+#: There is deliberately no "off" member. Thinking is never disabled:
+#: ``MiniMax-M3.1-Flash`` answers 400 for a disable request, and
+#: ``MiniMax-M3`` answering without thinking is a decision no operator
+#: configuration should be able to make.
+reasoning_effort: dict[str, str] = {}
+```
+
+Validation rejects any value outside `{adaptive, low, medium, high, xhigh,
+max}` at load time, with an error that names the cause. `none` and `disabled`
+are called out by name in that message, because on `MiniMax-M3.1-Flash` both
+are `400`s rather than inert values.
+
+**Provider surface — `oneiric/adapters/llm/provider.py`.** In `execute()`,
+after `model = self._resolve_model(task)`:
+
+```python
+create_kwargs: dict[str, Any] = {
+    "model": model,
+    "messages": task["messages"],
+    "max_tokens": task.get("max_tokens", 4096),
+    "temperature": task.get("temperature", 0.7),
+}
+effort = self._config.reasoning_effort.get(model)
+if effort is None:
+    if self._config.reasoning_effort:
+        logger.warning(
+            "Provider %s: model %s has no reasoning_effort entry; "
+            "the provider default applies",
+            self.name,
+            model,
+        )
+elif effort != "adaptive":
+    create_kwargs["reasoning_effort"] = effort
+```
+
+`reasoning_effort` is the native OpenAI Chat Completions field name and the
+same name MiniMax's `/v1/chat/completions` accepts, so on the **direct**
+path it needs no translation — that is what the measurements above were
+taken against. The worker may instead resolve the MiniMax provider onto the
+Bifrost gateway (`_resolve_minimax_endpoint` in
+`mahavishnu/workers/cloud_worker.py`), where the request crosses one more
+hop. The field is standard on the OpenAI chat-completions surface there
+too, but a hop is exactly where a field can be silently dropped, so the
+verification list asserts the field survives the hop rather than assuming
+the direct-path result carries over.
+
+The lookup key is the **resolved** model, so the provider's `task_routing`
+still decides which model answers; the map only says how deep that model
+should think. The `adaptive` sentinel sends no field at all, which is what
+keeps `MiniMax-M3` (and `llama_server`, whose provider entry carries an
+empty map) byte-identical to today's requests.
+
+The resolved effort is echoed in the returned dict as `reasoning_effort`
+(additive key) so a caller can tell a delivered setting from a silent no-op.
+
+**Operator config — `mahavishnu/settings/models.yaml`.** The map is
+operator-facing, alongside `task_routing`:
+
+```yaml
+minimax:
+  reasoning_effort:
+    MiniMax-M3: adaptive
+    MiniMax-M3.1-Flash: low
+```
+
+`MiniMax-M3` appears with the `adaptive` sentinel so the file states plainly
+that the primary model's thinking is left to the model, and so a renamed
+model id surfaces as a logged configuration miss rather than as a quiet
+fall-through to the provider default.
+
+**Verification.**
+
+- `ProviderConfig` rejects `none` and `disabled` with a load-time error.
+- A task routed to `MiniMax-M3.1-Flash` sends `reasoning_effort="low"`.
+- A task routed to `MiniMax-M3` sends **no** `reasoning_effort` key.
+- A resolved model absent from the map logs the configuration-miss warning
+  and sends no field.
+- The `llama_server` provider sends no field.
+- Through the Bifrost gateway (`via_gateway=True`), a request routed to
+  `MiniMax-M3.1-Flash` still carries `reasoning_effort` upstream. Assert it
+  against a live gateway call or the gateway's request log — do not carry the
+  direct-path result over by assumption.
+
+**Integration Contract:**
+
+- Triggered from: Phase 1 complete (the moved provider is in place)
+- Returns to / updates: `oneiric/adapters/llm/config.py` (new field + validator), `oneiric/adapters/llm/provider.py` (passthrough + echoed key), `mahavishnu/settings/models.yaml` (effort map), `mahavishnu/CLAUDE.md` (the task-to-model table gains a thinking-depth note)
+- Demonstrable by: `uv run pytest tests/ -k effort` exits 0 in oneiric; a mahavishnu worker call routed to `MiniMax-M3.1-Flash` returns a usage payload whose `completion_tokens_details.reasoning_tokens` is materially below the same call made without the map
+- Rollback signal: any MiniMax call returns `400` mentioning `reasoning.effort` or `requires adaptive thinking` — the field reached a model that rejects it
+- Observability added: the provider result carries `reasoning_effort`; a map miss logs a warning naming the unresolved model
+
 ### Phase 2 — Delete `HailuoAdapter` and the mcp-common prompting stack
 
 The original plan moved `HailuoAdapter` to `oneiric/adapters/video/` and the
@@ -343,6 +513,8 @@ Update any matches to the new factory paths.
 7. **No ADR change.** ADR 0002 (Oneiric Adapter Contract) is canonical and unaffected — the contract is about shape, not location.
 8. **No `pyproject.toml` version bumps.** Per `feedback-mcp-common-version-bump-is-user.md`. The user does all version bumps.
 9. **No spec doc.** This is a code-move plus a deletion; the design is implicit in the package layout.
+10. **The moved provider carries a per-model thinking-depth policy.** `reasoning_effort` is plumbed in during the move rather than after it — the file is being rewritten anyway, and the policy has to cross the mcp-common → oneiric boundary exactly once. The value vocabulary has no "off" member: no operator configuration may disable thinking.
+11. **`MiniMax-M3` is configured `adaptive` and `MiniMax-M3.1-Flash` is configured `low`.** Measured against MiniMax's API on 2026-11-14: the effort field is a no-op on `MiniMax-M3` (every level's reasoning-token count overlaps the no-field baseline), and `MiniMax-M3.1-Flash` defaults to `max` — so leaving the latency bucket unset would make the cheapest route the most expensive setting on the provider.
 
 ## Risks
 
@@ -352,6 +524,8 @@ Update any matches to the new factory paths.
 4. **The `llm` dependency-group in `mcp-common/pyproject.toml`** may declare `httpx2` as an optional dep. With `mcp_common/llm/` gone, that group should come out too — audit in Phase 5. (Note: `mcp_common/llm/` is itself excluded from coverage as an optional-dep module, so its *tests* may not run in CI; verify the moved tests still execute under oneiric's CI.)
 5. **Deleting the coverage omit entry and the low-coverage modules moves the coverage baseline.** `mcp_common/apple_script/bridge.py` (52.63%) and `exceptions.py` (50.00%) were measured and sub-95%; removing them should *raise* the ratio, but the ratchet must be re-measured and the memo amended per its own decision rule.
 6. **Cross-repo push coordination.** Per `feedback-bodai-push-is-user-controlled.md`, the user does all `git push`. This plan lands in 5 repos (oneiric, mcp-common, session-buddy, crackerjack, mahavishnu). The user must push them in a coordinated order — oneiric first (so consumers can pull the new code), then consumers, then mcp-common last (since removing `mcp_common/llm` breaks any repo that hasn't updated).
+7. **A renamed model id silently drops the effort policy.** The map is keyed by model id, so a MiniMax rename leaves the key unmatched — and on `MiniMax-M3.1-Flash` an unmatched key means the provider default, which is `max`. Mitigation: the provider logs a configuration-miss warning naming the unresolved model, and `mahavishnu/settings/models.yaml` lists `MiniMax-M3` explicitly with the `adaptive` sentinel, so both known models are accounted for rather than one of them relying on absence.
+8. **The two request paths do not share an effort mechanism.** The worker path (Phase 1b) sends `reasoning_effort` on the OpenAI-compatible surface, where the field name is native on both sides of the Bifrost gateway. The Claude Code path is a different surface with a different field name and a bridge in between — see the coordination note below before designing per-slot effort on that path.
 
 ## References
 
@@ -371,11 +545,12 @@ Update any matches to the new factory paths.
 | Phase | Effort |
 |---|---|
 | 1. Move LLM code to `oneiric.adapters.llm` | 30 min |
+| 1b. Per-model thinking-depth policy (config field + provider passthrough + operator map) | 30 min |
 | 2. Delete `HailuoAdapter` + prompting stack + backends + AppleScript | 30 min |
 | 3. Archive the decision doc; delete the orphaned conformance test | 15 min |
 | 4. Update consumers (mahavishnu, session-buddy, crackerjack) | 30 min |
 | 5. Docs + index regeneration + final validation | 15 min |
-| **Total** | ~2 hr |
+| **Total** | ~2.5 hr |
 
 ## Coordination notes
 
@@ -383,3 +558,5 @@ Update any matches to the new factory paths.
 - **The `BodaiAdapter` Protocol session is in flight.** Confirm the protocol's structural shape with that session before Phase 1; if the shape is finalized, the moved classes can be patched in lockstep.
 - **Per `feedback-keep-plan-files-tracked.md`:** when committing, run `git add docs/plans/2026-10-11-move-llm-from-mcp-common-to-oneiric.md docs/plans/PLAN_INDEX.md` first to land the plan atomically.
 - **`PLAN_INDEX.md` is auto-regenerated** by `scripts/regenerate_plan_index.py`. Regenerate it rather than hand-editing; verify the regeneration picks up the renamed path and the revised frontmatter.
+- **The Bifrost gateway's Claude Code path is a separate mechanism, and its effort story is unverified.** The worker path in Phase 1b sends `reasoning_effort` on the OpenAI-compatible surface, where the field name is native on both sides of the gateway. The Claude Code path is different: Claude Code talks to Bifrost's Anthropic ingress (`/anthropic/v1/messages`), which bridges every request into Bifrost's Responses shape before re-encoding it. Anthropic's `output_config.effort` has no representation in the Responses schema unless the bridge maps it, and `mahavishnu/config/bifrost/README.md` records that *"Anthropic fields with no representation in the Responses schema are dropped by the bridge rather than passed through."* Whether `output_config.effort` survives is **unverified** — the probe was blocked by the credential classifier in the session that gathered the Phase 1b measurements, so it needs a run in non-auto mode.
+  Confirm it before designing a per-slot effort policy (for example: the Sonnet slot is `MiniMax-M3.1-Flash` at a higher effort, the Haiku slot at a lower one). The answer decides whether such a policy can be expressed gateway-side at all, or whether the slot differentiation has to stay model-based (`MiniMax-M3` for the reasoning slot, `MiniMax-M3.1-Flash` for the fast one). Note also that the gateway's alias table and its slot defaults currently disagree — the alias maps `claude-sonnet-*` onto `MiniMax-M3.1-Flash` while the slot default is `MiniMax-M3`, so a client that names `claude-sonnet-5-5` explicitly gets the *weaker* model than one that simply uses the Sonnet slot. Whichever way the effort question lands, those two should agree. This is Bifrost configuration work in `mahavishnu`, not part of this move.
