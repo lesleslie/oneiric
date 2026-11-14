@@ -79,7 +79,7 @@ class TestQueueProviderSelection:
 
         This is what the pin exists to prevent. Asserted as "not the pinned
         provider" rather than against a specific priority so the test does
-        not churn when adapter priorities are retuned.
+        not churn when adapter priorities are returned.
         """
         candidate = _resolver().resolve(ADAPTER_DOMAIN, QUEUE_KEY)
         assert candidate is not None

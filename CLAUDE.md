@@ -10,7 +10,7 @@ Oneiric is a **universal resolution layer** for pluggable components with hot-sw
 
 **Status:** Production Ready (0.35.0) — hardened for controlled deployment. See `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for the most recent comprehensive audit, and `docs/ONEIRIC_VS_ACB.md` for comparison with ACB and migration strategy.
 
-**Current state:** 4531 tests passing, 94% coverage — a +15pp margin over the 79% coverage ratchet baseline.
+**Current state:** 4730 tests passing, 95% coverage — a +1pp margin over the 94% ratchet floor.
 
 **Python Version:** 3.14+ (async-first, modern type hints) — matches `requires-python = ">=3.14"` in `pyproject.toml`.
 
@@ -172,15 +172,15 @@ This project uses **Zuban** (via Crackerjack) for ultra-fast type checking. Due 
 
 **Important**: Do NOT add `[tool.zuban]` or `[tool.mypy]` to `pyproject.toml` - this will cause parsing errors. All type checking config must be in `mypy.ini`.
 
-**Note:** Comprehensive test suite with 4218 passing tests and 96% coverage. Security hardening complete (all P0 vulnerabilities resolved). See `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for detailed quality assessment.
+**Note:** Comprehensive test suite with 4730 passing tests and 95% coverage. Security hardening complete (all P0 vulnerabilities resolved). See `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for detailed quality assessment.
 
 ### Testing
 
 **Test Suite Overview:**
 
-- **Total:** 4218 passing tests (plus 17 skipped, 1 xfailed) across 210 test files
-- **Coverage:** 96% (coverage ratchet baseline: 79%)
-- **Test Categories:** by directory — `tests/adapters/` (83 files), `tests/unit/` (25), `tests/core/` (22), `tests/runtime/` (17), `tests/actions/` (11), `tests/domains/` (10), `tests/remote/` (9), `tests/integration/` (6), `tests/security/` (5), `tests/shell/` (5), `tests/cli/` (3), `tests/benchmarks/` (1)
+- **Total:** 4730 passing tests (plus 16 skipped, 2 xfailed) across 247 test files
+- **Coverage:** 95% (ratchet floor 94%)
+- **Test Categories:** by directory — `tests/adapters/` (100 files), `tests/unit/` (37), `tests/core/` (19), `tests/runtime/` (17), `tests/actions/` (11), `tests/domains/` (10), `tests/remote/` (9), `tests/integration/` (13), `tests/mcp/` (6), `tests/security/` (5), `tests/shell/` (5), `tests/cli/` (4), `tests/benchmarks/` (1), plus 10 top-level test modules
 - **Timeout:** 600s (10 minutes) configured in `[tool.crackerjack]`
 
 **Quick Start with Makefile:**

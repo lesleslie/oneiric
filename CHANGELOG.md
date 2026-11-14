@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.36.0] - 2026-11-14
+
+### Changed
+
+- Docs/narrow-llm-move-plan -> main
+- Feature/move-llm-from-mcp-common -> main
+- Fix/llm-address-parsing -> main
+- Fix/llm-transport-hardening -> main
+
+### Fixed
+
+- adapters: Pin the queue provider so registration cannot repoint the slot
+- deps: Add a 7-day dependency cooldown with CVE and tooling carve-outs
+- deps: Hold redis on a stable release so fakeredis can construct its client
+- docs: Sync the version stamps to 0.35.0
+- lint: Rename stale ty ignore rules to their current names
+
+### Documentation
+
+- adapters: Keep the lavinmq LaunchAgent, do not switch to brew services
+- Add the per-model thinking-depth policy to the LLM move plan
+- claude-md: Correct the stale test count and coverage margin
+- plan: Resolve the protocol item and add the missing floor bump
+
+### Internal
+
+- deps: Raise the mcp-common floor to 0.35.0
+- deps: Raise the mcp-common floor to 0.36.0
+
 ## [Unreleased]
 
 ### Fixed
