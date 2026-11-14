@@ -185,14 +185,38 @@ these are not vestigial):
 > (tracked files only) run in one repo, and the plan's own risk #1 predicted
 > exactly this miss. Any re-audit must sweep **all** fleet repos, not one.
 
-### Coordination with the in-flight `BodaiAdapter` Protocol session
+### Coordination with the `BodaiAdapter` Protocol session
 
-That session is extracting a fleet-wide adapter Protocol (one per category) — `BodaiAdapter` shape: `name`, `capabilities`, `init`, `health_check`, `execute`, `shutdown`. If it lands before this plan, the moved classes must satisfy the protocol's structural shape. The decision rule:
+**The protocol has landed.** `oneiric/adapters/protocol.py` defines
+`OneiricAdapter` (a `@runtime_checkable` `Protocol`), and conformance is
+*structural* — no inheritance is required, a class qualifies by having the
+right shape. The required shape is:
 
-- **`FallbackChain`**: currently standalone (not extending any base). Confirm it satisfies the protocol via duck typing; if not, add the missing methods before Phase 1.
-- **`LLMSettings` / `ProviderConfig`**: settings classes, not adapters. They're dependencies of the adapter classes, not adapters themselves — no conformance check needed.
+| Member | Kind | Note |
+|---|---|---|
+| `metadata` | class-level `AdapterMetadata` | declares slot, provider, capabilities, factory, settings model, priority |
+| `init()` | `async -> None` | warm up clients/pools; tolerate repeat calls across hot-swap |
+| `health()` | `async -> bool` | **never raises** — catch transport errors, log, return `False` |
+| `cleanup()` | `async -> None` | idempotent; release clients, close pools, drop locks |
 
-If the protocol session hasn't landed, the classes still move; conformance can be added in a follow-up.
+**Neither moved class conforms today** (measured 2026-11-14 against
+`mcp_common/llm/`):
+
+- `FallbackChain` has `__init__` / `from_settings` / `execute` — no `metadata`, no `init`, no `health`, no `cleanup`.
+- `OpenAICompatibleProvider` has `__init__` / `_resolve_model` / `execute` / `health_check` — it has a liveness method but it is named **`health_check`**, not `health`, and there is no `init`, no `cleanup`, no `metadata`.
+
+The original decision rule ("if not, add the missing methods before Phase 1")
+therefore resolves to: **the conformance methods land in Phase 1**, not in a
+follow-up. Concretely, Phase 1 grows:
+
+- `FallbackChain.metadata` (an `AdapterMetadata` instance) plus `init()` / `health()` / `cleanup()`.
+- `OpenAICompatibleProvider.metadata` plus `init()` / `health()` / `cleanup()`. Its existing `health_check()` is already the right behaviour — it returns `bool` and swallows transport errors — so `health()` can delegate to it rather than duplicating it. **Do not rename `health_check`**: it is a public method on a class three repos call.
+- Registrations in `oneiric/adapters/bootstrap.py` under the new factory paths (Failure Condition 11 already anticipates this).
+
+`LLMSettings` / `ProviderConfig` are settings classes, not adapters — they
+are dependencies of the adapter classes, not adapters themselves, and need
+no conformance check.
+
 
 ## Approach
 
@@ -466,6 +490,45 @@ are created.
 - `session-buddy/tests/unit/test_llm_providers_bifrost_router.py:89,133,168,208` — same swap
 - `crackerjack/tests/adapters/test_provider_chain.py:85` — same swap
 
+**Raise the `oneiric` dependency floor in all three consumers — this is not optional.**
+The import swap introduces a dependency on a module that does not exist in
+any currently published oneiric. Measured 2026-11-14:
+
+| Consumer | Declared floor | Locked version | Has `oneiric/adapters/llm/fallback.py`? |
+|---|---|---|---|
+| `mahavishnu` | `oneiric>=0.34.0` | `0.35.0` | **no** |
+| `session-buddy` | `oneiric>=0.33` | `0.35.0` | **no** |
+| `crackerjack` | `oneiric>=0.33` | `0.35.0` | **no** |
+
+oneiric's current version is `0.35.0`, and the installed wheel in all three
+consumer venvs has no `fallback.py` / `provider.py` / `config.py` under
+`adapters/llm/`. A consumer that swaps the import without raising its
+floor can legitimately resolve to an oneiric without the moved code and
+fail at import time — a hard `ImportError` that no test in that consumer
+would have caught before the swap.
+
+So Phase 4 edits, in each consumer's `pyproject.toml`:
+- `mahavishnu`: `oneiric>=0.34.0` → `oneiric>=<version carrying the moved code>`
+- `session-buddy`: `oneiric>=0.33` → `oneiric>=<version carrying the moved code>`
+- `crackerjack`: `oneiric>=0.33` → `oneiric>=<version carrying the moved code>`
+
+and each consumer's `uv.lock` is regenerated (`uv lock --upgrade-package oneiric`).
+**The floor value is the operator's call** — per
+`feedback-mcp-common-version-bump-is-user.md` the version bump on oneiric
+itself is the user's — so Phase 4 cannot be executed until the operator
+names the version that carries the moved code.
+
+**Sequencing.** Raising the floor makes `uv sync` unsatisfiable until that
+oneiric version is published. The order is therefore:
+
+1. Phase 1 lands in oneiric (code + conformance + Phase 1b).
+2. The operator publishes oneiric at the version carrying the moved code.
+3. Phase 4 swaps the imports, raises the floors, and regenerates the locks.
+
+The plan's existing push-order note covers repository push order; this is
+the PyPI publish gate that sits in front of it.
+
+
 **Run after edits:** `git grep -nE "from mcp_common\.llm|from mcp_common\.prompting|from mcp_common\.backends|from mcp_common\.apple_script" -- '*.py'` across the fleet. Must return zero matches.
 
 **Edit oneiric catalog registrations (if any exist):** the oneiric catalog may have registrations for these classes under the old factory paths. Audit by:
@@ -526,6 +589,8 @@ Update any matches to the new factory paths.
 6. **Cross-repo push coordination.** Per `feedback-bodai-push-is-user-controlled.md`, the user does all `git push`. This plan lands in 5 repos (oneiric, mcp-common, session-buddy, crackerjack, mahavishnu). The user must push them in a coordinated order — oneiric first (so consumers can pull the new code), then consumers, then mcp-common last (since removing `mcp_common/llm` breaks any repo that hasn't updated).
 7. **A renamed model id silently drops the effort policy.** The map is keyed by model id, so a MiniMax rename leaves the key unmatched — and on `MiniMax-M3.1-Flash` an unmatched key means the provider default, which is `max`. Mitigation: the provider logs a configuration-miss warning naming the unresolved model, and `mahavishnu/settings/models.yaml` lists `MiniMax-M3` explicitly with the `adaptive` sentinel, so both known models are accounted for rather than one of them relying on absence.
 8. **The two request paths do not share an effort mechanism.** The worker path (Phase 1b) sends `reasoning_effort` on the OpenAI-compatible surface, where the field name is native on both sides of the Bifrost gateway. The Claude Code path is a different surface with a different field name and a bridge in between — see the coordination note below before designing per-slot effort on that path.
+9. **A consumer can resolve an oneiric that lacks the moved code.** The import swap in Phase 4 fails at import time, not at test time, and only for environments whose lockfile resolves an older oneiric. The floors are raised in the same change (Phase 4), but the raise makes `uv sync` unsatisfiable until the carrying version is published — so an unlocked environment is broken until the publish lands. Mitigation: raise the floors and regenerate the locks in one commit per consumer, after the publish; do not merge a consumer's import swap ahead of its floor bump.
+10. **The moved classes must satisfy the `OneiricAdapter` protocol, and neither does today.** `FallbackChain` and `OpenAICompatibleProvider` both lack `metadata`, `init`, `health`, and `cleanup`; the provider also names its liveness method `health_check` where the protocol says `health`. Mitigation: Phase 1 adds the conformance slice and registers the new factory paths; the public `health_check` method is kept as-is and `health()` delegates to it.
 
 ## References
 
@@ -544,13 +609,16 @@ Update any matches to the new factory paths.
 
 | Phase | Effort |
 |---|---|
-| 1. Move LLM code to `oneiric.adapters.llm` | 30 min |
+| 1. Move LLM code to `oneiric.adapters.llm` + `OneiricAdapter` conformance slice | 60 min |
 | 1b. Per-model thinking-depth policy (config field + provider passthrough + operator map) | 30 min |
 | 2. Delete `HailuoAdapter` + prompting stack + backends + AppleScript | 30 min |
 | 3. Archive the decision doc; delete the orphaned conformance test | 15 min |
-| 4. Update consumers (mahavishnu, session-buddy, crackerjack) | 30 min |
+| 4. Update consumers (mahavishnu, session-buddy, crackerjack) + raise the `oneiric` floor | 45 min |
 | 5. Docs + index regeneration + final validation | 15 min |
-| **Total** | ~2.5 hr |
+| **Total** | ~3.5 hr |
+
+Phases 2 and 3 shipped on 2026-11-14; the remaining work is Phase 1, Phase 1b,
+Phase 4, and Phase 5.
 
 ## Coordination notes
 
