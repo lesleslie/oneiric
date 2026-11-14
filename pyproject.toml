@@ -263,12 +263,16 @@ skylos_timeout = 600  # 10 minutes for skylos analysis (analyzes 71 files)
 refurb_timeout = 600  # 10 minutes for refurb analysis (analyzes 178 Python files)
 
 # ty type-check ratchet enforced by ``crackerjack.tools.ty_ratchet``.
-# Measured 2026-11-14 with ty 0.0.104: prod 0, test 564. The prod budget is
+# Measured 2026-11-14 with ty 0.0.104: prod 0, test 558. The prod budget is
 # pinned at 0 so the next prod diagnostic fails the gate; the test budget is
 # the measured count, giving the ratchet a real baseline to tighten from.
 # The test gate is advisory — it never controls the exit code.
+# Re-measured 2026-11-14 after the mypy-syntax migration. The count fell
+# because every removed mypy-syntax directive also drew an
+# ``invalid-ignore-comment`` warning: ty parses the *text* of a comment
+# for directives, so a mypy-syntax comment is a malformed directive to it.
 ty_max_errors_prod = 0
-ty_max_errors_test = 564
+ty_max_errors_test = 558
 
 [tool.ty]
 # Scope ty to the package directory only (not tests/, benches/, docs/examples/)
