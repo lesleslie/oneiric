@@ -8,7 +8,7 @@ For a shorter, tool-neutral bootstrap document, start with `AGENTS.md`.
 
 Oneiric is a **universal resolution layer** for pluggable components with hot-swapping, multi-domain support, and remote manifest delivery. It extracts and modernizes the component discovery and lifecycle patterns into a standalone infrastructure layer.
 
-**Status:** Production Ready (0.35.0) — hardened for controlled deployment. See `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for the most recent comprehensive audit, and `docs/ONEIRIC_VS_ACB.md` for comparison with ACB and migration strategy.
+**Status:** Production Ready (0.36.0) — hardened for controlled deployment. See `docs/implementation/STAGE5_FINAL_AUDIT_REPORT.md` for the most recent comprehensive audit, and `docs/ONEIRIC_VS_ACB.md` for comparison with ACB and migration strategy.
 
 **Current state:** 4730 tests passing, 95% coverage — a +1pp margin over the 94% ratchet floor.
 
