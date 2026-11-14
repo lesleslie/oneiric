@@ -24,7 +24,7 @@ def _patch_observed_span(monkeypatch: pytest.MonkeyPatch) -> dict[str, DummySpan
     holder: dict[str, DummySpan] = {}
 
     @contextmanager
-    def _observed_span(*args, **kwargs):  # type: ignore[no-untyped-def]
+    def _observed_span(*args, **kwargs):
         span = DummySpan()
         holder["span"] = span
         yield span

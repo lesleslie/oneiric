@@ -308,7 +308,7 @@ async def test_fcm_send_notification_default_token() -> None:
     captured: list[str] = []
 
     def sender(payload: object, app: object) -> str:
-        captured.append(payload.kwargs["token"])  # type: ignore[attr-defined]
+        captured.append(payload.kwargs["token"])
         return "msg-x"
 
     settings = FCMPushSettings(default_device_token="default-tok")
@@ -353,9 +353,9 @@ def test_fcm_default_app_factory_via_sys_modules(
         return fake_app
 
     fake_firebase = types.ModuleType("firebase_admin")
-    fake_firebase.credentials = FakeCreds  # type: ignore[attr-defined]
-    fake_firebase.get_app = fake_get_app  # type: ignore[attr-defined]
-    fake_firebase.initialize_app = fake_initialize_app  # type: ignore[attr-defined]
+    fake_firebase.credentials = FakeCreds
+    fake_firebase.get_app = fake_get_app
+    fake_firebase.initialize_app = fake_initialize_app
 
     monkeypatch.setitem(sys.modules, "firebase_admin", fake_firebase)
     monkeypatch.setitem(sys.modules, "firebase_admin.credentials", fake_firebase)
@@ -416,9 +416,9 @@ def test_fcm_default_app_factory_application_default(
         return fake_app
 
     fake_firebase = types.ModuleType("firebase_admin")
-    fake_firebase.credentials = FakeCreds  # type: ignore[attr-defined]
-    fake_firebase.get_app = fake_get_app  # type: ignore[attr-defined]
-    fake_firebase.initialize_app = fake_initialize_app  # type: ignore[attr-defined]
+    fake_firebase.credentials = FakeCreds
+    fake_firebase.get_app = fake_get_app
+    fake_firebase.initialize_app = fake_initialize_app
 
     monkeypatch.setitem(sys.modules, "firebase_admin", fake_firebase)
     monkeypatch.setitem(sys.modules, "firebase_admin.credentials", fake_firebase)

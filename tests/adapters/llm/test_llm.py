@@ -686,7 +686,7 @@ class TestOpenAICompatibleProvider:
         )
         # Use None to simulate openai not being installed
         with pytest.raises(ImportError, match="openai package required"):
-            _build_provider_with_mock_openai(config, None)  # type: ignore[arg-type]
+            _build_provider_with_mock_openai(config, None)
 
     def test_constructor_creates_client(self, mock_openai_module: MagicMock) -> None:
         """Constructor initializes AsyncOpenAI with max_retries=0 (chain handles retries)."""

@@ -66,7 +66,7 @@ def _point(
 
 
 def _count(store: DuckdbHotStore) -> int:
-    row = store.conn.execute(  # type: ignore[union-attr]
+    row = store.conn.execute(
         "SELECT count(*) FROM metrics_substrate"
     ).fetchone()
     return int(row[0])
@@ -91,7 +91,7 @@ async def test_initialize_creates_the_metric_indexes(store: DuckdbHotStore) -> N
     """Every index the read path depends on resolves."""
     names = {
         row[0]
-        for row in store.conn.execute(  # type: ignore[union-attr]
+        for row in store.conn.execute(
             "SELECT index_name FROM duckdb_indexes() "
             "WHERE table_name = 'metrics_substrate'"
         ).fetchall()
@@ -266,14 +266,14 @@ async def test_a_mixed_type_batch_keeps_each_row_s_own_columns(
     assert await store.insert_metrics_substrate(rows) == (3, 0)
     kinds = [
         row[0]
-        for row in store.conn.execute(  # type: ignore[union-attr]
+        for row in store.conn.execute(
             "SELECT data_type FROM metrics_substrate ORDER BY ts"
         ).fetchall()
     ]
     assert kinds == ["gauge", "sum", "histogram"]
     monotonic = [
         row[0]
-        for row in store.conn.execute(  # type: ignore[union-attr]
+        for row in store.conn.execute(
             "SELECT is_monotonic FROM metrics_substrate ORDER BY ts"
         ).fetchall()
     ]
@@ -301,7 +301,7 @@ async def test_histogram_buckets_round_trip(store: DuckdbHotStore) -> None:
             )
         ]
     )
-    row = store.conn.execute(  # type: ignore[union-attr]
+    row = store.conn.execute(
         "SELECT value_sum, value_count, value_min, value_max, "
         "value_sum_of_squares, buckets_json FROM metrics_substrate"
     ).fetchone()

@@ -79,7 +79,7 @@ async def test_run_tasks_reraises_cancellation() -> None:
         "oneiric.runtime.load_testing.anyio.get_cancelled_exc_class",
         return_value=SentinelCancelled,
     ), pytest.raises(BaseExceptionGroup) as excinfo:
-        await run_load_test(profile, workload=workload)  # type: ignore[arg-type]
+        await run_load_test(profile, workload=workload)
 
     assert any(isinstance(exc, SentinelCancelled) for exc in excinfo.value.exceptions)
 

@@ -253,7 +253,7 @@ async def test_duckdb_health_false_on_error() -> None:
     adapter = DuckDBDatabaseAdapter(
         DuckDBDatabaseSettings(database_url="duckdb:///:memory:")
     )
-    adapter._conn = ErrorConn()  # type: ignore[assignment]
+    adapter._conn = ErrorConn()
     assert await adapter.health() is False
 
 
@@ -281,7 +281,7 @@ async def test_duckdb_cleanup_close_exception() -> None:
     adapter = DuckDBDatabaseAdapter(
         DuckDBDatabaseSettings(database_url="duckdb:///:memory:")
     )
-    adapter._conn = BrokenClose()  # type: ignore[assignment]
+    adapter._conn = BrokenClose()
     await adapter.cleanup()  # should not raise
     assert adapter._conn is None
 
@@ -313,7 +313,7 @@ async def test_duckdb_execute_no_description() -> None:
     adapter = DuckDBDatabaseAdapter(
         DuckDBDatabaseSettings(database_url="duckdb:///:memory:")
     )
-    adapter._conn = NoDescConn()  # type: ignore[assignment]
+    adapter._conn = NoDescConn()
     rowcount = await adapter.execute("INSERT INTO t VALUES (1)")
     assert rowcount == 0
 
@@ -330,7 +330,7 @@ async def test_duckdb_execute_exception() -> None:
     adapter = DuckDBDatabaseAdapter(
         DuckDBDatabaseSettings(database_url="duckdb:///:memory:")
     )
-    adapter._conn = ExplodingConn()  # type: ignore[assignment]
+    adapter._conn = ExplodingConn()
     with pytest.raises(LifecycleError, match="duckdb-execute-failed"):
         await adapter.execute("BAAD SQL")
 
@@ -347,7 +347,7 @@ async def test_duckdb_fetch_all_with_args() -> None:
     adapter = DuckDBDatabaseAdapter(
         DuckDBDatabaseSettings(database_url="duckdb:///:memory:")
     )
-    adapter._conn = RowConn()  # type: ignore[assignment]
+    adapter._conn = RowConn()
     rows = await adapter.fetch_all("SELECT ?", 1)
     assert rows == [(1,), (2,)]
 
@@ -364,7 +364,7 @@ async def test_duckdb_fetch_all_exception() -> None:
     adapter = DuckDBDatabaseAdapter(
         DuckDBDatabaseSettings(database_url="duckdb:///:memory:")
     )
-    adapter._conn = BoomConn()  # type: ignore[assignment]
+    adapter._conn = BoomConn()
     with pytest.raises(LifecycleError, match="duckdb-fetch-all-failed"):
         await adapter.fetch_all("SELECT * FROM missing")
 
@@ -381,7 +381,7 @@ async def test_duckdb_fetch_one_with_args() -> None:
     adapter = DuckDBDatabaseAdapter(
         DuckDBDatabaseSettings(database_url="duckdb:///:memory:")
     )
-    adapter._conn = OneRowConn()  # type: ignore[assignment]
+    adapter._conn = OneRowConn()
     row = await adapter.fetch_one("SELECT ? AS val", 42)
     assert row == (42,)
 
@@ -408,7 +408,7 @@ async def test_duckdb_fetch_one_exception() -> None:
     adapter = DuckDBDatabaseAdapter(
         DuckDBDatabaseSettings(database_url="duckdb:///:memory:")
     )
-    adapter._conn = BoomConn()  # type: ignore[assignment]
+    adapter._conn = BoomConn()
     with pytest.raises(LifecycleError, match="duckdb-fetch-one-failed"):
         await adapter.fetch_one("SELECT 1")
 
@@ -439,7 +439,7 @@ async def test_duckdb_fetch_df_success() -> None:
     adapter = DuckDBDatabaseAdapter(
         DuckDBDatabaseSettings(database_url="duckdb:///:memory:")
     )
-    adapter._conn = DFConn()  # type: ignore[assignment]
+    adapter._conn = DFConn()
     result = await adapter.fetch_df("SELECT 1")
     assert result is not None
 
@@ -462,7 +462,7 @@ async def test_duckdb_fetch_df_generic_exception() -> None:
     adapter = DuckDBDatabaseAdapter(
         DuckDBDatabaseSettings(database_url="duckdb:///:memory:")
     )
-    adapter._conn = ErrorConn()  # type: ignore[assignment]
+    adapter._conn = ErrorConn()
     with pytest.raises(LifecycleError, match="duckdb-fetch-df-failed"):
         await adapter.fetch_df("SELECT 1")
 
@@ -488,7 +488,7 @@ async def test_duckdb_fetch_arrow_success() -> None:
     adapter = DuckDBDatabaseAdapter(
         DuckDBDatabaseSettings(database_url="duckdb:///:memory:")
     )
-    adapter._conn = ArrowConn()  # type: ignore[assignment]
+    adapter._conn = ArrowConn()
     result = await adapter.fetch_arrow("SELECT 1")
     assert result is not None
 
@@ -511,7 +511,7 @@ async def test_duckdb_fetch_arrow_generic_exception() -> None:
     adapter = DuckDBDatabaseAdapter(
         DuckDBDatabaseSettings(database_url="duckdb:///:memory:")
     )
-    adapter._conn = ErrorConn()  # type: ignore[assignment]
+    adapter._conn = ErrorConn()
     with pytest.raises(LifecycleError, match="duckdb-fetch-arrow-failed"):
         await adapter.fetch_arrow("SELECT 1")
 
@@ -563,7 +563,7 @@ async def test_duckdb_execute_fetchall_raises_uses_fallback() -> None:
     adapter = DuckDBDatabaseAdapter(
         DuckDBDatabaseSettings(database_url="duckdb:///:memory:")
     )
-    adapter._conn = BoomFetchallConn()  # type: ignore[assignment]
+    adapter._conn = BoomFetchallConn()
     rowcount = await adapter.execute("SELECT 1")
     assert rowcount == 0
 
@@ -591,7 +591,7 @@ async def test_duckdb_fetch_df_with_args() -> None:
     adapter = DuckDBDatabaseAdapter(
         DuckDBDatabaseSettings(database_url="duckdb:///:memory:")
     )
-    adapter._conn = DFConn()  # type: ignore[assignment]
+    adapter._conn = DFConn()
     result = await adapter.fetch_df("SELECT ?", 1)
     assert result == [1, 2]
 
@@ -619,6 +619,6 @@ async def test_duckdb_fetch_arrow_with_args() -> None:
     adapter = DuckDBDatabaseAdapter(
         DuckDBDatabaseSettings(database_url="duckdb:///:memory:")
     )
-    adapter._conn = ArrowConn()  # type: ignore[assignment]
+    adapter._conn = ArrowConn()
     result = await adapter.fetch_arrow("SELECT ?", 42)
     assert result == [42]

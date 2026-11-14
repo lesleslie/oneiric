@@ -269,7 +269,7 @@ class WorkflowBridge(DomainBridge):
     ):
         async def _run():
             assert self._task_bridge is not None
-            handle = await self._task_bridge.use(task_key)  # type: ignore[arg-type]
+            handle = await self._task_bridge.use(task_key)
             instance = cast(TaskHandlerProtocol, handle.instance)
             runner = getattr(instance, "run", None)
             if not callable(runner):

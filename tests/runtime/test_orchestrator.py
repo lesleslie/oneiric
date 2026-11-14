@@ -689,7 +689,7 @@ class TestRuntimeOrchestratorHealthSnapshot:
         health_path = tmp_path / "health.json"
 
         status = LifecycleStatus(domain="adapter", key="cache", state="ready")
-        lifecycle._status[(status.domain, status.key)] = status  # type: ignore[attr-defined]
+        lifecycle._status[(status.domain, status.key)] = status
 
         orchestrator = RuntimeOrchestrator(
             settings, resolver, lifecycle, secrets, health_path=str(health_path)
@@ -741,7 +741,7 @@ class TestRuntimeOrchestratorHealthSnapshot:
         )
         resolver = Resolver()
         lifecycle = LifecycleManager(resolver)
-        lifecycle.all_statuses = list  # type: ignore[assignment]
+        lifecycle.all_statuses = list
         secrets = MockSecrets()
         health_path = tmp_path / "health.json"
 
@@ -749,7 +749,7 @@ class TestRuntimeOrchestratorHealthSnapshot:
             settings, resolver, lifecycle, secrets, health_path=str(health_path)
         )
         orchestrator._supervisor = None
-        orchestrator._activity_store.snapshot = lambda: None  # type: ignore[assignment]
+        orchestrator._activity_store.snapshot = lambda: None
 
         orchestrator._update_health(watchers_running=False, remote_enabled=False)
 

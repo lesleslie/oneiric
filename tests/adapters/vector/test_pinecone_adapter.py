@@ -127,7 +127,7 @@ def _make_fake_pinecone_module(index: FakeIndex | None = None) -> types.ModuleTy
             return _index
 
     fake_mod = types.ModuleType("pinecone")
-    fake_mod.Pinecone = FakePc  # type: ignore[attr-defined]
+    fake_mod.Pinecone = FakePc
     return fake_mod
 
 
@@ -167,7 +167,7 @@ async def test_pinecone_create_client_construction_error(
             raise ValueError("bad key")
 
     bad_mod = types.ModuleType("pinecone")
-    bad_mod.Pinecone = ExplodingPc  # type: ignore[attr-defined]
+    bad_mod.Pinecone = ExplodingPc
     monkeypatch.setitem(sys.modules, "pinecone", bad_mod)
     settings = PineconeSettings(api_key=SecretStr("key"))
     adapter = PineconeAdapter(settings)
@@ -232,7 +232,7 @@ async def test_pinecone_init_creates_index_when_not_found(
             return index
 
     bad_mod = types.ModuleType("pinecone")
-    bad_mod.Pinecone = PcNoIndex  # type: ignore[attr-defined]
+    bad_mod.Pinecone = PcNoIndex
     monkeypatch.setitem(sys.modules, "pinecone", bad_mod)
     settings = PineconeSettings(api_key=SecretStr("key"))
     adapter = PineconeAdapter(settings)
@@ -272,7 +272,7 @@ async def test_pinecone_create_default_index_pod_spec(
             return FakeIndex()
 
     pod_mod = types.ModuleType("pinecone")
-    pod_mod.Pinecone = PcPod  # type: ignore[attr-defined]
+    pod_mod.Pinecone = PcPod
     monkeypatch.setitem(sys.modules, "pinecone", pod_mod)
     settings = PineconeSettings(api_key=SecretStr("key"), serverless=False)
     adapter = PineconeAdapter(settings)
@@ -299,7 +299,7 @@ async def test_pinecone_create_default_index_raises(
             return FakeIndex()
 
     bad_mod = types.ModuleType("pinecone")
-    bad_mod.Pinecone = PcBadCreate  # type: ignore[attr-defined]
+    bad_mod.Pinecone = PcBadCreate
     monkeypatch.setitem(sys.modules, "pinecone", bad_mod)
     settings = PineconeSettings(api_key=SecretStr("key"))
     adapter = PineconeAdapter(settings)
@@ -333,7 +333,7 @@ async def test_pinecone_health_exception(monkeypatch: pytest.MonkeyPatch) -> Non
     """health() returns False when describe_index_stats raises (lines 163-165)."""
 
     class BrokenIndex(FakeIndex):
-        def describe_index_stats(self, **kwargs: Any) -> None:  # type: ignore[override]
+        def describe_index_stats(self, **kwargs: Any) -> None:
             raise RuntimeError("timeout")
 
     settings = PineconeSettings(api_key=SecretStr("key"))
@@ -360,7 +360,7 @@ async def test_pinecone_search_exception(monkeypatch: pytest.MonkeyPatch) -> Non
     """search() returns [] when query raises (lines 211-213)."""
 
     class BrokenIndex(FakeIndex):
-        def query(self, **kwargs: Any) -> None:  # type: ignore[override]
+        def query(self, **kwargs: Any) -> None:
             raise RuntimeError("query failed")
 
     settings = PineconeSettings(api_key=SecretStr("key"))
@@ -397,7 +397,7 @@ async def test_pinecone_upsert_batch_zero_count_logs_warning(
     """_upsert_batch() logs warning when upserted_count is 0 (line 265)."""
 
     class ZeroCountIndex(FakeIndex):
-        def upsert(self, **kwargs: Any) -> dict[str, Any]:  # type: ignore[override]
+        def upsert(self, **kwargs: Any) -> dict[str, Any]:
             return {"upserted_count": 0}
 
     settings = PineconeSettings(api_key=SecretStr("key"))
@@ -417,7 +417,7 @@ async def test_pinecone_upsert_exception(monkeypatch: pytest.MonkeyPatch) -> Non
     """upsert() returns [] when an error occurs (lines 287-289)."""
 
     class BrokenUpsert(FakeIndex):
-        def upsert(self, **kwargs: Any) -> None:  # type: ignore[override]
+        def upsert(self, **kwargs: Any) -> None:
             raise RuntimeError("upsert failed")
 
     settings = PineconeSettings(api_key=SecretStr("key"))
@@ -470,7 +470,7 @@ async def test_pinecone_delete_exception(monkeypatch: pytest.MonkeyPatch) -> Non
     """delete() returns False when index.delete raises (lines 307-309)."""
 
     class BrokenDelete(FakeIndex):
-        def delete(self, **kwargs: Any) -> None:  # type: ignore[override]
+        def delete(self, **kwargs: Any) -> None:
             raise RuntimeError("delete failed")
 
     settings = PineconeSettings(api_key=SecretStr("key"))
@@ -520,7 +520,7 @@ async def test_pinecone_get_exception(monkeypatch: pytest.MonkeyPatch) -> None:
     """get() returns [] when index.fetch raises (lines 343-345)."""
 
     class BrokenFetch(FakeIndex):
-        def fetch(self, **kwargs: Any) -> None:  # type: ignore[override]
+        def fetch(self, **kwargs: Any) -> None:
             raise RuntimeError("fetch failed")
 
     settings = PineconeSettings(api_key=SecretStr("key"))
@@ -554,7 +554,7 @@ async def test_pinecone_count_exception(monkeypatch: pytest.MonkeyPatch) -> None
     """count() returns 0 when describe_index_stats raises (lines 367-369)."""
 
     class BrokenStats(FakeIndex):
-        def describe_index_stats(self, **kwargs: Any) -> None:  # type: ignore[override]
+        def describe_index_stats(self, **kwargs: Any) -> None:
             raise RuntimeError("stats failed")
 
     settings = PineconeSettings(api_key=SecretStr("key"))
@@ -621,7 +621,7 @@ async def test_pinecone_delete_collection_exception(
     """delete_collection() returns False when index.delete raises (lines 399-401)."""
 
     class BrokenDelete(FakeIndex):
-        def delete(self, **kwargs: Any) -> None:  # type: ignore[override]
+        def delete(self, **kwargs: Any) -> None:
             raise RuntimeError("delete failed")
 
     settings = PineconeSettings(api_key=SecretStr("key"))
@@ -642,7 +642,7 @@ async def test_pinecone_list_collections_exception(
     """list_collections() returns [] when describe_index_stats raises (lines 417-419)."""
 
     class BrokenStats(FakeIndex):
-        def describe_index_stats(self, **kwargs: Any) -> None:  # type: ignore[override]
+        def describe_index_stats(self, **kwargs: Any) -> None:
             raise RuntimeError("stats failed")
 
     settings = PineconeSettings(api_key=SecretStr("key"))

@@ -272,7 +272,7 @@ async def test_health_false_on_ping_error() -> None:
     async def fail_ping() -> bool:
         raise RedisError("timeout")
 
-    client.ping = fail_ping  # type: ignore[method-assign]
+    client.ping = fail_ping
     assert await adapter.health() is False
 
 
@@ -378,7 +378,7 @@ async def test_cleanup_with_awaitable_pool_disconnect() -> None:
             disconnected.append(True)
 
     client = MockRedisClient()
-    client.connection_pool = AsyncPool()  # type: ignore[assignment]
+    client.connection_pool = AsyncPool()
 
     adapter = _make(client=client)
     # Override ownership to test the owned-client cleanup path
@@ -409,7 +409,7 @@ async def test_cleanup_uses_sync_close_fallback() -> None:
     client = SyncCloseOnly()
     adapter = RedisCacheAdapter(
         RedisCacheSettings(),
-        redis_client=client,  # type: ignore[arg-type]
+        redis_client=client,
     )
     adapter._owns_client = True
     await adapter.init()
@@ -448,7 +448,7 @@ async def test_close_client_awaitable_sync_close() -> None:
     client = AsyncCloseViaSyncMethod()
     adapter = RedisCacheAdapter(
         RedisCacheSettings(),
-        redis_client=client,  # type: ignore[arg-type]
+        redis_client=client,
     )
     adapter._owns_client = True
     await adapter.init()
@@ -477,7 +477,7 @@ async def test_disconnect_pool_no_pool() -> None:
     client = NopoolClient()
     adapter = RedisCacheAdapter(
         RedisCacheSettings(),
-        redis_client=client,  # type: ignore[arg-type]
+        redis_client=client,
     )
     await adapter.init()
     await adapter._disconnect_pool()  # must not raise
@@ -489,7 +489,7 @@ async def test_disconnect_pool_no_disconnect_method() -> None:
     from types import SimpleNamespace
 
     client = MockRedisClient()
-    client.connection_pool = SimpleNamespace()  # type: ignore[assignment]
+    client.connection_pool = SimpleNamespace()
     adapter = _make(client=client)
     await adapter.init()
     await adapter._disconnect_pool()  # must not raise

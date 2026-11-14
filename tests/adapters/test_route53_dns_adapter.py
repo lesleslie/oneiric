@@ -133,7 +133,7 @@ async def test_route53_init_aioboto3_path(monkeypatch) -> None:
     class FakeAioboto3:
         Session = FakeSession
 
-    monkeypatch.setitem(sys.modules, "aioboto3", FakeAioboto3)  # type: ignore[arg-type]
+    monkeypatch.setitem(sys.modules, "aioboto3", FakeAioboto3)
 
     adapter = Route53DNSAdapter(
         Route53DNSSettings(

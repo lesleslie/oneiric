@@ -243,11 +243,11 @@ async def test_pubsub_init_creates_clients_from_sdk(monkeypatch) -> None:
     subscriber = _FakeSubscriber()
 
     fake_pubsub_v1 = types.ModuleType("pubsub_v1")
-    fake_pubsub_v1.PublisherClient = lambda: publisher  # type: ignore[attr-defined]
-    fake_pubsub_v1.SubscriberClient = lambda: subscriber  # type: ignore[attr-defined]
+    fake_pubsub_v1.PublisherClient = lambda: publisher
+    fake_pubsub_v1.SubscriberClient = lambda: subscriber
 
     fake_google_cloud = types.ModuleType("google.cloud")
-    fake_google_cloud.pubsub_v1 = fake_pubsub_v1  # type: ignore[attr-defined]
+    fake_google_cloud.pubsub_v1 = fake_pubsub_v1
 
     monkeypatch.setitem(sys.modules, "google", types.ModuleType("google"))
     monkeypatch.setitem(sys.modules, "google.cloud", fake_google_cloud)

@@ -50,7 +50,7 @@ class FakeWorkflowBridge:
 @pytest.mark.asyncio
 async def test_workflow_task_processor_executes_workflow():
     bridge = FakeWorkflowBridge()
-    processor = WorkflowTaskProcessor(bridge)  # type: ignore[arg-type]
+    processor = WorkflowTaskProcessor(bridge)
     payload = {
         "workflow": "demo",
         "run_id": "abc123",

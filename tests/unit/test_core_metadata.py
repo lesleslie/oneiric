@@ -64,8 +64,8 @@ def test_register_metadata_registers_candidates_and_logs() -> None:
     resolver = ResolverMock()
     logger = LoggerMock()
     items = [
-        _CandidateLike({"name": "alpha"}),  # type: ignore[arg-type]
-        _CandidateLike({"name": "beta"}),  # type: ignore[arg-type]
+        _CandidateLike({"name": "alpha"}),
+        _CandidateLike({"name": "beta"}),
     ]
 
     register_metadata(

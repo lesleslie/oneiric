@@ -403,7 +403,7 @@ async def test_mysql_init_uses_aiomysql_when_no_factory(
         return _FakePool()
 
     fake_aiomysql = types.ModuleType("aiomysql")
-    fake_aiomysql.create_pool = fake_create_pool  # type: ignore[attr-defined]
+    fake_aiomysql.create_pool = fake_create_pool
     monkeypatch.setitem(sys.modules, "aiomysql", fake_aiomysql)
 
     adapter = MySQLDatabaseAdapter(MySQLDatabaseSettings(database="testdb"))

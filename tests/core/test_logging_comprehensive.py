@@ -123,13 +123,13 @@ def test_logging_sink_config_defaults() -> None:
 def test_logging_sink_config_validation_rejects_unsupported_target() -> None:
     """The Literal target field rejects unsupported values."""
     with pytest.raises(ValidationError):
-        LoggingSinkConfig(target="socket")  # type: ignore[arg-type]
+        LoggingSinkConfig(target="socket")
 
 
 def test_logging_sink_config_validation_rejects_empty_target() -> None:
     """An empty string target is not a valid Literal value."""
     with pytest.raises(ValidationError):
-        LoggingSinkConfig(target="")  # type: ignore[arg-type]
+        LoggingSinkConfig(target="")
 
 
 def test_logging_sink_config_for_file() -> None:
@@ -191,13 +191,13 @@ def test_logging_config_defaults() -> None:
 def test_logging_config_validation_rejects_non_bool_emit_json() -> None:
     """Pydantic coerces only truthy values; an explicit string fails."""
     with pytest.raises(ValidationError):
-        LoggingConfig(emit_json="yes-please")  # type: ignore[arg-type]
+        LoggingConfig(emit_json="yes-please")
 
 
 def test_logging_config_validation_rejects_non_string_level() -> None:
     """Level must be a string field on the model."""
     with pytest.raises(ValidationError):
-        LoggingConfig(level=42)  # type: ignore[arg-type]
+        LoggingConfig(level=42)
 
 
 def test_logging_config_accepts_arbitrary_level_strings() -> None:

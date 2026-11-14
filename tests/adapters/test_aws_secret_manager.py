@@ -257,7 +257,7 @@ async def test_aws_init_via_aioboto3(monkeypatch) -> None:
     class FakeAioboto3:
         Session = FakeSession
 
-    monkeypatch.setitem(sys.modules, "aioboto3", FakeAioboto3)  # type: ignore[arg-type]
+    monkeypatch.setitem(sys.modules, "aioboto3", FakeAioboto3)
 
     adapter = AWSSecretManagerAdapter(
         AWSSecretManagerSettings(

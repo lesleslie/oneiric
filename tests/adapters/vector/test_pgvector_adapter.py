@@ -354,7 +354,7 @@ async def test_create_client_default_factory(monkeypatch: pytest.MonkeyPatch) ->
         return pool
 
     fake_asyncpg = types.ModuleType("asyncpg")
-    fake_asyncpg.create_pool = fake_create_pool  # type: ignore[attr-defined]
+    fake_asyncpg.create_pool = fake_create_pool
     monkeypatch.setitem(sys.modules, "asyncpg", fake_asyncpg)
 
     register_calls: list[object] = []
@@ -363,7 +363,7 @@ async def test_create_client_default_factory(monkeypatch: pytest.MonkeyPatch) ->
         register_calls.append(conn)
 
     fake_pgvector_asyncpg = types.ModuleType("pgvector.asyncpg")
-    fake_pgvector_asyncpg.register_vector = fake_register_vector  # type: ignore[attr-defined]
+    fake_pgvector_asyncpg.register_vector = fake_register_vector
     fake_pgvector = types.ModuleType("pgvector")
     monkeypatch.setitem(sys.modules, "pgvector", fake_pgvector)
     monkeypatch.setitem(sys.modules, "pgvector.asyncpg", fake_pgvector_asyncpg)

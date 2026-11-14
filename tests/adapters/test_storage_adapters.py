@@ -280,14 +280,14 @@ async def test_gcs_init_without_client_uses_google_cloud_storage(monkeypatch) ->
             return self._bucket
 
     fake_storage = types.ModuleType("google.cloud.storage")
-    fake_storage.Client = FakeStorageClient  # type: ignore[attr-defined]
+    fake_storage.Client = FakeStorageClient
 
     fake_service_account = types.ModuleType("google.oauth2.service_account")
-    fake_service_account.Credentials = object  # type: ignore[attr-defined]
+    fake_service_account.Credentials = object
 
     fake_oauth2 = types.ModuleType("google.oauth2")
     fake_google_cloud = types.ModuleType("google.cloud")
-    fake_google_cloud.storage = fake_storage  # type: ignore[attr-defined]
+    fake_google_cloud.storage = fake_storage
     fake_google = types.ModuleType("google")
 
     class FakeClientOptions:
@@ -298,7 +298,7 @@ async def test_gcs_init_without_client_uses_google_cloud_storage(monkeypatch) ->
 
     fake_api_core = types.ModuleType("google.api_core")
     fake_api_core_client_options = types.ModuleType("google.api_core.client_options")
-    fake_api_core_client_options.ClientOptions = FakeClientOptions  # type: ignore[attr-defined]
+    fake_api_core_client_options.ClientOptions = FakeClientOptions
 
     monkeypatch.setitem(sys.modules, "google", fake_google)
     monkeypatch.setitem(sys.modules, "google.cloud", fake_google_cloud)
@@ -341,10 +341,10 @@ async def test_gcs_init_with_credentials_file(monkeypatch, tmp_path) -> None:
             return _FakeGCSBucket()
 
     fake_storage = types.ModuleType("google.cloud.storage")
-    fake_storage.Client = FakeStorageClient  # type: ignore[attr-defined]
+    fake_storage.Client = FakeStorageClient
 
     fake_sa = types.ModuleType("google.oauth2.service_account")
-    fake_sa.Credentials = FakeCredentials  # type: ignore[attr-defined]
+    fake_sa.Credentials = FakeCredentials
 
     monkeypatch.setitem(sys.modules, "google", types.ModuleType("google"))
     monkeypatch.setitem(sys.modules, "google.cloud", types.ModuleType("google.cloud"))
@@ -384,14 +384,14 @@ async def test_gcs_init_with_endpoint_url_passes_client_options(monkeypatch) -> 
             return self._bucket
 
     fake_storage = types.ModuleType("google.cloud.storage")
-    fake_storage.Client = FakeStorageClient  # type: ignore[attr-defined]
+    fake_storage.Client = FakeStorageClient
 
     fake_service_account = types.ModuleType("google.oauth2.service_account")
-    fake_service_account.Credentials = object  # type: ignore[attr-defined]
+    fake_service_account.Credentials = object
 
     fake_oauth2 = types.ModuleType("google.oauth2")
     fake_google_cloud = types.ModuleType("google.cloud")
-    fake_google_cloud.storage = fake_storage  # type: ignore[attr-defined]
+    fake_google_cloud.storage = fake_storage
     fake_google = types.ModuleType("google")
 
     class FakeClientOptions:
@@ -402,7 +402,7 @@ async def test_gcs_init_with_endpoint_url_passes_client_options(monkeypatch) -> 
 
     fake_api_core = types.ModuleType("google.api_core")
     fake_api_core_client_options = types.ModuleType("google.api_core.client_options")
-    fake_api_core_client_options.ClientOptions = FakeClientOptions  # type: ignore[attr-defined]
+    fake_api_core_client_options.ClientOptions = FakeClientOptions
 
     monkeypatch.setitem(sys.modules, "google", fake_google)
     monkeypatch.setitem(sys.modules, "google.cloud", fake_google_cloud)
@@ -447,12 +447,12 @@ async def test_gcs_init_without_endpoint_url_omits_client_options(monkeypatch) -
             return self._bucket
 
     fake_storage = types.ModuleType("google.cloud.storage")
-    fake_storage.Client = FakeStorageClient  # type: ignore[attr-defined]
+    fake_storage.Client = FakeStorageClient
     fake_service_account = types.ModuleType("google.oauth2.service_account")
-    fake_service_account.Credentials = object  # type: ignore[attr-defined]
+    fake_service_account.Credentials = object
     fake_oauth2 = types.ModuleType("google.oauth2")
     fake_google_cloud = types.ModuleType("google.cloud")
-    fake_google_cloud.storage = fake_storage  # type: ignore[attr-defined]
+    fake_google_cloud.storage = fake_storage
     fake_google = types.ModuleType("google")
 
     monkeypatch.setitem(sys.modules, "google", fake_google)
@@ -734,7 +734,7 @@ async def test_azure_init_with_connection_string(monkeypatch) -> None:
             pass
 
     fake_blob = types.ModuleType("azure.storage.blob.aio")
-    fake_blob.BlobServiceClient = FakeBlobServiceClient  # type: ignore[attr-defined]
+    fake_blob.BlobServiceClient = FakeBlobServiceClient
 
     monkeypatch.setitem(sys.modules, "azure", types.ModuleType("azure"))
     monkeypatch.setitem(sys.modules, "azure.storage", types.ModuleType("azure.storage"))
@@ -775,7 +775,7 @@ async def test_azure_init_with_account_url_and_credential(monkeypatch) -> None:
             pass
 
     fake_blob = types.ModuleType("azure.storage.blob.aio")
-    fake_blob.BlobServiceClient = FakeBlobServiceClient  # type: ignore[attr-defined]
+    fake_blob.BlobServiceClient = FakeBlobServiceClient
 
     monkeypatch.setitem(sys.modules, "azure", types.ModuleType("azure"))
     monkeypatch.setitem(sys.modules, "azure.storage", types.ModuleType("azure.storage"))
@@ -808,7 +808,7 @@ async def test_azure_init_missing_credential_raises(monkeypatch) -> None:
         pass
 
     fake_blob = types.ModuleType("azure.storage.blob.aio")
-    fake_blob.BlobServiceClient = FakeBlobServiceClient  # type: ignore[attr-defined]
+    fake_blob.BlobServiceClient = FakeBlobServiceClient
     monkeypatch.setitem(sys.modules, "azure", types.ModuleType("azure"))
     monkeypatch.setitem(sys.modules, "azure.storage", types.ModuleType("azure.storage"))
     monkeypatch.setitem(
@@ -837,7 +837,7 @@ async def test_azure_init_no_client_config_raises(monkeypatch) -> None:
         pass
 
     fake_blob = types.ModuleType("azure.storage.blob.aio")
-    fake_blob.BlobServiceClient = FakeBlobServiceClient  # type: ignore[attr-defined]
+    fake_blob.BlobServiceClient = FakeBlobServiceClient
     monkeypatch.setitem(sys.modules, "azure", types.ModuleType("azure"))
     monkeypatch.setitem(sys.modules, "azure.storage", types.ModuleType("azure.storage"))
     monkeypatch.setitem(
@@ -1002,9 +1002,9 @@ async def test_s3_init_via_aioboto3(monkeypatch) -> None:
     class FakeAioboto3:
         Session = FakeSession
 
-    monkeypatch.setitem(sys.modules, "aioboto3", FakeAioboto3)  # type: ignore[arg-type]
-    monkeypatch.setitem(sys.modules, "botocore", FakeBotocore)  # type: ignore[arg-type]
-    monkeypatch.setitem(sys.modules, "botocore.config", FakeBotocore.config)  # type: ignore[arg-type]
+    monkeypatch.setitem(sys.modules, "aioboto3", FakeAioboto3)
+    monkeypatch.setitem(sys.modules, "botocore", FakeBotocore)
+    monkeypatch.setitem(sys.modules, "botocore.config", FakeBotocore.config)
 
 
 # ---------------------------------------------------------------------------
@@ -1205,11 +1205,11 @@ async def test_azure_exists_returns_true_and_false() -> None:
         return _Container()
 
     adapter_missing = AzureBlobStorageAdapter.__new__(AzureBlobStorageAdapter)
-    adapter_missing._container_client = make_container(present=False)  # type: ignore[attr-defined]
+    adapter_missing._container_client = make_container(present=False)
     assert await adapter_missing.exists("missing") is False
 
     adapter_present = AzureBlobStorageAdapter.__new__(AzureBlobStorageAdapter)
-    adapter_present._container_client = make_container(present=True)  # type: ignore[attr-defined]
+    adapter_present._container_client = make_container(present=True)
     assert await adapter_present.exists("present") is True
 
     adapter = S3StorageAdapter(

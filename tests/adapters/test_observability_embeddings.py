@@ -402,7 +402,7 @@ async def test_probe_model2vec_success_caches_model(monkeypatch) -> None:
             return fake_model
 
     fake_module = types.ModuleType("model2vec")
-    fake_module.StaticModel = FakeStaticModel  # type: ignore[attr-defined]
+    fake_module.StaticModel = FakeStaticModel
     monkeypatch.setitem(sys.modules, "model2vec", fake_module)
 
     svc = EmbeddingService()
@@ -423,7 +423,7 @@ async def test_probe_model2vec_load_failure_returns_false(monkeypatch) -> None:
             raise RuntimeError("model download failed")
 
     fake_module = types.ModuleType("model2vec")
-    fake_module.StaticModel = FailingStaticModel  # type: ignore[attr-defined]
+    fake_module.StaticModel = FailingStaticModel
     monkeypatch.setitem(sys.modules, "model2vec", fake_module)
 
     svc = EmbeddingService()

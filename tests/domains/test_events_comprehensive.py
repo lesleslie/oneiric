@@ -446,7 +446,7 @@ class TestEmit:
 
         await bridge.emit("user.created", {"user_id": 1})
         assert isinstance(handler.recorder, list)
-        envelope: EventEnvelope = handler.last_envelope  # type: ignore[attr-defined]
+        envelope: EventEnvelope = handler.last_envelope
         assert envelope.headers["source"] == "oneiric.domains.events.EventBridge"
 
     async def test_custom_headers_merged_without_clobbering_source(self) -> None:
@@ -497,7 +497,7 @@ class TestEmit:
         bridge.refresh_dispatcher()
 
         results = await bridge.emit("t.t", {"x": 1})
-        bridge._telemetry.record_event_dispatch.assert_called_once_with(  # type: ignore[union-attr]
+        bridge._telemetry.record_event_dispatch.assert_called_once_with(
             "t.t", results
         )
 
@@ -788,7 +788,7 @@ class TestBuildHandlerMissingHandle:
         handler = bridge._build_handler(candidate)
         assert handler is not None
 
-        bridge.use = AsyncMock(  # type: ignore[method-assign]
+        bridge.use = AsyncMock(
             return_value=SimpleNamespace(instance=object())
         )
         with pytest.raises(LifecycleError, match="missing-handle-method"):
@@ -811,7 +811,7 @@ class TestBuildHandlerMissingHandle:
         resolver.register(candidate)
         bridge.refresh_dispatcher()
 
-        bridge.use = AsyncMock(  # type: ignore[method-assign]
+        bridge.use = AsyncMock(
             return_value=SimpleNamespace(instance=object())
         )
         results = await bridge.emit("t.broken", {"k": "v"})

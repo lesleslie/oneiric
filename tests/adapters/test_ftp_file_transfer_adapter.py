@@ -239,7 +239,7 @@ async def test_ftp_init_aioftp_path(monkeypatch) -> None:
     class FakeAioftp:
         ClientSession = FakeSession
 
-    monkeypatch.setitem(sys.modules, "aioftp", FakeAioftp)  # type: ignore[arg-type]
+    monkeypatch.setitem(sys.modules, "aioftp", FakeAioftp)
 
     adapter = FTPFileTransferAdapter(
         FTPFileTransferSettings(

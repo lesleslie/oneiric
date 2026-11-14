@@ -184,7 +184,7 @@ def test_webpush_load_sender_from_sys_modules(monkeypatch: pytest.MonkeyPatch) -
         return object()
 
     fake_pywebpush = types.ModuleType("pywebpush")
-    fake_pywebpush.webpush = fake_webpush  # type: ignore[attr-defined]
+    fake_pywebpush.webpush = fake_webpush
     monkeypatch.setitem(sys.modules, "pywebpush", fake_pywebpush)
 
     adapter = WebPushAdapter(WebPushSettings())
@@ -196,7 +196,7 @@ def test_webpush_resolve_private_key_from_path(tmp_path: object) -> None:
     """_resolve_private_key reads key from vapid_private_key_path (lines 168-169)."""
     import pathlib
 
-    key_file = pathlib.Path(str(tmp_path)) / "vapid.pem"  # type: ignore[arg-type]
+    key_file = pathlib.Path(str(tmp_path)) / "vapid.pem"
     key_file.write_text("my-vapid-key")
     adapter = WebPushAdapter(WebPushSettings(vapid_private_key_path=key_file))
     assert adapter._resolve_private_key() == "my-vapid-key"

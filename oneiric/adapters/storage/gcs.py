@@ -66,7 +66,7 @@ class GCSStorageAdapter:
     async def init(self) -> None:
         if self._client is None:
             try:
-                from google.cloud import storage  # type: ignore[attr-defined]
+                from google.cloud import storage
                 from google.oauth2 import service_account
             except ModuleNotFoundError as exc:  # pragma: no cover - defensive
                 raise LifecycleError("google-cloud-storage-missing") from exc

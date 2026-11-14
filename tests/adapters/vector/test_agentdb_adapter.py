@@ -52,8 +52,8 @@ def _inject_mcp_common(monkeypatch: pytest.MonkeyPatch) -> type:
     """Inject fake mcp_common.client so _create_client can import MCPClient."""
     fake_mod = types.ModuleType("mcp_common")
     fake_client_mod = types.ModuleType("mcp_common.client")
-    fake_client_mod.MCPClient = FakeMCPClient  # type: ignore[attr-defined]
-    fake_mod.client = fake_client_mod  # type: ignore[attr-defined]
+    fake_client_mod.MCPClient = FakeMCPClient
+    fake_mod.client = fake_client_mod
     monkeypatch.setitem(sys.modules, "mcp_common", fake_mod)
     monkeypatch.setitem(sys.modules, "mcp_common.client", fake_client_mod)
     return FakeMCPClient

@@ -505,7 +505,7 @@ class LifecycleManager:
     ) -> Any:
         task: Awaitable[Any] = awaitable
         if self._safety.shield_tasks:
-            task = asyncio.shield(task)  # type: ignore[assignment]
+            task = asyncio.shield(task)
         if timeout and timeout > 0:
             try:
                 return await asyncio.wait_for(task, timeout)

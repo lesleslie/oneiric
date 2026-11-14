@@ -235,7 +235,7 @@ async def test_default_client_factory(
             return FakeDB()
 
     fake_arango = types.ModuleType("arango")
-    fake_arango.ArangoClient = FakeArangoClient  # type: ignore[attr-defined]
+    fake_arango.ArangoClient = FakeArangoClient
     monkeypatch.setitem(sys.modules, "arango", fake_arango)
 
     adapter = ArangoDBGraphAdapter(ArangoDBGraphSettings(database="test"))

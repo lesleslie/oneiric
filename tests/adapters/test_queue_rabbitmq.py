@@ -390,7 +390,7 @@ async def test_rabbitmq_ensure_connection_uses_aio_pika(monkeypatch) -> None:
         async def connect_robust(**kwargs: Any) -> FakeConnection:
             return connection
 
-    monkeypatch.setitem(sys.modules, "aio_pika", FakeAioPika)  # type: ignore[arg-type]
+    monkeypatch.setitem(sys.modules, "aio_pika", FakeAioPika)
 
     adapter = RabbitMQQueueAdapter(
         RabbitMQQueueSettings(),
@@ -421,7 +421,7 @@ async def test_rabbitmq_build_message_uses_aio_pika(monkeypatch) -> None:
         async def connect_robust(**kwargs: Any) -> Any:
             raise RuntimeError("should not be called")
 
-    monkeypatch.setitem(sys.modules, "aio_pika", FakeAioPika)  # type: ignore[arg-type]
+    monkeypatch.setitem(sys.modules, "aio_pika", FakeAioPika)
 
     channel = FakeChannel(fake_queue)
     adapter = RabbitMQQueueAdapter(

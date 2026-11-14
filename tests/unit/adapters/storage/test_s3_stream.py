@@ -245,7 +245,7 @@ def _install_sync_client_cache(
     mirror that shares the async client's object store so save_stream
     and load_stream round-trip in-process without network or boto3."""
     sync = _FakeS3SyncClient(bucket=async_client.bucket, objects=async_client.objects)
-    adapter._sync_client = sync  # type: ignore[attr-defined]
+    adapter._sync_client = sync
     return sync
 
 

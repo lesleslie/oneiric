@@ -41,7 +41,7 @@ async def test_cloudflare_create_and_list_records() -> None:
     client = httpx.AsyncClient(base_url="https://example.com", transport=transport)
 
     adapter = CloudflareDNSAdapter(
-        CloudflareDNSSettings(zone_id="zone", api_token=SecretStr("token")),  # type: ignore[name-defined]
+        CloudflareDNSSettings(zone_id="zone", api_token=SecretStr("token")),
         client=client,
     )
     await adapter.init()
@@ -71,13 +71,13 @@ async def test_cloudflare_health_failure_logs_and_returns_false(monkeypatch) -> 
     )
 
     adapter = CloudflareDNSAdapter(
-        CloudflareDNSSettings(zone_id="zone", api_token=SecretStr("token")),  # type: ignore[name-defined]
+        CloudflareDNSSettings(zone_id="zone", api_token=SecretStr("token")),
         client=client,
     )
     await adapter.init()
 
     # monkeypatch request to raise
-    adapter._client.request = failing_request  # type: ignore[assignment]
+    adapter._client.request = failing_request
     assert await adapter.health() is False
 
     await adapter.cleanup()
@@ -111,7 +111,7 @@ async def test_request_error_raises_lifecycle_error() -> None:
         base_url="https://example.com", transport=httpx.MockTransport(handler)
     )
     adapter = CloudflareDNSAdapter(
-        CloudflareDNSSettings(zone_id="zone", api_token=SecretStr("token")),  # type: ignore[name-defined]
+        CloudflareDNSSettings(zone_id="zone", api_token=SecretStr("token")),
         client=client,
     )
     await adapter.init()

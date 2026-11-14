@@ -727,7 +727,7 @@ class TestSetPaused:
             resolver, lifecycle_manager, settings=layer_settings, domain="service"
         )
         info_calls: list[tuple[str, dict[str, Any]]] = []
-        bridge._logger.info = (  # type: ignore[method-assign]
+        bridge._logger.info = (
             lambda event, **kw: info_calls.append((event, kw))
         )
         bridge.set_paused("api", True, note="maint")
@@ -798,7 +798,7 @@ class TestSetDraining:
             resolver, lifecycle_manager, settings=layer_settings, domain="service"
         )
         info_calls: list[tuple[str, dict[str, Any]]] = []
-        bridge._logger.info = (  # type: ignore[method-assign]
+        bridge._logger.info = (
             lambda event, **kw: info_calls.append((event, kw))
         )
         bridge.set_draining("api", True, note="drain")

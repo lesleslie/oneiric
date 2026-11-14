@@ -56,7 +56,7 @@ async def test_event_handler_missing_handle_method_raises(tmp_path) -> None:
     handler = bridge._build_handler(candidate)
     assert handler is not None
 
-    bridge.use = AsyncMock(return_value=SimpleNamespace(instance=object()))  # type: ignore[method-assign]
+    bridge.use = AsyncMock(return_value=SimpleNamespace(instance=object()))
 
     with pytest.raises(LifecycleError, match="missing-handle-method"):
         await handler.callback(create_event_envelope("demo.topic", {}, source="test"))
@@ -116,7 +116,7 @@ async def test_workflow_runner_for_task_and_checkpoint_paths(
         resolver,
         lifecycle,
         LayerSettings(),
-        checkpoint_store=store,  # type: ignore[arg-type]
+        checkpoint_store=store,
     )
 
     bridge._task_bridge = SimpleNamespace(

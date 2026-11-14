@@ -30,8 +30,8 @@ def test_default_settings_are_loopback() -> None:
 def test_loopback_url_accepted() -> None:
     """127.0.0.1 (the default) is accepted by the validator."""
     s = BifrostLLMSettings(
-        base_url="http://127.0.0.1:9000",  # type: ignore[arg-type]
-        anthropic_base_url="http://127.0.0.1:9000/anthropic",  # type: ignore[arg-type]
+        base_url="http://127.0.0.1:9000",
+        anthropic_base_url="http://127.0.0.1:9000/anthropic",
     )
     assert s.base_url.host == "127.0.0.1"
 
@@ -41,7 +41,7 @@ def test_non_loopback_rejected_by_default(monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.delenv("BIFROST_ALLOW_REMOTE", raising=False)
     with pytest.raises(ValueError, match="non-loopback host"):
         BifrostLLMSettings(
-            base_url="http://api.example.com",  # type: ignore[arg-type]
+            base_url="http://api.example.com",
         )
 
 
@@ -53,7 +53,7 @@ def test_non_loopback_local_provider_url_rejected(
     with pytest.raises(ValueError, match="non-loopback host"):
         BifrostLLMSettings(
             local_provider_enabled=True,
-            local_provider_url="http://10.0.0.5:8081",  # type: ignore[arg-type]
+            local_provider_url="http://10.0.0.5:8081",
         )
 
 
@@ -66,7 +66,7 @@ def test_allow_remote_accepts_public_url(monkeypatch: pytest.MonkeyPatch) -> Non
     """With the opt-in, a public URL is accepted."""
     monkeypatch.setenv("BIFROST_ALLOW_REMOTE", "1")
     s = BifrostLLMSettings(
-        base_url="http://gateway.example.com:8471",  # type: ignore[arg-type]
+        base_url="http://gateway.example.com:8471",
     )
     assert s.base_url.host == "gateway.example.com"
 
@@ -90,7 +90,7 @@ def test_allow_remote_blocks_imds_ipv4(
     """The opt-in path explicitly rejects the IMDS IPv4 endpoints."""
     monkeypatch.setenv("BIFROST_ALLOW_REMOTE", "1")
     with pytest.raises(ValueError, match="IMDS / RFC1918 blocklist"):
-        BifrostLLMSettings(base_url=f"http://{host}:80")  # type: ignore[arg-type]
+        BifrostLLMSettings(base_url=f"http://{host}:80")
 
 
 @pytest.mark.parametrize(
@@ -106,14 +106,14 @@ def test_allow_remote_blocks_imds_hostnames(
     """The opt-in path rejects the metadata service hostnames."""
     monkeypatch.setenv("BIFROST_ALLOW_REMOTE", "1")
     with pytest.raises(ValueError, match="IMDS / RFC1918 blocklist"):
-        BifrostLLMSettings(base_url=f"http://{host}")  # type: ignore[arg-type]
+        BifrostLLMSettings(base_url=f"http://{host}")
 
 
 def test_allow_remote_blocks_aws_imds_ipv6(monkeypatch: pytest.MonkeyPatch) -> None:
     """The opt-in path also blocks the AWS IMDS IPv6 endpoint."""
     monkeypatch.setenv("BIFROST_ALLOW_REMOTE", "1")
     with pytest.raises(ValueError, match="IMDS / RFC1918 blocklist"):
-        BifrostLLMSettings(base_url="http://[fd00:ec2::254]:80")  # type: ignore[arg-type]
+        BifrostLLMSettings(base_url="http://[fd00:ec2::254]:80")
 
 
 # ---------------------------------------------------------------------------
@@ -135,7 +135,7 @@ def test_allow_remote_blocks_rfc1918(
     """The opt-in path explicitly rejects RFC1918 ranges."""
     monkeypatch.setenv("BIFROST_ALLOW_REMOTE", "1")
     with pytest.raises(ValueError, match="IMDS / RFC1918 blocklist"):
-        BifrostLLMSettings(base_url=f"http://{host}:8081")  # type: ignore[arg-type]
+        BifrostLLMSettings(base_url=f"http://{host}:8081")
 
 
 # ---------------------------------------------------------------------------
@@ -148,7 +148,7 @@ def test_unsupported_scheme_rejected() -> None:
     validator's downstream check doesn't accept a different scheme.
     """
     with pytest.raises(ValueError):
-        BifrostLLMSettings(base_url="ftp://127.0.0.1:8471")  # type: ignore[arg-type]
+        BifrostLLMSettings(base_url="ftp://127.0.0.1:8471")
 
 
 # ---------------------------------------------------------------------------
@@ -176,7 +176,7 @@ def test_allow_remote_default_does_not_log_identity(
 
     with structlog.testing.capture_logs() as captured:
         BifrostLLMSettings(
-            base_url="http://gateway.example.com:8471"  # type: ignore[arg-type]
+            base_url="http://gateway.example.com:8471"
         )
 
     bifrost_logs = [
@@ -205,7 +205,7 @@ def test_allow_remote_opt_in_to_log_identity(
 
     with structlog.testing.capture_logs() as captured:
         BifrostLLMSettings(
-            base_url="http://gateway.example.com:8471"  # type: ignore[arg-type]
+            base_url="http://gateway.example.com:8471"
         )
 
     bifrost_logs = [
@@ -231,7 +231,7 @@ def test_allow_remote_log_identity_zero_means_opt_out(
 
     with structlog.testing.capture_logs() as captured:
         BifrostLLMSettings(
-            base_url="http://gateway.example.com:8471"  # type: ignore[arg-type]
+            base_url="http://gateway.example.com:8471"
         )
 
     bifrost_logs = [

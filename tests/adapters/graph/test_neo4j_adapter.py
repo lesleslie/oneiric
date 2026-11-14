@@ -154,7 +154,7 @@ async def test_default_driver_factory(monkeypatch, fake_driver) -> None:
     import types
 
     fake_neo4j = types.ModuleType("neo4j")
-    fake_neo4j.AsyncGraphDatabase = types.SimpleNamespace(  # type: ignore[attr-defined]
+    fake_neo4j.AsyncGraphDatabase = types.SimpleNamespace(
         driver=lambda uri, auth, encrypted, max_connection_pool_size: fake_driver
     )
     monkeypatch.setitem(sys.modules, "neo4j", fake_neo4j)
@@ -175,7 +175,7 @@ async def test_default_driver_factory_with_auth(monkeypatch, fake_driver) -> Non
     auth_received: list[tuple] = []
 
     fake_neo4j = types.ModuleType("neo4j")
-    fake_neo4j.AsyncGraphDatabase = types.SimpleNamespace(  # type: ignore[attr-defined]
+    fake_neo4j.AsyncGraphDatabase = types.SimpleNamespace(
         driver=lambda uri, auth, **kw: (auth_received.append(auth), fake_driver)[1]
     )
     monkeypatch.setitem(sys.modules, "neo4j", fake_neo4j)

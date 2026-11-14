@@ -95,7 +95,7 @@ async def _push(
         domain="adapter",
         key=key,
         provider=provider,
-        runtime_facts=payload,  # type: ignore[arg-type]
+        runtime_facts=payload,
     )
 
 

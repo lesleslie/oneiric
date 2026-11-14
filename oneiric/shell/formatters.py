@@ -15,7 +15,7 @@ except ImportError:  # pragma: no cover
 class TableColumn:
     name: str
     width: int | None = None
-    justify: str = "left"  # type: ignore[assignment]
+    justify: str = "left"
     style: str | None = None
 
 
@@ -43,7 +43,7 @@ class BaseTableFormatter:
             table.add_column(
                 col.name,
                 width=col.width,
-                justify=col.justify,  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
+                justify=col.justify,  # ty: ignore[invalid-argument-type]
                 style=col.style,
             )
 

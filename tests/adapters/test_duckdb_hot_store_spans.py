@@ -67,14 +67,14 @@ async def test_required_not_null_columns_are_enforced(store: DuckdbHotStore) -> 
     reject it, not the table silently accept it.
     """
     with pytest.raises(duckdb.ConstraintException):
-        store.conn.execute(  # type: ignore[union-attr]
+        store.conn.execute(
             "INSERT INTO spans_substrate (span_id, service_namespace, "
             "span_name, start_time_unix_nano, received_at_unix_nano, "
             "attributes, resource) "
             "VALUES ('no-service-name', 'bodai', 'n', 1, 1, '{}', '{}')"
         )
 
-    store.conn.execute(  # type: ignore[union-attr]
+    store.conn.execute(
         "INSERT INTO spans_substrate (span_id, service_name, "
         "service_namespace, span_name, start_time_unix_nano, "
         "received_at_unix_nano, attributes, resource) "
@@ -91,14 +91,14 @@ async def test_composite_span_identity_constraint_is_enforced(
     cross-producer pairs sharing a ``span_id`` under different ``trace_id``s.
     The composite constraint is what makes a replay a genuine no-op.
     """
-    store.conn.execute(  # type: ignore[union-attr]
+    store.conn.execute(
         "INSERT INTO spans_substrate (span_id, trace_id, service_name, "
         "service_namespace, span_name, start_time_unix_nano, "
         "received_at_unix_nano, attributes, resource) "
         "VALUES ('a', 't1', 'mahavishnu', 'bodai', 'n', 1, 1, '{}', '{}')"
     )
     with pytest.raises(duckdb.ConstraintException):
-        store.conn.execute(  # type: ignore[union-attr]
+        store.conn.execute(
             "INSERT INTO spans_substrate (span_id, trace_id, service_name, "
             "service_namespace, span_name, start_time_unix_nano, "
             "received_at_unix_nano, attributes, resource) "
@@ -114,7 +114,7 @@ async def test_read_path_indexes_exist(store: DuckdbHotStore) -> None:
     """
     names = {
         row[0]
-        for row in store.conn.execute(  # type: ignore[union-attr]
+        for row in store.conn.execute(
             "SELECT index_name FROM duckdb_indexes() WHERE table_name = 'spans_substrate'"
         ).fetchall()
     }
@@ -158,11 +158,11 @@ async def test_dlq_rows_rejects_an_unknown_reason(store: DuckdbHotStore) -> None
     could be parsed.
     """
     with pytest.raises(duckdb.ConstraintException):
-        store.conn.execute(  # type: ignore[union-attr]
+        store.conn.execute(
             "INSERT INTO _dlq_rows (reason, row_json) VALUES (NULL, '{}')"
         )
 
-    store.conn.execute(  # type: ignore[union-attr]
+    store.conn.execute(
         "INSERT INTO _dlq_rows (reason, row_json) VALUES ('not_null', '{}')"
     )
 
@@ -177,11 +177,11 @@ async def test_dlq_rows_holds_no_primary_key(store: DuckdbHotStore) -> None:
     quarantine rows, and both must be retained.
     """
     for _ in range(2):
-        store.conn.execute(  # type: ignore[union-attr]
+        store.conn.execute(
             "INSERT INTO _dlq_rows (reason, field, row_json, trace_id, span_id) "
             "VALUES ('not_null', 'service_name', '{}', 't1', 's1')"
         )
-    count = store.conn.execute(  # type: ignore[union-attr]
+    count = store.conn.execute(
         "SELECT count(*) FROM _dlq_rows"
     ).fetchone()
     assert count[0] == 2
@@ -195,7 +195,7 @@ async def test_dlq_recent_index_exists(store: DuckdbHotStore) -> None:
     """
     names = {
         row[0]
-        for row in store.conn.execute(  # type: ignore[union-attr]
+        for row in store.conn.execute(
             "SELECT index_name FROM duckdb_indexes() WHERE table_name = '_dlq_rows'"
         ).fetchall()
     }
@@ -204,12 +204,12 @@ async def test_dlq_recent_index_exists(store: DuckdbHotStore) -> None:
 
 async def test_receiver_state_is_keyed_on_component(store: DuckdbHotStore) -> None:
     """One version-stamp row per component; re-stamping is an upsert, not a dup."""
-    store.conn.execute(  # type: ignore[union-attr]
+    store.conn.execute(
         "INSERT INTO _akosha_otel_receiver_state (component, schema_version) "
         "VALUES ('akosha', 7)"
     )
     with pytest.raises(duckdb.ConstraintException):
-        store.conn.execute(  # type: ignore[union-attr]
+        store.conn.execute(
             "INSERT INTO _akosha_otel_receiver_state (component, schema_version) "
             "VALUES ('akosha', 8)"
         )
@@ -224,7 +224,7 @@ async def test_receiver_tables_are_idempotent_across_reopen(tmp_path: Path) -> N
     """
     hs = DuckdbHotStore(database_path=tmp_path / "r.duckdb", embedding_dim=384)
     await hs.initialize()
-    hs.conn.execute(  # type: ignore[union-attr]
+    hs.conn.execute(
         "INSERT INTO _dlq_rows (reason, row_json) VALUES ('not_null', '{}')"
     )
     await hs.close()
@@ -232,7 +232,7 @@ async def test_receiver_tables_are_idempotent_across_reopen(tmp_path: Path) -> N
     again = DuckdbHotStore(database_path=tmp_path / "r.duckdb", embedding_dim=384)
     await again.initialize()
     assert await again.table_exists("_dlq_rows")
-    kept = again.conn.execute(  # type: ignore[union-attr]
+    kept = again.conn.execute(
         "SELECT count(*) FROM _dlq_rows"
     ).fetchone()
     assert kept[0] == 1, "re-opening the substrate must not drop existing DLQ rows"
@@ -266,7 +266,7 @@ def _span(
 
 
 def _count(store: DuckdbHotStore, sql: str) -> int:
-    row = store.conn.execute(sql).fetchone()  # type: ignore[union-attr]
+    row = store.conn.execute(sql).fetchone()
     return int(row[0])
 
 

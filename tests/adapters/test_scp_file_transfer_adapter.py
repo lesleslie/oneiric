@@ -108,7 +108,7 @@ async def test_scp_adapter_errors_raise_lifecycle_error() -> None:
     conn = _FakeSSHConnection()
 
     class BrokenAsyncSSH(_FakeAsyncSSH):
-        async def scp(self, source: Any, destination: Any) -> None:  # type: ignore[override]
+        async def scp(self, source: Any, destination: Any) -> None:
             raise RuntimeError("boom")
 
     adapter = SCPFileTransferAdapter(
@@ -157,7 +157,7 @@ async def test_scp_init_asyncssh_module_path() -> None:
             return conn
 
     module = FakeAsyncSSHModule()
-    module.scp = fake_asyncssh.scp  # type: ignore[attr-defined]
+    module.scp = fake_asyncssh.scp
 
     adapter = SCPFileTransferAdapter(
         SCPFileTransferSettings(host="host.example.com", username="user"),
@@ -184,7 +184,7 @@ async def test_scp_init_imports_asyncssh_from_sys_modules(monkeypatch) -> None:
             pass
 
     module = FakeAsyncSSHModule()
-    monkeypatch.setitem(sys.modules, "asyncssh", module)  # type: ignore[arg-type]
+    monkeypatch.setitem(sys.modules, "asyncssh", module)
 
     adapter = SCPFileTransferAdapter(
         SCPFileTransferSettings(host="host.example.com", username="user"),
@@ -209,7 +209,7 @@ async def test_scp_init_asyncssh_with_password_and_key() -> None:
             return conn
 
     module = FakeAsyncSSHModule()
-    module.scp = _FakeAsyncSSH(conn).scp  # type: ignore[attr-defined]
+    module.scp = _FakeAsyncSSH(conn).scp
 
     adapter = SCPFileTransferAdapter(
         SCPFileTransferSettings(

@@ -215,10 +215,10 @@ async def test_cloudtasks_init_creates_client_from_sdk(monkeypatch) -> None:
             pass
 
     fake_tasks_v2 = types.ModuleType("tasks_v2")
-    fake_tasks_v2.CloudTasksAsyncClient = FakeCloudTasksAsyncClient  # type: ignore[attr-defined]
+    fake_tasks_v2.CloudTasksAsyncClient = FakeCloudTasksAsyncClient
 
     fake_google_cloud = types.ModuleType("google.cloud")
-    fake_google_cloud.tasks_v2 = fake_tasks_v2  # type: ignore[attr-defined]
+    fake_google_cloud.tasks_v2 = fake_tasks_v2
 
     monkeypatch.setitem(sys.modules, "google", types.ModuleType("google"))
     monkeypatch.setitem(sys.modules, "google.cloud", fake_google_cloud)

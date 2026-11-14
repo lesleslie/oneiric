@@ -70,7 +70,7 @@ def iter_entry_points(group: str) -> Sequence[metadata.EntryPoint]:
         return tuple(entry_points.select(group=group))
 
     if hasattr(entry_points, "get"):
-        return tuple(entry_points.get(group, []))  # type: ignore[attr-defined]
+        return tuple(entry_points.get(group, []))
     return ()
 
 

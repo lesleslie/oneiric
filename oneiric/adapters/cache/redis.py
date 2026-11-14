@@ -24,7 +24,7 @@ except ImportError:  # pragma: no cover - exercised when extras missing
     Redis: Any = None
     LRUCache: Any = None
 
-    class _AbstractTrackingCache:  # type: ignore[no-redef]
+    class _AbstractTrackingCache:
         pass
 
     class RedisError(Exception):
@@ -66,7 +66,7 @@ class _TrackingCacheImpl(
         self._cache = LRUCache(max_keys=max_keys)  # ty: ignore[not-callable]
         self._retry_policy = None
         # ``_connection_pool`` is unused because ``run()`` is a no-op below.
-        self._connection_pool = None  # type: ignore[assignment]
+        self._connection_pool = None
 
     async def run(self, task_status: Any = None) -> None:
         return None
@@ -83,7 +83,7 @@ class _TrackingCacheImpl(
 # instantiation in adapter init works. Tests that monkeypatch
 # ``oneiric.adapters.cache.redis.TrackingCache`` will substitute their own
 # class here and still be honored (the reference is consulted at call time).
-TrackingCache = _TrackingCacheImpl  # type: ignore[assignment,misc]
+TrackingCache = _TrackingCacheImpl
 
 
 class RedisCacheSettings(BaseModel):

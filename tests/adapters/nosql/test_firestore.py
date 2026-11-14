@@ -226,7 +226,7 @@ async def test_default_client_factory_uses_google_cloud(
             self.closed = True
 
     fake_fs_module = types.ModuleType("google.cloud.firestore_v1.async_client")
-    fake_fs_module.AsyncClient = FakeAsyncClient  # type: ignore[attr-defined]
+    fake_fs_module.AsyncClient = FakeAsyncClient
     fake_google = types.ModuleType("google")
     fake_cloud = types.ModuleType("google.cloud")
     fake_firestore_v1 = types.ModuleType("google.cloud.firestore_v1")
@@ -290,7 +290,7 @@ async def test_default_client_factory_with_emulator(
             self.closed = True
 
     fake_fs_module = types.ModuleType("google.cloud.firestore_v1.async_client")
-    fake_fs_module.AsyncClient = FakeAsyncClient  # type: ignore[attr-defined]
+    fake_fs_module.AsyncClient = FakeAsyncClient
     monkeypatch.setitem(sys.modules, "google", types.ModuleType("google"))
     monkeypatch.setitem(sys.modules, "google.cloud", types.ModuleType("google.cloud"))
     monkeypatch.setitem(
@@ -338,9 +338,9 @@ async def test_default_client_factory_with_credentials_file(
             pass
 
     fake_fs_module = types.ModuleType("google.cloud.firestore_v1.async_client")
-    fake_fs_module.AsyncClient = FakeAsyncClient  # type: ignore[attr-defined]
+    fake_fs_module.AsyncClient = FakeAsyncClient
     fake_sa_module = types.ModuleType("google.oauth2.service_account")
-    fake_sa_module.Credentials = FakeCredentials  # type: ignore[attr-defined]
+    fake_sa_module.Credentials = FakeCredentials
     fake_oauth2 = types.ModuleType("google.oauth2")
 
     monkeypatch.setitem(sys.modules, "google", types.ModuleType("google"))

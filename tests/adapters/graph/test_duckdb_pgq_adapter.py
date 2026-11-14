@@ -88,7 +88,7 @@ async def test_ingest_and_neighbors(
     fake_connection.queue_result([], [])
     await adapter.init()
     await adapter.ingest_edges([("a", "b"), ("a", "c")])
-    fake_connection.queue_result([("b",), ("c",)], [adapter._settings.target_column])  # type: ignore[attr-defined]
+    fake_connection.queue_result([("b",), ("c",)], [adapter._settings.target_column])
     neighbors = await adapter.neighbors("a")
     assert neighbors == ["b", "c"]
 
@@ -246,7 +246,7 @@ def test_default_connection_factory(monkeypatch) -> None:
         return FakeConnection()
 
     fake_duckdb = types.ModuleType("duckdb")
-    fake_duckdb.connect = fake_connect  # type: ignore[attr-defined]
+    fake_duckdb.connect = fake_connect
     monkeypatch.setitem(sys.modules, "duckdb", fake_duckdb)
 
     adapter = DuckDBPGQAdapter(DuckDBPGQSettings(database=":memory:"))

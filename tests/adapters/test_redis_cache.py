@@ -78,7 +78,7 @@ async def test_redis_cache_enables_tracking_cache(monkeypatch) -> None:
             self.connection_pool = DummyPool()
 
         @classmethod
-        def from_url(cls, url: str, **kwargs: Any) -> DummyRedis:  # type: ignore[override]
+        def from_url(cls, url: str, **kwargs: Any) -> DummyRedis:
             return cls(**kwargs)
 
         async def ping(self) -> bool:

@@ -166,15 +166,15 @@ async def test_vector_collection_count_with_filter() -> None:
 
 def test_getattr_creates_collection() -> None:
     adapter = _make()
-    col = adapter.my_collection  # type: ignore[attr-defined]
+    col = adapter.my_collection
     assert isinstance(col, VectorCollection)
     assert col.name == "my_collection"
 
 
 def test_getattr_returns_cached_collection() -> None:
     adapter = _make()
-    col1 = adapter.items  # type: ignore[attr-defined]
-    col2 = adapter.items  # type: ignore[attr-defined]
+    col1 = adapter.items
+    col2 = adapter.items
     assert col1 is col2
 
 

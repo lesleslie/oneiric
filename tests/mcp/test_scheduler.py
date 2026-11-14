@@ -30,12 +30,12 @@ class _FakeBridge:
 class TestWorkflowTaskProcessor:
     def test_constructor_accepts_workflow_bridge(self) -> None:
         bridge = _FakeBridge()
-        proc = WorkflowTaskProcessor(workflow_bridge=bridge)  # type: ignore[arg-type]
+        proc = WorkflowTaskProcessor(workflow_bridge=bridge)
         assert proc._workflow_bridge is bridge
 
     async def test_process_returns_documented_shape(self) -> None:
         bridge = _FakeBridge(run_id="run-42", results={"step1": "ok"})
-        proc = WorkflowTaskProcessor(workflow_bridge=bridge)  # type: ignore[arg-type]
+        proc = WorkflowTaskProcessor(workflow_bridge=bridge)
         result = await proc.process({
             "workflow": "my-workflow",
             "context": {"k": "v"},
@@ -56,12 +56,12 @@ class TestWorkflowTaskProcessor:
             async def execute_dag(self, *args, **kwargs):
                 raise RuntimeError("dag exploded")
 
-        proc = WorkflowTaskProcessor(workflow_bridge=_FailingBridge())  # type: ignore[arg-type]
+        proc = WorkflowTaskProcessor(workflow_bridge=_FailingBridge())
         with pytest.raises(RuntimeError, match="dag exploded"):
             await proc.process({"workflow": "my-workflow"})
 
     async def test_process_rejects_missing_workflow_key(self) -> None:
         bridge = _FakeBridge()
-        proc = WorkflowTaskProcessor(workflow_bridge=bridge)  # type: ignore[arg-type]
+        proc = WorkflowTaskProcessor(workflow_bridge=bridge)
         with pytest.raises(ValueError, match="workflow-key-missing"):
             await proc.process({})

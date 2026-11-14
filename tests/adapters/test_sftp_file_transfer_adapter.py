@@ -216,7 +216,7 @@ async def test_sftp_init_asyncssh_path_with_password(monkeypatch) -> None:
         async def connect(**kwargs: Any) -> _FakeConn:
             return conn
 
-    monkeypatch.setitem(sys.modules, "asyncssh", FakeAsyncSSH)  # type: ignore[arg-type]
+    monkeypatch.setitem(sys.modules, "asyncssh", FakeAsyncSSH)
 
     adapter = SFTPFileTransferAdapter(
         SFTPFileTransferSettings(
@@ -250,7 +250,7 @@ async def test_sftp_init_asyncssh_path_with_private_key_and_root(monkeypatch) ->
         async def connect(**kwargs: Any) -> _FakeConn:
             return conn
 
-    monkeypatch.setitem(sys.modules, "asyncssh", FakeAsyncSSH)  # type: ignore[arg-type]
+    monkeypatch.setitem(sys.modules, "asyncssh", FakeAsyncSSH)
 
     adapter = SFTPFileTransferAdapter(
         SFTPFileTransferSettings(

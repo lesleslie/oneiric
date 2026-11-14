@@ -442,7 +442,7 @@ def mcp_start(
         # of run_stdio_async() (the historical bare-host/port call landed in
         # stdio, which throws TypeError: TransportMixin.run_stdio_async()
         # got an unexpected keyword argument 'host').
-        await server.run_async(  # type: ignore[attr-defined]
+        await server.run_async(
             transport="http",
             host=host,
             port=resolved_port,

@@ -306,7 +306,7 @@ class LLMBase(ABC):
         **kwargs: Any,
     ) -> AsyncGenerator[LLMStreamChunk]:
         if False:  # pragma: no cover - type stub only
-            yield  # type: ignore[unreachable]
+            yield
         raise NotImplementedError
 
     async def _complete(

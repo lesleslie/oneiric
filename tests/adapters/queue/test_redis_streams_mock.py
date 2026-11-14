@@ -179,7 +179,7 @@ async def test_init_legacy_busygroup_response_error_is_ignored() -> None:
         # StreamDuplicateConsumerGroupError — that's coredis 6.x only.
         raise ResponseError("BUSYGROUP Consumer Group name already exists")
 
-    client.xgroup_create = busygroup_via_response_error  # type: ignore[method-assign]
+    client.xgroup_create = busygroup_via_response_error
     adapter = RedisStreamsQueueAdapter(
         RedisStreamsQueueSettings(
             stream="s", group="g", consumer="c", auto_create_group=True
@@ -227,7 +227,7 @@ async def test_init_pool_init_via_aenter() -> None:
         aenter_called = True
         return await original_aenter()
 
-    client.__aenter__ = tracked_aenter  # type: ignore[method-assign]
+    client.__aenter__ = tracked_aenter
     adapter = RedisStreamsQueueAdapter(
         RedisStreamsQueueSettings(),
         redis_client=client,
@@ -310,7 +310,7 @@ async def test_init_other_error_propagates() -> None:
     async def bad_xgroup_create(*a: Any, **kw: Any) -> None:
         raise Exception("NOGROUP something else")
 
-    client.xgroup_create = bad_xgroup_create  # type: ignore[method-assign]
+    client.xgroup_create = bad_xgroup_create
     adapter = RedisStreamsQueueAdapter(
         RedisStreamsQueueSettings(auto_create_group=True),
         redis_client=client,
@@ -411,7 +411,7 @@ async def test_health_false_on_ping_failure() -> None:
         # the existing except clause catches it.
         raise ConnectionError("connection refused")
 
-    client.ping = bad_ping  # type: ignore[method-assign]
+    client.ping = bad_ping
     assert await adapter.health() is False
 
 
@@ -497,10 +497,10 @@ async def test_pubsub_skips_invalid_messages() -> None:
     messages = [
         {"channel": None, "data": b"orphan"},
         {"channel": b"ch", "data": None},
-        "not-a-mapping",  # type: ignore[list-item]
+        "not-a-mapping",
         {"channel": b"ok", "data": b"good"},
     ]
-    client = MockPubSubRedisClient(messages=messages)  # type: ignore[arg-type]
+    client = MockPubSubRedisClient(messages=messages)
     adapter = RedisStreamsQueueAdapter(RedisStreamsQueueSettings(), redis_client=client)
     await adapter.init()
 
@@ -620,7 +620,7 @@ async def test_disconnect_pool_awaitable_disconnect(
             disconnected.append(True)
 
     client = MockRedisClient()
-    client.connection_pool = AsyncPool()  # type: ignore[assignment]
+    client.connection_pool = AsyncPool()
     adapter = RedisStreamsQueueAdapter(RedisStreamsQueueSettings(), redis_client=client)
     adapter._owns_client = True
     await adapter.init()
@@ -684,6 +684,6 @@ async def test_health_false_on_ping_timeout() -> None:
     async def timeout_ping() -> bool:
         raise TimeoutError("simulated wait_for ceiling")
 
-    client.ping = timeout_ping  # type: ignore[method-assign]
+    client.ping = timeout_ping
     # Must NOT raise — return False instead.
     assert await adapter.health() is False

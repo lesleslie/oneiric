@@ -1059,7 +1059,7 @@ def _register_health_route(mcp: FastMCP, *, feeds: dict[str, HealthFeedState]) -
     """
 
     @mcp.custom_route("/health", methods=["GET"])
-    async def health(_request: Request) -> JSONResponse:  # type: ignore[no-untyped-def]
+    async def health(_request: Request) -> JSONResponse:
         status_code, body = _aggregate_health_status(feeds)
         return JSONResponse(content=body, status_code=status_code)
 

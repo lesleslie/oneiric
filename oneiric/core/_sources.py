@@ -127,7 +127,7 @@ class _AuthExcludingEnvSource(EnvSettingsSource):
     complex (BaseModel-typed) field.
     """
 
-    def get_field_value(  # type: ignore[override]
+    def get_field_value(
         self, field: Any, field_name: str
     ) -> tuple[Any, str, bool]:
         if field_name in _OUT_OF_BAND_ENV_FIELDS:
@@ -228,7 +228,7 @@ class _SubstrateEnvSource(PydanticBaseSettingsSource):
     def __init__(self, settings_cls: type[BaseSettings]) -> None:
         super().__init__(settings_cls)
 
-    def get_field_value(  # type: ignore[override]
+    def get_field_value(
         self, field: Any, field_name: str
     ) -> tuple[Any, str, bool]:
         # We override ``__call__`` to do bulk collection, so

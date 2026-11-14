@@ -34,7 +34,7 @@ class RuntimeTaskGroup:
         if not self._group:
             return None
 
-        result: bool | None = await self._group.__aexit__(exc_type, exc, tb)  # type: ignore[func-returns-value]
+        result: bool | None = await self._group.__aexit__(exc_type, exc, tb)
 
         self._logger.debug(
             "taskgroup-exit", name=self.name, exc=str(exc) if exc else None

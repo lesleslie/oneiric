@@ -209,7 +209,7 @@ def _install_sync_container(
             assert name == sync_container.name
             return sync_container
 
-    adapter._sync_client = _FakeSyncServiceClient()  # type: ignore[attr-defined]
+    adapter._sync_client = _FakeSyncServiceClient()
 
 
 def _reader(payload: bytes, chunk_size: int = 1024) -> Callable[[], Iterator[bytes]]:

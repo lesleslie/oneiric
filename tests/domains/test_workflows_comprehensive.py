@@ -401,7 +401,7 @@ class TestDagSpecs:
 
         snapshot = bridge.dag_specs()
         snapshot.clear()
-        snapshot["__bogus__"] = {"nodes": []}  # type: ignore[index]
+        snapshot["__bogus__"] = {"nodes": []}
 
         # Internal state untouched
         assert "wf" in bridge.dag_specs()
@@ -1321,7 +1321,7 @@ class TestDagSpecsIsolated:
         snapshot = bridge.dag_specs()
         # Mutate aggressively.
         snapshot.clear()
-        snapshot["__attacker__"] = mutation_value  # type: ignore[index]
+        snapshot["__attacker__"] = mutation_value
         snapshot.setdefault(unique_key, {})
 
         # Re-fetch and verify the bridge's internal state was untouched.

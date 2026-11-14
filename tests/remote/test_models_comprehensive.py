@@ -482,7 +482,7 @@ class TestManifestSignature:
 
     def test_signature_field_is_required(self) -> None:
         with pytest.raises(Exception):
-            ManifestSignature()  # type: ignore[call-arg]
+            ManifestSignature()
 
 
 # ---------------------------------------------------------------------------
@@ -707,7 +707,7 @@ class TestPropertyBased:
         list of CapabilityDescriptor instances, then "renormalize" by feeding
         that list through the validator path and check it round-trips.
         """
-        entry = _make_entry(capabilities=inputs)  # type: ignore[arg-type]
+        entry = _make_entry(capabilities=inputs)
         normalized_first = list(entry.capabilities)
 
         # Re-feed the list of descriptors through the validator (mode='before')

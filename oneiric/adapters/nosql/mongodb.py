@@ -205,7 +205,7 @@ class MongoDBAdapter(NoSQLAdapterBase[MongoDBSettings]):
         if self._client is None:  # pragma: no cover - defensive
             raise LifecycleError("mongodb-client-factory-returned-none")
         self._db = self._client[self._settings.database]
-        await self._client.admin.command("ping")  # type: ignore[union-attr]
+        await self._client.admin.command("ping")
         return self._client
 
     def _collection(self, collection: str | None) -> AsyncIOMotorCollection:

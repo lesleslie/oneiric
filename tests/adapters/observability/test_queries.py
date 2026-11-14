@@ -22,7 +22,7 @@ def query_service():
 
     Note: _orm_to_result doesn't need a session, so we pass None.
     """
-    return QueryService(session_factory=None)  # type: ignore[assignment]
+    return QueryService(session_factory=None)
 
 
 def test_orm_to_trace_result_conversion(query_service):

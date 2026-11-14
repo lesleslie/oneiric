@@ -109,7 +109,7 @@ def test_the_temp_file_is_owner_only_from_the_moment_it_exists(
     observed: list[int] = []
 
     def spy(*args: object, **kwargs: object) -> tuple[int, str]:
-        fd, name = real_mkstemp(*args, **kwargs)  # type: ignore[arg-type]
+        fd, name = real_mkstemp(*args, **kwargs)
         observed.append(stat.S_IMODE(os.fstat(fd).st_mode))
         return fd, name
 

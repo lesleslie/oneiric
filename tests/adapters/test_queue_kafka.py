@@ -227,8 +227,8 @@ async def test_aiokafka_producer_and_consumer_via_sys_modules(monkeypatch) -> No
             return {}
 
     fake_aiokafka = types.ModuleType("aiokafka")
-    fake_aiokafka.AIOKafkaProducer = FakeAIOKafkaProducer  # type: ignore[attr-defined]
-    fake_aiokafka.AIOKafkaConsumer = FakeAIOKafkaConsumer  # type: ignore[attr-defined]
+    fake_aiokafka.AIOKafkaProducer = FakeAIOKafkaProducer
+    fake_aiokafka.AIOKafkaConsumer = FakeAIOKafkaConsumer
     monkeypatch.setitem(sys.modules, "aiokafka", fake_aiokafka)
 
     adapter = KafkaQueueAdapter(KafkaQueueSettings(topic="t"))
@@ -249,7 +249,7 @@ async def test_topic_partition_via_sys_modules(monkeypatch) -> None:
             self.partition = partition
 
     fake_structs = types.ModuleType("aiokafka.structs")
-    fake_structs.TopicPartition = FakeTopicPartitionCls  # type: ignore[attr-defined]
+    fake_structs.TopicPartition = FakeTopicPartitionCls
     monkeypatch.setitem(sys.modules, "aiokafka.structs", fake_structs)
 
     adapter = KafkaQueueAdapter(KafkaQueueSettings())
@@ -313,7 +313,7 @@ async def test_health_partitions_for_returns_none_raises() -> None:
     """health() raises RuntimeError when partitions_for returns None (line 104)."""
 
     class NonePartitionsProducer(FakeProducer):
-        async def partitions_for(self, topic: str) -> None:  # type: ignore[override]
+        async def partitions_for(self, topic: str) -> None:
             return None
 
     adapter = KafkaQueueAdapter(
@@ -371,8 +371,8 @@ async def test_ensure_producer_aiokafka_path_is_cached(monkeypatch) -> None:
             pass
 
     fake_aiokafka = types.ModuleType("aiokafka")
-    fake_aiokafka.AIOKafkaProducer = FakeAIOKafkaProducer  # type: ignore[attr-defined]
-    fake_aiokafka.AIOKafkaConsumer = FakeAIOKafkaProducer  # type: ignore[attr-defined]
+    fake_aiokafka.AIOKafkaProducer = FakeAIOKafkaProducer
+    fake_aiokafka.AIOKafkaConsumer = FakeAIOKafkaProducer
     monkeypatch.setitem(sys.modules, "aiokafka", fake_aiokafka)
 
     adapter = KafkaQueueAdapter(KafkaQueueSettings())

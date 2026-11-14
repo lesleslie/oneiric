@@ -32,7 +32,7 @@ def _mock_aiomqtt(monkeypatch: pytest.MonkeyPatch) -> None:
         async def disconnect(self) -> None:
             pass
 
-    fake.Client = _FakeClient  # type: ignore[attr-defined]
+    fake.Client = _FakeClient
     monkeypatch.setitem(sys.modules, "aiomqtt", fake)
 
 
@@ -278,7 +278,7 @@ async def test_ack_message() -> None:
 async def test_ack_non_message_is_noop() -> None:
     adapter, _, _ = _amqp_adapter()
     await adapter.init()
-    await adapter.ack("not-a-message")  # type: ignore[arg-type]
+    await adapter.ack("not-a-message")
 
 
 @pytest.mark.asyncio
@@ -645,7 +645,7 @@ async def test_ensure_amqp_connection_via_aio_pika(monkeypatch: Any) -> None:
             return connection
 
     fake_aio_pika = types.ModuleType("aio_pika")
-    fake_aio_pika.connect_robust = FakeAioPika.connect_robust  # type: ignore[attr-defined]
+    fake_aio_pika.connect_robust = FakeAioPika.connect_robust
     monkeypatch.setitem(sys.modules, "aio_pika", fake_aio_pika)
 
     adapter = LavinMQQueueAdapter(
@@ -682,7 +682,7 @@ async def test_build_amqp_message_via_aio_pika(monkeypatch: Any) -> None:
             messages_built.append((body, headers))
 
     fake_aio_pika = types.ModuleType("aio_pika")
-    fake_aio_pika.Message = FakeMessage  # type: ignore[attr-defined]
+    fake_aio_pika.Message = FakeMessage
     monkeypatch.setitem(sys.modules, "aio_pika", fake_aio_pika)
 
     channel = MockChannel()
@@ -826,7 +826,7 @@ async def test_health_aiomqtt_import_error(monkeypatch: pytest.MonkeyPatch) -> N
     await adapter.init()
     # Replace client with non-aiomqtt object, then make aiomqtt unimportable
     adapter._mqtt_client = MockMqttClient()
-    monkeypatch.setitem(sys.modules, "aiomqtt", None)  # type: ignore[arg-type]
+    monkeypatch.setitem(sys.modules, "aiomqtt", None)
     # health() except ImportError → pass → falls through to len(active_protocols)
     result = await adapter.health()
     assert result is True
@@ -839,7 +839,7 @@ async def test_ensure_amqp_connection_aio_pika_missing(
     """_ensure_amqp_connection raises LifecycleError when aio_pika not installed (lines 428-429)."""
     from oneiric.core.lifecycle import LifecycleError
 
-    monkeypatch.setitem(sys.modules, "aio_pika", None)  # type: ignore[arg-type]
+    monkeypatch.setitem(sys.modules, "aio_pika", None)
 
     adapter = LavinMQQueueAdapter(
         LavinMQSettings(preferred_protocol=Protocol.AMQP),
@@ -856,7 +856,7 @@ async def test_build_amqp_message_aio_pika_missing(
     """_build_amqp_message raises LifecycleError when aio_pika not installed (lines 488-489)."""
     from oneiric.core.lifecycle import LifecycleError
 
-    monkeypatch.setitem(sys.modules, "aio_pika", None)  # type: ignore[arg-type]
+    monkeypatch.setitem(sys.modules, "aio_pika", None)
 
     adapter = LavinMQQueueAdapter(
         LavinMQSettings(preferred_protocol=Protocol.AMQP),
@@ -871,7 +871,7 @@ async def test_init_mqtt_aiomqtt_missing(monkeypatch: pytest.MonkeyPatch) -> Non
     """_init_mqtt raises LifecycleError when aiomqtt is not installed (lines 520-521)."""
     from oneiric.core.lifecycle import LifecycleError
 
-    monkeypatch.setitem(sys.modules, "aiomqtt", None)  # type: ignore[arg-type]
+    monkeypatch.setitem(sys.modules, "aiomqtt", None)
 
     adapter = LavinMQQueueAdapter(
         LavinMQSettings(preferred_protocol=Protocol.MQTT),

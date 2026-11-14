@@ -232,7 +232,7 @@ class TestPriorityBoundsValidation:
 
     def test_non_integer_priority_rejected(self):
         """Non-integer priority values rejected."""
-        is_valid, error = validate_priority_bounds("not-an-int")  # type: ignore[arg-type]
+        is_valid, error = validate_priority_bounds("not-an-int")
         assert not is_valid
         assert error is not None
         assert "must be integer" in error
@@ -275,7 +275,7 @@ class TestStackLevelBoundsValidation:
 
     def test_non_integer_stack_level_rejected(self):
         """Non-integer stack level values rejected."""
-        is_valid, error = validate_stack_level_bounds(3.14)  # type: ignore[arg-type]
+        is_valid, error = validate_stack_level_bounds(3.14)
         assert not is_valid
         assert error is not None
         assert "must be integer" in error

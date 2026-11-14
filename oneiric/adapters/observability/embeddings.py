@@ -348,7 +348,7 @@ class EmbeddingService:
             vec = model.encode(["probe"])
             self._backend_dim = int(vec.shape[1])
             # Cache the loaded model for subsequent encode calls.
-            self._model2vec_model = model  # type: ignore[attr-defined]
+            self._model2vec_model = model
             return True
         except Exception:
             return False
@@ -430,6 +430,6 @@ class EmbeddingService:
             from model2vec import StaticModel  # ty: ignore[import-not-found]
 
             model = StaticModel.from_pretrained(self._settings.model2vec_model_name)
-            self._model2vec_model = model  # type: ignore[attr-defined]
+            self._model2vec_model = model
         arr = model.encode(texts.copy())
         return [np.asarray(row, dtype=np.float32) for row in arr]

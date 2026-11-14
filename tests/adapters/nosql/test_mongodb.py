@@ -322,7 +322,7 @@ def test_default_client_factory(monkeypatch: pytest.MonkeyPatch) -> None:
 
     fake_motor = types.ModuleType("motor")
     fake_motor_asyncio = types.ModuleType("motor.motor_asyncio")
-    fake_motor_asyncio.AsyncIOMotorClient = FakeMotorClient  # type: ignore[attr-defined]
+    fake_motor_asyncio.AsyncIOMotorClient = FakeMotorClient
     monkeypatch.setitem(sys.modules, "motor", fake_motor)
     monkeypatch.setitem(sys.modules, "motor.motor_asyncio", fake_motor_asyncio)
 

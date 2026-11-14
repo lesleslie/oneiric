@@ -733,7 +733,7 @@ class TestDomainBridgeActivity:
         activity_store.set("service", "api", DomainActivity(paused=True, note="maint"))
         supervisor.refresh()
 
-        cached = bridge._activity["api"]  # type: ignore[attr-defined]
+        cached = bridge._activity["api"]
         assert cached.paused is True
         assert cached.note == "maint"
 

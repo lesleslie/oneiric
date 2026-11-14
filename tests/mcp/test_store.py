@@ -28,7 +28,7 @@ class TestSubstrateStoreSettings:
         payload = SimpleNamespace(
             model_dump=lambda: {"version": "1.0", "source": "test"}
         )
-        record = store.write_settings(payload)  # type: ignore[arg-type]
+        record = store.write_settings(payload)
         assert record["payload"]["version"] == "1.0"
         bucket = store.read_settings()
         assert bucket["current"]["payload"]["version"] == "1.0"

@@ -26,7 +26,7 @@ def test_ensure_client_returns_existing_client() -> None:
     sentinel = object()
 
     class _Stub(EnsureClientMixin):
-        _client = sentinel  # type: ignore[assignment]
+        _client = sentinel
 
     assert _Stub()._ensure_client("not-initialized") is sentinel
 

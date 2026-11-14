@@ -16,7 +16,7 @@ def test_protocol_is_importable() -> None:
 
 
 def test_concrete_class_satisfies_protocol() -> None:
-    q: QueueAdapterProtocol = _ConcreteQueue()  # type: ignore[assignment]
+    q: QueueAdapterProtocol = _ConcreteQueue()
     assert q is not None
 
 

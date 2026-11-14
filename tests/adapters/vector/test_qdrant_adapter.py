@@ -375,7 +375,7 @@ async def test_qdrant_build_filter_exception_returns_none(
 
     types.ModuleType("qdrant_client.models")
     # Make it raise when accessed
-    monkeypatch.setitem(sys.modules, "qdrant_client.models", None)  # type: ignore[arg-type]
+    monkeypatch.setitem(sys.modules, "qdrant_client.models", None)
 
     adapter = QdrantAdapter(QdrantSettings())
     result = adapter._build_qdrant_filter({"key": "val"})

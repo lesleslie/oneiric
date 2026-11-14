@@ -24,7 +24,7 @@ class DummyNATS:
         self, subject: str, queue: str | None = None, cb: Any | None = None
     ) -> str:
         self.subscriptions.append((subject, queue or ""))
-        await cb(None)  # type: ignore[arg-type]
+        await cb(None)
         return "sid-1"
 
     async def request(

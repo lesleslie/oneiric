@@ -445,7 +445,7 @@ def test_load_auth_key_from_secret() -> None:
 def test_load_auth_key_from_path(tmp_path: object) -> None:
     import pathlib
 
-    key_file = pathlib.Path(str(tmp_path)) / "key.p8"  # type: ignore[arg-type]
+    key_file = pathlib.Path(str(tmp_path)) / "key.p8"
     key_file.write_text("FILE-KEY")
     settings = APNSPushSettings(topic="t", auth_key_path=key_file)
     adapter = APNSPushAdapter(settings)
@@ -505,7 +505,7 @@ def test_filter_kwargs_known_params() -> None:
 
 def test_filter_kwargs_type_error() -> None:
     adapter = APNSPushAdapter(APNSPushSettings(topic="t"))
-    result = adapter._filter_kwargs(42, {"a": 1})  # type: ignore[arg-type]
+    result = adapter._filter_kwargs(42, {"a": 1})
     assert result == {"a": 1}
 
 
@@ -559,7 +559,7 @@ def test_apns_default_client_factory_via_sys_modules(
             created_kwargs.append(dict(kwargs))
 
     fake_aioapns = types.ModuleType("aioapns")
-    fake_aioapns.APNs = FakeAPNsClient  # type: ignore[attr-defined]
+    fake_aioapns.APNs = FakeAPNsClient
     monkeypatch.setitem(sys.modules, "aioapns", fake_aioapns)
 
     settings = APNSPushSettings(topic="com.example.app")
@@ -591,7 +591,7 @@ def test_apns_client_kwargs_with_all_options(tmp_path: object) -> None:
 
     from pydantic import SecretStr
 
-    cert_file = pathlib.Path(str(tmp_path)) / "cert.pem"  # type: ignore[arg-type]
+    cert_file = pathlib.Path(str(tmp_path)) / "cert.pem"
     cert_file.write_text("cert")
     key_file = pathlib.Path(str(tmp_path)) / "key.pem"
     key_file.write_text("key")

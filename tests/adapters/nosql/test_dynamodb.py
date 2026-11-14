@@ -211,7 +211,7 @@ async def test_ensure_session_with_aioboto3_mock(monkeypatch) -> None:
         pass
 
     fake_aioboto3 = types.ModuleType("aioboto3")
-    fake_aioboto3.Session = FakeAioboto3Session  # type: ignore[attr-defined]
+    fake_aioboto3.Session = FakeAioboto3Session
     monkeypatch.setitem(sys.modules, "aioboto3", fake_aioboto3)
 
     settings = DynamoDBSettings(table_name="t", primary_key_field="id")
@@ -233,7 +233,7 @@ async def test_ensure_session_with_profile(monkeypatch) -> None:
             created.append({"profile_name": profile_name})
 
     fake_aioboto3 = types.ModuleType("aioboto3")
-    fake_aioboto3.Session = FakeAioboto3Session  # type: ignore[attr-defined]
+    fake_aioboto3.Session = FakeAioboto3Session
     monkeypatch.setitem(sys.modules, "aioboto3", fake_aioboto3)
 
     settings = DynamoDBSettings(

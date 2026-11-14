@@ -58,7 +58,7 @@ class TestCreateEventEnvelope:
         assert parsed.tzinfo is not None
         assert parsed.utcoffset() is not None
         # UTC offset is zero
-        assert parsed.utcoffset().total_seconds() == 0  # type: ignore[union-attr]
+        assert parsed.utcoffset().total_seconds() == 0
 
     def test_correlation_id_added_when_supplied(self) -> None:
         envelope = create_event_envelope("t", {}, source="s", correlation_id="corr-1")
@@ -352,13 +352,13 @@ def _async_cb(
         recorder.append(name)
         if fail_first and len(recorder) <= 1 and name == recorder[-1]:
             # Surface a failure on the first invocation for this name
-            if cb._failed_once:  # type: ignore[attr-defined]
+            if cb._failed_once:
                 return "ok"
-            cb._failed_once = True  # type: ignore[attr-defined]
+            cb._failed_once = True
             raise RuntimeError("simulated transient failure")
         return "ok"
 
-    cb._failed_once = False  # type: ignore[attr-defined]
+    cb._failed_once = False
     return cb
 
 

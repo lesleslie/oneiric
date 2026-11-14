@@ -162,7 +162,7 @@ async def test_openai_ensure_client_creates_new(
         def __init__(self, **kwargs: object) -> None:
             created.append(self)
 
-    fake_openai.AsyncOpenAI = FakeAsyncOpenAI  # type: ignore[attr-defined]
+    fake_openai.AsyncOpenAI = FakeAsyncOpenAI
     monkeypatch.setitem(sys.modules, "openai", fake_openai)
 
     adapter = OpenAIEmbeddingAdapter(OpenAIEmbeddingSettings())
@@ -185,7 +185,7 @@ async def test_openai_ensure_client_creation_failure(
     def bad_constructor(**kwargs: object) -> None:
         raise RuntimeError("ssl error")
 
-    fake_openai.AsyncOpenAI = bad_constructor  # type: ignore[attr-defined]
+    fake_openai.AsyncOpenAI = bad_constructor
     monkeypatch.setitem(sys.modules, "openai", fake_openai)
 
     adapter = OpenAIEmbeddingAdapter(OpenAIEmbeddingSettings())
@@ -237,7 +237,7 @@ async def test_openai_cleanup_with_client() -> None:
             closed.append(True)
 
     adapter = OpenAIEmbeddingAdapter(OpenAIEmbeddingSettings())
-    adapter._client = ClosingClient()  # type: ignore[assignment]
+    adapter._client = ClosingClient()
     await adapter.cleanup()
     assert closed == [True]
     assert adapter._client is None
@@ -259,7 +259,7 @@ async def test_openai_cleanup_close_raises_logs_warning() -> None:
             raise RuntimeError("close failed")
 
     adapter = OpenAIEmbeddingAdapter(OpenAIEmbeddingSettings())
-    adapter._client = RaisingClient()  # type: ignore[assignment]
+    adapter._client = RaisingClient()
     await adapter.cleanup()  # must not propagate
     assert adapter._client is None
 

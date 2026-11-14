@@ -127,7 +127,7 @@ async def test_gcdns_init_with_sys_modules_google_cloud(monkeypatch) -> None:
             return zone
 
     fake_dns = types.ModuleType("google.cloud.dns")
-    fake_dns.Client = FakeDNSClient  # type: ignore[attr-defined]
+    fake_dns.Client = FakeDNSClient
     fake_google = types.ModuleType("google")
     fake_cloud = types.ModuleType("google.cloud")
     monkeypatch.setitem(sys.modules, "google", fake_google)
@@ -242,7 +242,7 @@ async def test_gcdns_create_client_with_credentials_file(monkeypatch, tmp_path) 
             return FakeCredentials()
 
     fake_sa = types.ModuleType("google.oauth2.service_account")
-    fake_sa.Credentials = FakeCredentials  # type: ignore[attr-defined]
+    fake_sa.Credentials = FakeCredentials
     fake_oauth2 = types.ModuleType("google.oauth2")
 
     class FakeDNSClient:
@@ -253,7 +253,7 @@ async def test_gcdns_create_client_with_credentials_file(monkeypatch, tmp_path) 
             return zone
 
     fake_dns = types.ModuleType("google.cloud.dns")
-    fake_dns.Client = FakeDNSClient  # type: ignore[attr-defined]
+    fake_dns.Client = FakeDNSClient
     fake_google = types.ModuleType("google")
     fake_cloud = types.ModuleType("google.cloud")
 
@@ -261,7 +261,7 @@ async def test_gcdns_create_client_with_credentials_file(monkeypatch, tmp_path) 
     monkeypatch.setitem(sys.modules, "google.cloud", fake_cloud)
     monkeypatch.setitem(sys.modules, "google.cloud.dns", fake_dns)
     monkeypatch.setitem(sys.modules, "google.oauth2", fake_oauth2)
-    monkeypatch.setitem(sys.modules, "google.oauth2.service_account", fake_sa)  # type: ignore[arg-type]
+    monkeypatch.setitem(sys.modules, "google.oauth2.service_account", fake_sa)
 
     adapter = GCDNSAdapter(
         GCDNSSettings(

@@ -194,7 +194,7 @@ class GCDNSAdapter:
             raise LifecycleError("gcdns-zone-not-initialized")
         return self._zone
 
-    def _list_record_sets(self, zone: Any) -> list[Any]:  # type: ignore[valid-type]
+    def _list_record_sets(self, zone: Any) -> list[Any]:
         return list(zone.list_resource_record_sets())
 
     async def _list_matching(

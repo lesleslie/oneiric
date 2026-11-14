@@ -77,7 +77,7 @@ async def test_gcp_init_via_secretmanager_v1(monkeypatch) -> None:
             self.closed = True
 
     fake_sm = types.ModuleType("google.cloud.secretmanager_v1")
-    fake_sm.SecretManagerServiceAsyncClient = FakeAsyncClient  # type: ignore[attr-defined]
+    fake_sm.SecretManagerServiceAsyncClient = FakeAsyncClient
     fake_google = types.ModuleType("google")
     fake_cloud = types.ModuleType("google.cloud")
     monkeypatch.setitem(sys.modules, "google", fake_google)
@@ -119,7 +119,7 @@ async def test_gcp_init_with_credentials_file(monkeypatch, tmp_path) -> None:
         SecretManagerServiceAsyncClient = FakeAsyncClientFromFile
 
     fake_sm = types.ModuleType("google.cloud.secretmanager_v1")
-    fake_sm.SecretManagerServiceAsyncClient = FakeAsyncClientFromFile  # type: ignore[attr-defined]
+    fake_sm.SecretManagerServiceAsyncClient = FakeAsyncClientFromFile
     fake_google = types.ModuleType("google")
     fake_cloud = types.ModuleType("google.cloud")
     monkeypatch.setitem(sys.modules, "google", fake_google)
