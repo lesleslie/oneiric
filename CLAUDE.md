@@ -34,7 +34,8 @@ oneiric/
 ├── adapters/              # Adapter domain bridge
 │   ├── metadata.py        # Adapter registration helpers
 │   ├── bridge.py          # AdapterBridge for lifecycle activation
-│   └── watcher.py         # Config file watcher for hot-swapping
+│   ├── watcher.py         # Config file watcher for hot-swapping
+│   └── llm/               # LLM subsystem: providers, fallback chain, settings
 ├── domains/               # Generic domain bridges
 │   ├── base.py            # DomainBridge base class
 │   ├── services.py        # ServiceBridge
@@ -59,6 +60,9 @@ oneiric/
 
 `oneiric/core/cli.py` holds the core CLI/MCP server primitives (`MCPServerBase`)
 and is separate from the `oneiric/cli/` command package above.
+
+`oneiric.adapters.llm` hosts the LLM subsystem (providers, fallback chain,
+settings); mcp-common no longer ships LLM or prompting code.
 
 ### Resolution Precedence (4-tier)
 
