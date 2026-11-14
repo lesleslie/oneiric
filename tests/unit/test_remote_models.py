@@ -59,7 +59,7 @@ class TestCapabilityDescriptor:
             schema_format="json-schema",
             security=security,
         )
-        assert d.security.classification == "public"  # type: ignore  nosec
+        assert d.security.classification == "public"  # ty: ignore[missing-union-attribute]  nosec
 
     def test_from_dict(self) -> None:
         d = CapabilityDescriptor(
@@ -112,7 +112,7 @@ class TestRemoteManifestEntry:
             key="x",
             provider="p",
             factory="f:f",
-            capabilities=["cap_a", "cap_b"],  # type: ignore
+            capabilities=["cap_a", "cap_b"],
         )
         assert e.capability_names == ["cap_a", "cap_b"]
         assert all(isinstance(c, CapabilityDescriptor) for c in e.capabilities)
@@ -163,7 +163,7 @@ class TestRemoteManifestEntry:
             key="x",
             provider="p",
             factory="f:f",
-            capabilities=[  # type: ignore
+            capabilities=[
                 CapabilityDescriptor(name="a", description="desc"),
                 "bare_string",
             ],

@@ -784,7 +784,7 @@ class TestExtractNotificationMetadata:
             metadata={"notifications": {"channel": "email"}},
         )
         result = _extract_notification_metadata(candidate)
-        assert result["include_context"] is True  # type: ignore
+        assert result["include_context"] is True  # ty: ignore[not-subscriptable]
 
     def test_extra_payload_non_dict(self) -> None:
         candidate = Candidate(

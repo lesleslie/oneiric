@@ -7,14 +7,14 @@ import sys
 from pathlib import Path
 
 try:
-    import boto3  # type: ignore
+    import boto3
 except ImportError:
-    boto3 = None  # type: ignore
+    boto3 = None
 
 try:
-    from google.cloud import storage  # type: ignore
+    from google.cloud import storage
 except ImportError:
-    storage = None  # type: ignore
+    storage = None
 
 
 def upload_to_s3(

@@ -64,9 +64,9 @@ class TestLifecycleHooks:
         async def dummy_post(): ...
         async def dummy_cleanup(): ...
 
-        h.add_pre_swap(dummy_pre)  # type: ignore
-        h.add_post_swap(dummy_post)  # type: ignore
-        h.add_cleanup(dummy_cleanup)  # type: ignore
+        h.add_pre_swap(dummy_pre)  # ty: ignore[invalid-argument-type]
+        h.add_post_swap(dummy_post)  # ty: ignore[invalid-argument-type]
+        h.add_cleanup(dummy_cleanup)  # ty: ignore[invalid-argument-type]
         assert len(h.pre_swap) == 1
         assert len(h.post_swap) == 1
         assert len(h.on_cleanup) == 1

@@ -164,7 +164,7 @@ class WorkflowBridge(DomainBridge):
         )
 
         handle = await self._queue_bridge.use(category, provider=target_provider)
-        queue = cast("QueueAdapterProtocol", handle.instance)  # type: ignore
+        queue = cast("QueueAdapterProtocol", handle.instance)  # ty: ignore[unresolved-reference]
         enqueue = getattr(queue, "enqueue", None)
         if not callable(enqueue):
             raise LifecycleError("workflow-queue-adapter-missing-enqueue")
