@@ -103,7 +103,7 @@ class WorkflowBridge(DomainBridge):
         self._dag_specs = dag_map
 
     def dag_specs(self) -> dict[str, dict[str, Any]]:
-        return dict(self._dag_specs)
+        return self._dag_specs.copy()
 
     async def execute_dag(
         self,

@@ -89,7 +89,7 @@ class SystemReference:
 
     @property
     def metadata(self) -> dict[str, Any]:
-        return dict(self._metadata)
+        return self._metadata.copy()
 
     @property
     def timestamp_ms(self) -> int:

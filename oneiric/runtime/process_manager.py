@@ -3,6 +3,7 @@ import os
 import signal
 import subprocess
 import sys
+from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
@@ -106,16 +107,15 @@ class ProcessManager:
             stderr=subprocess.DEVNULL,
             stdin=subprocess.DEVNULL,
             start_new_session=True,
-            env={
-                **os.environ,
+            env=os.environ
+            | {
                 "ONEIRIC_BACKGROUND": "1",
                 "ONEIRIC_PID_FILE": str(self.pid_file),
             },
         )
 
         self.pid_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.pid_file, "w") as f:
-            f.write(str(process.pid))
+        self.pid_file.write_text(str(process.pid))
 
         print(f"Orchestrator started in background with PID: {process.pid}")
         return True
@@ -139,10 +139,8 @@ class ProcessManager:
                 except OSError:
                     break
 
-            try:
+            with suppress(OSError):
                 os.kill(self.pid, signal.SIGKILL)
-            except OSError:
-                pass
 
             self.pid_file.unlink(missing_ok=True)
             print(f"Orchestrator (PID: {self.pid}) stopped")

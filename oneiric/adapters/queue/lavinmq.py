@@ -254,15 +254,13 @@ class LavinMQQueueAdapter:
             if self._mqtt_client is None:
                 return False
             # Check if client has active connection
-            try:
+            with suppress(ImportError):
                 from aiomqtt import (  # ty: ignore[import-not-found]
                     Client as MqttClient,  # ty: ignore[import-not-found]
                 )
 
                 if isinstance(self._mqtt_client, MqttClient):
                     return True
-            except ImportError:
-                pass
 
         return bool(self._active_protocols)
 

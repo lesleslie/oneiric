@@ -387,7 +387,7 @@ def _normalize_capabilities(
 ) -> list[str]:
     if not capabilities:
         return []
-    return [str(cap).strip() for cap in capabilities if str(cap).strip()]
+    return [cap.strip() for cap in capabilities if cap.strip()]
 
 
 def _candidate_supports_capabilities(
@@ -426,7 +426,7 @@ def _extract_capabilities_from_descriptors(descriptors: Any) -> set[str]:
 
 
 def _candidate_capabilities(candidate: Candidate) -> set[str]:
-    metadata = candidate.metadata or {}
+    metadata = candidate.metadata
     capabilities = metadata.get("capabilities") or []
     descriptors = metadata.get("capability_descriptors") or []
 

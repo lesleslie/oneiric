@@ -197,7 +197,7 @@ class HttpFetchAction:
         data: Any,
         content: Any,
     ) -> httpx.Response:
-        request_headers = dict(headers)
+        request_headers = headers.copy()
         inject_trace_context(request_headers)
         request_kwargs = {
             "params": params,

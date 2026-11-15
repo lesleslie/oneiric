@@ -201,7 +201,7 @@ class ConfigTraceability:
     @property
     def metadata(self) -> dict[str, Any]:
         """Application metadata (returns a copy)."""
-        return dict(self._metadata)
+        return self._metadata.copy()
 
     def correlates_with(self, other_id: str) -> bool:
         """True if this trace correlates with ``other_id`` within 1 second.
@@ -229,7 +229,7 @@ class ConfigTraceability:
             "change_type": self._change_type,
             "timestamp_ms": self._timestamp_ms,
             "timestamp_seconds": self.timestamp_seconds,
-            "metadata": dict(self._metadata),
+            "metadata": self._metadata.copy(),
         }
 
 

@@ -142,12 +142,10 @@ class RuntimeCacheManager:
 
     async def _save_cache(self) -> None:
         try:
-            cache_data = []
-            for entry in self.cache.values():
-                cache_data.append(entry.to_dict())
+            cache_data = [entry.to_dict() for entry in self.cache.values()]
 
             def _write_cache() -> None:
-                with open(self.cache_file, "w", encoding="utf-8") as f:
+                with self.cache_file.open("w", encoding="utf-8") as f:
                     json.dump(cache_data, f, indent=2)
 
             await asyncio.to_thread(_write_cache)
@@ -158,11 +156,7 @@ class RuntimeCacheManager:
             raise
 
     async def _cleanup_expired_entries(self) -> None:
-        expired_keys = []
-
-        for key, entry in self.cache.items():
-            if entry.is_expired():
-                expired_keys.append(key)
+        expired_keys = [key for key, entry in self.cache.items() if entry.is_expired()]
 
         for key in expired_keys:
             del self.cache[key]

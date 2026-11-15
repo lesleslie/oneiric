@@ -28,7 +28,7 @@ async def observed_http_request(
         "oneiric.provider": provider,
         "oneiric.operation": operation,
         "http.method": operation,
-        "http.url": str(url),
+        "http.url": url,
     }
     start = time.perf_counter()
     success = False

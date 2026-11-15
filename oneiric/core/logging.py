@@ -4,7 +4,7 @@ import logging
 import logging.handlers
 import sys
 from collections.abc import Callable
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import urlparse
@@ -195,10 +195,10 @@ def _create_stream_handler(stream: Any) -> logging.Handler:
     """
     if hasattr(stream, "reconfigure"):
         # No-op when stream is already line-buffered (TTY).
-        try:
+        with suppress(
+            ValueError, OSError
+        ):  # pragma: no cover - reconfigure fails closed
             stream.reconfigure(line_buffering=True)
-        except ValueError, OSError:  # pragma: no cover - reconfigure fails closed
-            pass
     return logging.StreamHandler(stream)
 
 
@@ -217,10 +217,8 @@ def _create_file_handler(sink: LoggingSinkConfig) -> logging.Handler:
     # Python-level text I/O wrappers, not ``open(..., buffering=8192)``).
     file_stream = getattr(handler, "stream", None)
     if file_stream is not None and hasattr(file_stream, "reconfigure"):
-        try:
+        with suppress(ValueError, OSError):  # pragma: no cover
             file_stream.reconfigure(line_buffering=True)
-        except ValueError, OSError:  # pragma: no cover
-            pass
     return handler
 
 

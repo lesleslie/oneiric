@@ -1156,10 +1156,10 @@ class DuckdbHotStore:
             conditions.append("system_id = ?")
             params.append(system_id)
         conditions.append("list_cosine_similarity(embedding, ?) >= ?")
-        params.append(list(query_embedding))
-        params.append(threshold)
+        params.extend((query_embedding.copy(), threshold))
         where_clause = " AND ".join(conditions) if conditions else "TRUE"
-        rows = conn.execute(
+        # Safe: where_clause interpolates only literal fragments; every caller value is bound via a ? placeholder.
+        rows = conn.execute(  # nosemgrep: sqlalchemy-execute-raw-query, formatted-sql-query, python.lang.security.audit.formatted-sql-query.formatted-sql-query, python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
             f"""
             SELECT system_id, conversation_id, content, timestamp, metadata,
                    list_cosine_similarity(embedding, ?) AS score
@@ -1168,7 +1168,7 @@ class DuckdbHotStore:
             ORDER BY score DESC
             LIMIT ?
             """,
-            [list(query_embedding), *params, limit],
+            [query_embedding.copy(), *params, limit],
         ).fetchall()
         return [
             {

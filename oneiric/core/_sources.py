@@ -329,13 +329,11 @@ def build_yaml_layers(
         project_root_path / "settings" / f"{project_name}.yaml",
         project_root_path / "settings" / f"{project_name}.yml",
     )
-    layers: list[PydanticBaseSettingsSource] = []
-    for path in candidates:
-        if path.exists():
-            layers.append(
-                _AuthExcludingYamlSource(settings_cls, yaml_file=path, deep_merge=True)
-            )
-    return layers
+    return [
+        _AuthExcludingYamlSource(settings_cls, yaml_file=path, deep_merge=True)
+        for path in candidates
+        if path.exists()
+    ]
 
 
 class _AuthExcludingDotEnvSource(DotEnvSettingsSource):

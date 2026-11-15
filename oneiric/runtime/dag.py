@@ -124,7 +124,7 @@ async def execute_dag(
                     hooks.on_generation_start if hooks else None,
                     run_id=resolved_run_id,
                     workflow_key=workflow_label,
-                    generation=list(generation),
+                    generation=generation.copy(),
                     index=index,
                 )
                 try:
@@ -148,7 +148,7 @@ async def execute_dag(
                     hooks.on_generation_complete if hooks else None,
                     run_id=resolved_run_id,
                     workflow_key=workflow_label,
-                    generation=list(generation),
+                    generation=generation.copy(),
                     index=index,
                 )
         except Exception as exc:

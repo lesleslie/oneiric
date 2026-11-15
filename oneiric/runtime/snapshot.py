@@ -89,7 +89,7 @@ class RuntimeSnapshotManager:
             try:
 
                 def _read_snapshot() -> RuntimeSnapshot:
-                    with open(latest_file, encoding="utf-8") as f:
+                    with latest_file.open(encoding="utf-8") as f:
                         return RuntimeSnapshot.from_dict(json.load(f))
 
                 self.current_snapshot = await asyncio.to_thread(_read_snapshot)
@@ -125,7 +125,7 @@ class RuntimeSnapshotManager:
         try:
 
             def _write_snapshot() -> None:
-                with open(filepath, "w", encoding="utf-8") as f:
+                with filepath.open("w", encoding="utf-8") as f:
                     json.dump(snapshot.to_dict(), f, indent=2)
 
             await asyncio.to_thread(_write_snapshot)
@@ -161,7 +161,7 @@ class RuntimeSnapshotManager:
             try:
 
                 def _read_file(f: Path = file) -> RuntimeSnapshot:
-                    with open(f, encoding="utf-8") as fh:
+                    with f.open(encoding="utf-8") as fh:
                         return RuntimeSnapshot.from_dict(json.load(fh))
 
                 snapshots.append(await asyncio.to_thread(_read_file))

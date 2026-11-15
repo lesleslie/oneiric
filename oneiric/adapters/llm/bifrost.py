@@ -86,6 +86,7 @@ import os
 import socket
 import warnings
 from collections.abc import Mapping
+from contextlib import suppress
 from enum import StrEnum
 from typing import Annotated, Any, ClassVar, Literal
 
@@ -345,12 +346,10 @@ class BifrostLLMSettings(BaseSettings):
                 # intending to clear the value. The Pydantic default
                 # ``0`` then wins (3-agent MED finding).
                 if raw.strip():
-                    try:
+                    # Non-integer values fall through to Pydantic's
+                    # own validator, which reports a precise error.
+                    with suppress(ValueError):
                         data[field_name] = int(raw)
-                    except ValueError:
-                        # Non-integer values fall through to Pydantic's
-                        # own validator, which reports a precise error.
-                        pass
             elif field_name == "routes":
                 data[field_name] = [
                     value.strip() for value in raw.split(",") if value.strip()
