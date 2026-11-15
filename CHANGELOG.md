@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.37.0] - 2026-11-14
+
+### Fixed
+
+- oneiric: Convert blanket type-ignores to specific ty rules
+- oneiric: Move the DuckDB nosemgrep suppression where the Guardian reads it
+- oneiric: Resolve refurb findings across core, runtime, and adapters
+
+### Documentation
+
+- claude-md: Sync the version stamps with the 0.36.0 bump
+- claude: Note that oneiric.adapters.llm hosts the LLM subsystem
+- plan: Record Phase 4 completion and the crackerjack patch-target ruling
+
+### Internal
+
+- deps: Sync the lockfile with the 0.36.0 version bump
+- Drop mypy configuration in favour of ty
+- oneiric: Re-tighten the ty ratchet test budget to 558
+- oneiric: Remove bracketed mypy ignore directives
+- oneiric: Set measured ty ratchet budgets
+
 ## [0.36.0] - 2026-11-14
 
 ### Changed
