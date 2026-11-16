@@ -142,3 +142,24 @@ class TestStampVersionContract:
 
         assert result.returncode == 0
         assert "1.2.3" in (root / "CLAUDE.md").read_text()
+
+    def test_a_failed_write_leaves_every_claim_untouched(self, tmp_path: Path) -> None:
+        """The stamp is atomic: a failure partway through changes nothing.
+
+        The release path snapshots pyproject and restores it when the bump
+        fails, and that snapshot knows nothing about the doc surfaces. So
+        the stamper has to be atomic on its own — otherwise a write error
+        would leave one claim stamped for a version the rollback just undid,
+        and one claim empty (write_text truncates on open).
+        """
+        root = _make_repo(tmp_path)
+        cli_reference = root / "docs" / "CLI_REFERENCE.md"
+        cli_reference.chmod(0o444)
+        try:
+            result = _run(root)
+        finally:
+            cli_reference.chmod(0o644)
+
+        assert result.returncode == 2
+        assert "(0.0.1)" in (root / "CLAUDE.md").read_text()
+        assert "**Version:** 0.0.1" in cli_reference.read_text()
