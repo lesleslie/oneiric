@@ -109,7 +109,9 @@ class TestExportedNamesResolve:
         namespace: dict[str, object] = {}
         exec(f"from {package} import {name}", namespace)  # noqa: S102
 
-        assert namespace[name].__name__ == name
+        imported = namespace[name]
+        assert isinstance(imported, type)
+        assert imported.__name__ == name
 
     def test_lavinmq_queue_settings_alias_resolves(self) -> None:
         """``__all__`` has advertised ``LavinMQQueueSettings`` since the

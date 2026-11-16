@@ -7,7 +7,10 @@ if TYPE_CHECKING:
     from coredis import Redis  # ty: ignore[import-not-found]
 
     from oneiric.adapters.metadata import AdapterMetadata
-    from oneiric.adapters.queue.redis_streams import RedisStreamsQueueSettings
+    from oneiric.adapters.queue.redis_streams import (
+        RedisStreamsQueueAdapter,
+        RedisStreamsQueueSettings,
+    )
     from oneiric.core.resolution import Resolver
 
 

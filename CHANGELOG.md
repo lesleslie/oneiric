@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.39.0] - 2026-11-16
+
+### Fixed
+
+- audit: Treat an else-branch assignment as a runtime binding
+
+### Performance
+
+- adapters: Resolve the adapter packages' re-exports lazily
+
+### Documentation
+
+- Sync the version stamps and record the empty 0.38.0 release
+
 ## [0.38.0] - 2026-11-14
 
 ### Internal

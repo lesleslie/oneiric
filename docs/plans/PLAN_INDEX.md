@@ -1,6 +1,6 @@
 # Plan Index
 
-_Regenerated 2026-11-15 by `crackerjack.tools.plan_index_sync` (phase)._
+_Regenerated 2026-11-16 by `crackerjack.tools.plan_index_sync` (phase)._
 
 ### Docs: adr
 
@@ -9,6 +9,7 @@ _Regenerated 2026-11-15 by `crackerjack.tools.plan_index_sync` (phase)._
 | [`docs/adr/0001-deployability-discipline.md`](../adr/0001-deployability-discipline.md) | 2026-09-26 | `active` | `canonical` | `deployability-discipline` | ADR 0001: Bodai Deployability Discipline — Standalone by Default, Enhanced by Installation |
 | [`docs/adr/0002-oneiric-adapter-contract.md`](../adr/0002-oneiric-adapter-contract.md) | 2026-10-11 | `active` | `canonical` | `adapter-registry` | ADR 0002: Oneiric Adapter Contract — Single Canonical Specification |
 | [`docs/adr/0003-pydantic-settings-migration.md`](../adr/0003-pydantic-settings-migration.md) | 2026-10-11 | `active` | `canonical` | `oneiric-config` | ADR 0003: Adopt pydantic-settings as Oneiric's settings loader (revised) |
+| [`docs/adr/0004-lazy-adapter-package-imports.md`](../adr/0004-lazy-adapter-package-imports.md) | 2026-11-16 | `active` | `canonical` | `oneiric-import-cost` | ADR 0004: Adapter packages resolve their re-exports lazily |
 
 ### Docs: plans
 
@@ -50,9 +51,9 @@ _Regenerated 2026-11-15 by `crackerjack.tools.plan_index_sync` (phase)._
 
 | Role \\ Lifecycle | draft | active | partial | shipped | complete | Total |
 |---|---|---|---|---|---|---|
-| `canonical` | 1 | 5 | · | · | · | **6** |
+| `canonical` | 1 | 6 | · | · | · | **7** |
 | `implementation` | 1 | 7 | 2 | · | · | **10** |
 | `umbrella` | · | · | · | · | · | **0** |
 | `historical` | · | 1 | · | · | 1 | **2** |
 | `superseded` | · | · | · | · | · | **0** |
-| **Total** | **2** | **13** | **2** | **·** | **1** | **18** |
+| **Total** | **2** | **14** | **2** | **·** | **1** | **19** |
