@@ -114,6 +114,62 @@ def _is_type_checking_test(node: ast.expr) -> bool:
     return bool(isinstance(node, ast.Attribute) and node.attr == "TYPE_CHECKING")
 
 
+def _is_in_tc_else(node: ast.AST, parents: dict[int, ast.AST]) -> bool:
+    """True when ``node`` lives in the orelse branch of a TYPE_CHECKING If.
+
+    Walks ancestors to determine if any ancestor is a TYPE_CHECKING ``if``
+    whose ``orelse`` clause contains the node. A node inside the ``body``
+    of a TYPE_CHECKING If returns False (it's still TC-only).
+    """
+    cur: ast.AST | None = node
+    while cur is not None:
+        par = parents.get(id(cur))
+        if par is None:
+            return False
+        if isinstance(par, ast.If):
+            if cur in par.body:
+                # We're in a TC If's body — NOT in the else branch.
+                return False
+            # cur is in the orelse of a non-TC If — that's runtime code.
+            return cur in par.orelse and _is_type_checking_test(par.test)
+        cur = par
+    return False
+
+
+def _collect_tc_else_assignment_names(
+    tree: ast.Module, parents: dict[int, ast.AST]
+) -> set[str]:
+    """Names bound by an assignment in a TYPE_CHECKING if's ``else`` branch.
+
+    The optional-dependency idiom::
+
+        if TYPE_CHECKING:
+            from foo import Bar
+        else:
+            Bar = Any
+
+    binds ``Bar`` at runtime, so the TC import is not TC-only. Counting
+    only imports as runtime bindings reported this as a violation.
+    """
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            targets = node.targets
+        elif isinstance(node, ast.AnnAssign):
+            targets = [node.target]
+        else:
+            continue
+        if not _is_in_tc_else(node, parents):
+            continue
+        for target in targets:
+            if target is None:
+                continue
+            for inner in ast.walk(target):
+                if isinstance(inner, ast.Name):
+                    names.add(inner.id)
+    return names
+
+
 def _collect_type_checking_imports(tree: ast.Module) -> list[ImportedName]:
     """Find names that are TC-only (imported under TYPE_CHECKING AND NOT bound at runtime elsewhere).
 
@@ -142,8 +198,11 @@ def _collect_type_checking_imports(tree: ast.Module) -> list[ImportedName]:
          TC ifs). Imports inside TC ifs' ``else`` branches are runtime.
       3. Names in TC-body that are also imported at runtime are excluded
          — they're bound at runtime, not TC-only.
+      4. Names bound by an *assignment* in a TC if's ``else`` branch are
+         excluded too, for the same reason.
     """
-    tc_body_ids = _collect_tc_body_node_ids(tree, _build_parent_map(tree))
+    parents = _build_parent_map(tree)
+    tc_body_ids = _collect_tc_body_node_ids(tree, parents)
 
     # First pass: classify all import sites.
     tc_candidates: list[ImportedName] = []
@@ -180,6 +239,13 @@ def _collect_type_checking_imports(tree: ast.Module) -> list[ImportedName]:
                     )
                 else:
                     runtime_names.add(name)
+
+    # Second pass: else-branch assignments. A name bound by an assignment
+    # in the ``else`` branch of a TYPE_CHECKING if IS bound at runtime —
+    # the idiom is ``if TYPE_CHECKING: from x import Y / else: Y = Any``,
+    # used for optional dependencies. Counting only imports here made the
+    # TC import look TC-only and reported a false positive.
+    runtime_names |= _collect_tc_else_assignment_names(tree, parents)
 
     # Filter: drop TC candidates that also have a runtime import of the
     # same name. The runtime import binds the name, so TC-only assumption
