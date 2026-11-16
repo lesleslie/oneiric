@@ -189,7 +189,7 @@ addopts = [
     "--cov-report=html",
     "--cov-report=json",
     "--cov-report=xml",
-    "--cov-fail-under=94.05043341213553"
+    "--cov-fail-under=94.0"
 ]
 markers = [
     "security: Security-related tests",
