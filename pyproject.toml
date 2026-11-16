@@ -162,6 +162,13 @@ artifacts = ["oneiric/schemas/*.md"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# Without this, pytest-asyncio warns on every run and future versions
+# will change the default anyway: unset means "the fixture's own caching
+# scope", while "function" is where pytest-asyncio is heading. Every
+# async fixture in this repo is function-scoped by default and none
+# declares its own scope or loop_scope, so naming it here is behaviour-
+# preserving today and silences the deprecation tomorrow.
+asyncio_default_fixture_loop_scope = "function"
 testpaths = [
     "tests",
 ]
