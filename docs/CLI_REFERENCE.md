@@ -13,7 +13,7 @@ topic: lifecycle
 # Oneiric CLI Reference
 
 **Last Updated:** 2026-09-09
-**Version:** 0.38.0
+**Version:** 0.39.0
 
 Complete reference for all Oneiric CLI commands with examples, use cases, and troubleshooting tips.
 
