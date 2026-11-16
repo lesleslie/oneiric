@@ -3,88 +3,96 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from oneiric.core.resolution import Resolver
-
 if TYPE_CHECKING:
     from coredis import Redis  # ty: ignore[import-not-found]
 
-from .cache import (
-    MemoryCacheAdapter,
-    PersistentKVCacheAdapter,
-    RedisCacheAdapter,
-)
-from .database import (
-    DuckDBDatabaseAdapter,
-    MySQLDatabaseAdapter,
-    PostgresDatabaseAdapter,
-    SQLiteDatabaseAdapter,
-)
-from .dns import CloudflareDNSAdapter, GCDNSAdapter
-from .dns.route53 import Route53DNSAdapter
-from .embedding import (
-    OpenAIEmbeddingAdapter,
-)
-from .file_transfer import (
-    FTPFileTransferAdapter,
-    HTTPArtifactAdapter,
-    HTTPSUploadAdapter,
-    SCPFileTransferAdapter,
-    SFTPFileTransferAdapter,
-)
-from .graph import ArangoDBGraphAdapter, DuckDBPGQAdapter, Neo4jGraphAdapter
-from .http import AioHTTPAdapter, HTTPClientAdapter
-from .identity import Auth0IdentityAdapter
-from .llm import AnthropicLLM, OpenAILLMAdapter
-from .messaging import (
-    APNSPushAdapter,
-    FCMPushAdapter,
-    MailgunAdapter,
-    SendGridAdapter,
-    SlackAdapter,
-    TeamsAdapter,
-    TwilioAdapter,
-    WebhookAdapter,
-    WebPushAdapter,
-)
-from .metadata import AdapterMetadata, register_adapter_metadata
-from .monitoring import (
-    LogfireMonitoringAdapter,
-    OTLPObservabilityAdapter,
-    SentryMonitoringAdapter,
-)
-from .nosql.dynamodb import DynamoDBAdapter
-from .nosql.firestore import FirestoreAdapter
-from .nosql.mongodb import MongoDBAdapter
-from .queue import (
-    CloudTasksQueueAdapter,
-    LavinMQQueueAdapter,
-    NATSQueueAdapter,
-    PubSubQueueAdapter,
-    RedisStreamsQueueAdapter,
-    RedisStreamsQueueSettings,
-)
-from .secrets import (
-    AWSSecretManagerAdapter,
-    EnvSecretAdapter,
-    FileSecretAdapter,
-    GCPSecretManagerAdapter,
-    InfisicalSecretAdapter,
-    KeyringSecretAdapter,
-)
-from .storage import (
-    AzureBlobStorageAdapter,
-    GCSStorageAdapter,
-    LocalStorageAdapter,
-    S3StorageAdapter,
-)
-from .vector import AgentDBAdapter, PgvectorAdapter, PineconeAdapter, QdrantAdapter
+    from oneiric.adapters.metadata import AdapterMetadata
+    from oneiric.adapters.queue.redis_streams import RedisStreamsQueueSettings
+    from oneiric.core.resolution import Resolver
 
 
 def builtin_adapter_metadata() -> list[AdapterMetadata]:
+    """Every adapter the resolver can pick, with its metadata.
+
+    The family imports live here rather than at module scope. Importing
+    them eagerly made ``import oneiric.adapters.bootstrap`` cost ~2.3 s,
+    because it pulled in every adapter family and each one's client
+    libraries. Callers that only want :func:`queued_publisher` -- the
+    Claude Code hooks that publish one bus event per tool call -- paid
+    that tax on the tool-call critical path for no reason.
+    """
     # Lazy import keeps the oneiric cold-start path from pulling the
     # bifrost module on every run (3-agent F8 fix: stay inside the
     # single ``oneiric.adapters`` package namespace).
+    from .cache import (
+        MemoryCacheAdapter,
+        PersistentKVCacheAdapter,
+        RedisCacheAdapter,
+    )
+    from .database import (
+        DuckDBDatabaseAdapter,
+        MySQLDatabaseAdapter,
+        PostgresDatabaseAdapter,
+        SQLiteDatabaseAdapter,
+    )
+    from .dns import CloudflareDNSAdapter, GCDNSAdapter
+    from .dns.route53 import Route53DNSAdapter
+    from .embedding import (
+        OpenAIEmbeddingAdapter,
+    )
+    from .file_transfer import (
+        FTPFileTransferAdapter,
+        HTTPArtifactAdapter,
+        HTTPSUploadAdapter,
+        SCPFileTransferAdapter,
+        SFTPFileTransferAdapter,
+    )
+    from .graph import ArangoDBGraphAdapter, DuckDBPGQAdapter, Neo4jGraphAdapter
+    from .http import AioHTTPAdapter, HTTPClientAdapter
+    from .identity import Auth0IdentityAdapter
+    from .llm import AnthropicLLM, OpenAILLMAdapter
     from .llm.bifrost import BifrostLLMRouter
+    from .messaging import (
+        APNSPushAdapter,
+        FCMPushAdapter,
+        MailgunAdapter,
+        SendGridAdapter,
+        SlackAdapter,
+        TeamsAdapter,
+        TwilioAdapter,
+        WebhookAdapter,
+        WebPushAdapter,
+    )
+    from .monitoring import (
+        LogfireMonitoringAdapter,
+        OTLPObservabilityAdapter,
+        SentryMonitoringAdapter,
+    )
+    from .nosql.dynamodb import DynamoDBAdapter
+    from .nosql.firestore import FirestoreAdapter
+    from .nosql.mongodb import MongoDBAdapter
+    from .queue import (
+        CloudTasksQueueAdapter,
+        LavinMQQueueAdapter,
+        NATSQueueAdapter,
+        PubSubQueueAdapter,
+        RedisStreamsQueueAdapter,
+    )
+    from .secrets import (
+        AWSSecretManagerAdapter,
+        EnvSecretAdapter,
+        FileSecretAdapter,
+        GCPSecretManagerAdapter,
+        InfisicalSecretAdapter,
+        KeyringSecretAdapter,
+    )
+    from .storage import (
+        AzureBlobStorageAdapter,
+        GCSStorageAdapter,
+        LocalStorageAdapter,
+        S3StorageAdapter,
+    )
+    from .vector import AgentDBAdapter, PgvectorAdapter, PineconeAdapter, QdrantAdapter
 
     return [
         MemoryCacheAdapter.metadata,
@@ -101,8 +109,8 @@ def builtin_adapter_metadata() -> list[AdapterMetadata]:
         # priority=330 — above redis-streams (300). Registered so it is
         # reachable by explicit opt-in (`use("queue", provider="lavinmq")`),
         # NOT so it can win by priority: `settings/oneiric.yaml` pins
-        # ("adapter", "queue") to redis-streams, and `override_score` is the
-        # first element of the scoring tuple. See
+        # ("adapter", "queue") to redis-streams, and `override_score` is
+        # the first element of the scoring tuple. See
         # docs/plans/2026-11-08-lavinmq-provider-pinning.md.
         LavinMQQueueAdapter.metadata,
         HTTPClientAdapter.metadata,
@@ -156,6 +164,9 @@ def builtin_adapter_metadata() -> list[AdapterMetadata]:
 
 
 def register_builtin_adapters(resolver: Resolver) -> None:
+    """Register every built-in adapter's metadata with *resolver*."""
+    from .metadata import register_adapter_metadata
+
     adapters = builtin_adapter_metadata()
     register_adapter_metadata(
         resolver,
@@ -179,5 +190,12 @@ def queued_publisher(
     This is the canonical entry point for hook-bus publishers (Mahavishnu's
     ``bodai_hook_bridge._publish`` and downstream consumers). Underlying
     adapter: ``oneiric.adapters.queue.redis_streams``.
+
+    The adapter import is local to the factory: this function is the only
+    thing the bus publishers need from this module, and importing it at
+    module scope made every hook publish pay for the whole adapter
+    catalogue.
     """
+    from .queue.redis_streams import RedisStreamsQueueAdapter
+
     return RedisStreamsQueueAdapter(settings=settings, redis_client=redis_client)
