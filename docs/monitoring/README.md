@@ -3,7 +3,7 @@ status: active
 role: canonical
 date: 2026-02-03
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: observability
 ---
@@ -25,21 +25,21 @@ This directory contains comprehensive guides for setting up production-grade mon
    - Query examples and dashboards
    - Best practices for production
 
-1. **[Grafana Dashboards](GRAFANA_DASHBOARDS.md)** - Visualization and monitoring
+2. **[Grafana Dashboards](GRAFANA_DASHBOARDS.md)** - Visualization and monitoring
 
    - Pre-built dashboard configurations
    - Custom dashboard creation
    - Panel setup and queries
    - Alerting rules
 
-1. **[Loki Setup](LOKI_SETUP.md)** - Log aggregation and analysis
+3. **[Loki Setup](LOKI_SETUP.md)** - Log aggregation and analysis
 
    - Loki installation
    - Structured logging integration
    - Log querying with LogQL
    - Retention policies
 
-1. **[Alerting Setup](ALERTING_SETUP.md)** - Proactive monitoring
+4. **[Alerting Setup](ALERTING_SETUP.md)** - Proactive monitoring
 
    - AlertManager configuration
    - Alert rule definitions

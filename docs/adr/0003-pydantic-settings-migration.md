@@ -4,7 +4,7 @@ role: canonical
 kind: decision
 date: 2026-10-11
 last_reviewed: 2026-10-11
-superseded_by: null
+superseded_by:
 blocks_on: []
 decision_date: 2026-10-11
 topic: oneiric-config
@@ -57,14 +57,7 @@ spec update at
 ```
 
 **Correction to original ADR (line 182):** the prior claim
-*"The cross-repo consumer contract: `MahavishnuSettings extends
-`OneiricMCPConfig` (still works)"* was wrong.
-`mahavishnu/core/config.py:2689` declares
-`class MahavishnuSettings(BaseSettings):` — `BaseSettings` directly,
-not `OneiricMCPConfig`. `OneiricMCPConfig` is a *nested field* on
-`MahavishnuSettings` (`oneiric_mcp: OneiricMCPConfig = Field(...)` at
-line 2984). Mahavishnu consumes Oneiric's settings indirectly via
-`from oneiric.core.config import load_settings as _oneiric_load`
+\*"The cross-repo consumer contract: `MahavishnuSettings extends `OneiricMCPConfig`(still works)"* was wrong.`mahavishnu/core/config.py:2689`declares`class MahavishnuSettings(BaseSettings):`—`BaseSettings`directly, not`OneiricMCPConfig`. `OneiricMCPConfig`is a *nested field* on`MahavishnuSettings` (`oneiric_mcp: OneiricMCPConfig = Field(...)`at line 2984). Mahavishnu consumes Oneiric's settings indirectly via`from oneiric.core.config import load_settings as \_oneiric_load\`
 (mahavishnu/core/config.py:3153).
 
 Furthermore, Mahavishnu has its **own local re-declaration** of
@@ -187,71 +180,73 @@ Oneiric's settings loader migrates to pydantic-settings natively.
 
 Concretely:
 
-1. **`OneiricSettings` and `OneiricMCPConfig` extend `BaseSettings`**
-   instead of `BaseModel`. Same `model_config = SettingsConfigDict(...)`
-   blocks already in the code — the inheritance change activates them.
+01. **`OneiricSettings` and `OneiricMCPConfig` extend `BaseSettings`**
+    instead of `BaseModel`. Same `model_config = SettingsConfigDict(...)`
+    blocks already in the code — the inheritance change activates them.
 
-2. **`load_settings()` is replaced** by a `settings_customise_sources`
-   method on `OneiricSettings` that returns a 7-source chain (see ACB
-   precedence above, reversed to pydantic-settings' "first wins"
-   convention).
+02. **`load_settings()` is replaced** by a `settings_customise_sources`
+    method on `OneiricSettings` that returns a 7-source chain (see ACB
+    precedence above, reversed to pydantic-settings' "first wins"
+    convention).
 
-3. **`OneiricMCPConfig.env_file=".env"` is dropped** (currently dead
-   config on `BaseModel`, becomes active on `BaseSettings`, silently
-   reads `.env` files from CWD on every instantiation). Migration
-   without this drop is a regression.
+03. **`OneiricMCPConfig.env_file=".env"` is dropped** (currently dead
+    config on `BaseModel`, becomes active on `BaseSettings`, silently
+    reads `.env` files from CWD on every instantiation). Migration
+    without this drop is a regression.
 
-4. **`OneiricSettings.model_config` gets `arbitrary_types_allowed=True`**
-   so the nested `auth: OneiricMCPAuthConfig` dataclass field
-   doesn't break construction. The `auth:` field's env-var source
-   is **excluded** from the chain (we keep the existing
-   `OneiricMCPAuthConfig.from_env()` call site at the CLI as the
-   single point of env-var overlay on auth).
+04. **`OneiricSettings.model_config` gets `arbitrary_types_allowed=True`**
+    so the nested `auth: OneiricMCPAuthConfig` dataclass field
+    doesn't break construction. The `auth:` field's env-var source
+    is **excluded** from the chain (we keep the existing
+    `OneiricMCPAuthConfig.from_env()` call site at the CLI as the
+    single point of env-var overlay on auth).
 
-5. **Hand-rolled YAML parsing helpers (`_read_file`, `_load_layer_file`,
-   `_deep_merge`, `_coerce_env_value`) are deleted.** Replaced by
-   `YamlConfigSettingsSource(settings_cls, yaml_file=..., deep_merge=True)`
-   for each layer.
+05. **Hand-rolled YAML parsing helpers (`_read_file`, `_load_layer_file`,
+    `_deep_merge`, `_coerce_env_value`) are deleted.** Replaced by
+    `YamlConfigSettingsSource(settings_cls, yaml_file=..., deep_merge=True)`
+    for each layer.
 
-6. **`_ALIAS_OVERRIDES` re-implemented as `AliasChoices`** on the
-   target fields: `RuntimePathsConfig.domain_activity_path` gets
-   `validation_alias=AliasChoices("domain_activity_path", "ONEIRIC_ACTIVITY_STORE")`
-   (already done at line 270); `LoggingConfig.level` gets
-   `validation_alias=AliasChoices("level", "ONEIRIC_LOG_LEVEL")`
-   (NEW — to add). Full audit of `_ALIAS_OVERRIDES` is Phase 0.
+06. **`_ALIAS_OVERRIDES` re-implemented as `AliasChoices`** on the
+    target fields: `RuntimePathsConfig.domain_activity_path` gets
+    `validation_alias=AliasChoices("domain_activity_path", "ONEIRIC_ACTIVITY_STORE")`
+    (already done at line 270); `LoggingConfig.level` gets
+    `validation_alias=AliasChoices("level", "ONEIRIC_LOG_LEVEL")`
+    (NEW — to add). Full audit of `_ALIAS_OVERRIDES` is Phase 0.
 
-7. **Per-project `env_prefix`** is handled by a memoized factory:
-   ```python
-   _PROJECT_SETTINGS: dict[str, type[OneiricSettings]] = {}
+07. **Per-project `env_prefix`** is handled by a memoized factory:
 
-   def build_oneiric_settings(project_name: str) -> type[OneiricSettings]:
-       if project_name not in _PROJECT_SETTINGS:
-           class _Project(OneiricSettings):
-               model_config = SettingsConfigDict(
-                   env_prefix=f"{project_name.upper()}_",
-                   env_nested_delimiter="__",
-                   extra="allow",
-                   populate_by_name=True,
-                   arbitrary_types_allowed=True,
-               )
-           _PROJECT_SETTINGS[project_name] = _Project
-       return _PROJECT_SETTINGS[project_name]
-   ```
-   `load_settings(project_name="X")` then returns
-   `build_oneiric_settings(project_name)().model_validate(...)` after
-   applying the explicit `path=` override (see §8 below).
+    ```python
+    _PROJECT_SETTINGS: dict[str, type[OneiricSettings]] = {}
 
-8. **Explicit `path=` override and `{PROJECT}_CONFIG` env var** are
-   preserved by post-construction `model_validate(merged_dict)` —
-   pydantic-settings' `init_settings` source covers constructor kwargs
-   but cannot easily model "explicit_config_data applies last as a
-   final override". Phase 1 Task 1.5 implements the merge + apply.
+    def build_oneiric_settings(project_name: str) -> type[OneiricSettings]:
+        if project_name not in _PROJECT_SETTINGS:
+            class _Project(OneiricSettings):
+                model_config = SettingsConfigDict(
+                    env_prefix=f"{project_name.upper()}_",
+                    env_nested_delimiter="__",
+                    extra="allow",
+                    populate_by_name=True,
+                    arbitrary_types_allowed=True,
+                )
+            _PROJECT_SETTINGS[project_name] = _Project
+        return _PROJECT_SETTINGS[project_name]
+    ```
 
-9. **`BodaiManifestSource` is defined** as a thin
-   `PydanticBaseSettingsSource` subclass reading from the
-   `oneiric remote-sync` cache, between YAML and env in the chain.
-   Skipped (no-op) when no manifest URL is configured. Cache +
-   signature semantics deferred to a follow-on spec.
+    `load_settings(project_name="X")` then returns
+    `build_oneiric_settings(project_name)().model_validate(...)` after
+    applying the explicit `path=` override (see §8 below).
+
+08. **Explicit `path=` override and `{PROJECT}_CONFIG` env var** are
+    preserved by post-construction `model_validate(merged_dict)` —
+    pydantic-settings' `init_settings` source covers constructor kwargs
+    but cannot easily model "explicit_config_data applies last as a
+    final override". Phase 1 Task 1.5 implements the merge + apply.
+
+09. **`BodaiManifestSource` is defined** as a thin
+    `PydanticBaseSettingsSource` subclass reading from the
+    `oneiric remote-sync` cache, between YAML and env in the chain.
+    Skipped (no-op) when no manifest URL is configured. Cache +
+    signature semantics deferred to a follow-on spec.
 
 10. **Adapter settings** follow the same pattern: `BaseModel` for
     adapters that don't need env-var loading (most adapters);
@@ -326,31 +321,31 @@ This ADR is correctly applied when:
 
 - [ ] `OneiricSettings` and `OneiricMCPConfig` extend `BaseSettings`.
 - [ ] `model_config` blocks retain the same `env_prefix` /
-      `env_nested_delimiter` declarations.
+  `env_nested_delimiter` declarations.
 - [ ] `OneiricSettings.model_config` declares
-      `arbitrary_types_allowed=True` (so the `auth: OneiricMCPAuthConfig`
-      dataclass field doesn't break construction).
+  `arbitrary_types_allowed=True` (so the `auth: OneiricMCPAuthConfig`
+  dataclass field doesn't break construction).
 - [ ] `OneiricMCPConfig.model_config` does NOT declare `env_file`
-      (the `.env` activation regression is avoided).
+  (the `.env` activation regression is avoided).
 - [ ] `LoggingConfig.level` declares
-      `validation_alias=AliasChoices("level", "ONEIRIC_LOG_LEVEL")`.
+  `validation_alias=AliasChoices("level", "ONEIRIC_LOG_LEVEL")`.
 - [ ] `settings_customise_sources` returns sources in ACB's precedence
-      order, **reversed** for pydantic-settings' "first wins" convention.
+  order, **reversed** for pydantic-settings' "first wins" convention.
 - [ ] `_alias_overrides_source` is the first-returned source
-      (highest priority).
+  (highest priority).
 - [ ] `env_settings` comes before any `YamlConfigSettingsSource`
-      so env vars override YAML.
+  so env vars override YAML.
 - [ ] `_load_layer_file`, `_read_file`, `_deep_merge`,
-      `_coerce_env_value`, `_env_overrides`, `_ALIAS_OVERRIDES` are
-      all deleted from `oneiric/core/config.py`.
+  `_coerce_env_value`, `_env_overrides`, `_ALIAS_OVERRIDES` are
+  all deleted from `oneiric/core/config.py`.
 - [ ] Each `YamlConfigSettingsSource` is constructed with
-      `deep_merge=True` so nested dicts across layers merge properly.
+  `deep_merge=True` so nested dicts across layers merge properly.
 - [ ] `load_settings(project_name="X")` returns an instance whose
-      env prefix is `X_` (uppercased) AND whose `auth:` field is
-      the result of `OneiricMCPAuthConfig.from_env()` post-construction.
+  env prefix is `X_` (uppercased) AND whose `auth:` field is
+  the result of `OneiricMCPAuthConfig.from_env()` post-construction.
 - [ ] `mcp__oneiric__*` MCP tools still work without changes.
 - [ ] Mahavishnu's local `OneiricMCPConfig(BaseModel)` decision is
-      documented (Phase 3 task 3.7 result).
+  documented (Phase 3 task 3.7 result).
 
 ## References
 

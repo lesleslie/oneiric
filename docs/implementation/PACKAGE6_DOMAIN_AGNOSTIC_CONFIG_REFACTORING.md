@@ -3,7 +3,7 @@ status: complete
 role: historical
 date: 2026-02-03
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: lifecycle
 ---
@@ -117,14 +117,14 @@ Created comprehensive test suite with 48 tests covering:
    - `AdapterConfigWatcher` API unchanged
    - All existing adapter configurations work as before
 
-1. **Domain Watchers**
+2. **Domain Watchers**
 
    - `ServiceConfigWatcher` API unchanged
    - `TaskConfigWatcher` API unchanged
    - `EventConfigWatcher` API unchanged
    - `WorkflowConfigWatcher` API unchanged
 
-1. **Config Models**
+3. **Config Models**
 
    - `LayerSettings` model unchanged
    - `OneiricSettings` structure unchanged
@@ -195,7 +195,7 @@ layer = selector(settings)
 ### New Files
 
 1. `/Users/les/Projects/oneiric/oneiric/core/config_helpers.py` (78 lines)
-1. `/Users/les/Projects/oneiric/tests/core/test_config_helpers.py` (348 lines)
+2. `/Users/les/Projects/oneiric/tests/core/test_config_helpers.py` (348 lines)
 
 ### Modified Files
 
@@ -204,12 +204,12 @@ layer = selector(settings)
    - Enhanced docstrings
    - No API changes
 
-1. `/Users/les/Projects/oneiric/oneiric/adapters/watcher.py` (61 lines)
+2. `/Users/les/Projects/oneiric/oneiric/adapters/watcher.py` (61 lines)
 
    - Uses `create_layer_selector("adapter")`
    - Keeps `adapter_layer()` for backwards compatibility
 
-1. `/Users/les/Projects/oneiric/oneiric/domains/watchers.py` (163 lines)
+3. `/Users/les/Projects/oneiric/oneiric/domains/watchers.py` (163 lines)
 
    - All watchers use `create_layer_selector()`
    - Enhanced docstrings
@@ -246,8 +246,8 @@ layer = selector(settings)
 ### For Users
 
 1. **No Action Required:** Existing code continues to work
-1. **New Code:** Use `create_layer_selector()` for consistency
-1. **Documentation:** Review updated docstrings for examples
+2. **New Code:** Use `create_layer_selector()` for consistency
+3. **Documentation:** Review updated docstrings for examples
 
 ### For Developers
 
@@ -257,12 +257,12 @@ layer = selector(settings)
    - Add `LayerSettings` field to `OneiricSettings`
    - Use `create_layer_selector()` in watchers
 
-1. **Testing:**
+2. **Testing:**
 
    - Run `tests/core/test_config_helpers.py` for validation
    - Use parametrized tests for multi-domain scenarios
 
-1. **Documentation:**
+3. **Documentation:**
 
    - Docstrings in `config_helpers.py` provide examples
    - Test file shows real-world usage patterns
@@ -285,9 +285,9 @@ The refactoring is production-ready and requires no migration effort from users.
 ### Optional Enhancements
 
 1. Add validation warnings for deprecated `adapter_layer()` usage
-1. Create migration guide for adding new domains
-1. Add more integration tests with watchers
-1. Consider adding config file validation utilities
+2. Create migration guide for adding new domains
+3. Add more integration tests with watchers
+4. Consider adding config file validation utilities
 
 ### Related Work
 

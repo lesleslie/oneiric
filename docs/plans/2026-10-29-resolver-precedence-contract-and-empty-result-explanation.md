@@ -3,7 +3,7 @@ status: partial
 role: implementation
 date: 2026-10-29
 last_reviewed: 2026-10-29
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: resolver
 ---
@@ -51,17 +51,20 @@ Input classes the spec implies but no existing test exercises, most likely to bi
 | `tests/core/test_resolution_spec_sync.py` | **New.** Guards that the spec text and the code agree. Created by Task 1. |
 | `~/.claude/skills/resolve-components/SKILL.md` | **New in Task 2 — outside the repository.** User-level skill; no repo-local source exists. |
 
----
+______________________________________________________________________
 
 ### Task 1: Reconcile the spec with the code and pin the precedence contract
 
 **Files:**
+
 - Modify: `docs/RESOLUTION_LAYER_SPEC.md` (Precedence Rules section, ~line 29–65)
 - Modify: `tests/core/test_resolution.py` (class `TestResolutionPrecedence`, ~line 281)
 - Create: `tests/core/test_resolution_spec_sync.py`
 
 **Interfaces:**
+
 - Consumes: `CandidateRegistry.register_candidate(candidate: Candidate) -> None`; `CandidateRegistry.resolve(domain: str, key: str, provider: str | None = None, capabilities: Iterable[str] | None = None, *, require_all: bool = True) -> Candidate | None`; `CandidateRegistry.explain(domain: str, key: str, *, capabilities: Iterable[str] | None = None, require_all: bool = True) -> ResolutionExplanation`; `Candidate(domain=..., key=..., provider=..., priority=..., factory=..., metadata=..., source=...)`.
+
 - Produces: no new API. Two test modules that pin existing behavior and guard the spec↔code relationship.
 
 - [ ] **Step 1: Amend the spec's Precedence Rules list**
@@ -135,13 +138,13 @@ git commit --only docs/RESOLUTION_LAYER_SPEC.md tests/core/test_resolution.py te
 - **Rollback signal**: `tests/core/test_resolution_spec_sync.py` fails after an unrelated resolver change, or the spec's numbered precedence list no longer matches the tuple order at `oneiric/core/resolution.py:278`.
 - **Observability added**: none at runtime. The guard converts a silent spec/code divergence into a failing test.
 
----
+______________________________________________________________________
 
 ### Task 2: Rewrite the `resolve-components` skill to describe the real API
 
 > **✅ Completed 2026-10-29** (out of band, from the mahavishnu planning
 > session — the skill is user-level, so no repo commit was involved).
-> Verified two ways: (a) all 17 ```python blocks scanned for the fictional
+> Verified two ways: (a) all 17 \`\`\`python blocks scanned for the fictional
 > symbols — **zero** matches; the only remaining mentions of
 > `oneiric.core.resolver`, `oneiric.core.priority`, and `@priority` are in the
 > prose, where they are named deliberately to warn against them. (b) every
@@ -153,9 +156,11 @@ git commit --only docs/RESOLUTION_LAYER_SPEC.md tests/core/test_resolution.py te
 > array — the skill now shows the tuple form and notes the JSON conversion.
 
 **Files:**
+
 - Modify: `~/.claude/skills/resolve-components/SKILL.md` (absolute path — this skill exists only at user level; there is no repo-local copy)
 
 **Interfaces:**
+
 - Consumes: the real public surface of `oneiric/core/resolution.py` — `Resolver`, `CandidateRegistry`, `Candidate`, `CandidateSource`, `ResolverSettings`, `ResolutionExplanation`.
 - Produces: a corrected skill file. No Python API changes.
 
@@ -260,7 +265,8 @@ For each Python symbol the skill names, confirm it is defined or exported in `on
 Run: `grep -nE "def (select|clear_selection|candidates|conflicts|set_priority|register_hook)|class ResolutionHook|oneiric\.core\.resolver|oneiric\.core\.priority" ~/.claude/skills/resolve-components/SKILL.md`
 
 Expected: **no output** from the code blocks. Scope the check to the file's
-```python blocks before running it — the prose deliberately names the fictions
+
+````python blocks before running it — the prose deliberately names the fictions
 in the Common Mistakes table and the priority note, so a naive whole-file
 grep produces false positives. Any match inside a code block is a surviving
 fiction — remove it.
@@ -283,7 +289,7 @@ The skill lives outside the repository, so it is not part of the repo commit. Co
 
 ```bash
 git status --short
-```
+````
 
 Expected: no new files beyond what Task 1 committed.
 
@@ -295,17 +301,19 @@ Expected: no new files beyond what Task 1 committed.
 - **Rollback signal**: The skill names a symbol that `grep` confirms is absent from `oneiric/core/resolution.py`, or an example in the skill raises `AttributeError`/`ImportError` when run.
 - **Observability added**: none. The skill is documentation; its correctness gate is the symbol-existence check in Step 7.
 
----
+______________________________________________________________________
 
 ### Task 3: Explain an empty resolution instead of returning a bare `None`
 
 **Files:**
+
 - Modify: `oneiric/core/resolution.py` (`ResolutionExplanation` at ~line 76; `_score_candidates` at ~line 217; `as_dict` at ~line 89)
 - Modify: `tests/core/test_resolution.py` (class `TestExplainAPI`)
 - Modify: `tests/core/test_resolution_comprehensive.py` (class `TestResolutionExplanation`)
 - Modify: `docs/RESOLUTION_LAYER_SPEC.md` (Observability section, ~line 319; API list, ~line 112)
 
 **Interfaces:**
+
 - Consumes: `CandidateRegistry.explain(domain, key, *, capabilities=None, require_all=True) -> ResolutionExplanation`; `Candidate.metadata` (capabilities live under `metadata["capabilities"]`); `_candidate_supports_capabilities(candidate, required, require_all=...) -> bool`; `_normalize_capabilities(capabilities) -> list[str]`.
 - Produces:
   - `FilteredCandidate` dataclass — `candidate: Candidate`, `missing_capabilities: list[str]`.
@@ -389,6 +397,7 @@ Add to `tests/core/test_resolution_comprehensive.py`, class `TestResolutionExpla
 Add to `tests/core/test_resolution.py`, class `TestExplainAPI`:
 
 - `test_explain_as_dict_includes_filtered` — `as_dict()` contains a `"filtered"` key; with one excluded candidate its entry has `provider` and `missing_capabilities` keys.
+
 - `test_explain_as_dict_filtered_empty_list` — `as_dict()["filtered"] == []` when nothing was filtered.
 
 - [ ] **Step 7: Run the full resolver test suite**
@@ -402,7 +411,9 @@ Expected: all PASS.
 In `docs/RESOLUTION_LAYER_SPEC.md`:
 
 - In the **Observability** section, extend the "Decision trace: show which rule decided the winner" bullet to state that the trace also reports candidates excluded by capability filtering, together with the capabilities they lacked.
+
 - In the **APIs** section, amend the `explain(domain, key) -> decision trace` line to note the returned `ResolutionExplanation` carries `ordered` (ranked candidates), `winner`, and `filtered` (excluded candidates with their missing capabilities).
+
 - In the **Precedence Rules** section, note that capability-incompatible candidates are excluded before ranking and are reported separately rather than ranked.
 
 - [ ] **Step 9: Run the spec sync guard**
@@ -434,7 +445,7 @@ git commit --only oneiric/core/resolution.py tests/core/test_resolution.py tests
 - **Rollback signal**: Any consumer of `ResolutionExplanation.as_dict()` breaks on the new `"filtered"` key, or `explain()` starts reporting candidates in `ordered` that were previously filtered out.
 - **Observability added**: The decision trace now distinguishes "nothing registered" from "everything filtered out", so a failed capability negotiation is diagnosable from the trace alone instead of requiring registry introspection.
 
----
+______________________________________________________________________
 
 ## Parking
 

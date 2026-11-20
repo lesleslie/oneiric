@@ -3,7 +3,7 @@ status: partial
 role: implementation
 date: 2025-12-29
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: adapter-architecture
 ---
@@ -479,12 +479,12 @@ ______________________________________________________________________
    - Sentence Transformers
    - ONNX embeddings
 
-1. **PGVector Adapter**
+2. **PGVector Adapter**
 
    - Reuse existing database/postgres adapter
    - Add vector extension support
 
-1. **AI/LLM Adapters**
+3. **AI/LLM Adapters**
 
    - OpenAI (GPT-4, embeddings)
    - Anthropic (Claude)
@@ -516,9 +516,9 @@ If migrating from ACB's vector adapters:
 ### Key Differences
 
 1. **Settings Model** - Pydantic V2 instead of V1
-1. **Lifecycle Hooks** - `init()`, `health()`, `cleanup()` instead of ACB's lifecycle
-1. **No Dependency Injection** - Settings passed directly to constructor
-1. **Simplified Interface** - No advanced features (caching, hybrid search) yet
+2. **Lifecycle Hooks** - `init()`, `health()`, `cleanup()` instead of ACB's lifecycle
+3. **No Dependency Injection** - Settings passed directly to constructor
+4. **Simplified Interface** - No advanced features (caching, hybrid search) yet
 
 ### Migration Example
 

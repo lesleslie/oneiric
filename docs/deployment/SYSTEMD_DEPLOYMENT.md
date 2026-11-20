@@ -3,7 +3,7 @@ status: active
 role: canonical
 date: 2026-05-10
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: oneiric-config
 ---
@@ -18,17 +18,17 @@ ______________________________________________________________________
 
 ## Table of Contents
 
-1. \[[#overview|Overview]\]
-1. \[[#prerequisites|Prerequisites]\]
-1. \[[#quick-start|Quick Start]\]
-1. \[[#systemd-service-configuration|Systemd Service Configuration]\]
-1. \[[#installation|Installation]\]
-1. \[[#service-management|Service Management]\]
-1. \[[#configuration|Configuration]\]
-1. \[[#logging|Logging]\]
-1. \[[#security-hardening|Security Hardening]\]
-1. \[[#monitoring-integration|Monitoring Integration]\]
-1. \[[#troubleshooting|Troubleshooting]\]
+01. \[[#overview|Overview]\]
+02. \[[#prerequisites|Prerequisites]\]
+03. \[[#quick-start|Quick Start]\]
+04. \[[#systemd-service-configuration|Systemd Service Configuration]\]
+05. \[[#installation|Installation]\]
+06. \[[#service-management|Service Management]\]
+07. \[[#configuration|Configuration]\]
+08. \[[#logging|Logging]\]
+09. \[[#security-hardening|Security Hardening]\]
+10. \[[#monitoring-integration|Monitoring Integration]\]
+11. \[[#troubleshooting|Troubleshooting]\]
 
 ______________________________________________________________________
 

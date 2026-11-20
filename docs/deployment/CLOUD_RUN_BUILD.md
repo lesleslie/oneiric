@@ -3,7 +3,7 @@ status: active
 role: canonical
 date: 2026-05-10
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: oneiric-config
 ---
@@ -84,9 +84,9 @@ ______________________________________________________________________
 ## 2. Prerequisites
 
 1. **Google Cloud CLI** with `gcloud components install beta` (for `gcloud run`).
-1. **pack CLI** (`brew install buildpacks/tap/pack` on macOS).
-1. Service account or user with `Cloud Run Admin`, `Artifact Registry Writer`, `Secret Manager Secret Accessor` roles.
-1. Optional: `uv` installed locally for parity with CI commands.
+2. **pack CLI** (`brew install buildpacks/tap/pack` on macOS).
+3. Service account or user with `Cloud Run Admin`, `Artifact Registry Writer`, `Secret Manager Secret Accessor` roles.
+4. Optional: `uv` installed locally for parity with CI commands.
 
 ______________________________________________________________________
 
@@ -131,9 +131,9 @@ make deploy-config
 Recommended pattern:
 
 1. Keep `config/standard.yaml` as the committed deployment baseline.
-1. Keep `deploy.yaml` for environment-specific overrides.
-1. Keep local user overrides in `~/.config/<project>/config.yaml` or `local.yaml`.
-1. Point `ONEIRIC_CONFIG` at the generated `config/serverless.yaml` in Cloud Run.
+2. Keep `deploy.yaml` for environment-specific overrides.
+3. Keep local user overrides in `~/.config/<project>/config.yaml` or `local.yaml`.
+4. Point `ONEIRIC_CONFIG` at the generated `config/serverless.yaml` in Cloud Run.
 
 Do not copy raw secret values into the overlay. Use secret IDs, Secret Manager references, or a secrets adapter so the runtime resolves sensitive values at launch time.
 
@@ -232,9 +232,9 @@ flowchart TD
 **Configuration Strategy:**
 
 1. **Secret Manager adapter** – configure `settings.secrets.provider = "gcp.secret_manager"` and grant the Cloud Run service account `roles/secretmanager.secretAccessor`.
-1. **Inline manifests** – package critical manifest entries into your YAML artifact (or embed as JSON inside the repo); the serverless profile assumes no remote polling unless you opt in.
-1. **Env fallbacks** – keep `.env`-style config limited to local dev. Production deployments should prefer Secret Manager + build-time manifest packaging.
-1. **Precedence & verification** – Secret Manager overrides env vars, which override manifest defaults; run `uv run python -m oneiric.cli health --probe --json` (or `--demo health --probe --json`) before deploys to capture the `secrets` block and confirm the expected provider is `status=ready`. Pair it with `uv run python -m oneiric.cli supervisor-info` so release notes show both the runtime profile and the current supervisor toggle.
+2. **Inline manifests** – package critical manifest entries into your YAML artifact (or embed as JSON inside the repo); the serverless profile assumes no remote polling unless you opt in.
+3. **Env fallbacks** – keep `.env`-style config limited to local dev. Production deployments should prefer Secret Manager + build-time manifest packaging.
+4. **Precedence & verification** – Secret Manager overrides env vars, which override manifest defaults; run `uv run python -m oneiric.cli health --probe --json` (or `--demo health --probe --json`) before deploys to capture the `secrets` block and confirm the expected provider is `status=ready`. Pair it with `uv run python -m oneiric.cli supervisor-info` so release notes show both the runtime profile and the current supervisor toggle.
 
 Sample snippet (`config/serverless.yaml`):
 
@@ -285,7 +285,7 @@ ______________________________________________________________________
 When remote polling is disabled, bake your manifest into the image so cold starts can activate adapters immediately:
 
 1. Keep manifests under `deployment/manifests/*.yaml`.
-1. Package them into JSON during the build:
+2. Package them into JSON during the build:
 
 ```bash
 uv run python -m oneiric.cli manifest pack \
@@ -310,10 +310,10 @@ ______________________________________________________________________
 ## 8. Verification & Observability
 
 1. Run `uv run pytest -k serverless_profile` before shipping (tests to be expanded alongside profile work).
-1. Use `oneiric.cli supervisor-info --json` followed by `oneiric.cli health --probe --json` locally to ensure adapters/actions activate without remote polling and the serverless toggles are correct.
-1. Configure Cloud Run logs to export structlog JSON (`stdout`) to Cloud Logging; reserve `stderr` for fatal errors only.
-1. Mirror Cloud Run deployments by running `uv run python -m oneiric.cli orchestrate --profile serverless --no-remote --health-path /tmp/runtime_health.json` locally, then inspect `oneiric.cli activity --json` and `oneiric.cli health --probe --json` to confirm the Service Supervisor is honoring pause/drain settings.
-1. Inspect the new `profile`, `secrets`, and `lifecycle_state` blocks in the `health --probe --json` output to verify the serverless toggles (`watchers_enabled`, `remote_enabled`, `inline_manifest_only`), confirm the Secret Manager adapter reports `status=ready`, and ensure lifecycle entries are paused/draining as expected before shipping.
+2. Use `oneiric.cli supervisor-info --json` followed by `oneiric.cli health --probe --json` locally to ensure adapters/actions activate without remote polling and the serverless toggles are correct.
+3. Configure Cloud Run logs to export structlog JSON (`stdout`) to Cloud Logging; reserve `stderr` for fatal errors only.
+4. Mirror Cloud Run deployments by running `uv run python -m oneiric.cli orchestrate --profile serverless --no-remote --health-path /tmp/runtime_health.json` locally, then inspect `oneiric.cli activity --json` and `oneiric.cli health --probe --json` to confirm the Service Supervisor is honoring pause/drain settings.
+5. Inspect the new `profile`, `secrets`, and `lifecycle_state` blocks in the `health --probe --json` output to verify the serverless toggles (`watchers_enabled`, `remote_enabled`, `inline_manifest_only`), confirm the Secret Manager adapter reports `status=ready`, and ensure lifecycle entries are paused/draining as expected before shipping.
 
 The orchestrator writes `runtime_health.json` (with supervisor + lifecycle metadata) and `domain_activity.sqlite` under `.oneiric_cache/`; Cloud Run operators can tail that directory to confirm the Service Supervisor sees the same state exposed via the CLI.
 

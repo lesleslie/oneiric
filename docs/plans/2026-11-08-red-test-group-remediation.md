@@ -8,7 +8,7 @@ role: implementation
 topic: testing
 date: 2026-11-08
 last_reviewed: 2026-11-08
-superseded_by: null
+superseded_by:
 blocks_on: []
 ---
 
@@ -22,8 +22,7 @@ blocks_on: []
 ## Problem
 
 Two test groups were red before this work. They have **no common
-mechanism**, but they do share a **common trigger**: commit `0470be3
-chore: bump version to 0.35.0` bumped `pyproject.toml` to 0.35.0 and
+mechanism**, but they do share a **common trigger**: commit `0470be3 chore: bump version to 0.35.0` bumped `pyproject.toml` to 0.35.0 and
 refreshed `uv.lock`, and that one commit is what broke both.
 
 | Group | Failures | Failure mode |
@@ -103,8 +102,7 @@ satisfying.
 | `CLAUDE.md` | 11 | `0.34.0` | `0.35.0` |
 
 `0470be3` bumped `pyproject.toml` to 0.35.0 but did not update either
-stamp. The prior bump did this correctly — commit `dca1600 fix(docs): sync
-the version stamps to 0.34.0` — so this is drift introduced by an
+stamp. The prior bump did this correctly — commit `dca1600 fix(docs): sync the version stamps to 0.34.0` — so this is drift introduced by an
 incomplete bump, not a broken guard.
 
 The direction matters: **`pyproject.toml` is the source of truth and is
@@ -170,8 +168,7 @@ happened. This change follows the same precedent.
 - **Demonstrable by:** `./.venv/bin/pytest tests/adapters/test_redis_cache.py tests/unit/test_version_consistency.py --no-cov`
   — 10 passed, 0 failed (was 5 failed / 5 passed).
 - **Rollback signal:** `tests/adapters/test_redis_cache.py` fails again
-  with `AttributeError: 'method_descriptor' object has no attribute
-  '__closure__'` after any `uv lock` (meaning the override stopped
+  with `AttributeError: 'method_descriptor' object has no attribute '__closure__'` after any `uv lock` (meaning the override stopped
   applying), or `tests/unit/test_version_consistency.py` fails after the
   next version bump (meaning that bump skipped the stamps again).
 - **Observability added:** none at runtime. Group 1's guard is

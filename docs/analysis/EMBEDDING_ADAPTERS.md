@@ -3,7 +3,7 @@ status: active
 role: canonical
 date: 2025-12-29
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: learning-pipeline
 ---
@@ -505,13 +505,13 @@ ______________________________________________________________________
    - On-device embeddings
    - No API costs
 
-1. **ONNX Adapter**
+2. **ONNX Adapter**
 
    - Optimized inference
    - Low-latency on-device
    - Mobile/edge deployment
 
-1. **AI/LLM Adapters**
+3. **AI/LLM Adapters**
 
    - OpenAI (GPT-4)
    - Anthropic (Claude)

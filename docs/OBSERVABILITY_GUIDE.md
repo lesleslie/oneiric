@@ -3,7 +3,7 @@ status: active
 role: canonical
 date: 2026-05-10
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: observability
 ---

@@ -113,6 +113,7 @@ A unilateral change to `MCPBaseSettings` would break every
 `MCPServerSettings(MCPBaseSettings)` consumer across mahavishnu,
 akosha, session-buddy, and crackerjack at module import time. The
 deferred Phase 4 work needs to:
+
 1. Update `mcp-common/config/base.py` to import `BaseSettings` from
    oneiric.
 2. Audit every `MCPServerSettings` subclass across the Bodai ecosystem.

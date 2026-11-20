@@ -3,7 +3,7 @@ status: partial
 role: implementation
 date: 2026-09-05
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: lifecycle
 ---

@@ -3,7 +3,7 @@ status: active
 role: umbrella
 date: 2026-07-15
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: lifecycle
 ---
@@ -29,8 +29,8 @@ ______________________________________________________________________
 **Kickoff Checklist**
 
 1. Confirm owners for each open row and note blockers in stand-up doc.
-1. Schedule Cloud Run transcript capture session; assign reviewer for doc updates.
-1. Create README/deployment doc notes referencing this tracker so changes do not get lost.
+2. Schedule Cloud Run transcript capture session; assign reviewer for doc updates.
+3. Create README/deployment doc notes referencing this tracker so changes do not get lost.
 
 ______________________________________________________________________
 
@@ -46,8 +46,8 @@ ______________________________________________________________________
 **Kickoff Checklist**
 
 1. Hold parity sync to validate milestone dates and owners.
-1. Ensure runtime prototypes have open tracking issues linked here.
-1. Verify CLI/tests referenced in each milestone already exist or have tickets.
+2. Ensure runtime prototypes have open tracking issues linked here.
+3. Verify CLI/tests referenced in each milestone already exist or have tickets.
 
 **Dependencies:** `oneiric.runtime.events`, `oneiric.runtime.dag`, Cloud Tasks/PubSub adapters, `docs/examples/FASTBLOCKS_PARITY_FIXTURE.yaml`, cut-over checklist.
 
@@ -67,8 +67,8 @@ ______________________________________________________________________
 **Kickoff Checklist**
 
 1. Re-run adapter gap audit and paste deltas into `ADAPTER_REMEDIATION_EXECUTION.md`.
-1. Assign engineering owners for Gemini/Pulsar/Wave C tasks with ETA.
-1. Decide whether Wave C evaluation requires product input; if so schedule review.
+2. Assign engineering owners for Gemini/Pulsar/Wave C tasks with ETA.
+3. Decide whether Wave C evaluation requires product input; if so schedule review.
 
 **Exit Criteria:** Adapter gap audit shows parity with ACB for required domains; Wave C backlog scoped with owners.
 
@@ -86,8 +86,8 @@ ______________________________________________________________________
 **Kickoff Checklist**
 
 1. Create doc issue list with owners for README/sample manifest updates.
-1. Run link audit (e.g., `mdbook-linkcheck` or custom script) to find stale references.
-1. Add reminder in Docs team calendar to revisit this phase monthly.
+2. Run link audit (e.g., `mdbook-linkcheck` or custom script) to find stale references.
+3. Add reminder in Docs team calendar to revisit this phase monthly.
 
 **Exit Criteria:** Contributors can navigate from docs index → roadmap → execution plans without stale/legacy references.
 
@@ -105,8 +105,8 @@ ______________________________________________________________________
 **Kickoff Checklist**
 
 1. File test-flake issues referencing failing suites; attach current CI logs.
-1. Draft design note for load test approach (owner + target release).
-1. Engage comms team to prepare outline for ACB deprecation notices once parity dates firm up.
+2. Draft design note for load test approach (owner + target release).
+3. Engage comms team to prepare outline for ACB deprecation notices once parity dates firm up.
 
 **Exit Criteria:** Patch release closes flakiness, v0.3.0 delivers load tests, comms ready for final cut-over.
 

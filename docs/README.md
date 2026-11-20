@@ -3,7 +3,7 @@ status: active
 role: canonical
 date: 2026-01-21
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: lifecycle
 ---
@@ -292,54 +292,54 @@ flowchart TD
 **### For New Users**
 
 1. **[ONEIRIC_VS_ACB.md](ONEIRIC_VS_ACB.md)** - Understand Oneiric vs ACB relationship
-1. **[NEW_ARCH_SPEC.md](NEW_ARCH_SPEC.md)** - Learn core architecture
-1. **[examples/LOCAL_CLI_DEMO.md](examples/LOCAL_CLI_DEMO.md)** - Try CLI commands
-1. **[OBSERVABILITY_GUIDE.md](OBSERVABILITY_GUIDE.md)** - Set up logging/metrics
+2. **[NEW_ARCH_SPEC.md](NEW_ARCH_SPEC.md)** - Learn core architecture
+3. **[examples/LOCAL_CLI_DEMO.md](examples/LOCAL_CLI_DEMO.md)** - Try CLI commands
+4. **[OBSERVABILITY_GUIDE.md](OBSERVABILITY_GUIDE.md)** - Set up logging/metrics
 
 ### For Operators
 
 1. **[deployment/](deployment/)** - Choose deployment method (Cloud Run or systemd)
-1. **[monitoring/](monitoring/)** - Set up observability stack
-1. **[runbooks/](runbooks/)** - Incident response procedures
-1. **[UNCOMPLETED_TASKS.md](UNCOMPLETED_TASKS.md)** - Known issues and limitations
+2. **[monitoring/](monitoring/)** - Set up observability stack
+3. **[runbooks/](runbooks/)** - Incident response procedures
+4. **[UNCOMPLETED_TASKS.md](UNCOMPLETED_TASKS.md)** - Known issues and limitations
 
 ### For Developers
 
 1. **[guides/custom-adapter.md](guides/custom-adapter.md)** - Writing a custom adapter (entry-point plugin pattern)
-1. **[examples/plugins/hello_oneiric_plugin/](examples/plugins/hello_oneiric_plugin/)** - Runnable plugin example (entry-points, `AdapterMetadata`, `Candidate`)
-1. **[RESOLUTION_LAYER_SPEC.md](RESOLUTION_LAYER_SPEC.md)** - Resolution system internals
-1. **[REMOTE_MANIFEST_SCHEMA.md](REMOTE_MANIFEST_SCHEMA.md)** - Remote manifest format
-1. **[SIGNATURE_VERIFICATION.md](SIGNATURE_VERIFICATION.md)** - Security implementation
-1. **[implementation/](implementation/)** - Active plans (serverless/parity, adapter remediation)
-1. **[analysis/](analysis/)** - Code quality and audit reports
+2. **[examples/plugins/hello_oneiric_plugin/](examples/plugins/hello_oneiric_plugin/)** - Runnable plugin example (entry-points, `AdapterMetadata`, `Candidate`)
+3. **[RESOLUTION_LAYER_SPEC.md](RESOLUTION_LAYER_SPEC.md)** - Resolution system internals
+4. **[REMOTE_MANIFEST_SCHEMA.md](REMOTE_MANIFEST_SCHEMA.md)** - Remote manifest format
+5. **[SIGNATURE_VERIFICATION.md](SIGNATURE_VERIFICATION.md)** - Security implementation
+6. **[implementation/](implementation/)** - Active plans (serverless/parity, adapter remediation)
+7. **[analysis/](analysis/)** - Code quality and audit reports
 
 ### For Migration from ACB
 
 1. **[ONEIRIC_VS_ACB.md](ONEIRIC_VS_ACB.md)** - Complete migration/cut-over guide
-1. **[analysis/ACB_ADAPTER_ACTION_IMPLEMENTATION.md](analysis/ACB_ADAPTER_ACTION_IMPLEMENTATION.md)** - Adapter porting details
-1. **[implementation/CUTOVER_VALIDATION_CHECKLIST.md](implementation/CUTOVER_VALIDATION_CHECKLIST.md)** - Required artifacts before flipping to Oneiric
-1. **[examples/FASTBLOCKS_PARITY_FIXTURE.yaml](examples/FASTBLOCKS_PARITY_FIXTURE.yaml)** - Canonical manifest mirrored in CI + docs
-1. **`docs/examples/*_OBSERVABILITY.md`** - Repo-specific DAG/event/telemetry/ChatOps capture instructions
-1. **[UNCOMPLETED_TASKS.md](UNCOMPLETED_TASKS.md)** - Remaining parity items (spoiler: nothing critical)
+2. **[analysis/ACB_ADAPTER_ACTION_IMPLEMENTATION.md](analysis/ACB_ADAPTER_ACTION_IMPLEMENTATION.md)** - Adapter porting details
+3. **[implementation/CUTOVER_VALIDATION_CHECKLIST.md](implementation/CUTOVER_VALIDATION_CHECKLIST.md)** - Required artifacts before flipping to Oneiric
+4. **[examples/FASTBLOCKS_PARITY_FIXTURE.yaml](examples/FASTBLOCKS_PARITY_FIXTURE.yaml)** - Canonical manifest mirrored in CI + docs
+5. **`docs/examples/*_OBSERVABILITY.md`** - Repo-specific DAG/event/telemetry/ChatOps capture instructions
+6. **[UNCOMPLETED_TASKS.md](UNCOMPLETED_TASKS.md)** - Remaining parity items (spoiler: nothing critical)
 
 ### For MCP Server Migrations
 
 1. **[migration/MIGRATION_TRACKING_DASHBOARD.md](migration/MIGRATION_TRACKING_DASHBOARD.md)** - Live migration status and timeline
-1. **[migration/COMPATIBILITY_CONTRACT.md](migration/COMPATIBILITY_CONTRACT.md)** - Compatibility contract and requirements
-1. **[migration/OPERATIONAL_MODEL_DOCUMENTATION.md](migration/OPERATIONAL_MODEL_DOCUMENTATION.md)** - Crackerjack + Session-Buddy contracts
-1. **[migration/CLI_COMMAND_MAPPING_GUIDE.md](migration/CLI_COMMAND_MAPPING_GUIDE.md)** - Standardized CLI commands
-1. **[migration/TEST_COVERAGE_BASELINES.md](migration/TEST_COVERAGE_BASELINES.md)** - Pre-migration test coverage baselines
-1. **[migration/ROLLBACK_PROCEDURES_TEMPLATE.md](migration/ROLLBACK_PROCEDURES_TEMPLATE.md)** - Rollback procedures
-1. **[migration/ACB_REMOVAL_INVENTORY.md](migration/ACB_REMOVAL_INVENTORY.md)** - ACB dependency inventory
+2. **[migration/COMPATIBILITY_CONTRACT.md](migration/COMPATIBILITY_CONTRACT.md)** - Compatibility contract and requirements
+3. **[migration/OPERATIONAL_MODEL_DOCUMENTATION.md](migration/OPERATIONAL_MODEL_DOCUMENTATION.md)** - Crackerjack + Session-Buddy contracts
+4. **[migration/CLI_COMMAND_MAPPING_GUIDE.md](migration/CLI_COMMAND_MAPPING_GUIDE.md)** - Standardized CLI commands
+5. **[migration/TEST_COVERAGE_BASELINES.md](migration/TEST_COVERAGE_BASELINES.md)** - Pre-migration test coverage baselines
+6. **[migration/ROLLBACK_PROCEDURES_TEMPLATE.md](migration/ROLLBACK_PROCEDURES_TEMPLATE.md)** - Rollback procedures
+7. **[migration/ACB_REMOVAL_INVENTORY.md](migration/ACB_REMOVAL_INVENTORY.md)** - ACB dependency inventory
 
 ### For Project Planning
 
 1. **[implementation/STAGE5_FINAL_AUDIT_REPORT.md](implementation/STAGE5_FINAL_AUDIT_REPORT.md)** - Production readiness (95/100)
-1. **[STRATEGIC_ROADMAP.md](STRATEGIC_ROADMAP.md)** - Current strategic priorities
-1. **[implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md](implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md)** - Serverless + parity execution plan
-1. **[implementation/ORCHESTRATION_PARITY_PLAN.md](implementation/ORCHESTRATION_PARITY_PLAN.md)** - Orchestration parity roadmap
-1. **[implementation/CUTOVER_VALIDATION_CHECKLIST.md](implementation/CUTOVER_VALIDATION_CHECKLIST.md)** - Migration validation workflow + repo sign-off table
-1. **[UNCOMPLETED_TASKS.md](UNCOMPLETED_TASKS.md)** - Future enhancements + known issues
+2. **[STRATEGIC_ROADMAP.md](STRATEGIC_ROADMAP.md)** - Current strategic priorities
+3. **[implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md](implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md)** - Serverless + parity execution plan
+4. **[implementation/ORCHESTRATION_PARITY_PLAN.md](implementation/ORCHESTRATION_PARITY_PLAN.md)** - Orchestration parity roadmap
+5. **[implementation/CUTOVER_VALIDATION_CHECKLIST.md](implementation/CUTOVER_VALIDATION_CHECKLIST.md)** - Migration validation workflow + repo sign-off table
+6. **[UNCOMPLETED_TASKS.md](UNCOMPLETED_TASKS.md)** - Future enhancements + known issues
 
 ______________________________________________________________________
 
@@ -431,9 +431,9 @@ ______________________________________________________________________
 **When updating major docs, also update:**
 
 1. This README.md (Quick Navigation, Key Documents sections)
-1. /Users/les/Projects/oneiric/README.md (main project README)
-1. /Users/les/Projects/oneiric/oneiric/README.md (package map and extension points)
-1. /Users/les/Projects/oneiric/CLAUDE.md (project instructions)
+2. /Users/les/Projects/oneiric/README.md (main project README)
+3. /Users/les/Projects/oneiric/oneiric/README.md (package map and extension points)
+4. /Users/les/Projects/oneiric/CLAUDE.md (project instructions)
 
 ______________________________________________________________________
 
@@ -442,9 +442,9 @@ ______________________________________________________________________
 For questions about documentation:
 
 1. Check this README for document location
-1. Start with ONEIRIC_VS_ACB.md for general overview
-1. Refer to UNCOMPLETED_TASKS.md for known limitations
-1. Check implementation/ for build status
-1. Review analysis/ for quality assessments
+2. Start with ONEIRIC_VS_ACB.md for general overview
+3. Refer to UNCOMPLETED_TASKS.md for known limitations
+4. Check implementation/ for build status
+5. Review analysis/ for quality assessments
 
 **Documentation is production-ready.** All critical operational docs are complete and comprehensive.

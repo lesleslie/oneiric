@@ -3,7 +3,7 @@ status: active
 role: canonical
 date: 2026-01-21
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: lifecycle
 ---
@@ -19,14 +19,14 @@ ______________________________________________________________________
 ## Table of Contents
 
 1. \[[#overview|Overview]\]
-1. \[[#maintenance-windows|Maintenance Windows]\]
-1. \[[#pre-maintenance-checklist|Pre-Maintenance Checklist]\]
-1. \[[#runbooks|Runbooks]\]
+2. \[[#maintenance-windows|Maintenance Windows]\]
+3. \[[#pre-maintenance-checklist|Pre-Maintenance Checklist]\]
+4. \[[#runbooks|Runbooks]\]
    - \[[#runbook-1-version-upgrade|1. Version Upgrade]\]
    - \[[#runbook-2-cache-cleanup|2. Cache Cleanup]\]
    - \[[#runbook-3-secret-rotation|3. Secret Rotation]\]
-1. \[[#post-maintenance-checklist|Post-Maintenance Checklist]\]
-1. \[[#rollback-procedures|Rollback Procedures]\]
+5. \[[#post-maintenance-checklist|Post-Maintenance Checklist]\]
+6. \[[#rollback-procedures|Rollback Procedures]\]
 
 ______________________________________________________________________
 

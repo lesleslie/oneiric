@@ -5,7 +5,6 @@ date: 2026-10-05
 last_reviewed: 2026-10-05
 topic: routing-composition
 title: "Migrate Oneiric CLI/MCP loader from ~/.oneiric/settings.yaml to Oneiric XDG loader"
-
 ---
 
 # Migrate Oneiric CLI/MCP loader from `~/.oneiric/settings.yaml` to the XDG loader
@@ -98,12 +97,14 @@ requirements:
 **Goal:** Produce a precise list of every key the legacy `~/.oneiric/settings.yaml` supports and which Pydantic field (if any) it maps to.
 
 **Tasks:**
+
 - `git grep -n "auth\." oneiric/mcp/config.py` — read `OneiricMCPAuthConfig` and `load_auth_config` to enumerate the auth-section shape.
 - `cat ~/.oneiric/settings.yaml` against the field list to produce a coverage matrix.
 - `python -c "from oneiric.core.config import load_settings; print(load_settings().model_dump_json(indent=2))"` from `~/Projects/oneiric` to capture the effective config when the loader is invoked fresh.
 - (Bonus) If a colleague has a customized legacy file (not in this repo), enumerate it too.
 
 **Exit criteria:**
+
 - A `docs/plans/2026-10-05-oneiric-cli-loader-xdg-migration/recon.md` (or inline section) listing every legacy key and its target Pydantic field, with "GAP" markers where no target exists.
 
 #### Integration Contract
@@ -119,6 +120,7 @@ requirements:
 **Goal:** `OneiricSettings.auth` is a typed `OneiricMCPAuthConfig` so the `auth:` block from any XDG or project layer is validated, not just stashed in `__pydantic_extra__`.
 
 **Tasks:**
+
 - Add `auth: OneiricMCPAuthConfig = Field(default_factory=OneiricMCPAuthConfig)` to `OneiricSettings` in `oneiric/core/config.py` (after the existing nested fields).
 - Import `OneiricMCPAuthConfig` from `oneiric.mcp.config` (currently lives there, line 60). Verify the import doesn't create a cycle — `oneiric/core/config.py` is the foundational config module, `oneiric/mcp/config.py` may import from core but not vice-versa.
 - If a cycle exists: move `OneiricMCPAuthConfig` to `oneiric/core/auth_config.py` and re-export from `oneiric/mcp/config.py` for backwards-compat within the `oneiric.mcp` package.
@@ -126,6 +128,7 @@ requirements:
 - Verify `pydantic_extra` no longer contains an `auth` key after the change.
 
 **Exit criteria:**
+
 - `s.auth` is a `OneiricMCPAuthConfig` instance, not a dict.
 - `pydantic_extra` is empty (or contains only documented legacy keys like `selections`/`provider_settings`/`options` if those are kept on the model — they're dead code but harmless).
 - All existing `pytest` tests that touch `load_settings()` pass.
@@ -143,12 +146,14 @@ requirements:
 **Goal:** `oneiric.cli.mcp` reads config from `load_settings()`.
 
 **Tasks:**
+
 - Replace `DEFAULT_SETTINGS_PATH = Path.home() / ".oneiric" / "settings.yaml"` (`oneiric/cli/mcp.py:45`) with a function `_resolve_settings_layer()` that returns a `OneiricSettings` instance via `load_settings(project_name="oneiric", project_root=Path(__file__).resolve().parent.parent.parent)`.
 - Replace `_load_auth_from_settings()` (`oneiric/cli/mcp.py:105-116`) with a function that reads `settings.auth` directly and wraps it in the existing `OneiricMCPAuthConfig.from_env()` for the env-var overlay contract.
 - Update the `_resolve_settings_path()` function (`:95-112`) to either (a) return the path of the highest-priority existing layer, or (b) be deprecated in favor of `load_settings()`. Decision: option (b); remove the function entirely.
 - Update the CLI `--settings-path` arg (`:224`) to advertise the XDG-canonical default.
 
 **Exit criteria:**
+
 - `oneiric.cli.mcp` no longer references `~/.oneiric/settings.yaml` (verified with `grep`).
 - `cd ~/Projects/oneiric && .venv/bin/python -c "from oneiric.cli.mcp import _resolve_settings_layer; print(_resolve_settings_layer().auth)"` returns a populated `OneiricMCPAuthConfig`.
 
@@ -165,11 +170,13 @@ requirements:
 **Goal:** `scripts/launch_mcp.py` no longer hardcodes `~/.oneiric/settings.yaml`.
 
 **Tasks:**
+
 - Replace the typer default at `scripts/launch_mcp.py:193-194` with `None` and have the loader fall back to `load_settings()` when `--settings-path` is omitted.
 - Drop the explicit `--settings-path` argument entirely if no caller uses it (the only known caller is the launchd plist, and the plist should be updated to drop it).
 - Update `scripts/launch_mcp.py:10` (the comment about the launchd plist) to reflect the new path-or-no-path behavior.
 
 **Exit criteria:**
+
 - `grep "settings.yaml" scripts/launch_mcp.py` returns no occurrences outside docstrings/comments.
 - `bash scripts/launch_mcp.py --help` no longer advertises a `--settings-path` argument (or shows a non-legacy default).
 
@@ -186,6 +193,7 @@ requirements:
 **Goal:** Behavior pinned against the new XDG loader.
 
 **Tasks:**
+
 - Add `tests/unit/test_cli_xdg_loader.py` covering:
   - XDG layer override reaches `OneiricSettings.auth`.
   - Project layer `settings/oneiric.yaml` is loaded.
@@ -194,6 +202,7 @@ requirements:
 - Confirm `crackerjack run -p fast_hooks` still passes (ruff/mypy/ty/basic tests).
 
 **Exit criteria:**
+
 - `pytest tests/unit/test_cli_xdg_loader.py tests/integration/test_oneiric_mcp_starts_via_xdg.py -v` exits 0.
 - `crackerjack run -v` exits 0.
 
@@ -210,12 +219,14 @@ requirements:
 **Goal:** Operators and downstream consumers find the new path.
 
 **Tasks:**
+
 - Update `oneiric/README.md` to reference `~/.config/oneiric/local.yaml` (XDG) as the canonical path.
 - Update `docs/CONFIGURATION.md` (or its oneiric equivalent) with the loader precedence list.
 - Add an entry to `docs/plans/PLAN_INDEX.md` once the plan is no longer `draft`.
 - Drop the now-stale comment in `~/.config/oneiric/local.yaml` about the loader GAP (the gap is closed by this migration).
 
 **Exit criteria:**
+
 - `grep -r "~/.oneiric/settings.yaml" oneiric/` returns no prescriptive references (only `migration_guide` style mentions are OK).
 - `PLAN_INDEX.md` lists `2026-10-05-oneiric-cli-loader-xdg-migration.md` with status `active`.
 

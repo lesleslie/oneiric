@@ -4,7 +4,7 @@ role: canonical
 kind: decision
 date: 2026-10-11
 last_reviewed: 2026-10-11
-superseded_by: null
+superseded_by:
 blocks_on: []
 decision_date: 2026-10-11
 topic: adapter-registry
@@ -143,13 +143,13 @@ And the **`REMOTE_MANIFEST` `CandidateSource` value** is canonical:
 This ADR is correctly applied when:
 
 - [ ] A new adapter author can read the spec and produce a working
-      adapter without grepping the codebase.
+  adapter without grepping the codebase.
 - [ ] All existing built-in adapters in
-      `oneiric/adapters/bootstrap.py::builtin_adapter_metadata()`
-      conform to the spec (verified by reading 1-2 random samples).
+  `oneiric/adapters/bootstrap.py::builtin_adapter_metadata()`
+  conform to the spec (verified by reading 1-2 random samples).
 - [ ] Cross-component consumers (Mahavishnu, Akosha, Crackerjack,
-      Session-Buddy) call `mcp__oneiric__*` tools to discover
-      adapters.
+  Session-Buddy) call `mcp__oneiric__*` tools to discover
+  adapters.
 
 ## References
 

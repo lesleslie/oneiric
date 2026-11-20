@@ -3,7 +3,7 @@ status: complete
 role: historical
 date: 2026-10-11
 last_reviewed: 2026-10-30
-superseded_by: null
+superseded_by:
 topic: storage-consolidation
 ---
 

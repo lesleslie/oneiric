@@ -3,7 +3,7 @@ status: complete
 role: historical
 date: 2026-02-05
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: storage-consolidation
 ---
@@ -43,12 +43,12 @@ The multi-tier cache adapter provides a two-layer caching strategy that dramatic
    - Hit → Return value immediately
    - Miss → Check L2
 
-1. **L2 Check**: Distributed cache lookup (~50ms)
+2. **L2 Check**: Distributed cache lookup (~50ms)
 
    - Hit → Populate L1 for future access, return value
    - Miss → Return None
 
-1. **Write Strategy**: Write-through to both tiers
+3. **Write Strategy**: Write-through to both tiers
 
    - Set operations write to both L1 and L2
    - Ensures consistency across layers
@@ -176,10 +176,10 @@ await cache.init()
 ### For the Entire Ecosystem
 
 1. **Mahavishnu**: Faster adapter resolution
-1. **Session-Buddy**: Faster session retrieval
-1. **Crackerjack**: Faster quality checks
-1. **Akosha**: Faster analytics queries
-1. **All MCP Servers**: Faster adapter discovery
+2. **Session-Buddy**: Faster session retrieval
+3. **Crackerjack**: Faster quality checks
+4. **Akosha**: Faster analytics queries
+5. **All MCP Servers**: Faster adapter discovery
 
 ### Performance Improvements
 
@@ -237,9 +237,9 @@ The multi-tier cache is API-compatible with existing cache adapters, making migr
 **Solutions**:
 
 1. Increase `l1_max_entries` (default: 1000)
-1. Increase `l1_ttl_seconds` (default: 600)
-1. Check L2 Redis connectivity
-1. Verify cache keys are consistent
+2. Increase `l1_ttl_seconds` (default: 600)
+3. Check L2 Redis connectivity
+4. Verify cache keys are consistent
 
 ### High Memory Usage
 
@@ -248,8 +248,8 @@ The multi-tier cache is API-compatible with existing cache adapters, making migr
 **Solutions**:
 
 1. Reduce `l1_max_entries`
-1. Reduce `l1_ttl_seconds`
-1. Monitor metrics with `get_metrics()`
+2. Reduce `l1_ttl_seconds`
+3. Monitor metrics with `get_metrics()`
 
 ### Redis Connection Issues
 
@@ -258,19 +258,19 @@ The multi-tier cache is API-compatible with existing cache adapters, making migr
 **Solutions**:
 
 1. Check Redis server is running
-1. Verify `l2_host` and `l2_port` settings
-1. Check network connectivity
-1. System will gracefully degrade to L1-only mode
+2. Verify `l2_host` and `l2_port` settings
+3. Check network connectivity
+4. System will gracefully degrade to L1-only mode
 
 ## Future Enhancements
 
 Potential improvements identified in the research:
 
 1. **Adaptive TTL**: Adjust TTL based on access patterns
-1. **Cache Warming**: Pre-populate cache on startup
-1. **Distributed Invalidation**: Broadcast invalidations across instances
-1. **Compression**: Compress large values in L2
-1. **Sharding**: Distribute L2 cache across multiple Redis instances
+2. **Cache Warming**: Pre-populate cache on startup
+3. **Distributed Invalidation**: Broadcast invalidations across instances
+4. **Compression**: Compress large values in L2
+5. **Sharding**: Distribute L2 cache across multiple Redis instances
 
 ## Related Documentation
 
@@ -291,9 +291,9 @@ Potential improvements identified in the research:
 **Next Steps**:
 
 1. Deploy to production environment
-1. Monitor metrics for first week
-1. Tune configuration based on actual usage patterns
-1. Consider implementing future enhancements
+2. Monitor metrics for first week
+3. Tune configuration based on actual usage patterns
+4. Consider implementing future enhancements
 
 ______________________________________________________________________
 

@@ -3,7 +3,7 @@ status: active
 role: canonical
 date: 2026-01-21
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: lifecycle
 ---
@@ -19,17 +19,17 @@ ______________________________________________________________________
 ## Table of Contents
 
 1. \[[#overview|Overview]\]
-1. \[[#incident-severity-levels|Incident Severity Levels]\]
-1. \[[#general-incident-response-process|General Incident Response Process]\]
-1. \[[#runbook-index|Runbook Index]\]
-1. \[[#runbooks|Runbooks]\]
+2. \[[#incident-severity-levels|Incident Severity Levels]\]
+3. \[[#general-incident-response-process|General Incident Response Process]\]
+4. \[[#runbook-index|Runbook Index]\]
+5. \[[#runbooks|Runbooks]\]
    - \[[#runbook-1-resolution-failures|1. Resolution Failures]\]
    - \[[#runbook-2-hot-swap-failures|2. Hot-Swap Failures]\]
    - \[[#runbook-3-remote-sync-failures|3. Remote Sync Failures]\]
    - \[[#runbook-4-cache-corruption|4. Cache Corruption]\]
    - \[[#runbook-5-memory-exhaustion|5. Memory Exhaustion]\]
-1. \[[#post-incident-review|Post-Incident Review]\]
-1. \[[#escalation-matrix|Escalation Matrix]\]
+6. \[[#post-incident-review|Post-Incident Review]\]
+7. \[[#escalation-matrix|Escalation Matrix]\]
 
 ______________________________________________________________________
 
@@ -158,37 +158,37 @@ flowchart LR
 ### Phase 1: Acknowledge (< 5 min)
 
 1. **Acknowledge alert** in PagerDuty/AlertManager
-1. **Join incident channel** (Slack #incident-response)
-1. **Announce response:** "I'm investigating [INCIDENT]"
-1. **Silence related alerts** to reduce noise
+2. **Join incident channel** (Slack #incident-response)
+3. **Announce response:** "I'm investigating [INCIDENT]"
+4. **Silence related alerts** to reduce noise
 
 ### Phase 2: Diagnose (< 15 min)
 
 1. **Check monitoring:** Grafana dashboards, Prometheus alerts
-1. **Review logs:** Loki queries for errors
-1. **Identify root cause:** Use runbook diagnosis section
-1. **Update incident channel** with findings
+2. **Review logs:** Loki queries for errors
+3. **Identify root cause:** Use runbook diagnosis section
+4. **Update incident channel** with findings
 
 ### Phase 3: Resolve (Variable)
 
 1. **Follow runbook resolution steps**
-1. **Document actions taken** in incident channel
-1. **Verify fix:** Check metrics/logs for improvement
-1. **Update stakeholders** on progress
+2. **Document actions taken** in incident channel
+3. **Verify fix:** Check metrics/logs for improvement
+4. **Update stakeholders** on progress
 
 ### Phase 4: Verify (< 10 min)
 
 1. **Confirm resolution:** Metrics/alerts return to normal
-1. **Test functionality:** Run smoke tests
-1. **Monitor for recurrence:** Watch for 30 minutes
-1. **Remove silences** if stable
+2. **Test functionality:** Run smoke tests
+3. **Monitor for recurrence:** Watch for 30 minutes
+4. **Remove silences** if stable
 
 ### Phase 5: Close (< 30 min)
 
 1. **Update incident ticket** with resolution
-1. **Schedule post-incident review** (within 48 hours)
-1. **Document learnings** in incident log
-1. **Close alerts** in AlertManager
+2. **Schedule post-incident review** (within 48 hours)
+3. **Document learnings** in incident log
+4. **Close alerts** in AlertManager
 
 ______________________________________________________________________
 
@@ -422,10 +422,10 @@ uv run python -m oneiric.cli explain status --domain adapter
 ### Prevention
 
 1. **Implement registration tests:** Unit tests verify candidates registered
-1. **Config validation:** CI/CD validates YAML syntax before deploy
-1. **Health check tuning:** Increase timeouts if providers slow to initialize
-1. **Monitoring:** Alert on low candidate counts per domain
-1. **Documentation:** Document registration process for each domain
+2. **Config validation:** CI/CD validates YAML syntax before deploy
+3. **Health check tuning:** Increase timeouts if providers slow to initialize
+4. **Monitoring:** Alert on low candidate counts per domain
+5. **Documentation:** Document registration process for each domain
 
 ### Escalation
 
@@ -640,10 +640,10 @@ uv run python -m oneiric.cli status --domain adapter --key cache
 ### Prevention
 
 1. **Health check tuning:** Increase timeouts for slow-initializing providers
-1. **Factory validation:** Unit tests verify factory imports work
-1. **Staged rollout:** Test swaps in staging before production
-1. **Monitoring:** Alert on high rollback rates
-1. **Cleanup hardening:** Ensure cleanup logic handles errors gracefully
+2. **Factory validation:** Unit tests verify factory imports work
+3. **Staged rollout:** Test swaps in staging before production
+4. **Monitoring:** Alert on high rollback rates
+5. **Cleanup hardening:** Ensure cleanup logic handles errors gracefully
 
 ### Escalation
 
@@ -876,10 +876,10 @@ uv run python -m oneiric.cli list --domain adapter
 ### Prevention
 
 1. **Network monitoring:** Alert on DNS failures, connection timeouts
-1. **Key rotation process:** Document procedure, test before production
-1. **Manifest validation:** CI/CD validates manifest syntax before publish
-1. **Circuit breaker tuning:** Adjust thresholds based on network reliability
-1. **Artifact integrity:** Implement checksum verification in upload pipeline
+2. **Key rotation process:** Document procedure, test before production
+3. **Manifest validation:** CI/CD validates manifest syntax before publish
+4. **Circuit breaker tuning:** Adjust thresholds based on network reliability
+5. **Artifact integrity:** Implement checksum verification in upload pipeline
 
 ### Escalation
 
@@ -1066,11 +1066,11 @@ curl http://alertmanager:9093/api/v2/alerts | jq '.[] | select(.labels.component
 ### Prevention
 
 1. **Disk monitoring:** Alert on disk errors, SMART failures
-1. **Manifest signing:** Always verify ED25519 signatures
-1. **Network security:** Use TLS, certificate pinning
-1. **Access control:** Restrict who can publish manifests
-1. **Audit logging:** Log all manifest/artifact changes
-1. **Incident response drills:** Practice security scenarios
+2. **Manifest signing:** Always verify ED25519 signatures
+3. **Network security:** Use TLS, certificate pinning
+4. **Access control:** Restrict who can publish manifests
+5. **Audit logging:** Log all manifest/artifact changes
+6. **Incident response drills:** Practice security scenarios
 
 ### Escalation
 
@@ -1270,10 +1270,10 @@ curl 'http://prometheus:9090/api/v1/query?query=oneiric:system_active_instances_
 ### Prevention
 
 1. **Cleanup enforcement:** Unit tests verify cleanup called after swaps
-1. **Memory limits:** Set appropriate limits per environment
-1. **Monitoring:** Alert on high instance counts before critical
-1. **Resource pooling:** Reuse instances where possible
-1. **Profiling:** Regular memory profiling in staging
+2. **Memory limits:** Set appropriate limits per environment
+3. **Monitoring:** Alert on high instance counts before critical
+4. **Resource pooling:** Reuse instances where possible
+5. **Profiling:** Regular memory profiling in staging
 
 ### Escalation
 

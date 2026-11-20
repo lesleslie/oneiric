@@ -4,7 +4,7 @@ status: active
 role: canonical
 date: 2026-10-11
 last_reviewed: 2026-10-11
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: adapter-registry
 related:

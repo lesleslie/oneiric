@@ -4,7 +4,7 @@ status: active
 role: canonical
 date: 2026-10-17
 last_reviewed: 2026-10-17
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: persistence
 related:
@@ -37,14 +37,14 @@ The substrate is not a database. It is a **uniform adapter layer**
 across six storage categories, all built on the same metadata +
 lifecycle contract:
 
-| Category   | Adapter examples                          | Use it for                                 |
+| Category | Adapter examples | Use it for |
 |------------|-------------------------------------------|--------------------------------------------|
-| `storage`  | `s3`, `local_disk`, `mirror`, `snapshot`  | Blobs, files, backup snapshots, OTel logs. |
-| `database` | `sqlite`, `postgres`, `libsql`, `turso`   | SQL with migrations, ACID transactions.    |
-| `cache`    | `memory`, `redis`, `multitier`, `snapshot`| KV reads, hot-tier state, session caches.  |
-| `queue`    | `redis_streams`, `kafka`, `pubsub`, `nats`| Durable background work, fanout, WAL.     |
-| `vector`   | `pgvector`, `qdrant`, `duckdb_hot_store`  | Embedding storage + similarity search.    |
-| `embedding`| `openai`, `local`, `probe_chain`          | Compute embeddings (L2-normalized).       |
+| `storage` | `s3`, `local_disk`, `mirror`, `snapshot` | Blobs, files, backup snapshots, OTel logs. |
+| `database` | `sqlite`, `postgres`, `libsql`, `turso` | SQL with migrations, ACID transactions. |
+| `cache` | `memory`, `redis`, `multitier`, `snapshot`| KV reads, hot-tier state, session caches. |
+| `queue` | `redis_streams`, `kafka`, `pubsub`, `nats`| Durable background work, fanout, WAL. |
+| `vector` | `pgvector`, `qdrant`, `duckdb_hot_store` | Embedding storage + similarity search. |
+| `embedding`| `openai`, `local`, `probe_chain` | Compute embeddings (L2-normalized). |
 
 Together they replace the old cross-component storage surface's
 hardcoded `FileStorage`, Akosha's bespoke `HotStorageConfig`,
@@ -179,8 +179,7 @@ The four `CandidateSource` paths (`oneiric/core/resolution.py`):
 
 ### 3.2 Resolve
 
-The `Resolver` scores candidates by `priority × capability_match ×
-stack_level × registration_order` and picks the highest-scoring
+The `Resolver` scores candidates by `priority × capability_match × stack_level × registration_order` and picks the highest-scoring
 match. `AdapterBridge.use(category, provider=..., capabilities=...)`
 calls the resolver, materializes settings, and runs `init()` before
 returning the handle.
@@ -203,14 +202,14 @@ state.
 Mahavishnu, Akosha, Session-Buddy, and Crackerjack **do not import
 Oneiric directly** for substrate access. They call the MCP tools:
 
-| Tool                         | Purpose                                       |
+| Tool | Purpose |
 |------------------------------|-----------------------------------------------|
-| `oneiric_list_adapters`      | List registered adapters (filter by domain).  |
-| `oneiric_get_adapter`        | Retrieve adapter record by `(domain, key, provider)`. |
-| `oneiric_get_adapter_health` | Probe adapter health.                         |
-| `oneiric_validate_adapter`   | Verify factory import + deps + capabilities.   |
-| `oneiric_store_adapter`      | Register/update a custom adapter.              |
-| `oneiric_report_runtime`     | Push sanitized runtime facts.                  |
+| `oneiric_list_adapters` | List registered adapters (filter by domain). |
+| `oneiric_get_adapter` | Retrieve adapter record by `(domain, key, provider)`. |
+| `oneiric_get_adapter_health` | Probe adapter health. |
+| `oneiric_validate_adapter` | Verify factory import + deps + capabilities. |
+| `oneiric_store_adapter` | Register/update a custom adapter. |
+| `oneiric_report_runtime` | Push sanitized runtime facts. |
 
 This rule survived the 2026-09 storage decomposition — direct Python
 imports across Bodai components are forbidden.
@@ -255,11 +254,13 @@ cross-component storage surface**:
 ## 6. References
 
 - [ADR 017 — Oneiric as the shared persistence substrate for Bodai](https://github.com/lesleslie/mahavishnu/blob/main/docs/adr/017-oneiric-shared-persistence-substrate.md)
+
 <!-- ADR 013 lives in the mahavishnu repo and its filename changes with
      mahavishnu's own renames. GitHub does not redirect renamed files in
      blob/ URLs, so a direct file link 404s whenever the sibling repo
      renames the ADR. The directory link is rename-proof: it resolves
      before and after a sibling rename. -->
+
 - [ADR 013 — Mahavishnu adapter-tool boundary](https://github.com/lesleslie/mahavishnu/tree/main/docs/adr)
 - [ADR 0002 — Oneiric adapter contract](adr/0002-oneiric-adapter-contract.md)
 - [Oneiric Adapter Contract spec](specs/2026-10-11-adapter-contract-design.md)

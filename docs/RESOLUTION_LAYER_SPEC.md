@@ -3,7 +3,7 @@ status: active
 role: canonical
 date: 2026-01-21
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: resolver
 ---
@@ -60,9 +60,9 @@ flowchart TD
 **Precedence Order** (highest to lowest):
 
 1. **Explicit override** (config/manifest selection).
-1. **Inferred priority** from register_pkg (caller path mapped to stack order; fallback heuristics).
-1. **Candidate metadata stack_level** (higher wins).
-1. **Registration order** (last registered wins).
+2. **Inferred priority** from register_pkg (caller path mapped to stack order; fallback heuristics).
+3. **Candidate metadata stack_level** (higher wins).
+4. **Registration order** (last registered wins).
 
 ## Data Model (Candidate)
 
@@ -178,10 +178,10 @@ sequenceDiagram
 **Flow Steps:**
 
 1. Fetch manifest (HTTP/S3/GCS/OCI).
-1. Verify signature/digest.
-1. Download artifact to cache; install/import or place on sys.path.
-1. Register candidates with manifest-provided stack_level and source priority.
-1. Fallback: use cached artifact if offline; otherwise fall back to local candidates.
+2. Verify signature/digest.
+3. Download artifact to cache; install/import or place on sys.path.
+4. Register candidates with manifest-provided stack_level and source priority.
+5. Fallback: use cached artifact if offline; otherwise fall back to local candidates.
 
 ## Domain Integration
 
@@ -349,7 +349,7 @@ flowchart LR
 - **Existing Calls**: Existing register\_\* calls keep working; they flow through register_candidate internally.
 - **Incremental Adoption**:
   1. Implement resolver/registry in-memory.
-  1. Route adapters through it.
-  1. Add hot swap for adapters.
-  1. Extend to services/tasks/events/workflows.
-  1. Add observability and remote manifest support.
+  2. Route adapters through it.
+  3. Add hot swap for adapters.
+  4. Extend to services/tasks/events/workflows.
+  5. Add observability and remote manifest support.

@@ -3,7 +3,7 @@ status: active
 role: canonical
 date: 2026-01-21
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: observability
 ---
@@ -19,14 +19,14 @@ ______________________________________________________________________
 ## Table of Contents
 
 1. \[[#overview|Overview]\]
-1. \[[#quick-start|Quick Start]\]
-1. \[[#dashboard-catalog|Dashboard Catalog]\]
-1. \[[#installation|Installation]\]
-1. \[[#dashboard-details|Dashboard Details]\]
-1. \[[#custom-queries|Custom Queries]\]
-1. \[[#alerting-integration|Alerting Integration]\]
-1. \[[#troubleshooting|Troubleshooting]\]
-1. \[[#best-practices|Best Practices]\]
+2. \[[#quick-start|Quick Start]\]
+3. \[[#dashboard-catalog|Dashboard Catalog]\]
+4. \[[#installation|Installation]\]
+5. \[[#dashboard-details|Dashboard Details]\]
+6. \[[#custom-queries|Custom Queries]\]
+7. \[[#alerting-integration|Alerting Integration]\]
+8. \[[#troubleshooting|Troubleshooting]\]
+9. \[[#best-practices|Best Practices]\]
 
 ______________________________________________________________________
 
@@ -78,12 +78,12 @@ Use a managed Grafana instance (or your existing dashboards stack) and load the 
 ### Import Dashboards (Manual)
 
 1. **Login to Grafana:** http://localhost:3000
-1. **Navigate:** Dashboards → Import
-1. **Upload JSON:** Select dashboard file from `deployment/monitoring/grafana/dashboards/`
-1. **Configure:**
+2. **Navigate:** Dashboards → Import
+3. **Upload JSON:** Select dashboard file from `deployment/monitoring/grafana/dashboards/`
+4. **Configure:**
    - Select Prometheus data source
    - Set folder (e.g., "Oneiric")
-1. **Import**
+5. **Import**
 
 Apply the dashboard JSON using your platform’s preferred provisioning flow (ConfigMaps, Terraform, or managed Grafana provisioning).
 
@@ -108,42 +108,42 @@ ______________________________________________________________________
    - Active instances
    - SLO health score
 
-1. **Traffic Overview** (Graph)
+2. **Traffic Overview** (Graph)
 
    - Resolution throughput (req/sec)
    - Swap operations (ops/min)
    - Remote sync frequency
 
-1. **Error Rates** (Graph)
+3. **Error Rates** (Graph)
 
    - Resolution failures
    - Swap failures
    - Health check failures
    - Remote sync failures
 
-1. **Latency P99** (Graph)
+4. **Latency P99** (Graph)
 
    - Resolution latency
    - Swap duration
    - Remote sync duration
 
-1. **Recent Alerts** (Alert List)
+5. **Recent Alerts** (Alert List)
 
    - Critical alerts (last 24h)
    - Warning alerts (last 24h)
 
-1. **Resource Usage** (Gauge)
+6. **Resource Usage** (Gauge)
 
    - Active instances
    - Cache size
    - Memory estimate
 
-1. **Component Distribution** (Pie Chart)
+7. **Component Distribution** (Pie Chart)
 
    - Active by domain
    - Shadowed count
 
-1. **Activity State** (Table)
+8. **Activity State** (Table)
 
    - Paused components
    - Draining components
@@ -168,7 +168,7 @@ ______________________________________________________________________
    - Target: > 99%
    - Trend (24h)
 
-1. **Resolution Throughput by Domain** (Stacked Graph)
+2. **Resolution Throughput by Domain** (Stacked Graph)
 
    - adapter
    - service
@@ -176,18 +176,18 @@ ______________________________________________________________________
    - event
    - workflow
 
-1. **Resolution Latency Heatmap** (Heatmap)
+3. **Resolution Latency Heatmap** (Heatmap)
 
    - P50, P95, P99 distribution
    - Color-coded by latency bands
 
-1. **Resolution Latency Percentiles** (Graph)
+4. **Resolution Latency Percentiles** (Graph)
 
    - P50 (green)
    - P95 (yellow)
    - P99 (red, SLO line at 100ms)
 
-1. **Top Resolved Components** (Table)
+5. **Top Resolved Components** (Table)
 
    - Domain
    - Key
@@ -195,11 +195,11 @@ ______________________________________________________________________
    - Requests/sec
    - Avg latency
 
-1. **Resolution Failures by Domain** (Bar Gauge)
+6. **Resolution Failures by Domain** (Bar Gauge)
 
    - Failure count per domain
 
-1. **Shadowed Components** (Table)
+7. **Shadowed Components** (Table)
 
    - Domain
    - Key
@@ -207,7 +207,7 @@ ______________________________________________________________________
    - Stack level
    - Priority
 
-1. **Resolution Errors Over Time** (Graph)
+8. **Resolution Errors Over Time** (Graph)
 
    - Failed resolutions (line)
    - Error annotations
@@ -232,24 +232,24 @@ ______________________________________________________________________
    - Target: > 95%
    - Trend (24h)
 
-1. **Swap Operations Timeline** (Graph)
+2. **Swap Operations Timeline** (Graph)
 
    - Successful swaps (green)
    - Failed swaps (red)
    - Rollbacks (yellow)
 
-1. **Swap Latency Percentiles** (Graph)
+3. **Swap Latency Percentiles** (Graph)
 
    - P50 (green)
    - P95 (yellow, SLO line at 5s)
    - P99 (red)
 
-1. **Swap Duration Heatmap** (Heatmap)
+4. **Swap Duration Heatmap** (Heatmap)
 
    - Distribution across domains
    - Color-coded by duration (ms)
 
-1. **Active Instances by Domain** (Stacked Graph)
+5. **Active Instances by Domain** (Stacked Graph)
 
    - adapter
    - service
@@ -257,12 +257,12 @@ ______________________________________________________________________
    - event
    - workflow
 
-1. **Health Check Failures** (Graph)
+6. **Health Check Failures** (Graph)
 
    - Failures/sec by provider
    - Threshold line
 
-1. **Swap Failure Reasons** (Table)
+7. **Swap Failure Reasons** (Table)
 
    - Domain
    - Key
@@ -270,13 +270,13 @@ ______________________________________________________________________
    - Error type
    - Last occurrence
 
-1. **Rollback Events** (Timeline)
+8. **Rollback Events** (Timeline)
 
    - Rollback annotations
    - Reason
    - Domain/key
 
-1. **Lifecycle State Transitions** (Sankey Diagram)
+9. **Lifecycle State Transitions** (Sankey Diagram)
 
    - pending → activating → ready
    - activating → failed → rollback
@@ -295,64 +295,64 @@ ______________________________________________________________________
 
 **Panels:**
 
-1. **Sync Success Rate** (Gauge + Graph)
+01. **Sync Success Rate** (Gauge + Graph)
 
-   - Current: 99.8%
-   - Target: > 99%
-   - Trend (24h)
+    - Current: 99.8%
+    - Target: > 99%
+    - Trend (24h)
 
-1. **Last Sync Status** (Stat)
+02. **Last Sync Status** (Stat)
 
-   - Last sync time
-   - Duration
-   - Status (success/failed)
+    - Last sync time
+    - Duration
+    - Status (success/failed)
 
-1. **Sync Latency vs Budget** (Graph)
+03. **Sync Latency vs Budget** (Graph)
 
-   - P99 sync latency
-   - Latency budget (30s line)
-   - Budget violations highlighted
+    - P99 sync latency
+    - Latency budget (30s line)
+    - Budget violations highlighted
 
-1. **Sync Frequency** (Graph)
+04. **Sync Frequency** (Graph)
 
-   - Syncs/hour
-   - Refresh interval setting
+    - Syncs/hour
+    - Refresh interval setting
 
-1. **Artifacts Cached** (Graph + Stat)
+05. **Artifacts Cached** (Graph + Stat)
 
-   - Total artifacts
-   - Cache size (GB)
-   - Growth rate
+    - Total artifacts
+    - Cache size (GB)
+    - Growth rate
 
-1. **Digest Verification Status** (Table)
+06. **Digest Verification Status** (Table)
 
-   - Artifact
-   - SHA256
-   - Status
-   - Verification time
+    - Artifact
+    - SHA256
+    - Status
+    - Verification time
 
-1. **Signature Verification** (Graph)
+07. **Signature Verification** (Graph)
 
-   - Successful verifications (green)
-   - Failed verifications (red, critical)
+    - Successful verifications (green)
+    - Failed verifications (red, critical)
 
-1. **Remote Sources** (Table)
+08. **Remote Sources** (Table)
 
-   - Source URL
-   - Last sync
-   - Success rate
-   - Avg latency
+    - Source URL
+    - Last sync
+    - Success rate
+    - Avg latency
 
-1. **Sync Errors** (Logs Panel)
+09. **Sync Errors** (Logs Panel)
 
-   - Error messages from Loki
-   - Filter: `{app="oneiric"} |= "remote-sync-error"`
+    - Error messages from Loki
+    - Filter: `{app="oneiric"} |= "remote-sync-error"`
 
-1. **Cache Operations** (Graph)
+10. **Cache Operations** (Graph)
 
-   - Cache hits
-   - Cache misses
-   - Evictions
+    - Cache hits
+    - Cache misses
+    - Evictions
 
 **Target Audience:** Security Team, SRE, Platform Engineers
 
@@ -374,7 +374,7 @@ ______________________________________________________________________
    - Total draining
    - Active (normal)
 
-1. **Paused Components** (Table)
+2. **Paused Components** (Table)
 
    - Domain
    - Key
@@ -382,7 +382,7 @@ ______________________________________________________________________
    - Paused since
    - Duration
 
-1. **Draining Components** (Table)
+3. **Draining Components** (Table)
 
    - Domain
    - Key
@@ -390,25 +390,25 @@ ______________________________________________________________________
    - Draining since
    - Duration
 
-1. **Pause/Drain Events Over Time** (Graph)
+4. **Pause/Drain Events Over Time** (Graph)
 
    - Pause events
    - Resume events
    - Drain started
    - Drain completed
 
-1. **Activity State Distribution** (Pie Chart)
+5. **Activity State Distribution** (Pie Chart)
 
    - Active
    - Paused
    - Draining
 
-1. **Activity Timeline** (Annotations)
+6. **Activity Timeline** (Annotations)
 
    - Pause/resume events
    - Maintenance windows
 
-1. **Long-Running Paused Components** (Alert)
+7. **Long-Running Paused Components** (Alert)
 
    - Paused > 1 hour
    - May indicate forgotten maintenance mode
@@ -433,7 +433,7 @@ ______________________________________________________________________
    - Based on all SLIs
    - Color thresholds: Green > 95%, Yellow > 90%, Red < 90%
 
-1. **SLI Compliance** (Stat Panels Row)
+2. **SLI Compliance** (Stat Panels Row)
 
    - Resolution latency SLI: ✓/✗
    - Resolution success SLI: ✓/✗
@@ -442,39 +442,39 @@ ______________________________________________________________________
    - Remote sync latency SLI: ✓/✗
    - Remote sync success SLI: ✓/✗
 
-1. **Latency Breakdown** (Graph)
+3. **Latency Breakdown** (Graph)
 
    - Resolution P99
    - Swap P95
    - Remote sync P99
    - SLO lines overlaid
 
-1. **Throughput Metrics** (Graph)
+4. **Throughput Metrics** (Graph)
 
    - Resolution req/sec
    - Swap ops/min
    - Remote sync syncs/hour
 
-1. **Error Budget Consumption** (Graph)
+5. **Error Budget Consumption** (Graph)
 
    - Resolution error budget remaining
    - Lifecycle error budget remaining
    - Remote error budget remaining
 
-1. **Capacity Metrics** (Graph)
+6. **Capacity Metrics** (Graph)
 
    - Active instances
    - Memory usage estimate
    - Cache size
 
-1. **Resource Utilization** (Gauges Row)
+7. **Resource Utilization** (Gauges Row)
 
    - CPU (from cAdvisor)
    - Memory (from cAdvisor)
    - Disk I/O
    - Network I/O
 
-1. **Query Performance** (Table)
+8. **Query Performance** (Table)
 
    - Top slowest operations
    - Domain
@@ -508,13 +508,13 @@ Dashboards auto-loaded from `deployment/monitoring/grafana/dashboards/`.
 ### Option 2: Manual Import
 
 1. **Download dashboard JSON**
-1. **Login to Grafana:** http://localhost:3000
-1. **Import:**
+2. **Login to Grafana:** http://localhost:3000
+3. **Import:**
    - Click **+** → Import
    - Upload JSON file
    - Select Prometheus data source
    - Set folder: "Oneiric"
-1. **Save**
+4. **Save**
 
 ### Option 3: Terraform Provisioning
 
@@ -689,13 +689,13 @@ ______________________________________________________________________
    - Configuration → Data Sources → Prometheus
    - Test connection (should show "Data source is working")
 
-1. **Verify metrics exist:**
+2. **Verify metrics exist:**
 
    ```bash
    curl http://localhost:9090/api/v1/label/__name__/values | grep oneiric
    ```
 
-1. **Check time range:**
+3. **Check time range:**
 
    - Ensure dashboard time range includes data
    - Try "Last 5 minutes"
@@ -717,11 +717,11 @@ ______________________________________________________________________
    - Pre-compute expensive queries
    - Reduce dashboard query load
 
-1. **Decrease time range:**
+2. **Decrease time range:**
 
    - Use shorter time windows (e.g., 1h instead of 24h)
 
-1. **Increase Prometheus resources:**
+3. **Increase Prometheus resources:**
 
    ```yaml
    services:
@@ -732,7 +732,7 @@ ______________________________________________________________________
              memory: 4G
    ```
 
-1. **Optimize queries:**
+4. **Optimize queries:**
 
    - Use `rate()` instead of `irate()` for smoother graphs
    - Add `by (label)` to reduce cardinality
@@ -850,10 +850,10 @@ ______________________________________________________________________
 ## Next Steps
 
 1. **Import dashboards:** Follow installation section
-1. **Customize:** Adjust thresholds/colors for your environment
-1. **Set up alerts:** Configure AlertManager (see `ALERTING_SETUP.md`)
-1. **Create custom views:** Add panels specific to your use case
-1. **Export & version control:** Save dashboard JSON to Git
+2. **Customize:** Adjust thresholds/colors for your environment
+3. **Set up alerts:** Configure AlertManager (see `ALERTING_SETUP.md`)
+4. **Create custom views:** Add panels specific to your use case
+5. **Export & version control:** Save dashboard JSON to Git
 
 ______________________________________________________________________
 

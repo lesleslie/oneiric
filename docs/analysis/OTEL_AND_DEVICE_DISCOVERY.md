@@ -3,7 +3,7 @@ status: complete
 role: historical
 date: 2025-01-25
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: observability
 ---
@@ -18,8 +18,8 @@ ______________________________________________________________________
 ## 📋 Questions Answered
 
 1. **Can Mahavishnu collect and store OTel logs for querying?**
-1. **Does OTel collect logs (pull) or are logs pushed to it?**
-1. **Should Oneiric devices announce themselves (push) or be polled (pull), or both?**
+2. **Does OTel collect logs (pull) or are logs pushed to it?**
+3. **Should Oneiric devices announce themselves (push) or be polled (pull), or both?**
 
 ______________________________________________________________________
 
@@ -887,16 +887,16 @@ ______________________________________________________________________
 ### OTel Integration (4 hours):
 
 1. [ ] Deploy OTel Collector (Docker Compose)
-1. [ ] Configure Jaeger, Prometheus, Elasticsearch
-1. [ ] Set up Grafana dashboards
-1. [ ] Verify Mahavishnu data flow
+2. [ ] Configure Jaeger, Prometheus, Elasticsearch
+3. [ ] Set up Grafana dashboards
+4. [ ] Verify Mahavishnu data flow
 
 ### Device Discovery (16 hours):
 
 1. [ ] Create MCP discovery server (4h)
-1. [ ] Implement device registry (4h)
-1. [ ] Build device client library (4h)
-1. [ ] Add health monitor (4h)
+2. [ ] Implement device registry (4h)
+3. [ ] Build device client library (4h)
+4. [ ] Add health monitor (4h)
 
 **Total**: 20 hours for both systems
 

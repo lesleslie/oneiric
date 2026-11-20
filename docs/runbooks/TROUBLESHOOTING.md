@@ -3,7 +3,7 @@ status: active
 role: canonical
 date: 2026-05-10
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: lifecycle
 ---
@@ -19,17 +19,17 @@ ______________________________________________________________________
 ## Table of Contents
 
 1. \[[#overview|Overview]\]
-1. \[[#troubleshooting-methodology|Troubleshooting Methodology]\]
-1. \[[#quick-reference|Quick Reference]\]
-1. \[[#common-issues|Common Issues]\]
+2. \[[#troubleshooting-methodology|Troubleshooting Methodology]\]
+3. \[[#quick-reference|Quick Reference]\]
+4. \[[#common-issues|Common Issues]\]
    - \[[#resolution-issues|Resolution Issues]\]
    - \[[#lifecycle-issues|Lifecycle Issues]\]
    - \[[#remote-sync-issues|Remote Sync Issues]\]
    - \[[#performance-issues|Performance Issues]\]
    - \[[#configuration-issues|Configuration Issues]\]
-1. \[[#diagnostic-commands|Diagnostic Commands]\]
-1. \[[#log-analysis|Log Analysis]\]
-1. \[[#when-to-escalate|When to Escalate]\]
+5. \[[#diagnostic-commands|Diagnostic Commands]\]
+6. \[[#log-analysis|Log Analysis]\]
+7. \[[#when-to-escalate|When to Escalate]\]
 
 ______________________________________________________________________
 
@@ -40,9 +40,9 @@ This guide provides diagnostic steps and solutions for common Oneiric operationa
 ### Using This Guide
 
 1. **Identify symptom** from Quick Reference table
-1. **Follow diagnostic steps** in relevant section
-1. **Apply solution** or escalate if unresolved
-1. **Document findings** for knowledge base
+2. **Follow diagnostic steps** in relevant section
+3. **Apply solution** or escalate if unresolved
+4. **Document findings** for knowledge base
 
 ______________________________________________________________________
 
@@ -84,11 +84,11 @@ flowchart TD
 **DEDUCE Steps:**
 
 1. **D**efine the problem - What is the symptom? When did it start?
-1. **E**xamine the system - Check logs, metrics, configuration
-1. **D**etermine root cause - Why is this happening?
-1. **U**nderstand the fix - What needs to change?
-1. **C**orrect the issue - Apply the fix
-1. **E**valuate the solution - Verify problem resolved
+2. **E**xamine the system - Check logs, metrics, configuration
+3. **D**etermine root cause - Why is this happening?
+4. **U**nderstand the fix - What needs to change?
+5. **C**orrect the issue - Apply the fix
+6. **E**valuate the solution - Verify problem resolved
 
 ### Information Gathering Checklist
 

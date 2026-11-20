@@ -3,7 +3,7 @@ status: active
 role: canonical
 date: 2025-12-11
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: observability
 ---
@@ -104,8 +104,8 @@ ______________________________________________________________________
 ## 6. Additional Checks
 
 1. `uv run python -m oneiric.cli activity --json` → confirm the Service Supervisor captured the latest event counts.
-1. `uv run python -m oneiric.cli health --probe --json` → ensure event dispatcher appears in `lifecycle_state`.
-1. Run `uv run pytest tests/cli/test_commands.py::TestEventWorkflowCommands` before committing changes to the dispatcher/CLI.
+2. `uv run python -m oneiric.cli health --probe --json` → ensure event dispatcher appears in `lifecycle_state`.
+3. Run `uv run pytest tests/cli/test_commands.py::TestEventWorkflowCommands` before committing changes to the dispatcher/CLI.
 
 ______________________________________________________________________
 

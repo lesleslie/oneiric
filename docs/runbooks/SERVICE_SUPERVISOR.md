@@ -3,7 +3,7 @@ status: active
 role: canonical
 date: 2025-12-11
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: lifecycle
 ---
@@ -92,9 +92,9 @@ ______________________________________________________________________
 ## 5. Serverless Deployments (Cloud Run)
 
 1. Set `ONEIRIC_PROFILE=serverless` and, if needed, `ONEIRIC_RUNTIME_SUPERVISOR__ENABLED=true` in the deploy command or Procfile.
-1. Persist `.oneiric_cache/` via `BP_KEEP_FILES=/workspace/.oneiric_cache` so `domain_activity.sqlite` and `runtime_health.json` survive container rebuilds.
-1. Expose `--health-path /workspace/.oneiric_cache/runtime_health.json` when running the orchestrator so Cloud Run probes can read the snapshot.
-1. Follow the serverless quickstart (`README.md`) or Cloud Run build guide to capture `supervisor-info`, `health --probe --json`, and the raw `runtime_health.json` output.
+2. Persist `.oneiric_cache/` via `BP_KEEP_FILES=/workspace/.oneiric_cache` so `domain_activity.sqlite` and `runtime_health.json` survive container rebuilds.
+3. Expose `--health-path /workspace/.oneiric_cache/runtime_health.json` when running the orchestrator so Cloud Run probes can read the snapshot.
+4. Follow the serverless quickstart (`README.md`) or Cloud Run build guide to capture `supervisor-info`, `health --probe --json`, and the raw `runtime_health.json` output.
 
 ______________________________________________________________________
 

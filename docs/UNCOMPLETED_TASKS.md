@@ -3,7 +3,7 @@ status: active
 role: umbrella
 date: 2026-01-21
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: lifecycle
 ---
@@ -82,7 +82,7 @@ ______________________________________________________________________
 **Recommendation:**
 
 1. ✅ **Production deployment:** Proceed (tests clean)
-1. ⏳ **CI hardening:** Optional; keep test runtime stable as suites grow
+2. ⏳ **CI hardening:** Optional; keep test runtime stable as suites grow
 
 ______________________________________________________________________
 
@@ -225,8 +225,8 @@ None (all current items complete).
 **Goals:**
 
 1. Maintain 100% pass rate
-1. Improve CI test isolation
-1. Clean up pytest collection warnings
+2. Improve CI test isolation
+3. Clean up pytest collection warnings
 
 **Priority:** Medium (quality improvement, not functionality) — closed as part of subsequent quality work; see the Phase 4 plan for current test counts.
 
@@ -243,9 +243,9 @@ None (all current items complete).
 **Goals:**
 
 1. Real-world production usage feedback
-1. Community validation
-1. Performance optimization based on usage patterns
-1. Advanced features based on user requests
+2. Community validation
+3. Performance optimization based on usage patterns
+4. Advanced features based on user requests
 
 **Priority:** Evaluate based on v0.21.x / v1.0 adoption — v1.0 has not yet been tagged; current state is the 0.21.2 production-ready release.
 
@@ -266,6 +266,6 @@ ______________________________________________________________________
 **Next Steps:**
 
 1. ✅ **Ship v0.2.x** to production (v0.2.0 shipped; continue with patch releases)
-1. ⏳ **Monitor usage** and gather feedback
-1. ⏳ **Address test failures** in v0.2.x (non-blocking)
-1. ⏳ **Plan v0.3.0** based on real-world needs
+2. ⏳ **Monitor usage** and gather feedback
+3. ⏳ **Address test failures** in v0.2.x (non-blocking)
+4. ⏳ **Plan v0.3.0** based on real-world needs

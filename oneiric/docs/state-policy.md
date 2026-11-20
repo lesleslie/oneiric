@@ -55,6 +55,7 @@ If a workflow has any persisted process state, the **first** thing it does is wi
 A `.coverage-ratchet.json` from last year is not equivalent to one from yesterday. Output state should include a generation timestamp and, when derived from other state, a reference to that source. Consumers (release audit, publish manager, dashboards) should refuse to use output state that is too old or whose source has drifted.
 
 **Reference implementation:** `.coverage-ratchet.json` carries three new fields:
+
 - `generated_at` (ISO-8601 timestamp of the write)
 - `coverage_data_path` (absolute path to the `coverage.json` that produced the ratchet)
 - `coverage_data_mtime` (mtime of that `coverage.json`)
@@ -129,6 +130,7 @@ This is a multi-PR rollout; track as separate work in each component.
 Active. All Bodai workflow consumers are expected to follow these four rules. New code is expected to comply from the start; existing code is expected to migrate as part of its next maintenance cycle. Compliance is reviewed as part of the monthly Bodai-wide audit (per the mcp-backend-wiring-discipline cadence).
 
 Reference implementations:
+
 - `crackerjack/.claude/decisions/2026-10-13-checkpoint-disabled.md` — Rules 1 and 2
 - `crackerjack/.claude/decisions/2026-10-13-ratchet-staleness.md` — Rule 3
 - (Future) per-consumer decision notes when each component migrates to this policy.

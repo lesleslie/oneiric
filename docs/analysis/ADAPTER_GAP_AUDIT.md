@@ -3,7 +3,7 @@ status: complete
 role: historical
 date: 2025-12-29
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: adapter-architecture
 ---
@@ -43,8 +43,8 @@ topic: adapter-architecture
 ## Actions
 
 1. **Messaging bundle (SendGrid/Mailgun/Twilio):** share HTTP telemetry middleware, provide manifest snippets, and add CLI how-to in `docs/examples/LOCAL_CLI_DEMO.md`. See `docs/archive/implementation/MESSAGING_AND_SCHEDULER_ADAPTER_PLAN.md` for deliverables, owners, and test expectations.
-1. **Scheduler bundle (Cloud Tasks + Pub/Sub):** add adapters plus queue fixtures so DAG orchestration (WS-B) can rely on them. Details in the plan above.
-1. **Docs:** cross-link this audit from `docs/implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md` §5 so the backlog stays visible.
+2. **Scheduler bundle (Cloud Tasks + Pub/Sub):** add adapters plus queue fixtures so DAG orchestration (WS-B) can rely on them. Details in the plan above.
+3. **Docs:** cross-link this audit from `docs/implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md` §5 so the backlog stays visible.
 
 ## Priority Focus (Q1 2026)
 

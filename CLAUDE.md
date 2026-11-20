@@ -69,9 +69,9 @@ settings); mcp-common no longer ships LLM or prompting code.
 Components are resolved with this priority order (highest wins):
 
 1. **Explicit override** - `selections` in config (`adapters.yml`, `services.yml`, etc.)
-1. **Inferred priority** - From `ONEIRIC_STACK_ORDER` env var or path heuristics
-1. **Stack level** - Z-index style layering (candidate metadata `stack_level`)
-1. **Registration order** - Last registered wins (tie-breaker)
+2. **Inferred priority** - From `ONEIRIC_STACK_ORDER` env var or path heuristics
+3. **Stack level** - Z-index style layering (candidate metadata `stack_level`)
+4. **Registration order** - Last registered wins (tie-breaker)
 
 ### Lifecycle Flow
 
@@ -250,13 +250,13 @@ Tests can be marked with the following markers to enable selective execution:
    make test-not-slow    # Skip slow tests
    ```
 
-1. **Full Test Suite** (10 minutes):
+2. **Full Test Suite** (10 minutes):
 
    ```bash
    make test             # Run the full test suite
    ```
 
-1. **Development Workflow** (iterative):
+3. **Development Workflow** (iterative):
 
    ```bash
    # Quick feedback loop
@@ -269,7 +269,7 @@ Tests can be marked with the following markers to enable selective execution:
    python -m crackerjack -t
    ```
 
-1. **Performance Analysis**:
+4. **Performance Analysis**:
 
    ```bash
    make test-analyze     # Run tests and analyze timing distribution
@@ -412,22 +412,22 @@ async with watcher:
    - Factory allowlist implemented in `core/security.py`
    - Module import restrictions enforced
 
-1. ✅ **Missing signature verification** - **RESOLVED**
+2. ✅ **Missing signature verification** - **RESOLVED**
 
    - ED25519 signature verification in `remote/security.py`
    - Configurable trusted public keys
 
-1. ✅ **Path traversal** - **RESOLVED**
+3. ✅ **Path traversal** - **RESOLVED**
 
    - Path sanitization function in `remote/security.py`
    - Cache directory boundary enforcement
 
-1. ✅ **No HTTP timeouts** - **RESOLVED**
+4. ✅ **No HTTP timeouts** - **RESOLVED**
 
    - Configurable timeouts in `remote/loader.py` (default: 30s)
    - Circuit breaker + retry logic in `core/resiliency.py`
 
-1. ✅ **Public-network auth gap (FastMCP transport)** - **RESOLVED** (2026-09-18)
+5. ✅ **Public-network auth gap (FastMCP transport)** - **RESOLVED** (2026-09-18)
 
    - FastMCP's HTTP transport defaults to `127.0.0.1`, eliminating the missing-auth-network-exposure finding by default (spec §8 Q3).
    - **Operator guard**: `oneiric/cli/mcp.py::_enforce_public_network_auth_safety` raises `typer.BadParameter` when `--host` is non-loopback AND the resolved `mcp_auth_config.enabled` is False. Refuses to start before either path (foreground `run_async` or detached subprocess) can bind the unauthorized socket.
@@ -436,7 +436,7 @@ async with watcher:
    - **Tests**: `tests/cli/test_mcp_cli.py::TestIsLoopbackHost` (6 cases) + `TestEnforcePublicNetworkAuthSafety` (6 cases, covering the four-cell matrix).
    - **Follow-up**: Starlette-level `/mcp/` middleware that hardens the path even when auth is already enabled remains as a separate task (Spec §8 Q3 addendum).
 
-1. ✅ **Thread safety** - **RESOLVED**
+6. ✅ **Thread safety** - **RESOLVED**
 
    - RLock added to resolver registry
    - Concurrent registration tests passing
@@ -485,13 +485,13 @@ The `docs/` directory contains comprehensive documentation organized by purpose:
 ## Design Principles
 
 1. **Single Responsibility** - Oneiric only does resolution + lifecycle + remote loading
-1. **Domain Agnostic** - Same semantics work for any pluggable domain
-1. **Explicit Over Implicit** - Stack levels, priorities, and selection are transparent
-1. **Explain Everything** - Every resolution has a traceable decision path
-1. **Hot-Swap First** - Runtime changes without restarts
-1. **Remote Native** - Built for distributed component delivery
-1. **Type Safe** - Full Pydantic + type hints throughout
-1. **Async First** - All I/O is async, structured concurrency ready
+2. **Domain Agnostic** - Same semantics work for any pluggable domain
+3. **Explicit Over Implicit** - Stack levels, priorities, and selection are transparent
+4. **Explain Everything** - Every resolution has a traceable decision path
+5. **Hot-Swap First** - Runtime changes without restarts
+6. **Remote Native** - Built for distributed component delivery
+7. **Type Safe** - Full Pydantic + type hints throughout
+8. **Async First** - All I/O is async, structured concurrency ready
 
 ## Observability
 
@@ -613,10 +613,10 @@ python -m crackerjack -a patch
 ```
 
 1. **Plan with crackerjack-architect**: Ensure proper architecture from the start
-1. **Implement with python-pro**: Follow modern Python patterns
-1. **Test comprehensively**: Use pytest-hypothesis-specialist for robust testing
-1. **Run quality checks**: `python -m crackerjack -t` before committing
-1. **Security review**: Use security-auditor for final validation
+2. **Implement with python-pro**: Follow modern Python patterns
+3. **Test comprehensively**: Use pytest-hypothesis-specialist for robust testing
+4. **Run quality checks**: `python -m crackerjack -t` before committing
+5. **Security review**: Use security-auditor for final validation
 
 - **Use crackerjack-architect agent proactively** for all significant code changes
 - **Never reduce test coverage** - the ratchet system only allows improvements

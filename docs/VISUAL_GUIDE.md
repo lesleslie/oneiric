@@ -3,7 +3,7 @@ status: active
 role: canonical
 date: 2026-02-03
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: resolver
 ---
@@ -16,17 +16,17 @@ ______________________________________________________________________
 
 ## Table of Contents
 
-1. [Architecture Overview](#1-architecture-overview)
-1. [Resolution System](#2-resolution-system)
-1. [Lifecycle Management](#3-lifecycle-management)
-1. [Remote Manifest Delivery](#4-remote-manifest-delivery)
-1. [Domain Bridge Pattern](#5-domain-bridge-pattern)
-1. [Complete Request Flow](#6-complete-request-flow)
-1. [Quality & Testing](#7-quality--testing)
-1. [Security Architecture](#8-security-architecture)
-1. [Performance & Deployment](#9-performance--deployment)
-1. [Troubleshooting](#10-troubleshooting)
-1. [CLI Command Reference](#11-cli-command-reference)
+01. [Architecture Overview](#1-architecture-overview)
+02. [Resolution System](#2-resolution-system)
+03. [Lifecycle Management](#3-lifecycle-management)
+04. [Remote Manifest Delivery](#4-remote-manifest-delivery)
+05. [Domain Bridge Pattern](#5-domain-bridge-pattern)
+06. [Complete Request Flow](#6-complete-request-flow)
+07. [Quality & Testing](#7-quality--testing)
+08. [Security Architecture](#8-security-architecture)
+09. [Performance & Deployment](#9-performance--deployment)
+10. [Troubleshooting](#10-troubleshooting)
+11. [CLI Command Reference](#11-cli-command-reference)
 
 ______________________________________________________________________
 
@@ -1063,17 +1063,17 @@ ______________________________________________________________________
 
 ### Key Flows to Understand
 
-1. **New to Oneiric?** Start with [Architecture Overview](#1-architecture-overview)
-1. **Understanding resolution?** See [4-Tier Precedence Flow](#2-resolution-system)
-1. **Implementing hot-swap?** Check [Hot-Swap Flow](#3-lifecycle-management)
-1. **Using remote manifests?** Read [Remote Sync Architecture](#4-remote-manifest-delivery)
-1. **Building your own domain?** Study [Domain Bridge Pattern](#5-domain-bridge-pattern)
-1. **End-to-end understanding?** Review [Complete Request Flow](#6-complete-request-flow)
-1. **Checking test coverage?** View [Test Coverage by Module](#7-quality--testing)
-1. **Understanding security?** See [Security Hardening Layers](#8-security-architecture)
-1. **Performance tuning?** Check [Performance Optimization Flow](#9-performance--deployment)
-1. **Troubleshooting issues?** Use [Troubleshooting Decision Trees](#10-troubleshooting)
-1. **Using CLI commands?** Reference [CLI Command Structure](#11-cli-command-reference)
+01. **New to Oneiric?** Start with [Architecture Overview](#1-architecture-overview)
+02. **Understanding resolution?** See [4-Tier Precedence Flow](#2-resolution-system)
+03. **Implementing hot-swap?** Check [Hot-Swap Flow](#3-lifecycle-management)
+04. **Using remote manifests?** Read [Remote Sync Architecture](#4-remote-manifest-delivery)
+05. **Building your own domain?** Study [Domain Bridge Pattern](#5-domain-bridge-pattern)
+06. **End-to-end understanding?** Review [Complete Request Flow](#6-complete-request-flow)
+07. **Checking test coverage?** View [Test Coverage by Module](#7-quality--testing)
+08. **Understanding security?** See [Security Hardening Layers](#8-security-architecture)
+09. **Performance tuning?** Check [Performance Optimization Flow](#9-performance--deployment)
+10. **Troubleshooting issues?** Use [Troubleshooting Decision Trees](#10-troubleshooting)
+11. **Using CLI commands?** Reference [CLI Command Structure](#11-cli-command-reference)
 
 ### Diagram Types Used
 

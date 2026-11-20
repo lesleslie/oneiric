@@ -3,7 +3,7 @@ status: partial
 role: implementation
 date: 2026-01-21
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: adapter-architecture
 ---
@@ -236,10 +236,10 @@ Remaining Phase 3 backlog (DNS, FileTransfer, optional Wave C messaging adapte
 For each checkbox above, completion requires:
 
 1. Provider metadata & settings model (`settings.py` per provider or inline).
-1. Lifecycle-compliant wrapper with structlog instrumentation.
-1. Candidate registration through `adapters.bridge.register`.
-1. Unit/lifecycle tests + resolver precedence tests.
-1. Documentation snippet (manifest example or README section).
+2. Lifecycle-compliant wrapper with structlog instrumentation.
+3. Candidate registration through `adapters.bridge.register`.
+4. Unit/lifecycle tests + resolver precedence tests.
+5. Documentation snippet (manifest example or README section).
 
 ### Stage 3 – Action Migration Waves (Status: ☑)
 
@@ -268,9 +268,9 @@ For each checkbox above, completion requires:
 Each action migration step delivers:
 
 1. Resolver-friendly registration via respective domain bridge.
-1. Structured logging alignment (structlog context fields).
-1. Health/pause/drain hooks implemented.
-1. CLI coverage (list/show/trigger) updated.
+2. Structured logging alignment (structlog context fields).
+3. Health/pause/drain hooks implemented.
+4. CLI coverage (list/show/trigger) updated.
 
 ### Stage 4 – Remote & Packaging (Status: ☑ COMPLETE - See docs/implementation/SERVERLESS_AND_PARITY_EXECUTION_PLAN.md)
 

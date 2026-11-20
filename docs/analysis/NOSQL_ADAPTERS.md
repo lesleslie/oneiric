@@ -3,7 +3,7 @@ status: active
 role: canonical
 date: 2026-02-03
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: adapter-architecture
 ---
@@ -239,8 +239,8 @@ ______________________________________________________________________
 ## 5. Best Practices
 
 1. **Secrets:** Prefer Secret Manager adapters for credentials (Mongo URI, AWS keys) and use inline config only for dev.
-1. **Serverless deployments:** Package manifests with the desired NoSQL adapter and disable remote polling to avoid cold-start penalties.
-1. **Testing:** Use fakes (Mongo) or local emulators (LocalStack/DynamoDB Local) so CI can exercise adapters without real cloud resources.
-1. **Logging:** Adapters emit structured spans (`adapter.nosql.*`) for CRUD operations; scrape them in Cloud Logging / Loki for auditing.
+2. **Serverless deployments:** Package manifests with the desired NoSQL adapter and disable remote polling to avoid cold-start penalties.
+3. **Testing:** Use fakes (Mongo) or local emulators (LocalStack/DynamoDB Local) so CI can exercise adapters without real cloud resources.
+4. **Logging:** Adapters emit structured spans (`adapter.nosql.*`) for CRUD operations; scrape them in Cloud Logging / Loki for auditing.
 
 Keep this file synchronized with future NoSQL additions (Firestore, Cassandra, etc.) so operators have a single source of truth for configuration.

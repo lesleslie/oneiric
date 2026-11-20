@@ -3,7 +3,7 @@ status: active
 role: canonical
 date: 2025-12-29
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: observability
 ---
@@ -18,16 +18,16 @@ ______________________________________________________________________
 
 ## Table of Contents
 
-1. \[[#overview|Overview]\]
-1. \[[#quick-start|Quick Start]\]
-1. \[[#installation|Installation]\]
-1. \[[#configuration|Configuration]\]
-1. \[[#routing-rules|Routing Rules]\]
-1. \[[#notification-channels|Notification Channels]\]
-1. \[[#escalation-policies|Escalation Policies]\]
-1. \[[#silencing-alerts|Silencing Alerts]\]
-1. \[[#troubleshooting|Troubleshooting]\]
-1. \[[#best-practices|Best Practices]\]
+01. \[[#overview|Overview]\]
+02. \[[#quick-start|Quick Start]\]
+03. \[[#installation|Installation]\]
+04. \[[#configuration|Configuration]\]
+05. \[[#routing-rules|Routing Rules]\]
+06. \[[#notification-channels|Notification Channels]\]
+07. \[[#escalation-policies|Escalation Policies]\]
+08. \[[#silencing-alerts|Silencing Alerts]\]
+09. \[[#troubleshooting|Troubleshooting]\]
+10. \[[#best-practices|Best Practices]\]
 
 ______________________________________________________________________
 
@@ -358,8 +358,8 @@ ______________________________________________________________________
 **Setup:**
 
 1. **Create Slack App:** https://api.slack.com/apps
-1. **Enable Incoming Webhooks**
-1. **Add webhook URL to AlertManager config**
+2. **Enable Incoming Webhooks**
+3. **Add webhook URL to AlertManager config**
 
 **Configuration:**
 
@@ -384,8 +384,8 @@ slack_configs:
 **Setup:**
 
 1. **Create PagerDuty Service**
-1. **Get Integration Key**
-1. **Add to AlertManager config**
+2. **Get Integration Key**
+3. **Add to AlertManager config**
 
 **Configuration:**
 
@@ -482,14 +482,14 @@ ______________________________________________________________________
 ### Via UI
 
 1. **Access AlertManager UI:** http://localhost:9093
-1. **Click "Silences" tab**
-1. **New Silence**
+2. **Click "Silences" tab**
+3. **New Silence**
    - **Matchers:** `alertname="OneiricHealthCheck"`, `domain="adapter"`
    - **Start:** Now
    - **Duration:** 1h
    - **Creator:** Your name
    - **Comment:** "Maintenance window for adapter health checks"
-1. **Create**
+4. **Create**
 
 ### Via CLI (amtool)
 
@@ -562,8 +562,8 @@ curl http://localhost:9093/api/v2/status
 **Solutions:**
 
 1. **Alert rules not loaded:** Reload Prometheus config
-1. **Alert expression not firing:** Test query in Prometheus UI
-1. **AlertManager not reachable:** Check network connectivity
+2. **Alert expression not firing:** Test query in Prometheus UI
+3. **AlertManager not reachable:** Check network connectivity
 
 ______________________________________________________________________
 
@@ -587,9 +587,9 @@ curl -X POST http://localhost:9093/api/v2/alerts \
 **Solutions:**
 
 1. **Webhook URL invalid:** Verify Slack/PagerDuty webhook
-1. **Receiver misconfigured:** Check `alertmanager.yml` syntax
-1. **Silenced:** Check active silences
-1. **Routing mismatch:** Verify route matchers
+2. **Receiver misconfigured:** Check `alertmanager.yml` syntax
+3. **Silenced:** Check active silences
+4. **Routing mismatch:** Verify route matchers
 
 ______________________________________________________________________
 
@@ -635,10 +635,10 @@ ______________________________________________________________________
 ## Next Steps
 
 1. **Configure notification channels:** Set up Slack/PagerDuty/email webhooks
-1. **Customize routing:** Adjust routes for your team structure
-1. **Test alerting:** Send test alerts and verify delivery
-1. **Create runbooks:** Ensure all alerts link to runbooks
-1. **Monitor AlertManager:** Add AlertManager metrics to dashboards
+2. **Customize routing:** Adjust routes for your team structure
+3. **Test alerting:** Send test alerts and verify delivery
+4. **Create runbooks:** Ensure all alerts link to runbooks
+5. **Monitor AlertManager:** Add AlertManager metrics to dashboards
 
 ______________________________________________________________________
 

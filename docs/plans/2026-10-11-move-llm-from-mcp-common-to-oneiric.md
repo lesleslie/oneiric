@@ -9,7 +9,7 @@ topic: adapter-registry
 date: 2026-10-11
 last_reviewed: 2026-11-14
 revised: 2026-11-14
-superseded_by: null
+superseded_by:
 blocks_on: []
 ---
 
@@ -65,15 +65,15 @@ consumers in lockstep, ship.
 
 ### Failure Conditions (verifier-only)
 
-1. `mcp_common/llm/` does not exist as a directory after the change (8 files: `__init__.py`, `_security.py`, `config.py`, `exceptions.py`, `fallback.py`, `hailuo.py`, `provider.py`, `types.py` — none remain).
-2. `mcp_common/prompting/` (8 files), `mcp_common/backends/` (3 files), and `mcp_common/apple_script/` (3 files) do not exist after the change.
-3. `oneiric/adapters/llm/` contains the moved LLM code: `fallback.py` (`FallbackChain`, `CircuitBreaker`), `config.py` (`LLMSettings`, `ProviderConfig`), `exceptions.py` (`LLMError`), `provider.py` (`OpenAICompatibleProvider`), `types.py` (`TaskType`), `_security.py` (`sanitize_error`). **No `hailuo.py` — that is deleted, not moved.**
-4. `oneiric.adapters.llm.fallback.FallbackChain`, `oneiric.adapters.llm.config.LLMSettings`, `oneiric.adapters.llm.config.ProviderConfig`, `oneiric.adapters.llm.exceptions.LLMError`, `oneiric.adapters.llm.types.TaskType` all import cleanly.
-5. `git grep -nE "from mcp_common\.llm|from mcp_common\.prompting|from mcp_common\.backends|from mcp_common\.apple_script" -- '*.py'` returns zero matches across the fleet (mahavishnu, akosha, session-buddy, crackerjack, oneiric, mcp-common).
-6. `pytest tests/` in each affected repo exits 0 after the consumer updates.
-7. `mcp_common/pyproject.toml` declares no `macos-prompts` or `terminal-prompts` dependency-group, and `[tool.coverage.run].omit` no longer lists `mcp_common/backends/pyobjc.py`.
-8. `mcp-common/uv.lock` no longer resolves `pyobjc-core`, `pyobjc-framework-cocoa`, or `prompt-toolkit`.
-9. `session-buddy/docs/developer/PROMPTING_ADAPTER_QUICK_REFERENCE.md` carries frontmatter `status: complete` + `role: superseded` + `superseded_by: ext:oneiric/docs/plans/2026-10-11-move-llm-from-mcp-common-to-oneiric.md`, and the duplicate root copy `session-buddy/PROMPTING_ADAPTER_QUICK_REFERENCE.md` is removed.
+01. `mcp_common/llm/` does not exist as a directory after the change (8 files: `__init__.py`, `_security.py`, `config.py`, `exceptions.py`, `fallback.py`, `hailuo.py`, `provider.py`, `types.py` — none remain).
+02. `mcp_common/prompting/` (8 files), `mcp_common/backends/` (3 files), and `mcp_common/apple_script/` (3 files) do not exist after the change.
+03. `oneiric/adapters/llm/` contains the moved LLM code: `fallback.py` (`FallbackChain`, `CircuitBreaker`), `config.py` (`LLMSettings`, `ProviderConfig`), `exceptions.py` (`LLMError`), `provider.py` (`OpenAICompatibleProvider`), `types.py` (`TaskType`), `_security.py` (`sanitize_error`). **No `hailuo.py` — that is deleted, not moved.**
+04. `oneiric.adapters.llm.fallback.FallbackChain`, `oneiric.adapters.llm.config.LLMSettings`, `oneiric.adapters.llm.config.ProviderConfig`, `oneiric.adapters.llm.exceptions.LLMError`, `oneiric.adapters.llm.types.TaskType` all import cleanly.
+05. `git grep -nE "from mcp_common\.llm|from mcp_common\.prompting|from mcp_common\.backends|from mcp_common\.apple_script" -- '*.py'` returns zero matches across the fleet (mahavishnu, akosha, session-buddy, crackerjack, oneiric, mcp-common).
+06. `pytest tests/` in each affected repo exits 0 after the consumer updates.
+07. `mcp_common/pyproject.toml` declares no `macos-prompts` or `terminal-prompts` dependency-group, and `[tool.coverage.run].omit` no longer lists `mcp_common/backends/pyobjc.py`.
+08. `mcp-common/uv.lock` no longer resolves `pyobjc-core`, `pyobjc-framework-cocoa`, or `prompt-toolkit`.
+09. `session-buddy/docs/developer/PROMPTING_ADAPTER_QUICK_REFERENCE.md` carries frontmatter `status: complete` + `role: superseded` + `superseded_by: ext:oneiric/docs/plans/2026-10-11-move-llm-from-mcp-common-to-oneiric.md`, and the duplicate root copy `session-buddy/PROMPTING_ADAPTER_QUICK_REFERENCE.md` is removed.
 10. `mahavishnu/tests/unit/test_apple_script_bridge_conformance.py` is deleted (it tested the removed `mcp_common.apple_script` bridge).
 11. **The moved classes are NOT in the adapter resolution catalog.** *(Amended
     2026-11-14.)* The original text required registrations under the new
@@ -235,7 +235,6 @@ follow-up. Concretely, Phase 1 grows:
 are dependencies of the adapter classes, not adapters themselves, and need
 no conformance check.
 
-
 ## Approach
 
 Five phases. Each phase ends with the consumer-side smoke test for the affected repo: `uv sync` then `pytest tests/` for the consumer, `crackerjack run` for crackerjack, and `python -c "import oneiric.adapters.llm.fallback"` for oneiric.
@@ -243,6 +242,7 @@ Five phases. Each phase ends with the consumer-side smoke test for the affected 
 ### Phase 1 — Move the LLM code to `oneiric.adapters.llm`
 
 **New files in `oneiric/`:**
+
 - `oneiric/adapters/llm/_security.py` ← moved from `mcp_common/llm/_security.py`
 - `oneiric/adapters/llm/config.py` ← moved from `mcp_common/llm/config.py`
 - `oneiric/adapters/llm/exceptions.py` ← moved from `mcp_common/llm/exceptions.py`
@@ -254,6 +254,7 @@ Five phases. Each phase ends with the consumer-side smoke test for the affected 
 **Edit:** each moved file's internal imports. `mcp_common.llm.fallback` and others may have intra-package imports; those become relative imports (e.g., `from .exceptions import LLMError` instead of `from mcp_common.llm.exceptions import LLMError`).
 
 **Files deleted in `mcp-common/`:**
+
 - `mcp_common/llm/_security.py`
 - `mcp_common/llm/config.py`
 - `mcp_common/llm/exceptions.py`
@@ -263,6 +264,7 @@ Five phases. Each phase ends with the consumer-side smoke test for the affected 
 - `mcp_common/llm/__init__.py`
 
 **Integration Contract:**
+
 - Triggered from: this plan (manual edits)
 - Returns to / updates: `oneiric/adapters/llm/` (added 6 files, updated 1), `mcp_common/llm/` (deleted 7 files)
 - Demonstrable by: `uv run python -c "import oneiric.adapters.llm; from oneiric.adapters.llm import FallbackChain, LLMSettings, ProviderConfig, LLMError, TaskType"` exits 0; `uv run python -c "import mcp_common.llm"` raises `ModuleNotFoundError`
@@ -277,13 +279,13 @@ slice, and the new factory paths are registered in
 
 Two decisions the plan did not pin down:
 
-1. **Factory paths use the colon form** — `oneiric.adapters.llm.fallback:
-   FallbackChain`, not the dotted `oneiric.adapters.llm.fallback.FallbackChain`
+1. **Factory paths use the colon form** — `oneiric.adapters.llm.fallback: FallbackChain`, not the dotted `oneiric.adapters.llm.fallback.FallbackChain`
    the Failure Condition spells out. `oneiric/core/security.py`'s
    `FACTORY_PATTERN` *requires* `module.path: Name`; a dotted path is
    rejected at resolution time with `Invalid factory format`. The dotted
    spelling in the Failure Condition is prose shorthand for "the new path",
    not a literal.
+
 2. **Both classes are zero-argument constructible.** The lifecycle manager
    instantiates a candidate with `factory()` and no arguments
    (`oneiric/core/lifecycle.py:_instantiate_candidate`), so a registration
@@ -293,10 +295,12 @@ Two decisions the plan did not pin down:
    is an empty chain. Passing a configuration keeps the original eager
    behaviour, including the constructor-time `ImportError` when `openai` is
    not installed.
+
 3. **They are not in the resolution catalog at all.** Zero-argument
    constructibility is not enough — a catalog entry also has to pass its
    health check to be activated, and an unconfigured chain or provider
    never can. See Failure Condition 11 (amended).
+
 4. **The transport layer carries the security posture oneiric's own
    Bifrost adapter assigns to it.** `oneiric/adapters/llm/bifrost.py`
    documents that the *transport* owns the request-time half of the SSRF
@@ -422,8 +426,7 @@ Two error paths, both measured:
 reasoning_effort: dict[str, str] = {}
 ```
 
-Validation rejects any value outside `{adaptive, low, medium, high, xhigh,
-max}` at load time, with an error that names the cause. `none` and `disabled`
+Validation rejects any value outside `{adaptive, low, medium, high, xhigh, max}` at load time, with an error that names the cause. `none` and `disabled`
 are called out by name in that message, because on `MiniMax-M3.1-Flash` both
 are `400`s rather than inert values.
 
@@ -511,8 +514,7 @@ fall-through to the provider default.
 > to prevent, so **Phase 4 must carry the wiring step** (see below).
 >
 > *(An earlier draft of this note claimed the map would break the shipped
-> YAML outright, with `ValidationError: reasoning_effort — Extra inputs
-> are not permitted`. That measurement was real but irrelevant: it loaded
+> YAML outright, with `ValidationError: reasoning_effort — Extra inputs are not permitted`. That measurement was real but irrelevant: it loaded
 > the file through `LLMSettings`, which nothing does. The deferral was
 > harmless; the reason given for it was wrong, and the real problem —
 > the missing wiring — is worse.)*
@@ -556,6 +558,7 @@ zero consumers for both, so they are deleted instead. No new oneiric packages
 are created.
 
 **Files deleted in `mcp-common/`:**
+
 - `mcp_common/llm/hailuo.py` (the last file in `mcp_common/llm/`)
 - `mcp_common/prompting/` — `__init__.py`, `adapter.py`, `base.py`, `exceptions.py`, `factory.py`, `models.py`, `MIGRATION.md`, `README.md`
 - `mcp_common/backends/` — `__init__.py`, `pyobjc.py`, `toolkit.py`
@@ -565,6 +568,7 @@ are created.
 - `docs/iterm2-applescript-protocol.md` (the escaping protocol spec, orphaned by the bridge's removal)
 
 **Edit `mcp-common/pyproject.toml`:**
+
 - Drop the `macos-prompts` dependency-group (`pyobjc-core>=12.2.2`, `pyobjc-framework-Cocoa>=10.0`).
 - Drop the `terminal-prompts` dependency-group (`prompt-toolkit>=3.0.53`). `prompt_toolkit` has no other consumer in mcp-common.
 - Drop `"mcp_common/backends/pyobjc.py"` from `[tool.coverage.run].omit`.
@@ -584,6 +588,7 @@ are created.
 **At end of this phase, `mcp_common/llm/`, `mcp_common/prompting/`, `mcp_common/backends/`, and `mcp_common/apple_script/` do not exist as directories.**
 
 **Integration Contract:**
+
 - Triggered from: Phase 1 complete
 - Returns to / updates: `mcp_common/llm/hailuo.py` (deleted), `mcp_common/prompting/` (deleted), `mcp_common/backends/` (deleted), `mcp_common/apple_script/` (deleted), `mcp-common/pyproject.toml` (2 groups + 1 omit entry removed), `mcp-common/uv.lock` (regenerated), `mcp-common/CLAUDE.md`, `mcp-common/AGENTS.md`, `mcp-common/docs/reference/service-dependencies.md`, `mcp-common/docs/audits/2026-09-05-coverage-ratchet-memo.md`
 - Demonstrable by: `ls mcp_common/prompting/ mcp_common/backends/ mcp_common/apple_script/ mcp_common/llm/` returns "No such file or directory" for all four; `uv run python -c "import mcp_common.prompting, mcp_common.backends, mcp_common.apple_script"` raises `ModuleNotFoundError`; `uv lock --check` passes; `rg pyobjc uv.lock` returns no matches
@@ -593,14 +598,17 @@ are created.
 ### Phase 3 — Archive the superseded decision doc; delete the orphaned conformance test
 
 **`session-buddy`:**
+
 - Delete the duplicate root copy `PROMPTING_ADAPTER_QUICK_REFERENCE.md` (byte-identical to the `docs/developer/` copy; the root copy was the older file).
 - Keep `docs/developer/PROMPTING_ADAPTER_QUICK_REFERENCE.md` **in place** — session-buddy has no archive/deprecated directory convention, so the repo's own mechanism is the frontmatter chain. Restore its frontmatter to the canonical fenced form and mark it `status: complete` + `role: superseded` + `superseded_by: ext:oneiric/docs/plans/2026-10-11-move-llm-from-mcp-common-to-oneiric.md` (the `ext:` form is required because the plan lives in oneiric, so a repo-relative path could not resolve).
 - Add a prominent `SUPERSEDED` banner under the frontmatter naming the plan and calling out the two false premises in the body. **Do not edit the historical body** — it is a record of a real past decision, and annotating it is more honest than rewriting it. (The plan's earlier draft proposed editing the body in place; that was revised 2026-11-14.)
 
 **`mahavishnu`:**
+
 - Delete `tests/unit/test_apple_script_bridge_conformance.py`. It tested `mcp_common.apple_script.bridge` and was `skipif(not OSASCRIPT_AVAILABLE)` — on macOS it *ran*, so it breaks on Phase 2's deletion.
 
 **Integration Contract:**
+
 - Triggered from: Phase 2 complete
 - Returns to / updates: `session-buddy/PROMPTING_ADAPTER_QUICK_REFERENCE.md` (deleted), `session-buddy/docs/developer/PROMPTING_ADAPTER_QUICK_REFERENCE.md` (frontmatter reconciled + SUPERSEDED banner), `mahavishnu/tests/unit/test_apple_script_bridge_conformance.py` (deleted)
 - Demonstrable by: `rg -l 'PROMPTING_ADAPTER_QUICK_REFERENCE' session-buddy/` shows only `docs/developer/`; the doc's frontmatter parses as YAML and yields `role: superseded`; `rg -c 'apple_script' mahavishnu/tests/` returns zero
@@ -610,6 +618,7 @@ are created.
 ### Phase 4 — Update consumers in lockstep
 
 **Edit:**
+
 - `mahavishnu/mahavishnu/workers/cloud_worker.py:20` — `from mcp_common.llm import FallbackChain, LLMSettings` → `from oneiric.adapters.llm import FallbackChain, LLMSettings`
 - `session-buddy/session_buddy/llm_providers.py:10` — same swap
 - `crackerjack/crackerjack/adapters/ai/unified.py:8` — same swap
@@ -641,6 +650,7 @@ fail at import time — a hard `ImportError` that no test in that consumer
 would have caught before the swap.
 
 So Phase 4 edits, in each consumer's `pyproject.toml`:
+
 - `mahavishnu`: `oneiric>=0.34.0` → `oneiric>=<version carrying the moved code>`
 - `session-buddy`: `oneiric>=0.33` → `oneiric>=<version carrying the moved code>`
 - `crackerjack`: `oneiric>=0.33` → `oneiric>=<version carrying the moved code>`
@@ -661,16 +671,18 @@ oneiric version is published. The order is therefore:
 The plan's existing push-order note covers repository push order; this is
 the PyPI publish gate that sits in front of it.
 
-
 **Run after edits:** `git grep -nE "from mcp_common\.llm|from mcp_common\.prompting|from mcp_common\.backends|from mcp_common\.apple_script" -- '*.py'` across the fleet. Must return zero matches.
 
 **Edit oneiric catalog registrations (if any exist):** the oneiric catalog may have registrations for these classes under the old factory paths. Audit by:
+
 ```bash
 rg -l "mcp_common\.llm|mcp_common\.prompting" --glob '*.yaml' --glob '*.json' oneiric/
 ```
+
 Update any matches to the new factory paths.
 
 **Integration Contract:**
+
 - Triggered from: Phases 1-2 complete (the moved code is in place; consumers just need to point at the new locations)
 - Returns to / updates: 3 production import sites (mahavishnu, session-buddy, crackerjack) + 3 test files + any oneiric catalog registrations
 - Demonstrable by: the fleet-wide `git grep` returns zero; `pytest tests/` exits 0 in mahavishnu, session-buddy, crackerjack, oneiric
@@ -733,6 +745,7 @@ revised title.
 > entry is unchanged.
 
 **Final validation across all affected repos:**
+
 - `uv sync` in oneiric, mcp-common, session-buddy, crackerjack, mahavishnu
 - `pytest tests/` in each — exits 0
 - `python -c "import oneiric.adapters.llm.fallback; from oneiric.adapters.llm import FallbackChain, LLMSettings"` exits 0
@@ -741,6 +754,7 @@ revised title.
 - `session-buddy` MCP server starts and serves healthcheck
 
 **Integration Contract:**
+
 - Triggered from: Phase 4 complete
 - Returns to / updates: `oneiric/CLAUDE.md` (one-line note), `oneiric/docs/plans/PLAN_INDEX.md` (regenerated)
 - Demonstrable by: all of the above checks pass
@@ -749,29 +763,29 @@ revised title.
 
 ## Resolved decisions
 
-1. **Hard break, no shims.** The user explicitly said "we don't care about backwards compat or legacy support". No re-export shims, no `DeprecationWarning`, no deprecation windows.
-2. **The prompting stack is deleted, not moved.** Zero production consumers across 29 mcp-common-dependent repos. Relocation would preserve ~2,071 lines of maintenance cost and add oneiric's adapter-registration and health-feed obligations for a capability nobody calls.
-3. **`HailuoAdapter` is deleted, not moved to `adapters/video/`.** Zero consumers; no `oneiric/adapters/video/` package exists or is warranted. Git retains it if a video feature is ever specced.
-4. **The rest of `mcp_common/llm/` lands in the existing `adapters/llm/`.** It already exists and owns the providers; extending it is the natural home for provider routing, settings, and the LLMError exception.
-5. **No `oneiric/adapters/prompt/` or `oneiric/adapters/video/` packages are created.** This reverses the original plan's shape, per the 2026-11-14 audit.
-6. **The archived session-buddy decision doc keeps its historical body.** It records a real past decision and a real reasoning error; both are worth preserving. Only its frontmatter and its two actively-misleading verdicts get annotated.
-7. **No ADR change.** ADR 0002 (Oneiric Adapter Contract) is canonical and unaffected — the contract is about shape, not location.
-8. **No `pyproject.toml` version bumps.** Per `feedback-mcp-common-version-bump-is-user.md`. The user does all version bumps.
-9. **No spec doc.** This is a code-move plus a deletion; the design is implicit in the package layout.
+01. **Hard break, no shims.** The user explicitly said "we don't care about backwards compat or legacy support". No re-export shims, no `DeprecationWarning`, no deprecation windows.
+02. **The prompting stack is deleted, not moved.** Zero production consumers across 29 mcp-common-dependent repos. Relocation would preserve ~2,071 lines of maintenance cost and add oneiric's adapter-registration and health-feed obligations for a capability nobody calls.
+03. **`HailuoAdapter` is deleted, not moved to `adapters/video/`.** Zero consumers; no `oneiric/adapters/video/` package exists or is warranted. Git retains it if a video feature is ever specced.
+04. **The rest of `mcp_common/llm/` lands in the existing `adapters/llm/`.** It already exists and owns the providers; extending it is the natural home for provider routing, settings, and the LLMError exception.
+05. **No `oneiric/adapters/prompt/` or `oneiric/adapters/video/` packages are created.** This reverses the original plan's shape, per the 2026-11-14 audit.
+06. **The archived session-buddy decision doc keeps its historical body.** It records a real past decision and a real reasoning error; both are worth preserving. Only its frontmatter and its two actively-misleading verdicts get annotated.
+07. **No ADR change.** ADR 0002 (Oneiric Adapter Contract) is canonical and unaffected — the contract is about shape, not location.
+08. **No `pyproject.toml` version bumps.** Per `feedback-mcp-common-version-bump-is-user.md`. The user does all version bumps.
+09. **No spec doc.** This is a code-move plus a deletion; the design is implicit in the package layout.
 10. **The moved provider carries a per-model thinking-depth policy.** `reasoning_effort` is plumbed in during the move rather than after it — the file is being rewritten anyway, and the policy has to cross the mcp-common → oneiric boundary exactly once. The value vocabulary has no "off" member: no operator configuration may disable thinking.
 11. **`MiniMax-M3` is configured `adaptive` and `MiniMax-M3.1-Flash` is configured `low`.** Measured against MiniMax's API on 2026-11-14: the effort field is a no-op on `MiniMax-M3` (every level's reasoning-token count overlaps the no-field baseline), and `MiniMax-M3.1-Flash` defaults to `max` — so leaving the latency bucket unset would make the cheapest route the most expensive setting on the provider.
 
 ## Risks
 
-1. **Hidden consumers of `mcp_common.llm`.** The original plan's grep found 5 sites and missed `mahavishnu/workers/cloud_worker.py:20`. Any re-audit must sweep all fleet repos, not one. Mitigation: the fleet-wide `git grep` in Phase 4 is the gate; a missed consumer breaks at import time, which is loud but disruptive.
-2. **`mcp_common/llm/` may have intra-package imports that only surface at runtime.** Mitigation: Phase 1's import smoke test plus each consumer's test suite.
-3. **The `BodaiAdapter` Protocol session's shape** may require extra methods on the moved classes (e.g., explicit `init` / `health_check` / `shutdown`). If those don't exist, the classes need patching before the protocol session lands. Mitigation: confirm protocol shape with that session before Phase 1; if unknown, land the move anyway and add methods in a follow-up.
-4. **The `llm` dependency-group in `mcp-common/pyproject.toml`** may declare `httpx2` as an optional dep. With `mcp_common/llm/` gone, that group should come out too — audit in Phase 5. (Note: `mcp_common/llm/` is itself excluded from coverage as an optional-dep module, so its *tests* may not run in CI; verify the moved tests still execute under oneiric's CI.)
-5. **Deleting the coverage omit entry and the low-coverage modules moves the coverage baseline.** `mcp_common/apple_script/bridge.py` (52.63%) and `exceptions.py` (50.00%) were measured and sub-95%; removing them should *raise* the ratio, but the ratchet must be re-measured and the memo amended per its own decision rule.
-6. **Cross-repo push coordination.** Per `feedback-bodai-push-is-user-controlled.md`, the user does all `git push`. This plan lands in 5 repos (oneiric, mcp-common, session-buddy, crackerjack, mahavishnu). The user must push them in a coordinated order — oneiric first (so consumers can pull the new code), then consumers, then mcp-common last (since removing `mcp_common/llm` breaks any repo that hasn't updated).
-7. **A renamed model id silently drops the effort policy.** The map is keyed by model id, so a MiniMax rename leaves the key unmatched — and on `MiniMax-M3.1-Flash` an unmatched key means the provider default, which is `max`. Mitigation: the provider logs a configuration-miss warning naming the unresolved model, and `mahavishnu/settings/models.yaml` lists `MiniMax-M3` explicitly with the `adaptive` sentinel, so both known models are accounted for rather than one of them relying on absence.
-8. **The two request paths do not share an effort mechanism.** The worker path (Phase 1b) sends `reasoning_effort` on the OpenAI-compatible surface, where the field name is native on both sides of the Bifrost gateway. The Claude Code path is a different surface with a different field name and a bridge in between — see the coordination note below before designing per-slot effort on that path.
-9. **A consumer can resolve an oneiric that lacks the moved code.** The import swap in Phase 4 fails at import time, not at test time, and only for environments whose lockfile resolves an older oneiric. The floors are raised in the same change (Phase 4), but the raise makes `uv sync` unsatisfiable until the carrying version is published — so an unlocked environment is broken until the publish lands. Mitigation: raise the floors and regenerate the locks in one commit per consumer, after the publish; do not merge a consumer's import swap ahead of its floor bump.
+01. **Hidden consumers of `mcp_common.llm`.** The original plan's grep found 5 sites and missed `mahavishnu/workers/cloud_worker.py:20`. Any re-audit must sweep all fleet repos, not one. Mitigation: the fleet-wide `git grep` in Phase 4 is the gate; a missed consumer breaks at import time, which is loud but disruptive.
+02. **`mcp_common/llm/` may have intra-package imports that only surface at runtime.** Mitigation: Phase 1's import smoke test plus each consumer's test suite.
+03. **The `BodaiAdapter` Protocol session's shape** may require extra methods on the moved classes (e.g., explicit `init` / `health_check` / `shutdown`). If those don't exist, the classes need patching before the protocol session lands. Mitigation: confirm protocol shape with that session before Phase 1; if unknown, land the move anyway and add methods in a follow-up.
+04. **The `llm` dependency-group in `mcp-common/pyproject.toml`** may declare `httpx2` as an optional dep. With `mcp_common/llm/` gone, that group should come out too — audit in Phase 5. (Note: `mcp_common/llm/` is itself excluded from coverage as an optional-dep module, so its *tests* may not run in CI; verify the moved tests still execute under oneiric's CI.)
+05. **Deleting the coverage omit entry and the low-coverage modules moves the coverage baseline.** `mcp_common/apple_script/bridge.py` (52.63%) and `exceptions.py` (50.00%) were measured and sub-95%; removing them should *raise* the ratio, but the ratchet must be re-measured and the memo amended per its own decision rule.
+06. **Cross-repo push coordination.** Per `feedback-bodai-push-is-user-controlled.md`, the user does all `git push`. This plan lands in 5 repos (oneiric, mcp-common, session-buddy, crackerjack, mahavishnu). The user must push them in a coordinated order — oneiric first (so consumers can pull the new code), then consumers, then mcp-common last (since removing `mcp_common/llm` breaks any repo that hasn't updated).
+07. **A renamed model id silently drops the effort policy.** The map is keyed by model id, so a MiniMax rename leaves the key unmatched — and on `MiniMax-M3.1-Flash` an unmatched key means the provider default, which is `max`. Mitigation: the provider logs a configuration-miss warning naming the unresolved model, and `mahavishnu/settings/models.yaml` lists `MiniMax-M3` explicitly with the `adaptive` sentinel, so both known models are accounted for rather than one of them relying on absence.
+08. **The two request paths do not share an effort mechanism.** The worker path (Phase 1b) sends `reasoning_effort` on the OpenAI-compatible surface, where the field name is native on both sides of the Bifrost gateway. The Claude Code path is a different surface with a different field name and a bridge in between — see the coordination note below before designing per-slot effort on that path.
+09. **A consumer can resolve an oneiric that lacks the moved code.** The import swap in Phase 4 fails at import time, not at test time, and only for environments whose lockfile resolves an older oneiric. The floors are raised in the same change (Phase 4), but the raise makes `uv sync` unsatisfiable until the carrying version is published — so an unlocked environment is broken until the publish lands. Mitigation: raise the floors and regenerate the locks in one commit per consumer, after the publish; do not merge a consumer's import swap ahead of its floor bump.
 10. **The moved classes must satisfy the `OneiricAdapter` protocol, and neither does today.** `FallbackChain` and `OpenAICompatibleProvider` both lack `metadata`, `init`, `health`, and `cleanup`; the provider also names its liveness method `health_check` where the protocol says `health`. Mitigation: Phase 1 adds the conformance slice and registers the new factory paths; the public `health_check` method is kept as-is and `health()` delegates to it.
 11. **A *published* package outside the audited repos imports `mcp_common.llm`.** The consumer audit swept all 29 local repos' *source*, and found crackerjack's `crackerjack/adapters/ai/unified.py:8` — which Phase 4 fixes. But the *installed* crackerjack wheel in mcp-common's own venv imports the same module, so deleting `mcp_common/llm/` from mcp-common breaks **mcp-common's own tooling**: `crackerjack run` cannot even import its CLI (measured 2026-11-14 —
     `ModuleNotFoundError: No module named 'mcp_common.llm'` at

@@ -3,7 +3,7 @@ status: active
 role: canonical
 date: 2026-01-21
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: observability
 ---
@@ -19,14 +19,14 @@ ______________________________________________________________________
 ## Table of Contents
 
 1. \[[#overview|Overview]\]
-1. \[[#quick-start|Quick Start]\]
-1. \[[#installation|Installation]\]
-1. \[[#configuration|Configuration]\]
-1. \[[#metrics-reference|Metrics Reference]\]
-1. \[[#recording-rules|Recording Rules]\]
-1. \[[#alert-rules|Alert Rules]\]
-1. \[[#troubleshooting|Troubleshooting]\]
-1. \[[#best-practices|Best Practices]\]
+2. \[[#quick-start|Quick Start]\]
+3. \[[#installation|Installation]\]
+4. \[[#configuration|Configuration]\]
+5. \[[#metrics-reference|Metrics Reference]\]
+6. \[[#recording-rules|Recording Rules]\]
+7. \[[#alert-rules|Alert Rules]\]
+8. \[[#troubleshooting|Troubleshooting]\]
+9. \[[#best-practices|Best Practices]\]
 
 ______________________________________________________________________
 
@@ -792,11 +792,11 @@ journalctl -u prometheus -f
    - Verify port 8000 is accessible
    - Check firewall rules
 
-1. **Prometheus not scraping:**
+2. **Prometheus not scraping:**
 
    - Verify `prometheus.yml` configuration
 
-1. **Wrong service name/port:**
+3. **Wrong service name/port:**
 
    - Update `scrape_configs` in `prometheus.yml`
    - Reload config: `curl -X POST http://localhost:9090/-/reload`
@@ -824,7 +824,7 @@ count(oneiric_resolution_total) by (domain, key, provider)
    - Check `oneiric/core/observability.py` metric definitions
    - Verify OpenTelemetry instrumentation
 
-1. **Relabeling config:**
+2. **Relabeling config:**
 
    - Add `relabel_configs` in Prometheus scrape config
    - Drop unnecessary labels to reduce cardinality
@@ -862,7 +862,7 @@ metric_relabel_configs:
    - Pre-aggregate metrics with recording rules
    - Reduces query load and storage
 
-1. **Increase retention:**
+3. **Increase retention:**
 
    - Adjust `--storage.tsdb.retention.time=30d`
 
@@ -892,13 +892,13 @@ curl http://localhost:9093/api/v1/alerts
    - Test query in Prometheus UI (`:9090/graph`)
    - Check `for` duration (may be too long)
 
-1. **Reload rules:**
+2. **Reload rules:**
 
    ```bash
    curl -X POST http://localhost:9090/-/reload
    ```
 
-1. **Check AlertManager configuration:**
+3. **Check AlertManager configuration:**
 
    - Verify routing rules
    - Test notification channels
@@ -987,10 +987,10 @@ ______________________________________________________________________
 ## Next Steps
 
 1. **Deploy Prometheus:** Follow installation section
-1. **Verify metrics:** Check `/metrics` endpoint and Prometheus targets
-1. **Configure alerts:** Deploy alert rules and connect AlertManager
-1. **Create dashboards:** Import Grafana dashboards (see `GRAFANA_DASHBOARDS.md`)
-1. **Set up log aggregation:** Configure Loki (see `LOKI_SETUP.md`)
+2. **Verify metrics:** Check `/metrics` endpoint and Prometheus targets
+3. **Configure alerts:** Deploy alert rules and connect AlertManager
+4. **Create dashboards:** Import Grafana dashboards (see `GRAFANA_DASHBOARDS.md`)
+5. **Set up log aggregation:** Configure Loki (see `LOKI_SETUP.md`)
 
 ______________________________________________________________________
 

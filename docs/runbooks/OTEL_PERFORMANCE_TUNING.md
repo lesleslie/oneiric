@@ -3,7 +3,7 @@ status: active
 role: canonical
 date: 2026-01-28
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: observability
 ---
@@ -47,8 +47,8 @@ LIMIT 10;
 **Solutions:**
 
 1. **Create IVFFlat index** (see Index Management Guide)
-1. **Increase similarity threshold** (reduce result set)
-1. **Limit search scope** (add time range filter)
+2. **Increase similarity threshold** (reduce result set)
+3. **Limit search scope** (add time range filter)
 
 ### Slow Error Search
 
@@ -68,8 +68,8 @@ WHERE attributes->>'error.message' LIKE '%timeout%';
 **Solutions:**
 
 1. **Add composite index:** `(start_time, status)`
-1. **Use GIN index** on attributes (automatic)
-1. **Reduce time range** (add start/end filters)
+2. **Use GIN index** on attributes (automatic)
+3. **Reduce time range** (add start/end filters)
 
 ### High Memory Usage
 
@@ -81,8 +81,8 @@ WHERE attributes->>'error.message' LIKE '%timeout%';
 **Solutions:**
 
 1. **Reduce buffer size:** Set `batch_size=50` in settings
-1. **Reduce flush interval:** Set `batch_interval_seconds=3`
-1. **Limit trace history:** Partition old data
+2. **Reduce flush interval:** Set `batch_interval_seconds=3`
+3. **Limit trace history:** Partition old data
 
 ### Slow Batch Inserts
 
@@ -101,8 +101,8 @@ FROM otel_traces;
 **Solutions:**
 
 1. **Use unlogged tables** (if durability not critical)
-1. **Increase connection pool:** Set `max_retries=10`
-1. **Batch in parallel** (multiple insert workers)
+2. **Increase connection pool:** Set `max_retries=10`
+3. **Batch in parallel** (multiple insert workers)
 
 ## Tuning Parameters
 

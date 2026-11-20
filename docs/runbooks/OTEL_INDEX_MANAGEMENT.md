@@ -3,7 +3,7 @@ status: active
 role: canonical
 date: 2026-01-28
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: observability
 ---
@@ -126,5 +126,5 @@ REINDEX INDEX CONCURRENTLY ix_traces_embedding_ivfflat;
 **Solutions:**
 
 1. Increase `lists` parameter (try 200 or 300)
-1. Reduce data ingestion rate
-1. Consider partitioning by time
+2. Reduce data ingestion rate
+3. Consider partitioning by time

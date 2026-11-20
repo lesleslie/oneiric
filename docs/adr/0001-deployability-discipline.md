@@ -4,7 +4,7 @@ role: canonical
 kind: decision
 date: 2026-09-26
 last_reviewed: 2026-09-26
-superseded_by: null
+superseded_by:
 blocks_on: []
 decision_date: 2026-09-26
 topic: deployability-discipline
@@ -88,13 +88,13 @@ Concrete obligations:
 
 1. **Install-on-laptop is the dominant onboarding path.** New users run *one* component to evaluate it. A first run that crashes because Session-Buddy is not running loses the user; a first run that boots and degrades invites the next step.
 
-1. **Serverless is the deployment story for half the ecosystem.** Mahavishnu workers on RunPod, Akosha ingestion jobs on Cloud Run, Crackerjack in CI — all are ephemeral. Coupled startup violates the deployment target.
+2. **Serverless is the deployment story for half the ecosystem.** Mahavishnu workers on RunPod, Akosha ingestion jobs on Cloud Run, Crackerjack in CI — all are ephemeral. Coupled startup violates the deployment target.
 
-1. **Harness agnosticism is non-negotiable now.** The user runs Claude Code, Goose, and Pi interchangeably. A Bodai component that hardcodes Claude Code specifics is a Bodai component the user will eventually fork.
+3. **Harness agnosticism is non-negotiable now.** The user runs Claude Code, Goose, and Pi interchangeably. A Bodai component that hardcodes Claude Code specifics is a Bodai component the user will eventually fork.
 
-1. **Graceful degradation is cheaper than mocks.** Mocking Akosha for a Mahavishnu unit test is a tax on every contributor. Capability detection that returns "Akosha unreachable → use baseline" is a one-line check the runtime does anyway.
+4. **Graceful degradation is cheaper than mocks.** Mocking Akosha for a Mahavishnu unit test is a tax on every contributor. Capability detection that returns "Akosha unreachable → use baseline" is a one-line check the runtime does anyway.
 
-1. **The alternative is silent fallback.** The user's CLAUDE.md explicitly forbids silent fallback in mahavishnu ("Degraded mode: surface the unavailability"). This ADR codifies that posture across the whole ecosystem and turns it into a deployable property.
+5. **The alternative is silent fallback.** The user's CLAUDE.md explicitly forbids silent fallback in mahavishnu ("Degraded mode: surface the unavailability"). This ADR codifies that posture across the whole ecosystem and turns it into a deployable property.
 
 ## Architecture
 

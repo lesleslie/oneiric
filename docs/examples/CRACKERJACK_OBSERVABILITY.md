@@ -3,7 +3,7 @@ status: active
 role: canonical
 date: 2026-01-21
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: observability
 ---
@@ -80,8 +80,8 @@ The JSON payload lists every handler (topics, concurrency, filters) so Ops can c
 Workflows that emit `workflow.notify` already include the structured message body. To mirror ACB’s MCP notifications:
 
 1. Configure `[adapters.selections.notifications]` to point at `slack`, `teams`, or `webhook`.
-1. Use the same config when running the CLI inspectors so the logs include `NotificationMessage` payloads.
-1. Replay the payload via `uv run python -m oneiric.cli action-invoke workflow.notify --workflow crackerjack.workflows.release --payload '{"message":"Deploy queued","channel":"deploys"}' --send-notification --json` so the ChatOps transcript matches production. The CLI uses the same `NotificationRouter` the orchestrator uses, so the Slack/Teams/Webhook payload stays identical.
-1. Drop the CLI transcript + telemetry JSON into Slack/Teams for reviewer context.
+2. Use the same config when running the CLI inspectors so the logs include `NotificationMessage` payloads.
+3. Replay the payload via `uv run python -m oneiric.cli action-invoke workflow.notify --workflow crackerjack.workflows.release --payload '{"message":"Deploy queued","channel":"deploys"}' --send-notification --json` so the ChatOps transcript matches production. The CLI uses the same `NotificationRouter` the orchestrator uses, so the Slack/Teams/Webhook payload stays identical.
+4. Drop the CLI transcript + telemetry JSON into Slack/Teams for reviewer context.
 
 > Tip: keep all artifacts (`dag.json`, `events.json`, `runtime_telemetry.json`) under `docs/examples/crackerjack/` so Crackerjack reviewers have a single folder to diff.

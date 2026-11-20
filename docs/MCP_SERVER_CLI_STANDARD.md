@@ -3,7 +3,7 @@ status: active
 role: canonical
 date: 2026-01-02
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: mcp-design
 ---
@@ -51,6 +51,6 @@ projects adopting Oneiric.
 ### Adoption Order
 
 1. `mcp-common` (Oneiric native CLI factory)
-1. `session-buddy`
-1. `raindropio-mcp` and `mailgun-mcp`
-1. Remaining active MCP servers
+2. `session-buddy`
+3. `raindropio-mcp` and `mailgun-mcp`
+4. Remaining active MCP servers

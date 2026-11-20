@@ -3,7 +3,7 @@ status: complete
 role: historical
 date: 2026-01-21
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: lifecycle
 ---
@@ -133,9 +133,9 @@ ______________________________________________________________________
 **4-Tier Precedence Verified:**
 
 1. ✓ Explicit override (config selections)
-1. ✓ Inferred priority (ONEIRIC_STACK_ORDER)
-1. ✓ Stack level (candidate metadata)
-1. ✓ Registration order (tie-breaker)
+2. ✓ Inferred priority (ONEIRIC_STACK_ORDER)
+3. ✓ Stack level (candidate metadata)
+4. ✓ Registration order (tie-breaker)
 
 **Explain API:** Fully functional with decision traces
 
@@ -153,25 +153,25 @@ ______________________________________________________________________
    - **Fix:** Added factory allowlist in `core/security.py` (lines 1-60)
    - **Verification:** 100% coverage on security module
 
-1. ✅ **Missing Signature Verification** (CRITICAL) - **RESOLVED**
+2. ✅ **Missing Signature Verification** (CRITICAL) - **RESOLVED**
 
    - **Issue:** Remote manifests only checked SHA256, no signatures
    - **Fix:** Implemented ED25519 signature verification in `remote/security.py`
    - **Verification:** 95% coverage, signature verification functional
 
-1. ✅ **Path Traversal** (HIGH) - **RESOLVED**
+3. ✅ **Path Traversal** (HIGH) - **RESOLVED**
 
    - **Issue:** Cache directory operations lacked path sanitization
    - **Fix:** Added `sanitize_filename()` in `remote/security.py` (lines 169-199)
    - **Verification:** 31 passing path traversal tests in `tests/security/test_cache_paths.py`
 
-1. ✅ **No HTTP Timeouts** (HIGH) - **RESOLVED**
+4. ✅ **No HTTP Timeouts** (HIGH) - **RESOLVED**
 
    - **Issue:** Remote fetches could hang indefinitely
    - **Fix:** Added configurable timeouts in `remote/loader.py` (default 30s)
    - **Verification:** Timeout tests pass
 
-1. ✅ **Thread Safety** (MEDIUM) - **RESOLVED**
+5. ✅ **Thread Safety** (MEDIUM) - **RESOLVED**
 
    - **Issue:** Concurrent registry modifications could corrupt state
    - **Fix:** Added `RLock` to resolver registry (core/resolution.py)
@@ -293,27 +293,27 @@ CLI:
    - **Impact:** Low - aiohttp adapter works fine, httpx is secondary
    - **Fix:** Requires httpx dependency investigation
 
-1. **HTTP Action Tests (2 failures):**
+2. **HTTP Action Tests (2 failures):**
 
    - `test_http_fetch_action_returns_json`
    - `test_http_fetch_action_raise_for_status`
    - **Root Cause:** Similar to above, action system HTTP mocking
    - **Impact:** Low - actions are optional feature
 
-1. **Event Action Test (1 failure):**
+3. **Event Action Test (1 failure):**
 
    - `test_event_dispatch_executes_hooks`
    - **Root Cause:** Async event hook timing issue
    - **Impact:** Low - event hooks work in integration tests
 
-1. **Remote Manifest Integration Tests (11 failures):**
+4. **Remote Manifest Integration Tests (11 failures):**
 
    - Various `test_remote_watchers.py` tests
    - **Root Cause:** Integration test flakiness (timing/async)
    - **Impact:** Low - remote manifest loading works in manual testing
    - **Fix:** Tests need async timeout adjustments
 
-1. **Security Edge Case Test (1 failure):**
+5. **Security Edge Case Test (1 failure):**
 
    - `test_empty_uri`
    - **Root Cause:** Empty URI edge case not yet handled
@@ -483,10 +483,10 @@ ______________________________________________________________________
 **5 Runbooks Created:**
 
 1. ✓ Resolution Failures (P0 Critical)
-1. ✓ Hot-Swap Failures (P0 Critical)
-1. ✓ Remote Sync Failures (P1 High)
-1. ✓ Cache Corruption (P0 Critical - Security)
-1. ✓ Memory Exhaustion (P0 Critical)
+2. ✓ Hot-Swap Failures (P0 Critical)
+3. ✓ Remote Sync Failures (P1 High)
+4. ✓ Cache Corruption (P0 Critical - Security)
+5. ✓ Memory Exhaustion (P0 Critical)
 
 **Each Runbook Includes:**
 
@@ -509,13 +509,13 @@ ______________________________________________________________________
    - Rollback procedures
    - Health validation
 
-1. ✓ Cache Cleanup (weekly, 15-30 min)
+2. ✓ Cache Cleanup (weekly, 15-30 min)
 
    - Disk space management
    - Artifact cache pruning
    - Snapshot rotation
 
-1. ✓ Secret Rotation (quarterly, 30-45 min)
+3. ✓ Secret Rotation (quarterly, 30-45 min)
 
    - Credential refresh
    - Zero-downtime rotation
@@ -636,11 +636,11 @@ ______________________________________________________________________
 
    - **Mitigation:** Monitoring stack will detect performance degradation
 
-1. **Automated Secrets Rotation:** Requires manual restart for secret refresh
+2. **Automated Secrets Rotation:** Requires manual restart for secret refresh
 
    - **Mitigation:** Documented in maintenance runbooks, quarterly schedule
 
-1. **Test Flakiness:** 18 failing tests (3.3% failure rate)
+3. **Test Flakiness:** 18 failing tests (3.3% failure rate)
 
    - **Mitigation:** Core functionality verified, failures are edge cases
 
@@ -658,7 +658,7 @@ ______________________________________________________________________
    - ✓ Update CLAUDE.md score: 68/100 → 95/100
    - ✓ Update test coverage: "Minimal" → "83% (526 tests)"
 
-1. **Tag Release (30 minutes):**
+2. **Tag Release (30 minutes):**
 
    - ✓ Create git tag `v0.2.0` (production-ready)
    - ✓ Update `pyproject.toml` version: 0.1.0 → 0.2.0
@@ -670,18 +670,18 @@ ______________________________________________________________________
    - Investigate httpx version compatibility
    - Fix 3 failing HTTP adapter tests
 
-1. **Stabilize Integration Tests (2-3 days):**
+2. **Stabilize Integration Tests (2-3 days):**
 
    - Add async timeouts to remote manifest tests
    - Fix 11 flaky integration tests
 
-1. **Performance Testing (1 week):**
+3. **Performance Testing (1 week):**
 
    - Load test with 1000+ candidates
    - Benchmark swap latency under load
    - Memory profiling for long-running orchestrator
 
-1. **Automated Secrets Rotation (1 week):**
+4. **Automated Secrets Rotation (1 week):**
 
    - Implement zero-downtime secret refresh per `docs/implementation/RESOLVER_SECRET_REFRESH_PLAN.md`
    - Add secrets cache TTL configuration + CLI invalidate command
@@ -693,12 +693,12 @@ ______________________________________________________________________
    - Shared registry (Redis/etcd backend)
    - Multi-instance coordination
 
-1. **Plugin Marketplace:**
+2. **Plugin Marketplace:**
 
    - Public registry for community adapters
    - Automated plugin discovery
 
-1. **Advanced Observability:**
+3. **Advanced Observability:**
 
    - Distributed tracing integration
    - Custom metrics dashboard builder
@@ -758,9 +758,9 @@ The project demonstrates:
 **Recommended Deployment Strategy:**
 
 1. Deploy to staging environment with full monitoring
-1. Run for 1-2 weeks to validate stability
-1. Address any issues discovered in staging
-1. Gradual production rollout (10% → 50% → 100% traffic)
+2. Run for 1-2 weeks to validate stability
+3. Address any issues discovered in staging
+4. Gradual production rollout (10% → 50% → 100% traffic)
 
 **Risk Level:** Low - All critical issues resolved, minor test failures are edge cases
 

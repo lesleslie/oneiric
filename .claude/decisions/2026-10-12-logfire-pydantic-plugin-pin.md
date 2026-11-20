@@ -16,11 +16,9 @@ related:
 `uv run crackerjack gitignore sync` was emitting two related failures
 in the oneiric venv:
 
-1. `UserWarning: ImportError while loading the 'logfire-plugin' Pydantic
-   plugin, this plugin will not be installed.` — emitted by
+1. `UserWarning: ImportError while loading the 'logfire-plugin' Pydantic plugin, this plugin will not be installed.` — emitted by
    `pydantic/plugin/_schema_validator.py:40`.
-2. `ImportError: cannot import name '_clean_attribute_value' from
-   'opentelemetry.attributes'` — root cause of the plugin-load failure.
+2. `ImportError: cannot import name '_clean_attribute_value' from 'opentelemetry.attributes'` — root cause of the plugin-load failure.
 
 ### The chain
 
@@ -49,7 +47,7 @@ import pydantic
   **drifted from the lock**. SDK 1.45.1's `measurement.py:11` imports
   `_clean_attribute_value`, which was renamed to
   `_clean_extended_attribute_value` upstream before API 1.44.0 shipped.
-  The 6.0.0b* betas of logfire were pinned against bleeding-edge OTel
+  The 6.0.0b\* betas of logfire were pinned against bleeding-edge OTel
   and never picked up the rename.
 - `uv run`'s pre-invocation sync is supposed to reconcile the venv with
   the lock but did not in this case (drift persisted). Use
@@ -68,11 +66,13 @@ packages.
 ## Decision
 
 1. **Pin `logfire` below 6.0** in `pyproject.toml`:
+
    ```toml
    "monitoring-logfire" = [
        "logfire>=4.37.0,<6.0",
    ]
    ```
+
    logfire 5.1.1 (resolved by `uv lock`) works cleanly with the locked
    `opentelemetry-sdk==1.44.0` and `opentelemetry-api==1.44.0` pair.
    Bump the upper bound when logfire ships a stable 6.x that fixes
@@ -88,9 +88,11 @@ packages.
 
 3. **Document the escape hatch** for environments where logfire is
    installed but its pydantic integration is unwanted:
+
    ```bash
    export PYDANTIC_DISABLE_PLUGINS=logfire-plugin
    ```
+
    Pydantic reads this env var at
    `pydantic/plugin/_loader.py:27` and skips matching plugins
    (lines 32, 45). Setting it to `1` disables all plugins; setting it
@@ -137,10 +139,10 @@ PYDANTIC_DISABLE_PLUGINS=logfire-plugin uv run python -c "import pydantic"
 ## Rollback signal
 
 Any of:
+
 - `UserWarning: ImportError while loading the 'logfire-plugin' Pydantic plugin`
   re-emerges at pydantic import time.
-- `ImportError: cannot import name '_clean_attribute_value' from
-  'opentelemetry.attributes'` re-emerges at SDK metrics import.
+- `ImportError: cannot import name '_clean_attribute_value' from 'opentelemetry.attributes'` re-emerges at SDK metrics import.
 - `uv.lock` shows `logfire>=6.0` or `opentelemetry-sdk>=1.45` without
   a verified fix.
 

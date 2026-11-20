@@ -3,7 +3,7 @@ status: active
 role: canonical
 date: 2026-01-02
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: observability
 ---
@@ -19,13 +19,13 @@ ______________________________________________________________________
 ## Table of Contents
 
 1. \[[#overview|Overview]\]
-1. \[[#quick-start|Quick Start]\]
-1. \[[#installation|Installation]\]
-1. \[[#configuration|Configuration]\]
-1. \[[#logql-queries|LogQL Queries]\]
-1. \[[#grafana-integration|Grafana Integration]\]
-1. \[[#troubleshooting|Troubleshooting]\]
-1. \[[#best-practices|Best Practices]\]
+2. \[[#quick-start|Quick Start]\]
+3. \[[#installation|Installation]\]
+4. \[[#configuration|Configuration]\]
+5. \[[#logql-queries|LogQL Queries]\]
+6. \[[#grafana-integration|Grafana Integration]\]
+7. \[[#troubleshooting|Troubleshooting]\]
+8. \[[#best-practices|Best Practices]\]
 
 ______________________________________________________________________
 
@@ -508,9 +508,9 @@ datasources:
 **Manual configuration:**
 
 1. **Configuration → Data Sources → Add data source**
-1. **Select "Loki"**
-1. **URL:** `http://loki:3100`
-1. **Save & Test**
+2. **Select "Loki"**
+3. **URL:** `http://loki:3100`
+4. **Save & Test**
 
 ### Grafana Explore
 
@@ -591,11 +591,11 @@ curl http://localhost:9080/targets
 
    - Check container label filters in `promtail-config.yml`
 
-1. **Loki not receiving:**
+2. **Loki not receiving:**
 
    - Verify Loki URL in Promtail config
 
-1. **Oneiric not logging:**
+3. **Oneiric not logging:**
 
    - Verify Oneiric is running
    - Ensure structlog configured correctly
@@ -618,7 +618,7 @@ ______________________________________________________________________
    {app="oneiric"} | json | __timestamp__ >= 1h
    ```
 
-1. **Use label filters (indexed):**
+2. **Use label filters (indexed):**
 
    ```logql
    # FAST: Label filter
@@ -628,7 +628,7 @@ ______________________________________________________________________
    {app="oneiric"} |= "error"
    ```
 
-1. **Reduce query parallelism:**
+3. **Reduce query parallelism:**
 
    ```yaml
    # loki-config.yml
@@ -636,7 +636,7 @@ ______________________________________________________________________
      max_query_parallelism: 16  # Reduce from 32
    ```
 
-1. **Enable caching:**
+4. **Enable caching:**
 
    ```yaml
    # loki-config.yml
@@ -660,14 +660,14 @@ ______________________________________________________________________
      retention_delete_delay: 2h
    ```
 
-1. **Reduce retention period:**
+2. **Reduce retention period:**
 
    ```yaml
    table_manager:
      retention_period: 168h  # 7 days instead of 30
    ```
 
-1. **Implement log sampling:**
+3. **Implement log sampling:**
 
    ```yaml
    # promtail-config.yml
@@ -677,7 +677,7 @@ ______________________________________________________________________
          action: drop  # Drop debug logs
    ```
 
-1. **Use S3 storage (production):**
+4. **Use S3 storage (production):**
 
    ```yaml
    storage_config:
@@ -766,10 +766,10 @@ ______________________________________________________________________
 ## Next Steps
 
 1. **Deploy Loki + Promtail:** Follow installation section
-1. **Verify logs flowing:** Check Grafana Explore
-1. **Create log panels:** Add to Grafana dashboards
-1. **Set up log alerts:** Configure LogQL alerts
-1. **Tune retention:** Adjust based on storage constraints
+2. **Verify logs flowing:** Check Grafana Explore
+3. **Create log panels:** Add to Grafana dashboards
+4. **Set up log alerts:** Configure LogQL alerts
+5. **Tune retention:** Adjust based on storage constraints
 
 ______________________________________________________________________
 

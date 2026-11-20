@@ -14,31 +14,31 @@ The following dashboard JSON files should be created based on the specifications
    - Refresh: 30s
    - Panels: 8 (status, traffic, errors, latency, alerts, resources, distribution, activity)
 
-1. **oneiric-resolution.json** - Component resolution deep dive
+2. **oneiric-resolution.json** - Component resolution deep dive
 
    - UID: `oneiric-resolution`
    - Refresh: 10s
    - Panels: 8 (success rate, throughput, heatmap, percentiles, top components, failures, shadowed, errors)
 
-1. **oneiric-lifecycle.json** - Hot-swap operations monitoring
+3. **oneiric-lifecycle.json** - Hot-swap operations monitoring
 
    - UID: `oneiric-lifecycle`
    - Refresh: 10s
    - Panels: 9 (success rate, timeline, latency, heatmap, instances, health failures, reasons, rollbacks, state transitions)
 
-1. **oneiric-remote.json** - Remote manifest and artifact tracking
+4. **oneiric-remote.json** - Remote manifest and artifact tracking
 
    - UID: `oneiric-remote`
    - Refresh: 30s
    - Panels: 10 (success rate, last sync, latency budget, frequency, cache, digest, signature, sources, errors, cache ops)
 
-1. **oneiric-activity.json** - Pause/drain state management
+5. **oneiric-activity.json** - Pause/drain state management
 
    - UID: `oneiric-activity`
    - Refresh: 30s
    - Panels: 7 (summary, paused table, draining table, events, distribution, timeline, long-running alert)
 
-1. **oneiric-performance.json** - Performance analysis and SLO tracking
+6. **oneiric-performance.json** - Performance analysis and SLO tracking
 
    - UID: `oneiric-performance`
    - Refresh: 10s
@@ -59,10 +59,10 @@ open http://localhost:3000
 ### Option 2: Manual Import
 
 1. Access Grafana: http://localhost:3000
-1. Navigate to: Dashboards → Import
-1. Upload JSON file from this directory
-1. Select "Prometheus" as data source
-1. Import
+2. Navigate to: Dashboards → Import
+3. Upload JSON file from this directory
+4. Select "Prometheus" as data source
+5. Import
 
 ### Option 3: Kubernetes ConfigMap
 
@@ -192,12 +192,12 @@ Dashboards include annotations for important events:
    ALERTS{alertname=~"Oneiric.*",severity="critical"}
    ```
 
-1. **Deployments**
+2. **Deployments**
 
    - Restart events (uptime < 5min)
    - Version changes
 
-1. **Pause/Resume Events**
+3. **Pause/Resume Events**
 
    - Activity state changes
 
@@ -227,11 +227,11 @@ Edit panel JSON to change color thresholds:
 ### Add Custom Panels
 
 1. Edit dashboard
-1. Add panel
-1. Configure query/visualization
-1. Save dashboard
-1. Export JSON
-1. Commit to version control
+2. Add panel
+3. Configure query/visualization
+4. Save dashboard
+5. Export JSON
+6. Commit to version control
 
 ## Troubleshooting
 
@@ -240,17 +240,17 @@ Edit panel JSON to change color thresholds:
 **Check:**
 
 1. Prometheus datasource configured: Configuration → Data Sources
-1. Metrics exist: `curl http://localhost:9090/api/v1/label/__name__/values | grep oneiric`
-1. Time range includes data
-1. Oneiric is running: `docker ps | grep oneiric`
+2. Metrics exist: `curl http://localhost:9090/api/v1/label/__name__/values | grep oneiric`
+3. Time range includes data
+4. Oneiric is running: `docker ps | grep oneiric`
 
 ### Slow dashboard loading
 
 **Solutions:**
 
 1. Use recording rules (already configured in Prometheus)
-1. Reduce time range (e.g., 1h instead of 24h)
-1. Increase Prometheus memory: `docker-compose.yml` → `memory: 4G`
+2. Reduce time range (e.g., 1h instead of 24h)
+3. Increase Prometheus memory: `docker-compose.yml` → `memory: 4G`
 
 ### Panels showing errors
 
@@ -263,22 +263,22 @@ Edit panel JSON to change color thresholds:
 ## Best Practices
 
 1. **Use recording rules** for frequently queried metrics (already configured)
-1. **Set appropriate refresh rates**: 10s for real-time, 30s for overview, 1m for trends
-1. **Include SLO lines** on latency/error rate graphs
-1. **Add annotations** for deployments and incidents
-1. **Version control** dashboard JSON in Git
-1. **Test dashboards** after Prometheus rule changes
-1. **Document custom panels** in comments
+2. **Set appropriate refresh rates**: 10s for real-time, 30s for overview, 1m for trends
+3. **Include SLO lines** on latency/error rate graphs
+4. **Add annotations** for deployments and incidents
+5. **Version control** dashboard JSON in Git
+6. **Test dashboards** after Prometheus rule changes
+7. **Document custom panels** in comments
 
 ## Maintenance
 
 ### Updating Dashboards
 
 1. Edit dashboard in Grafana UI
-1. Save changes
-1. Export JSON: Dashboard settings → JSON Model
-1. Save to this directory
-1. Commit to Git
+2. Save changes
+3. Export JSON: Dashboard settings → JSON Model
+4. Save to this directory
+5. Commit to Git
 
 ### Backup
 

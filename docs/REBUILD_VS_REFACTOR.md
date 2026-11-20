@@ -3,7 +3,7 @@ status: active
 role: canonical
 date: 2025-12-29
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: resolver
 ---
@@ -32,18 +32,18 @@ keeping existing adapter functionality and actions utilities.
 
 1. New core packages: `core/resolution`, `core/lifecycle`, `core/observability`,
    `core/plugins`, `core/runtime` (context/taskgroups/supervision).
-1. Candidate model + resolver (shared across adapters/services/tasks/events/workflows)
+2. Candidate model + resolver (shared across adapters/services/tasks/events/workflows)
    with precedence: config override > package priority > stack_level > last-write.
-1. Lifecycle contract (init/health/cleanup/pause-resume) with rollback on failed init.
-1. Structured concurrency helpers (TaskGroup/Nursery abstraction) and cancellation-
+3. Lifecycle contract (init/health/cleanup/pause-resume) with rollback on failed init.
+4. Structured concurrency helpers (TaskGroup/Nursery abstraction) and cancellation-
    safe utilities; make all background work go through them.
-1. Observability: OpenTelemetry tracing/metrics/logging fields standard across domains;
+5. Observability: OpenTelemetry tracing/metrics/logging fields standard across domains;
    health/readiness hooks.
-1. Plugin protocol: entry points or pluggy-style plus path-based discovery; optional
+6. Plugin protocol: entry points or pluggy-style plus path-based discovery; optional
    remote manifest source (signed wheel/zip) with cache.
-1. Hot swap: resolver-driven swap with health check, cleanup, rollback; config/manifest
+7. Hot swap: resolver-driven swap with health check, cleanup, rollback; config/manifest
    watcher triggers swaps.
-1. CLI/diagnostics: list/why/explain/swap per domain; active vs. shadowed.
+8. CLI/diagnostics: list/why/explain/swap per domain; active vs. shadowed.
 
 ## Migration of Existing Adapters/Actions
 

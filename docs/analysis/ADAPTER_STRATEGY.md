@@ -3,7 +3,7 @@ status: draft
 role: implementation
 date: 2025-12-19
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: adapter-architecture
 ---
@@ -16,6 +16,7 @@ topic: adapter-architecture
 **Date:** 2025-11-26
 
 > **Terminology:** Throughout Oneiric docs:
+>
 > - **adapter** = one *candidate* in the resolver with `domain='adapter'`
 > - **key** = the category (e.g., `cache`, `database`, `vector`)
 > - **provider** = the implementation (e.g., `redis`, `memcached` for cache adapters)
@@ -84,9 +85,9 @@ ______________________________________________________________________
 **Rationale:**
 
 1. **Most common use case** - SQL databases are 80% of production workloads
-1. **Consistent with industry** - "database adapter" typically means SQL
-1. **NoSQL is niche** - NoSQL databases are specialized, domain-specific
-1. **Avoid fragmentation** - Single category easier to discover
+2. **Consistent with industry** - "database adapter" typically means SQL
+3. **NoSQL is niche** - NoSQL databases are specialized, domain-specific
+4. **Avoid fragmentation** - Single category easier to discover
 
 ### Proposed Structure
 
@@ -143,10 +144,10 @@ ______________________________________________________________________
 **Core Principles:**
 
 1. **Pydantic models everywhere** - Single source of truth
-1. **Universal query interface** - Same API across SQL/NoSQL/Graph
-1. **Type-safe at compile time** - Full mypy/pyright support
-1. **Adapter-specific optimizations** - Leverage native features when available
-1. **Zero learning curve** - Familiar patterns from SQLModel/Redis-OM
+2. **Universal query interface** - Same API across SQL/NoSQL/Graph
+3. **Type-safe at compile time** - Full mypy/pyright support
+4. **Adapter-specific optimizations** - Leverage native features when available
+5. **Zero learning curve** - Familiar patterns from SQLModel/Redis-OM
 
 ### Recommended Stack
 
@@ -527,14 +528,14 @@ ______________________________________________________________________
 **For each ACB adapter:**
 
 1. **Copy adapter implementation** from ACB to Oneiric
-1. **Update imports** to use Oneiric's core modules:
+2. **Update imports** to use Oneiric's core modules:
    - `from oneiric.adapters.metadata import AdapterMetadata`
    - `from oneiric.core.lifecycle import LifecycleError`
    - `from oneiric.core.logging import get_logger`
-1. **Add lifecycle hooks** (if missing):
+3. **Add lifecycle hooks** (if missing):
    - `async def health(self) -> bool`
    - `async def cleanup(self) -> None`
-1. **Add AdapterMetadata** to class:
+4. **Add AdapterMetadata** to class:
    ```python
    metadata = AdapterMetadata(
        category="vector",
@@ -549,15 +550,15 @@ ______________________________________________________________________
        settings_model=PineconeSettings,
    )
    ```
-1. **Update Pydantic models** to use V2 syntax:
+5. **Update Pydantic models** to use V2 syntax:
    - `from pydantic import BaseModel, Field, ConfigDict`
    - Add `model_config = ConfigDict(...)` instead of class Config
-1. **Add tests** (100 lines minimum):
+6. **Add tests** (100 lines minimum):
    - Unit tests for initialization
    - Health check tests
    - Cleanup tests
    - Integration tests (if possible)
-1. **Update documentation**:
+7. **Update documentation**:
    - Add adapter to `oneiric/adapters/<category>/__init__.py`
    - Add usage example to `docs/adapters/<category>_USAGE.md`
 
@@ -680,9 +681,9 @@ ______________________________________________________________________
 **Next Adapters (Priority):**
 
 1. Vector databases (Pinecone, Qdrant, PGVector)
-1. Embedding adapters (OpenAI, Sentence Transformers)
-1. NoSQL databases (MongoDB, DynamoDB, Firestore)
-1. AI/LLM adapters (OpenAI, Anthropic, Gemini)
+2. Embedding adapters (OpenAI, Sentence Transformers)
+3. NoSQL databases (MongoDB, DynamoDB, Firestore)
+4. AI/LLM adapters (OpenAI, Anthropic, Gemini)
 
 **Timeline:**
 

@@ -224,8 +224,8 @@ make test-coverage  # With HTML coverage report
 If tests are timing out:
 
 1. Check `[tool.crackerjack]` in `pyproject.toml` - current timeout is 600s
-1. Run `make test-analyze` to identify slow tests
-1. Consider parallelizing with `pytest -n auto`
+2. Run `make test-analyze` to identify slow tests
+3. Consider parallelizing with `pytest -n auto`
 
 ### Marker Warnings
 

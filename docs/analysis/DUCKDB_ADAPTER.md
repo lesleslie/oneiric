@@ -3,7 +3,7 @@ status: active
 role: canonical
 date: 2025-12-29
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: adapter-architecture
 ---
@@ -37,11 +37,11 @@ ______________________________________________________________________
 DuckDB is ideal for:
 
 1. **Data Analytics** - Fast aggregations, window functions, complex joins
-1. **Data Pipelines** - ETL/ELT processing with minimal infrastructure
-1. **Data Science** - Seamless integration with pandas and Arrow
-1. **Embedded Analytics** - No server required, embedded in application
-1. **Development/Testing** - Fast in-memory database for tests
-1. **Data Warehousing** - Lightweight alternative to large-scale warehouses
+2. **Data Pipelines** - ETL/ELT processing with minimal infrastructure
+3. **Data Science** - Seamless integration with pandas and Arrow
+4. **Embedded Analytics** - No server required, embedded in application
+5. **Development/Testing** - Fast in-memory database for tests
+6. **Data Warehousing** - Lightweight alternative to large-scale warehouses
 
 **Not Suitable For:**
 

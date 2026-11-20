@@ -3,7 +3,7 @@ status: complete
 role: historical
 date: 2026-09-05
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: lifecycle
 ---
@@ -224,8 +224,8 @@ For the implementation plan (Phase 4), I'd recommend shipping these in a single 
 **Definitely ship (HIGH severity)**:
 
 1. Fix the 3 version_consistency doc files → bumps tests pass (Bug #B)
-1. Resolve CLAUDE.md internal contradiction (Bug #C)
-1. Triage the 3 loader/CLI failures: maintainer ruling on whether test or code is right (Bug #A groups 2 + 3)
+2. Resolve CLAUDE.md internal contradiction (Bug #C)
+3. Triage the 3 loader/CLI failures: maintainer ruling on whether test or code is right (Bug #A groups 2 + 3)
 
 **Should ship (MED severity)**:
 4\. Rewrite CLAUDE.md to match current state: version, test count, coverage, Python floor, architecture tree (Bugs #E, #F, #G combined — single CLAUDE.md rewrite like mcp-common Phase 1)

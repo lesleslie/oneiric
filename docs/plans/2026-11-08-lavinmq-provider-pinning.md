@@ -8,7 +8,7 @@ role: implementation
 topic: adapter-registry
 date: 2026-11-08
 last_reviewed: 2026-11-08
-superseded_by: null
+superseded_by:
 blocks_on: []
 ---
 
@@ -153,8 +153,7 @@ The broker is already running, and `brew services list` reports `lavinmq none`
 because a second, hand-rolled LaunchAgent owns it:
 
 - `~/Library/LaunchAgents/com.bodai.lavinmq.plist` — label `com.bodai.lavinmq`,
-  `RunAtLoad` + `KeepAlive`, running `lavinmq --data-dir
-  /Users/les/Library/lavinmq --default-user-only-loopback false` (no `-c`, so
+  `RunAtLoad` + `KeepAlive`, running `lavinmq --data-dir /Users/les/Library/lavinmq --default-user-only-loopback false` (no `-c`, so
   the Homebrew ini is **not** read).
 - Verified listening: `127.0.0.1:5672` (AMQP), `127.0.0.1:1883` (MQTT),
   `127.0.0.1:15672` (mgmt), `127.0.0.1:15692` (metrics). Loopback only.

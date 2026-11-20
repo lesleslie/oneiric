@@ -3,7 +3,7 @@ status: active
 role: canonical
 date: 2026-05-10
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: lifecycle
 ---
@@ -74,11 +74,11 @@ OneiricSettings
 Oneiric uses a layered configuration system with the following precedence (highest to lowest):
 
 1. **Environment Variables** - Runtime overrides (`ONEIRIC_*`)
-1. **XDG Local** - `~/.config/oneiric/local.yaml`
-1. **XDG Config** - `~/.config/oneiric/config.yaml`
-1. **Local YAML** - `settings/local.yaml` (gitignored)
-1. **Project YAML** - `settings/oneiric.yaml` (committed)
-1. **Defaults** - Pydantic field defaults
+2. **XDG Local** - `~/.config/oneiric/local.yaml`
+3. **XDG Config** - `~/.config/oneiric/config.yaml`
+4. **Local YAML** - `settings/local.yaml` (gitignored)
+5. **Project YAML** - `settings/oneiric.yaml` (committed)
+6. **Defaults** - Pydantic field defaults
 
 If you pass `--config` or set `ONEIRIC_CONFIG`, that explicit file overrides all of the layers above.
 

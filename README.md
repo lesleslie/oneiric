@@ -119,11 +119,11 @@ ______________________________________________________________________
 `project_name`. From lowest to highest precedence, it checks:
 
 1. Code defaults
-1. `settings/<project_name>.yaml` or `.yml` at the project root
-1. `settings/local.yaml` at the project root
-1. `${XDG_CONFIG_HOME:-~/.config}/<project_name>/config.yaml`
-1. `${XDG_CONFIG_HOME:-~/.config}/<project_name>/local.yaml`
-1. Environment overrides in the form `<PROJECT_NAME>_<SETTING>__<FIELD>`
+2. `settings/<project_name>.yaml` or `.yml` at the project root
+3. `settings/local.yaml` at the project root
+4. `${XDG_CONFIG_HOME:-~/.config}/<project_name>/config.yaml`
+5. `${XDG_CONFIG_HOME:-~/.config}/<project_name>/local.yaml`
+6. Environment overrides in the form `<PROJECT_NAME>_<SETTING>__<FIELD>`
 
 For example, a project using `project_name="oneiric"` checks
 `~/.config/oneiric/config.yaml` and `~/.config/oneiric/local.yaml` when
@@ -308,9 +308,9 @@ ______________________________________________________________________
 ## Contributing
 
 1. Review the relevant architecture and operator documentation.
-1. Run `python -m crackerjack run --run-tests` before opening a PR.
-1. Add or update tests for runtime features, adapters, actions, or CLI flows.
-1. Update the README or linked documentation when the operator surface changes.
+2. Run `python -m crackerjack run --run-tests` before opening a PR.
+3. Add or update tests for runtime features, adapters, actions, or CLI flows.
+4. Update the README or linked documentation when the operator surface changes.
 
 ______________________________________________________________________
 

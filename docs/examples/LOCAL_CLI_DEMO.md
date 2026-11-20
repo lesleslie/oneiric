@@ -3,7 +3,7 @@ status: active
 role: canonical
 date: 2026-02-03
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: lifecycle
 ---
@@ -156,14 +156,14 @@ sandbox_mode = true                  # Keeps calls in SendGrid's sandbox
 
    Update `docs/examples/demo_settings.toml` (or your own config) with the same key or a Secret Manager reference.
 
-1. Verify the adapter is registered:
+2. Verify the adapter is registered:
 
    ```bash
    ONEIRIC_CONFIG=~/.oneiric.toml \
    uv run python -m oneiric.cli list --domain adapter --shadowed | grep messaging
    ```
 
-1. Send a sandboxed test message using the adapter bridge:
+3. Send a sandboxed test message using the adapter bridge:
 
    ```bash
    ONEIRIC_CONFIG=~/.oneiric.toml uv run python - <<'PY'

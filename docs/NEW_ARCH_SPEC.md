@@ -3,7 +3,7 @@ status: active
 role: canonical
 date: 2026-01-21
 last_reviewed: 2026-09-09
-superseded_by: null
+superseded_by:
 blocks_on: []
 topic: resolver
 ---
@@ -157,9 +157,9 @@ flowchart TD
 **Precedence Rules** (highest to lowest):
 
 1. **Explicit config override** - User selections in `settings/*.yaml` (e.g., `adapters.yml`)
-1. **Package-inferred priority** - From `ONEIRIC_STACK_ORDER` env var or path heuristics
-1. **Stack level** - Candidate metadata `stack_level` (z-index style)
-1. **Registration order** - Last registered wins (tie-breaker)
+2. **Package-inferred priority** - From `ONEIRIC_STACK_ORDER` env var or path heuristics
+3. **Stack level** - Candidate metadata `stack_level` (z-index style)
+4. **Registration order** - Last registered wins (tie-breaker)
 
 ## Domain Mapping
 
@@ -409,12 +409,12 @@ flowchart LR
 
 1. Add stack priority map per app (`STACK_ORDER` env or config; e.g., sites →
    sites → fastblocks → oneiric).
-1. Register packages via new `register_pkg` (no old globals).
-1. Wrap adapters with lifecycle shims; declare stack_level/provider metadata.
-1. Bind services/tasks/events/workflows through their bridges; remove legacy
+2. Register packages via new `register_pkg` (no old globals).
+3. Wrap adapters with lifecycle shims; declare stack_level/provider metadata.
+4. Bind services/tasks/events/workflows through their bridges; remove legacy
    registration paths.
-1. Enable OTel/logging helpers; add minimal health hooks.
-1. Optionally set up remote manifest for shared/ad-hoc components.
+5. Enable OTel/logging helpers; add minimal health hooks.
+6. Optionally set up remote manifest for shared/ad-hoc components.
 
 **Strengthening Apps:**
 
