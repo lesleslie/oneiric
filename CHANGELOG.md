@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.39.1] - 2026-11-21
+
+### Changed
+
+- docs: Format this repository's markdown for the first time
+
+### Fixed
+
+- queue: Decode coredis 6.x stream replies in the redis-streams adapter
+- release: Make the version stamper atomic and interpreter-agnostic
+- release: Make the version stamper's --stage flag real
+
+### Documentation
+
+- Re-stamp the version surfaces for 0.39.0
+
+### Internal
+
+- coverage: Round the ratchet floor down to a whole point
+- docs: Make the plan-index script a wrapper over the one renderer
+- pytest: Name the async fixture loop scope
+- release: Add a version stamper so a bump carries its doc claims
+
 ## [0.39.0] - 2026-11-16
 
 ### Fixed

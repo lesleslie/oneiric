@@ -3,7 +3,7 @@ title: Oneiric Topic Vocabulary
 status: active
 role: canonical
 topic: lifecycle
-last_reviewed: 2026-09-09
+last_reviewed: 2026-11-21
 ---
 
 # Topic Vocabulary v1
@@ -53,6 +53,20 @@ contribution workflow below.
 | `lifecycle-hooks` | Oneiric activation, health-check, hot-swap, rollback, and cleanup hook contracts. |
 | `decision-index` | `.claude/decisions/` README index file (canonical decision inventory). |
 | `deployability-discipline` | Bodai deployability rule: standalone-by-default, harness-agnostic interface, serverless-deployable runtime. See `oneiric/docs/adr/0001-deployability-discipline.md` (proposed 2026-09-26). |
+| `embeddings` | Embedding provider chains, canonical vector width, and vector-store migration (session-buddy). |
+| `architecture` | System structure, component boundaries, and the design decisions that shape them. |
+| `security` | Security posture: path disclosure, redaction, and secret handling. |
+| `documentation` | Documentation and docstring accuracy, including technical writing correctness. |
+| `integration` | Integration boundaries between components, including the decommissioning of an integration. |
+| `operations` | Operational runbooks and maintenance procedures. |
+| `dependency-management` | Dependency pinning, version ranges, platform markers, and lockfile policy. |
+| `testing-infrastructure` | Test selection, runners, coverage collection, and pytest plugin wiring. |
+| `settings-resolution` | Oneiric layered settings resolution: defaults, YAML layers, and environment overrides. |
+| `process-discipline` | Bodai process discipline: plan and spec templates, integration contracts, and lifecycle gates. |
+| `action-kit-adoption` | Adoption of the Oneiric action kits as shared implementation primitives. |
+| `gitignore-conformance` | Conformance to the canonical Bodai gitignore policy across the fleet. |
+| `workflow-architecture` | Workflow phase design, checkpointing, and gate ordering. |
+| `cli-lifecycle` | CLI command surface lifecycle: subcommand structure, deprecation, and removal. |
 
 ## Contribution Workflow
 
@@ -77,3 +91,8 @@ can be merged.
 - Slug **must not be a reserved word**. The reserved words are:
   `draft`, `active`, `partial`, `shipped`, `complete`, `canonical`,
   `implementation`, `umbrella`, `historical`, `superseded`.
+
+## Cross-Reference
+
+See [document-frontmatter-v1.md](../../oneiric/schemas/document-frontmatter-v1.md)
+for the frontmatter contract that consumes this vocabulary.

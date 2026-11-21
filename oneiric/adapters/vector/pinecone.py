@@ -79,7 +79,7 @@ class PineconeAdapter(VectorBase[PineconeSettings]):
             return pc
         except ImportError as exc:
             raise LifecycleError(
-                "pinecone-client-import-failed: pip install pinecone-client"
+                "pinecone-client-import-failed: pip install pinecone"
             ) from exc
         except Exception as exc:
             raise LifecycleError(f"pinecone-client-creation-failed: {exc}") from exc

@@ -2,8 +2,8 @@
 status: active
 role: implementation
 date: 2026-08-22
-last_reviewed: 2026-09-09
-superseded_by: null
+last_reviewed: 2026-11-19
+superseded_by:
 blocks_on: []
 topic: learning-pipeline
 ---
@@ -11,9 +11,40 @@ topic: learning-pipeline
 # Hybrid EmbeddingService Design
 
 **Date:** 2026-08-22
-**Status:** Approved Design
+**Status:** Approved Design — **stale; see the revision note below**
 **Implementing:** Real embeddings across the Bodai ecosystem via a 5-backend
 probe chain in oneiric.
+
+______________________________________________________________________
+
+## ⚠ Revision note — 2026-11-19: do not execute as written
+
+**This design is approved but abandoned, and it was never finished.** Its
+Phases 1–4 were partly built; **Phase 5 — "Runtime verification: all
+components restart, all tools work end-to-end" — was never done**, and a
+fleet-wide audit on 2026-11-17–19 found what that gap hid: the chain has
+**no OpenAI leg**, so the fleet's standard embedding provider is unreachable
+through the only embedding client in the fleet, and the chain silently
+falls to a 384-dim mock whose width happened to match a stale schema.
+
+**The current position is `mahavishnu/docs/plans/2026-11-19-fleet-standardisation.md`.**
+This document is kept as the design record; the corrections are:
+
+| This document says | Current position (2026-11-19) |
+|---|---|
+| Leg 1 `llama.cpp` at `http://localhost:8080/v1/embeddings` (`:58`, `:86`) | Port **8081**. 8080 is too common a default; the fleet moved. |
+| Leg 2 `Ollama` at `:11434` (`:59`) | **Removed.** Ollama is retired fleet-wide; llama.cpp/llama-server replaced it and is not depended on. |
+| Leg 3 `MiniMax` with `embo-01` (`:60`, `:99`) | `embo-01` is natively **1536**, not the **1024** stated at `:239`. It stays as a *tier* — a different model is a different vector space — never as a provider failover. |
+| Legs 4–5 `Model2Vec` (256) and `Mock` (384) (`:61-62`) | Leave the **semantic** chain. The mock becomes a **startup failure** in any tier holding semantic vectors, and the fleet width is **1536**, so neither is width-eligible. |
+| — | **New legs 1–2: `openai_gateway` (Bifrost, `x-bf-vk`) → `openai_direct` (`OPENAI_API_KEY`)**, reusing the existing `oneiric/adapters/embedding/openai.py` rather than a parallel HTTP client. |
+| "Target width" implied by the legacy tiers (`:237-240`) | **1536** — `text-embedding-3-small` native. The contract is `(model, dimensions, space_version)`, not a dimension: a width check cannot tell two vector spaces apart. |
+| Phase 4 "Simplify mahavishnu" (`:254`) | **Not done.** Mahavishnu still carries its own `EmbeddingService` subclass whose `provider`/`model` config is accepted-and-ignored. |
+| Phase 5 "Runtime verification" (`:255`) | **The work this fleet plan performs.** |
+
+The substrate's `embedding__*` knobs — which this design's "single source of
+truth" goal depends on — are still **declared but unread**: one production
+reader in the whole fleet. Wiring or deleting them is part of the fleet
+plan.
 
 ______________________________________________________________________
 
@@ -37,10 +68,10 @@ ______________________________________________________________________
 ## Goals
 
 1. **Real embeddings everywhere** — `is_available()` finally returns `True`
-1. **Single source of truth** — one EmbeddingService, one config schema
-1. **Graceful degradation** — chain probes each backend; first responder wins
-1. **No ONNX dependency** — matches project policy set in crackerjack / session-buddy
-1. **Zero hard deps** — all backends are HTTP or pure-numpy (model2vec)
+2. **Single source of truth** — one EmbeddingService, one config schema
+3. **Graceful degradation** — chain probes each backend; first responder wins
+4. **No ONNX dependency** — matches project policy set in crackerjack / session-buddy
+5. **Zero hard deps** — all backends are HTTP or pure-numpy (model2vec)
 
 ______________________________________________________________________
 
@@ -204,9 +235,9 @@ ______________________________________________________________________
 ### Demonstrable by
 
 1. `pytest oneiric/tests/unit/test_embedding_chain.py` — all 5 backends tested in isolation
-1. `pytest oneiric/tests/unit/test_embedding_probe.py` — probe order verified
-1. Runtime: `curl http://localhost:8682/health` → akosha reports backend name
-1. Runtime: `mcp__akosha__generate_embedding("hello")` → returns REAL 384-dim embedding (via Ollama today)
+2. `pytest oneiric/tests/unit/test_embedding_probe.py` — probe order verified
+3. Runtime: `curl http://localhost:8682/health` → akosha reports backend name
+4. Runtime: `mcp__akosha__generate_embedding("hello")` → returns REAL 384-dim embedding (via Ollama today)
 
 ### Rollback signal
 
