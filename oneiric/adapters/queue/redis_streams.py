@@ -337,24 +337,28 @@ class RedisStreamsQueueAdapter(EnsureClientMixin):
         if not message_ids:
             return 0
         acked = await client.xack(
-            self._settings.stream, self._settings.group, *message_ids
+            self._settings.stream, self._settings.group, list(message_ids)
         )
         self._logger.debug("queue-ack", stream=self._settings.stream, count=acked)
         return acked
 
     async def pending(self, *, count: int = 10) -> list[dict[str, Any]]:
         client = self._ensure_client("redis-streams-client-not-initialized")
-        response = await client.xpending_range(
+        # coredis 6.x has no ``xpending_range`` — the command is
+        # ``xpending(key, group, start, end, count)``, whose extended
+        # form returns one ``(identifier, consumer, idle, delivered)``
+        # row per pending message.
+        response = await client.xpending(
             self._settings.stream,
             self._settings.group,
-            min="-",
-            max="+",
-            count=count,
+            "-",
+            "+",
+            count,
         )
         return [
             {
-                "message_id": entry[0],
-                "consumer": entry[1],
+                "message_id": self._as_text(entry[0]),
+                "consumer": self._as_text(entry[1]),
                 "delivery_count": entry[2],
                 "idle": entry[3],
             }
@@ -389,13 +393,60 @@ class RedisStreamsQueueAdapter(EnsureClientMixin):
         else:
             pairs = entries
         for stream_key, messages in pairs:
-            if stream_key != self._settings.stream:
+            # The reply key arrives as ``bytes`` (coredis does not decode
+            # unless the client asked for it) while the configured
+            # stream name is a ``str``. Comparing the two raw values is
+            # ALWAYS unequal, so this guard — written to drop foreign
+            # streams — used to drop every entry instead, and the
+            # adapter returned an empty list with no error at all.
+            if self._as_text(stream_key) != self._settings.stream:
                 continue
-            for message_id, payload in cast(Iterable[tuple[Any, Any]], messages):
+            for message in cast(Iterable[Any], messages):
+                message_id, payload = self._entry_parts(message)
                 formatted.append(
                     {
-                        "message_id": message_id,
-                        "payload": payload,
+                        "message_id": self._as_text(message_id),
+                        "payload": self._decode_payload(payload),
                     }
                 )
         return formatted
+
+    @staticmethod
+    def _as_text(value: Any) -> Any:
+        """Decode a Redis reply value to ``str`` when it arrived as bytes.
+
+        coredis returns keys, entry identifiers and field values as
+        ``bytes`` unless the client is built with
+        ``decode_responses=True``. Everything the adapter compares or
+        emits is normalised here, once, at the boundary — so the
+        output contract is the same whichever client is behind it.
+        """
+        if isinstance(value, bytes):
+            return value.decode("utf-8", errors="replace")
+        return value
+
+    @classmethod
+    def _decode_payload(cls, payload: Any) -> Any:
+        """Normalise a stream entry's field mapping to ``str`` keys/values."""
+        if not isinstance(payload, Mapping):
+            return payload
+        return {
+            cls._as_text(key): cls._as_text(value) for key, value in payload.items()
+        }
+
+    @staticmethod
+    def _entry_parts(message: Any) -> tuple[Any, Any]:
+        """Split one stream entry into ``(message_id, payload)``.
+
+        coredis 6.x yields ``StreamEntry`` objects — a 4-field namedtuple
+        of ``(identifier, field_values, idle, delivered)`` — so unpacking
+        one into two variables raises ``ValueError: too many values to
+        unpack``. Older clients and the in-memory fixtures yield plain
+        ``(id, fields)`` pairs. Read the attributes when they exist and
+        fall back to tuple unpacking otherwise.
+        """
+        field_values = getattr(message, "field_values", None)
+        if field_values is not None:
+            return message.identifier, field_values
+        message_id, payload = message
+        return message_id, payload

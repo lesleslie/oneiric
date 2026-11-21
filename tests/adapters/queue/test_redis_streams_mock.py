@@ -78,14 +78,24 @@ class MockRedisClient:
         entries = self.streams[stream][:count]
         return [(stream, entries)] if entries else []
 
-    async def xack(self, stream: str, group: str, *ids: str) -> int:
+    async def xack(self, stream: str, group: str, identifiers: Any) -> int:
+        """Mirror coredis 6.x: ``identifiers`` is ONE sequence argument."""
+        ids = identifiers if isinstance(identifiers, (list, tuple)) else [identifiers]
         return len(ids)
 
-    async def xpending_range(
-        self, stream: str, group: str, *, min: str, max: str, count: int
+    async def xpending(
+        self,
+        stream: str,
+        group: str,
+        start: str | None = None,
+        end: str | None = None,
+        count: int | None = None,
+        idle: int | None = None,
+        consumer: str | None = None,
     ) -> list[tuple[str, str, int, int]]:
+        """Mirror coredis 6.x's ``xpending`` (it has no ``xpending_range``)."""
         entries = self.streams.get(stream, [])
-        return [(msg_id, "consumer", 1, 0) for msg_id, _ in entries[:count]]
+        return [(msg_id, "consumer", 1, 0) for msg_id, _ in entries[: count or 10]]
 
     async def publish(self, channel: str, payload: bytes) -> int:
         return 1
@@ -171,9 +181,7 @@ async def test_init_legacy_busygroup_response_error_is_ignored() -> None:
     """
     client = MockRedisClient()
 
-    async def busygroup_via_response_error(
-        *a: Any, **kw: Any
-    ) -> None:
+    async def busygroup_via_response_error(*a: Any, **kw: Any) -> None:
         # Simulate coredis 5.x: raises generic ResponseError whose
         # message carries the BUSYGROUP sentinel. NOT an instance of
         # StreamDuplicateConsumerGroupError — that's coredis 6.x only.
